@@ -999,8 +999,10 @@ def gen_ICP_global(pastPose, targetPose, pastHull, targetHull, pastCircles, cost
 
 			#pylab.xlim(-4.5,4.5)
 			#pylab.ylim(-4,4)
-			pylab.xlim(-3,6)
-			pylab.ylim(-4,4)
+			#pylab.xlim(-3,6)
+			#pylab.ylim(-4,4)
+			pylab.xlim(-4,7)
+			pylab.ylim(-7,3)
 			#pylab.axis('equal')
 			pylab.savefig("ICP_plot_%04u.png" % numIterations)
 			pylab.clf()			
