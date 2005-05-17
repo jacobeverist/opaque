@@ -46,6 +46,7 @@ import math
 import pylab
 import pca_module
 import functions
+from subprocess import *
 
 from matplotlib.patches import Circle
 
@@ -1213,6 +1214,70 @@ def save(filename):
 	pylab.savefig(filename)
 	pylab.clf()
 
+
+def computeUnions(point_sets):
+
+	currPoly = point_sets[0]
+
+	for i in range(1,len(point_sets)):
+		currPoly = computeUnion(currPoly,point_sets[i])
+
+	return currPoly
+
+def computeUnion(points1, points2):
+	
+	numPoints1 = len(points1)
+	numPoints2 = len(points2)
+
+	inputStr = str(numPoints1) + " " + str(numPoints2) + " "
+	
+	" Removed Gaussians because were causing self-intersections ."
+	" not necessary anymore because polygons come from CGAL and are not degenerate. "
+	for p in points1:
+		p2 = copy(p)
+		#p2[0] += gauss(0.0,0.0001)
+		#p2[1] += gauss(0.0,0.0001)
+
+		inputStr += str(p2[0]) + " " + str(p2[1]) + " "
+
+	for p in points2:
+		p2 = copy(p)
+		#p2[0] += gauss(0.0,0.0001)
+		#p2[1] += gauss(0.0,0.0001)
+
+		inputStr += str(p2[0]) + " " + str(p2[1]) + " "
+	
+	inputStr += "\n"
+	
+	#print "sending input to Union:  ", inputStr
+	
+	" start the subprocess "
+	subProc = Popen(["./poly_union.exe"], stdin=PIPE, stdout=PIPE)
+	
+	" send input and receive output "
+	sout, serr = subProc.communicate(inputStr)
+
+	#print "rawOutput ="
+	#print sout
+
+	print serr
+	
+	" convert string output to typed data "
+	sArr = sout.split(" ")
+
+	numVert = int(sArr[0])
+	
+	#print "numVert =", numVert
+	#print numVert, len(sArr)
+	#print sArr
+	
+	vertices = []
+	for i in range(numVert):
+		#print sArr[2*i+1], sArr[2*i+2]
+		vertices.append([float(sArr[2*i + 1]), float(sArr[2*i + 2])])
+	
+	return vertices
+				
 
 
 if __name__ == '__main__':

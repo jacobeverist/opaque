@@ -79,6 +79,9 @@ class LocalNode:
 		self.foreR = array([[cos(self.vecAng), -sin(self.vecAng)],[sin(self.vecAng),cos(self.vecAng)]])
 		
 		self.R = array([[cos(self.estPose[2]), sin(self.estPose[2])],[-sin(self.estPose[2]),cos(self.estPose[2])]])
+		
+	def getEstPose(self):
+		return copy(self.estPose)
 
 	def setGndPose(self, newPose):
 		
@@ -92,6 +95,9 @@ class LocalNode:
 		self.gndForeR = array([[cos(self.gndVecAng), -sin(self.gndVecAng)],[sin(self.gndVecAng),cos(self.gndVecAng)]])
 		
 		self.gndR = array([[cos(self.gndPose[2]), sin(self.gndPose[2])],[-sin(self.gndPose[2]),cos(self.gndPose[2])]])
+
+	def getGndPose(self):
+		return copy(self.gndPose)
 		
 	def convertLocalOffsetToGlobal(self, offset):
 
@@ -377,9 +383,6 @@ class LocalNode:
 
 	def getPoseProfile(self):
 		return self.poseProfile
-		
-	def getEstPose(self):
-		return copy(self.estPose)
 
 	def obstCallBack(self, direction):
 		#self.currNode.obstCallBack(direction)		
