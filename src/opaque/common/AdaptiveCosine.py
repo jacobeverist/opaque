@@ -4,7 +4,7 @@ dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if not dir in sys.path:
 	sys.path.append(dir)
 
-from common import *
+#from common import *
 
 from numpy import arange
 from math import *
@@ -57,9 +57,11 @@ class AdaptiveCosine:
 		self.origin = [0.0,0.0]
 		self.oVec = [1.0,0.0]
 		self.sampleResolution = 0.01
+		self.head_len = 0.0
+
 
 		self.peakAmp = [0.0 for i in range(40)]
-
+	
 		self.ampSpacing = 2*pi / self.initFreq / 2.0
 		#self.ampSpacing *= 2.0
 		self.numPeaks = 2
@@ -67,9 +69,6 @@ class AdaptiveCosine:
 		self.peakSpacings = [self.ampSpacing for i in range(40)]
 		self.peakSpacings[0] = 3.0 * self.ampSpacing/2.0
 
-		" making the peaks wider in the middle and thinner in front and back "
-		" front and back are more critical anchors so we make more contact points "
-		" wide peaks in middle allow us to travel faster/farther "
 		self.peakSpacings[3] = self.ampSpacing * 2.0
 		self.peakSpacings[4] = self.ampSpacing * 2.0
 		self.peakSpacings[5] = self.ampSpacing * 2.0
@@ -78,6 +77,8 @@ class AdaptiveCosine:
 		self.infPoints = []
 		for i in range(self.numPeaks):
 			totalSum = 0.0
+			totalSum += self.head_len
+
 			for j in range(i):
 				totalSum += self.peakSpacings[j]
 
@@ -90,12 +91,16 @@ class AdaptiveCosine:
 		#	self.infPoints.append(self.ampSpacing/2.0 + i * self.ampSpacing)
 		
 		p1 = self.origin
+
+		pA = [self.origin[0] + self.head_len, self.origin[1]]
 		
 		#self.x_len = self.ampSpacing/2.0 + self.numPeaks * self.ampSpacing
 		self.x_len = self.infPoints[-1]
 		#varZ = self.peakAmp[0] * cos(self.req*self.x_len) - self.peakAmp[0]			
 		varZ = -self.peakAmp[0]			
-		p2 = [p1[0] + self.x_len, p1[1] + varZ ]
+		#p2 = [p1[0] + self.x_len, p1[1] + varZ ]
+		p2 = [pA[0] + self.x_len, pA[1] + varZ ]
+
 		
 		self.tail_len = 3.0
 		p3 = [p2[0] + self.tail_len, p2[1]]
@@ -103,7 +108,7 @@ class AdaptiveCosine:
 		#p1 = self.origin		
 		#p2 = [p1[0] + self.oVec[0]*self.x_len, p1[1] + self.oVec[1]*self.x_len]
 
-		self.control = {'p1':p1, 'p2':p2, 'p3':p3}
+		self.control = {'p1':p1, 'pA':pA, 'p2':p2, 'p3':p3}
 
 		self.saveCount = 0
 		
@@ -113,12 +118,43 @@ class AdaptiveCosine:
 		f.close()
 		self.saveCount += 1
 
+	def setHeadLength(self, length):
+		self.head_len = length
+
+		if True:
+
+			" peak inflection points, spaced at every cross over the x-axis "
+			self.infPoints = []
+			for i in range(self.numPeaks):
+				totalSum = 0.0
+				totalSum += self.head_len
+
+				for j in range(i):
+					totalSum += self.peakSpacings[j]
+
+				totalSum += self.peakSpacings[i]
+				
+				self.infPoints.append(totalSum)	
+
+			p1 = self.origin
+			pA = [self.origin[0] + self.head_len, self.origin[1]]
+			self.x_len = self.infPoints[-1]
+			varZ = -self.peakAmp[0]			
+			p2 = [pA[0] + self.x_len, pA[1] + varZ]
+			p3 = [p2[0] + self.tail_len, p2[1]]
+
+			self.control['p1'] = p1
+			self.control['pA'] = pA
+			self.control['p2'] = p2
+			self.control['p3'] = p3
+
 	def setTailLength(self, length):
 		
 		self.tail_len = length
 
 		if True:
 			p1 = self.control['p1']
+			pA = self.control['pA']
 			p2 = self.control['p2']
 			p3 = self.control['p3']
 			
@@ -126,7 +162,8 @@ class AdaptiveCosine:
 			self.x_len = self.infPoints[-1]
 			#z = self.peakAmp[0] * cos(self.freq*self.x_len) - self.peakAmp[0]			
 			varZ = -self.peakAmp[0]			
-			p2 = [p1[0] + self.x_len, p1[1] + varZ ]
+			#p2 = [p1[0] + self.x_len, p1[1] + varZ ]
+			p2 = [pA[0] + self.x_len, pA[1] + varZ ]
 			p3 = [p2[0] + self.tail_len, p2[1]]
 			
 			self.control['p2'] = p2
@@ -141,6 +178,7 @@ class AdaptiveCosine:
 			self.infPoints = []
 			for i in range(self.numPeaks):
 				totalSum = 0.0
+				totalSum += self.head_len
 				for j in range(i):
 					totalSum += self.peakSpacings[j]
 	
@@ -157,6 +195,7 @@ class AdaptiveCosine:
 		if True:
 		#if index == 0 or index >= self.numPeaks:
 			p1 = self.control['p1']
+			pA = self.control['pA']
 			p2 = self.control['p2']
 			p3 = self.control['p3']
 			
@@ -164,7 +203,8 @@ class AdaptiveCosine:
 			self.x_len = self.infPoints[-1]
 			#z = self.peakAmp[0] * cos(self.freq*self.x_len) - self.peakAmp[0]			
 			varZ = -self.peakAmp[0]			
-			p2 = [p1[0] + self.x_len, p1[1] + varZ ]
+			#p2 = [p1[0] + self.x_len, p1[1] + varZ ]
+			p2 = [pA[0] + self.x_len, pA[1] + varZ ]
 			p3 = [p2[0] + self.tail_len, p2[1]]
 			
 			self.control['p2'] = p2
@@ -184,6 +224,7 @@ class AdaptiveCosine:
 		self.infPoints = []
 		for i in range(self.numPeaks):
 			totalSum = 0.0
+			totalSum += self.head_len
 			for j in range(i):
 				totalSum += self.peakSpacings[j]
 
@@ -192,14 +233,16 @@ class AdaptiveCosine:
 			self.infPoints.append(totalSum)
 
 		p1 = self.control['p1']
+		pA = self.control['pA']
 		p2 = self.control['p2']
 		p3 = self.control['p3']
-		
+
 		#self.x_len = self.ampSpacing/2.0 + self.numPeaks * self.ampSpacing
 		self.x_len = self.infPoints[-1]
 		#varZ = self.peakAmp[0] * cos(self.freq*self.x_len) - self.peakAmp[0]			
 		varZ = -self.peakAmp[0]			
-		p2 = [p1[0] + self.x_len, p1[1] + varZ ]
+		#p2 = [p1[0] + self.x_len, p1[1] + varZ ]
+		p2 = [pA[0] + self.x_len, pA[1] + varZ ]
 		p3 = [p2[0] + self.tail_len, p2[1]]
 		
 		self.control['p2'] = p2
@@ -237,11 +280,14 @@ class AdaptiveCosine:
 				
 		x_samp = point[0]
 
+		if x_samp < self.head_len:
+			return [x_samp, 0.0]
+
 		" determine the amplitude control points we'll use "
-		if x_samp < 3.0*self.ampSpacing/2.0:
+		if (x_samp-self.head_len) < 3.0*self.ampSpacing/2.0:
 			ampIndex = 0
 		else:
-			ampIndex = int((x_samp - self.ampSpacing/2.0) / self.ampSpacing)
+			ampIndex = int(((x_samp-self.head_len) - self.ampSpacing/2.0) / self.ampSpacing)
 
 		for i in range(len(self.infPoints)):
 			infX = self.infPoints[i]
@@ -300,30 +346,33 @@ class AdaptiveCosine:
 			return 1e100, 0.5, copy(point)		
 
 		p1 = self.control['p1']
+		pA = self.control['pA']
 		p2 = self.control['p2']
 		p3 = self.control['p3']
 
 		# Hypothesis 1: closest point on the cosine curve
 		# evenly sample the cosine curve to find the closest point
-		newSamples = arange(0.0,self.x_len + self.sampleResolution, self.sampleResolution)
-	
+		#newSamples = arange(0.0,self.x_len + self.sampleResolution, self.sampleResolution)
+		newSamples = arange(self.head_len,self.x_len + self.sampleResolution, self.sampleResolution)
+
 		samples = []
 		for i in range(len(newSamples)):
 			if newSamples[i] >= xNotLessThan:
 				samples.append(newSamples[i])
-				
+
 		min1 = 100000
 		curvePoint1 = [0.0,0.0]
 		curvePoint2 = [0.0,0.0]
+		curvePoint3 = [0.0,0.0]
 		termP = []
 
 		for x_samp in samples:
 
 			" determine the amplitude control points we'll use "
-			if x_samp < 3.0*self.ampSpacing/2.0:
+			if (x_samp - self.head_len) < 3.0*self.ampSpacing/2.0:
 				ampIndex = 0
 			else:
-				ampIndex = int((x_samp - self.ampSpacing/2.0) / self.ampSpacing)
+				ampIndex = int(((x_samp - self.head_len) - self.ampSpacing/2.0) / self.ampSpacing)
 
 			for i in range(len(self.infPoints)):
 				infX = self.infPoints[i]
@@ -379,16 +428,46 @@ class AdaptiveCosine:
 			print "points not in expected configuration"
 			raise
 		
+
+		# Hypothesis 3: closest point on the leading edge
+		if point[0] <= p1[0]:
+			min3 = sqrt((point[0]-p1[0])**2 + (point[1]-p1[1])**2)
+			curvePoint3 = p1
+
+		elif point[0] > p1[0] and point[0] < pA[0]:
+			min3 = fabs(point[1] - p1[1])
+			curvePoint3 = [point[0],p1[1]]
+
+		elif point[0] >= pA[0]:
+			min3 = sqrt((point[0]-pA[0])**2 + (point[1]-pA[1])**2)
+			curvePoint3 = pA
+
+		else:
+			print "points not in expected configuration"
+			raise
+		
+
 		min = 0.0
 		pnt = []
 
 
 		if min1 <= min2:
-			min = min1
-			pnt = curvePoint1
+
+			if min1 <= min3:
+				min = min1
+				pnt = curvePoint1
+
+			else:
+				min = min3
+				pnt = curvePoint3
+
 		else:
-			min = min2
-			pnt = curvePoint2
+			if min2 <= min3:
+				min = min2
+				pnt = curvePoint2
+			else:
+				min = min3
+				pnt = curvePoint3
 
 		#if pnt[0] == termP[0] and pnt[1] == termP[1]:
 		#	return min, 1.0, copy(pnt)
@@ -407,23 +486,29 @@ class AdaptiveCosine:
 	def getPoints(self):
 		# create a distribution of points along the curve
 		p1 = self.control['p1']
+		pA = self.control['pA']
 		p2 = self.control['p2']
 		p3 = self.control['p3']
 
 		points = []
 
-		samples = arange(0.0,self.x_len + self.sampleResolution, self.sampleResolution)
 
-		#self.ampSpacing = 2*pi / self.freq / 2.0
-		#freq = 2*pi / ampSpacing / 2.0
+		" head section "
+		samples1 = arange(p1[0], pA[0] + self.sampleResolution, self.sampleResolution)
+		for x_samp in samples1:
+			varZ = p1[1]
+			points.append([x_samp,varZ])
+		
 
+		" curves section "
+		samples = arange(self.head_len,self.x_len + self.sampleResolution, self.sampleResolution)
 		for x_samp in samples:
 
 			" determine the amplitude control points we'll use "
-			if x_samp < 3.0*self.ampSpacing/2.0:
+			if (x_samp-self.head_len) < 3.0*self.ampSpacing/2.0:
 				ampIndex = 0
 			else:
-				ampIndex = int((x_samp - self.ampSpacing/2.0) / self.ampSpacing)
+				ampIndex = int(((x_samp - self.head_len) - self.ampSpacing/2.0) / self.ampSpacing)
 
 			for i in range(len(self.infPoints)):
 				infX = self.infPoints[i]
@@ -462,9 +547,7 @@ class AdaptiveCosine:
 			points.append([x_samp,varZ])
 			
 		
-		"""
-		TODO: add the point samples on the tail
-		"""
+		" tail section "
 		samples2 = arange(p2[0], p3[0] + self.sampleResolution, self.sampleResolution)
 		for x_samp in samples2:
 			varZ = p2[1]
