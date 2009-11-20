@@ -1,0 +1,78 @@
+material WallMaterial_Int
+{
+//    receive_shadows off
+	technique
+	{
+		pass
+		{
+			ambient 0.2 0.7 0.2 
+			diffuse 1 1 1 
+		}
+	}
+}
+
+material WallMaterial_Ext
+{
+//    receive_shadows off
+	technique
+	{
+		pass
+		{
+			ambient 0.1 0.1 0.5 
+			diffuse 1 1 1 
+		}
+	}
+}
+
+material WallMaterial_Top
+{
+//    receive_shadows off
+	technique
+	{
+		pass
+		{
+			//ambient 0.125 0.51 0.629
+			ambient 0.418 0.793 0.906
+			diffuse 1 1 1 
+		}
+	}
+}
+
+material Red
+{
+//    receive_shadows off
+	technique
+	{
+		pass
+		{
+			ambient 1.0 0.0 0.0 
+			diffuse 1 1 1 
+		}
+	}
+}
+
+material Green
+{
+//    receive_shadows off
+	technique
+	{
+		pass
+		{
+			ambient 0.0 1.0 0.0 
+			diffuse 1 1 1 
+		}
+	}
+}
+
+material Blue
+{
+//    receive_shadows off
+	technique
+	{
+		pass
+		{
+			ambient 0.0 0.0 1.0 
+			diffuse 1 1 1 
+		}
+	}
+}
