@@ -40,6 +40,7 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 		self.jerkingDone = False
 		self.jerkAngle = 0
 		self.prevJerkAngle = self.jerkAngle
+		self.jerkErrors = []
 		
 		self.computeCurve()
 
@@ -534,10 +535,10 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 						
 						if self.direction:
 							maxJoint = max(peakJoints)
-							self.jerkJoint = maxJoint + 3
+							self.jerkJoint = maxJoint + 1
 						else:
 							minJoint = min(peakJoints)
-							self.jerkJoint = minJoint - 3
+							self.jerkJoint = minJoint - 1
 						
 						if self.jerkAngle == 0 and self.prevJerkAngle == 0:
 							self.nomJerk = self.probe.getServo(self.jerkJoint) * 180.0 / pi
@@ -550,11 +551,13 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 							
 							#print "setting jerk joint to ", self.jerkAngle + self.nomJerk
 							print "jerk angle error = " , self.probe.getServo(j)-self.probe.getServoCmd(j)
+							self.jerkErrors.append(self.probe.getServo(j)-self.probe.getServoCmd(j))
 							self.prevJerkAngle = self.jerkAngle
 							self.jerkAngle = -90
 						
 						elif self.jerkAngle == -90:
 							print "jerk angle error = " , self.probe.getServo(j)-self.probe.getServoCmd(j)
+							self.jerkErrors.append(self.probe.getServo(j)-self.probe.getServoCmd(j))
 
 							" error = (-0.09, 0.005) is good "
 							" error = (-2.73, -1.99) is bad "
@@ -569,10 +572,28 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 						#print "jerk angle error = " , self.probe.getServo(j)-self.probe.getServoCmd(j)
 			
 				if self.isJerking and self.jerkingDone:
-					self.localFit.setSolid(0)
-					self.localFit.setSolid(1)
-					self.currPeak += 2
 					
+					" if the anchor is not secure, lets try it again "
+					if abs(self.jerkErrors[0]) < 0.01 and abs(self.jerkErrors[1]) < 0.01:
+						
+						" reset the amplitude of peaks 0 and 1, nextVal = 0.0 "
+						
+						" increment the head length of adaptive cosine curve "
+						head_len = self.curve.getHeadLength()
+						self.curve.setHeadLength(head_len + 0.5)
+						
+						#tail_len = self.curve.getTailLength()
+						#self.curve.setTailLength(tail_len - 0.5)
+						
+					else:
+							
+						self.localFit.setSolid(0)
+						self.localFit.setSolid(1)
+						self.currPeak += 2
+
+						" reset the head length of adaptive cosine curve to 0 "
+						self.curve.setHeadLength(0.0)
+						
 					self.minAmp = 0.0
 					self.maxAmp = 0.0
 
@@ -589,6 +610,8 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 					
 					self.isJerking = False
 					self.jerkingDone = False
+					
+					self.jerkErrors = []
 
 
 				" reset all torques of the joints to maximum "

@@ -103,7 +103,12 @@ class AdaptiveCosine:
 
 		
 		self.tail_len = 3.0
-		p3 = [p2[0] + self.tail_len, p2[1]]
+		
+		followLen = self.tail_len - self.head_len
+		if followLen < 0:
+			followLen = 0.0
+
+		p3 = [p2[0] + followLen, p2[1]]
 		
 		#p1 = self.origin		
 		#p2 = [p1[0] + self.oVec[0]*self.x_len, p1[1] + self.oVec[1]*self.x_len]
@@ -117,6 +122,9 @@ class AdaptiveCosine:
 		f.write(repr(self.peakAmp))
 		f.close()
 		self.saveCount += 1
+
+	def getHeadLength(self):
+		return self.head_len
 
 	def setHeadLength(self, length):
 		self.head_len = length
@@ -141,12 +149,20 @@ class AdaptiveCosine:
 			self.x_len = self.infPoints[-1]
 			varZ = -self.peakAmp[0]			
 			p2 = [pA[0] + self.x_len, pA[1] + varZ]
-			p3 = [p2[0] + self.tail_len, p2[1]]
+	
+			followLen = self.tail_len - self.head_len
+			if followLen < 0:
+				followLen = 0.0
+
+			p3 = [p2[0] + followLen, p2[1]]
 
 			self.control['p1'] = p1
 			self.control['pA'] = pA
 			self.control['p2'] = p2
 			self.control['p3'] = p3
+
+	def getHeadLength(self):
+		return self.tail_len
 
 	def setTailLength(self, length):
 		
@@ -164,7 +180,11 @@ class AdaptiveCosine:
 			varZ = -self.peakAmp[0]			
 			#p2 = [p1[0] + self.x_len, p1[1] + varZ ]
 			p2 = [pA[0] + self.x_len, pA[1] + varZ ]
-			p3 = [p2[0] + self.tail_len, p2[1]]
+
+			followLen = self.tail_len - self.head_len
+			if followLen < 0:
+				followLen = 0.0
+			p3 = [p2[0] + followLen, p2[1]]
 			
 			self.control['p2'] = p2
 			self.control['p3'] = p3
@@ -205,7 +225,13 @@ class AdaptiveCosine:
 			varZ = -self.peakAmp[0]			
 			#p2 = [p1[0] + self.x_len, p1[1] + varZ ]
 			p2 = [pA[0] + self.x_len, pA[1] + varZ ]
-			p3 = [p2[0] + self.tail_len, p2[1]]
+			
+			
+			followLen = self.tail_len - self.head_len
+			if followLen < 0:
+				followLen = 0.0
+
+			p3 = [p2[0] + followLen, p2[1]]
 			
 			self.control['p2'] = p2
 			self.control['p3'] = p3
@@ -243,7 +269,12 @@ class AdaptiveCosine:
 		varZ = -self.peakAmp[0]			
 		#p2 = [p1[0] + self.x_len, p1[1] + varZ ]
 		p2 = [pA[0] + self.x_len, pA[1] + varZ ]
-		p3 = [p2[0] + self.tail_len, p2[1]]
+		
+		followLen = self.tail_len - self.head_len
+		if followLen < 0:
+			followLen = 0.0
+
+		p3 = [p2[0] + followLen, p2[1]]
 		
 		self.control['p2'] = p2
 		self.control['p3'] = p3
