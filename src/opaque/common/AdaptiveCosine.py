@@ -1,8 +1,8 @@
-import os
-import sys
-dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if not dir in sys.path:
-	sys.path.append(dir)
+#import os
+#import sys
+#dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+#if not dir in sys.path:
+#	sys.path.append(dir)
 
 #from common import *
 
@@ -99,7 +99,8 @@ class AdaptiveCosine:
 		#varZ = self.peakAmp[0] * cos(self.req*self.x_len) - self.peakAmp[0]			
 		varZ = -self.peakAmp[0]			
 		#p2 = [p1[0] + self.x_len, p1[1] + varZ ]
-		p2 = [pA[0] + self.x_len, pA[1] + varZ ]
+		#p2 = [pA[0] + self.x_len, pA[1] + varZ ]
+		p2 = [self.x_len, pA[1] + varZ]
 
 		
 		self.tail_len = 3.0
@@ -148,7 +149,7 @@ class AdaptiveCosine:
 			pA = [self.origin[0] + self.head_len, self.origin[1]]
 			self.x_len = self.infPoints[-1]
 			varZ = -self.peakAmp[0]			
-			p2 = [pA[0] + self.x_len, pA[1] + varZ]
+			p2 = [self.x_len, pA[1] + varZ]
 	
 			followLen = self.tail_len - self.head_len
 			if followLen < 0:
@@ -156,10 +157,14 @@ class AdaptiveCosine:
 
 			p3 = [p2[0] + followLen, p2[1]]
 
+			print self.control
+
 			self.control['p1'] = p1
 			self.control['pA'] = pA
 			self.control['p2'] = p2
 			self.control['p3'] = p3
+
+			print self.control
 
 	def getHeadLength(self):
 		return self.tail_len
@@ -179,7 +184,8 @@ class AdaptiveCosine:
 			#z = self.peakAmp[0] * cos(self.freq*self.x_len) - self.peakAmp[0]			
 			varZ = -self.peakAmp[0]			
 			#p2 = [p1[0] + self.x_len, p1[1] + varZ ]
-			p2 = [pA[0] + self.x_len, pA[1] + varZ ]
+			#p2 = [pA[0] + self.x_len, pA[1] + varZ ]
+			p2 = [self.x_len, pA[1] + varZ]
 
 			followLen = self.tail_len - self.head_len
 			if followLen < 0:
@@ -224,7 +230,8 @@ class AdaptiveCosine:
 			#z = self.peakAmp[0] * cos(self.freq*self.x_len) - self.peakAmp[0]			
 			varZ = -self.peakAmp[0]			
 			#p2 = [p1[0] + self.x_len, p1[1] + varZ ]
-			p2 = [pA[0] + self.x_len, pA[1] + varZ ]
+			#p2 = [pA[0] + self.x_len, pA[1] + varZ ]
+			p2 = [self.x_len, pA[1] + varZ]
 			
 			
 			followLen = self.tail_len - self.head_len
@@ -268,7 +275,8 @@ class AdaptiveCosine:
 		#varZ = self.peakAmp[0] * cos(self.freq*self.x_len) - self.peakAmp[0]			
 		varZ = -self.peakAmp[0]			
 		#p2 = [p1[0] + self.x_len, p1[1] + varZ ]
-		p2 = [pA[0] + self.x_len, pA[1] + varZ ]
+		#p2 = [pA[0] + self.x_len, pA[1] + varZ ]
+		p2 = [self.x_len, pA[1] + varZ]
 		
 		followLen = self.tail_len - self.head_len
 		if followLen < 0:
