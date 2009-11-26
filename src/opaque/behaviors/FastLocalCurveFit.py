@@ -801,6 +801,8 @@ class FastLocalCurveFit(Behavior):
 					self.setJoint(j,self.solidCompJoints[j]*180.0/pi)
 		"""
 		
+		#print self.curve.control
+		
 	
 		if self.anterior:
 			self.forwardFit()

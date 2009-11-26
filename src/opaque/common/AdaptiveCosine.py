@@ -166,9 +166,6 @@ class AdaptiveCosine:
 
 			print self.control
 
-	def getHeadLength(self):
-		return self.tail_len
-
 	def setTailLength(self, length):
 		
 		self.tail_len = length
@@ -211,6 +208,7 @@ class AdaptiveCosine:
 				totalSum += self.peakSpacings[i]
 				
 				self.infPoints.append(totalSum)
+
 							
 			#self.infPoints = [self.ampSpacing/2.0]
 			#for i in range(self.numPeaks):
@@ -243,6 +241,9 @@ class AdaptiveCosine:
 			self.control['p2'] = p2
 			self.control['p3'] = p3
 	
+		print self.infPoints
+		print self.peakAmp
+		print self.control
 		#print "amplitudes:", self.peakAmp
 		
 	def setPeakWidth(self, index, width):
@@ -389,6 +390,8 @@ class AdaptiveCosine:
 		p2 = self.control['p2']
 		p3 = self.control['p3']
 
+		#print self.control
+
 		# Hypothesis 1: closest point on the cosine curve
 		# evenly sample the cosine curve to find the closest point
 		#newSamples = arange(0.0,self.x_len + self.sampleResolution, self.sampleResolution)
@@ -528,6 +531,7 @@ class AdaptiveCosine:
 		pA = self.control['pA']
 		p2 = self.control['p2']
 		p3 = self.control['p3']
+		
 
 		points = []
 

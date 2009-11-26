@@ -77,6 +77,7 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 		
 	def computeCurve(self):
 		self.curve = AdaptiveCosine(4*pi, 1.0)
+		self.curve.setHeadLength(0.5)
 		#self.curve = AdaptiveCosine(2*pi, 1.0)
 		
 		if self.localFit == 0:
@@ -437,7 +438,7 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 			if not isDone:
 				
 				" draw the state of the curve fitting "
-				#self.drawFit()
+				self.drawFit()
 				self.computeCmdSegPoints()
 
 				currWidth = self.curve.getPeakWidth(self.currPeak)
@@ -545,17 +546,17 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 						
 							print "nominal = " , self.nomJerk, self.probe.getServo(self.jerkJoint)
 							self.prevJerkAngle = self.jerkAngle
-							self.jerkAngle = 90	
+							self.jerkAngle = 60	
 						
-						elif self.jerkAngle == 90:
+						elif self.jerkAngle == 60:
 							
 							#print "setting jerk joint to ", self.jerkAngle + self.nomJerk
 							print "jerk angle error = " , self.probe.getServo(j)-self.probe.getServoCmd(j)
 							self.jerkErrors.append(self.probe.getServo(j)-self.probe.getServoCmd(j))
 							self.prevJerkAngle = self.jerkAngle
-							self.jerkAngle = -90
+							self.jerkAngle = -60
 						
-						elif self.jerkAngle == -90:
+						elif self.jerkAngle == -60:
 							print "jerk angle error = " , self.probe.getServo(j)-self.probe.getServoCmd(j)
 							self.jerkErrors.append(self.probe.getServo(j)-self.probe.getServoCmd(j))
 
@@ -592,7 +593,7 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 						self.currPeak += 2
 
 						" reset the head length of adaptive cosine curve to 0 "
-						self.curve.setHeadLength(0.0)
+						#self.curve.setHeadLength(0.0)
 						
 					self.minAmp = 0.0
 					self.maxAmp = 0.0
