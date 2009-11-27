@@ -31,7 +31,7 @@ class FastLocalCurveFit(Behavior):
 		self.rootNode = cutoff
 
 		" whether peaks are solid or not "
-		self.solid = [False for i in range(50)]
+		self.solid = [False for i in range(20)]
 
 		" the commanded angles for solid joints, None if joint is not solid "
 		self.solidJoints = [None for i in range(0,39)]
@@ -40,14 +40,14 @@ class FastLocalCurveFit(Behavior):
 		self.solidCompJoints = [None for i in range(0,39)]
 		
 		" joints classified according to their solid index, does not change"		
-		self.solidJointClasses = [[] for i in range(50)]
+		self.solidJointClasses = [[] for i in range(20)]
 		
 		" location of joint origin of commanded in curve space, does not change "
 		self.solidJointPositions = [None for i in range(0,39)]
 	
 		" classification of joints into peak indices, updated every step "
-		self.jointClasses = [[] for i in range(50)]
-		self.jointErrorClasses = [[] for i in range(50)]
+		self.jointClasses = [[] for i in range(20)]
+		self.jointErrorClasses = [[] for i in range(20)]
 		
 		" last round setting of joint angles and origins "
 		self.jointPositions = [None for i in range(0,39)]
@@ -346,8 +346,8 @@ class FastLocalCurveFit(Behavior):
 
 	def classifyJoints(self):
 
-		self.jointClasses = [[] for i in range(50)]
-		self.jointErrorClasses = [[] for i in range(50)]
+		self.jointClasses = [[] for i in range(20)]
+		self.jointErrorClasses = [[] for i in range(20)]
 		
 		for i in range(len(self.jointPositions)):
 		
