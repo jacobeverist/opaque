@@ -116,7 +116,7 @@ class TestAnchor(SnakeControl):
 		#xAvg /= NUM_SEGS-1
 		#yAvg /= NUM_SEGS-1
 
-		pose = self.probe.getActualJointPose(19)
+		pose = self.probe.getActualJointPose(1)
 		xAvg = pose[0]
 		yAvg = pose[1]
 		

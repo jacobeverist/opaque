@@ -483,7 +483,7 @@ class ContactReferences:
 						self.createEdges(newNode)
 
 			# compute the active node local configuration error
-			self.computeActiveError()
+			#self.computeActiveError()
 			
 			#self.prof.runcall(self.computeActiveError)
 			#self.prof.dump_stats("profile_info2")	

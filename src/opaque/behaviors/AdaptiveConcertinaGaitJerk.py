@@ -77,7 +77,7 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 		
 	def computeCurve(self):
 		self.curve = AdaptiveCosine(4*pi, 1.0)
-		self.curve.setHeadLength(0.5)
+		#self.curve.setHeadLength(0.5)
 		#self.curve = AdaptiveCosine(2*pi, 1.0)
 		
 		if self.localFit == 0:
@@ -438,7 +438,7 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 			if not isDone:
 				
 				" draw the state of the curve fitting "
-				self.drawFit()
+				#self.drawFit()
 				self.computeCmdSegPoints()
 
 				currWidth = self.curve.getPeakWidth(self.currPeak)

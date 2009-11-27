@@ -241,9 +241,9 @@ class AdaptiveCosine:
 			self.control['p2'] = p2
 			self.control['p3'] = p3
 	
-		print self.infPoints
-		print self.peakAmp
-		print self.control
+		#print self.infPoints
+		#print self.peakAmp
+		#print self.control
 		#print "amplitudes:", self.peakAmp
 		
 	def setPeakWidth(self, index, width):
