@@ -106,15 +106,19 @@ class TestAnchor(SnakeControl):
 		
 
 	def adjustCamera(self):
-		xAvg = 0
-		yAvg = 0
-		for i in range(NUM_SEGS-1):
-			pose = self.probe.getActualJointPose(0)
-			xAvg += pose[0]
-			yAvg += pose[1]
+		#xAvg = 0
+		#yAvg = 0
+		#for i in range(NUM_SEGS-1):
+		#	pose = self.probe.getActualJointPose(i)
+		#	xAvg += pose[0]
+		#	yAvg += pose[1]
 
-		xAvg /= NUM_SEGS-1
-		yAvg /= NUM_SEGS-1
+		#xAvg /= NUM_SEGS-1
+		#yAvg /= NUM_SEGS-1
+
+		pose = self.probe.getActualJointPose(19)
+		xAvg = pose[0]
+		yAvg = pose[1]
 		
 		prevPose = self.camera.getPosition()
 		xPrev = prevPose[0] + 4
