@@ -692,7 +692,7 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 			
 			" update mask for ContactReference "
 			for i in range(self.probe.numSegs-1):
-				if self.localFit.isJointSolid(i) or joints2[i] == None:
+				if joints2[i] == None or self.localFit.isJointSolid(i):
 					self.mask[i] = 1.0
 				else:
 					self.mask[i] = 0.0
@@ -702,7 +702,7 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 			allActive = True
 			" update mask for ContactReference "
 			for i in range(self.probe.numSegs-1):
-				if self.localFit.isJointSolid(i) or joints2[i] == None:
+				if joints2[i] == None or self.localFit.isJointSolid(i):
 					self.mask[i] = 1.0
 
 					" check if all reference points have been created "

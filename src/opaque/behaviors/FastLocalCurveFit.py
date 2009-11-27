@@ -205,6 +205,7 @@ class FastLocalCurveFit(Behavior):
 		for i in range(len(self.solidJointClasses)):
 			if self.solidJointClasses[i].count(joint) > 0:
 				peakIndex = i
+				break
 				
 		if peakIndex == -1:
 			return False
