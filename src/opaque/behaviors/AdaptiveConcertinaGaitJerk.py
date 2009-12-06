@@ -41,6 +41,12 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 		self.jerkAngle = 0
 		self.prevJerkAngle = self.jerkAngle
 		self.jerkErrors = []
+		self.jerkJoint = 0
+		self.jerkJoints = [0,1,2,3]
+		self.nomJerk = 0.0
+		self.nomJerks = [0.0,0.0,0.0,0.0]
+		self.jerkAngles = [0.0,0.0,0.0,0.0]
+		self.prevJerkAngles = [0.0,0.0,0.0,0.0]
 		
 		self.computeCurve()
 
@@ -407,6 +413,15 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 			errors = []
 			for j in peakJoints:
 				errors.append(self.probe.getServo(j)-self.probe.getServoCmd(j))
+
+			torques = []
+			maxPeak = -1
+			if len(peakJoints) > 0:
+				maxPeak = max(peakJoints)
+			#for j in peakJoints:
+			#for j in range(self.probe.numSegs-1):
+			for j in range(0,maxPeak+1):
+				torques.append(self.probe.getJointTorque(j))
 			
 			#print "errors:", errors
 			
@@ -453,6 +468,9 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 					" error threshold that determines we have made an anchor contact "
 					if maxError > 0.3 and self.maxAmp != 0.0:
 						
+						print errors
+						print torques
+						
 						" if the difference between amplitudes is < 0.01 "
 						if fabs(self.maxAmp-self.minAmp) < 0.01:
 							
@@ -488,6 +506,11 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 						
 							currAmp = self.curve.getPeakAmp(self.currPeak)
 							
+							# FIXME TODO
+							" FIXME:  will these comparisons always work because of floating point error? "
+							
+							" FIXME:  if self.minAmp is 0 and currAmp is 0, will reduce to negative amplitude "
+							" error with zero amplitude means that the straight segments are already under stress "
 							if currAmp == self.minAmp:
 								
 								" C:  Overshoot.  Minimum is too high." 
@@ -531,43 +554,105 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 						
 				if self.isJerking:
 					
-					peakJoints = self.localFit.getPeakJoints(self.currPeak+1)
+					peakJoints = self.localFit.getPeakJoints(self.currPeak) + self.localFit.getPeakJoints(self.currPeak+1)
 					if len(peakJoints) > 0:
 						
 						if self.direction:
 							maxJoint = max(peakJoints)
 							self.jerkJoint = maxJoint + 1
+							
+							self.jerkJoints = []
+							for k in range(0,4):
+								jointNum = maxJoint + k + 1
+								if jointNum > 38:
+									break
+								self.jerkJoints.append(jointNum)
+								
 						else:
 							minJoint = min(peakJoints)
 							self.jerkJoint = minJoint - 1
-						
+							self.jerkJoints = []
+							for k in range(0,4):
+								jointNum = minJoint - k - 1
+								if jointNum < 0:
+									break
+								self.jerkJoints.append(jointNum)
+													
 						if self.jerkAngle == 0 and self.prevJerkAngle == 0:
 							self.nomJerk = self.probe.getServo(self.jerkJoint) * 180.0 / pi
+						
+							for k in range(len(self.jerkJoints)):
+								self.nomJerks[k] = self.probe.getServo(self.jerkJoints[k]) * 180.0 / pi
 						
 							print "nominal = " , self.nomJerk, self.probe.getServo(self.jerkJoint)
 							self.prevJerkAngle = self.jerkAngle
 							self.jerkAngle = 60	
 						
+							for k in range(len(self.jerkJoints)):
+								self.prevJerkAngles[k] = self.jerkAngles[k]
+								self.jerkAngles[k] = 60
+								
+							self.originPoses = []
+							for k in peakJoints:
+								self.originPoses.append(self.contacts.getAveragePose(k))
+	
 						elif self.jerkAngle == 60:
 							
 							#print "setting jerk joint to ", self.jerkAngle + self.nomJerk
-							print "jerk angle error = " , self.probe.getServo(j)-self.probe.getServoCmd(j)
-							self.jerkErrors.append(self.probe.getServo(j)-self.probe.getServoCmd(j))
+							print "jerk angle error = " , self.probe.getServo(self.jerkJoint)-self.probe.getServoCmd(self.jerkJoint)
+
+							errs = []
+							for k in range(len(self.jerkJoints)):
+								errs.append(self.probe.getServo(self.jerkJoints[k])-self.probe.getServoCmd(self.jerkJoints[k]))
+								self.prevJerkAngles[k] = self.jerkAngles[k]
+							
+							self.jerkErrors.append(self.probe.getServo(self.jerkJoint)-self.probe.getServoCmd(self.jerkJoint))
 							self.prevJerkAngle = self.jerkAngle
 							self.jerkAngle = -60
+
+							for k in range(len(self.jerkJoints)):
+								self.prevJerkAngles[k] = self.jerkAngles[k]
+								self.jerkAngles[k] = -60
+
+							self.errorPoses1 = []
+							for k in range(len(peakJoints)):
+								tempPose = self.contacts.getAveragePose(peakJoints[k])
+								originPose = self.originPoses[k]
+								self.errorPoses1.append([tempPose[0]-originPose[0],tempPose[1]-originPose[1],tempPose[2]-originPose[2]])
 						
+							print self.errorPoses1
+							
+							self.originPoses = []
+							for k in peakJoints:
+								self.originPoses.append(self.contacts.getAveragePose(k))
+							
 						elif self.jerkAngle == -60:
-							print "jerk angle error = " , self.probe.getServo(j)-self.probe.getServoCmd(j)
-							self.jerkErrors.append(self.probe.getServo(j)-self.probe.getServoCmd(j))
+							print "jerk angle error = " , self.probe.getServo(self.jerkJoint)-self.probe.getServoCmd(self.jerkJoint)
+							self.jerkErrors.append(self.probe.getServo(self.jerkJoint)-self.probe.getServoCmd(self.jerkJoint))
 
 							" error = (-0.09, 0.005) is good "
 							" error = (-2.73, -1.99) is bad "
 							self.prevJerkAngle = self.jerkAngle
 							self.jerkAngle = 0
+							
+							for k in range(len(self.jerkJoints)):
+								self.prevJerkAngles[k] = self.jerkAngles[k]
+								self.jerkAngles[k] = 0
+
+							self.errorPoses2 = []
+							for k in range(len(peakJoints)):
+								tempPose = self.contacts.getAveragePose(peakJoints[k])
+								originPose = self.originPoses[k]
+								self.errorPoses2.append([tempPose[0]-originPose[0],tempPose[1]-originPose[1],tempPose[2]-originPose[2]])
+						
+							print self.errorPoses2
 						
 						else:
 							self.prevJerkAngle = self.jerkAngle
 							self.jerkingDone = True
+
+							for k in range(len(self.jerkJoints)):
+								self.prevJerkAngles[k] = self.jerkAngles[k]
 
 						#print "setting jerk joint to ", self.jerkAngle + self.nomJerk
 						#print "jerk angle error = " , self.probe.getServo(j)-self.probe.getServoCmd(j)
@@ -575,13 +660,45 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 				if self.isJerking and self.jerkingDone:
 					
 					" if the anchor is not secure, lets try it again "
-					if abs(self.jerkErrors[0]) < 0.01 and abs(self.jerkErrors[1]) < 0.01:
+					" 0.03707 "
+					
+					numPoses = len(self.errorPoses1)
+					xDiff = 0.0
+					yDiff = 0.0
+					for p in self.errorPoses1:
+						xDiff += p[0]
+						yDiff += p[1]
 						
+					xDiff /= numPoses
+					yDiff /= numPoses
+					
+					err1 = sqrt(xDiff**2 + yDiff**2)
+			
+					numPoses = len(self.errorPoses2)
+					xDiff = 0.0
+					yDiff = 0.0
+					for p in self.errorPoses2:
+						xDiff += p[0]
+						yDiff += p[1]
+						
+					xDiff /= numPoses
+					yDiff /= numPoses
+					
+					err2 = sqrt(xDiff**2 + yDiff**2)
+					
+					print "anchor errors =", err1, err2
+					
+					
+					#if abs(self.jerkErrors[0]) < 0.01 and abs(self.jerkErrors[1]) < 0.01:
+					#if abs(self.jerkErrors[0]) < 0.1 or abs(self.jerkErrors[1]) < 0.1:
+					if err1 > 0.1 or err2 > 0.1:
+					
 						" reset the amplitude of peaks 0 and 1, nextVal = 0.0 "
 						
 						" increment the head length of adaptive cosine curve "
 						head_len = self.curve.getHeadLength()
 						self.curve.setHeadLength(head_len + 0.5)
+
 						
 						#tail_len = self.curve.getTailLength()
 						#self.curve.setTailLength(tail_len - 0.5)
@@ -600,6 +717,11 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 
 					nextVal = 0.0
 					self.ampInc = 0.04
+
+	
+					#nextVal = self.minAmp + self.ampInc
+					" maximum is the value we just set "
+					#self.maxAmp = nextVal
 
 					self.maxWidth = self.nomWidth
 					self.minWidth = self.nomWidth
@@ -623,6 +745,29 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 				if self.currPeak == 0:					
 					self.curve.setPeakAmp(0,nextVal)
 					self.curve.setPeakAmp(1,nextVal)
+
+					" weaken head joints "
+					" 30*2.5 is maximum "
+					peakJoints = self.localFit.getPeakJoints(self.currPeak)
+
+					print "peakJoints =", len(peakJoints), "amp =", self.curve.getPeakAmp(0)
+					if len(peakJoints) > 0 and self.curve.getPeakAmp(0) > 0 and self.isJerking:
+						
+						print "direction =", self.direction
+						if not self.direction:
+							maxJoint = max(peakJoints)
+							print "maxJoint = ", maxJoint
+							for i in range(maxJoint+1, self.probe.numSegs-2):
+								if i <= self.probe.numSegs-2:
+									print "setting joint ", i, "to torque 3.0"
+									self.probe.setJointTorque(i, 3.0)
+						else:
+							minJoint = min(peakJoints)
+							print "minJoint = ", minJoint
+							for i in range(0, minJoint):					
+								if i <= self.probe.numSegs-2:
+									print "setting joint ", i, "to torque 3.0"
+									self.probe.setJointTorque(i, 3.0)
 
 				else:
 					" stretch tail to remove closed-chain interference "
@@ -654,7 +799,9 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 				
 				if self.isJerking:
 					print "setting jerk joint to ", self.nomJerk + self.jerkAngle
-					self.holdT.positions[self.jerkJoint] = self.nomJerk + self.jerkAngle
+					#self.holdT.positions[self.jerkJoint] = self.nomJerk + self.jerkAngle
+					for k in range(len(self.jerkJoints)):
+						self.holdT.positions[self.jerkJoints[k]] = self.nomJerks[k] + self.jerkAngles[k]
 					
 				
 				self.refDone = False

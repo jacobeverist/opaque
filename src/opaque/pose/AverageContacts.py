@@ -149,51 +149,89 @@ class AverageContacts:
 		refExists = False
 		refNumber = 0
 		isNewRoot = False
+		refCount = 0
 
-		if targetJoint == -1:
-			midJoint = 0
-		elif targetJoint == self.numJoints:
-			midJoint = self.numJoints-1
-		else:
-			midJoint = targetJoint
-			
-			if self.activeRef[midJoint]:
-				refX, refZ, refP = self.activeRefPtr[midJoint].getRefPose()
-				return [refX, refZ, refP]
 
-		# FIXME: find the *closest* recent node, not the *first*
-		nodes = range(0,targetJoint-1)
-		nodes.reverse()
+		# search for the largest consecutive section of stable reference nodes
+		nodes = range(0,self.numJoints-1)
 
-		for j in nodes:
-
-			if self.activeRef[j]:
-				refExists = True
-				refNumber = j
-				break
-
-		if not refExists:
-			nodes = range(0,self.numJoints-1)
-			nodes.reverse()
-			for j in nodes:
-				if self.activeRef[j]:
-					refExists = True
-					refNumber = j
-					break
+		prevActive = False
+		currStart = 0
+		currSize = 0
+		maxConsec = 0
+		maxSize = 0
+		
+		" select the largest contiguous set of reference points to compute the average pose "
+		for i in nodes:
+			if self.activeRef[i]:
+				currStart = i
+				if prevActive:
+					currSize += 1
+						
+					if currSize > maxSize:
+						maxSize = currSize
+						maxConsec = currStart
+				else:
+					prevActive = True
+					currSize = 1
+			else:
+				currSize = 0
+				currStart = 0
+				prevActive = False
+		
+		if maxSize > 0:
+			refExists = True
+			refNumber = maxConsec
 
 		# record this as new reference point
 		pose = [0.,0.,0.]
 
-		if refExists:
+		nodes = range(maxConsec-maxSize+1,maxConsec+1)
 
-			# with an existing reference point, we determine the new node's position with respect to it
-			refX, refZ, refP = self.activeRefPtr[refNumber].getRefPose()
-
-			initPose = [refX,refZ,refP]
-			jointID = self.activeRefPtr[refNumber].getJointID()
-			pose = self.probe.getJointWRTJointPose(initPose, jointID, targetJoint) 
-			return pose
+		refCount = maxSize
 		
+		if refExists:
+			sumX = 0.0
+			sumY = 0.0
+			sumPx = 0.0
+			sumPy = 0.0
+			
+			for j in nodes:
+				
+				if j != newJointID and self.activeRef[j]:
+					#print "ref ", j
+					# with an existing reference point, we determine the new node's position with respect to it
+					refX, refZ, refP = self.activeRefPtr[j].getRefPose()
+			
+					initPose = [refX,refZ,refP]
+					jointID = self.activeRefPtr[j].getJointID()
+					pose = self.probe.getJointWRTJointPose(initPose, jointID, newJointID) 
+					sumX += pose[0]
+					sumY += pose[1]
+					sumPx += cos(pose[2])
+					sumPy += sin(pose[2])
+					
+					# the existing reference node saved for debugging purposes 
+					self.lastNode = self.activeRefPtr[refNumber]
+			
+			sumX /= refCount
+			sumY /= refCount
+			mag = sqrt(sumPx**2 + sumPy**2)
+			sumPx /= mag
+			sumPy /= mag
+
+			vecAng = acos(sumPx)
+			if asin(sumPy) < 0:
+				vecAng = -vecAng
+				
+			pose = [sumX, sumY, vecAng]
+			
+		# this is the first node, so reference from 0,0
+		elif self.numRef == 0:
+
+			# initialize the first reference node with its position in global coordinates
+			pose = self.probe.getActualJointPose(targetJoint)
+
 		else:
 			# no active node exists and not the first,
 			# so lets use the latest dormant one
@@ -203,8 +241,9 @@ class AverageContacts:
 			initPose = [refX, refZ, refP]
 
 			jointID = recentNode.getJointID()
-			pose = self.probe.getJointWRTJointPose(initPose, jointID, targetJoint) 
-			return pose
+			pose = self.probe.getJointWRTJointPose(initPose, jointID, newJointID) 
+
+		return pose
 
 	
 	def getClosestPose(self, targetJoint):
@@ -685,6 +724,7 @@ class AverageContacts:
 		maxConsec = 0
 		maxSize = 0
 		
+		" select the largest contiguous set of reference points to compute the average pose "
 		for i in nodes:
 			if self.activeRef[i]:
 				currStart = i

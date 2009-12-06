@@ -237,6 +237,9 @@ class SnakeProbe:
 	def setJointTorque(self, i, torque):
 		self._joints[i].setMaxTorque(torque)
 
+	def getJointTorque(self, i):
+		return self._joints[i].getMaxTorque()
+
 	def setServo(self, i, angle):
 		self._joints[i].go_to(ogre.Math.AngleUnitsToRadians(angle))
 

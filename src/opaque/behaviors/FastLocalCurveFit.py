@@ -31,7 +31,7 @@ class FastLocalCurveFit(Behavior):
 		self.rootNode = cutoff
 
 		" whether peaks are solid or not "
-		self.solid = [False for i in range(20)]
+		self.solid = [False for i in range(30)]
 
 		" the commanded angles for solid joints, None if joint is not solid "
 		self.solidJoints = [None for i in range(0,39)]
@@ -40,14 +40,14 @@ class FastLocalCurveFit(Behavior):
 		self.solidCompJoints = [None for i in range(0,39)]
 		
 		" joints classified according to their solid index, does not change"		
-		self.solidJointClasses = [[] for i in range(20)]
+		self.solidJointClasses = [[] for i in range(30)]
 		
 		" location of joint origin of commanded in curve space, does not change "
 		self.solidJointPositions = [None for i in range(0,39)]
 	
 		" classification of joints into peak indices, updated every step "
-		self.jointClasses = [[] for i in range(20)]
-		self.jointErrorClasses = [[] for i in range(20)]
+		self.jointClasses = [[] for i in range(30)]
+		self.jointErrorClasses = [[] for i in range(30)]
 		
 		" last round setting of joint angles and origins "
 		self.jointPositions = [None for i in range(0,39)]
@@ -347,8 +347,8 @@ class FastLocalCurveFit(Behavior):
 
 	def classifyJoints(self):
 
-		self.jointClasses = [[] for i in range(20)]
-		self.jointErrorClasses = [[] for i in range(20)]
+		self.jointClasses = [[] for i in range(30)]
+		self.jointErrorClasses = [[] for i in range(30)]
 		
 		for i in range(len(self.jointPositions)):
 		
@@ -358,25 +358,29 @@ class FastLocalCurveFit(Behavior):
 			if pos == None:
 				continue
 		
+			ampIndex = -1
+			
 			" determine classification index "
-			if pos[0] < 3.0*self.curve.ampSpacing/2.0:
-				ampIndex = 0
-			else:
-				ampIndex = int((pos[0] - self.curve.ampSpacing/2.0) / self.curve.ampSpacing)
+			#if pos[0] < 3.0*self.curve.ampSpacing/2.0:
+			#	ampIndex = 0
+			#else:
+			#	ampIndex = int((pos[0] - self.curve.ampSpacing/2.0) / self.curve.ampSpacing)
 
-			for j in range(len(self.curve.infPoints)):
-				infX = self.curve.infPoints[j]
-				if pos[0] < infX:
-					ampIndex = j
-					break
+			if pos[0] >= self.curve.getHeadLength():
+				for j in range(len(self.curve.infPoints)):
+					infX = self.curve.infPoints[j]
+					if pos[0] < infX:
+						ampIndex = j
+						break
 		
 			" save this classification "
 			#print "appending", i, "to ampIndex=", ampIndex
-			self.jointClasses[ampIndex].append(i)
+			if ampIndex >= 0:
+				self.jointClasses[ampIndex].append(i)
 			
-			errIndex = int(pos[0]/self.curve.ampSpacing)	
-			#print errIndex, i, pos
-			self.jointErrorClasses[errIndex].append(i)
+				errIndex = int(pos[0]/self.curve.ampSpacing)	
+				#print errIndex, i, pos
+				self.jointErrorClasses[errIndex].append(i)
 	
 		#print self.jointClasses
 		

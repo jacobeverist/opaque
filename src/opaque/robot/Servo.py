@@ -66,6 +66,8 @@ class Servo():
 
 		self.rigid = False
 
+		self._torque = self.fmax 
+
 		self.joint.setParameter(OgreOde.Joint.Parameter.Parameter_MaximumForce, self.fmax) 
 		self.joint.setParameter(OgreOde.Joint.Parameter.Parameter_LowStop, self.lostop-self.init_phi) 
 		self.joint.setParameter(OgreOde.Joint.Parameter.Parameter_HighStop, self.histop-self.init_phi) 
@@ -163,8 +165,13 @@ class Servo():
 		
 		
 	def setMaxTorque(self, torque):
-		self.joint.setParameter(OgreOde.Joint.Parameter.Parameter_MaximumForce, torque) 
+		self.joint.setParameter(OgreOde.Joint.Parameter.Parameter_MaximumForce, torque)
+		self._torque = torque 
 
+	def getMaxTorque(self):
+		return self.joint.getParameter(OgreOde.Joint.Parameter.Parameter_MaximumForce)
+		#return self._torque
+		
 	def setMaxVelocity(self, vel):
 		self.maxVel = vel
 

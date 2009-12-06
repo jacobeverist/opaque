@@ -221,7 +221,10 @@ class SnakeApp(sf.Application):
 		#pos = ogre.Vector3(0.0,0.04,0.0)
 		#pos = ogre.Vector3(1.5,0.04,0.0)
 		#pos = ogre.Vector3(1.0,0.04,0.0)
-		pos = ogre.Vector3(1.5,0.04,0.0)
+		#pos = ogre.Vector3(1.5,0.04,0.0)
+		#pos = ogre.Vector3(1.75,0.04,0.0)
+		pos = ogre.Vector3(1.8,0.04,0.0)
+
 
 		self.probe = robots.SnakeProbe(self._world,yRot,pos,40,0.15,0.05,30.0*2.5,0.9)
 
