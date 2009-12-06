@@ -49,7 +49,7 @@ class Transition(Behavior):
 			else:
 				diff = self.targetJoints[i] - self.initJoints[i]
 				
-				diffs.append(diff)
+				#diffs.append(diff)
 				
 				val = 1.0 - float(self.timeLength - self.transitionTime) / self.timeLength
 				
@@ -62,3 +62,4 @@ class Transition(Behavior):
             return True
         else:
             return False
+
