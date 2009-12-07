@@ -526,15 +526,14 @@ class AdaptiveCosine:
 			return min, 0.5, copy(pnt)
 		
 	def getPoints(self):
+
 		# create a distribution of points along the curve
 		p1 = self.control['p1']
 		pA = self.control['pA']
 		p2 = self.control['p2']
 		p3 = self.control['p3']
 		
-
 		points = []
-
 
 		" head section "
 		samples1 = arange(p1[0], pA[0] + self.sampleResolution, self.sampleResolution)
