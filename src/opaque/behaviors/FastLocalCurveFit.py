@@ -409,7 +409,7 @@ class FastLocalCurveFit(Behavior):
 		
 		radius = self.probe.segLength
 		breakFromFit = False
-					
+		
 		for currJoint in ind:
 			
 			crossOvers = []
@@ -427,8 +427,7 @@ class FastLocalCurveFit(Behavior):
 			" 2 peaks in a row must be solid before we re-use old data "
 			" this is to allow segments spanning two neighoring peaks to adjust freely "
 			if solidIndex >= 0 and self.solid[solidIndex]:
-			#if False:
-				
+
 				" set to actual angle"
 				self.setJoint(currJoint,self.solidCompJoints[currJoint] * 180.0 / pi)
 				

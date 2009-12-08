@@ -21,23 +21,22 @@ class AdaptiveAnchorCurve:
 
 		self.peakAmp = [0.0 for i in range(40)]
 
-		self.ampSpacing = 2*pi / self.initFreq / 2.0
-		self.numPeaks = 2
+		self.ampSpacing = 5*pi / self.initFreq / 2.0
+		self.numPeaks = 1
 
 
 		dispZ = self.peakAmp[0]			
 
 		pO = self.origin
 
-		pA_1 = [pO[0] + self.ampSpacing, pO[1] - 2*dispZ]
-		pB_1 = [pO[0] - self.ampSpacing, pO[1] - 2*dispZ]
-		
-		pA_2 = [pA_1[0] + self.infLength, pA_1[1]]
-		pB_2 = [pB_1[0] - self.infLength, pB_1[1]]
-		
-		self.controlA = {'pO':pO, 'p1':pA_1, 'p2':pA_2}
-		self.controlB = {'pO':pO, 'p1':pB_1, 'p2':pB_2}
+		p1 = [pO[0] + self.ampSpacing, pO[1] - dispZ]		
+		p2 = [p1[0] + self.infLength, p1[1]]		
 
+		self.controlA = {'pO':pO, 'p1':p1, 'p2':p2}
+
+	def getPeakWidth(self):
+		return self.ampSpacing
+	
 	def setPeakAmp(self, amplitude):
 		
 		self.peakAmp[0] = amplitude
@@ -46,17 +45,11 @@ class AdaptiveAnchorCurve:
 		
 		dispZ = self.peakAmp[0]			
 
-		pA_1 = [pO[0] + self.ampSpacing, pO[1] - 2*dispZ]
-		pB_1 = [pO[0] - self.ampSpacing, pO[1] - 2*dispZ]
-		
-		pA_2 = [pA_1[0] + self.infLength, pA_1[1]]
-		pB_2 = [pB_1[0] - self.infLength, pB_1[1]]
+		p1 = [pO[0] + self.ampSpacing, pO[1] - dispZ]		
+		p2 = [p1[0] + self.infLength, p1[1]]		
 
-		self.controlA['p1'] = pA_1
-		self.controlA['p2'] = pA_2
-		
-		self.controlB['p1'] = pB_1
-		self.controlB['p2'] = pB_2
+		self.controlA['p1'] = p1
+		self.controlA['p2'] = p2
 	
 	def getPeakAmp(self):
 		return self.peakAmp[0]
@@ -81,34 +74,21 @@ class AdaptiveAnchorCurve:
 		" create a distribution of points along the curve "
 
 		pO = self.controlA['pO']		
-		pA_1 = self.controlA['p1']
-		pA_2 = self.controlA['p2']
-		pB_1 = self.controlB['p1']
-		pB_2 = self.controlB['p2']
+		p1 = self.controlA['p1']
+		p2 = self.controlA['p2']
 		
 		points = []
 
-		" infinite lead "
-		samplesB = arange(pB_2[0], pB_1[0] + self.sampleResolution, self.sampleResolution)
-		for x_samp in samplesB:
-			dispZ = -2*self.peakAmp[0]
-			points.append([x_samp,dispZ])
-
-
 		" anchor section "
-		samples1 = arange(pB_1[0], pA_1[0] + self.sampleResolution, self.sampleResolution)
+		samples1 = arange(pO[0], p1[0] + self.sampleResolution, self.sampleResolution)
 		for x_samp in samples1:
-			adapAmp = self.peakAmp[0]
-			varZ = adapAmp * cos(self.initFreq*x_samp) - self.peakAmp[0]
-
+			varZ = -self.peakAmp[0] * sin(self.initFreq*x_samp)
 			points.append([x_samp,varZ])
 
 		" infinite follow "
-		samplesA = arange(pA_1[0], pA_2[0] + self.sampleResolution, self.sampleResolution)
-		for x_samp in samplesA:
-			dispZ = -2*self.peakAmp[0]
-			points.append([x_samp,dispZ])
-		
+		samples2 = arange(p1[0], p2[0] + self.sampleResolution, self.sampleResolution)
+		for x_samp in samples2:
+			points.append([x_samp,p2[1]])
 		
 		return points
 

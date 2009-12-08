@@ -25,3 +25,4 @@ from GuidedPoke import *
 from Spring import *
 from Curl import *
 from AdaptiveConcertinaGaitJerk import *
+from FrontAnchorTest import *
