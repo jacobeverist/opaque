@@ -133,7 +133,7 @@ class TestAnchor(SnakeControl):
 	def frameStarted(self):
 		
 		self.adjustCamera()
-		self.grabImage()
+		#self.grabImage()
 		#self.grabAngles()
 
 

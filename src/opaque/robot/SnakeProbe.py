@@ -97,8 +97,8 @@ class SnakeProbe:
 			err = self._joints[i].error()
 			self.segMaterials[i].setAmbient(err,0.0,1.0-err)
 		
-		for i in range(16,23):
-			self.segMaterials[i].setAmbient(0.0,1.0,0.0)
+		#for i in range(16,23):
+		#	self.segMaterials[i].setAmbient(0.0,1.0,0.0)
 
 		# lets also created meshes to visualize our joint positions
 

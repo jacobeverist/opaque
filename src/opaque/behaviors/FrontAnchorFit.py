@@ -3,8 +3,10 @@ from Behavior import *
 import traceback
 import math
 
-from math import pi , cos, sin
+from math import pi , cos, sin, sqrt
 from numpy import arange
+
+from common import *
 
 fastLocalNodeCount = 0
 
