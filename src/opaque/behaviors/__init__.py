@@ -26,3 +26,4 @@ from Spring import *
 from Curl import *
 from AdaptiveConcertinaGaitJerk import *
 from FrontAnchorTest import *
+from AdaptiveCosine import *

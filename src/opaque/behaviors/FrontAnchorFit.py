@@ -52,10 +52,10 @@ class FrontAnchorFit(Behavior):
 
 	" this code has been modified and the changes are untested "
 	def forwardFit(self):
-					
+		
 		# origin is at the tip of segment 39
 		originPose = [0.0, 0.0, pi]
-
+		
 		# indices
 		minJoint = 0
 		maxJoint = self.probe.numSegs-1
@@ -141,7 +141,7 @@ class FrontAnchorFit(Behavior):
 						breakFromFit = True
 						break
 
-			print "crossOvers =", crossOvers
+			#print "crossOvers =", crossOvers
 
 			if breakFromFit:
 				break
@@ -219,7 +219,7 @@ class FrontAnchorFit(Behavior):
 				break		
 	
 	
-		print "breakFromFit = ", breakFromFit
+		#print "breakFromFit = ", breakFromFit
 		
 		" position of last joint iterated through "
 		self.jointPositions[currJoint]= originPose
@@ -457,29 +457,29 @@ class FrontAnchorFit(Behavior):
 			
 	def step(self):
 		
-		print "caseA"
+		#print "caseA"
 		Behavior.step(self)
 
-		print "caseB"
+		#print "caseB"
 
 		if not self.isStep():
 			return False
-		print "caseC"
+		#print "caseC"
 
 		if self.startNode == -1 or self.endNode == -1:
 			return False
-		print "caseD"
+		#print "caseD"
 		
 		self.resetJoints()
 
-		print self.anterior
+		#print self.anterior
 		if self.anterior:
 			self.forwardFit()
 
 		else:
 			self.backwardFit()
 		
-		print self.getJoints()
+		#print self.getJoints()
 		
 		return False	
 		

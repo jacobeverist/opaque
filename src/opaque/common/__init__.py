@@ -8,4 +8,3 @@ from SplineFit import *
 from VoronoiFit import *
 from polySimplify import *
 from convexhull import *
-from AdaptiveCosine import *

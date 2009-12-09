@@ -28,6 +28,7 @@ class FastLocalCurveFit(Behavior):
 		" anterior or posterior "
 		self.anterior = anterior
 
+		print "setting rootNode to ", cutoff
 		self.rootNode = cutoff
 
 		" whether peaks are solid or not "
@@ -70,6 +71,9 @@ class FastLocalCurveFit(Behavior):
 		self.childNodes = []
 		self.childEntities = []
 		self.parentNode = self.probe._mgr.getRootSceneNode().createChildSceneNode("fastLocalCurveRoot" + str(self.nodeCount))
+	
+	def setStartNode(self, node):
+		self.startNode = node
 	
 	def setSide(self, val):
 		self.anterior = val

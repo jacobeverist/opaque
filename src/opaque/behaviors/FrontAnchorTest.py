@@ -8,9 +8,10 @@ from copy import *
 from common import *
 from Behavior import *
 from FrontAnchorFit import FrontAnchorFit
+from FastLocalCurveFit import FastLocalCurveFit
 from HoldTransition import HoldTransition
 from AdaptiveAnchorCurve import AdaptiveAnchorCurve
-
+from AdaptiveCosine import AdaptiveCosine
 
 class FrontAnchorTest(Behavior):
 
@@ -87,22 +88,48 @@ class FrontAnchorTest(Behavior):
 			self.frontAnchorFit.setCurve(self.frontCurve)
 
 		self.adaptiveCurve = AdaptiveCosine(4*pi)
+		self.adaptiveCurve.setTailLength(2.0)
 
 		if self.concertinaFit == 0:
-			self.concertinaFit = FastLocalCurveFit(self.probe, self.direction, 10)
-			self.concertinaFit.setCurve(self.adaptiveCurve)
+			self.concertinaFit = FastLocalCurveFit(self.probe, self.direction, self.adaptiveCurve, 38)
+			self.concertinaFit.setStartNode(10)
+
 		else:
 			self.concertinaFit.setCurve(self.adaptiveCurve)
 
 
-		self.holdT.reset(self.frontAnchorFit.getJoints())
+		#self.adaptiveCurve.setPeakAmp(6,0.33)
+		#self.adaptiveCurve.setPeakAmp(4,0.33)
+		self.frontAnchorFit.step()
+		self.concertinaFit.step()
+		
+		resultJoints = self.spliceFitJoints(self.frontAnchorFit.getJoints(), self.concertinaFit.getJoints(), 10)
+		
+		self.holdT.reset(resultJoints)
 		self.refDone = False
-			
+
+	def spliceFitJoints(self, joints1, joints2, spliceJoint):
+		
+		result = [None for i in range(self.probe.numSegs-1)]
+		
+		#print "joints1 =", joints1
+		#print "joints2 =", joints2
+		
+		jointList = [joints1,joints2]
+		
+		# merge the joints prioritizing the first to last
+		for joints in jointList:
+			for i in range(len(joints)):
+				if result[i] == None and joints[i] != None:
+					result[i] = joints[i]
+		
+		return result
+								
 	def getCenterPoints(self):
 		
 		#return copy(self.cmdSegPoints)
 		return self.cPoints
-			
+		
 	def computeCenterPoints(self):
 		
 		points = [[self.adaptiveCurve.ampSpacing/2.0 + i * self.adaptiveCurve.ampSpacing, -self.frontCurve.peakAmp[0]] for i in range(self.frontCurve.numPeaks)]
@@ -323,17 +350,19 @@ class FrontAnchorTest(Behavior):
 			self.transDone = False
 			
 			" compute the maximum error of the joints in the current peak "
-			peakJoints = self.frontAnchorFit.getPeakJoints()
-			peakJoints.sort()
+			anchorJoints = self.frontAnchorFit.getPeakJoints()
+			anchorJoints.sort()
+			
+			peakJoints = self.concertinaFit.getPeakJoints(self.currPeak)
 			
 			errors = []
-			for j in peakJoints:
+			for j in anchorJoints:
 				errors.append(self.probe.getServo(j)-self.probe.getServoCmd(j))
 
 			torques = []
 			maxPeak = -1
-			if len(peakJoints) > 0:
-				maxPeak = max(peakJoints)
+			if len(anchorJoints) > 0:
+				maxPeak = max(anchorJoints)
 
 			for j in range(0,maxPeak+1):
 				torques.append(self.probe.getJointTorque(j))
@@ -346,15 +375,15 @@ class FrontAnchorTest(Behavior):
 			" check for terminating criteria "
 			currAmp = self.frontCurve.getPeakAmp()
 						
-			if len(peakJoints) == 0 and self.currPeak != 0:
+			if len(anchorJoints) == 0 and self.currPeak != 0:
 				isDone = True
 				print "terminating caseA"
 				
-			elif self.direction and 38 in peakJoints and currAmp > 0.5:
+			elif self.direction and 38 in anchorJoints and currAmp > 0.5:
 				isDone = True
 				print "terminating caseB"
 				
-			elif not self.direction and 0 in peakJoints and currAmp > 0.5:
+			elif not self.direction and 0 in anchorJoints and currAmp > 0.5:
 				isDone = True
 				print "terminating caseC"
 	
@@ -373,8 +402,8 @@ class FrontAnchorTest(Behavior):
 					" error threshold that determines we have made an anchor contact "
 					if maxError > 0.3 and self.maxAmp != 0.0:
 						
-						print errors
-						print torques
+						print "errors =", errors
+						#print torques
 						
 						" if the difference between amplitudes is < 0.01 "
 						if fabs(self.maxAmp-self.minAmp) < 0.01:
@@ -438,11 +467,11 @@ class FrontAnchorTest(Behavior):
 					
 				if self.isJerking:
 					
-					peakJoints = self.frontAnchorFit.getPeakJoints() 
-					if len(peakJoints) > 0:
+					anchorJoints = self.frontAnchorFit.getPeakJoints() 
+					if len(anchorJoints) > 0:
 						
 						if self.direction:
-							maxJoint = max(peakJoints)
+							maxJoint = max(anchorJoints)
 							self.jerkJoint = maxJoint + 1
 							
 							self.jerkJoints = []
@@ -453,7 +482,7 @@ class FrontAnchorTest(Behavior):
 								self.jerkJoints.append(jointNum)
 								
 						else:
-							minJoint = min(peakJoints)
+							minJoint = min(anchorJoints)
 							self.jerkJoint = minJoint - 1
 							self.jerkJoints = []
 							for k in range(0,4):
@@ -477,7 +506,7 @@ class FrontAnchorTest(Behavior):
 								self.jerkAngles[k] = 60
 								
 							self.originPoses = []
-							for k in peakJoints:
+							for k in anchorJoints:
 								self.originPoses.append(self.contacts.getAveragePose(k))
 	
 						elif self.jerkAngle == 60:
@@ -499,15 +528,15 @@ class FrontAnchorTest(Behavior):
 								self.jerkAngles[k] = -60
 
 							self.errorPoses1 = []
-							for k in range(len(peakJoints)):
-								tempPose = self.contacts.getAveragePose(peakJoints[k])
+							for k in range(len(anchorJoints)):
+								tempPose = self.contacts.getAveragePose(anchorJoints[k])
 								originPose = self.originPoses[k]
 								self.errorPoses1.append([tempPose[0]-originPose[0],tempPose[1]-originPose[1],tempPose[2]-originPose[2]])
 						
 							print self.errorPoses1
 							
 							self.originPoses = []
-							for k in peakJoints:
+							for k in anchorJoints:
 								self.originPoses.append(self.contacts.getAveragePose(k))
 							
 						elif self.jerkAngle == -60:
@@ -524,8 +553,8 @@ class FrontAnchorTest(Behavior):
 								self.jerkAngles[k] = 0
 
 							self.errorPoses2 = []
-							for k in range(len(peakJoints)):
-								tempPose = self.contacts.getAveragePose(peakJoints[k])
+							for k in range(len(anchorJoints)):
+								tempPose = self.contacts.getAveragePose(anchorJoints[k])
 								originPose = self.originPoses[k]
 								self.errorPoses2.append([tempPose[0]-originPose[0],tempPose[1]-originPose[1],tempPose[2]-originPose[2]])
 						
@@ -622,25 +651,25 @@ class FrontAnchorTest(Behavior):
 
 					" weaken head joints "
 					" 30*2.5 is maximum "
-					peakJoints = self.frontAnchorFit.getPeakJoints()
+					anchorJoints = self.frontAnchorFit.getPeakJoints()
 
-					print "peakJoints =", len(peakJoints), "amp =", self.frontCurve.getPeakAmp()
-					if len(peakJoints) > 0 and self.frontCurve.getPeakAmp() > 0 and self.isJerking:
+					print "anchorJoints =", len(anchorJoints), "amp =", self.frontCurve.getPeakAmp()
+					if len(anchorJoints) > 0 and self.frontCurve.getPeakAmp() > 0 and self.isJerking:
 						
-						print "direction =", self.direction
+						#print "direction =", self.direction
 						if not self.direction:
-							maxJoint = max(peakJoints)
-							print "maxJoint = ", maxJoint
+							maxJoint = max(anchorJoints)
+							#print "maxJoint = ", maxJoint
 							for i in range(maxJoint+1, self.probe.numSegs-2):
 								if i <= self.probe.numSegs-2:
-									print "setting joint ", i, "to torque 3.0"
+									#print "setting joint ", i, "to torque 3.0"
 									self.probe.setJointTorque(i, 3.0)
 						else:
-							minJoint = min(peakJoints)
-							print "minJoint = ", minJoint
+							minJoint = min(anchorJoints)
+							#print "minJoint = ", minJoint
 							for i in range(0, minJoint):					
 								if i <= self.probe.numSegs-2:
-									print "setting joint ", i, "to torque 3.0"
+									#print "setting joint ", i, "to torque 3.0"
 									self.probe.setJointTorque(i, 3.0)
 
 				else:
@@ -666,15 +695,20 @@ class FrontAnchorTest(Behavior):
 							for i in range(0, minJoint):					
 								if i <= self.probe.numSegs-2:
 									self.probe.setJointTorque(i, 3.0)
-									
+				
+				
 				" execute the local curve fitting "
 				self.frontAnchorFit.step()
-				print "joints =", self.frontAnchorFit.getJoints()
+				#self.concertinaFit.step()
 
-				self.holdT.reset(self.frontAnchorFit.getJoints())
+				resultJoints = self.spliceFitJoints(self.frontAnchorFit.getJoints(), self.concertinaFit.getJoints(), 10)
+				#print "joints =", resultJoints
+				self.holdT.reset(resultJoints)
+
+				#self.holdT.reset(self.frontAnchorFit.getJoints())
 				
 				if self.isJerking:
-					print "setting jerk joint to ", self.nomJerk + self.jerkAngle
+					print "setting jerk joints", self.jerkJoints, "to", self.nomJerk + self.jerkAngle
 					#self.holdT.positions[self.jerkJoint] = self.nomJerk + self.jerkAngle
 					for k in range(len(self.jerkJoints)):
 						self.holdT.positions[self.jerkJoints[k]] = self.nomJerks[k] + self.jerkAngles[k]
@@ -702,9 +736,11 @@ class FrontAnchorTest(Behavior):
 				self.transDone = self.holdT.step()
 	
 		" collect joint settings for both behaviors "
-		joints2 = self.frontAnchorFit.getJoints()
+		#joints2 = self.frontAnchorFit.getJoints()
 
 		joints3 = self.holdT.getJoints()
+
+		#resultJoints = self.spliceFitJoints(self.frontAnchorFit.getJoints(), self.concertinaFit.getJoints(), 10)
 
 
 		#print joints2
@@ -716,7 +752,7 @@ class FrontAnchorTest(Behavior):
 			
 			" update mask for ContactReference "
 			for i in range(self.probe.numSegs-1):
-				if joints2[i] == None:
+				if joints3[i] == None:
 					self.mask[i] = 1.0
 				else:
 					self.mask[i] = 0.0
@@ -726,7 +762,7 @@ class FrontAnchorTest(Behavior):
 			allActive = True
 			" update mask for ContactReference "
 			for i in range(self.probe.numSegs-1):
-				if joints2[i] == None:
+				if joints3[i] == None:
 					self.mask[i] = 1.0
 
 					" check if all reference points have been created "

@@ -47,7 +47,7 @@ Stage 3
 
 class AdaptiveCosine:
 
-	def __init__(self, freq, length):
+	def __init__(self, freq):
 
 		# cosine x length for one cycle
 		#self.x_len = length
