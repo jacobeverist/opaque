@@ -45,7 +45,7 @@ class FastLocalCurveFit(Behavior):
 		
 		" location of joint origin of commanded in curve space, does not change "
 		self.solidJointPositions = [None for i in range(0,39)]
-	
+		
 		" classification of joints into peak indices, updated every step "
 		self.jointClasses = [[] for i in range(30)]
 		self.jointErrorClasses = [[] for i in range(30)]

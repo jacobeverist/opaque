@@ -11,7 +11,18 @@ from FrontAnchorFit import FrontAnchorFit
 from FastLocalCurveFit import FastLocalCurveFit
 from HoldTransition import HoldTransition
 from AdaptiveAnchorCurve import AdaptiveAnchorCurve
-from AdaptiveCosine import AdaptiveCosine
+from BackConcertinaCurve import BackConcertinaCurve
+
+"""
+TODO
+
+1.  Check condition in FrontAnchorFit when curve goes beyond joint 0
+2.  If joint 0 passed and anchor is loose, start over with higher splice joint
+3.  Changing splice joint will shorten tail of BackConcertinaCurve
+4.  Add the front anchoring state and then the concertina gait state to behavior control
+
+
+"""
 
 class FrontAnchorTest(Behavior):
 
@@ -43,6 +54,8 @@ class FrontAnchorTest(Behavior):
 		self.jerkAngles = [0.0,0.0,0.0,0.0]
 		self.prevJerkAngles = [0.0,0.0,0.0,0.0]
 		
+		self.spliceJoint = 7
+		
 		self.computeCurve()
 
 		self.mask = [0.0 for i in range(0,40)]
@@ -57,8 +70,12 @@ class FrontAnchorTest(Behavior):
 		self.isDone = False
 		self.plotCount = 0
 		
-		self.transDone = False
 		self.newJoints = [None for i in range(0,self.probe.numSegs-1)]
+
+		" flag true when the HoldTransition behavior has completed its behavior, select next transition "
+		self.transDone = False
+
+		" flag true when all the joints are stable, then step the HoldTransition behavior "
 		self.refDone = False
 		
 	def getMask(self):
@@ -82,28 +99,33 @@ class FrontAnchorTest(Behavior):
 		self.frontCurve = AdaptiveAnchorCurve(4*pi)				
 
 		if self.frontAnchorFit == 0:
-			self.frontAnchorFit = FrontAnchorFit(self.probe, self.direction, 10)
+			self.frontAnchorFit = FrontAnchorFit(self.probe, self.direction, self.spliceJoint)
 			self.frontAnchorFit.setCurve(self.frontCurve)
+			self.frontAnchorFit.setSpliceJoint(self.spliceJoint)
+
 		else:
 			self.frontAnchorFit.setCurve(self.frontCurve)
+			self.frontAnchorFit.setSpliceJoint(self.spliceJoint)
 
-		self.adaptiveCurve = AdaptiveCosine(4*pi)
+		self.adaptiveCurve = BackConcertinaCurve(4*pi)
 		self.adaptiveCurve.setTailLength(2.0)
 
 		if self.concertinaFit == 0:
 			self.concertinaFit = FastLocalCurveFit(self.probe, self.direction, self.adaptiveCurve, 38)
-			self.concertinaFit.setStartNode(10)
+			self.concertinaFit.setStartNode(self.spliceJoint)
 
 		else:
 			self.concertinaFit.setCurve(self.adaptiveCurve)
+			self.concertinaFit.setStartNode(self.spliceJoint)
 
 
-		#self.adaptiveCurve.setPeakAmp(6,0.33)
+		#self.adaptiveCurve.setPeakAmp(0,0.2)
+		#self.adaptiveCurve.setPeakAmp(1,0.2)
 		#self.adaptiveCurve.setPeakAmp(4,0.33)
 		self.frontAnchorFit.step()
 		self.concertinaFit.step()
 		
-		resultJoints = self.spliceFitJoints(self.frontAnchorFit.getJoints(), self.concertinaFit.getJoints(), 10)
+		resultJoints = self.spliceFitJoints(self.frontAnchorFit.getJoints(), self.concertinaFit.getJoints(), self.spliceJoint)
 		
 		self.holdT.reset(resultJoints)
 		self.refDone = False
@@ -114,6 +136,10 @@ class FrontAnchorTest(Behavior):
 		
 		#print "joints1 =", joints1
 		#print "joints2 =", joints2
+		
+		newJointVal = joints1[spliceJoint] + joints2[spliceJoint]
+		
+		joints1[spliceJoint] = newJointVal
 		
 		jointList = [joints1,joints2]
 		
@@ -177,18 +203,23 @@ class FrontAnchorTest(Behavior):
 				self.cPoints.append(point)
 
 	
-	def computeCmdSegPoints(self):	
+	def computeCmdSegPoints(self):
 		
 		if self.direction:
-				
+			
 			" the configuration of the snake as we've commanded it "
 			#self.cmdSegPoints = [[-self.probe.segLength,0.0,0.0]]
+			
+			spliceJointAngle = self.concertinaFit.getJoints()[self.spliceJoint] * pi /180.0
+			#spliceJoint = 0.0
+
+			print "joint =", spliceJointAngle
+
 			self.cmdSegPoints = []
-			cmdOrigin = [0.0,0.0,pi]
+			cmdOrigin = [0.0,0.0,-spliceJointAngle]
 			self.cmdSegPoints.append(cmdOrigin)
 			
-			
-			ind = range(0,10+1)
+			ind = range(0,self.spliceJoint+1)
 			ind.reverse()
 			
 			for i in ind:		
@@ -200,8 +231,10 @@ class FrontAnchorTest(Behavior):
 				cmdOrigin = pnt
 				self.cmdSegPoints.insert(0, cmdOrigin)
 
-			cmdOrigin = [0.0,0.0,pi]
-			for i in range(10,self.probe.numSegs-1):
+			cmdOrigin = [self.probe.segLength*cos(-spliceJointAngle),self.probe.segLength*sin(-spliceJointAngle),-spliceJointAngle]
+			self.cmdSegPoints.append(cmdOrigin)
+
+			for i in range(11,self.probe.numSegs-1):
 				
 				sampAngle = self.probe.getServoCmd(i)
 
@@ -244,6 +277,18 @@ class FrontAnchorTest(Behavior):
 		xP = []
 		yP = []
 		for p in crvPoints:
+			px = p[0]*cos(pi) - p[1]*sin(pi)
+			py = p[0]*sin(pi) + p[1]*cos(pi)
+			
+			xP.append(px)
+			yP.append(py)
+		pylab.plot(xP,yP,color='0.3')
+
+		#pylab.clf()
+		crvPoints = self.adaptiveCurve.getPoints()		
+		xP = []
+		yP = []
+		for p in crvPoints:
 			xP.append(p[0])
 			yP.append(p[1])
 		pylab.plot(xP,yP,color='0.3')
@@ -253,11 +298,16 @@ class FrontAnchorTest(Behavior):
 		if self.direction:
 			" the actual configuration of the snake "
 			#actSegPoints = [[-self.probe.segLength,0.0,0.0]]
+
+			spliceJointAngle = self.concertinaFit.getJoints()[self.spliceJoint] * pi /180.0
+			#spliceJoint = 0.0
+			
 			actSegPoints = []
-			actOrigin = [0.0,0.0,pi]
+			actOrigin = [0.0,0.0,-spliceJointAngle]
+
 			actSegPoints.append(actOrigin)
 
-			ind = range(0,10+1)
+			ind = range(0,self.spliceJoint+1)
 			ind.reverse()
 			
 			for i in ind:
@@ -269,7 +319,10 @@ class FrontAnchorTest(Behavior):
 				actOrigin = pnt
 				actSegPoints.insert(0,actOrigin)
 
-			actOrigin = [0.0,0.0,pi]
+			#actOrigin = [0.0,0.0,-spliceJoint]			
+			actOrigin = [self.probe.segLength*cos(-spliceJointAngle),self.probe.segLength*sin(-spliceJointAngle),-spliceJointAngle]
+			actSegPoints.append(actOrigin)
+			
 			for i in range(11,self.probe.numSegs-1):
 				sampAngle = self.probe.getServo(i)
 				totalAngle = actOrigin[2] - sampAngle
@@ -342,11 +395,11 @@ class FrontAnchorTest(Behavior):
 		self.count += 1
 		isDone = False
 
-		" mask is used to determine the segments that need to be fitted to the curve "
-		#self.mask = mask = [1.0 for i in range(39)]
-		
+	
 		if self.transDone:
 		
+		
+			print "out of segments = ", self.frontCurve.isOutOfSegments(self.frontAnchorFit.lastPosition)
 			self.transDone = False
 			
 			" compute the maximum error of the joints in the current peak "
@@ -701,7 +754,7 @@ class FrontAnchorTest(Behavior):
 				self.frontAnchorFit.step()
 				#self.concertinaFit.step()
 
-				resultJoints = self.spliceFitJoints(self.frontAnchorFit.getJoints(), self.concertinaFit.getJoints(), 10)
+				resultJoints = self.spliceFitJoints(self.frontAnchorFit.getJoints(), self.concertinaFit.getJoints(), self.spliceJoint)
 				#print "joints =", resultJoints
 				self.holdT.reset(resultJoints)
 
@@ -740,7 +793,7 @@ class FrontAnchorTest(Behavior):
 
 		joints3 = self.holdT.getJoints()
 
-		#resultJoints = self.spliceFitJoints(self.frontAnchorFit.getJoints(), self.concertinaFit.getJoints(), 10)
+		#resultJoints = self.spliceFitJoints(self.frontAnchorFit.getJoints(), self.concertinaFit.getJoints(), self.spliceJoint)
 
 
 		#print joints2

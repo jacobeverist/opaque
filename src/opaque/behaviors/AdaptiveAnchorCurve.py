@@ -29,7 +29,7 @@ class AdaptiveAnchorCurve:
 
 		pO = self.origin
 
-		p1 = [pO[0] + self.ampSpacing, pO[1] - dispZ]		
+		p1 = [pO[0] + self.ampSpacing, pO[1] + dispZ]		
 		p2 = [p1[0] + self.infLength, p1[1]]		
 
 		self.controlA = {'pO':pO, 'p1':p1, 'p2':p2}
@@ -45,7 +45,7 @@ class AdaptiveAnchorCurve:
 		
 		dispZ = self.peakAmp[0]			
 
-		p1 = [pO[0] + self.ampSpacing, pO[1] - dispZ]		
+		p1 = [pO[0] + self.ampSpacing, pO[1] + dispZ]		
 		p2 = [p1[0] + self.infLength, p1[1]]		
 
 		self.controlA['p1'] = p1
@@ -68,6 +68,14 @@ class AdaptiveAnchorCurve:
 		pylab.ylim(-4,2)
 		pylab.show()
 
+	def isOutOfSegments(self, tipPoint):
+		p1 = self.controlA['p1']
+		
+		print "comparing tipPoint =", tipPoint, "to inflection point", p1
+		if tipPoint[0] < p1[0]:
+			return True
+		
+		return False
 
 	def getPoints(self):
 
@@ -82,7 +90,7 @@ class AdaptiveAnchorCurve:
 		" anchor section "
 		samples1 = arange(pO[0], p1[0] + self.sampleResolution, self.sampleResolution)
 		for x_samp in samples1:
-			varZ = -self.peakAmp[0] * sin(self.initFreq*x_samp)
+			varZ = self.peakAmp[0] * sin(self.initFreq*x_samp)
 			points.append([x_samp,varZ])
 
 		" infinite follow "
@@ -110,7 +118,7 @@ class AdaptiveAnchorCurve:
 					
 		adapAmp = self.peakAmp[0]
 		
-		varZ = -adapAmp * sin(self.initFreq*x_samp)
+		varZ = adapAmp * sin(self.initFreq*x_samp)
 		
 		
 		curvePoint1 = [x_samp,varZ]
@@ -152,7 +160,7 @@ class AdaptiveAnchorCurve:
 						
 			adapAmp = self.peakAmp[0]
 						
-			varZ = -adapAmp * sin(self.initFreq*x_samp)
+			varZ = adapAmp * sin(self.initFreq*x_samp)
 			
 			dist = sqrt((point[0]-(x_samp))**2 + (point[1]-varZ)**2)
 

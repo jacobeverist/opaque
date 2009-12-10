@@ -27,3 +27,4 @@ from Curl import *
 from AdaptiveConcertinaGaitJerk import *
 from FrontAnchorTest import *
 from AdaptiveCosine import *
+from BackConcertinaCurve import *

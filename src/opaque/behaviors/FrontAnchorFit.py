@@ -12,7 +12,7 @@ fastLocalNodeCount = 0
 
 class FrontAnchorFit(Behavior):
 
-	def __init__(self, probe, anterior = True, cutOff = 19):
+	def __init__(self, probe, anterior = True, spliceJoint = 19):
 		global fastLocalNodeCount
 
 		Behavior.__init__(self, probe)
@@ -24,13 +24,24 @@ class FrontAnchorFit(Behavior):
 		
 		if self.anterior:
 			self.startNode = 0
-			self.endNode = cutOff
+			self.endNode = spliceJoint
 		else:
-			self.startNode = cutOff
+			self.startNode = spliceJoint
 			self.endNode = self.probe.numSegs-1	
 					
 		self.curve = 0
+
+		self.lastPosition = [0.0,0.0,0.0]
 		
+	def setSpliceJoint(self, spliceJoint):
+		
+		if self.anterior:
+			self.startNode = 0
+			self.endNode = spliceJoint
+		else:
+			self.startNode = spliceJoint
+			self.endNode = self.probe.numSegs-1	
+	
 	def setCurve(self, curve):
 		self.curve = curve
 
@@ -222,7 +233,8 @@ class FrontAnchorFit(Behavior):
 		#print "breakFromFit = ", breakFromFit
 		
 		" position of last joint iterated through "
-		self.jointPositions[currJoint]= originPose
+		self.lastPosition = originPose
+		#self.jointPositions[currJoint]= originPose
 		
 	def backwardFit(self):
 		
@@ -396,7 +408,7 @@ class FrontAnchorFit(Behavior):
 		self.jointPositions[currJoint]= originPose
 
 	def getPeakError(self):
-					
+
 		cmdPoints = []
 		actPoints = []
 		
