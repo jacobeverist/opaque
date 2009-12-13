@@ -71,7 +71,7 @@ class AdaptiveAnchorCurve:
 	def isOutOfSegments(self, tipPoint):
 		p1 = self.controlA['p1']
 		
-		print "comparing tipPoint =", tipPoint, "to inflection point", p1
+		#print "comparing tipPoint =", tipPoint, "to inflection point", p1
 		if tipPoint[0] < p1[0]:
 			return True
 		

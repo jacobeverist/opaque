@@ -9,6 +9,8 @@ from common import *
 from Behavior import *
 from FastLocalCurveFit import FastLocalCurveFit
 from HoldTransition import HoldTransition
+from AdaptiveCosine import AdaptiveCosine
+
 
 class AdaptiveConcertinaGaitJerk(Behavior):
 
@@ -82,7 +84,7 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 			self.localFit.setRootNode(0)
 		
 	def computeCurve(self):
-		self.curve = AdaptiveCosine(4*pi, 1.0)
+		self.curve = AdaptiveCosine(4*pi)
 		#self.curve.setHeadLength(0.5)
 		#self.curve = AdaptiveCosine(2*pi, 1.0)
 		
@@ -436,7 +438,8 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 			#currErr = self.localFit.getPeakError(self.currPeak)
 			
 			#print self.currPeak, "peakJoints =", peakJoints, "error =", maxError, currAmp, self.minAmp, self.maxAmp
-			
+		
+
 			
 			if len(peakJoints) == 0 and self.currPeak != 0:
 				isDone = True
@@ -453,7 +456,7 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 			if not isDone:
 				
 				" draw the state of the curve fitting "
-				#self.drawFit()
+				self.drawFit()
 				self.computeCmdSegPoints()
 
 				currWidth = self.curve.getPeakWidth(self.currPeak)

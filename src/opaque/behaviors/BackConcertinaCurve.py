@@ -218,6 +218,8 @@ class BackConcertinaCurve:
 			
 			self.control['p2'] = p2
 			self.control['p3'] = p3
+		
+		#print "infPoints =", self.infPoints
 	
 	def setPeakWidth(self, index, width):
 		

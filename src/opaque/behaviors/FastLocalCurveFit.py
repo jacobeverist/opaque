@@ -56,6 +56,9 @@ class FastLocalCurveFit(Behavior):
 
 		self.plotCount = 0
 		
+		self.spliceJoint = 0
+		self.spliceAngle = 0.0
+		
 		"""		
 		# There are 2 possibilities to how the local fit is computed
 		# if we assume that the curve is always on the extrema, and never the interior of the snake
@@ -314,8 +317,16 @@ class FastLocalCurveFit(Behavior):
 		
 		#print "setting solid", index, "with joints", joints
 		for i in joints:
-			self.solidJoints[i] = self.probe.getServoCmd(i)
+			self.solidJoints[i] = pi / 180.0 * self.getJoints()[i]
+			#self.solidJoints[i] = self.probe.getServoCmd(i)
+			
 			self.solidCompJoints[i] = self.probe.getServo(i)
+			
+			if i == self.spliceJoint:
+				self.solidCompJoints[i] -= self.spliceAngle
+			
+			print "setting solid joint", i, self.probe.getServo(i), self.solidCompJoints[i]
+			
 			self.solidJointClasses[index].append(i)
 			self.solidJointPositions[i] = copy(self.jointPositions[i])
 			#print self.solidJoints[i], self.solidCompJoints[i]
@@ -323,22 +334,42 @@ class FastLocalCurveFit(Behavior):
 			#self.setJoint(i,actAngle*180.0/pi)
 
 
-		if self.anterior:
-			
-			" now set the maximum joint of the previous peak "
-			minJoint = min(joints) - 1
-			if minJoint >= 0:
-				self.solidJoints[minJoint] = self.probe.getServoCmd(minJoint)
-				self.solidCompJoints[minJoint] = self.probe.getServo(minJoint)
-				self.solidJointPositions[minJoint] = copy(self.jointPositions[minJoint])
-			
-		else:
-			" now set the maximum joint of the previous peak "
-			maxJoint = max(joints) + 1
-			if maxJoint <= self.probe.numSegs -2:
-				self.solidJoints[maxJoint] = self.probe.getServoCmd(maxJoint)
-				self.solidCompJoints[maxJoint] = self.probe.getServo(maxJoint)
-				self.solidJointPositions[maxJoint] = copy(self.jointPositions[maxJoint])
+		" don't set the previous joint solid if it's not part of this curve "
+		if index > 0:
+			if self.anterior:
+				
+				" now set the maximum joint of the previous peak "
+				minJoint = min(joints) - 1
+				if minJoint >= 0:
+					print "altering joint", minJoint, "at index", index
+					self.solidJoints[minJoint] = pi / 180.0 * self.getJoints()[minJoint]
+					#self.solidJoints[minJoint] = self.probe.getServoCmd(minJoint)
+					
+
+					self.solidCompJoints[minJoint] = self.probe.getServo(minJoint)
+					if minJoint == self.spliceJoint:
+						self.solidCompJoints[minJoint] -= self.spliceAngle
+
+					print "setting solid joint", minJoint, self.probe.getServo(minJoint), self.solidCompJoints[minJoint]
+					
+					self.solidJointPositions[minJoint] = copy(self.jointPositions[minJoint])
+				
+			else:
+				" now set the maximum joint of the previous peak "
+				maxJoint = max(joints) + 1
+				if maxJoint <= self.probe.numSegs -2:
+					print "altering joint", maxJoint, "at index", index
+					self.solidJoints[maxJoint] = pi / 180.0 * self.getJoints()[maxJoint]
+					#self.solidJoints[maxJoint] = self.probe.getServoCmd(maxJoint)
+					
+
+					self.solidCompJoints[maxJoint] = self.probe.getServo(maxJoint)
+					if maxJoint == self.spliceJoint:
+						self.solidCompJoints[maxJoint] -= self.spliceAngle
+
+					print "setting solid joint", maxJoint, self.probe.getServo(maxJoint), self.solidCompJoints[maxJoint]
+
+					self.solidJointPositions[maxJoint] = copy(self.jointPositions[maxJoint])
 			
 
 		#print self.solid
@@ -386,7 +417,9 @@ class FastLocalCurveFit(Behavior):
 				#print errIndex, i, pos
 				self.jointErrorClasses[errIndex].append(i)
 	
-		#print self.jointClasses
+		print self.curve.infPoints
+		print self.jointPositions
+		print self.jointClasses
 		
 	def forwardFit(self):
 		
@@ -429,7 +462,7 @@ class FastLocalCurveFit(Behavior):
 
 			
 			" 2 peaks in a row must be solid before we re-use old data "
-			" this is to allow segments spanning two neighoring peaks to adjust freely "
+			" this is to allow segments spanning two neighboring peaks to adjust freely "
 			if solidIndex >= 0 and self.solid[solidIndex]:
 
 				" set to actual angle"
