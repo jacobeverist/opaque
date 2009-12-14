@@ -513,7 +513,6 @@ class FrontAnchorTest(Behavior):
 		anchorJoints = self.frontAnchorFit.getPeakJoints()
 		anchorJoints.sort()
 
-		print "out of segments = ", self.frontCurve.isOutOfSegments(self.frontAnchorFit.lastPosition)
 		errors = []
 		for j in anchorJoints:
 			errors.append(self.probe.getServo(j)-self.probe.getServoCmd(j))
@@ -609,6 +608,7 @@ class FrontAnchorTest(Behavior):
 		" change the amplitude "
 		print "setting amp = " , nextVal		
 		self.frontCurve.setPeakAmp(nextVal)
+		
 			
 		if self.isJerking:
 			
@@ -1020,19 +1020,12 @@ class FrontAnchorTest(Behavior):
 					
 			if allActive:
 				self.refDone = True
-			
-		if isDone:
-			
-			#self.computeCenterPoints()
-			
-			"reset everything "
-			self.frontAnchorFit = 0
-			self.frontCurve = 0
-			self.adaptiveCurve = 0
-			self.concertinaFit = 0
+		
+		if self.frontCurve.isOutOfSegments(self.frontAnchorFit.lastPosition):
 
-			self.computeCurve()
+			self.spliceJoint += 2
 			
+			print "out of segments, switching splice joint to", self.spliceJoint
 			self.mask = [0.0 for i in range(0,40)]
 			self.count = 0
 				
@@ -1041,13 +1034,45 @@ class FrontAnchorTest(Behavior):
 			self.ampInc = 0.04
 						
 			self.currPeak = 0
-			self.spliceJoint = 7
+			
 			self.lastSpliceAngle = 0.0
+			self.frontAnchorFit = 0
+			self.frontCurve = 0
+			self.adaptiveCurve = 0
+			self.concertinaFit = 0
+
+			self.computeCurve()
+			
+
 					
+			
+		if isDone:
+			
+			#self.computeCenterPoints()
+			self.mask = [0.0 for i in range(0,40)]
+			self.count = 0
+
 			self.frontAnchoringState = True
 			self.frontAnchoringDone = False
 		
-		
+						
+			self.minAmp = 0.0
+			self.maxAmp = 0.0			
+			self.ampInc = 0.04
+						
+			self.currPeak = 0
+			self.spliceJoint = 7
+			self.lastSpliceAngle = 0.0
+							
+			"reset everything "
+			self.frontAnchorFit = 0
+			self.frontCurve = 0
+			self.adaptiveCurve = 0
+			self.concertinaFit = 0
+
+			self.computeCurve()
+			
+
 		return isDone
 	
 
