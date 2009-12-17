@@ -577,6 +577,7 @@ class FrontAnchorTest(Behavior):
 						" C:  Overshoot.  Minimum is too high." 
 						" Reduce amplitude minimum, set current to maximum"
 						
+						" FIXME:  sometimes the amplitude goes below zero. "
 						self.minAmp -= self.ampInc
 						self.maxAmp = currAmp
 						nextVal = self.minAmp
