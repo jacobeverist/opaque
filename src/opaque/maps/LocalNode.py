@@ -19,7 +19,7 @@ import pose
 
 class LocalNode:
 
-	def __init__(self, probe, contacts, nodeID, rootNode):
+	def __init__(self, probe, contacts, nodeID, rootNode, inSim = True):
 
 		self.nodeID = nodeID
 		self.probe = probe
@@ -37,12 +37,16 @@ class LocalNode:
 		2. profile of the anchor points 
 		"""
 		
-		self.setEstPose(self.contacts.getClosestPose(self.rootNode))
-			
-		self.poseProfile = pose.PoseProfile(self.contacts,self.rootNode)
-	
-		self.setGndPose(self.probe.getActualJointPose(self.rootNode))
+		if inSim:
+			self.setEstPose(self.contacts.getClosestPose(self.rootNode))
+				
+			self.poseProfile = pose.PoseProfile(self.contacts,self.rootNode)
 		
+			self.setGndPose(self.probe.getActualJointPose(self.rootNode))
+	
+		else:
+			self.poseProfile = pose.PoseProfile(self.contacts,self.rootNode, inSim = False)
+			
 		# MAPS
 		self.occMap = LocalOccMap(self)
 		self.boundaryMap = LocalBoundaryMap(self)
@@ -56,15 +60,16 @@ class LocalNode:
 		" by default, the center points are the estimated positions of joints: "
 		cJoints = [2, 6, 10, 14, 18, 22, 26, 30, 34, 38]
 
-		self.centerPoints = []
-		for j in cJoints:
-			self.centerPoints.append(self.contacts.getClosestPose(j))
-		
-		self.localCenterPoints = []
-
-		for pnt in self.centerPoints:
-			newPoint = self.convertGlobalToLocal(pnt)
-			self.localCenterPoints.append(newPoint)
+		if inSim:
+			self.centerPoints = []
+			for j in cJoints:
+				self.centerPoints.append(self.contacts.getClosestPose(j))
+			
+			self.localCenterPoints = []
+	
+			for pnt in self.centerPoints:
+				newPoint = self.convertGlobalToLocal(pnt)
+				self.localCenterPoints.append(newPoint)
 
 	def setEstPose(self, newPose):
 
@@ -279,7 +284,7 @@ class LocalNode:
 		"""
 		
 		#self.occMap.saveToFile("occ%04u.txt" % self.nodeID)
-		self.occMap.saveMap("occ%04u.png" % self.nodeID)
+		#self.occMap.saveMap("occ%04u.png" % self.nodeID)
 		self.poseProfile.saveToFile("prof%04u.txt" % self.nodeID)
 		
 		f = open("estpose%04u.txt" % self.nodeID, 'w')
@@ -301,12 +306,12 @@ class LocalNode:
 		
 		self.nodeID = nodeID
 		self.poseProfile.readFromFile("prof%04u.txt" % self.nodeID)
-
+		
 		" occupancy map "
 		self.occMap.readFromFile()
 	
 		" obstacle map "
-		self.obstacleMap.readFromFile()
+		#self.obstacleMap.readFromFile()
 		
 		f = open("estpose%04u.txt" % self.nodeID, 'r')
 		estPose = eval(f.read())
@@ -457,12 +462,24 @@ class LocalNode:
 		f = open("gnd_alpha_bound_%04u.txt" % self.nodeID, 'w')
 		f.write(val)
 		f.close()
+
+		val = repr(self.gndOccPoints)
+		f = open("gnd_occ_points_%04u.txt" % self.nodeID, 'w')
+		f.write(val)
+		f.close()
+
 				
 		self.computeAlphaBoundary()
 		val = repr(self.a_vert)
 		f = open("alpha_bound_%04u.txt" % self.nodeID, 'w')
 		f.write(val)
 		f.close()
+
+		val = repr(self.estOccPoints)
+		f = open("est_occ_points_%04u.txt" % self.nodeID, 'w')
+		f.write(val)
+		f.close()
+
 
 	def getOccMap(self):
 		return self.occMap
@@ -483,7 +500,8 @@ class LocalNode:
 					pnt = self.occMap.gridToReal([j,k])
 					points.append(pnt)
 		
-		print len(points)
+		self.estOccPoints = points
+		#print len(points)
 		
 		if len(points) > 0:
 			#print points
@@ -514,6 +532,7 @@ class LocalNode:
 					pnt = self.occMap.gridToReal([j,k])
 					points.append(pnt)
 		
+		self.gndOccPoints = points
 		print len(points)
 		
 		if len(points) > 0:

@@ -76,7 +76,7 @@ class AdaptiveAnchorCurve:
 			return True
 		
 		return False
-
+	
 	def getPoints(self):
 
 		" create a distribution of points along the curve "

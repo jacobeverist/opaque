@@ -51,12 +51,28 @@ class FrontAnchorFit(Behavior):
 		self.centerNode = endNode - math.floor(endNode-startNode)/2
 
 	def getPeakJoints(self):
-		if self.endNode > self.startNode:
-			return range(self.startNode, self.endNode+1)
-		else:
-			return range(self.endNode, self.startNode+1)
+		#if self.endNode > self.startNode:
+		#	return range(self.startNode, self.endNode+1)
+		#else:
+		#	return range(self.endNode, self.startNode+1)
+		joints = []
+				
+		for i in range(self.startNode, self.endNode+1):
+		
+			pos = self.jointPositions[i]
 			
+			" don't classify an unfitted joint "
+			if pos == None:
+				continue
+		
+			p1 = self.curve.controlA['p1']
+		
+			if pos[0] < p1[0]:
+				joints.append(i)
 
+
+		return joints
+	
 	def getPeakErrorJoints(self, index):
 		return self.jointErrorClasses[index]
 		
@@ -327,7 +343,7 @@ class FrontAnchorFit(Behavior):
 						breakFromFit = True
 						break
 						
-			print "crossOvers =", crossOvers
+			#print "crossOvers =", crossOvers
 			
 			if breakFromFit:
 				break

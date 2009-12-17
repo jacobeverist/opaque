@@ -720,14 +720,14 @@ class MapGraph:
 		
 		#for i in range(0,22):
 		#for i in range(0, 14):
-		for i in range(0,1):
-			self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19)
-			self.currNode.readFromFile(self.numNodes)
+		for i in range(1,10):
+			self.currNode = LocalNode(self.probe, self.contacts, i, 19, inSim = False)
+			self.currNode.readFromFile(i)
 			
-			self.poseGraph.add_node(self.numNodes, self.currNode)
+			self.poseGraph.add_node(i, self.currNode)
 
 			if self.numNodes > 0:
-				self.poseGraph.add_edge(self.numNodes - 1, self.numNodes)
+				self.poseGraph.add_edge(i-1, i)
 
 			self.numNodes += 1
 	

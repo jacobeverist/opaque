@@ -76,7 +76,7 @@ class LocalOccMap:
 		#self.fileName = "gndLocalOccMap%03u" % self.nodeID + "_%04u.png"
 		self.fileName = "localOccMap%03u" % self.nodeID + "_%04u.png"
 		
-		self.mapImage = Image.open("localOccMap%03u" % self.nodeID + ".png")
+		self.mapImage = Image.open(self.fileName % 0)
 		self.image = self.mapImage.load()
 		
 		self.changed = True
