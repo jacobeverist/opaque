@@ -530,7 +530,6 @@ class FrontAnchorTest(Behavior):
 		currAmp = self.frontCurve.getPeakAmp()	
 		
 		" draw the state of the curve fitting "
-		#self.computeCmdSegPoints()
 		#self.drawFit()
 
 		currAmp = self.frontCurve.getPeakAmp()
@@ -542,7 +541,7 @@ class FrontAnchorTest(Behavior):
 			" error threshold that determines we have made an anchor contact "
 			if maxError > 0.3 and self.maxAmp != 0.0:
 				
-				print "errors =", errors
+				#print "errors =", errors
 				
 				" if the difference between amplitudes is < 0.01 "
 				if fabs(self.maxAmp-self.minAmp) < 0.01:
@@ -679,7 +678,7 @@ class FrontAnchorTest(Behavior):
 						originPose = self.originPoses[k]
 						self.errorPoses1.append([tempPose[0]-originPose[0],tempPose[1]-originPose[1],tempPose[2]-originPose[2]])
 				
-					print self.errorPoses1
+					#print self.errorPoses1
 					
 					self.originPoses = []
 					for k in anchorJoints:
@@ -704,7 +703,7 @@ class FrontAnchorTest(Behavior):
 						originPose = self.originPoses[k]
 						self.errorPoses2.append([tempPose[0]-originPose[0],tempPose[1]-originPose[1],tempPose[2]-originPose[2]])
 				
-					print self.errorPoses2
+					#print self.errorPoses2
 				
 				else:
 					self.prevJerkAngle = self.jerkAngle
@@ -757,16 +756,19 @@ class FrontAnchorTest(Behavior):
 		anchorJoints = self.frontAnchorFit.getPeakJoints()
 
 		print "anchorJoints =", len(anchorJoints), "amp =", self.frontCurve.getPeakAmp()
-		if len(anchorJoints) > 0 and self.frontCurve.getPeakAmp() > 0 and self.isJerking:
+		#if len(anchorJoints) > 0 and self.frontCurve.getPeakAmp() > 0 and self.isJerking:
+		if len(anchorJoints) > 0 and self.frontCurve.getPeakAmp() > 0:
 			
 			if not self.direction:
 				maxJoint = max(anchorJoints)
+				print "weakening joints", range(maxJoint+1, self.probe.numSegs-2)
 				for i in range(maxJoint+1, self.probe.numSegs-2):
 					if i <= self.probe.numSegs-2:
 						self.probe.setJointTorque(i, 3.0)
 			else:
 				minJoint = min(anchorJoints)
-				for i in range(0, minJoint):					
+				print "weakening joints", range(0,minJoint-1)
+				for i in range(0, minJoint-1):					
 					if i <= self.probe.numSegs-2:
 						self.probe.setJointTorque(i, 3.0)
 
@@ -978,7 +980,7 @@ class FrontAnchorTest(Behavior):
 				for i in range(0,self.probe.numSegs-2):
 					torques.append(self.probe.getJointTorque(i))
 				
-				print "joints =", self.spliceFitJoints()
+				#print "joints =", self.spliceFitJoints()
 
 				#print torques
 

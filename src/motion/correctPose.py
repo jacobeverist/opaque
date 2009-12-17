@@ -109,6 +109,42 @@ def modifyGuess(est1, newOffset, control_points):
 	
 	return newGuess
 
+def plotEnv():
+	WLEN = 3.0
+	wall1 = [[-14.0, -0.2], [-4.0, -0.2], [-4.0 + WLEN*math.cos(math.pi/3), -0.2 - WLEN*math.sin(math.pi/3)]]
+	wall2 = [[-4.0 + WLEN*math.cos(math.pi/3), 0.2 + WLEN*math.sin(math.pi/3)], [-4.0, 0.2] ,[-14.0, 0.2]]
+	w1 = wall1[2]
+	w2 = wall2[0]
+	
+	wall3 = [[w1[0] + 0.4*math.cos(math.pi/6), w1[1] + 0.4*math.sin(math.pi/6)], [0.4*math.cos(math.pi/6) - 4, 0.0], [w2[0] + 0.4*math.cos(math.pi/6), w2[1] - 0.4*math.sin(math.pi/6)], w2]
+	lp = wall3[0]
+	rp = wall3[2]
+	
+	wall6 = [lp, [lp[0] + WLEN*math.cos(math.pi/6), lp[1] + WLEN*math.sin(math.pi/6)]]
+	wall6.append([wall6[1][0] + 0.4*math.cos(math.pi/3), wall6[1][1] - 0.4*math.sin(math.pi/3)])
+	wall6.append([wall6[2][0] - WLEN*math.cos(math.pi/6), wall6[2][1] - WLEN*math.sin(math.pi/6)])
+	wall6.append([wall6[3][0] + WLEN*math.cos(math.pi/3), wall6[3][1] - WLEN*math.sin(math.pi/3)])
+	wall6.append([wall6[4][0] - 0.4*math.cos(math.pi/6), wall6[4][1] - 0.4*math.sin(math.pi/6)])
+	wall6.append(w1)
+	wall6.reverse()
+
+	walls = [wall1, wall2, wall3, wall6]
+
+	for wall in walls:
+		xP = []
+		yP = []
+		for i in range(len(wall)):
+			p = copy(wall[i])
+			p[0] += 6.0
+			wall[i] = p
+			xP.append(p[0])
+			yP.append(p[1])
+
+		pylab.plot(xP,yP, linewidth=2, color = 'g')
+
+	pylab.xlim(-3,6)
+	pylab.ylim(-4,4)
+	
 
 if __name__ == '__main__':
 
@@ -160,41 +196,7 @@ if __name__ == '__main__':
 		gndPoses.append(gndPose1)
 		poseNumbers.append(i)
 
-	
-	WLEN = 3.0
-	wall1 = [[-14.0, -0.2], [-4.0, -0.2], [-4.0 + WLEN*math.cos(math.pi/3), -0.2 - WLEN*math.sin(math.pi/3)]]
-	wall2 = [[-4.0 + WLEN*math.cos(math.pi/3), 0.2 + WLEN*math.sin(math.pi/3)], [-4.0, 0.2] ,[-14.0, 0.2]]
-	w1 = wall1[2]
-	w2 = wall2[0]
-	
-	wall3 = [[w1[0] + 0.4*math.cos(math.pi/6), w1[1] + 0.4*math.sin(math.pi/6)], [0.4*math.cos(math.pi/6) - 4, 0.0], [w2[0] + 0.4*math.cos(math.pi/6), w2[1] - 0.4*math.sin(math.pi/6)], w2]
-	lp = wall3[0]
-	rp = wall3[2]
-	
-	wall6 = [lp, [lp[0] + WLEN*math.cos(math.pi/6), lp[1] + WLEN*math.sin(math.pi/6)]]
-	wall6.append([wall6[1][0] + 0.4*math.cos(math.pi/3), wall6[1][1] - 0.4*math.sin(math.pi/3)])
-	wall6.append([wall6[2][0] - WLEN*math.cos(math.pi/6), wall6[2][1] - WLEN*math.sin(math.pi/6)])
-	wall6.append([wall6[3][0] + WLEN*math.cos(math.pi/3), wall6[3][1] - WLEN*math.sin(math.pi/3)])
-	wall6.append([wall6[4][0] - 0.4*math.cos(math.pi/6), wall6[4][1] - 0.4*math.sin(math.pi/6)])
-	wall6.append(w1)
-	wall6.reverse()
-
-	walls = [wall1, wall2, wall3, wall6]
-
-	for wall in walls:
-		xP = []
-		yP = []
-		for i in range(len(wall)):
-			p = copy(wall[i])
-			p[0] += 6.0
-			wall[i] = p
-			xP.append(p[0])
-			yP.append(p[1])
-
-		pylab.plot(xP,yP, linewidth=2, color = 'g')
-
-	pylab.xlim(-3,6)
-	pylab.ylim(-4,4)
+	plotEnv()	
 
 	count = 0
 	pylab.savefig("uncorrectedMap_%04u.png" % count)
@@ -228,16 +230,21 @@ if __name__ == '__main__':
 		pylab.savefig("uncorrectedMap_%04u.png" % count)
 		count += 1
 
+
 	pylab.xlim(-3,6)
 	pylab.ylim(-4,4)
 	gen_icp.save("uncorrectedMap.png")
 
-	exit()
+	#exit()
 
+	finalOffsets = []
+	estPoses = []
+	#gndPoses = []
+	poseNumbers = []
 	#raise
 	#for i in range(1,29):
 	#for i in range(5,6):
-	for i in range(1,6):
+	for i in range(1,8):
 	#for i in range(2,3):
 	
 		#if i % 2 == 1:
@@ -352,6 +359,8 @@ if __name__ == '__main__':
 
 	print "estPoses"
 	print estPoses
+	
+	pylab.clf()
 
 	for i in range(len(estPoses)):
 
@@ -364,8 +373,23 @@ if __name__ == '__main__':
 		a_trans = []
 		for p in a_data:
 			a_trans.append(gen_icp.dispOffset(p, est1))
+			
+		gen_icp.draw( a_trans, b_data,"foo.png", fileWrite = False) 
 
-		gen_icp.draw(a_trans, b_data, "foo.png", fileWrite = False) 
+
+		gnd1 = gndPoses[i]
+		a_data = eval(val)
+		b_data = []
+		a_trans = []
+		for p in a_data:
+			a_trans.append(gen_icp.dispOffset(p, gnd1))
+		gen_icp.draw(b_data, a_trans, "foo.png", fileWrite = False) 
+		
+		
+	plotEnv()
+
+	pylab.xlim(-3,6)
+	pylab.ylim(-4,4)
 
 	gen_icp.save("finalMap.png")
 

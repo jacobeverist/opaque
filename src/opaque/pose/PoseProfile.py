@@ -16,16 +16,18 @@ import traceback
 
 class PoseProfile:
 
-	def __init__ (self, contacts, rootNode):
+	def __init__ (self, contacts, rootNode, inSim = True):
 
 		self.rootNode = rootNode
 		self.contacts = contacts
 		self.allNodes = []
-		for i in range(-1,self.contacts.numJoints+1):
-			self.allNodes.append(self.contacts.getClosestPose(i))		
+		
+		if inSim:
+			for i in range(-1,self.contacts.numJoints+1):
+				self.allNodes.append(self.contacts.getClosestPose(i))		
 
 
-		self.separatePoints()
+			self.separatePoints()
 
 	def separatePoints(self):
 

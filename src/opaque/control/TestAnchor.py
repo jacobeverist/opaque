@@ -63,8 +63,8 @@ class TestAnchor(SnakeControl):
 		self.anchorMass = OgreOde.BoxMass(STD_WEIGHT*10000.0,size)
 		self.normalMass = OgreOde.BoxMass(STD_WEIGHT,size)
 
-		self.angle_output = open("angle_output_%04u.txt" % 0, "w")
-		self.global_output = open("global_pose_output_%04u.txt" % 0, "w")
+		#self.angle_output = open("angle_output_%04u.txt" % 0, "w")
+		#self.global_output = open("global_pose_output_%04u.txt" % 0, "w")
 		self.isCapture = False
 		
 	def updateMaps(self):
@@ -133,7 +133,7 @@ class TestAnchor(SnakeControl):
 	def frameStarted(self):
 		
 		self.adjustCamera()
-		#self.grabImage()
+		self.grabImage()
 		#self.grabAngles()
 
 
@@ -224,8 +224,8 @@ class TestAnchor(SnakeControl):
 				
 				""" create a new pose node since we are in stable anchor position"""
 				self.mapGraph.newNode()
-				self.angle_output = open("angle_output_%04u.txt" % (self.mapGraph.numNodes-1), "w")
-				self.global_output = open("global_pose_output_%04u.txt" % (self.mapGraph.numNodes-1), "w")
+				#self.angle_output = open("angle_output_%04u.txt" % (self.mapGraph.numNodes-1), "w")
+				#self.global_output = open("global_pose_output_%04u.txt" % (self.mapGraph.numNodes-1), "w")
 				self.isCapture = True
 
 				centerPoints = self.adaptiveStep.getCenterPoints()
@@ -305,8 +305,8 @@ class TestAnchor(SnakeControl):
 				self.mapGraph.saveLocalMap()
 
 				self.mapGraph.newNode()
-				self.angle_output = open("angle_output_%04u.txt" % (self.mapGraph.numNodes-1), "w")
-				self.global_output = open("global_pose_output_%04u.txt" % (self.mapGraph.numNodes-1), "w")
+				#self.angle_output = open("angle_output_%04u.txt" % (self.mapGraph.numNodes-1), "w")
+				#self.global_output = open("global_pose_output_%04u.txt" % (self.mapGraph.numNodes-1), "w")
 				self.isCapture = True
 
 				centerPoints = self.adaptiveStep.getCenterPoints()

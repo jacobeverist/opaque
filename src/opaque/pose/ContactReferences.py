@@ -107,7 +107,8 @@ class ContactReferences:
 		self._allRefNodes = []
 		self._allRefEnt = []
 			
-		
+			
+		"""
 		for i in range(0,self.numJoints):
 			## Create the visual reprsentation of active reference nodes
 			name = "act_node" + str(i)
@@ -131,6 +132,7 @@ class ContactReferences:
 			#entity.setVisible(False)
 			self._refnodes.append(node)
 			self._refent.append(entity)
+		"""
 
 	def setTimerAliasing(self, timeInc):
 		self.timeInc = timeInc
@@ -324,7 +326,7 @@ class ContactReferences:
 		if not self.isStep():
 			return 
 	
-		
+		"""
 		for i in range(self.numJoints):
 			
 			if self.activeRef[i]:
@@ -345,7 +347,7 @@ class ContactReferences:
 				mPtr.setDiffuse(0.8,0.2,0.2, 1.0)
 
 			self._refent[i].setVisible(self.activeRef[i])
-		
+		"""
 				
 		
 		if True:

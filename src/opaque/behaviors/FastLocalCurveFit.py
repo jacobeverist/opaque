@@ -417,9 +417,9 @@ class FastLocalCurveFit(Behavior):
 				#print errIndex, i, pos
 				self.jointErrorClasses[errIndex].append(i)
 	
-		print self.curve.infPoints
-		print self.jointPositions
-		print self.jointClasses
+		#print self.curve.infPoints
+		#print self.jointPositions
+		#print self.jointClasses
 		
 	def forwardFit(self):
 		
