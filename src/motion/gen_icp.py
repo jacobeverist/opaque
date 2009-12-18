@@ -590,18 +590,20 @@ def draw(a_pnts, b_pnts, filename, fileWrite = True):
 	for a in a_pnts:
 		xP.append(a[0])	
 		yP.append(a[1])	
-		#pylab.scatter([a[0]],[a[1]],linewidth=1, color='b')
+		pylab.scatter([a[0]],[a[1]],linewidth=1, color=(0.6,0.6,1.0), edgecolors='none')
 	if len(xP) > 0:
-		pylab.plot(xP,yP, linewidth=1, color='b')
+		#pylab.plot(xP,yP, linewidth=1, color='b')
+		pass
 		
 	xP = []
 	yP = []
 	for b in b_pnts:
 		xP.append(b[0])	
 		yP.append(b[1])	
-		#pylab.scatter([b[0]],[b[1]],linewidth=1, color='r')
+		pylab.scatter([b[0]],[b[1]],linewidth=1, color=(1.0,0.6,0.6), edgecolors='none')
 	if len(xP) > 0:
-		pylab.plot(xP,yP, linewidth=1, color='r')
+		#pylab.plot(xP,yP, linewidth=1, color='r')
+		pass
 
 	if fileWrite:
 		pylab.xlim(-4.5,4.5)

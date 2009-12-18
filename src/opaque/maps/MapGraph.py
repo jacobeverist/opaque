@@ -15,6 +15,86 @@ import pylab
 from matplotlib.patches import Circle
 
 from pose import *
+import gen_icp
+
+
+class Pose:
+	
+	def __init__(self, pose = [0.0,0.0,0.0]):
+		self.setEstPose(pose)
+
+	def setEstPose(self, newPose):
+
+	   self.estPose = copy(newPose)
+	   self.dist = sqrt(self.estPose[0]**2 + self.estPose[1]**2)
+	   self.vecAng = acos(self.estPose[0]/self.dist)
+	   if asin(self.estPose[1]/self.dist) < 0:
+			   self.vecAng = -self.vecAng
+
+	   self.backR = array([[cos(self.vecAng), sin(self.vecAng)],[-sin(self.vecAng),cos(self.vecAng)]])
+	   self.foreR = array([[cos(self.vecAng), -sin(self.vecAng)],[sin(self.vecAng),cos(self.vecAng)]])
+
+	   self.R = array([[cos(self.estPose[2]), sin(self.estPose[2])],[-sin(self.estPose[2]),cos(self.estPose[2])]])
+
+	def convertLocalOffsetToGlobal(self, offset):
+
+	   globalEst = [0.0,0.0,0.0]
+
+	   finalVec = array([[offset[0]], [offset[1]]])
+	   transVec = dot(transpose(self.R), finalVec)
+	   resVec = dot(self.backR, transVec)
+	   resVec[0, 0] += self.dist
+	   tempVec = dot(self.foreR, resVec)
+	   globalEst[0] = tempVec[0, 0]
+	   globalEst[1] = tempVec[1, 0]
+	   globalEst[2] = normalizeAngle(self.estPose[2] + offset[2])
+
+	   return globalEst
+
+	def convertGlobalPoseToLocal(self, pose):
+
+	   " transform pnt to local coordinates"
+	   globalVec = array([[pose[0]],[pose[1]]])
+
+	   " perform translation correction "
+	   tempVec = dot(self.backR, globalVec)
+	   tempVec[0,0] -= self.dist
+	   transVec = dot(self.foreR, tempVec)
+
+	   " now, apply rotation correction with respect to origin "
+	   localVec = dot(self.R, transVec)
+
+	   localPose = [localVec[0,0], localVec[1,0], normalizeAngle(pose[2] - self.estPose[2])]
+
+	   return localPose
+
+	def convertLocalToGlobal(self, pnt):
+
+	   finalVec = array([[pnt[0]], [pnt[1]]])
+	   transVec = dot(transpose(self.R), finalVec)
+	   resVec = dot(self.backR, transVec)
+	   resVec[0, 0] += self.dist
+	   tempVec = dot(self.foreR, resVec)
+
+	   newPoint = [tempVec[0,0],tempVec[1,0]]
+
+	   return newPoint
+
+	def convertGlobalToLocal(self, pnt):
+
+	   " transform pnt to local coordinates"
+	   globalVec = array([[pnt[0]],[pnt[1]]])
+
+	   " perform translation correction "
+	   tempVec = dot(self.backR, globalVec)
+	   tempVec[0,0] -= self.dist
+	   transVec = dot(self.foreR, tempVec)
+
+	   " now, apply rotation correction with respect to origin "
+	   localVec = dot(self.R, transVec)
+
+	   newPoint = [localVec[0,0], localVec[1,0]]
+	   return newPoint
 
 
 
@@ -720,7 +800,7 @@ class MapGraph:
 		
 		#for i in range(0,22):
 		#for i in range(0, 14):
-		for i in range(1,10):
+		for i in range(0,9):
 			self.currNode = LocalNode(self.probe, self.contacts, i, 19, inSim = False)
 			self.currNode.readFromFile(i)
 			
@@ -781,6 +861,189 @@ class MapGraph:
 	def keepStablePose(self):
 		self.stablePose.update()
 		
+	def correctPoses3(self):
+			
+		# 2. compute the global position of all the poses wrt to first pose
+	
+		# TUNE ME:  threshold cost difference between iterations to determine if converged
+		#costThresh = 0.004
+		costThresh = 0.1
+	
+		# TUNE ME:   minimum match distance before point is discarded from consideration
+		minMatchDist = 2.0
+	
+		# plot the best fit at each iteration of the algorithm?
+		plotIteration = True
+		#plotIteration = False
+	
+		# initial guess for x, y, theta parameters
+		offset = [0.0,0.0,0.0]
+	
+		# sample data
+		a_data = []
+		b_data = []
+	
+		estPoses = []
+		finalOffsets = []
+
+		for i in range(1, self.numNodes-1):
+			
+			node1 = self.poseGraph.get_node_attributes(i)
+			node2 = self.poseGraph.get_node_attributes(i+1)
+			
+			print "correcting", i , "and", i+1
+
+			node1.computeAlphaBoundary()
+			node2.computeAlphaBoundary()
+			
+			b_data = node1.getAlphaBoundary()
+			a_data = node2.getAlphaBoundary()
+			
+			def decimatePoints(points):
+				result = []
+			
+				for i in range(len(points)):
+					if i%2 == 0:
+						result.append(points[i])
+			
+				return result
+			
+			a_data = decimatePoints(a_data)
+			b_data = decimatePoints(b_data)
+
+			estPose1 = node1.getEstPose()
+			estPose2 = node2.getEstPose()
+			
+			# get the offset of node 2 with respect to node 1
+			pose1 = Pose(estPose1)
+			offset = pose1.convertGlobalPoseToLocal(estPose2)
+
+			# treat the points with the point-to-line constraint
+			gen_icp.addPointToLineCovariance(a_data, high_var=1.0, low_var=0.001)
+			gen_icp.addPointToLineCovariance(b_data, high_var=1.0, low_var=0.001)
+
+			gen_icp.addDistanceFromOriginCovariance(a_data, tan_var=0.1, perp_var=0.01)
+			gen_icp.addDistanceFromOriginCovariance(b_data, tan_var=0.1, perp_var=0.01)
+
+			# plot the data without A transformed, plot 997
+			gen_icp.draw(a_data, b_data, "rawData.png")
+
+			# transform the points in A by 'offset'
+			a_trans = []
+			for p in a_data:
+				a_trans.append(gen_icp.dispOffset(p, offset))
+
+			# plot the data with A transformed, plot 998
+			gen_icp.draw(a_trans, b_data, "initialGuess.png") 
+
+			# run generalized ICP (a plot is made for each iteration of the algorithm)
+			offset = gen_icp.gen_ICP(offset, a_data, b_data, costThresh, minMatchDist, plotIteration)
+
+			# transform the points of A with parameters determined by algorithm
+			a_trans = []
+			for p in a_data:
+				a_trans.append(gen_icp.dispPoint(p, offset))
+
+			print "drawing: ", "finalOutput_%04u.png" % i
+
+			# plot the final result, plot 999
+			gen_icp.draw(a_trans, b_data, "finalOutput_%04u.png" % i, fileWrite = True) 
+
+			finalOffsets.append(offset)
+			estPoses.append(estPose1)
+
+		"""
+		1. get the relative offsets (done)
+		2. for each node, recompute the estimated pose of all the subsequent poses
+		3. plot them
+		"""
+		
+		for i in range(len(finalOffsets)):
+			
+			est1 = estPoses[i]
+	
+			offset = finalOffsets[i]
+	
+			pose1 = Pose(est1)
+	
+			newEst2 = pose1.convertLocalOffsetToGlobal(offset)
+	
+			if i+1 < len(estPoses):
+				estPoses[i+1] = newEst2
+			else:
+				estPoses.append(newEst2)
+
+		pylab.clf()
+
+		for i in range(len(estPoses)):
+			est1 = estPoses[i]
+			node1 = self.poseGraph.get_node_attributes(i+1)
+			node1.setEstPose(est1)
+
+	
+		for i in range(1, self.numNodes-1):
+
+			#est1 = estPoses[i-1]
+			node1 = self.poseGraph.get_node_attributes(i)
+			est1 = node1.getEstPose()
+			
+			a_data = node1.estOccPoints
+			b_data = []
+			a_trans = []
+			for p in a_data:
+				a_trans.append(gen_icp.dispOffset(p, est1))
+				
+			gen_icp.draw( a_trans, b_data,"foo.png", fileWrite = False) 
+	
+	
+			#gnd1 = gndPoses[i]
+			#a_data = eval(val)
+			#b_data = []
+			#a_trans = []
+			#for p in a_data:
+			#	a_trans.append(gen_icp.dispOffset(p, gnd1))
+			#gen_icp.draw(b_data, a_trans, "foo.png", fileWrite = False) 
+			
+		def plotEnv():
+			WLEN = 3.0
+			wall1 = [[-14.0, -0.2], [-4.0, -0.2], [-4.0 + WLEN*math.cos(math.pi/3), -0.2 - WLEN*math.sin(math.pi/3)]]
+			wall2 = [[-4.0 + WLEN*math.cos(math.pi/3), 0.2 + WLEN*math.sin(math.pi/3)], [-4.0, 0.2] ,[-14.0, 0.2]]
+			w1 = wall1[2]
+			w2 = wall2[0]
+			
+			wall3 = [[w1[0] + 0.4*math.cos(math.pi/6), w1[1] + 0.4*math.sin(math.pi/6)], [0.4*math.cos(math.pi/6) - 4, 0.0], [w2[0] + 0.4*math.cos(math.pi/6), w2[1] - 0.4*math.sin(math.pi/6)], w2]
+			lp = wall3[0]
+			rp = wall3[2]
+			
+			wall6 = [lp, [lp[0] + WLEN*math.cos(math.pi/6), lp[1] + WLEN*math.sin(math.pi/6)]]
+			wall6.append([wall6[1][0] + 0.4*math.cos(math.pi/3), wall6[1][1] - 0.4*math.sin(math.pi/3)])
+			wall6.append([wall6[2][0] - WLEN*math.cos(math.pi/6), wall6[2][1] - WLEN*math.sin(math.pi/6)])
+			wall6.append([wall6[3][0] + WLEN*math.cos(math.pi/3), wall6[3][1] - WLEN*math.sin(math.pi/3)])
+			wall6.append([wall6[4][0] - 0.4*math.cos(math.pi/6), wall6[4][1] - 0.4*math.sin(math.pi/6)])
+			wall6.append(w1)
+			wall6.reverse()
+		
+			walls = [wall1, wall2, wall3, wall6]
+		
+			for wall in walls:
+				xP = []
+				yP = []
+				for i in range(len(wall)):
+					p = copy(wall[i])
+					p[0] += 6.0
+					wall[i] = p
+					xP.append(p[0])
+					yP.append(p[1])
+		
+				pylab.plot(xP,yP, linewidth=2, color = 'g')
+		
+		plotEnv()
+	
+		pylab.xlim(-3,6)
+		pylab.ylim(-4,4)
+	
+		gen_icp.save("finalMap.png")	
+			
 	def correctPoses2(self):
 		
 		if self.numNodes <= 1:

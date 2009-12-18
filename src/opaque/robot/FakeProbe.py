@@ -39,6 +39,17 @@ class FakeProbe:
 		for i in range(len(self.angles)):
 			print len(self.angles[i])
 		#print len(self.angles[0])
+		
+	def loadEmpty(self):
+
+		self.angles = [[] for i in range(39)]
+	
+		for j in range(5000):
+			angleSnapshot = [0.0 for i in range(39)]
+			for i in range(len(angleSnapshot)):
+				self.angles[i].append(angleSnapshot[i])
+		
+		self.currIndex = 0
 			
 	def step(self):
 		self.currIndex += 1
@@ -56,6 +67,12 @@ class FakeProbe:
 	
 	def getError(self, index):
 		return 0.0
+	
+	def addWalls(self, walls):
+		self.walls = copy(walls)
+		
+	def getWalls(self):
+		return self.walls
 
 	def getJointWRTJointPose(self, originPose, originJoint, targetJoint):
 

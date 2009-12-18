@@ -207,7 +207,8 @@ if __name__ == '__main__':
 
 		est1 = estPoses[i]
 
-		f = open('alpha_bound_%04u.txt' % poseNumbers[i],'r')
+		#f = open('alpha_bound_%04u.txt' % poseNumbers[i],'r')
+		f = open('est_occ_points_%04u.txt' % poseNumbers[i],'r')
 		val = f.read()
 		a_data = eval(val)
 		b_data = []
@@ -366,7 +367,8 @@ if __name__ == '__main__':
 
 		est1 = estPoses[i]
 
-		f = open('alpha_bound_%04u.txt' % poseNumbers[i],'r')
+		#f = open('alpha_bound_%04u.txt' % poseNumbers[i],'r')
+		f = open('est_occ_points_%04u.txt' % poseNumbers[i],'r')
 		val = f.read()
 		a_data = eval(val)
 		b_data = []

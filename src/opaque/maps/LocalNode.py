@@ -38,15 +38,11 @@ class LocalNode:
 		"""
 		
 		if inSim:
-			self.setEstPose(self.contacts.getClosestPose(self.rootNode))
-				
-			self.poseProfile = pose.PoseProfile(self.contacts,self.rootNode)
-		
+			self.setEstPose(self.contacts.getClosestPose(self.rootNode))			
 			self.setGndPose(self.probe.getActualJointPose(self.rootNode))
-	
-		else:
-			self.poseProfile = pose.PoseProfile(self.contacts,self.rootNode, inSim = False)
-			
+
+		self.poseProfile = pose.PoseProfile(self.contacts,self.rootNode)
+
 		# MAPS
 		self.occMap = LocalOccMap(self)
 		self.boundaryMap = LocalBoundaryMap(self)
@@ -332,8 +328,8 @@ class LocalNode:
 		centerPoints = eval(f.read())
 		f.close()
 		
-		print "reading in center points", "cntpose%04u.txt" % self.nodeID
-		print self.centerPoints
+		#print "reading in center points", "cntpose%04u.txt" % self.nodeID
+		#print centerPoints
 		
 		self.setCenterPoints(centerPoints)
 
@@ -515,6 +511,9 @@ class LocalNode:
 		
 		else:
 			self.a_vert = []
+			
+	def getAlphaBoundary(self):
+		return self.a_vert
 
 	def computeGndAlphaBoundary(self):
 
