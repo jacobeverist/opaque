@@ -10,6 +10,7 @@ from Behavior import *
 from FrontAnchorFit import FrontAnchorFit
 from FastLocalCurveFit import FastLocalCurveFit
 from HoldTransition import HoldTransition
+from HoldSlideTransition import HoldSlideTransition
 from AdaptiveAnchorCurve import AdaptiveAnchorCurve
 from BackConcertinaCurve import BackConcertinaCurve
 
@@ -39,6 +40,7 @@ class FrontAnchorTest(Behavior):
 		self.isInit = False
 
 		self.holdT = HoldTransition(probe)
+		self.holdSlideT = HoldSlideTransition(probe)
 
 		self.cPoints = []
 		
@@ -77,10 +79,14 @@ class FrontAnchorTest(Behavior):
 
 		" flag true when all the joints are stable, then step the HoldTransition behavior "
 		self.refDone = False
-		
+
 		self.frontAnchoringState = True
 		self.frontAnchoringDone = False
+		self.frontExtending = True
+		#self.frontExtending = False
+		self.frontExtendDone = False
 		
+				
 	def getMask(self):
 		return self.mask
 		
@@ -130,10 +136,15 @@ class FrontAnchorTest(Behavior):
 		
 		resultJoints = self.spliceFitJoints()
 		
+		self.holdSlideT.setSpliceJoint(self.spliceJoint)
+		
+		self.holdSlideT.reset(resultJoints)
 		self.holdT.reset(resultJoints)
 		self.refDone = False
 
-	def spliceFitJoints(self):
+		#self.adaptiveCurve.setTailLength(2.0)
+
+	def spliceFitJoints(self, isStart = False):
 		
 		result = [None for i in range(self.probe.numSegs-1)]
 		
@@ -167,7 +178,8 @@ class FrontAnchorTest(Behavior):
 					result[i] = joints[i]
 		
 		return result
-								
+	
+							
 	def getCenterPoints(self):
 		
 		#return copy(self.cmdSegPoints)
@@ -506,7 +518,19 @@ class FrontAnchorTest(Behavior):
 		
 		return err1, err2
 			
-				
+	def doExtendFront(self):
+
+		print "Extend Front"
+
+		self.frontExtendDone = False
+
+		resultJoints = self.spliceFitJoints()
+		self.holdSlideT.reset(resultJoints)
+		
+
+		#self.frontExtending = False
+		#self.frontExtendDone = False
+					
 	def doFrontAnchor(self):
 				
 		" compute the maximum error of the joints in the current peak "
@@ -913,13 +937,18 @@ class FrontAnchorTest(Behavior):
 		
 		self.count += 1
 		isDone = False
-
-
-
 		
 		if self.transDone:
 			self.transDone = False
 
+
+			if self.frontExtending:
+				self.frontExtendDone = True
+				self.frontExtending = False
+				resultJoints = self.holdSlideT.getJoints()
+				self.holdT.reset(resultJoints)
+
+							
 			# termination cases
 			if not self.frontAnchoringState:
 				
@@ -953,15 +982,25 @@ class FrontAnchorTest(Behavior):
 				self.holdT.step()
 				
 			else:
-				
+							
 				if self.frontAnchoringState:
 					
-					print "Front Anchor Step"
-					self.doFrontAnchor()
-	
-					if self.frontAnchoringDone:
-						self.frontAnchoringDone = False
-						self.frontAnchoringState = False
+					if self.frontExtending:
+						self.doExtendFront()
+						#self.frontExtending = False
+						#self.frontExtendDone = False
+		
+						if self.frontExtendDone:
+							self.frontExtending = False
+						
+					else:
+						print "Front Anchor Step"
+						self.doFrontAnchor()
+		
+						if self.frontAnchoringDone:
+							self.frontAnchoringDone = False
+							self.frontAnchoringState = False
+							self.frontExtended = False
 	
 				else:
 					peakJoints = self.concertinaFit.getPeakJoints(self.currPeak)	
@@ -973,7 +1012,7 @@ class FrontAnchorTest(Behavior):
 				solids = []
 				for i in range(self.probe.numSegs-1):
 					solids.append(self.concertinaFit.isJointSolid(i))
-				print "solids =", solids
+				#print "solids =", solids
 
 				torques = []
 				for i in range(0,self.probe.numSegs-2):
@@ -983,17 +1022,37 @@ class FrontAnchorTest(Behavior):
 
 				#print torques
 
-				self.refDone = False
-				self.transDone = self.holdT.step()
+				if self.frontExtending:
+					self.refDone = False
+					print "caseA"
+					self.transDone = self.holdSlideT.step()
+				
+				else:	
+					self.refDone = False
+					self.transDone = self.holdT.step()
 				
 		else:
 			
 			" make no movements until all reference nodes are activated "
 			if self.refDone:
-				self.transDone = self.holdT.step()
+				if self.frontExtending:
+					#self.transDone = self.holdT.step()
+					self.transDone = self.holdSlideT.step()
+				else:
+					self.transDone = self.holdT.step()
 
 		anchorJoints = self.frontAnchorFit.getJoints()
-		joints = self.holdT.getJoints()
+		
+
+		#print self.refDone, self.transDone, self.frontAnchoringState, self.frontExtending, self.frontExtendDone
+		
+		if self.frontExtending:
+			joints = self.holdT.getJoints()
+			#print joints
+			joints = self.holdSlideT.getJoints()
+			#print joints
+		else:
+			joints = self.holdT.getJoints()
 
 		" Set the joints "
 		if self.refDone:
@@ -1002,6 +1061,7 @@ class FrontAnchorTest(Behavior):
 			
 			" update mask for ContactReference "
 			for i in range(self.probe.numSegs-1):
+				#print self.frontAnchoringState, anchorJoints[i], self.concertinaFit.isJointSolid(i), joints[i]
 				if (not self.frontAnchoringState and anchorJoints[i] != None) or self.concertinaFit.isJointSolid(i) or joints[i] == None:
 					self.mask[i] = 1.0
 				else:
@@ -1022,6 +1082,8 @@ class FrontAnchorTest(Behavior):
 					
 			if allActive:
 				self.refDone = True
+		
+		#print self.mask
 		
 		if self.frontCurve.isOutOfSegments(self.frontAnchorFit.lastPosition):
 
@@ -1045,9 +1107,6 @@ class FrontAnchorTest(Behavior):
 
 			self.computeCurve()
 			
-
-					
-			
 		if isDone:
 			
 			#self.computeCenterPoints()
@@ -1056,7 +1115,8 @@ class FrontAnchorTest(Behavior):
 
 			self.frontAnchoringState = True
 			self.frontAnchoringDone = False
-		
+			self.frontExtending = True
+			self.frontExtendDone = False
 						
 			self.minAmp = 0.0
 			self.maxAmp = 0.0			
