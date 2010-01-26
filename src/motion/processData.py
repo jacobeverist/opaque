@@ -215,26 +215,38 @@ if __name__ == '__main__':
 		estVec = [estPose2[0]-estPose1[0], estPose2[1]-estPose1[1]]
 		gndVec = [gndPose2[0]-gndPose1[0], gndPose2[1]-gndPose1[1]]
 		
+		" rotate both vectors by ground angle to 0 "
+		groundAng = gndPose1[2]
+		rotGndVec1 = [gndVec[0]*math.cos(groundAng) + gndVec[1]*math.sin(groundAng), -gndVec[0]*math.sin(groundAng) + gndVec[1]*math.cos(groundAng)]
+
+		estAng = estPose1[2]
+		rotEstVec1 = [estVec[0]*math.cos(estAng) + estVec[1]*math.sin(estAng), -estVec[0]*math.sin(estAng) + estVec[1]*math.cos(estAng)]
+		
+		#testVec = [math.cos(groundAng), math.sin(groundAng)]
+		#testVec = [testVec[0]*math.cos(groundAng) + testVec[1]*math.sin(groundAng), -testVec[0]*math.sin(groundAng) + testVec[1]*math.cos(groundAng)]
+		#print "testVec =", testVec
+		
 		" rotate estVec to [1,0] "
-		normVec = [estVec[0]/estDist, estVec[1]/estDist]
+		normVec = [rotGndVec1[0]/gndDist, rotGndVec1[1]/gndDist]
 		rotAng = math.acos(normVec[0])
 		if normVec[1] < 0.0:
 			rotAng = -rotAng
 		
-		rotEstVec = [estDist, 0.0]
-		rotEstVec = [estVec[0]*math.cos(rotAng) + estVec[1]*math.sin(rotAng), estVec[0]*math.sin(rotAng) - estVec[1]*math.cos(rotAng)]
-		rotGndVec = [gndVec[0]*math.cos(rotAng) + gndVec[1]*math.sin(rotAng), gndVec[0]*math.sin(rotAng) - gndVec[1]*math.cos(rotAng)]
+		#rotEstVec2 = [estDist, 0.0]
+		rotEstVec2 = [rotEstVec1[0]*math.cos(rotAng) + rotEstVec1[1]*math.sin(rotAng), -rotEstVec1[0]*math.sin(rotAng) + rotEstVec1[1]*math.cos(rotAng)]
+		rotGndVec2 = [rotGndVec1[0]*math.cos(rotAng) + rotGndVec1[1]*math.sin(rotAng), -rotGndVec1[0]*math.sin(rotAng) + rotGndVec1[1]*math.cos(rotAng)]
+				
+		print gndDist, (rotEstVec2[0]-rotGndVec2[0]), (rotEstVec2[1]-rotGndVec2[1])
+
+		rotEstVec3 = [rotEstVec1[0]*math.cos(estAng) - rotEstVec1[1]*math.sin(estAng), rotEstVec1[0]*math.sin(estAng) + rotEstVec1[1]*math.cos(estAng)]
+		rotGndVec3 = [rotGndVec1[0]*math.cos(estAng) - rotGndVec1[1]*math.sin(estAng), rotGndVec1[0]*math.sin(estAng) + rotGndVec1[1]*math.cos(estAng)]
 		
-		#print estDist, gndDist
-		#print rotEstVec
-		#print rotGndVec
-		#print
-		
-		print estDist, rotEstVec[0]-rotGndVec[0], rotEstVec[1]-rotGndVec[1]
-		
-		xP = [estPose1[0],estPose1[0] + gndVec[0]]
-		yP = [estPose1[1],estPose1[1] + gndVec[1]]
-		
+		xP = [estPose1[0],estPose1[0] + rotEstVec3[0]]
+		yP = [estPose1[1],estPose1[1] + rotEstVec3[1]]		
+		pylab.plot(xP,yP, color='r')
+
+		xP = [estPose1[0],estPose1[0] + rotGndVec3[0]]
+		yP = [estPose1[1],estPose1[1] + rotGndVec3[1]]		
 		pylab.plot(xP,yP, color='b')
 
 	for i in range(len(estPoses)-1):
@@ -244,7 +256,7 @@ if __name__ == '__main__':
 		xP = [estPose1[0],estPose2[0]]
 		yP = [estPose1[1],estPose2[1]]
 		
-		pylab.plot(xP,yP, color='r')
+		#pylab.plot(xP,yP, color='r')
 
 	for i in range(len(estPoses)):
 		estPose1 = estPoses[i]
@@ -257,6 +269,13 @@ if __name__ == '__main__':
 	
 	plotEnv()	
 	pylab.show()
+
+	" 1. build data structure holding the relative positions between poses "
+	" 2. query and return local poses that are close enough to a particular local pose "
+	" 3. perform a simultaneous iterative closest fit between all the closest local poses "
+	" 4. when the position of a local pose changes, alter its relative pose and propagate its changes globally"
+	" 5. cycle through all of the local poses like 10 times and see how the system changes over time "
+	" 6. add in the cost of the motion model in the iterative closest fit "
 
 	exit()
 
