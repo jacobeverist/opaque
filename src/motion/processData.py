@@ -197,7 +197,9 @@ if __name__ == '__main__':
 		estPoses.append(estPose1)
 		gndPoses.append(gndPose1)
 		poseNumbers.append(i)
-		
+	
+	pylab.clf()
+	
 	" relative distance error "
 	" separate error into two components, the direct error and the lateral error "
 	for i in range(len(estPoses)-1):
@@ -228,10 +230,35 @@ if __name__ == '__main__':
 		#print rotGndVec
 		#print
 		
-		print estDist, abs(rotEstVec[0]-rotGndVec[0])/estDist, abs(rotEstVec[1]-rotGndVec[1])/estDist
+		print estDist, rotEstVec[0]-rotGndVec[0], rotEstVec[1]-rotGndVec[1]
+		
+		xP = [estPose1[0],estPose1[0] + gndVec[0]]
+		yP = [estPose1[1],estPose1[1] + gndVec[1]]
+		
+		pylab.plot(xP,yP, color='b')
+
+	for i in range(len(estPoses)-1):
+		estPose1 = estPoses[i]
+		estPose2 = estPoses[i+1]
+		
+		xP = [estPose1[0],estPose2[0]]
+		yP = [estPose1[1],estPose2[1]]
+		
+		pylab.plot(xP,yP, color='r')
+
+	for i in range(len(estPoses)):
+		estPose1 = estPoses[i]
+		gndPose1 = gndPoses[i]
+		
+		xP = [estPose1[0],gndPose1[0]]
+		yP = [estPose1[1],gndPose1[1]]
+		
+		#pylab.plot(xP,yP, color='b')
+	
+	plotEnv()	
+	pylab.show()
 
 	exit()
-	plotEnv()	
 
 	count = 0
 	pylab.savefig("uncorrectedMap_%04u.png" % count)
