@@ -24,7 +24,11 @@ class Transition(Behavior):
     
     def resetTime(self, newTime = 500):
         self.transitionTime = 0
-        self.timeLength = newTime
+        
+        if newTime == 0:
+        	self.timeLength = 1
+        else:
+			self.timeLength = newTime
     
     def step(self):
         Behavior.step(self)

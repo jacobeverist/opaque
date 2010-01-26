@@ -21,6 +21,7 @@ from Transition import *
 from AdaptiveConcertinaGait import *
 from HoldPosition import *
 from HoldTransition import *
+from HoldSlideTransition import *
 from GuidedPoke import *
 from Spring import *
 from Curl import *

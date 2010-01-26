@@ -770,6 +770,7 @@ class AlphaMap:
 		self.drawCount = 0
 	
 		#self.draw()
+		
 	def draw(self):
 		
 		f = open("offsets.txt", 'r')

@@ -201,6 +201,7 @@ def findLocalNormal(pnt,points):
 	return loadings[1]
 
 def computeVectorCovariance(vec,x_var,y_var):
+
 	Cv = numpy.matrix([	[x_var, 0.0],
 			[0.0, y_var]
 		    ])
