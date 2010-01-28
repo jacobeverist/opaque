@@ -172,10 +172,13 @@ class TestAnchor(SnakeControl):
 				self.stateA = 0
 				#print "going to state 0"
 
-				
+			
 				self.holdP.reset()
 				self.holdT.reset()
+	
 				self.mapGraph.newNode()
+				self.mapGraph.forceUpdate(False)
+				#self.mapGraph.saveLocalMap()
 				
 				#self.stateA = 1
 				#self.isAnchored = True

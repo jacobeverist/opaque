@@ -431,6 +431,9 @@ class LocalNode:
 	
 	def synch(self):
 		self.occMap.buildMap()
+		
+		self.computeAlphaBoundary()
+
 		self.boundaryMap.update()
 		self.obstacleMap.update()
 		self.voronoiMap.update()

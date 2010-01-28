@@ -175,7 +175,7 @@ if __name__ == '__main__':
 	gndPoses = []
 	poseNumbers = []
 
-	for i in range(1,9):
+	for i in range(0,9):
 	
 		f = open('cntpose%04u.txt' % i,'r')
 		val = f.read()
@@ -198,6 +198,22 @@ if __name__ == '__main__':
 		gndPoses.append(gndPose1)
 		poseNumbers.append(i)
 	
+	#print estPoses
+	#print gndPoses
+	#estPoses.insert(0,[0.0,0.0,0.0])
+	#gndPoses.insert(0,[0.0,0.0,0.0])
+	
+	" build the relative offset data structure "
+	initPose = copy(estPoses[0])
+	offsets = []
+	for i in range(len(estPoses)-1):
+		pose1 = estPoses[i]
+		pose2 = estPoses[i+1]
+		
+		rel_offset = [pose2[0]-pose1[0], pose2[1]-pose1[1], normalizeAngle(pose2[2]-pose1[2])]
+		offsets.append(rel_offset)
+	
+	print offsets
 	pylab.clf()
 	
 	" relative distance error "
@@ -249,6 +265,7 @@ if __name__ == '__main__':
 		yP = [estPose1[1],estPose1[1] + rotGndVec3[1]]		
 		pylab.plot(xP,yP, color='b')
 
+
 	for i in range(len(estPoses)-1):
 		estPose1 = estPoses[i]
 		estPose2 = estPoses[i+1]
@@ -267,8 +284,37 @@ if __name__ == '__main__':
 		
 		#pylab.plot(xP,yP, color='b')
 	
+	" build the list of relative offsets for this path "
+	offsets = []
+	for i in range(len(estPoses)-1):
+		estPose1 = estPoses[i]
+		estPose2 = estPoses[i+1]
+		pose1 = Pose(estPose1)
+		offset = pose1.convertGlobalPoseToLocal(estPose2)
+		offsets.append(offset)
+	
+	a_hulls = []
+	for i in range(len(estPoses)):
+		f = open('alpha_bound_%04u.txt' % i,'r')
+		val = f.read()
+		a_data = eval(val)
+		a_data = decimatePoints(a_data)
+
+		" treat the points with the point-to-line constraint "
+		gen_icp.addPointToLineCovariance(a_data, high_var=1.0, low_var=0.001)
+
+		" treat the points with the distance-from-origin increasing error constraint "
+		gen_icp.addDistanceFromOriginCovariance(a_data, tan_var=0.1, perp_var=0.01)
+
+		a_hulls.append(a_data)
+	
+	" run generalized ICP (a plot is made for each iteration of the algorithm) "
+	offset = gen_icp.gen_ICP_past(estPoses, a_hulls, costThresh, minMatchDist, plotIteration)
+	
+	exit()
+	
 	plotEnv()	
-	pylab.show()
+	#pylab.show()
 
 	" 1. build data structure holding the relative positions between poses "
 	" 2. query and return local poses that are close enough to a particular local pose "
@@ -277,12 +323,57 @@ if __name__ == '__main__':
 	" 5. cycle through all of the local poses like 10 times and see how the system changes over time "
 	" 6. add in the cost of the motion model in the iterative closest fit "
 
+	#exit()
+	
+
+	" 2. query and return local poses that are close enough to a particular local pose "
+	circles = []
+	for i in range(len(estPoses)):
+
+		est1 = estPoses[i]
+
+		f = open('alpha_bound_%04u.txt' % poseNumbers[i],'r')
+		val = f.read()
+		a_data = eval(val)
+		b_data = []
+		a_trans = []
+		for p in a_data:
+			a_trans.append(gen_icp.dispOffset(p, est1))
+
+		radius, center = gen_icp.computeEnclosingCircle(a_trans)
+
+		circles.append([radius, center])
+
+	print circles
+	
+	
+	print
+	for i in range(len(circles)):
+		distances = []
+		for j in range(0,i):
+			radius1 = circles[i][0]
+			radius2 = circles[j][0]
+			
+			center1 = circles[i][1]
+			center2 = circles[j][1]
+			
+			dist = math.sqrt((center1[0]-center2[0])**2 + (center1[1]-center2[1])**2)
+			
+			maxDist = radius1 + radius2
+			
+			if dist < maxDist:
+				distances.append(1)
+			else:
+				distances.append(0)
+		print distances
+
+	print a_data
 	exit()
 
 	count = 0
 	pylab.savefig("uncorrectedMap_%04u.png" % count)
 
-	count += 1
+	#count += 1
 
 	for i in range(len(estPoses)):
 
@@ -311,12 +402,14 @@ if __name__ == '__main__':
 		pylab.savefig("uncorrectedMap_%04u.png" % count)
 		count += 1
 
+	#print a_trans
+
 
 	pylab.xlim(-3,6)
 	pylab.ylim(-4,4)
 	gen_icp.save("uncorrectedMap.png")
 
-	#exit()
+	exit()
 
 	finalOffsets = []
 	estPoses = []
