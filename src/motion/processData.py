@@ -218,6 +218,7 @@ if __name__ == '__main__':
 	
 	" relative distance error "
 	" separate error into two components, the direct error and the lateral error "
+	" MOTION MODEL "
 	for i in range(len(estPoses)-1):
 		estPose1 = estPoses[i]
 		estPose2 = estPoses[i+1]
@@ -266,6 +267,7 @@ if __name__ == '__main__':
 		pylab.plot(xP,yP, color='b')
 
 
+	"""
 	for i in range(len(estPoses)-1):
 		estPose1 = estPoses[i]
 		estPose2 = estPoses[i+1]
@@ -283,6 +285,7 @@ if __name__ == '__main__':
 		yP = [estPose1[1],gndPose1[1]]
 		
 		#pylab.plot(xP,yP, color='b')
+	"""
 	
 	" build the list of relative offsets for this path "
 	offsets = []
