@@ -148,40 +148,26 @@ def plotEnv():
 
 if __name__ == '__main__':
 
-
-	# 1. compute all the relative offsets between the odd-numbered poses
-	# 2. compute the global position of all the poses wrt to first pose
-
-	# TUNE ME:  threshold cost difference between iterations to determine if converged
+	" TUNE ME:  threshold cost difference between iterations to determine if converged "
 	#costThresh = 0.004
 	costThresh = 0.1
 
-	# TUNE ME:   minimum match distance before point is discarded from consideration
+	" TUNE ME:   minimum match distance before point is discarded from consideration "
 	minMatchDist = 2.0
 
-	# plot the best fit at each iteration of the algorithm?
+	" plot the best fit at each iteration of the algorithm? "
 	plotIteration = True
 	#plotIteration = False
 
-	# initial guess for x, y, theta parameters
+	" initial guess for x, y, theta parameters "
 	offset = [0.0,0.0,0.0]
 
-	# sample data
-	a_data = []
-	b_data = []
-
-	finalOffsets = []
+	" Extract the data from the files and put them into arrays "
 	estPoses = []
 	gndPoses = []
 	poseNumbers = []
-
 	for i in range(0,9):
 	
-		f = open('cntpose%04u.txt' % i,'r')
-		val = f.read()
-		val = val.rstrip('\r\n')
-		b_cnt = eval(val)
-
 		f = open('estpose%04u.txt' % i,'r')
 		val = f.read()
 		val = val.rstrip('\r\n')
@@ -192,28 +178,10 @@ if __name__ == '__main__':
 		val = val.rstrip('\r\n')
 		gndPose1 = eval(val)
 
-		#print estPose1, gndPose1
-
 		estPoses.append(estPose1)
 		gndPoses.append(gndPose1)
 		poseNumbers.append(i)
 	
-	#print estPoses
-	#print gndPoses
-	#estPoses.insert(0,[0.0,0.0,0.0])
-	#gndPoses.insert(0,[0.0,0.0,0.0])
-	
-	" build the relative offset data structure "
-	initPose = copy(estPoses[0])
-	offsets = []
-	for i in range(len(estPoses)-1):
-		pose1 = estPoses[i]
-		pose2 = estPoses[i+1]
-		
-		rel_offset = [pose2[0]-pose1[0], pose2[1]-pose1[1], normalizeAngle(pose2[2]-pose1[2])]
-		offsets.append(rel_offset)
-	
-	print offsets
 	pylab.clf()
 	
 	" relative distance error "
@@ -239,21 +207,16 @@ if __name__ == '__main__':
 		estAng = estPose1[2]
 		rotEstVec1 = [estVec[0]*math.cos(estAng) + estVec[1]*math.sin(estAng), -estVec[0]*math.sin(estAng) + estVec[1]*math.cos(estAng)]
 		
-		#testVec = [math.cos(groundAng), math.sin(groundAng)]
-		#testVec = [testVec[0]*math.cos(groundAng) + testVec[1]*math.sin(groundAng), -testVec[0]*math.sin(groundAng) + testVec[1]*math.cos(groundAng)]
-		#print "testVec =", testVec
-		
 		" rotate estVec to [1,0] "
 		normVec = [rotGndVec1[0]/gndDist, rotGndVec1[1]/gndDist]
 		rotAng = math.acos(normVec[0])
 		if normVec[1] < 0.0:
 			rotAng = -rotAng
 		
-		#rotEstVec2 = [estDist, 0.0]
 		rotEstVec2 = [rotEstVec1[0]*math.cos(rotAng) + rotEstVec1[1]*math.sin(rotAng), -rotEstVec1[0]*math.sin(rotAng) + rotEstVec1[1]*math.cos(rotAng)]
 		rotGndVec2 = [rotGndVec1[0]*math.cos(rotAng) + rotGndVec1[1]*math.sin(rotAng), -rotGndVec1[0]*math.sin(rotAng) + rotGndVec1[1]*math.cos(rotAng)]
 				
-		print gndDist, (rotEstVec2[0]-rotGndVec2[0]), (rotEstVec2[1]-rotGndVec2[1])
+		#print gndDist, (rotEstVec2[0]-rotGndVec2[0]), (rotEstVec2[1]-rotGndVec2[1])
 
 		rotEstVec3 = [rotEstVec1[0]*math.cos(estAng) - rotEstVec1[1]*math.sin(estAng), rotEstVec1[0]*math.sin(estAng) + rotEstVec1[1]*math.cos(estAng)]
 		rotGndVec3 = [rotGndVec1[0]*math.cos(estAng) - rotGndVec1[1]*math.sin(estAng), rotGndVec1[0]*math.sin(estAng) + rotGndVec1[1]*math.cos(estAng)]
@@ -287,15 +250,7 @@ if __name__ == '__main__':
 		#pylab.plot(xP,yP, color='b')
 	"""
 	
-	" build the list of relative offsets for this path "
-	offsets = []
-	for i in range(len(estPoses)-1):
-		estPose1 = estPoses[i]
-		estPose2 = estPoses[i+1]
-		pose1 = Pose(estPose1)
-		offset = pose1.convertGlobalPoseToLocal(estPose2)
-		offsets.append(offset)
-	
+	" Read in data of Alpha-Shapes and add their associated covariances "
 	a_hulls = []
 	for i in range(len(estPoses)):
 		f = open('alpha_bound_%04u.txt' % i,'r')
@@ -310,9 +265,40 @@ if __name__ == '__main__':
 		gen_icp.addDistanceFromOriginCovariance(a_data, tan_var=0.1, perp_var=0.01)
 
 		a_hulls.append(a_data)
+
+	offsets = []
+	for i in range(len(estPoses)-1):
+		estPose1 = estPoses[i]
+		estPose2 = estPoses[i+1]
+		
+		pose1 = Pose(estPose1)
+		offset = pose1.convertGlobalPoseToLocal(estPose2)
+		offsets.append(offset)
 	
-	" run generalized ICP (a plot is made for each iteration of the algorithm) "
-	offset = gen_icp.gen_ICP_past(estPoses, a_hulls, costThresh, minMatchDist, plotIteration)
+	for k in range(1,len(estPoses)):
+		print k
+
+		currEstPoses = estPoses[:k+1]
+		curr_a_hulls = a_hulls[:k+1]
+		
+		print len(currEstPoses),len(curr_a_hulls)
+		
+		" run generalized ICP (a plot is made for each iteration of the algorithm) "
+		offset = gen_icp.gen_ICP_past(currEstPoses, curr_a_hulls, costThresh, minMatchDist, plotIteration)
+		
+		offsets[k-1] = offset
+		
+		" recompute the estimated poses with the new offset "
+		newEstPoses = []
+		newEstPoses.append(estPoses[0])
+		
+		for m in range(len(offsets)):
+			pose1 = Pose(newEstPoses[m])
+			offset = offsets[m]
+			newEstPose2 = pose1.convertLocalOffsetToGlobal(offset)
+			newEstPoses.append(newEstPose2)
+			
+		estPoses = newEstPoses
 	
 	exit()
 	

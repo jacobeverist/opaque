@@ -479,10 +479,6 @@ class LocalNode:
 		f.write(val)
 		f.close()
 
-
-	def getOccMap(self):
-		return self.occMap
-	
 	def computeAlphaBoundary(self):
 
 		" 1. pick out the points "

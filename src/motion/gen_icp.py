@@ -52,7 +52,10 @@ from copy import deepcopy
 
 from coord import Pose
 
-# displace the point by the offset plus modify it's covariance
+numIterations = 0
+
+
+" displace the point by the offset plus modify it's covariance "
 def dispPoint(p, offset):
 	xd = offset[0]
 	yd = offset[1]
@@ -61,7 +64,7 @@ def dispPoint(p, offset):
 	T = numpy.matrix([	[math.cos(theta), -math.sin(theta), xd],
 			[math.sin(theta), math.cos(theta), yd],
 			[0.0, 0.0, 1.0]
-		    ])
+			])
 
 	p_hom = numpy.matrix([[p[0]],[p[1]],[1.0]])
 	temp = T*p_hom
@@ -76,7 +79,7 @@ def dispPoint(p, offset):
 
 	return p_off
 
-# displace the point by the offset only.  No covariance
+" displace the point by the offset only.  No covariance "
 def dispOffset(p, offset):
 	xd = offset[0]
 	yd = offset[1]
@@ -85,7 +88,7 @@ def dispOffset(p, offset):
 	T = numpy.matrix([	[math.cos(theta), -math.sin(theta), xd],
 			[math.sin(theta), math.cos(theta), yd],
 			[0.0, 0.0, 1.0]
-		    ])
+			])
 
 	p_hom = numpy.matrix([[p[0]],[p[1]],[1.0]])
 	temp = T*p_hom
@@ -101,7 +104,7 @@ def dispOffsetMany(points, offset):
 	T = numpy.matrix([	[math.cos(theta), -math.sin(theta), xd],
 			[math.sin(theta), math.cos(theta), yd],
 			[0.0, 0.0, 1.0]
-		    ])
+			])
 
 	results = []
 
@@ -132,7 +135,7 @@ def computeMatchError(offset, a, b, Ca, Cb):
 	T = numpy.matrix([	[math.cos(theta), -math.sin(theta), xd],
 			[math.sin(theta), math.cos(theta), yd],
 			[0.0, 0.0, 1.0]
-		    ])
+			])
 
 	R = numpy.matrix([	[math.cos(theta), -math.sin(theta)],
 		[math.sin(theta), math.cos(theta)] ])
@@ -205,7 +208,7 @@ def computeVectorCovariance(vec,x_var,y_var):
 
 	Cv = numpy.matrix([	[x_var, 0.0],
 			[0.0, y_var]
-		    ])
+			])
 
 	mag = math.sqrt(vec[0]**2 + vec[1]**2)
 	normVec = [vec[0]/mag, vec[1]/mag]
@@ -213,14 +216,14 @@ def computeVectorCovariance(vec,x_var,y_var):
 	if normVec[1] == 0:
 		R = numpy.matrix([	[1.0, 0.0],
 				[0.0, 1.0]
-			    ])
+				])
 
 	else:
 		B = -1 / (normVec[1] + normVec[0]**2/normVec[1])
 		A = -normVec[0]*B/normVec[1]
 		R = numpy.matrix([	[A, -B],
 				[B, A]
-			    ])
+				])
 
 	Ca = numpy.transpose(R) * Cv * R
 
@@ -237,12 +240,11 @@ def findClosestPointInA(a_trans, b, offset):
 	for i in range(len(a_trans)):
 		p = a_trans[i]
 
-	 	dist = math.sqrt((p[0]-b[0])**2 + (p[1]-b[1])**2)
+		dist = math.sqrt((p[0]-b[0])**2 + (p[1]-b[1])**2)
 		if dist < minDist:
 			minPoint = copy(p)
 			minDist = dist
 			min_i = i
-
 
 	if minPoint != None:
 		return minPoint, min_i, minDist
@@ -260,7 +262,7 @@ def findClosestPointInB(b_data, a, offset):
 	T = numpy.matrix([	[math.cos(theta), -math.sin(theta), xd],
 			[math.sin(theta), math.cos(theta), yd],
 			[0.0, 0.0, 1.0]
-		    ])
+			])
 
 
 	a_hom = numpy.matrix([[a[0]],[a[1]],[1.0]])
@@ -272,7 +274,7 @@ def findClosestPointInB(b_data, a, offset):
 
 	for p in b_data:
 
-	 	dist = math.sqrt((p[0]-a_off[0])**2 + (p[1]-a_off[1])**2)
+		dist = math.sqrt((p[0]-a_off[0])**2 + (p[1]-a_off[1])**2)
 		if dist < minDist:
 			minPoint = copy(p)
 			minDist = dist
@@ -284,7 +286,7 @@ def findClosestPointInB(b_data, a, offset):
 		raise
 
 
-def cost_func(offset, match_pairs, polyA, polyB):
+def cost_func(offset, match_pairs):
 
 	sum = 0.0
 	for pair in match_pairs:
@@ -471,19 +473,11 @@ def computeEnclosingCircle(a_data):
 
 
 def gen_ICP_past(estPoses, a_hulls, costThresh = 0.004, minMatchDist = 2.0, plotIter = False):
+	
+	global numIterations
+	#numIterations = 0
 
-	" build the list of relative offsets for this path "
-	offsets = []
-	for i in range(len(estPoses)-1):
-		estPose1 = estPoses[i]
-		estPose2 = estPoses[i+1]
-		pose1 = Pose(estPose1)
-		offset = pose1.convertGlobalPoseToLocal(estPose2)
-		offsets.append(offset)
-	
-	#print "a_hulls =", a_hulls[0]
-	
-	" compute the minimum enclosing circles in global coordinates "
+	" Determine which local poses are close enough and should be fit together "
 	circles = []
 	for i in range(len(estPoses)):
 
@@ -495,12 +489,8 @@ def gen_ICP_past(estPoses, a_hulls, costThresh = 0.004, minMatchDist = 2.0, plot
 		for p in a_data:
 			a_trans.append(dispOffset(p, est1))
 
-		#print "a_data =", a_data
-		#print "a_trans =", a_trans
 		radius, center = computeEnclosingCircle(a_trans)
-
 		circles.append([radius, center])
-
 
 	distances = []
 	for j in range(len(circles)-1):
@@ -521,15 +511,13 @@ def gen_ICP_past(estPoses, a_hulls, costThresh = 0.004, minMatchDist = 2.0, plot
 
 	print "distances =", distances
 
-	numIterations = 0
 	lastCost = 1e100
-
 
 	circles = []
 	a_hull_trans = []
 	poly_trans = []
 	estPoseOrigin = estPoses[-2]
-	for i in range(len(estPoses)-2):
+	for i in range(len(estPoses)):
 		estPose2 = estPoses[i]
 		poseOrigin = Pose(estPoseOrigin)
 		offset = poseOrigin.convertGlobalPoseToLocal(estPose2)
@@ -553,50 +541,10 @@ def gen_ICP_past(estPoses, a_hulls, costThresh = 0.004, minMatchDist = 2.0, plot
 		radius, center = computeEnclosingCircle(a_trans)
 		circles.append([radius, center])
 
-	" origin pose and points "
-	if True:
-		a_data = a_hulls[-2]
-		a_trans = deepcopy(a_data)
-		a_hull_trans.append(a_trans)
-		polyA_trans = []
-		for p in a_trans:
-			polyA_trans.append([p[0],p[1]])	
-		poly_trans.append(polyA_trans)
-
-		" get the circles and radii "
-		radius, center = computeEnclosingCircle(a_trans)
-		circles.append([radius, center])
-
-	" target local pose to be corrected "
-	if True:
-		estPose2 = estPoses[-1]
-		poseOrigin = Pose(estPoseOrigin)
-		offset = poseOrigin.convertGlobalPoseToLocal(estPose2)
-
-		" transform the past poses "
-		a_data = a_hulls[-1]
-		a_trans = []
-		for p in a_data:
-			a_trans.append(dispPoint(p, offset))
-		
-		a_hull_trans.append(a_trans)
-
-		" transformed points without associated covariance "
-		polyA_trans = []
-		for p in a_trans:
-			polyA_trans.append([p[0],p[1]])	
-			
-		poly_trans.append(polyA_trans)
-
-		" get the circles and radii "
-		radius, center = computeEnclosingCircle(a_trans)
-		circles.append([radius, center])
-
-
-	print len(a_hull_trans)
-	print len(poly_trans)
-	print len(distances)
-	print
+	#print len(a_hull_trans)
+	#print len(poly_trans)
+	#print len(distances)
+	#print
 	
 	if True:
 		pylab.clf()
@@ -615,104 +563,145 @@ def gen_ICP_past(estPoses, a_hulls, costThresh = 0.004, minMatchDist = 2.0, plot
 			pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
 	
 		#pylab.show()
+		#pylab.savefig("test3.png")
 	
+	#exit()
 
-	" find the matching pairs "
-	match_pairs = []
-	
-	for j in range(7,len(distances)):
-		if distances[j] == 1:
-			
-			print j
-			
-			a_trans = a_hull_trans[-1]
-			b_data = a_hull_trans[j]
-			
-			polyA = poly_trans[-1]
-			polyB = poly_trans[j]
+	" set the initial guess "
+	estPoseOrigin = estPoses[-2]
+	estPose2 = estPoses[-1]
+	poseOrigin = Pose(estPoseOrigin)
+	offset = poseOrigin.convertGlobalPoseToLocal(estPose2)
 
-			radiusA = circles[-1][0]
-			radiusB = circles[j][0]
-			
-			centerA = circles[-1][1]
-			centerB = circles[j][1]
-			
-			print centerA, centerB
-			print len(a_trans), len(b_data), len(polyA), len(polyB)
-			
-			for i in range(len(a_trans)):
-				a_p = polyA[i]
-
-				#if isValidA(a_p, radiusB, centerB, polyB):
-				if isValid(a_p, radiusB, centerB, polyB):
-					print "checkA"
-					# for every transformed point of A, find it's closest neighbor in B
-					b_p, minDist = findClosestPointInB(b_data, a_p, [0.0,0.0,0.0])
-		
-					if minDist <= minMatchDist:
-			
-						# add to the list of match pairs less than 1.0 distance apart 
-						# keep A points and covariances untransformed
-						Ca = a_data[i][2]
-						Cb = b_p[2]
-		
-						# we store the untransformed point, but the transformed covariance of the A point
-						match_pairs.append([a_data[i],b_p,Ca,Cb])
-			
-			for i in range(len(b_data)):
-				b_p = polyB[i]
-		
-				#if isValidB2(b_p, radiusA, centerA, polyA):
-				if isValid(b_p, radiusA, centerA, polyA):
-					print "checkB"
-					# for every point of B, find it's closest neighbor in transformed A
-					a_p, a_i, minDist = findClosestPointInA(a_trans, b_p, [0.0,0.0,0.0])
-		
-					if minDist <= minMatchDist:
-			
-						# add to the list of match pairs less than 1.0 distance apart 
-						# keep A points and covariances untransformed
-						Ca = a_data[a_i][2]
-						
-						Cb = b_data[i][2]
-		
-						# we store the untransformed point, but the transformed covariance of the A point
-						match_pairs.append([a_data[a_i],b_p,Ca,Cb])
-	
-	print match_pairs
-	for pair in match_pairs:
-		a = pair[0]
-		b = pair[1]
-
-		pylab.plot([a[0],b[0]], [a[1],b[1]])
-	
-	pylab.show()
-	
-	exit()
 	while True:
+		" find the matching pairs "
+		match_pairs = []
+		for j in range(0,len(distances)):
+			if distances[j] == 1:
+				
+				if True:
+					" transform the past poses "
+					a_data_raw = a_hulls[-1]
+					a_data = []
+					for p in a_data_raw:
+						a_data.append(dispPoint(p, offset))
+					
+					" transformed points without associated covariance "
+					polyA = []
+					for p in a_data:
+						polyA.append([p[0],p[1]])	
+											
+					radiusA, centerA = computeEnclosingCircle(a_data)
+
+				else:
+					a_data = a_hull_trans[-1]
+					polyA = poly_trans[-1]
+					radiusA = circles[-1][0]
+					centerA = circles[-1][1]					
+									
+				a_data_raw = a_hulls[-1]
+				b_data = a_hull_trans[j]			
+				polyB = poly_trans[j]
+				radiusB = circles[j][0]				
+				centerB = circles[j][1]
+				
+				#print centerA, centerB
+				#print len(a_data), len(b_data), len(polyA), len(polyB)
+				
+				for i in range(len(a_data)):
+					a_p = polyA[i]
 	
+					#if isValidA(a_p, radiusB, centerB, polyB):
+					if isValid(a_p, radiusB, centerB, polyB):
+	
+						" for every transformed point of A, find it's closest neighbor in B "
+						b_p, minDist = findClosestPointInB(b_data, a_p, [0.0,0.0,0.0])
+			
+						if minDist <= minMatchDist:
+				
+							" add to the list of match pairs less than 1.0 distance apart "
+							" keep A points and covariances untransformed "
+							#Ca = a_data[i][2]
+							Ca = a_data_raw[i][2]
+							Cb = b_p[2]
+			
+							" we store the untransformed point, but the transformed covariance of the A point "
+							#match_pairs.append([a_data[i],b_p,Ca,Cb])
+							match_pairs.append([a_data_raw[i],b_p,Ca,Cb])
+				
+				for i in range(len(b_data)):
+					b_p = polyB[i]
+			
+					#if isValidB2(b_p, radiusA, centerA, polyA):
+					if isValid(b_p, radiusA, centerA, polyA):
+	
+						# for every point of B, find it's closest neighbor in transformed A
+						a_p, a_i, minDist = findClosestPointInA(a_data, b_p, [0.0,0.0,0.0])
+			
+						if minDist <= minMatchDist:
+				
+							" add to the list of match pairs less than 1.0 distance apart "
+							" keep A points and covariances untransformed "
+							#Ca = a_data[a_i][2]
+							Ca = a_data_raw[a_i][2]
+							
+							Cb = b_data[i][2]
+			
+							" we store the untransformed point, but the transformed covariance of the A point "
+							#match_pairs.append([a_data[a_i],b_p,Ca,Cb])
+							match_pairs.append([a_data_raw[a_i],b_p,Ca,Cb])
+
+		#print match_pairs
+		if False:
+			for pair in match_pairs:
+				a = pair[0]
+				b = pair[1]
+			
+				pylab.plot([a[0],b[0]], [a[1],b[1]])
+			
+			pylab.show()
+
 		# optimize the match error for the current list of match pairs
-		newOffset = scipy.optimize.fmin(cost_func, offset, [match_pairs, polyA, polyB])
-
+		newOffset = scipy.optimize.fmin(cost_func, offset, [match_pairs])
+	
 		# get the current cost
-		newCost = cost_func(newOffset, match_pairs, polyA, polyB)
-
+		newCost = cost_func(newOffset, match_pairs)
+	
 		# check for convergence condition, different between last and current cost is below threshold
 		if abs(lastCost - newCost) < costThresh:
 			offset = newOffset
 			lastCost = newCost
 			break
-
+	
 		numIterations += 1
-
+	
 		# optionally draw the position of the points in current transform
 		if plotIter:
+			pylab.clf()
 			draw_matches(match_pairs, offset)
-			draw(a_trans,b_data, "ICP_plot_%04u.png" % numIterations)
-
+			
+			for i in range(len(a_hull_trans)-1):
+				a_pnts = a_hull_trans[i]
+		
+				xP = []
+				yP = []
+				for a in a_pnts:
+					xP.append(a[0])	
+					yP.append(a[1])
+						
+				xP.append(a_pnts[0][0])	
+				yP.append(a_pnts[0][1])
+				
+				pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+			
+			draw(a_data,[], "ICP_plot_%04u.png" % numIterations)
+	
 		# save the current offset and cost
 		offset = newOffset
 		lastCost = newCost
+	
+	
+
 
 	return offset
 
@@ -815,10 +804,10 @@ def gen_ICP(offset, a_data, b_data, costThresh = 0.004, minMatchDist = 2.0, plot
 
 		
 		# optimize the match error for the current list of match pairs
-		newOffset = scipy.optimize.fmin(cost_func, offset, [match_pairs, polyA, polyB])
+		newOffset = scipy.optimize.fmin(cost_func, offset, [match_pairs])
 
 		# get the current cost
-		newCost = cost_func(newOffset, match_pairs, polyA, polyB)
+		newCost = cost_func(newOffset, match_pairs)
 
 		# check for convergence condition, different between last and current cost is below threshold
 		if abs(lastCost - newCost) < costThresh:
@@ -855,9 +844,9 @@ def draw(a_pnts, b_pnts, filename, fileWrite = True):
 	for a in a_pnts:
 		xP.append(a[0])	
 		yP.append(a[1])	
-		pylab.scatter([a[0]],[a[1]],linewidth=1, color=(0.6,0.6,1.0), edgecolors='none')
+		#pylab.scatter([a[0]],[a[1]],linewidth=1, color=(0.6,0.6,1.0), edgecolors='none')
 	if len(xP) > 0:
-		#pylab.plot(xP,yP, linewidth=1, color='b')
+		pylab.plot(xP,yP, linewidth=1, color='b')
 		pass
 		
 	xP = []
@@ -865,9 +854,9 @@ def draw(a_pnts, b_pnts, filename, fileWrite = True):
 	for b in b_pnts:
 		xP.append(b[0])	
 		yP.append(b[1])	
-		pylab.scatter([b[0]],[b[1]],linewidth=1, color=(1.0,0.6,0.6), edgecolors='none')
+		#pylab.scatter([b[0]],[b[1]],linewidth=1, color=(1.0,0.6,0.6), edgecolors='none')
 	if len(xP) > 0:
-		#pylab.plot(xP,yP, linewidth=1, color='r')
+		pylab.plot(xP,yP, linewidth=1, color='r')
 		pass
 
 	if fileWrite:
@@ -928,4 +917,3 @@ if __name__ == '__main__':
 
 	# plot the final result, plot 999
 	draw(a_trans, b_data, "finalOutput.png") 
-
