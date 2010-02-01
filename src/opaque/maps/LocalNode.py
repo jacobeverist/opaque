@@ -41,7 +41,7 @@ class LocalNode:
 			self.setEstPose(self.contacts.getClosestPose(self.rootNode))			
 			self.setGndPose(self.probe.getActualJointPose(self.rootNode))
 
-		self.poseProfile = pose.PoseProfile(self.contacts,self.rootNode)
+		self.poseProfile = pose.PoseProfile(self.contacts,self.rootNode, inSim)
 
 		# MAPS
 		self.occMap = LocalOccMap(self)

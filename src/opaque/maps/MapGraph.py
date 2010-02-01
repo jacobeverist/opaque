@@ -791,16 +791,16 @@ class MapGraph:
 
 		#self.newNode()
 
-	def loadFile(self):
+	def loadFile(self, num_poses):
 		
-		self.saveCount = 0
+		#self.saveCount = 0
 		self.poseGraph = graph.graph()
 		self.numNodes = 0
 		self.currNode = 0
 		
 		#for i in range(0,22):
 		#for i in range(0, 14):
-		for i in range(0,9):
+		for i in range(0,num_poses):
 			self.currNode = LocalNode(self.probe, self.contacts, i, 19, inSim = False)
 			self.currNode.readFromFile(i)
 			
@@ -1292,6 +1292,10 @@ class MapGraph:
 		
 		#self.saveMap()
 	
+	def setNodePose(self, nodeNum, estPose):
+		localNode = self.poseGraph.get_node_attributes(nodeNum)
+		localNode.setEstPose(estPose)
+	
 	def obstCallBack(self, direction):
 		self.currNode.obstCallBack(direction)
 	
@@ -1515,19 +1519,53 @@ class MapGraph:
 	
 			" cut out the repeat vertex "
 			a_vert = a_vert[:-1]
-			
+
+			a_vert = self.convertAlphaUniform(a_vert)
+		
 		else:
 			a_vert = []
 		
 		return a_vert
-	
+
+	def convertAlphaUniform(self, a_vert):
+		
+		" make the vertices uniformly distributed "
+		
+		new_vert = []
+		
+		max_spacing = 0.04
+		#max_spacing = 0.1
+		
+		for i in range(len(a_vert)):
+			p0 = a_vert[i]
+			p1 = a_vert[(i+1) % len(a_vert)]
+			dist = sqrt((p0[0]-p1[0])**2 + (p0[1]-p1[1])**2)
+
+			vec = [p1[0]-p0[0], p1[1]-p0[1]]
+			vec[0] /= dist
+			vec[1] /= dist
+			
+			new_vert.append(copy(p0))
+			
+			if dist > max_spacing:
+				" cut into pieces max_spacing length or less "
+				numCount = int(floor(dist / max_spacing))
+				
+				for j in range(1, numCount+1):
+					newP = [j*max_spacing*vec[0] + p0[0], j*max_spacing*vec[1] + p0[1]]
+					new_vert.append(newP)
+					
+		return new_vert
+		
 	def computeAlpha2(self, points):
 		
 		numPoints = len(points)
+		print numPoints, "input points"
 		inputStr = str(numPoints) + " "
 		
 		" radius 0.2 "
-		inputStr += str(2.0) + " "
+		#inputStr += str(0.8) + " "
+		inputStr += str(0.2) + " "
 		
 		for p in points:
 			p2 = copy(p)
@@ -1544,6 +1582,9 @@ class MapGraph:
 		
 		" send input and receive output "
 		sout, serr = subProc.communicate(inputStr)
+	
+		print "rawOutput ="
+		print sout
 	
 		" convert string output to typed data "
 		sArr = sout.split(" ")

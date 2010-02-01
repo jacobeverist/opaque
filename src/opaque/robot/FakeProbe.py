@@ -18,6 +18,8 @@ class FakeProbe:
 		
 		self.currIndex = 0
 		self.angles = [[] for i in range(39)]
+		
+		self.walls = []
 
 	def getNumJoints(self):
 		return self.numSegs - 1

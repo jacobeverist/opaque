@@ -41,7 +41,7 @@ class TestMap:
 				self.mapGraph.update(True)
 			else:
 				self.mapGraph.update(False)
-				
+		
 	def load(self, num):
 		self.num = num
 		self.probe.loadFile(num)

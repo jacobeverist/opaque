@@ -24,9 +24,13 @@ if ( CGAL_FOUND )
   add_executable  ( alpha2
                     alpha2.cpp )
 
-  add_to_cached_list( CGAL_EXECUTABLE_TARGETS alpha2 )
+  add_executable  ( poly_union
+                    poly_union.cpp )
+
+  add_to_cached_list( CGAL_EXECUTABLE_TARGETS alpha2 poly_union)
 
   target_link_libraries( alpha2 ${CGAL_LIBRARIES}  ${CGAL_3RD_PARTY_LIBRARIES})
+  target_link_libraries( poly_union ${CGAL_LIBRARIES}  ${CGAL_3RD_PARTY_LIBRARIES})
 
 else()
 

@@ -35,6 +35,7 @@
 #include <CGAL/point_generators_2.h>
 #include <CGAL/Kernel/function_objects.h>
 
+#include <CGAL/Boolean_set_operations_2.h>
 
 typedef double                      Coord_type;
 typedef CGAL::Cartesian<Coord_type> Rep;
@@ -46,6 +47,10 @@ typedef Rep::Triangle_2             Triangle;
 typedef Rep::Less_xy_2              Point_compare;
 typedef CGAL::Triangulation_2<Rep>  Triangulation;
 typedef std::list<Point_2>          CGALPointlist;
+
+typedef CGAL::Polygon_2<Rep>                    Polygon_2;
+typedef CGAL::Polygon_with_holes_2<Rep>         Polygon_with_holes_2;
+
 
 //Weighted alpha_shape
 typedef CGAL::Weighted_alpha_shape_euclidean_traits_2<Rep> Gt_w;
