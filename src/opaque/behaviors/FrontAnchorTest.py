@@ -541,10 +541,6 @@ class FrontAnchorTest(Behavior):
 		for j in anchorJoints:
 			errors.append(self.probe.getServo(j)-self.probe.getServoCmd(j))
 
-		maxPeak = -1
-		if len(anchorJoints) > 0:
-			maxPeak = max(anchorJoints)
-	
 		maxError = 0.0	
 		for err in errors:
 			if fabs(err) > maxError:
@@ -653,6 +649,7 @@ class FrontAnchorTest(Behavior):
 				else:
 					minJoint = min(anchorJoints)
 					self.jerkJoint = minJoint - 1
+					
 					self.jerkJoints = []
 					for k in range(0,4):
 						jointNum = minJoint - k - 1

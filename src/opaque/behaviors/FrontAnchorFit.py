@@ -110,9 +110,7 @@ class FrontAnchorFit(Behavior):
 			crossOvers = []
 
 			self.jointPositions[currJoint]= originPose		
-			
-			self.foo = 0
-			
+
 			samples = []
 			localMin = 1e10
 			localAng = 0
@@ -258,7 +256,7 @@ class FrontAnchorFit(Behavior):
 		originPose = [0.0, 0.0, 0.0]
 		
 		minJoint = 0
-		maxJoint = self.rootNode
+		maxJoint = self.probe.numSegs-1
 		
 		if minJoint < self.startNode:
 			minJoint = self.startNode
@@ -283,8 +281,6 @@ class FrontAnchorFit(Behavior):
 			crossOvers = []
 			
 			self.jointPositions[currJoint]= originPose
-			
-			self.foo = 0
 			
 			samples = []
 			localMin = 1e10
