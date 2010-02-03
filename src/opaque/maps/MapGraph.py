@@ -1291,6 +1291,14 @@ class MapGraph:
 		#self.currNode.update(isForward)
 		
 		#self.saveMap()
+
+	def getNodeOccMap(self, nodeNum):
+		localNode = self.poseGraph.get_node_attributes(nodeNum)
+		return localNode.getOccMap()
+
+	def getNodePose(self, nodeNum):
+		localNode = self.poseGraph.get_node_attributes(nodeNum)
+		return localNode.getEstPose()
 	
 	def setNodePose(self, nodeNum, estPose):
 		localNode = self.poseGraph.get_node_attributes(nodeNum)

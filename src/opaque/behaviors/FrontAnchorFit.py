@@ -27,7 +27,7 @@ class FrontAnchorFit(Behavior):
 			self.endNode = spliceJoint
 		else:
 			self.startNode = spliceJoint
-			self.endNode = self.probe.numSegs-1	
+			self.endNode = self.probe.numSegs-2	
 					
 		self.curve = 0
 
@@ -40,7 +40,7 @@ class FrontAnchorFit(Behavior):
 			self.endNode = spliceJoint
 		else:
 			self.startNode = spliceJoint
-			self.endNode = self.probe.numSegs-1	
+			self.endNode = self.probe.numSegs-2	
 	
 	def setCurve(self, curve):
 		self.curve = curve
@@ -56,7 +56,9 @@ class FrontAnchorFit(Behavior):
 		#else:
 		#	return range(self.endNode, self.startNode+1)
 		joints = []
-				
+		
+		#print self.jointPositions
+		#print self.startNode, self.endNode
 		for i in range(self.startNode, self.endNode+1):
 		
 			pos = self.jointPositions[i]
@@ -85,7 +87,7 @@ class FrontAnchorFit(Behavior):
 		
 		# indices
 		minJoint = 0
-		maxJoint = self.probe.numSegs-1
+		maxJoint = self.probe.numSegs-2
 					
 		if minJoint < self.startNode:
 			minJoint = self.startNode
@@ -256,7 +258,7 @@ class FrontAnchorFit(Behavior):
 		originPose = [0.0, 0.0, 0.0]
 		
 		minJoint = 0
-		maxJoint = self.probe.numSegs-1
+		maxJoint = self.probe.numSegs-2
 		
 		if minJoint < self.startNode:
 			minJoint = self.startNode
@@ -265,13 +267,16 @@ class FrontAnchorFit(Behavior):
 
 		# indices	
 		ind = range(minJoint,maxJoint+1)
+		#print "ind =", ind
 		
 		maxNode = 0
 		maxU = 0.0
-
+		
 		" positions and angles of the joints computed for this step "
 		self.jointPositions = [None for i in range(self.probe.numSegs-1)]
 		self.jointAngles = [None for i in range(self.probe.numSegs-1)]
+
+
 		
 		radius = self.probe.segLength
 		breakFromFit = False
@@ -280,6 +285,7 @@ class FrontAnchorFit(Behavior):
 			
 			crossOvers = []
 			
+			#print "indexing", currJoint
 			self.jointPositions[currJoint]= originPose
 			
 			samples = []
@@ -417,8 +423,11 @@ class FrontAnchorFit(Behavior):
 				break
 
 		" position of last joint iterated through "
-		self.jointPositions[currJoint]= originPose
-
+		#self.jointPositions[currJoint]= originPose
+		
+		" position of last joint iterated through "
+		self.lastPosition = originPose
+		
 	def getPeakError(self):
 
 		cmdPoints = []

@@ -282,7 +282,62 @@ if __name__ == '__main__':
 		gen_icp.addDistanceFromOriginCovariance(a_data, tan_var=0.1, perp_var=0.01)
 
 		a_hulls.append(a_data)
+
+	occMaps = []
+	for m in range(0,len(estPoses)):
+		offset = estPoses[m]
+		occMap = mapGraph.getNodeOccMap(m)
+
+		mapImage = occMap.getMap()
+		image = mapImage.load()
+		
+		" 1. pick out the points "
+		points = []
+		for j in range(occMap.numPixel):
+			for k in range(occMap.numPixel):
+				if image[j,k] == 255:
+					pnt = occMap.gridToReal([j,k])
+					points.append(gen_icp.dispOffset(pnt, offset))
+		
+		occMaps.append(points)
+		
+
+	a_hull_trans = []
+	for m in range(0,len(estPoses)):
+		offset = estPoses[m]
+
+		" transform the past poses "
+		past_data = a_hulls[m]
+		a_trans = []
+		for p in past_data:
+			a_trans.append(gen_icp.dispPoint(p, offset))
+		
+		a_hull_trans.append(a_trans)
+		
+	pylab.clf()
+	plotEnv()
+
+	for points in occMaps:
+		xP = []
+		yP = []
+		for p in points:
+			xP.append(p[0])
+			yP.append(p[1])
+		pylab.scatter(xP,yP, linewidth=1, color=(1.0,0.6,0.6))
 	
+	for hull in a_hull_trans:
+		
+		xP = []
+		yP = []
+		for p in hull:
+			xP.append(p[0])
+			yP.append(p[1])
+		xP.append(hull[0][0])
+		yP.append(hull[0][1])
+		
+		pylab.plot(xP,yP,color='b')
+		
+	pylab.savefig("uncorrectedPoses.png")	
 	
 	offsets = []
 	for i in range(len(estPoses)-1):
@@ -379,6 +434,86 @@ if __name__ == '__main__':
 		
 		#mapGraph.saveMap()
 	
+	" 2. all poses in single alpha shape "
+	mapGraph.loadFile(len(estPoses))
+	
+	" update the estimated poses "
+	for m in range(0,len(estPoses)):
+		mapGraph.setNodePose(m, estPoses[m])
+				
+	mapGraph.saveMap()
+
+	occMaps = []
+	for m in range(0,len(estPoses)):
+		offset = estPoses[m]
+		occMap = mapGraph.getNodeOccMap(m)
+
+		mapImage = occMap.getMap()
+		image = mapImage.load()
+		
+		" 1. pick out the points "
+		points = []
+		for j in range(occMap.numPixel):
+			for k in range(occMap.numPixel):
+				if image[j,k] == 255:
+					pnt = occMap.gridToReal([j,k])
+					points.append(gen_icp.dispOffset(pnt, offset))
+		
+		occMaps.append(points)
+		
+
+	a_hull_trans = []
+	for m in range(0,len(estPoses)):
+		offset = estPoses[m]
+
+		" transform the past poses "
+		past_data = a_hulls[m]
+		a_trans = []
+		for p in past_data:
+			a_trans.append(gen_icp.dispPoint(p, offset))
+		
+		a_hull_trans.append(a_trans)
+
+	pastHull = computeUnions(a_hull_trans)
+	
+	pylab.clf()
+	plotEnv()
+	
+	xP = []
+	yP = []
+	for p in pastHull:
+		xP.append(p[0])
+		yP.append(p[1])
+	xP.append(pastHull[0][0])
+	yP.append(pastHull[0][1])
+	
+	pylab.plot(xP,yP,color='b')
+	pylab.savefig("finalMap.png")
+	
+	pylab.clf()
+	plotEnv()
+
+	for points in occMaps:
+		xP = []
+		yP = []
+		for p in points:
+			xP.append(p[0])
+			yP.append(p[1])
+		pylab.scatter(xP,yP, linewidth=1, color=(1.0,0.6,0.6))
+	
+	for hull in a_hull_trans:
+		
+		xP = []
+		yP = []
+		for p in hull:
+			xP.append(p[0])
+			yP.append(p[1])
+		xP.append(hull[0][0])
+		yP.append(hull[0][1])
+		
+		pylab.plot(xP,yP,color='b')
+		
+	pylab.savefig("finalPoses.png")
 	
 	" relative distance error "
 	" separate error into two components, the direct error and the lateral error "

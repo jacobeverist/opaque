@@ -77,6 +77,9 @@ class FastLocalCurveFit(Behavior):
 	
 	def setStartNode(self, node):
 		self.startNode = node
+
+	def setEndNode(self, node):
+		self.endNode = node
 	
 	def setSide(self, val):
 		self.anterior = val
@@ -434,6 +437,8 @@ class FastLocalCurveFit(Behavior):
 		if maxJoint > self.endNode:
 			maxJoint = self.endNode
 
+		print "forwardFit:", minJoint, maxJoint
+
 		# indices	
 		ind = range(minJoint,maxJoint+1)
 		
@@ -637,6 +642,8 @@ class FastLocalCurveFit(Behavior):
 			minJoint = self.startNode
 		if maxJoint > self.endNode:
 			maxJoint = self.endNode
+			
+		print "backwardFit:", minJoint, maxJoint
 
 		ind = range(minJoint,maxJoint+1)
 		ind.reverse()

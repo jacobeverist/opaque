@@ -40,7 +40,7 @@ class FrontAnchorTest(Behavior):
 		self.isInit = False
 
 		self.holdT = HoldTransition(probe)
-		self.holdSlideT = HoldSlideTransition(probe)
+		self.holdSlideT = HoldSlideTransition(probe, direction)
 
 		self.cPoints = []
 		
@@ -56,7 +56,11 @@ class FrontAnchorTest(Behavior):
 		self.jerkAngles = [0.0,0.0,0.0,0.0]
 		self.prevJerkAngles = [0.0,0.0,0.0,0.0]
 		
-		self.spliceJoint = 7
+		if direction:
+			self.spliceJoint = 7
+		else:
+			self.spliceJoint = 31
+			
 		self.lastSpliceAngle = 0.0
 		
 		self.computeCurve()
@@ -92,16 +96,14 @@ class FrontAnchorTest(Behavior):
 		
 	def setDirection(self, isForward):
 
-		if isForward:
-			self.frontAnchorFit.setSide(True)
-			
-			self.concertinaFit.setSide(True)
-			self.concertinaFit.setRootNode(38)
+		self.direction = isForward
+
+		if self.direction:
+			self.spliceJoint = 7
 		else:
-			self.frontAnchorFit.setSide(False)
+			self.spliceJoint = 31
 			
-			self.concertinaFit.setSide(False)
-			self.concertinaFit.setRootNode(0)
+		self.computeCurve()
 		
 	def computeCurve(self):
 		
@@ -116,16 +118,23 @@ class FrontAnchorTest(Behavior):
 			self.frontAnchorFit.setCurve(self.frontCurve)
 			self.frontAnchorFit.setSpliceJoint(self.spliceJoint)
 
+
 		self.adaptiveCurve = BackConcertinaCurve(4*pi)
 		self.adaptiveCurve.setTailLength(2.0)
 
 		if self.concertinaFit == 0:
 			self.concertinaFit = FastLocalCurveFit(self.probe, self.direction, self.adaptiveCurve, 38)
-			self.concertinaFit.setStartNode(self.spliceJoint)
 
+			if self.direction:	
+				self.concertinaFit.setStartNode(self.spliceJoint)
+			else:
+				self.concertinaFit.setEndNode(self.spliceJoint)
 		else:
 			self.concertinaFit.setCurve(self.adaptiveCurve)
-			self.concertinaFit.setStartNode(self.spliceJoint)
+			if self.direction:	
+				self.concertinaFit.setStartNode(self.spliceJoint)
+			else:
+				self.concertinaFit.setEndNode(self.spliceJoint)
 
 
 		#self.adaptiveCurve.setPeakAmp(0,0.2)
@@ -136,9 +145,11 @@ class FrontAnchorTest(Behavior):
 		
 		resultJoints = self.spliceFitJoints()
 		
+		#print "resultJoints =", resultJoints
+		
 		self.holdSlideT.setSpliceJoint(self.spliceJoint)
 		
-		self.holdSlideT.reset(resultJoints)
+		self.holdSlideT.reset(resultJoints, self.direction)
 		self.holdT.reset(resultJoints)
 		self.refDone = False
 
@@ -160,6 +171,9 @@ class FrontAnchorTest(Behavior):
 				
 		joints1 = self.frontAnchorFit.getJoints()
 		joints2 = self.concertinaFit.getJoints()
+		
+		#print "joints1 =", joints1
+		#print "joints2 =", joints2
 		
 		self.concertinaFit.spliceJoint = self.spliceJoint
 		self.concertinaFit.spliceAngle = pi / 180.0 * joints1[self.spliceJoint]
@@ -525,7 +539,7 @@ class FrontAnchorTest(Behavior):
 		self.frontExtendDone = False
 
 		resultJoints = self.spliceFitJoints()
-		self.holdSlideT.reset(resultJoints)
+		self.holdSlideT.reset(resultJoints, self.direction)
 		
 
 		#self.frontExtending = False
@@ -656,7 +670,10 @@ class FrontAnchorTest(Behavior):
 						if jointNum < 0:
 							break
 						self.jerkJoints.append(jointNum)
-											
+
+				print "anchor joints =", anchorJoints
+				print "setting jerkJoints to", self.jerkJoints
+								
 				if self.jerkAngle == 0 and self.prevJerkAngle == 0:
 					self.nomJerk = self.probe.getServo(self.jerkJoint) * 180.0 / pi
 				
@@ -782,7 +799,7 @@ class FrontAnchorTest(Behavior):
 			
 			if not self.direction:
 				maxJoint = max(anchorJoints)
-				print "weakening joints", range(maxJoint+1, self.probe.numSegs-2)
+				print "weakening joints", range(maxJoint+1, self.probe.numSegs-1)
 				for i in range(maxJoint+1, self.probe.numSegs-2):
 					if i <= self.probe.numSegs-2:
 						self.probe.setJointTorque(i, 3.0)
@@ -1085,8 +1102,11 @@ class FrontAnchorTest(Behavior):
 		
 		if self.frontCurve.isOutOfSegments(self.frontAnchorFit.lastPosition):
 
-			self.spliceJoint += 2
-			
+			if self.direction:
+				self.spliceJoint += 2
+			else:
+				self.spliceJoint -= 2
+				
 			print "out of segments, switching splice joint to", self.spliceJoint
 			self.mask = [0.0 for i in range(0,40)]
 			self.count = 0
@@ -1121,9 +1141,14 @@ class FrontAnchorTest(Behavior):
 			self.ampInc = 0.04
 						
 			self.currPeak = 0
-			self.spliceJoint = 7
+			#self.spliceJoint = 7
 			self.lastSpliceAngle = 0.0
 							
+			if self.direction:
+				self.spliceJoint = 7
+			else:
+				self.spliceJoint = 31
+			
 			"reset everything "
 			self.frontAnchorFit = 0
 			self.frontCurve = 0

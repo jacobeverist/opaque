@@ -136,7 +136,6 @@ class TestAnchor(SnakeControl):
 		self.grabImage()
 		#self.grabAngles()
 
-
 		if self.isAnchored:
 			body = self.probe._bodies[20]
 			body.setMass(self.anchorMass)
@@ -178,7 +177,7 @@ class TestAnchor(SnakeControl):
 	
 				self.mapGraph.newNode()
 				self.mapGraph.forceUpdate(False)
-				#self.mapGraph.saveLocalMap()
+				self.mapGraph.saveLocalMap()
 				
 				#self.stateA = 1
 				#self.isAnchored = True
@@ -220,10 +219,14 @@ class TestAnchor(SnakeControl):
 				self.mapGraph.saveLocalMap()
 				
 				" quit after 15 iterations "
-				if self.mapGraph.numNodes >= 10:
+				if self.mapGraph.numNodes >= 8:
+					direction = False
+					self.adaptiveStep.setDirection(direction)
+					
+				if self.mapGraph.numNodes >= 16:
 					exit()
 				
-				#self.mapGraph.saveLocalMap()				
+				self.mapGraph.saveLocalMap()				
 				
 				""" create a new pose node since we are in stable anchor position"""
 				self.mapGraph.newNode()

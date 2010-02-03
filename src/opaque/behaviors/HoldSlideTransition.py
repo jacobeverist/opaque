@@ -11,7 +11,7 @@ from math import exp
 
 class HoldSlideTransition(Behavior):
 	
-	def __init__(self, probe):
+	def __init__(self, probe, direction = True):
 		Behavior.__init__(self, probe)
 
 		self.transition = Transition(self.probe)
@@ -22,6 +22,7 @@ class HoldSlideTransition(Behavior):
 		#self.count = 0
 		self.count = 4
 
+		self.direction = direction
 
 		self.targetState = []
 		for i in range(self.probe.numSegs-1):
@@ -38,11 +39,13 @@ class HoldSlideTransition(Behavior):
 		self.spliceJoint = joint
 	
 
-	def reset(self, joints = []):
+	def reset(self, joints = [], direction = True):
 		self.targetState = []
 		self.positions = []
 
-		print "resetting HoldSlideTransition to:", joints
+		self.direction = direction
+		
+		#print "resetting HoldSlideTransition to:", joints
 		
 		if len(joints) > 0:
 			for i in range(len(joints)):				
@@ -66,7 +69,7 @@ class HoldSlideTransition(Behavior):
 		self.hasTransitioned = False
 		self.isDone = False
 				
-		print "reseting hold slide transition:", self.positions
+		#print "reseting hold slide transition:", self.positions
 
 	def step(self):
 		Behavior.step(self)
@@ -123,7 +126,12 @@ class HoldSlideTransition(Behavior):
 				if initState[i] != None:
 					if targetState[i] != None:
 						diff = targetState[i] - initState[i]
-						diff *= 1 / (1 + exp(i-2*self.count)) 
+						
+						if self.direction:
+							diff *= 1 / (1 + exp(i-2*self.count))
+						else:
+							diff *= 1 / (1 + exp((self.probe.numSegs-2-i)-2*self.count))
+							
 						targetState[i] = initState[i] + diff
 					else:
 						targetState[i] = initState[i]
