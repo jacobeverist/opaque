@@ -219,11 +219,11 @@ class TestAnchor(SnakeControl):
 				self.mapGraph.saveLocalMap()
 				
 				" quit after 15 iterations "
-				if self.mapGraph.numNodes >= 8:
+				if self.mapGraph.numNodes >= 6:
 					direction = False
 					self.adaptiveStep.setDirection(direction)
 					
-				if self.mapGraph.numNodes >= 16:
+				if self.mapGraph.numNodes >= 12:
 					exit()
 				
 				self.mapGraph.saveLocalMap()				

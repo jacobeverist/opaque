@@ -202,16 +202,16 @@ def computeUnion(points1, points2):
 	" send input and receive output "
 	sout, serr = subProc.communicate(inputStr)
 
-	print "rawOutput ="
-	print sout
+	#print "rawOutput ="
+	#print sout
 
 	" convert string output to typed data "
 	sArr = sout.split(" ")
 
 	numVert = int(sArr[0])
 	
-	print "numVert =", numVert
-	print numVert, len(sArr)
+	#print "numVert =", numVert
+	#print numVert, len(sArr)
 	#print sArr
 	
 	vertices = []
@@ -227,7 +227,11 @@ if __name__ == '__main__':
 	contacts = ContactReferences(probe)
 	mapGraph = MapGraph(probe, contacts)
 
-	mapGraph.loadFile(9)
+
+	numPoses = 8
+	#numPoses = 11
+
+	mapGraph.loadFile(numPoses)
 	mapGraph.saveMap()
 	#exit()
 
@@ -249,7 +253,7 @@ if __name__ == '__main__':
 	estPoses = []
 	gndPoses = []
 	poseNumbers = []
-	for i in range(0,9):
+	for i in range(0,numPoses):
 	
 		f = open('estpose%04u.txt' % i,'r')
 		val = f.read()
@@ -385,6 +389,12 @@ if __name__ == '__main__':
 			
 			a_hull_trans.append(a_trans)
 
+		pastCircles = []
+		for m in range(0,k):
+			hull = a_hull_trans[m]
+			radius, center = gen_icp.computeEnclosingCircle(hull)
+			pastCircles.append([radius,center])
+			
 		pastPose = estPoses[k-1]
 		
 		pastHull = computeUnions(a_hull_trans)
@@ -414,7 +424,7 @@ if __name__ == '__main__':
 		print "targetPose =", targetPose
 				
 		" run generalized ICP (a plot is made for each iteration of the algorithm) "
-		offset = gen_icp.gen_ICP_global(pastPose, targetPose, pastHull, targetHull, costThresh, minMatchDist, plotIteration)
+		offset = gen_icp.gen_ICP_global(pastPose, targetPose, pastHull, targetHull, pastCircles, costThresh, minMatchDist, plotIteration)
 		#offset = gen_icp.gen_ICP_past(currEstPoses, curr_a_hulls, costThresh, minMatchDist, plotIteration)
 		
 		offsets[k-1] = offset
@@ -492,7 +502,7 @@ if __name__ == '__main__':
 	
 	pylab.clf()
 	plotEnv()
-
+	
 	for points in occMaps:
 		xP = []
 		yP = []
