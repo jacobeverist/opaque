@@ -297,7 +297,7 @@ def cost_func(offset, match_pairs, a_data_raw = [], polyB = [], circles = []):
 	fig.clf()
 	ax = fig.add_subplot(111)
 	
-	if True and len(a_data_raw) > 0 and len(polyB) > 0:
+	if False and len(a_data_raw) > 0 and len(polyB) > 0:
 
 		numIterations += 1
 		
@@ -463,7 +463,7 @@ def isValidPast(p, pastCircles, poly):
 
 def isValidA(p, radiusB, centerB, polyB):
 
-	dist = math.sqrt((p[0] - centerB[0]) ** 2 + (p[1] - centerB[0]) ** 2)
+	dist = math.sqrt((p[0] - centerB[0]) ** 2 + (p[1] - centerB[1]) ** 2)
 	if dist < radiusB:
 		if not functions.point_inside_polygon(p[0],p[1],polyB):
 			return True

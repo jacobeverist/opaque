@@ -959,6 +959,7 @@ class FrontAnchorTest(Behavior):
 						self.probe.setJointTorque(i, 3.0)
 			else:
 				minJoint = min(peakJoints)
+				print "weakening", 0, "to", minJoint-1
 				for i in range(0, minJoint):					
 					if i <= self.probe.numSegs-2:
 						self.probe.setJointTorque(i, 3.0)

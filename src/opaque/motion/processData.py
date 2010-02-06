@@ -180,21 +180,25 @@ def computeUnion(points1, points2):
 
 	inputStr = str(numPoints1) + " " + str(numPoints2) + " "
 	
+	" Removed Gaussians because were causing self-intersections ."
+	" not necessary anymore because polygons come from CGAL and are not degenerate. "
 	for p in points1:
 		p2 = copy(p)
-		p2[0] += gauss(0.0,0.0001)
-		p2[1] += gauss(0.0,0.0001)
+		#p2[0] += gauss(0.0,0.0001)
+		#p2[1] += gauss(0.0,0.0001)
 
 		inputStr += str(p2[0]) + " " + str(p2[1]) + " "
 
 	for p in points2:
 		p2 = copy(p)
-		p2[0] += gauss(0.0,0.0001)
-		p2[1] += gauss(0.0,0.0001)
+		#p2[0] += gauss(0.0,0.0001)
+		#p2[1] += gauss(0.0,0.0001)
 
 		inputStr += str(p2[0]) + " " + str(p2[1]) + " "
 	
 	inputStr += "\n"
+	
+	#print "sending input to Union:  ", inputStr
 	
 	" start the subprocess "
 	subProc = Popen(["./poly_union.exe"], stdin=PIPE, stdout=PIPE)
@@ -205,6 +209,8 @@ def computeUnion(points1, points2):
 	#print "rawOutput ="
 	#print sout
 
+	print serr
+	
 	" convert string output to typed data "
 	sArr = sout.split(" ")
 
@@ -228,8 +234,8 @@ if __name__ == '__main__':
 	mapGraph = MapGraph(probe, contacts)
 
 
-	numPoses = 8
-	#numPoses = 11
+	#numPoses = 8
+	numPoses = 11
 
 	mapGraph.loadFile(numPoses)
 	mapGraph.saveMap()
@@ -399,7 +405,7 @@ if __name__ == '__main__':
 		
 		pastHull = computeUnions(a_hull_trans)
 		gen_icp.addPointToLineCovariance(pastHull, high_var=1.0, low_var=0.001)
-		gen_icp.addDistanceFromOriginCovariance(pastHull, tan_var=0.1, perp_var=0.01)
+		#gen_icp.addDistanceFromOriginCovariance(pastHull, tan_var=0.1, perp_var=0.01)
 		
 		"""	
 		globalHull = mapGraph.computeAlphaBoundary()		

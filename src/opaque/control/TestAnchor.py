@@ -28,7 +28,7 @@ class TestAnchor(SnakeControl):
 
 		self.setTimerAliasing(1)
 
-		direction = True
+		direction = False
 		
 		" pose estimation "
 		self.contacts = pose.ContactReferences(self.probe)
