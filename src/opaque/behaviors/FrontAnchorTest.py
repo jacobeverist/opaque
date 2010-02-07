@@ -325,26 +325,37 @@ class FrontAnchorTest(Behavior):
 			
 			
 		else:
-				
-			" the configuration of the snake as we've commanded it "
-			self.cmdSegPoints = [[-self.probe.segLength,0.0,0.0]]
-			cmdOrigin = [0.0,0.0,pi]
-			self.cmdSegPoints.insert(0, cmdOrigin)
-		
-			ind = range(0,self.probe.numSegs-1)
+			
+			spliceJointAngle = -self.concertinaFit.getJoints()[self.spliceJoint] * pi /180.0 
+			
+			self.cmdSegPoints = []
+			cmdOrigin = [self.probe.segLength*cos(-spliceJointAngle),self.probe.segLength*sin(-spliceJointAngle),-spliceJointAngle + pi]
+
+			self.cmdSegPoints.append(cmdOrigin)
+
+			ind = range(0,self.spliceJoint)
 			ind.reverse()
-	
+			
 			for i in ind:
 				sampAngle = self.probe.getServoCmd(i)
-				#sampAngle = self.probe.getServoCmd(i)
-
 				totalAngle = cmdOrigin[2] + sampAngle
 				xTotal = cmdOrigin[0] - self.probe.segLength*cos(totalAngle)
 				zTotal = cmdOrigin[1] - self.probe.segLength*sin(totalAngle)
 				pnt = [xTotal, zTotal, totalAngle]
 				cmdOrigin = pnt
-				self.cmdSegPoints.insert(0, cmdOrigin)
-				#cmdSegPoints[i+2] = cmdOrigin
+				self.cmdSegPoints.insert(0,cmdOrigin)
+
+			cmdOrigin = [0.0,0.0,-spliceJointAngle + pi]			
+			self.cmdSegPoints.append(cmdOrigin)
+			
+			for i in range(self.spliceJoint,self.probe.numSegs-1):
+				sampAngle = self.probe.getServoCmd(i)
+				totalAngle = cmdOrigin[2] - sampAngle
+				xTotal = cmdOrigin[0] + self.probe.segLength*cos(totalAngle)
+				zTotal = cmdOrigin[1] + self.probe.segLength*sin(totalAngle)
+				pnt = [xTotal, zTotal, totalAngle]
+				cmdOrigin = pnt
+				self.cmdSegPoints.append(cmdOrigin)
 			
 	def drawFit(self):
 		
@@ -386,8 +397,6 @@ class FrontAnchorTest(Behavior):
 			#	spliceJointAngle = self.lastDrawSpliceAngle
 	
 			spliceJointAngle = self.concertinaFit.getJoints()[self.spliceJoint] * pi /180.0
-				
-			#spliceJoint = 0.0
 			
 			actSegPoints = []
 			actOrigin = [0.0,0.0,-spliceJointAngle]
@@ -405,8 +414,7 @@ class FrontAnchorTest(Behavior):
 				pnt = [xTotal, zTotal, totalAngle]
 				actOrigin = pnt
 				actSegPoints.insert(0,actOrigin)
-
-			#actOrigin = [0.0,0.0,-spliceJoint]			
+	
 			actOrigin = [self.probe.segLength*cos(-spliceJointAngle),self.probe.segLength*sin(-spliceJointAngle),-spliceJointAngle]
 			actSegPoints.append(actOrigin)
 			
@@ -420,7 +428,41 @@ class FrontAnchorTest(Behavior):
 				actSegPoints.append(actOrigin)
 
 		else:
+			
+			spliceJointAngle = -self.concertinaFit.getJoints()[self.spliceJoint] * pi /180.0 
+			
+			actSegPoints = []
+			actOrigin = [self.probe.segLength*cos(-spliceJointAngle),self.probe.segLength*sin(-spliceJointAngle),-spliceJointAngle + pi]
+
+			actSegPoints.insert(0, actOrigin)
+
+			ind = range(0,self.spliceJoint)
+			ind.reverse()
+			
+			for i in ind:
+				sampAngle = self.probe.getServo(i)
+				totalAngle = actOrigin[2] + sampAngle
+				xTotal = actOrigin[0] - self.probe.segLength*cos(totalAngle)
+				zTotal = actOrigin[1] - self.probe.segLength*sin(totalAngle)
+				pnt = [xTotal, zTotal, totalAngle]
+				actOrigin = pnt
+				actSegPoints.insert(0,actOrigin)
+
+			actOrigin = [0.0,0.0,-spliceJointAngle + pi]			
+			actSegPoints.append(actOrigin)
+			
+			for i in range(self.spliceJoint,self.probe.numSegs-1):
+				sampAngle = self.probe.getServo(i)
+				totalAngle = actOrigin[2] - sampAngle
+				xTotal = actOrigin[0] + self.probe.segLength*cos(totalAngle)
+				zTotal = actOrigin[1] + self.probe.segLength*sin(totalAngle)
+				pnt = [xTotal, zTotal, totalAngle]
+				actOrigin = pnt
+				actSegPoints.append(actOrigin)
+
+			
 			" the actual configuration of the snake "
+			"""
 			actSegPoints = [[-self.probe.segLength,0.0,0.0]]
 			actOrigin = [0.0,0.0,pi]
 			actSegPoints.insert(0,actOrigin)
@@ -439,14 +481,16 @@ class FrontAnchorTest(Behavior):
 			
 				
 				#actSegPoints[i+2] = actOrigin		
-
+			"""
 		
 		if self.direction:
 
+			
 			spliceJointAngle = self.concertinaFit.getJoints()[self.spliceJoint] * pi /180.0
 
 			" local peak configurations "
 			peakCurves = [[]]
+
 			peakOrigin = [self.probe.segLength*cos(-spliceJointAngle),self.probe.segLength*sin(-spliceJointAngle),-spliceJointAngle]
 			peakCurves[-1].append(copy(peakOrigin))
 
@@ -481,36 +525,136 @@ class FrontAnchorTest(Behavior):
 					peakCurves[-1].append(copy(peakOrigin))
 				else:
 					peakCurves[-1].append(copy(peakOrigin))
+		else:
+
+			spliceJointAngle = -self.concertinaFit.getJoints()[self.spliceJoint] * pi /180.0
+
+			" local peak configurations "
+			peakCurves = [[]]
+
+			peakOrigin = [self.probe.segLength*cos(-spliceJointAngle),self.probe.segLength*sin(-spliceJointAngle),-spliceJointAngle + pi]
+			peakCurves[-1].append(copy(peakOrigin))
 			
+			ind = range(0,self.spliceJoint)
+			ind.reverse()
+
+			for i in ind:
+				sampAngle = self.probe.getServo(i)
+				totalAngle = peakOrigin[2] + sampAngle
+				xTotal = peakOrigin[0] - self.probe.segLength*cos(totalAngle)
+				zTotal = peakOrigin[1] - self.probe.segLength*sin(totalAngle)
+				pnt = [xTotal, zTotal, totalAngle]
+				peakOrigin = pnt
+				#peakCurves[-1].append(copy(peakOrigin))
+				
+				" if current joint is the minimum of a current peak, reset the origin "
+				peakIndex = -1
+				for index in range(len(self.concertinaFit.jointClasses)):
+					if self.concertinaFit.jointClasses[index].count(i) > 0:
+						peakIndex = index
+						break
+				
+				if peakIndex >= 1 and max(self.concertinaFit.jointClasses[peakIndex]) == i:
+					peakCurves.append([])
+					peakOrigin = self.cmdSegPoints[i+1]
+					peakCurves[-1].append(copy(peakOrigin))
+	
+					sampAngle = self.probe.getServo(i)
+					totalAngle = peakOrigin[2] + sampAngle
+					xTotal = peakOrigin[0] - self.probe.segLength*cos(totalAngle)
+					zTotal = peakOrigin[1] - self.probe.segLength*sin(totalAngle)
+					pnt = [xTotal, zTotal, totalAngle]
+					peakOrigin = pnt
+					peakCurves[-1].append(copy(peakOrigin))
+				else:
+					peakCurves[-1].append(copy(peakOrigin))
 					
+					
+							
+
+			"""
+			spliceJointAngle = -self.concertinaFit.getJoints()[self.spliceJoint] * pi /180.0
+
+			" local peak configurations "
+			peakCurves = [[]]
+
+			#peakOrigin = [self.probe.segLength*cos(-spliceJointAngle),self.probe.segLength*sin(-spliceJointAngle),-spliceJointAngle + pi]
+
+			#peakOrigin = [self.probe.segLength*cos(-spliceJointAngle),self.probe.segLength*sin(-spliceJointAngle),-spliceJointAngle]
+			
+			peakOrigin = [0.0,0.0,-spliceJointAngle + pi]	
+			peakCurves[-1].append(copy(peakOrigin))
+
+			ind = range(0,self.spliceJoint)
+			ind.reverse()
+			
+			#ind = range(0, self.spliceJoint+2)
+			#ind.reverse()
+
+			for i in ind:
+				sampAngle = self.probe.getServo(i)
+				totalAngle = peakOrigin[2] + sampAngle
+				xTotal = peakOrigin[0] - self.probe.segLength*cos(totalAngle)
+				zTotal = peakOrigin[1] - self.probe.segLength*sin(totalAngle)
+				pnt = [xTotal, zTotal, totalAngle]
+				peakOrigin = pnt
+				
+				" if current joint is the minimum of a current peak, reset the origin "
+				peakIndex = -1
+				for index in range(len(self.concertinaFit.jointClasses)):
+					if self.concertinaFit.jointClasses[index].count(i) > 0:
+						peakIndex = index
+						break
+				
+				if peakIndex >= 1 and min(self.concertinaFit.jointClasses[peakIndex]) == i:
+					peakCurves.append([])
+					peakOrigin = self.cmdSegPoints[i+1]
+					peakCurves[-1].append(copy(peakOrigin))
+	
+					sampAngle = self.probe.getServo(i)
+					totalAngle = peakOrigin[2] + sampAngle
+					xTotal = peakOrigin[0] - self.probe.segLength*cos(totalAngle)
+					zTotal = peakOrigin[1] - self.probe.segLength*sin(totalAngle)
+					pnt = [xTotal, zTotal, totalAngle]
+					peakOrigin = pnt
+					peakCurves[-1].append(copy(peakOrigin))
+				else:
+					peakCurves[-1].append(copy(peakOrigin))
+			"""
+			
+			
 		errors = []
 		for i in range(0,self.probe.numSegs-2):
 			errors.append(fabs(self.probe.getServo(i)-self.probe.getServoCmd(i)))
 
-		xP = []
-		yP = []
-		for p in actSegPoints:
-			xP.append(p[0])
-			yP.append(p[1])		
-		pylab.plot(xP,yP,color='r')
-
-		xP = []
-		yP = []
-		for p in self.cmdSegPoints:
-			xP.append(p[0])
-			yP.append(p[1])		
-		pylab.scatter(xP,yP,color='g')
-
-		for curve in peakCurves:
+		if True:
 			xP = []
 			yP = []
-			for p in curve:
+			for p in actSegPoints:
 				xP.append(p[0])
-				yP.append(p[1])
-				
-				
-			pylab.scatter(xP,yP, linewidth=1, color='b')
-			pylab.plot(xP,yP,color='b')
+				yP.append(p[1])		
+			pylab.plot(xP,yP,color='r')
+
+
+		if True:
+			xP = []
+			yP = []
+			for p in self.cmdSegPoints:
+				xP.append(p[0])
+				yP.append(p[1])		
+			pylab.scatter(xP,yP,color='g')
+		
+		if True	:
+			for curve in peakCurves:
+				xP = []
+				yP = []
+				for p in curve:
+					xP.append(p[0])
+					yP.append(p[1])
+					
+					
+				pylab.scatter(xP,yP, linewidth=1, color='b')
+				pylab.plot(xP,yP,color='b')
 		
 		"""
 		for i in range(1, len(actSegPoints)-2):
@@ -591,7 +735,7 @@ class FrontAnchorTest(Behavior):
 		currAmp = self.frontCurve.getPeakAmp()	
 		
 		" draw the state of the curve fitting "
-		#self.drawFit()
+		self.drawFit()
 
 		currAmp = self.frontCurve.getPeakAmp()
 		nextVal = currAmp	
@@ -869,7 +1013,7 @@ class FrontAnchorTest(Behavior):
 		print "maxError =", maxError
 		
 		" draw the state of the curve fitting "
-		#self.drawFit()
+		self.drawFit()
 
 		currAmp = self.adaptiveCurve.getPeakAmp(self.currPeak)
 		nextVal = currAmp
@@ -954,13 +1098,15 @@ class FrontAnchorTest(Behavior):
 			if self.direction:
 				maxJoint = max(peakJoints)
 				print "weakening", maxJoint+1, "to", self.probe.numSegs-3
-				for i in range(maxJoint+1, self.probe.numSegs-2):
+				#for i in range(maxJoint+1, self.probe.numSegs-2):
+				for i in range(maxJoint+2, self.probe.numSegs-1):
 					if i <= self.probe.numSegs-2:
 						self.probe.setJointTorque(i, 3.0)
 			else:
 				minJoint = min(peakJoints)
 				print "weakening", 0, "to", minJoint-1
-				for i in range(0, minJoint):					
+				#for i in range(0, minJoint):					
+				for i in range(0, minJoint-1):					
 					if i <= self.probe.numSegs-2:
 						self.probe.setJointTorque(i, 3.0)
 							

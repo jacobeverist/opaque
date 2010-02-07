@@ -28,7 +28,7 @@ class TestAnchor(SnakeControl):
 
 		self.setTimerAliasing(1)
 
-		direction = False
+		direction = True
 		
 		" pose estimation "
 		self.contacts = pose.ContactReferences(self.probe)
@@ -133,7 +133,7 @@ class TestAnchor(SnakeControl):
 	def frameStarted(self):
 		
 		self.adjustCamera()
-		self.grabImage()
+		#self.grabImage()
 		#self.grabAngles()
 
 		if self.isAnchored:
