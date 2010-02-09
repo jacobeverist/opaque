@@ -235,7 +235,8 @@ if __name__ == '__main__':
 
 
 	#numPoses = 8
-	numPoses = 11
+	#numPoses = 11
+	numPoses = 34
 
 	mapGraph.loadFile(numPoses)
 	mapGraph.saveMap()

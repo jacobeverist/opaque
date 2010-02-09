@@ -133,7 +133,7 @@ class TestAnchor(SnakeControl):
 	def frameStarted(self):
 		
 		self.adjustCamera()
-		#self.grabImage()
+		self.grabImage()
 		#self.grabAngles()
 
 		if self.isAnchored:
@@ -219,11 +219,27 @@ class TestAnchor(SnakeControl):
 				self.mapGraph.saveLocalMap()
 				
 				" quit after 15 iterations "
-				if self.mapGraph.numNodes >= 6:
+				if self.mapGraph.numNodes == 6:
 					direction = False
 					self.adaptiveStep.setDirection(direction)
-					
-				if self.mapGraph.numNodes >= 12:
+
+				if self.mapGraph.numNodes == 12:
+					direction = True
+					self.adaptiveStep.setDirection(direction)
+
+				if self.mapGraph.numNodes == 18:
+					direction = False
+					self.adaptiveStep.setDirection(direction)
+
+				if self.mapGraph.numNodes == 24:
+					direction = True
+					self.adaptiveStep.setDirection(direction)
+
+				if self.mapGraph.numNodes == 30:
+					direction = False
+					self.adaptiveStep.setDirection(direction)
+
+				if self.mapGraph.numNodes >= 36:					
 					exit()
 				
 				self.mapGraph.saveLocalMap()				

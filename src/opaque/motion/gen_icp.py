@@ -786,6 +786,8 @@ def gen_ICP_global(pastPose, targetPose, pastHull, targetHull, pastCircles, cost
 	global numIterations
 	
 	lastCost = 1e100
+	
+	startIteration = numIterations
 
 	estPoseOrigin = pastPose
 	
@@ -904,7 +906,7 @@ def gen_ICP_global(pastPose, targetPose, pastHull, targetHull, pastCircles, cost
 		newCost = cost_func(newOffset, match_pairs)
 	
 		# check for convergence condition, different between last and current cost is below threshold
-		if abs(lastCost - newCost) < costThresh:
+		if abs(lastCost - newCost) < costThresh or (numIterations - startIteration) > 10:
 			offset = newOffset
 			lastCost = newCost
 			break

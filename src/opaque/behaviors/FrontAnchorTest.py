@@ -735,7 +735,7 @@ class FrontAnchorTest(Behavior):
 		currAmp = self.frontCurve.getPeakAmp()	
 		
 		" draw the state of the curve fitting "
-		self.drawFit()
+		#self.drawFit()
 
 		currAmp = self.frontCurve.getPeakAmp()
 		nextVal = currAmp	
@@ -923,7 +923,7 @@ class FrontAnchorTest(Behavior):
 
 				#print "setting jerk joint to ", self.jerkAngle + self.nomJerk
 				#print "jerk angle error = " , self.probe.getServo(j)-self.probe.getServoCmd(j)
-	
+
 		if self.isJerking and self.jerkingDone:
 			
 			" if the anchor is not secure, lets try it again "
@@ -959,19 +959,19 @@ class FrontAnchorTest(Behavior):
 		for i in range(self.probe.numSegs-1):
 			self.probe.setJointTorque(i, self.probe.maxTorque)
 
-
 		" weaken head joints "
 		" 30*2.5 is maximum "
 		anchorJoints = self.frontAnchorFit.getPeakJoints()
 
 		print "anchorJoints =", len(anchorJoints), "amp =", self.frontCurve.getPeakAmp()
 		#if len(anchorJoints) > 0 and self.frontCurve.getPeakAmp() > 0 and self.isJerking:
+
 		if len(anchorJoints) > 0 and self.frontCurve.getPeakAmp() > 0:
 			
 			if not self.direction:
 				maxJoint = max(anchorJoints)
-				print "weakening joints", range(maxJoint+1, self.probe.numSegs-1)
-				for i in range(maxJoint+1, self.probe.numSegs-2):
+				print "weakening joints", range(maxJoint+1, self.probe.numSegs-2)
+				for i in range(maxJoint+1, self.probe.numSegs-1):
 					if i <= self.probe.numSegs-2:
 						self.probe.setJointTorque(i, 3.0)
 			else:
@@ -1013,7 +1013,7 @@ class FrontAnchorTest(Behavior):
 		print "maxError =", maxError
 		
 		" draw the state of the curve fitting "
-		self.drawFit()
+		#self.drawFit()
 
 		currAmp = self.adaptiveCurve.getPeakAmp(self.currPeak)
 		nextVal = currAmp
@@ -1037,8 +1037,7 @@ class FrontAnchorTest(Behavior):
 				
 				nextVal = 0.0
 				self.ampInc = 0.04
-
-
+				
 			else:
 			
 				" B: Section of snake experiencing error, now narrow down a tight fit"
@@ -1136,8 +1135,7 @@ class FrontAnchorTest(Behavior):
 				self.frontExtending = False
 				resultJoints = self.holdSlideT.getJoints()
 				self.holdT.reset(resultJoints)
-
-							
+		
 			# termination cases
 			if not self.frontAnchoringState:
 				
