@@ -920,16 +920,40 @@ def gen_ICP_global(pastPose, targetPose, pastHull, targetHull, pastCircles, cost
 		if plotIter:
 			pylab.clf()
 			pylab.axes()
-			draw_matches(match_pairs, offset)
+			match_global = []
+			
+			#match_pairs.append([a_data_raw[a_i],b_p,Ca,Cb])
+			
+			for pair in match_pairs:
+				p1 = pair[0]
+				p2 = pair[1]
+				
+				p1_o = dispOffset(p1, offset)
+				#p2_o = dispOffset(p2, offset)
+
+				
+				p1_g = poseOrigin.convertLocalToGlobal(p1_o)
+				p2_g = poseOrigin.convertLocalToGlobal(p2)
+				match_global.append([p1_g,p2_g])
+			
+			#draw_matches(match_pairs, offset)
+			draw_matches(match_global, [0.0,0.0,0.0])
 			
 			xP = []
 			yP = []
 			for b in polyB:
-				xP.append(b[0])	
-				yP.append(b[1])
+				p1 = poseOrigin.convertLocalToGlobal(b)
+
+				xP.append(p1[0])	
+				yP.append(p1[1])
+				#xP.append(b[0])	
+				#yP.append(b[1])
 			
-			xP.append(polyB[0][0])	
-			yP.append(polyB[0][1])
+			p1 = poseOrigin.convertLocalToGlobal(polyB[0])
+			xP.append(p1[0])	
+			yP.append(p1[1])
+			#xP.append(polyB[0][0])	
+			#yP.append(polyB[0][1])
 			
 			pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
 
@@ -938,19 +962,30 @@ def gen_ICP_global(pastPose, targetPose, pastHull, targetHull, pastCircles, cost
 			for b in a_data_raw:
 				p = [b[0],b[1]]
 				p = dispOffset(p,offset)
-				xP.append(p[0])	
-				yP.append(p[1])
+				
+				p1 = poseOrigin.convertLocalToGlobal(p)
+				xP.append(p1[0])	
+				yP.append(p1[1])
+				
+				#xP.append(p[0])	
+				#yP.append(p[1])
 			
 			p = [a_data_raw[0][0],a_data_raw[0][1]]
 			p = dispOffset(p,offset)
-			xP.append(p[0])	
-			yP.append(p[1])
+
+			p1 = poseOrigin.convertLocalToGlobal(p)
+			xP.append(p1[0])	
+			yP.append(p1[1])
+
+			#xP.append(p[0])	
+			#yP.append(p[1])
 			
 			pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
 
 			#cir = Circle( (0,0), radius=0.5)
 			#a.add_patch(cir)
 
+			plotEnv()		
 			
 			#for circle in pastCircles:
 			#	radius, center = circle
@@ -962,7 +997,9 @@ def gen_ICP_global(pastPose, targetPose, pastHull, targetHull, pastCircles, cost
 			#cir = pylab.Circle((.5,.5), radius=0.25, alpha =.2, fc='b')
 			#pylab.gca().add_patch(cir)
 
-			pylab.xlim(-4.5,4.5)
+			#pylab.xlim(-4.5,4.5)
+			#pylab.ylim(-4,4)
+			pylab.xlim(-3,6)
 			pylab.ylim(-4,4)
 			#pylab.axis('equal')
 			pylab.savefig("ICP_plot_%04u.png" % numIterations)
@@ -1100,6 +1137,39 @@ def gen_ICP(offset, a_data, b_data, costThresh = 0.004, minMatchDist = 2.0, plot
 
 	return offset
 
+def plotEnv():
+	WLEN = 3.0
+	wall1 = [[-14.0, -0.2], [-4.0, -0.2], [-4.0 + WLEN*math.cos(math.pi/3), -0.2 - WLEN*math.sin(math.pi/3)]]
+	wall2 = [[-4.0 + WLEN*math.cos(math.pi/3), 0.2 + WLEN*math.sin(math.pi/3)], [-4.0, 0.2] ,[-14.0, 0.2]]
+	w1 = wall1[2]
+	w2 = wall2[0]
+	
+	wall3 = [[w1[0] + 0.4*math.cos(math.pi/6), w1[1] + 0.4*math.sin(math.pi/6)], [0.4*math.cos(math.pi/6) - 4, 0.0], [w2[0] + 0.4*math.cos(math.pi/6), w2[1] - 0.4*math.sin(math.pi/6)], w2]
+	lp = wall3[0]
+	rp = wall3[2]
+	
+	wall6 = [lp, [lp[0] + WLEN*math.cos(math.pi/6), lp[1] + WLEN*math.sin(math.pi/6)]]
+	wall6.append([wall6[1][0] + 0.4*math.cos(math.pi/3), wall6[1][1] - 0.4*math.sin(math.pi/3)])
+	wall6.append([wall6[2][0] - WLEN*math.cos(math.pi/6), wall6[2][1] - WLEN*math.sin(math.pi/6)])
+	wall6.append([wall6[3][0] + WLEN*math.cos(math.pi/3), wall6[3][1] - WLEN*math.sin(math.pi/3)])
+	wall6.append([wall6[4][0] - 0.4*math.cos(math.pi/6), wall6[4][1] - 0.4*math.sin(math.pi/6)])
+	wall6.append(w1)
+	wall6.reverse()
+
+	walls = [wall1, wall2, wall3, wall6]
+
+	for wall in walls:
+		xP = []
+		yP = []
+		for i in range(len(wall)):
+			p = copy(wall[i])
+			p[0] += 6.0
+			wall[i] = p
+			xP.append(p[0])
+			yP.append(p[1])
+
+		pylab.plot(xP,yP, linewidth=2, color = 'g')
+	
 def draw_matches(match_pairs, offset):
 
 	for pair in match_pairs:
