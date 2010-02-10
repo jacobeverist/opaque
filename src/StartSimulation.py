@@ -230,7 +230,7 @@ class SnakeApp(sf.Application):
 
 		#currControl = controls.TestJunction(self.probe)
 		#currControl = controls.TestMap(self.probe)
-		currControl = controls.TestAnchor(self.probe)
+		currControl = controls.TestMapping(self.probe)
 		#currControl = controls.TestBehaviors(self.probe)
 		#currControl = controls.BuildMap(self.probe)
 		currControl.setRenderWindow(self.renderWindow)

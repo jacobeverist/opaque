@@ -1438,6 +1438,7 @@ class MapGraph:
 			for j in range(mapSize[0]):
 				for k in range(mapSize[1]):
 					if localImage[j, k] == 255:
+
 						pnt = localObstMap.gridToReal([j, k])
 
 						pnt = localNode.convertLocalToGlobal(pnt)

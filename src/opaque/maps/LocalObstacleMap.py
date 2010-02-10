@@ -45,8 +45,11 @@ class LocalObstacleMap(Map):
 	def readFromFile(self):
 		#self.nodeID = nodeID
 		#fileName = "localObstacleMap%03u" % self.nodeID + "_0000.png"
+
+		self.fileName = "localObstacleMap%03u" % self.nodeID + "_%04u.png"
 		
-		self.mapImage = Image.open("localObstacleMap%03u" % self.nodeID + ".png")
+		self.mapImage = Image.open(self.fileName % 0)
+					
 		self.loadImage(self.mapImage)
 		
 	def saveMap(self):

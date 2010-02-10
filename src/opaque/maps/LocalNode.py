@@ -307,7 +307,7 @@ class LocalNode:
 		self.occMap.readFromFile()
 	
 		" obstacle map "
-		#self.obstacleMap.readFromFile()
+		self.obstacleMap.readFromFile()
 		
 		f = open("estpose%04u.txt" % self.nodeID, 'r')
 		estPose = eval(f.read())
@@ -445,15 +445,15 @@ class LocalNode:
 		" FIXME: uncomment these to build the other maps "
 		
 		" synchronize maps first "
-		#self.synch()
+		self.synch()
 
 		# save a copy of each version of the map
 		#self.saveCount += 1
 		self.occMap.saveMap()
-		#self.boundaryMap.saveMap()
-		#self.obstacleMap.saveMap()
-		#self.voronoiMap.saveMap()
-		#self.frontierMap.saveMap()
+		self.boundaryMap.saveMap()
+		self.obstacleMap.saveMap()
+		self.voronoiMap.saveMap()
+		self.frontierMap.saveMap()
 		
 		
 		self.computeGndAlphaBoundary()
