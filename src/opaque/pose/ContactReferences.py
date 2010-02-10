@@ -21,9 +21,7 @@ import curveMatch
 
 import ogre.renderer.OGRE as ogre
 
-
 class ContactReferences:
-
 
 	def __init__(self, probe):
 
@@ -106,7 +104,6 @@ class ContactReferences:
 		
 		self._allRefNodes = []
 		self._allRefEnt = []
-			
 			
 		"""
 		for i in range(0,self.numJoints):
@@ -208,7 +205,6 @@ class ContactReferences:
 
 	
 	def getClosestPose(self, targetJoint):
-
 		# find the first active reference from which to determine the new node's position in space
 		refExists = False
 		refNumber = 0
@@ -690,6 +686,7 @@ class ContactReferences:
 		maxConsec = 0
 		maxSize = 0
 		
+		" select the largest contiguous set of reference points to compute the average pose "
 		for i in nodes:
 			if self.activeRef[i]:
 				currStart = i

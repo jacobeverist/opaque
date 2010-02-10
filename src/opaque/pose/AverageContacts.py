@@ -105,7 +105,7 @@ class AverageContacts:
 		self._allRefNodes = []
 		self._allRefEnt = []
 			
-		
+		"""
 		for i in range(0,self.numJoints):
 			## Create the visual reprsentation of active reference nodes
 			name = "act_node" + str(i)
@@ -129,11 +129,8 @@ class AverageContacts:
 			#entity.setVisible(False)
 			self._refnodes.append(node)
 			self._refent.append(entity)
+		"""
 
-
-	def __del__(self):
-		pass
-	
 	def setTimerAliasing(self, timeInc):
 		self.timeInc = timeInc
 
@@ -198,14 +195,14 @@ class AverageContacts:
 			
 			for j in nodes:
 				
-				if j != newJointID and self.activeRef[j]:
+				if j != targetJoint and self.activeRef[j]:
 					#print "ref ", j
 					# with an existing reference point, we determine the new node's position with respect to it
 					refX, refZ, refP = self.activeRefPtr[j].getRefPose()
 			
 					initPose = [refX,refZ,refP]
 					jointID = self.activeRefPtr[j].getJointID()
-					pose = self.probe.getJointWRTJointPose(initPose, jointID, newJointID) 
+					pose = self.probe.getJointWRTJointPose(initPose, jointID, targetJoint) 
 					sumX += pose[0]
 					sumY += pose[1]
 					sumPx += cos(pose[2])
@@ -241,7 +238,7 @@ class AverageContacts:
 			initPose = [refX, refZ, refP]
 
 			jointID = recentNode.getJointID()
-			pose = self.probe.getJointWRTJointPose(initPose, jointID, newJointID) 
+			pose = self.probe.getJointWRTJointPose(initPose, jointID, targetJoint) 
 
 		return pose
 
@@ -365,7 +362,7 @@ class AverageContacts:
 		if not self.isStep():
 			return 
 	
-		
+		"""
 		for i in range(self.numJoints):
 			pos = self.probe.getActualJointPose(i)
 			position = ogre.Vector3(pos[0],0.1,pos[1])
@@ -384,6 +381,7 @@ class AverageContacts:
 			mPtr = self._refnodes[i].getMaterial()
 			mPtr.setAmbient(1.0,0.0,0.0)
 			mPtr.setDiffuse(1.0,0.0,0.0, 1.0)
+		"""
 		
 		if True:
 
@@ -520,7 +518,7 @@ class AverageContacts:
 						self.createEdges(newNode)
 
 			# compute the active node local configuration error
-			self.computeActiveError()
+			#self.computeActiveError()
 			
 			#self.prof.runcall(self.computeActiveError)
 			#self.prof.dump_stats("profile_info2")	
@@ -676,7 +674,7 @@ class AverageContacts:
 		self.activeRefPtr[newJointID] = newNode	
 
 		" draw the estimated reference nodes "
-		if True:
+		if False:
 			i = self.numRef
 			## Create the visual reprsentation of active reference nodes
 			name = "est_node" + str(i)
@@ -852,7 +850,7 @@ class AverageContacts:
 		self.activeRefPtr[newJointID] = newNode	
 
 		" draw the estimated reference nodes "
-		if True:
+		if False:
 			i = self.numRef
 			## Create the visual reprsentation of active reference nodes
 			name = "est_node" + str(i)
