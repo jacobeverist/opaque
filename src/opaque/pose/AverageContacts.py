@@ -198,14 +198,14 @@ class AverageContacts:
 			
 			for j in nodes:
 				
-				if j != newJointID and self.activeRef[j]:
+				if j != targetJoint and self.activeRef[j]:
 					#print "ref ", j
 					# with an existing reference point, we determine the new node's position with respect to it
 					refX, refZ, refP = self.activeRefPtr[j].getRefPose()
 			
 					initPose = [refX,refZ,refP]
 					jointID = self.activeRefPtr[j].getJointID()
-					pose = self.probe.getJointWRTJointPose(initPose, jointID, newJointID) 
+					pose = self.probe.getJointWRTJointPose(initPose, jointID, targetJoint) 
 					sumX += pose[0]
 					sumY += pose[1]
 					sumPx += cos(pose[2])
@@ -241,7 +241,7 @@ class AverageContacts:
 			initPose = [refX, refZ, refP]
 
 			jointID = recentNode.getJointID()
-			pose = self.probe.getJointWRTJointPose(initPose, jointID, newJointID) 
+			pose = self.probe.getJointWRTJointPose(initPose, jointID, targetJoint) 
 
 		return pose
 
