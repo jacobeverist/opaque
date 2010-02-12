@@ -13,7 +13,6 @@ import csv
 from LocalNode import *
 import pylab
 from matplotlib.patches import Circle
-
 from pose import *
 
 from motion import gen_icp

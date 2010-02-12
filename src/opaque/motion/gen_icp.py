@@ -46,6 +46,7 @@ import math
 import pylab
 import pca_module
 import functions
+from subprocess import *
 
 from matplotlib.patches import Circle
 

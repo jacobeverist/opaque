@@ -309,7 +309,7 @@ class TestMapping(SnakeControl):
 					
 					self.mapGraph.saveLocalMap()
 	
-					if self.mapGraph.numNodes >= 6:					
+					if self.mapGraph.numNodes >= 12:					
 						exit()
 
 					self.stateA = 0
