@@ -185,11 +185,11 @@ class TestMapping(SnakeControl):
 			
 			if isDone:
 				
-				self.stateA = 2
+				self.stateA = 1
 
 				self.holdP.reset()
 				self.holdT.reset()
-				print "going to state 2"
+				print "going to state 1"
 
 			
 				" set anchoring "
@@ -204,30 +204,8 @@ class TestMapping(SnakeControl):
 				self.mapGraph.setCenterPoints(centerPoints)
 				
 				self.mapGraph.forceUpdate(False)
-
+				
 		elif self.stateA == 1:
-
-			self.sweep.setDirection(False)
-			isDone = self.sweep.step()
-			
-			joints1 = self.holdP.getJoints()
-			joints2 = self.sweep.getJoints()
-
-			
-			self.mergeJoints([joints1, joints2])
-			
-			if self.sweep.hasInitialized():
-				self.mapGraph.keepStablePose()
-	
-				if self.globalTimer % 30 == 0:
-					#self.mapGraph.update(True)
-					self.mapGraph.update(False)
-
-			if isDone:
-				self.stateA = 2
-				print "going to state 2"
-
-		elif self.stateA == 2:
 			
 			self.pokeWalls.setDirection(False)
 			isDone = self.pokeWalls.step()
@@ -243,11 +221,11 @@ class TestMapping(SnakeControl):
 	
 			if isDone:
 				self.isCapture = False
-				self.stateA = 3
+				self.stateA = 2
 				self.prevTime = self.globalTimer
-				print "going to state 3"
+				print "going to state 2"
 
-		elif self.stateA == 3:
+		elif self.stateA == 2:
 			
 			isDone = self.holdT.step()
 			joints1 = self.holdT.getJoints()
@@ -260,30 +238,10 @@ class TestMapping(SnakeControl):
 				centerPoints = self.adaptiveStep.getCenterPoints()
 				self.mapGraph.setCenterPoints(centerPoints)
 
-				self.stateA = 5
-				print "going to state 5"
+				self.stateA = 3
+				print "going to state 3"
 
-		elif self.stateA == 4:
-			
-			self.sweep.setDirection(True)
-			isDone = self.sweep.step()
-			
-			joints1 = self.holdP.getJoints()
-			joints2 = self.sweep.getJoints()
-			self.mergeJoints([joints1,joints2])
-
-			if self.sweep.hasInitialized():
-	
-				self.mapGraph.keepStablePose()
-	
-				if self.globalTimer % 30 == 0:
-					self.mapGraph.update(True)
-	
-			if isDone:
-				self.stateA = 5
-				print "going to state 5"
-
-		elif self.stateA == 5:
+		elif self.stateA == 3:
 			
 			self.pokeWalls.setDirection(True)
 			isDone = self.pokeWalls.step()
@@ -318,27 +276,7 @@ class TestMapping(SnakeControl):
 					" anchoring turned off "
 					self.isAnchored = False
 
-
-		elif self.stateA == 6:
-			
-			isDone = self.holdT.step()
-			joints1 = self.holdT.getJoints()
-
-			self.mergeJoints([joints1])
-			
-			if isDone:
-				
-				self.mapGraph.saveLocalMap()
-
-				if self.mapGraph.numNodes >= 6:					
-					exit()
-
-				self.isAnchored = False
-
-				self.stateA = 0
-				print "going to state 0"
-
-		elif self.stateA == 7:
+		elif self.stateA == 4:
 			
 			joints1 = self.holdP.getJoints()
 			self.mergeJoints([joints1])
@@ -355,7 +293,7 @@ class TestMapping(SnakeControl):
 					#exit()
 
 				else:
-					self.stateA = 8
+					self.stateA = 5
 					
 					frontierPoint = self.frontierMap.selectNextFrontier()
 					currPose = self.probe.getActualSegPose(0)
@@ -370,7 +308,7 @@ class TestMapping(SnakeControl):
 						self.pathStep.setPath(self.wayPaths[0])
 					
 					
-		elif self.stateA == 8:
+		elif self.stateA == 5:
 					
 			isDone = self.pathStep.step()
 			joints = self.pathStep.getJoints()
