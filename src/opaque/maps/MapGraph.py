@@ -11,6 +11,7 @@ from scipy.optimize import *
 import graph
 import csv
 from LocalNode import *
+from VoronoiMap import *
 import pylab
 from matplotlib.patches import Circle
 from pose import *
@@ -155,23 +156,22 @@ class MapGraph:
 	
 	def newNode(self):
 		
-		if self.numNodes > 0:
-			self.synch()
-		
 		if self.numNodes >= 2:
 			self.correctPoses2()
 		
 		if self.numNodes > 0:
+			if self.currNode.isDirty():
+				self.synch()
 			self.saveMap()
 			self.currNode.saveToFile()
 
 		self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19)
-			
+		
 		self.poseGraph.add_node(self.numNodes, self.currNode)
-
+		
 		if self.numNodes > 0:
 			self.poseGraph.add_edge(self.numNodes - 1, self.numNodes)
-
+		
 		self.numNodes += 1
 		
 		#self.contacts.resetPose()
@@ -183,6 +183,9 @@ class MapGraph:
 		self.stablePose.update()
 	
 	def correctPoses2(self):
+
+		if self.currNode.isDirty():
+			self.synch()
 
 		" TUNE ME:  threshold cost difference between iterations to determine if converged "
 		costThresh = 0.1
@@ -651,26 +654,6 @@ class MapGraph:
 
 		self.boundMapImage.save("mapBoundGraph%04u.png" % self.saveCount)	
 
-		" alpha shape boundary of global map "
-		self.alphaMapImage = Image.new('L', (self.numPixel, self.numPixel), 0)
-		self.alphaImage = self.alphaMapImage.load()
-		alphaDraw = ImageDraw.Draw(self.alphaMapImage)
-		
-		alpha_vert = []
-		#alpha_vert = self.computeAlphaBoundary()
-		
-		for i in range(len(alpha_vert)):
-			p1 = alpha_vert[i]
-			p2 = alpha_vert[(i+1) % len(alpha_vert)]
-
-			p1Grid = self.realToGrid(p1)
-			p2Grid = self.realToGrid(p2)
-
-			alphaDraw.line([p1Grid,p2Grid], fill=255)
-		
-		
-		self.alphaMapImage.save("mapAlphaGraph%04u.png" % self.saveCount)
-		
 		" 1. for each node, copy local image "
 		" 2. for each point in image, transform appropriately and plot to main image "
 		self.obstMapImage = Image.new('L', (self.numPixel, self.numPixel), 0)
@@ -706,44 +689,60 @@ class MapGraph:
 						self.obstImage[indexX, indexY] = 255
 							
 		self.obstMapImage.save("mapObstGraph%04u.png" % self.saveCount)	
+
+		self.frontMapImage = Image.new('L', (self.numPixel, self.numPixel), 0)
+		self.frontImage = self.frontMapImage.load()
+
+
+		sumRange = 1
+		num = (2*sumRange+1) * (2*sumRange+1)
 		
+		xMax = 0
+		yMax = 0
+		densityMax = 0
+		densityMin = 1e100
+		
+		for i in range(sumRange,self.numPixel-sumRange):
+			for j in range(sumRange,self.numPixel-sumRange):
+				if self.boundImage[i,j] == 255:
+				#if True:
+					fSum = 0
+					for m in range(-sumRange, sumRange+1):
+						for n in range(-sumRange, sumRange+1):
+							fSum += self.obstImage[i+m, j+n]
+					
+					density =  fSum/num
+					density = 255 - density
+					self.frontImage[i,j] = density
+					
+					if density > densityMax:
+						xMax = i
+						yMax = j
+						densityMax = density
+						
+					if density < densityMin:
+						densityMin = density
+
+		for i in range(sumRange,self.numPixel-sumRange):
+			for j in range(sumRange,self.numPixel-sumRange):
+				if self.boundImage[i,j] == 255:
+					density =  self.frontImage[i,j]
+					density = density - densityMin
+					self.frontImage[i,j] = density
+
+		print "maximum density =", densityMax
+		print "minimum density =", densityMin
+
+		draw = ImageDraw.Draw(self.frontMapImage)
+		draw.ellipse((xMax-10, yMax-10, xMax+10, yMax+10), outline=255)
+		
+		self.frontMapImage.save("mapFrontierGraph%04u.png" % self.saveCount)	
+								
+		
+		self.voronoiMap = VoronoiMap(self.mapImage, self.boundMapImage)
+		self.voronoiMap.saveMap(self.saveCount)			
+								
 		self.saveCount += 1	
-
-	def fillOpen(self, polygon):
-
-		# vertices of the 4-sided convex polygon
-		polyX = [polygon[0][0], polygon[1][0], polygon[2][0], polygon[3][0], polygon[0][0]]
-		polyY = [polygon[0][1], polygon[1][1], polygon[2][1], polygon[3][1], polygon[0][1]]
-
-		# bounding box of polygon
-		maxX = - 10000.0
-		minX = 10000.0
-		maxY = - 10000.0
-		minY = 10000.0
-		for i in range(4):
-			if polyX[i] > maxX:
-				maxX = polyX[i]
-			if polyX[i] < minX:
-				minX = polyX[i]
-			if polyY[i] > maxY:
-				maxY = polyY[i]
-			if polyY[i] < minY:
-				minY = polyY[i]
-
-		# set boundaries of map grid
-		highIndexX, highIndexY = self.realToGrid([maxX, maxY])
-		lowIndexX, lowIndexY = self.realToGrid([minX, minY])
-
-		# fill map grid cell if occupied by arm
-		indices = []
-
-		for i in range(lowIndexX, highIndexX + 1, 1):
-			for j in range(lowIndexY, highIndexY + 1, 1):
-				point = self.gridToReal([i, j])
-				if IsContained(polygon, point):
-					# free space overwrites everything
-					if i >= 0 and i < self.numPixel and j >= 0 and j < self.numPixel:
-						self.image[i, j] = 255			
 			
 	def realToGrid(self, point):
 		indexX = int(floor(point[0] * self.divPix)) + self.numPixel / 2 + 1

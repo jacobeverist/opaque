@@ -15,30 +15,49 @@ import graph
 
 class VoronoiMap(Map):
 
-	def __init__(self, boundaryPoints, occupancyImage):
-		Map.__init__(self)
+	def __init__(self, occMapImage, boundMapImage):
 
-		self.fileName = "voronoiMap%04u.png"
+		Map.__init__(self, mapSize = 20.0)
+
+		self.occMapImage = occMapImage
+		self.boundMapImage = boundMapImage
+
+		self.fileName = "mapVoronoiGraph%04u.png"
+
+		self.update()
+
+	def getBoundaryPoints(self):
+		# return the boundary as a set of (x,y) points
 		
-		self.update(boundaryPoints, occupancyImage)
+		image = self.boundMapImage.load()
+		points = []
 		
-	def update(self, boundaryPoints, occupancyImage):
+		for i in range(0,self.numPixel):
+			for j in range(0,self.numPixel):
+				if image[i,j] == 255:
+					p = self.gridToReal([i,j])
+					points.append(p)
+					
+		return points
+			
+	def update(self):
 		
-		self.boundaryPoints = boundaryPoints
+		self.boundaryPoints = self.getBoundaryPoints()
 		
-		# standard python graph
+		" standard python graph "
 		self.roadGraph = graph.graph()
 		
-		# compute voronoi diagram
+		" compute voronoi diagram "
 		self.computeVoronoi()
 		
-		# prune the edges that are outside of free space
-		self.pruneEdges(occupancyImage)
-	
+		" prune the edges that are outside of free space and put into graph structure "
+		self.pruneEdges()
+		
 	def getGraph(self):
 		return self.roadGraph
 	
 	def computeVoronoi(self):
+		
 		'''
 		Compute the voronoi diagram using a 3rd party library.
 		
@@ -49,8 +68,11 @@ class VoronoiMap(Map):
 		self.lines, 3-tuples: a,b,c for a*x + b*y = c
 		self.edges, 3-tuples, (l, v1, v2)  line, vertex 1, vertex 2
 		vertex -1 means edge extends to infinity
-		
 		'''
+		
+		print "computing voronoi"
+		print len(self.boundaryPoints), "boundary points"
+		
 		sites = []
 		for p in self.boundaryPoints:
 			sites.append(Site(p[0],p[1]))
@@ -61,15 +83,17 @@ class VoronoiMap(Map):
 			self.vertices = []
 			self.lines = []
 			self.edges = []
-			
-	def pruneEdges(self, occupancyImage):
+		
+		print len(self.vertices)
+	def pruneEdges(self):
+		
 		'''remove edges and vertices that are outside the explored area'''
 
 		#NEIGHBOR_WIDTH = 3
 		NEIGHBOR_WIDTH = 0
 
 		xSize, ySize = self.size
-		occPix = occupancyImage.load()
+		occPix = self.occMapImage.load()
 
 		newVertices = {}
 		newEdges = []
@@ -133,7 +157,7 @@ class VoronoiMap(Map):
 			length = sqrt((v2[0]-v1[0])**2+(v2[1]-v1[1])**2)
 			self.roadGraph.set_edge_weight(edge[0],edge[1],length)
 			
-	def saveMap(self):
+	def saveMap(self, num):
 		
 		draw = ImageDraw.Draw(self.mapImage)
 
@@ -148,7 +172,7 @@ class VoronoiMap(Map):
 
 			draw.line([(i1,j1),(i2,j2)], fill = 255)
 
-		Map.saveMap(self)
+		self.mapImage.save(self.fileName % num)	
 		
 		
 	def draw(self):

@@ -30,6 +30,8 @@ class LocalNode:
 		self._refnodes = []
 		self._refent = []
 		
+		self.dirty = False
+		
 		"""
 		initial information for the local node
 		
@@ -431,8 +433,14 @@ class LocalNode:
 		#self.obstacleMap.update(self.boundaryMap)
 		#self.frontierMap.update(self.boundaryMap, self.obstacleMap)
 		#self.navRoadMap.update(self.voronoiMap.getGraph())
+
+		self.dirty = True
+	
+	def isDirty(self):
+		return self.dirty
 	
 	def synch(self):
+		
 		self.occMap.buildMap()
 		
 		self.computeAlphaBoundary()
@@ -442,13 +450,16 @@ class LocalNode:
 		self.voronoiMap.update()
 		self.frontierMap.update()
 		self.navMap.update()
+
+		self.dirty = False
 		
 	def saveMap(self):
 			
 		" FIXME: uncomment these to build the other maps "
 		
 		" synchronize maps first "
-		self.synch()
+		if self.isDirty():
+			self.synch()
 
 		# save a copy of each version of the map
 		#self.saveCount += 1

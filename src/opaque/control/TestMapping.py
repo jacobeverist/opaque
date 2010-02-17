@@ -37,6 +37,8 @@ class TestMapping(SnakeControl):
 
 		" maps "
 		self.mapGraph = maps.MapGraph(self.probe, self.contacts)
+		self.mapGraph.loadFile(11)
+
 
 		" behaviors "
 		self.anchorT = behave.AnchorTransition(self.probe)
@@ -152,9 +154,8 @@ class TestMapping(SnakeControl):
 			
 			if isDone:
 				self.stateA = 0
-				#print "going to state 0"
+				print "going to state 0"
 
-			
 				self.holdP.reset()
 				self.holdT.reset()
 	
@@ -167,7 +168,7 @@ class TestMapping(SnakeControl):
 
 				centerPoints = self.adaptiveStep.getCenterPoints()
 				self.mapGraph.setCenterPoints(centerPoints)
-	
+
 		elif self.stateA == 0:
 			
 			# make a blind concertina step
@@ -191,7 +192,6 @@ class TestMapping(SnakeControl):
 				self.holdT.reset()
 				print "going to state 1"
 
-			
 				" set anchoring "
 				self.isAnchored = True
 
@@ -267,7 +267,7 @@ class TestMapping(SnakeControl):
 					
 					self.mapGraph.saveLocalMap()
 	
-					if self.mapGraph.numNodes >= 12:					
+					if self.mapGraph.numNodes >= 18:					
 						exit()
 
 					self.stateA = 0

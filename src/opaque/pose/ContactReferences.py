@@ -11,13 +11,10 @@ from RefEdge import *
 from ValueStability import *
 from PoseProfile import *
 
-#import mapping
 import math
 import cProfile
-#import curveMatch
 import pylab
 from copy import *
-import curveMatch
 
 import ogre.renderer.OGRE as ogre
 
@@ -1126,74 +1123,8 @@ class ContactReferences:
 		x, z, p = self.activeRefPtr[j].getRefPose()
 		rootPose = [x,z,nodeID]
 		pose = PoseProfile(L_saddleNodes, R_saddleNodes, inflectionNodes, rootPose)
+		
 		return pose
-
-
-		#self.correctedPoses = []
-
-		if len(self.L_saddlePoses) > 1:
-			poses, offsetHistories = curveMatch.contourErrorCorrect(self.L_saddlePoses[-2:], self.R_saddlePoses[-2:], self.inflectionPoses[-2:])
-
-			# save the newest poses
-			if len(self.poses) == 0:
-				self.poses += poses
-			else:
-				self.poses.append(poses[1])
-
-			# pop the final offset value for each relative displacement
-			finalOffsets = []
-			for values in offsetHistories:
-				finalOffsets.append(copy(values[-1]))
-
-			# save the relative displacements
-			if len(self.offsets) == 0:
-				self.offsets += finalOffsets
-			else:
-				self.offsets.append(finalOffsets[0])
-
-			newPoses = curveMatch.getCorrectPoses(self.poses, self.offsets)
-
-			newInflectionPoses = []
-			for pose in newPoses:
-				newInflectionPoses.append(pose.getIPose())
-
-			newInflectionPoints = []
-			for pose in newInflectionPoses:
-				for i in range(0,len(pose)):
-					newInflectionPoints.append(pose[i])
-
-			# order these points starting from the back of the back point of the first pose at points[8]
-			orderedPoints = self.orderInflectionPoints(newInflectionPoints)
-
-			# create the grounded points
-			gndPoints = []
-			for point in orderedPoints:
-				nodeID = point[2]
-				refnode = self.refPoints[nodeID]
-				xGnd, yGnd, pGnd = refnode.getGroundTruthPose()
-				gndPoints.append([xGnd,yGnd,nodeID])
-
-			cntLine = curveMatch.GroundedSpline(orderedPoints, gndPoints)
-
-			self.tipPoint = orderedPoints[-1]
-
-			resultGnd = cntLine.computeGroundPose(self.tipPoint)
-			#print self.tipPoint, resultGnd, "error = ", math.sqrt((self.tipPoint[0]-resultGnd[0])**2+(self.tipPoint[1]-resultGnd[1])**2)
-
-			pylab.clf()
-			cntLine.drawSpline(clr = 'k')
-
-			pylab.ylim(-5,20)
-			pylab.xlim(-15,15)
-			pylab.savefig("frame" + "/mapPoints%04d.png" % self.poseCount)
-
-
-			currDist = cntLine.length()
-			if currDist > 10.0:
-				print "Destination Reached: we have traveled", currDist
-				self.destinationReached = True
-
-		self.poseCount += 1
 
 	def normalizeAngle(self, angle):
 		while angle > math.pi:
