@@ -12,37 +12,39 @@ import pylab
 import ImageDraw
 
 
+
 class FrontierMap(Map):
 
-	def __init__(self, probe, boundMap, obstacleMap):
-		Map.__init__(self)
-
-		self.probe = probe
-		self.fileName = "frontierMap%04u.png"
+	def __init__(self, boundMap, obstacleMap):
+		Map.__init__(self, mapSize = 20.0)
+				
+		self.fileName = "mapFrontierGraph%04u.png"
 		
-		self.update(boundMap, obstacleMap)
+		self.boundMap = boundMap
+		self.obstacleMap = obstacleMap
+															
 		
 		self.checkSpline = 0
+
+
+		self.inhibitRadius = 1.0
+		self.inhibits = [[-3.0,0.0], [-2.0,0.0], [-1.0,0.0]]
+						
+		self.densityThreshold = 30
+
+		self.update()
 	
 	def saveMap(self):
 
 		tempImage = self.mapImage.copy()
 		draw = ImageDraw.Draw(tempImage)
 		
-		pixPoly = []
-		for p in self.obstacleMap.poly:
-			x, y = self.realToGrid(p)
-			pixPoly.append([x,y])
-			
-		num = len(self.obstacleMap.poly)
-		
-		for i in range(num):
-			draw.line((pixPoly[i][0], pixPoly[i][1], pixPoly[(i+1) % num][0], pixPoly[(i+1) % num][1]), fill = 255)
-		
 		tempImage.save(self.fileName % self.saveCount)	
-		self.saveCount += 1
+		#self.saveCount += 1
 		
 	def isFrontier(self):
+		" checks if there are frontier points directly in front of snake "
+		" if there are enough, it will return true "
 		
 		centerNodes = [2, 6, 10, 14, 18, 22, 26, 30, 34]
 		centerNodes.reverse()
@@ -133,7 +135,6 @@ class FrontierMap(Map):
 					if self.image[i,j] > 0:
 						numPoints += 1
 		
-		
 		print numPoints,"frontier points found: "
 		if numPoints > 10:
 			return True
@@ -142,94 +143,156 @@ class FrontierMap(Map):
 			#print "frontier points NOT found: ", (self.saveCount-1)
 			return False
 
-	def update(self, boundMap, obstacleMap):
+	def update(self):
 		
-		self.occMap = boundMap.occMap
-		self.boundMap = boundMap
-		self.obstacleMap = obstacleMap
-		
-		self.xMin = boundMap.xMin
-		self.xMax = boundMap.xMax
-		self.yMin = boundMap.yMin
-		self.yMax = boundMap.yMax
+		#self.xMin = self.boundMap.xMin
+		#self.xMax = self.boundMap.xMax
+		#self.yMin = self.boundMap.yMin
+		#self.yMax = self.boundMap.yMax
 
-		self.points = boundMap.getBoundaryPoints()
-		
 		self.computeFrontiers()
-		
-		
+				
 	def computeFrontiers(self):
 		
-		
-		# cycle through all boundary points in boundaryMap
-		# for each:
-		#       check if it is an obstacle on obstacleMap
-		#       check if it is a shadow boundary or an unexplored boundary in occupancyMap
-		#       non-obstacle + unexplored boundary has higher weight than only non-obstacle and shadow boundary
+		"""
+		cycle through all boundary points in boundaryMap
+		  for each:
+		       check if it is an obstacle on obstacleMap
+		       otherwise, it is a frontier
+		"""
 		
 		# we don't consider frontier points next to the point of origin
-		xBoundary, yBoundary = self.realToGrid((-8.0,0.0))
+		# xBoundary, yBoundary = self.realToGrid((-8.0,0.0))
 		
 		self.resetMap()
 		
-		for i in range(self.xMin, self.xMax):
-			if i > xBoundary:
-				for j in range(self.yMin, self.yMax):
-					
-					if self.boundMap.image[i,j] == 255:
-						if self.obstacleMap.image[i,j] == 0:
-							
-							# is it a shadow boundary or unexplored boundary?
-							
-							isShadow = False
-							
-							for m in range(-1,2):
-								for n in range(-1,2):
-									if self.occMap.image[i+m,j+n] == 0:
-										isShadow = True
-							
-							if isShadow:
-								self.image[i,j] = 127
-							else:
-								self.image[i,j] = 255
-	
-	
-	def selectNextFrontier(self):
-		# select for closeness and density of frontier points
-		frontierDensity = Image.new('L', (self.numPixel,self.numPixel),0)
-		fimg = frontierDensity.load()
-		
-		
-		sumRange = 4
+		sumRange = 3
 		num = (2*sumRange+1) * (2*sumRange+1)
 		
 		xMax = 0
 		yMax = 0
 		densityMax = 0
-		
-		for i in range(self.xMin, self.xMax):
-			for j in range(self.yMin, self.yMax):
-				
-				fSum = 0
-				for m in range(-sumRange, sumRange+1):
-					for n in range(-sumRange, sumRange+1):
-						fSum += self.image[i+m, j+n]
-				
-				density =  fSum/num
-				fimg[i,j] = density
-				
-				if density > densityMax:
-					xMax = i
-					yMax = j
-					densityMax = density
+		densityMin = 1e100
 
+		boundImg = self.boundMap.load()
+		obstImg = self.obstacleMap.load()
+
+		for i in range(sumRange,self.numPixel-sumRange):
+			for j in range(sumRange,self.numPixel-sumRange):
+				if boundImg[i,j] == 255:
+	
+					isTooClose = False
+					xReal , yReal = self.gridToReal([i,j])
+					
+					" make sure we only consider points that are outside inhibition circles "
+					for k in range(len(self.inhibits)):
+						iP = self.inhibits[k]
+						dist = sqrt((iP[0]-xReal)**2 + (iP[1]-yReal)**2)
+						if dist < self.inhibitRadius:
+							isTooClose = True
+							break
+
+					if not isTooClose:
+
+						fSum = 0
+						for m in range(-sumRange, sumRange+1):
+							for n in range(-sumRange, sumRange+1):
+								fSum += obstImg[i+m, j+n]
+						
+						density =  fSum/num
+						density = 255 - density
+						self.image[i,j] = density
+						
+						if density > densityMax:
+							xMax = i
+							yMax = j
+							densityMax = density
+							
+						if density < densityMin:
+							densityMin = density
+
+		maxDen = densityMax - densityMin
+
+		for i in range(sumRange,self.numPixel-sumRange):
+			for j in range(sumRange,self.numPixel-sumRange):
+				if boundImg[i,j] == 255:
+
+					isTooClose = False
+					xReal , yReal = self.gridToReal([i,j])
+
+					" make sure we only consider points that are outside inhibition circles "
+					for k in range(len(self.inhibits)):
+						iP = self.inhibits[k]
+						dist = sqrt((iP[0]-xReal)**2 + (iP[1]-yReal)**2)
+						if dist < self.inhibitRadius:
+							isTooClose = True
+							break
+
+					if not isTooClose:
+						density =  self.image[i,j]
+						density = density - densityMin
+						result = 255*(1.0-float(maxDen-density)/float(maxDen))
+						self.image[i,j] = result
+						#print maxDen, density, result, self.image[i,j]
+
+		self.mapImage.save("mapFrontierGraph%04u.png" % self.saveCount)		
+	
+	
+	def inhibitLocation(self, point):
+		self.inhibits.append(copy(point))
+	
+	def selectNextFrontier(self, direction = True):
+		
+		# select for closeness and density of frontier points
+		frontierDensity = Image.new('L', (self.numPixel,self.numPixel),0)
+		fimg = frontierDensity.load()
+
+		densityMax = 0
+		xMax = 0
+		yMax = 0
+		frontWidth = 4
+		normFactor = (2*frontWidth+1) * (2*frontWidth+1)
+
+		#boundImg = self.boundMap.load()
+
+		for i in range(frontWidth,self.numPixel-frontWidth):
+			for j in range(frontWidth,self.numPixel-frontWidth):
+				#if self.image[i,j] > 0:
+				if True:
+					sum = 0
+					for k in range(i-frontWidth,i+frontWidth):
+						for l in range(j-frontWidth,j+frontWidth):						
+							sum += self.image[k,l]
+	
+					density =  sum/normFactor
+					fimg[i,j] = density
+						
+					if density > densityMax:
+						densityMax = density
+						xMax = k
+						yMax = l
+					
 		draw = ImageDraw.Draw(frontierDensity)
 		draw.ellipse((xMax-10, yMax-10, xMax+10, yMax+10), outline=255)
+
+		for k in range(len(self.inhibits)):
+			cP = self.inhibits[k]
+			radius = self.inhibitRadius
+			radius = int(radius*self.divPix)
+			xGrid , yGrid = self.realToGrid(cP)
+			draw.ellipse((xGrid-radius, yGrid-radius, xGrid+radius, yGrid+radius), outline=255)
 		
-		filename = "densityMap%04u.png"
-		frontierDensity.save(filename % (self.saveCount-1))
+		frontierDensity.save("mapFrontierDensity%04u.png" % self.saveCount)		
+
+		self.saveCount += 1
 			
 		x, y = self.gridToReal([xMax, yMax])
+
+		print "maximum density point"
+		print x, y, densityMax
+
+		if densityMax < self.densityThreshold:
+			raise
 		
 		return [x,y]
 		

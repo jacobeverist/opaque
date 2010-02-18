@@ -9,10 +9,13 @@ from Map import Map
 from copy import *
 from math import *
 
+parentNode = 0
+
 class NavRoadMap(Map):
 
 	# take in vertices and edges of roadmap graph
 	def __init__(self, probe, roadGraph):
+		global parentNode
 		Map.__init__(self)
 		
 		self.probe = probe
@@ -26,8 +29,12 @@ class NavRoadMap(Map):
 		self.nodeCount = 0
 		self.childNodes = []
 		self.childEntities = []
-		self.parentNode = self.probe._mgr.getRootSceneNode().createChildSceneNode("navRoadCurveRoot" + str(self.nodeCount))
-
+		if parentNode != 0:
+			self.parentNode = parentNode
+		else:
+			self.parentNode = self.probe._mgr.getRootSceneNode().createChildSceneNode("navRoadCurveRoot" + str(self.nodeCount))
+			parentNode = self.parentNode
+			
 	def draw(self):
 		
 		# remove all children
@@ -73,6 +80,8 @@ class NavRoadMap(Map):
 		Compute path, backing from start, then going forward again towards goal
 		Root is the base of the roadmap graph
 		'''
+
+		print "computeHeadPath(", start, goal, root, ")"
 
 		# the path from the starting point to the origin
 		originPath = self.computePath(root, start)
@@ -199,6 +208,8 @@ class NavRoadMap(Map):
 		A. either of two end points
 		B. somewhere in the interior of the edge
 		'''
+
+		#print "getClosestEdgePoint(", edge, point, ")"
 
 		v1 = edge[0]
 		v2 = edge[1]

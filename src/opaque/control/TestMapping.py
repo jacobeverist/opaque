@@ -49,6 +49,8 @@ class TestMapping(SnakeControl):
 		self.sweep = behave.SpaceSweep(self.probe, direction)
 		self.pokeWalls = behave.PokeWalls(self.probe, direction, self.mapGraph.obstCallBack)
 
+		self.exploreRoot = [2.0,0.0]
+		self.pathStep = 0
 
 		self.stateA = -1
 		self.prevTime = 0
@@ -153,7 +155,7 @@ class TestMapping(SnakeControl):
 			self.contacts.step()
 			
 			if isDone:
-				self.stateA = 0
+				self.stateA = 4
 				print "going to state 0"
 
 				self.holdP.reset()
@@ -283,7 +285,7 @@ class TestMapping(SnakeControl):
 			if self.globalTimer - self.prevTime > 100:
 			
 				#if self.frontierMap.isFrontier():
-				if True:
+				if False:
 					self.stateA = 0
 					print "going to state 0"
 					self.mapGraph.saveLocalMap()
@@ -294,11 +296,16 @@ class TestMapping(SnakeControl):
 
 				else:
 					self.stateA = 5
+
+					self.mapGraph.saveLocalMap()
+
+					" anchoring turned off "
+					self.isAnchored = False
 					
-					frontierPoint = self.frontierMap.selectNextFrontier()
+					frontierPoint = self.mapGraph.selectNextFrontier()
 					currPose = self.probe.getActualSegPose(0)
 				
-					originPath, goalPath, breakPoint = self.navRoadMap.computeHeadPath(currPose, frontierPoint, self.exploreRoot)
+					originPath, goalPath, breakPoint = self.mapGraph.computeHeadPath(currPose, frontierPoint, self.exploreRoot)
 					self.wayPoints = [breakPoint, goalPath[-1]]
 					self.wayPaths = [originPath, goalPath]
 					
@@ -313,10 +320,20 @@ class TestMapping(SnakeControl):
 			isDone = self.pathStep.step()
 			joints = self.pathStep.getJoints()
 			self.mergeJoints([joints])
+
+			val = self.pathStep.getMask()
 			
+			self.contacts.setMask(val)
+			self.contacts.step()
+						
 			if isDone:
 				print "done!"
-				
+
+				self.mapGraph.saveLocalMap()
+
+				self.mapGraph.newNode()
+				self.mapGraph.forceUpdate(False)
+									
 				if len(self.wayPoints) > 0:
 					dest = self.wayPoints[0]
 					pose = self.probe.getActualSegPose(0)

@@ -86,6 +86,8 @@ class PathConcertinaGait(Behavior):
 		
 		return isDone
 
+	def getMask(self):
+		return self.blindConcertina.getMask()
 
 	def computeBounds(self, mask):
 		

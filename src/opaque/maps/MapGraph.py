@@ -12,6 +12,8 @@ import graph
 import csv
 from LocalNode import *
 from VoronoiMap import *
+from FrontierMap import *
+from NavRoadMap import *
 import pylab
 from matplotlib.patches import Circle
 from pose import *
@@ -545,6 +547,16 @@ class MapGraph:
 		
 		#self.saveMap()
 
+	def computeHeadPath(self, currPose, frontierPoint, exploreRoot):
+		vals = self.navRoadMap.computeHeadPath(currPose, frontierPoint, exploreRoot)
+
+		self.navRoadMap.draw()
+		
+		return vals
+
+	def selectNextFrontier(self):
+		return self.frontierMap.selectNextFrontier()
+
 	def getNodeOccMap(self, nodeNum):
 		localNode = self.poseGraph.get_node_attributes(nodeNum)
 		return localNode.getOccMap()
@@ -690,58 +702,126 @@ class MapGraph:
 							
 		self.obstMapImage.save("mapObstGraph%04u.png" % self.saveCount)	
 
+		self.frontierMap = FrontierMap(self.boundMapImage, self.obstMapImage)
+		self.frontierMap.selectNextFrontier()
+
+				
+		#self.frontierMap.saveMap(self.saveCount)			
+		
+		"""
 		self.frontMapImage = Image.new('L', (self.numPixel, self.numPixel), 0)
 		self.frontImage = self.frontMapImage.load()
 
 
-		sumRange = 1
+		sumRange = 3
 		num = (2*sumRange+1) * (2*sumRange+1)
 		
 		xMax = 0
 		yMax = 0
 		densityMax = 0
 		densityMin = 1e100
+
+		inhibitRadius = 1.0
+		inhibits = [[-3.0,0.0], [-2.0,0.0], [-1.0,0.0]]
 		
 		for i in range(sumRange,self.numPixel-sumRange):
 			for j in range(sumRange,self.numPixel-sumRange):
 				if self.boundImage[i,j] == 255:
-				#if True:
-					fSum = 0
-					for m in range(-sumRange, sumRange+1):
-						for n in range(-sumRange, sumRange+1):
-							fSum += self.obstImage[i+m, j+n]
-					
-					density =  fSum/num
-					density = 255 - density
-					self.frontImage[i,j] = density
-					
-					if density > densityMax:
-						xMax = i
-						yMax = j
-						densityMax = density
+	
+					isTooClose = False
+					xReal , yReal = self.gridToReal([i,j])
+
+					" make sure we only consider points that are outside inhibition circles "
+					for k in range(len(inhibits)):
+						iP = inhibits[k]
+						dist = sqrt((iP[0]-xReal)**2 + (iP[1]-yReal)**2)
+						if dist < inhibitRadius:
+							isTooClose = True
+							break
+
+					if not isTooClose:
+
+						fSum = 0
+						for m in range(-sumRange, sumRange+1):
+							for n in range(-sumRange, sumRange+1):
+								fSum += self.obstImage[i+m, j+n]
 						
-					if density < densityMin:
-						densityMin = density
+						density =  fSum/num
+						density = 255 - density
+						self.frontImage[i,j] = density
+						
+						if density > densityMax:
+							xMax = i
+							yMax = j
+							densityMax = density
+							
+						if density < densityMin:
+							densityMin = density
+
+		maxDen = densityMax - densityMin
 
 		for i in range(sumRange,self.numPixel-sumRange):
 			for j in range(sumRange,self.numPixel-sumRange):
 				if self.boundImage[i,j] == 255:
-					density =  self.frontImage[i,j]
-					density = density - densityMin
-					self.frontImage[i,j] = density
 
-		print "maximum density =", densityMax
-		print "minimum density =", densityMin
+					isTooClose = False
+					xReal , yReal = self.gridToReal([i,j])
+
+					" make sure we only consider points that are outside inhibition circles "
+					for k in range(len(inhibits)):
+						iP = inhibits[k]
+						dist = sqrt((iP[0]-xReal)**2 + (iP[1]-yReal)**2)
+						if dist < inhibitRadius:
+							isTooClose = True
+							break
+
+					if not isTooClose:
+						density =  self.frontImage[i,j]
+						density = density - densityMin
+						result = 255*(1.0-float(maxDen-density)/float(maxDen))
+						self.frontImage[i,j] = result
+						#print maxDen, density, result, self.frontImage[i,j]
+
+		maxSum = 0
+		xMax = 0
+		yMax = 0
+		frontWidth = 4
+
+		for i in range(frontWidth,self.numPixel-frontWidth):
+			for j in range(frontWidth,self.numPixel-frontWidth):
+
+				sum = 0
+				for k in range(i-frontWidth,i+frontWidth):
+					for l in range(j-frontWidth,j+frontWidth):						
+						sum += self.frontImage[k,l]
+
+				if sum > maxSum:
+					maxSum = sum
+					xMax = k
+					yMax = l
+				
+
+		#print "maximum density =", densityMax
+		#print "minimum density =", densityMin
 
 		draw = ImageDraw.Draw(self.frontMapImage)
 		draw.ellipse((xMax-10, yMax-10, xMax+10, yMax+10), outline=255)
+
+		for k in range(len(inhibits)):
+			cP = inhibits[k]
+			radius = inhibitRadius
+			radius = int(radius*self.divPix)
+			xGrid , yGrid = self.realToGrid(cP)
+			draw.ellipse((xGrid-radius, yGrid-radius, xGrid+radius, yGrid+radius), outline=255)
 		
 		self.frontMapImage.save("mapFrontierGraph%04u.png" % self.saveCount)	
-								
+		"""						
 		
 		self.voronoiMap = VoronoiMap(self.mapImage, self.boundMapImage)
 		self.voronoiMap.saveMap(self.saveCount)			
-								
+
+		self.navRoadMap = NavRoadMap(self.probe, self.voronoiMap.getGraph())
+			
 		self.saveCount += 1	
 			
 	def realToGrid(self, point):
