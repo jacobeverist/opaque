@@ -268,17 +268,21 @@ class SnakeProbe:
 		if i == 39:
 			currPos = self._bodies[i].getPosition()
 			angQuat = self._bodies[i].getOrientation()
+			
 			vec = ogre.Vector3(0.0,0.0,0.0)
 			radAngle = ogre.Radian(0.0)
 			val = angQuat.ToAngleAxis(radAngle,vec)
 			curAngle = radAngle.valueRadians()
 			curAngle = self.normalizeAngle(curAngle)
+			
 			if vec[1] < 0:
 				pose = [currPos[0], currPos[2], curAngle]
 			else:
 				pose = [currPos[0], currPos[2], -curAngle]
+			
 			pose[0] = pose[0] + (self.segLength/2)*cos(pose[2])
 			pose[1] = pose[1] + (self.segLength/2)*sin(pose[2])
+			
 			return pose
 
 		# we use the i+1'th body as the fixed frame of reference for the joint i
@@ -288,16 +292,9 @@ class SnakeProbe:
 
 		vec = ogre.Vector3(0.0,0.0,0.0)
 		radAngle = ogre.Radian(0.0)
-
-		#if i == 38:
-		#	print "before:", vec[0],vec[1],vec[2], radAngle.valueRadians()
 		val = angQuat.ToAngleAxis(radAngle,vec)
-		#if i == 38:
-		#	print "after:", vec[0],vec[1],vec[2], radAngle.valueRadians(), "val =", val
 		curAngle = radAngle.valueRadians()
 		curAngle = self.normalizeAngle(curAngle)
-
-		#print "angle", i, "=", curAngle
 
 		# curAngle is negated because the returned angle of the body is upside down wrt to the global frame
 		if vec[1] < 0:

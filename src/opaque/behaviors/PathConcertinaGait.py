@@ -13,12 +13,13 @@ from GlobalCurveFit import GlobalCurveFit
 class PathConcertinaGait(Behavior):
 
 	#def __init__(self, probe, direction = False, curve = 0):
-	def __init__(self, probe, direction = False, path = []):
+	def __init__(self, probe, contacts, direction = False, path = []):
 		Behavior.__init__(self, probe)
 
 		self.blindConcertina = BlindConcertinaGait(probe, direction)
 		
 		self.globalCurve = 0
+		self.contacts = contacts
 		
 		self.isInit = False
 		self.startCount = 0
@@ -42,7 +43,7 @@ class PathConcertinaGait(Behavior):
 		self.curve = VoronoiFit(self.path)
 		
 		if self.globalCurve == 0:
-			self.globalCurve = GlobalCurveFit(self.probe, self.curve)
+			self.globalCurve = GlobalCurveFit(self.probe, self.contacts, self.curve)
 		else:
 			self.globalCurve.setCurve(self.curve)
 		

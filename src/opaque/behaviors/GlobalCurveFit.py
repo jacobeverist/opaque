@@ -11,9 +11,10 @@ from numpy import arange
 
 class GlobalCurveFit(Behavior):
 
-	def __init__(self, probe, curve = 0):
+	def __init__(self, probe, contacts, curve = 0):
 		Behavior.__init__(self, probe)
 
+		self.contacts = contacts
 		self.numSegs = probe.numSegs
 		self.setCurve(curve)
 		self.startNode = 19
@@ -59,7 +60,6 @@ class GlobalCurveFit(Behavior):
 		self.vecNode1.attachObject(self.vecEnt1)
 		self.vecNode2.attachObject(self.vecEnt2)
 		self.vecNode3.attachObject(self.vecEnt3)
-
 		
 	def setCurve(self, curve):
 		self.curve = curve
@@ -182,7 +182,7 @@ class GlobalCurveFit(Behavior):
 		elif self.endNode == self.numSegs-2:
 			segments = range(self.startNode+1,self.endNode+2)
 			segmentOrder = 1
-			
+		
 		# use the direction of the curve to guide our kinematic order
 		else:
 			# something in the middle
@@ -195,12 +195,15 @@ class GlobalCurveFit(Behavior):
 			else:
 				segments = range(self.startNode+1,self.endNode+2)
 				segmentOrder = 1
-				
-		origin = self.probe.getActualSegPose(segments[0])
+		
+		#origin = self.probe.getActualSegPose(segments[0])
+		origin = self.contacts.getAverageSegPose(segments[0])
+
+		#origin = self.probe.getActualSegPose(segments[0])
 		xTotal = origin[0]
 		yTotal = origin[1]
 		totalAngle = origin[2]
-		
+
 		if segmentOrder == -1:
 			# adding constant offset so that we are on the joint
 			xTotal = xTotal + (self.probe.segLength/2)*cos(totalAngle)
@@ -447,7 +450,8 @@ class GlobalCurveFit(Behavior):
 		else:
 			backwards = False
 
-		origin = self.probe.getActualJointPose(self.startNode)
+		origin = self.contacts.getAveragePose(self.startNode)
+		#origin = self.probe.getActualJointPose(self.startNode)
 		xTotal = origin[0]
 		yTotal = origin[1]
 		totalAngle = origin[2]
@@ -697,7 +701,8 @@ class GlobalCurveFit(Behavior):
 
 		for j in joints:
 
-			origin = self.probe.getActualJointPose(j)
+			origin = self.contacts.getAveragePose(j)
+			#origin = self.probe.getActualJointPose(j)
 			poseVec = [cos(origin[2]),sin(origin[2])] 
 			vecSum1[0] += poseVec[0]
 			vecSum1[1] += poseVec[1]

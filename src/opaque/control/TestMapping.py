@@ -23,35 +23,35 @@ class TestMapping(SnakeControl):
 
 	def __init__(self, probe):
 		SnakeControl.__init__(self)
-			
+		
 		self.probe = probe
-
+		
 		self.setTimerAliasing(1)
-
+		
 		direction = True
 		
 		" pose estimation "
 		#self.contacts = pose.ContactReferences(self.probe)
 		self.contacts = pose.AverageContacts(self.probe)
 		self.contacts.setTimerAliasing(5)
-
+		
 		" maps "
 		self.mapGraph = maps.MapGraph(self.probe, self.contacts)
 		self.mapGraph.loadFile(11)
-
-
+		
+		
 		" behaviors "
 		self.anchorT = behave.AnchorTransition(self.probe)
 		self.holdP = behave.HoldPosition(self.probe)
 		self.holdT = behave.HoldTransition(self.probe)
 		self.adaptiveStep = behave.FrontAnchorTest(self.probe, self.contacts, self.mapGraph, direction)
-
+		
 		self.sweep = behave.SpaceSweep(self.probe, direction)
 		self.pokeWalls = behave.PokeWalls(self.probe, direction, self.mapGraph.obstCallBack)
-
+		
 		self.exploreRoot = [2.0,0.0]
 		self.pathStep = 0
-
+		
 		self.stateA = -1
 		self.prevTime = 0
 		
@@ -69,6 +69,8 @@ class TestMapping(SnakeControl):
 		#self.angle_output = open("angle_output_%04u.txt" % 0, "w")
 		#self.global_output = open("global_pose_output_%04u.txt" % 0, "w")
 		self.isCapture = False
+		
+		self.isInitialized = False
 		
 	def updateMaps(self):
 		pass
@@ -133,8 +135,7 @@ class TestMapping(SnakeControl):
 		else:
 			body = self.probe._bodies[20]
 			body.setMass(self.normalMass)
-
-			
+						
 		# alias the control sequence by some time step
 		SnakeControl.frameStarted(self)
 		if not self.isStep():
@@ -160,11 +161,15 @@ class TestMapping(SnakeControl):
 
 				self.holdP.reset()
 				self.holdT.reset()
-	
-				self.mapGraph.newNode()
-				self.mapGraph.forceUpdate(False)
-				self.mapGraph.saveLocalMap()
+
+				#self.mapGraph.newNode()
+				#self.mapGraph.forceUpdate(False)
+				#self.mapGraph.saveLocalMap()
+		
 				
+				#self.mapGraph.synch()
+				self.mapGraph.saveMap()
+						
 				#self.stateA = 1
 				self.isAnchored = False
 
@@ -297,7 +302,7 @@ class TestMapping(SnakeControl):
 				else:
 					self.stateA = 5
 
-					self.mapGraph.saveLocalMap()
+					#self.mapGraph.saveLocalMap()
 
 					" anchoring turned off "
 					self.isAnchored = False
@@ -310,13 +315,13 @@ class TestMapping(SnakeControl):
 					self.wayPaths = [originPath, goalPath]
 					
 					if self.pathStep == 0:
-						self.pathStep = behave.PathConcertinaGait(self.probe, False, self.wayPaths[0])
+						self.pathStep = behave.PathConcertinaGait(self.probe, self.contacts, False, self.wayPaths[0])
 					else:
 						self.pathStep.setPath(self.wayPaths[0])
 					
-					
+		
 		elif self.stateA == 5:
-					
+			
 			isDone = self.pathStep.step()
 			joints = self.pathStep.getJoints()
 			self.mergeJoints([joints])

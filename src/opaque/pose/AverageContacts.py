@@ -137,6 +137,27 @@ class AverageContacts:
 		
 		return False
 
+	def getAverageSegPose(self, targetSegment):
+	
+		if targetSegment == 0:
+			pose = self.getAveragePose(0)
+
+			pose[2] = pose[2] + self.probe.getServo(0)
+			pose[2] = self.normalizeAngle(pose[2])
+			pose[0] = pose[0] - self.probe.segLength*cos(pose[2])
+			pose[1] = pose[1] - self.probe.segLength*sin(pose[2])
+
+			return pose
+		
+		pose = self.getAveragePose(targetSegment-1)
+
+	
+		# adding constant offset so that we are on the joint
+		pose[0] = pose[0] + (self.probe.segLength/2)*cos(pose[2])
+		pose[1] = pose[1] + (self.probe.segLength/2)*sin(pose[2])
+
+		return pose
+
 	def getAveragePose(self, targetJoint):
 		
 		# find the first active reference from which to determine the new node's position in space
