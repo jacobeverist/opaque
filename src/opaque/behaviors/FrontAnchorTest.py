@@ -134,7 +134,7 @@ class FrontAnchorTest(Behavior):
 		
 	def computeCurve(self):
 		
-		self.frontCurve = AdaptiveAnchorCurve(4*pi)				
+		self.frontCurve = AdaptiveAnchorCurve(4*pi, self.probe.segLength)				
 
 		if self.frontAnchorFit == 0:
 			self.frontAnchorFit = FrontAnchorFit(self.probe, self.direction, self.spliceJoint)
@@ -147,7 +147,7 @@ class FrontAnchorTest(Behavior):
 
 
 		self.adaptiveCurve = BackConcertinaCurve(4*pi)
-		self.adaptiveCurve.setTailLength(2.0)
+		#self.adaptiveCurve.setTailLength(2.0)
 
 		if self.concertinaFit == 0:
 			self.concertinaFit = FastLocalCurveFit(self.probe, self.direction, self.adaptiveCurve, 38)
@@ -966,6 +966,7 @@ class FrontAnchorTest(Behavior):
 		print "anchorJoints =", len(anchorJoints), "amp =", self.frontCurve.getPeakAmp()
 		#if len(anchorJoints) > 0 and self.frontCurve.getPeakAmp() > 0 and self.isJerking:
 
+		" Lead joints of the snake are weakened when not part of front-anchoring "
 		if len(anchorJoints) > 0 and self.frontCurve.getPeakAmp() > 0:
 			
 			if not self.direction:

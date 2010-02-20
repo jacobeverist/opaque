@@ -79,7 +79,6 @@ class FrontAnchorFit(Behavior):
 		return self.jointErrorClasses[index]
 		
 
-	" this code has been modified and the changes are untested "
 	def forwardFit(self):
 		
 		# origin is at the tip of segment 39
@@ -246,7 +245,7 @@ class FrontAnchorFit(Behavior):
 				break		
 	
 	
-		#print "breakFromFit = ", breakFromFit
+		print "breakFromFit = ", breakFromFit
 		
 		" position of last joint iterated through "
 		self.lastPosition = originPose

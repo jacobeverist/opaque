@@ -90,7 +90,8 @@ class BackConcertinaCurve:
 		p2 = [self.x_len, pA[1] + varZ]
 
 		
-		self.tail_len = 3.0
+		#self.tail_len = 3.0
+		self.tail_len = 0.0
 		
 		followLen = self.tail_len - self.head_len
 		if followLen < 0:

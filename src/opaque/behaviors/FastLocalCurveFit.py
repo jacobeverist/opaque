@@ -197,7 +197,6 @@ class FastLocalCurveFit(Behavior):
 		
 		return cost
 		
-
 	def getPeakJoints(self, index):
 		return self.jointClasses[index]
 

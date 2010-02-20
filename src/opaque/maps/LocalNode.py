@@ -49,9 +49,9 @@ class LocalNode:
 		self.occMap = LocalOccMap(self)
 		self.boundaryMap = LocalBoundaryMap(self)
 		self.obstacleMap = LocalObstacleMap(self)
-		self.voronoiMap = LocalVoronoiMap(self)
-		self.navMap = LocalNavRoadMap(self)
-		self.frontierMap = LocalFrontierMap(self)
+		#self.voronoiMap = LocalVoronoiMap(self)
+		#self.navMap = LocalNavRoadMap(self)
+		#self.frontierMap = LocalFrontierMap(self)
 		
 		self.saveCount = 0
 	
@@ -447,14 +447,14 @@ class LocalNode:
 
 		self.boundaryMap.update()
 		self.obstacleMap.update()
-		self.voronoiMap.update()
-		self.frontierMap.update()
-		self.navMap.update()
+		#self.voronoiMap.update()
+		#self.frontierMap.update()
+		#self.navMap.update()
 
 		self.dirty = False
 		
 	def saveMap(self):
-			
+		
 		" FIXME: uncomment these to build the other maps "
 		
 		" synchronize maps first "
@@ -464,11 +464,12 @@ class LocalNode:
 		# save a copy of each version of the map
 		#self.saveCount += 1
 		self.occMap.saveMap()
-		self.boundaryMap.saveMap()
+		#self.boundaryMap.saveMap()
 		self.obstacleMap.saveMap()
-		self.voronoiMap.saveMap()
-		self.frontierMap.saveMap()
+		#self.voronoiMap.saveMap()
+		#self.frontierMap.saveMap()
 		
+		"""
 		
 		self.computeGndAlphaBoundary()
 		val = repr(self.a_vert)
@@ -492,6 +493,8 @@ class LocalNode:
 		f = open("est_occ_points_%04u.txt" % self.nodeID, 'w')
 		f.write(val)
 		f.close()
+		
+		"""
 
 	def computeAlphaBoundary(self):
 

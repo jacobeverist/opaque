@@ -37,7 +37,7 @@ class TestMapping(SnakeControl):
 		
 		" maps "
 		self.mapGraph = maps.MapGraph(self.probe, self.contacts)
-		self.mapGraph.loadFile(11)
+		self.mapGraph.loadFile(9)
 		
 		
 		" behaviors "
@@ -151,25 +151,25 @@ class TestMapping(SnakeControl):
 			joints1 = self.anchorT.getJoints()
 			
 			self.mergeJoints([joints1])
-
+			
 			self.contacts.setMask( [1.0 for i in range(39)] )
 			self.contacts.step()
 			
 			if isDone:
-				self.stateA = 4
+				#self.stateA = 4
 				print "going to state 0"
 
 				self.holdP.reset()
 				self.holdT.reset()
 
-				#self.mapGraph.newNode()
-				#self.mapGraph.forceUpdate(False)
-				#self.mapGraph.saveLocalMap()
-		
+				self.mapGraph.newNode()
+				self.mapGraph.forceUpdate(False)
+				self.mapGraph.saveLocalMap()
 				
 				#self.mapGraph.synch()
 				self.mapGraph.saveMap()
 						
+				self.stateA = 0
 				#self.stateA = 1
 				self.isAnchored = False
 

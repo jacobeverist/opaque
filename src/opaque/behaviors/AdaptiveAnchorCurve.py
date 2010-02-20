@@ -6,11 +6,12 @@ import pylab
 
 class AdaptiveAnchorCurve:
 
-	def __init__(self, freq):
+	def __init__(self, freq, segLength = 0.15):
 
 		" the curve is a cosine curve centered at the peak and "
 		" straight lines to positive and negative infinity "
 
+		self.segLength = segLength
 		self.initFreq = freq
 		self.freq = freq
 		self.amp = 1.0
@@ -105,22 +106,20 @@ class AdaptiveAnchorCurve:
 		
 		if point[0] < xNotLessThan:
 			return 1e100, 0.5, copy(point)
-		
-		" Hypothesis 1: closest point on the cosine curve "
-		" evenly sample the cosine curve to find the closest point "
-				
+					
 		x_samp = point[0]
 
-		" determine the amplitude control points we'll use "
+		" if the sample goes beyond the anchor curve, simply return x value and the terminating y position "
 		if x_samp >= self.ampSpacing:
-			p2 = self.controlA['p2']
-			return [x_samp,p2[1]]
-					
+			if x_samp < self.ampSpacing + self.segLength:
+				p2 = self.controlA['p2']
+				return [x_samp,p2[1]]
+			else:
+				raise
+
+		" point is on the anchor curve "
 		adapAmp = self.peakAmp[0]
-		
 		varZ = adapAmp * sin(self.initFreq*x_samp)
-		
-		
 		curvePoint1 = [x_samp,varZ]
 		
 		return curvePoint1

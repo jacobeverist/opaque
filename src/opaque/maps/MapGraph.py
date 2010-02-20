@@ -536,6 +536,7 @@ class MapGraph:
 
 		self.stablePose.setDirection(isForward)
 
+		#if True:
 		if self.stablePose.isStable():
 			#print "stable"
 			self.currNode.update(isForward)
