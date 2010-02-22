@@ -16,6 +16,9 @@ class FastLocalCurveFit(Behavior):
 	def __init__(self, probe, anterior = True, curve = 0, cutoff = 19):
 		global fastLocalNodeCount
 
+		print "creating FastLocalCurveFit behavior"
+
+
 		Behavior.__init__(self, probe)
 
 		self.numSegs = self.probe.numSegs

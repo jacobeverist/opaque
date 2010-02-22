@@ -13,6 +13,7 @@ from HoldTransition import HoldTransition
 from HoldSlideTransition import HoldSlideTransition
 from AdaptiveAnchorCurve import AdaptiveAnchorCurve
 from BackConcertinaCurve import BackConcertinaCurve
+from GlobalCurveFit import GlobalCurveFit
 
 """
 TODO
@@ -25,9 +26,9 @@ TODO
 
 """
 
-class FrontAnchorTest(Behavior):
+class PathStep(Behavior):
 
-	def __init__(self, probe, contacts, mapGraph, direction = True):
+	def __init__(self, probe, contacts, mapGraph, direction = True, path = []):
 		Behavior.__init__(self, probe)
 
 		self.mapGraph = mapGraph
@@ -36,6 +37,7 @@ class FrontAnchorTest(Behavior):
 		self.frontAnchorFit = 0
 		self.concertinaFit = 0
 
+		
 		self.direction = direction
 		self.isInit = False
 
@@ -58,12 +60,14 @@ class FrontAnchorTest(Behavior):
 		
 		if direction:
 			self.spliceJoint = 7
+			#self.spliceJoint = 13
 		else:
 			self.spliceJoint = 31
 			
 		self.lastSpliceAngle = 0.0
+
 		
-		self.computeCurve()
+		#self.computeCurve()
 
 		self.mask = [0.0 for i in range(0,40)]
 		self.count = 0
@@ -90,19 +94,40 @@ class FrontAnchorTest(Behavior):
 		#self.frontExtending = False
 		self.frontExtendDone = False
 		
+
+		self.globalCurveFit = 0
+		#self.setPath(path)
 				
 	def getMask(self):
 		return self.mask
+
+	def setPath(self, path):
+		print "setting path: ", path
+
+		self.path = deepcopy(path)
+		#self.computeCurve()
+
+		self.pathCurve = VoronoiFit(self.path)
 		
+		self.globalCurveFit = GlobalCurveFit(self.probe, self.contacts, self.pathCurve)
+		
+		self.setDirection(not self.globalCurveFit.getPathDirection())
+		
+		self.globalCurveFit.draw()
+				
+	def reverseDirection(self):
+		self.path.reverse()
+		
+		self.setPath(self.path)
+		
+		self.computeCurve()
+						
 	def setDirection(self, isForward):
 
 		self.direction = isForward
-
-		if self.direction:
-			self.spliceJoint = 7
-		else:
-			self.spliceJoint = 31
 		
+		print "setting direction =", self.direction
+
 		self.mask = [0.0 for i in range(0,40)]
 		self.count = 0
 
@@ -121,6 +146,7 @@ class FrontAnchorTest(Behavior):
 						
 		if self.direction:
 			self.spliceJoint = 7
+			#self.spliceJoint = 13
 		else:
 			self.spliceJoint = 31
 		
@@ -130,10 +156,11 @@ class FrontAnchorTest(Behavior):
 		self.adaptiveCurve = 0
 		self.concertinaFit = 0
 		
-		self.computeCurve()
+		#self.computeCurve()
 		
 	def computeCurve(self):
-		
+
+				
 		self.frontCurve = AdaptiveAnchorCurve(4*pi, self.probe.segLength)				
 
 		if self.frontAnchorFit == 0:
@@ -148,7 +175,7 @@ class FrontAnchorTest(Behavior):
 
 		self.adaptiveCurve = BackConcertinaCurve(4*pi)
 		self.adaptiveCurve.setTailLength(2.0)
-
+		
 		if self.concertinaFit == 0:
 			self.concertinaFit = FastLocalCurveFit(self.probe, self.direction, self.adaptiveCurve, 38)
 
@@ -164,23 +191,16 @@ class FrontAnchorTest(Behavior):
 				self.concertinaFit.setEndNode(self.spliceJoint)
 
 
-		#self.adaptiveCurve.setPeakAmp(0,0.2)
-		#self.adaptiveCurve.setPeakAmp(1,0.2)
-		#self.adaptiveCurve.setPeakAmp(4,0.33)
 		self.frontAnchorFit.step()
 		self.concertinaFit.step()
 		
 		resultJoints = self.spliceFitJoints()
-		
-		#print "resultJoints =", resultJoints
 		
 		self.holdSlideT.setSpliceJoint(self.spliceJoint)
 		
 		self.holdSlideT.reset(resultJoints, self.direction)
 		self.holdT.reset(resultJoints)
 		self.refDone = False
-
-		#self.adaptiveCurve.setTailLength(2.0)
 
 	def spliceFitJoints(self, isStart = False):
 		
@@ -844,7 +864,7 @@ class FrontAnchorTest(Behavior):
 
 				print "anchor joints =", anchorJoints
 				print "setting jerkJoints to", self.jerkJoints
-								
+				
 				if self.jerkAngle == 0 and self.prevJerkAngle == 0:
 					self.nomJerk = self.probe.getServo(self.jerkJoint) * 180.0 / pi
 				
@@ -967,6 +987,7 @@ class FrontAnchorTest(Behavior):
 		#if len(anchorJoints) > 0 and self.frontCurve.getPeakAmp() > 0 and self.isJerking:
 
 		" Lead joints of the snake are weakened when not part of front-anchoring "
+		"""
 		if len(anchorJoints) > 0 and self.frontCurve.getPeakAmp() > 0:
 			
 			if not self.direction:
@@ -981,11 +1002,29 @@ class FrontAnchorTest(Behavior):
 				for i in range(0, minJoint-1):					
 					if i <= self.probe.numSegs-2:
 						self.probe.setJointTorque(i, 3.0)
+		"""
 
 		" execute the local curve fitting "
 		self.frontAnchorFit.step()
 
+		" compute the bounds for behavior for global curve fitting "
+		if self.frontAnchorFit.anterior:
+			startNode = 0
+			endNode = self.frontAnchorFit.lastJoint
+			self.globalCurveFit.setBoundaries(startNode, endNode)
+		else:
+			startNode = self.frontAnchorFit.lastJoint
+			endNode = self.probe.numSegs-2	
+			self.globalCurveFit.setBoundaries(startNode, endNode)
+			
+
+		
+		" Set the joints, with joints2 as priority over joints1 "
+		#self.mergeJoints([joints2, joints1])
+
 		resultJoints = self.spliceFitJoints()
+		
+
 		self.holdT.reset(resultJoints)
 		
 		if self.isJerking:
@@ -1224,11 +1263,14 @@ class FrontAnchorTest(Behavior):
 			" make no movements until all reference nodes are activated "
 			if self.refDone:
 				if self.frontExtending:
-					#self.transDone = self.holdT.step()
 					self.transDone = self.holdSlideT.step()
 				else:
-					self.transDone = self.holdT.step()
-
+					self.transDone = self.holdT.step()					
+					" execute the global curve fitting "
+					
+				if self.frontAnchoringState and not self.frontExtending:
+					self.globalCurveFit.step()
+		
 		anchorJoints = self.frontAnchorFit.getJoints()
 		
 
@@ -1241,6 +1283,17 @@ class FrontAnchorTest(Behavior):
 			#print joints
 		else:
 			joints = self.holdT.getJoints()
+
+		if self.frontAnchoringState and not self.frontExtending:
+			" collect joint settings for both behaviors "
+			joints2 = self.globalCurveFit.getJoints()
+			
+			if self.frontAnchorFit.anterior:			
+				for p in range(0,self.frontAnchorFit.lastJoint+1):
+					joints[p] = joints2[p]
+			else:
+				for p in range(self.frontAnchorFit.lastJoint, self.probe.numSegs-1):
+					joints[p] = joints2[p]
 
 		" Set the joints "
 		if self.refDone:
@@ -1286,8 +1339,7 @@ class FrontAnchorTest(Behavior):
 				
 			self.minAmp = 0.0
 			self.maxAmp = 0.0			
-			self.ampInc = 0.04
-						
+			self.ampInc = 0.04		
 			self.currPeak = 0
 			
 			self.lastSpliceAngle = 0.0
@@ -1308,7 +1360,7 @@ class FrontAnchorTest(Behavior):
 			self.frontAnchoringDone = False
 			self.frontExtending = True
 			self.frontExtendDone = False
-						
+			
 			self.minAmp = 0.0
 			self.maxAmp = 0.0			
 			self.ampInc = 0.04
@@ -1319,6 +1371,7 @@ class FrontAnchorTest(Behavior):
 							
 			if self.direction:
 				self.spliceJoint = 7
+				#self.spliceJoint = 13
 			else:
 				self.spliceJoint = 31
 			

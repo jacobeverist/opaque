@@ -14,6 +14,8 @@ class FrontAnchorFit(Behavior):
 
 	def __init__(self, probe, anterior = True, spliceJoint = 19):
 		global fastLocalNodeCount
+		
+		print "creating FrontAnchorFit behavior"
 
 		Behavior.__init__(self, probe)
 
@@ -32,6 +34,7 @@ class FrontAnchorFit(Behavior):
 		self.curve = 0
 
 		self.lastPosition = [0.0,0.0,0.0]
+		self.lastJoint = 0
 		
 	def setSpliceJoint(self, spliceJoint):
 		
@@ -107,6 +110,8 @@ class FrontAnchorFit(Behavior):
 		breakFromFit = False
 
 		for currJoint in ind:
+			
+			self.lastJoint = currJoint
 
 			crossOvers = []
 
@@ -274,13 +279,13 @@ class FrontAnchorFit(Behavior):
 		" positions and angles of the joints computed for this step "
 		self.jointPositions = [None for i in range(self.probe.numSegs-1)]
 		self.jointAngles = [None for i in range(self.probe.numSegs-1)]
-
-
 		
 		radius = self.probe.segLength
 		breakFromFit = False
 		
 		for currJoint in ind:
+
+			self.lastJoint = currJoint
 			
 			crossOvers = []
 			

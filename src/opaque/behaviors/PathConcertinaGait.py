@@ -29,6 +29,8 @@ class PathConcertinaGait(Behavior):
 
 	def setDirection(self, direction):
 		self.direction = direction
+		print "setting direction =", self.direction
+
 		self.blindConcertina.setDirection(direction)
 		
 	def setPath(self, path):
@@ -46,7 +48,7 @@ class PathConcertinaGait(Behavior):
 			self.globalCurve = GlobalCurveFit(self.probe, self.contacts, self.curve)
 		else:
 			self.globalCurve.setCurve(self.curve)
-		
+			
 		self.setDirection(self.globalCurve.getPathDirection())
 			
 		self.globalCurve.draw()

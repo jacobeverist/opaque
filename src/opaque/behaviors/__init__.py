@@ -29,3 +29,4 @@ from AdaptiveConcertinaGaitJerk import *
 from FrontAnchorTest import *
 from AdaptiveCosine import *
 from BackConcertinaCurve import *
+from PathStep import *

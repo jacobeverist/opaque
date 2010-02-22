@@ -125,7 +125,7 @@ class TestMapping(SnakeControl):
 	def frameStarted(self):
 		
 		self.adjustCamera()
-		#self.grabImage()
+		self.grabImage()
 		#self.grabAngles()
 
 		if self.isAnchored:
@@ -156,20 +156,20 @@ class TestMapping(SnakeControl):
 			self.contacts.step()
 			
 			if isDone:
-				#self.stateA = 4
+				self.stateA = 4
 				print "going to state 0"
 
 				self.holdP.reset()
 				self.holdT.reset()
 
-				self.mapGraph.newNode()
-				self.mapGraph.forceUpdate(False)
-				self.mapGraph.saveLocalMap()
+				#self.mapGraph.newNode()
+				#self.mapGraph.forceUpdate(False)
+				#self.mapGraph.saveLocalMap()
 				
-				#self.mapGraph.synch()
+				self.mapGraph.synch()
 				self.mapGraph.saveMap()
 						
-				self.stateA = 0
+				#self.stateA = 0
 				#self.stateA = 1
 				self.isAnchored = False
 
@@ -314,11 +314,24 @@ class TestMapping(SnakeControl):
 					self.wayPoints = [breakPoint, goalPath[-1]]
 					self.wayPaths = [originPath, goalPath]
 					
+					print "originPath:", originPath
+					
+					print "goalPath:", goalPath
+
+					self.pathStep = behave.PathStep(self.probe, self.contacts, self.mapGraph, False)
+					self.pathStep.setPath(self.wayPaths[0])
+					self.pathStep.computeCurve()
+					
+					"""
 					if self.pathStep == 0:
-						self.pathStep = behave.PathConcertinaGait(self.probe, self.contacts, False, self.wayPaths[0])
+						#self.pathStep = behave.PathConcertinaGait(self.probe, self.contacts, True, self.wayPaths[0])
+						self.pathStep = behave.PathStep(self.probe, self.contacts, self.mapGraph, False)
+						self.pathStep.setPath(self.wayPaths[0])
+						self.pathStep.computeCurve()
 					else:
 						self.pathStep.setPath(self.wayPaths[0])
-					
+						self.pathStep.computeCurve()
+					"""
 		
 		elif self.stateA == 5:
 			
@@ -338,7 +351,7 @@ class TestMapping(SnakeControl):
 
 				self.mapGraph.newNode()
 				self.mapGraph.forceUpdate(False)
-									
+		
 				if len(self.wayPoints) > 0:
 					dest = self.wayPoints[0]
 					pose = self.probe.getActualSegPose(0)
@@ -361,6 +374,7 @@ class TestMapping(SnakeControl):
 							#curve = VoronoiFit(self.wayPaths[0])
 							#self.pathStep.setCurve(curve)
 							self.pathStep.setPath(self.wayPaths[0])
+							self.pathStep.computeCurve()
 						else:
 							self.stateA = 1
 							

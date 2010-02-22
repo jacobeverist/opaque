@@ -9,9 +9,14 @@ from common import *
 from Behavior import *
 from numpy import arange
 
+
+globalNodeCount = 0
+
 class GlobalCurveFit(Behavior):
 
 	def __init__(self, probe, contacts, curve = 0):
+		global globalNodeCount
+
 		Behavior.__init__(self, probe)
 
 		self.contacts = contacts
@@ -24,11 +29,15 @@ class GlobalCurveFit(Behavior):
 		self.setTimerAliasing(5)
 
 		# nodes for drawing purposes
-		self.nodeCount = 0
+		self.nodeCount = globalNodeCount
+		globalNodeCount += 1
 		self.childNodes = []
 		self.childEntities = []
 		self.parentNode = self.probe._mgr.getRootSceneNode().createChildSceneNode("globalCurveRoot" + str(self.nodeCount))
 
+		
+
+		
 		self.vecNode1 = self.parentNode.createChildSceneNode("vecNode1")
 		self.vecNode2 = self.parentNode.createChildSceneNode("vecNode2")
 		self.vecNode3 = self.parentNode.createChildSceneNode("vecNode3")
@@ -41,7 +50,10 @@ class GlobalCurveFit(Behavior):
 		self.vecEnt1.setMaterialName("Red")
 		self.vecEnt2.setMaterialName("Green")
 		self.vecEnt3.setMaterialName("Blue")
-		
+
+		self.childNodes = [self.vecNode1, self.vecNode2, self.vecNode3]
+		self.childEntities = [self.vecEnt1, self.vecEnt2, self.vecEnt3]
+				
 		position = ogre.Vector3(0.0,0.0,0.0)
 		self.vecNode1.setPosition(position)
 		self.vecNode2.setPosition(position)
@@ -60,6 +72,22 @@ class GlobalCurveFit(Behavior):
 		self.vecNode1.attachObject(self.vecEnt1)
 		self.vecNode2.attachObject(self.vecEnt2)
 		self.vecNode3.attachObject(self.vecEnt3)
+		
+	def __del__(self):
+
+		# remove all children
+		self.parentNode.removeAllChildren()
+
+		# deference the child nodes now
+		for child in self.childNodes:
+			self.probe._mgr.destroySceneNode(child)
+
+		self.childNodes = []
+	
+		for child in self.childEntities:
+			self.probe._mgr.destroyEntity(child)
+	
+		self.childEntities = []		
 		
 	def setCurve(self, curve):
 		self.curve = curve
@@ -127,6 +155,8 @@ class GlobalCurveFit(Behavior):
 	def setBoundaries(self, startNode, endNode):
 		self.startNode = startNode
 		self.endNode = endNode
+		
+		print "setting boundaries:", self.startNode, self.endNode
 
 	# perform a continuous transition to a continuous fit
 	def step(self):
@@ -174,6 +204,7 @@ class GlobalCurveFit(Behavior):
 		# now we need to determine which segments are active
 		# start from the inner segment and work to the 0th segment
 		if self.startNode == 0:
+			#segments = range(0,self.endNode+1)
 			segments = range(0,self.endNode+1)
 			segments.reverse()
 			segmentOrder = -1
@@ -195,6 +226,8 @@ class GlobalCurveFit(Behavior):
 			else:
 				segments = range(self.startNode+1,self.endNode+2)
 				segmentOrder = 1
+		
+		print "global curve fit segments:", segments
 		
 		#origin = self.probe.getActualSegPose(segments[0])
 		origin = self.contacts.getAverageSegPose(segments[0])
@@ -708,7 +741,7 @@ class GlobalCurveFit(Behavior):
 			vecSum1[1] += poseVec[1]
 
 			dist, linePoint, orientVec = self.curve.findClosestPoint([origin[0], origin[1]])
-			print dist, linePoint, orientVec
+			#print dist, linePoint, orientVec
 			vecSum2[0] += orientVec[0]
 			vecSum2[1] += orientVec[1]
 
@@ -745,3 +778,4 @@ class GlobalCurveFit(Behavior):
 		else:
 			self.direction = False
 
+		print "globalCurveFit direction =", self.direction
