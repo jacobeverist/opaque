@@ -35,9 +35,10 @@ class GlobalCurveFit(Behavior):
 		self.childEntities = []
 		self.parentNode = self.probe._mgr.getRootSceneNode().createChildSceneNode("globalCurveRoot" + str(self.nodeCount))
 
-		
+		self._allRefNodes = []
+		self._allRefEnt = []
 
-		
+		"""
 		self.vecNode1 = self.parentNode.createChildSceneNode("vecNode1")
 		self.vecNode2 = self.parentNode.createChildSceneNode("vecNode2")
 		self.vecNode3 = self.parentNode.createChildSceneNode("vecNode3")
@@ -72,23 +73,11 @@ class GlobalCurveFit(Behavior):
 		self.vecNode1.attachObject(self.vecEnt1)
 		self.vecNode2.attachObject(self.vecEnt2)
 		self.vecNode3.attachObject(self.vecEnt3)
-		
+		"""
 	def __del__(self):
 
-		# remove all children
-		self.parentNode.removeAllChildren()
-
-		# deference the child nodes now
-		for child in self.childNodes:
-			self.probe._mgr.destroySceneNode(child)
-
-		self.childNodes = []
-	
-		for child in self.childEntities:
-			self.probe._mgr.destroyEntity(child)
-	
-		self.childEntities = []		
-		
+		self.clearDraw()
+				
 	def setCurve(self, curve):
 		self.curve = curve
 		self.computePathDirection()
@@ -111,22 +100,9 @@ class GlobalCurveFit(Behavior):
 
 	def draw(self):
 		
-		return
-
-		# remove all children
-		self.parentNode.removeAllChildren()
-
-		# deference the child nodes now
-		for child in self.childNodes:
-			self.probe._mgr.destroySceneNode(child)
-
-		self.childNodes = []
 	
-		for child in self.childEntities:
-			self.probe._mgr.destroyEntity(child)
+		self.clearDraw()
 	
-		self.childEntities = []
-		
 		# draw the points in the simulation
 		#for i in range(len(self.realPath)):
 		for i in arange(0.0,1.0, 0.01):
@@ -310,23 +286,24 @@ class GlobalCurveFit(Behavior):
 				if asin(locVec[1]) < 0:
 					ang2 = -ang2
 				
-				newQuat = ogre.Quaternion(-ogre.Radian(ang1), ogre.Vector3().UNIT_Y)
-				self.vecNode1.setOrientation(newQuat)
-				newQuat = ogre.Quaternion(-ogre.Radian(ang2), ogre.Vector3().UNIT_Y)
-				self.vecNode2.setOrientation(newQuat)
+				#newQuat = ogre.Quaternion(-ogre.Radian(ang1), ogre.Vector3().UNIT_Y)
+				#self.vecNode1.setOrientation(newQuat)
+				#newQuat = ogre.Quaternion(-ogre.Radian(ang2), ogre.Vector3().UNIT_Y)
+				#self.vecNode2.setOrientation(newQuat)
 	
-				position = ogre.Vector3(xTotal + (self.probe.segLength/2)*cos(ang1),0.0,yTotal + (self.probe.segLength/2)*sin(ang1))
-				self.vecNode1.setPosition(position)
-				position = ogre.Vector3(xTotal + (self.probe.segLength/2)*cos(ang2),0.0,yTotal + (self.probe.segLength/2)*sin(ang2))
-				self.vecNode2.setPosition(position)
+				#position = ogre.Vector3(xTotal + (self.probe.segLength/2)*cos(ang1),0.0,yTotal + (self.probe.segLength/2)*sin(ang1))
+				#self.vecNode1.setPosition(position)
+				#position = ogre.Vector3(xTotal + (self.probe.segLength/2)*cos(ang2),0.0,yTotal + (self.probe.segLength/2)*sin(ang2))
+				#self.vecNode2.setPosition(position)
+
 			if i == 39:
 				ang3 = acos(totalVec[0])
 				if asin(totalVec[1]) < 0:
 					ang3 = -ang3
-				newQuat = ogre.Quaternion(-ogre.Radian(ang3), ogre.Vector3().UNIT_Y)
-				self.vecNode3.setOrientation(newQuat)
-				position = ogre.Vector3(xTotal + (self.probe.segLength/2)*cos(ang3),0.0,yTotal + (self.probe.segLength/2)*sin(ang3))
-				self.vecNode3.setPosition(position)
+				#newQuat = ogre.Quaternion(-ogre.Radian(ang3), ogre.Vector3().UNIT_Y)
+				#self.vecNode3.setOrientation(newQuat)
+				#position = ogre.Vector3(xTotal + (self.probe.segLength/2)*cos(ang3),0.0,yTotal + (self.probe.segLength/2)*sin(ang3))
+				#self.vecNode3.setPosition(position)
 			
 				
 			# weighted direction we want to point to given orientation and location vectors
