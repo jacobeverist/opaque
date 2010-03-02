@@ -164,6 +164,8 @@ class GlobalCurveFit(Behavior):
 			print "Nodes out of bounds for fitBody:", self.startNode, self.endNode
 			raise
 
+		#self.direction = False
+
 		backwards = not self.direction
 
 		self.closePoints = []
@@ -175,6 +177,8 @@ class GlobalCurveFit(Behavior):
 		tAngle = acos(tVec[0])
 		if asin(tVec[1]) < 0:
 			tAngle = -tAngle
+		
+		print "tPoint:", tPoint, "tVec:", tVec, "tAngle:", tAngle
 			
 		
 		# now we need to determine which segments are active
@@ -277,6 +281,8 @@ class GlobalCurveFit(Behavior):
 				orientVec[1] *= -1
 				locVec[0] *= -1
 				locVec[1] *= -1
+			
+			
 				
 			if i == 39:
 				ang1 = acos(orientVec[0])
@@ -310,7 +316,8 @@ class GlobalCurveFit(Behavior):
 			desVec = [(orientVec[0] + dist*locVec[0])/(dist+1.0), (orientVec[1] + dist*locVec[1])/(dist+1.0)]
 			desMag = sqrt(desVec[0]**2 + desVec[1]**2)
 			desVec = [desVec[0]/desMag, desVec[1]/desMag]
-		
+
+			print self.direction, i, "orientVec:", orientVec, "locVec:", locVec, "desVec:", desVec
 
 			# Compute the required rotation from current orientation to desired orientation (totalVec, desVec)
 
@@ -726,8 +733,8 @@ class GlobalCurveFit(Behavior):
 		mag1 = sqrt(vecSum1[0]**2 + vecSum1[1]**2)
 		vecSum1 = [vecSum1[0]/mag1,vecSum1[1]/mag1]
 
-		#print "snake vector:", vecSum1
-		#print "path vector:", vecSum2
+		print "snake vector:", vecSum1
+		print "path vector:", vecSum2
 		# compute angle of snake orientation average
 		ang1 = acos(vecSum1[0])
 		if asin(vecSum1[1]) < 0:
@@ -745,8 +752,8 @@ class GlobalCurveFit(Behavior):
 		if asin(vecSum2[1]) < 0:
 			ang2 *= -1
 
-		#print "snake orientation:", ang1
-		#print "PATH DIRECTION:", ang2
+		print "snake orientation:", ang1
+		print "PATH DIRECTION:", ang2
 
 		# forward, path along ascending joints
 		if fabs(ang2) < pi/2:
@@ -754,5 +761,7 @@ class GlobalCurveFit(Behavior):
 		# backward, path along descending joints
 		else:
 			self.direction = False
+
+		#self.direction = False
 
 		print "globalCurveFit direction =", self.direction

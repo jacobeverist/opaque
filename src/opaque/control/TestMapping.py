@@ -49,7 +49,7 @@ class TestMapping(SnakeControl):
 		self.sweep = behave.SpaceSweep(self.probe, direction)
 		self.pokeWalls = behave.PokeWalls(self.probe, direction, self.mapGraph.obstCallBack)
 		
-		self.exploreRoot = [2.0,0.0]
+		self.exploreRoot = [0.5,0.0]
 		self.pathStep = 0
 		
 		self.stateA = -1
@@ -124,8 +124,8 @@ class TestMapping(SnakeControl):
 
 	def frameStarted(self):
 		
-		self.adjustCamera()
-		self.grabImage()
+		#self.adjustCamera()
+		#self.grabImage()
 		#self.grabAngles()
 
 		if self.isAnchored:
@@ -308,7 +308,8 @@ class TestMapping(SnakeControl):
 					self.isAnchored = False
 					
 					frontierPoint = self.mapGraph.selectNextFrontier()
-					currPose = self.probe.getActualSegPose(0)
+					#currPose = self.probe.getActualSegPose(0)
+					currPose = self.contacts.getAverageSegPose(0)
 				
 					originPath, goalPath, breakPoint = self.mapGraph.computeHeadPath(currPose, frontierPoint, self.exploreRoot)
 					self.wayPoints = [breakPoint, goalPath[-1]]
@@ -322,6 +323,41 @@ class TestMapping(SnakeControl):
 					self.pathStep.setPath(self.wayPaths[0])
 					self.pathStep.computeCurve()
 					
+					
+					" check if we're already there "
+					if len(self.wayPoints) > 0:
+						dest = self.wayPoints[0]
+						#pose = self.probe.getActualSegPose(0)
+						pose = self.contacts.getAverageSegPose(0)
+	
+						
+						dist = sqrt((dest[0]-pose[0])**2 + (dest[1]-pose[1])**2)
+						print "dist = ", dist
+						
+						if dist > self.lastDist:
+							self.distCount += 1
+						else:
+							self.distCount = 0
+							
+						self.lastDist = dist
+							
+					
+						if dist < 0.5:
+							self.wayPoints = self.wayPoints[1:]
+							self.wayPaths = self.wayPaths[1:]
+							if len(self.wayPoints) > 0: 
+								#curve = VoronoiFit(self.wayPaths[0])
+								#self.pathStep.setCurve(curve)
+								self.pathStep.setPath(self.wayPaths[0])
+								self.pathStep.computeCurve()
+							else:
+								self.stateA = 1
+								
+						elif self.distCount >= 2:
+							self.pathStep.reverseDirection()
+							self.lastDist = 1e100
+							self.distCount = 0
+							
 					"""
 					if self.pathStep == 0:
 						#self.pathStep = behave.PathConcertinaGait(self.probe, self.contacts, True, self.wayPaths[0])
@@ -354,7 +390,9 @@ class TestMapping(SnakeControl):
 		
 				if len(self.wayPoints) > 0:
 					dest = self.wayPoints[0]
-					pose = self.probe.getActualSegPose(0)
+					#pose = self.probe.getActualSegPose(0)
+					pose = self.contacts.getAverageSegPose(0)
+
 					
 					dist = sqrt((dest[0]-pose[0])**2 + (dest[1]-pose[1])**2)
 					print "dist = ", dist

@@ -196,6 +196,20 @@ class PathStep(Behavior):
 		
 		resultJoints = self.spliceFitJoints()
 		
+		" straighten the part of frontAnchorFit that is not actuated "
+		if self.frontAnchorFit.anterior:
+			startNode = 0
+			endNode = self.frontAnchorFit.lastJoint
+		else:
+			startNode = self.frontAnchorFit.lastJoint
+			endNode = self.probe.numSegs-2
+			
+		for i in range(startNode, endNode+1):
+			print "changing joint", i, "from", resultJoints[i], "to 0.0"
+			resultJoints[i] = 0.0
+			
+
+		
 		self.holdSlideT.setSpliceJoint(self.spliceJoint)
 		
 		self.holdSlideT.reset(resultJoints, self.direction)
@@ -240,7 +254,6 @@ class PathStep(Behavior):
 		
 		return result
 	
-							
 	def getCenterPoints(self):
 		
 		#return copy(self.cmdSegPoints)
@@ -987,23 +1000,25 @@ class PathStep(Behavior):
 		#if len(anchorJoints) > 0 and self.frontCurve.getPeakAmp() > 0 and self.isJerking:
 
 		" Lead joints of the snake are weakened when not part of front-anchoring "
+		
 		"""
-		if len(anchorJoints) > 0 and self.frontCurve.getPeakAmp() > 0:
-			
-			if not self.direction:
-				maxJoint = max(anchorJoints)
-				print "weakening joints", range(maxJoint+1, self.probe.numSegs-2)
-				for i in range(maxJoint+1, self.probe.numSegs-1):
-					if i <= self.probe.numSegs-2:
-						self.probe.setJointTorque(i, 3.0)
-			else:
-				minJoint = min(anchorJoints)
-				print "weakening joints", range(0,minJoint-1)
-				for i in range(0, minJoint-1):					
-					if i <= self.probe.numSegs-2:
-						self.probe.setJointTorque(i, 3.0)
+		if self.frontExtending:
+			if len(anchorJoints) > 0 and self.frontCurve.getPeakAmp() > 0:
+				
+				if not self.direction:
+					maxJoint = max(anchorJoints)
+					print "weakening joints", range(maxJoint+1, self.probe.numSegs-2)
+					for i in range(maxJoint+1, self.probe.numSegs-1):
+						if i <= self.probe.numSegs-2:
+							self.probe.setJointTorque(i, 3.0)
+				else:
+					minJoint = min(anchorJoints)
+					print "weakening joints", range(0,minJoint-1)
+					for i in range(0, minJoint-1):					
+						if i <= self.probe.numSegs-2:
+							self.probe.setJointTorque(i, 3.0)
 		"""
-
+	
 		" execute the local curve fitting "
 		self.frontAnchorFit.step()
 

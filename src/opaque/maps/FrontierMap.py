@@ -15,14 +15,15 @@ import ImageDraw
 
 class FrontierMap(Map):
 
-	def __init__(self, boundMap, obstacleMap):
+	def __init__(self, boundMap, obstacleMap, saveCount):
 		Map.__init__(self, mapSize = 20.0)
 				
 		self.fileName = "mapFrontierGraph%04u.png"
 		
 		self.boundMap = boundMap
 		self.obstacleMap = obstacleMap
-															
+		
+		self.saveCount = saveCount											
 		
 		self.checkSpline = 0
 

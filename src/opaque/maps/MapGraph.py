@@ -703,9 +703,8 @@ class MapGraph:
 							
 		self.obstMapImage.save("mapObstGraph%04u.png" % self.saveCount)	
 
-		self.frontierMap = FrontierMap(self.boundMapImage, self.obstMapImage)
+		self.frontierMap = FrontierMap(self.boundMapImage, self.obstMapImage, self.saveCount)
 		self.frontierMap.selectNextFrontier()
-
 				
 		#self.frontierMap.saveMap(self.saveCount)			
 		

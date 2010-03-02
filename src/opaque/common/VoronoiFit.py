@@ -54,6 +54,8 @@ class VoronoiFit:
 		#print "spline fitting:", self.points
 		self.curve = SplineFit(self.points, smooth = 0.1)
 
+		self.draw()
+
 	def fillPoints(self, points):
 		
 		new_points = []
@@ -91,15 +93,33 @@ class VoronoiFit:
 			xP.append(p[0])
 			yP.append(p[1])
 
+		pylab.clf()
 		pylab.scatter(xP,yP, color='r')
 		self.curve.drawSpline()
 		#pylab.scatter(xP,yP)
+		
+		pylab.xlim(-1.0,1.0)
+		pylab.ylim(-0.5,0.5)
+		
+		pylab.savefig("curveFit.png")
 
 	def getU(self,u):
 		return self.curve.getU(u)
 
-	def getUVector(self,u):
-		return self.curve.getUVector(u)
+	def getUVector(self,u, iter=0.01):
+		
+		vecSum = [0.0,0.0]
+		for i in range(5):
+			tVec = self.curve.getUVector(0.8-i*0.01)
+			print tVec
+			vecSum[0] += tVec[0]
+			vecSum[1] += tVec[1]
+		
+		mag = sqrt(vecSum[0]**2 + vecSum[1]**2)
+		vecSum[0] = vecSum[0]/mag
+		vecSum[1] = vecSum[1]/mag
+			
+		return vecSum
 
 	def findClosestPoint(self, point):
 		minDist, u, linePoint1 = self.curve.findClosestPoint(point)
