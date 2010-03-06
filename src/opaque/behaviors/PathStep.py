@@ -1020,25 +1020,21 @@ class PathStep(Behavior):
 		print "anchorJoints =", len(anchorJoints), "amp =", self.frontCurve.getPeakAmp()
 		#if len(anchorJoints) > 0 and self.frontCurve.getPeakAmp() > 0 and self.isJerking:
 
-		" Lead joints of the snake are weakened when not part of front-anchoring "
-		
-		"""
-		if self.frontExtending:
-			if len(anchorJoints) > 0 and self.frontCurve.getPeakAmp() > 0:
-				
-				if not self.direction:
-					maxJoint = max(anchorJoints)
-					print "weakening joints", range(maxJoint+1, self.probe.numSegs-2)
-					for i in range(maxJoint+1, self.probe.numSegs-1):
-						if i <= self.probe.numSegs-2:
-							self.probe.setJointTorque(i, 3.0)
-				else:
-					minJoint = min(anchorJoints)
-					print "weakening joints", range(0,minJoint-1)
-					for i in range(0, minJoint-1):					
-						if i <= self.probe.numSegs-2:
-							self.probe.setJointTorque(i, 3.0)
-		"""
+		" Lead joints of the snake are weakened when not part of front-anchoring "		
+		if len(anchorJoints) > 0 and self.frontCurve.getPeakAmp() > 0:
+			
+			if not self.direction:
+				maxJoint = max(anchorJoints)
+				print "weakening joints", range(maxJoint+1, self.probe.numSegs-2)
+				for i in range(maxJoint+1, self.probe.numSegs-1):
+					if i <= self.probe.numSegs-2:
+						self.probe.setJointTorque(i, 3.0)
+			else:
+				minJoint = min(anchorJoints)
+				print "weakening joints", range(0,minJoint-1)
+				for i in range(0, minJoint-1):					
+					if i <= self.probe.numSegs-2:
+						self.probe.setJointTorque(i, 3.0)
 	
 		" execute the local curve fitting "
 		self.frontAnchorFit.step()
@@ -1327,10 +1323,11 @@ class PathStep(Behavior):
 		else:
 			joints = self.holdT.getJoints()
 		"""
+
 		
 		joints = self.holdT.getJoints()
-
-		if self.frontAnchoringState and not self.frontExtending:
+		
+		if self.frontAnchoringState and self.frontExtendDone:
 			" collect joint settings for both behaviors "
 			#joints2 = self.globalCurveFit.getJoints()
 			
