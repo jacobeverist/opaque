@@ -26,7 +26,7 @@ class GlobalCurveFit(Behavior):
 		self.endNode = 0
 		
 		# time divider
-		self.setTimerAliasing(5)
+		#self.setTimerAliasing(5)
 
 		# nodes for drawing purposes
 		self.nodeCount = globalNodeCount

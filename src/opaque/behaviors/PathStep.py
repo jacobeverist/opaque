@@ -14,6 +14,7 @@ from HoldSlideTransition import HoldSlideTransition
 from AdaptiveAnchorCurve import AdaptiveAnchorCurve
 from BackConcertinaCurve import BackConcertinaCurve
 from GlobalCurveFit import GlobalCurveFit
+from GlobalCurveSlide import GlobalCurveSlide
 
 """
 TODO
@@ -110,10 +111,13 @@ class PathStep(Behavior):
 		self.pathCurve = VoronoiFit(self.path)
 		
 		self.globalCurveFit = GlobalCurveFit(self.probe, self.contacts, self.pathCurve)
+		self.globalCurveSlide = GlobalCurveSlide(self.probe, self.contacts, self.pathCurve)
 		
-		self.setDirection(not self.globalCurveFit.getPathDirection())
+		#self.setDirection(not self.globalCurveFit.getPathDirection())
+		self.setDirection(not self.globalCurveSlide.getPathDirection())
 		
-		self.globalCurveFit.draw()
+		#self.globalCurveFit.draw()
+		self.globalCurveSlide.draw()
 				
 	def reverseDirection(self):
 		self.path.reverse()
@@ -200,9 +204,14 @@ class PathStep(Behavior):
 		if self.frontAnchorFit.anterior:
 			startNode = 0
 			endNode = self.frontAnchorFit.lastJoint
+			
+			#self.globalCurveSlide.setBoundaries(startNode, 20)
+			
+			
 		else:
 			startNode = self.frontAnchorFit.lastJoint
 			endNode = self.probe.numSegs-2
+			#self.globalCurveSlide.setBoundaries(19, endNode)
 			
 		for i in range(startNode, endNode+1):
 			print "changing joint", i, "from", resultJoints[i], "to 0.0"
@@ -210,10 +219,14 @@ class PathStep(Behavior):
 			
 
 		
-		self.holdSlideT.setSpliceJoint(self.spliceJoint)
+		#self.holdSlideT.setSpliceJoint(self.spliceJoint)
+
+		self.globalCurveSlide.reset(resultJoints)
+		self.globalCurveSlide.step()
+		resultJoints2 = self.globalCurveSlide.getJoints()
 		
-		self.holdSlideT.reset(resultJoints, self.direction)
-		self.holdT.reset(resultJoints)
+		#self.holdSlideT.reset(resultJoints, self.direction)
+		self.holdT.reset(resultJoints2)
 		self.refDone = False
 
 	def spliceFitJoints(self, isStart = False):
@@ -740,10 +753,18 @@ class PathStep(Behavior):
 
 		print "Extend Front"
 
-		self.frontExtendDone = False
+		#self.frontExtendDone = False
+		
+		if self.globalCurveSlide.step():
+			self.frontExtendDone = True
+			self.frontExtending = False
+			
+		joints = self.globalCurveSlide.getJoints()
 
-		resultJoints = self.spliceFitJoints()
-		self.holdSlideT.reset(resultJoints, self.direction)
+		self.holdT.reset(joints)
+		
+		#resultJoints = self.spliceFitJoints()
+		#self.holdSlideT.reset(resultJoints, self.direction)
 		
 
 		#self.frontExtending = False
@@ -1185,11 +1206,12 @@ class PathStep(Behavior):
 			self.transDone = False
 
 
-			if self.frontExtending:
-				self.frontExtendDone = True
-				self.frontExtending = False
-				resultJoints = self.holdSlideT.getJoints()
-				self.holdT.reset(resultJoints)
+			#if self.frontExtending:
+				#self.frontExtendDone = True
+				#self.frontExtending = False
+				#resultJoints = self.holdSlideT.getJoints()
+				#self.holdT.reset(resultJoints)
+				
 		
 			# termination cases
 			if not self.frontAnchoringState:
@@ -1228,6 +1250,8 @@ class PathStep(Behavior):
 				if self.frontAnchoringState:
 					
 					if self.frontExtending:
+						
+						print "Front Extend Step"
 						self.doExtendFront()
 						#self.frontExtending = False
 						#self.frontExtendDone = False
@@ -1264,44 +1288,54 @@ class PathStep(Behavior):
 
 				#print torques
 
+				"""
 				if self.frontExtending:
 					self.refDone = False
 					print "caseA"
 					self.transDone = self.holdSlideT.step()
 				
-				else:	
-					self.refDone = False
-					self.transDone = self.holdT.step()
+				else:
+				"""	
+				
+				self.refDone = False
+				self.transDone = self.holdT.step()
 				
 		else:
 			
 			" make no movements until all reference nodes are activated "
 			if self.refDone:
+				"""
 				if self.frontExtending:
 					self.transDone = self.holdSlideT.step()
 				else:
 					self.transDone = self.holdT.step()					
-					" execute the global curve fitting "
-					
-				if self.frontAnchoringState and not self.frontExtending:
-					self.globalCurveFit.step()
+				"""
+				
+				self.transDone = self.holdT.step()					
+				
+				" execute the global curve fitting "
+				#if self.frontAnchoringState and not self.frontExtending:
+				#	self.globalCurveFit.step()
 		
 		anchorJoints = self.frontAnchorFit.getJoints()
 		
-
 		#print self.refDone, self.transDone, self.frontAnchoringState, self.frontExtending, self.frontExtendDone
 		
+		"""
 		if self.frontExtending:
-			joints = self.holdT.getJoints()
-			#print joints
 			joints = self.holdSlideT.getJoints()
-			#print joints
 		else:
 			joints = self.holdT.getJoints()
+		"""
+		
+		joints = self.holdT.getJoints()
 
 		if self.frontAnchoringState and not self.frontExtending:
 			" collect joint settings for both behaviors "
-			joints2 = self.globalCurveFit.getJoints()
+			#joints2 = self.globalCurveFit.getJoints()
+			
+			joints2 = [0.0 for i in range(40)]
+			
 			
 			if self.frontAnchorFit.anterior:			
 				for p in range(0,self.frontAnchorFit.lastJoint+1):

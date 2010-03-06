@@ -124,7 +124,7 @@ class TestMapping(SnakeControl):
 
 	def frameStarted(self):
 		
-		#self.adjustCamera()
+		self.adjustCamera()
 		#self.grabImage()
 		#self.grabAngles()
 
