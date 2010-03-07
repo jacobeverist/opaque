@@ -18,13 +18,14 @@ class GlobalCurveSlide(Behavior):
 
 		self.contacts = contacts
 
+		self.direction = True
+
 		self.setCurve(curve)
 
 		self.isDone = False
 		self.count = 4
 		self.moveCount = 0
 
-		self.direction = True
 
 		self.targetState = []
 		for i in range(self.probe.numSegs-1):
@@ -38,10 +39,15 @@ class GlobalCurveSlide(Behavior):
 		self.curve = curve
 
 		self.globalCurveFit = GlobalCurveFit(self.probe, self.contacts, self.curve)
-		self.direction = not self.getPathDirection()
+		#self.direction = not self.getPathDirection()
+		
+		self.direction = not self.globalCurveFit.getPathDirection()
+	
+		print "globalCurveFit direction =", self.direction
 	
 	def getPathDirection(self):
-		return self.globalCurveFit.getPathDirection()
+		print "globalCurveSlide returning", self.direction
+		return self.direction
 
 	def draw(self):
 		self.globalCurveFit.draw()
@@ -82,8 +88,8 @@ class GlobalCurveSlide(Behavior):
 				endNode = self.count
 				self.globalCurveFit.setBoundaries(startNode, endNode)
 			else:
-				startNode = endNode - self.count
 				endNode = self.probe.numSegs-2	
+				startNode = endNode - self.count
 				self.globalCurveFit.setBoundaries(startNode, endNode)
 			
 		self.globalCurveFit.step()

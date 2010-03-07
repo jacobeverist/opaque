@@ -705,6 +705,7 @@ class GlobalCurveFit(Behavior):
 		return False
 	
 	def getPathDirection(self):
+		print "returning GlobalCurveFit direction:", self.direction
 		return self.direction
 	
 	def computePathDirection(self):
@@ -725,7 +726,7 @@ class GlobalCurveFit(Behavior):
 			vecSum1[1] += poseVec[1]
 
 			dist, linePoint, orientVec = self.curve.findClosestPoint([origin[0], origin[1]])
-			#print dist, linePoint, orientVec
+			print dist, linePoint, orientVec
 			vecSum2[0] += orientVec[0]
 			vecSum2[1] += orientVec[1]
 

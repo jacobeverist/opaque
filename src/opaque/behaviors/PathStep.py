@@ -114,11 +114,15 @@ class PathStep(Behavior):
 		self.globalCurveSlide = GlobalCurveSlide(self.probe, self.contacts, self.pathCurve)
 		
 		#self.setDirection(not self.globalCurveFit.getPathDirection())
-		self.setDirection(not self.globalCurveSlide.getPathDirection())
+		result = self.globalCurveSlide.getPathDirection()
+		
+		print "received", result, "from globalCurveSlide"
+		
+		self.setDirection(result)
 		
 		#self.globalCurveFit.draw()
 		self.globalCurveSlide.draw()
-				
+		
 	def reverseDirection(self):
 		self.path.reverse()
 		
@@ -143,7 +147,7 @@ class PathStep(Behavior):
 		self.minAmp = 0.0
 		self.maxAmp = 0.0			
 		self.ampInc = 0.04
-					
+		
 		self.currPeak = 0
 		#self.spliceJoint = 7
 		self.lastSpliceAngle = 0.0
@@ -222,6 +226,7 @@ class PathStep(Behavior):
 		#self.holdSlideT.setSpliceJoint(self.spliceJoint)
 
 		self.globalCurveSlide.reset(resultJoints)
+		print "globalCurveSlide.step()"
 		self.globalCurveSlide.step()
 		resultJoints2 = self.globalCurveSlide.getJoints()
 		

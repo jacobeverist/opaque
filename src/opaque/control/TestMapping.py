@@ -50,6 +50,7 @@ class TestMapping(SnakeControl):
 		self.pokeWalls = behave.PokeWalls(self.probe, direction, self.mapGraph.obstCallBack)
 		
 		self.exploreRoot = [0.5,0.0]
+		self.exploreRoot = [-3.5,0.0]
 		self.pathStep = 0
 		
 		self.stateA = -1
@@ -318,11 +319,12 @@ class TestMapping(SnakeControl):
 					print "originPath:", originPath
 					
 					print "goalPath:", goalPath
+					
+					#self.wayPaths[0].reverse()
 
 					self.pathStep = behave.PathStep(self.probe, self.contacts, self.mapGraph, False)
 					self.pathStep.setPath(self.wayPaths[0])
 					self.pathStep.computeCurve()
-					
 					
 					" check if we're already there "
 					if len(self.wayPoints) > 0:
@@ -332,7 +334,7 @@ class TestMapping(SnakeControl):
 	
 						
 						dist = sqrt((dest[0]-pose[0])**2 + (dest[1]-pose[1])**2)
-						print "dist = ", dist
+						print "distance from", dest, "to", pose, "=", dist
 						
 						if dist > self.lastDist:
 							self.distCount += 1
@@ -395,7 +397,7 @@ class TestMapping(SnakeControl):
 
 					
 					dist = sqrt((dest[0]-pose[0])**2 + (dest[1]-pose[1])**2)
-					print "dist = ", dist
+					print "distance from", dest, "to", pose, "=", dist
 					
 					if dist > self.lastDist:
 						self.distCount += 1
