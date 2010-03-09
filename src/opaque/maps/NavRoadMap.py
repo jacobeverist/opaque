@@ -8,13 +8,14 @@ from common import *
 from Map import Map
 from copy import *
 from math import *
+from MapGraph import Pose
 
 nodeCount = 0
 
 class NavRoadMap(Map):
 
 	# take in vertices and edges of roadmap graph
-	def __init__(self, probe, roadGraph):
+	def __init__(self, probe, roadGraph, localNode = 0):
 		global nodeCount
 		Map.__init__(self)
 		
@@ -25,6 +26,8 @@ class NavRoadMap(Map):
 		
 		self.cleanPath = []
 		
+		self.currNode = localNode
+		
 		# stuff for drawing purposes
 		self.nodeCount = nodeCount
 		self.childNodes = []
@@ -32,6 +35,7 @@ class NavRoadMap(Map):
 
 		self.parentNode = self.probe._mgr.getRootSceneNode().createChildSceneNode("navRoadCurveRoot" + str(self.nodeCount))
 		
+		self.originPose = [0.0,0.0,0.0]
 		nodeCount += 1
 		
 	def __del__(self):
@@ -61,6 +65,14 @@ class NavRoadMap(Map):
 		for i in range(len(self.cleanPath)):
 			
 			pnt = self.cleanPath[i]
+			
+			" convert points from estimated points to actual points in view "
+			if localNode != 0:
+				pose = Pose(self.currNode.getEstPose())
+				localPnt = pose.convertGlobalToLocal(pnt)
+				pose2 = Pose( self.probe.getActualJointPose(self.currNode.rootNode))
+				pnt = pose.convertLocalToGlobal(localPnt)
+			
 	
 			childNode = self.parentNode.createChildSceneNode("navRoadCurvePoint" + str(self.nodeCount) + "_" + str(i))
 			self.childNodes.append(childNode)
@@ -88,6 +100,8 @@ class NavRoadMap(Map):
 		'''
 
 		print "computeHeadPath(", start, goal, root, ")"
+
+		self.originPose = copy(start)
 
 		# the path from the starting point to the origin
 		originPath = self.computePath(root, start)

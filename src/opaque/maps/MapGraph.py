@@ -820,7 +820,7 @@ class MapGraph:
 		self.voronoiMap = VoronoiMap(self.mapImage, self.boundMapImage)
 		self.voronoiMap.saveMap(self.saveCount)			
 
-		self.navRoadMap = NavRoadMap(self.probe, self.voronoiMap.getGraph())
+		self.navRoadMap = NavRoadMap(self.probe, self.voronoiMap.getGraph(), localNode = self.currNode)
 			
 		self.saveCount += 1	
 			
