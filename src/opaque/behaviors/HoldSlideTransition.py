@@ -106,7 +106,7 @@ class HoldSlideTransition(Behavior):
 
 		if not self.hasTransitioned:
 
-			print "setting next transition"
+			#print "setting next transition"
 			#print "self.positions = ", self.positions
 			initState = []
 			for i in range(self.probe.numSegs-1):
@@ -171,7 +171,7 @@ class HoldSlideTransition(Behavior):
 			self.hasTransitioned = False
 			self.isTransitioning = False
 
-		print self.count
+		#print self.count
 
 		" delay period to allow body to stabilize "
 		if self.count > 10:
@@ -180,10 +180,10 @@ class HoldSlideTransition(Behavior):
 			self.hasTransitioned = False
 			self.isTransitioning = False
 			
-			print "caseC"
+			#print "caseC"
 
 			return True
 		
-		print "transitions =", self.hasTransitioned, self.isTransitioning
-		print "caseD"
+		#print "transitions =", self.hasTransitioned, self.isTransitioning
+		#print "caseD"
 		return False

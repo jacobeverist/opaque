@@ -43,10 +43,10 @@ class GlobalCurveSlide(Behavior):
 		
 		self.direction = not self.globalCurveFit.getPathDirection()
 	
-		print "globalCurveFit direction =", self.direction
+		#print "globalCurveFit direction =", self.direction
 	
 	def getPathDirection(self):
-		print "globalCurveSlide returning", self.direction
+		#print "globalCurveSlide returning", self.direction
 		return self.direction
 
 	def draw(self):
@@ -54,7 +54,7 @@ class GlobalCurveSlide(Behavior):
 
 	def reset(self, joints = []):
 
-		print "globalCurveSlide reset:", joints
+		#print "globalCurveSlide reset:", joints
 		
 		self.targetState = []
 		self.positions = []
@@ -95,7 +95,7 @@ class GlobalCurveSlide(Behavior):
 		self.globalCurveFit.step()
 		targetState = self.globalCurveFit.getJoints()
 		
-		print "globalCurveFit:", targetState
+		#print "globalCurveFit:", targetState
 		
 		self.positions = copy(targetState)
 
@@ -103,7 +103,7 @@ class GlobalCurveSlide(Behavior):
 		self.mergeJoints([targetState])
 
 		self.moveCount += 1
-		print "moveCount =", self.moveCount
+		#print "moveCount =", self.moveCount
 		
 		
 		if self.moveCount > 5 :
@@ -112,13 +112,13 @@ class GlobalCurveSlide(Behavior):
 	
 			self.count += 1
 	
-			print "count =", self.count
+			#print "count =", self.count
 	
 			" delay period to allow body to stabilize "
 			if self.count > 24:
 				self.count = 4
 				
-				print "GlobalCurveSlide = DONE"
+				#print "GlobalCurveSlide = DONE"
 				return True
 			
 		

@@ -31,7 +31,7 @@ class FastLocalCurveFit(Behavior):
 		" anterior or posterior "
 		self.anterior = anterior
 
-		print "setting rootNode to ", cutoff
+		#print "setting rootNode to ", cutoff
 		self.rootNode = cutoff
 
 		" whether peaks are solid or not "
@@ -330,7 +330,7 @@ class FastLocalCurveFit(Behavior):
 			if i == self.spliceJoint:
 				self.solidCompJoints[i] -= self.spliceAngle
 			
-			print "setting solid joint", i, self.probe.getServo(i), self.solidCompJoints[i]
+			#print "setting solid joint", i, self.probe.getServo(i), self.solidCompJoints[i]
 			
 			self.solidJointClasses[index].append(i)
 			self.solidJointPositions[i] = copy(self.jointPositions[i])
@@ -346,7 +346,7 @@ class FastLocalCurveFit(Behavior):
 				" now set the maximum joint of the previous peak "
 				minJoint = min(joints) - 1
 				if minJoint >= 0:
-					print "altering joint", minJoint, "at index", index
+					#print "altering joint", minJoint, "at index", index
 					self.solidJoints[minJoint] = pi / 180.0 * self.getJoints()[minJoint]
 					#self.solidJoints[minJoint] = self.probe.getServoCmd(minJoint)
 					
@@ -355,7 +355,7 @@ class FastLocalCurveFit(Behavior):
 					if minJoint == self.spliceJoint:
 						self.solidCompJoints[minJoint] -= self.spliceAngle
 
-					print "setting solid joint", minJoint, self.probe.getServo(minJoint), self.solidCompJoints[minJoint]
+					#print "setting solid joint", minJoint, self.probe.getServo(minJoint), self.solidCompJoints[minJoint]
 					
 					self.solidJointPositions[minJoint] = copy(self.jointPositions[minJoint])
 				
@@ -363,7 +363,7 @@ class FastLocalCurveFit(Behavior):
 				" now set the maximum joint of the previous peak "
 				maxJoint = max(joints) + 1
 				if maxJoint <= self.probe.numSegs -2:
-					print "altering joint", maxJoint, "at index", index
+					#print "altering joint", maxJoint, "at index", index
 					self.solidJoints[maxJoint] = pi / 180.0 * self.getJoints()[maxJoint]
 					#self.solidJoints[maxJoint] = self.probe.getServoCmd(maxJoint)
 					
@@ -372,7 +372,7 @@ class FastLocalCurveFit(Behavior):
 					if maxJoint == self.spliceJoint:
 						self.solidCompJoints[maxJoint] -= self.spliceAngle
 
-					print "setting solid joint", maxJoint, self.probe.getServo(maxJoint), self.solidCompJoints[maxJoint]
+					#print "setting solid joint", maxJoint, self.probe.getServo(maxJoint), self.solidCompJoints[maxJoint]
 
 					self.solidJointPositions[maxJoint] = copy(self.jointPositions[maxJoint])
 			
@@ -439,7 +439,7 @@ class FastLocalCurveFit(Behavior):
 		if maxJoint > self.endNode:
 			maxJoint = self.endNode
 
-		print "forwardFit:", minJoint, maxJoint
+		#print "forwardFit:", minJoint, maxJoint
 
 		# indices	
 		ind = range(minJoint,maxJoint+1)
@@ -645,7 +645,7 @@ class FastLocalCurveFit(Behavior):
 		if maxJoint > self.endNode:
 			maxJoint = self.endNode
 			
-		print "backwardFit:", minJoint, maxJoint
+		#print "backwardFit:", minJoint, maxJoint
 
 		ind = range(minJoint,maxJoint+1)
 		ind.reverse()

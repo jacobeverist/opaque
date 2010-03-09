@@ -68,9 +68,9 @@ class LocalBoundaryMap(Map):
 
 		self.occMap = self.localNode.getOccMap()
 		
-		print "computing boundary"
+		#print "computing boundary"
 		
-		print self.occMap.changed
+		#print self.occMap.changed
 		
 		#print traceback.print_stack()
 

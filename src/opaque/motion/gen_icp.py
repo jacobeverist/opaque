@@ -786,6 +786,7 @@ def gen_ICP_global(pastPose, targetPose, pastHull, targetHull, pastCircles, cost
 
 	global numIterations
 	
+	stepOne = True
 	lastCost = 1e100
 	
 	startIteration = numIterations
@@ -917,9 +918,12 @@ def gen_ICP_global(pastPose, targetPose, pastHull, targetHull, pastCircles, cost
 		offset = newOffset
 
 		" reduce the minMatch distance for each step down to a floor value "
-		minMatchDist /= 2
-		if minMatchDist < 0.25:
-			minMatchDist = 0.25
+		if stepOne:
+			stepOne = False
+		else:
+			minMatchDist /= 2
+			if minMatchDist < 0.25:
+				minMatchDist = 0.25
 	
 		# optionally draw the position of the points in current transform
 		if plotIter:
@@ -1253,7 +1257,7 @@ def computeUnion(points1, points2):
 	
 	inputStr += "\n"
 	
-	#print "sending input to Union:  ", inputStr
+	print "sending input to Union:  ", inputStr
 	
 	" start the subprocess "
 	subProc = Popen(["./poly_union.exe"], stdin=PIPE, stdout=PIPE)
@@ -1261,8 +1265,8 @@ def computeUnion(points1, points2):
 	" send input and receive output "
 	sout, serr = subProc.communicate(inputStr)
 
-	#print "rawOutput ="
-	#print sout
+	print "rawOutput ="
+	print sout
 
 	print serr
 	

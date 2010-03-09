@@ -70,8 +70,8 @@ class VoronoiMap(Map):
 		vertex -1 means edge extends to infinity
 		'''
 		
-		print "computing voronoi"
-		print len(self.boundaryPoints), "boundary points"
+		#print "computing voronoi"
+		#print len(self.boundaryPoints), "boundary points"
 		
 		sites = []
 		for p in self.boundaryPoints:
@@ -84,7 +84,8 @@ class VoronoiMap(Map):
 			self.lines = []
 			self.edges = []
 		
-		print len(self.vertices)
+		#print len(self.vertices)
+		
 	def pruneEdges(self):
 		
 		'''remove edges and vertices that are outside the explored area'''

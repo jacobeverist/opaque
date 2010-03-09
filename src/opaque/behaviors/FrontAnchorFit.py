@@ -168,7 +168,7 @@ class FrontAnchorFit(Behavior):
 					except:
 						" x point is beyond curve range "
 						" breaking assumption only works if tail is straight "
-						traceback.print_exc()
+						#traceback.print_exc()
 						breakFromFit = True
 						break
 
@@ -250,7 +250,7 @@ class FrontAnchorFit(Behavior):
 				break		
 	
 	
-		print "breakFromFit = ", breakFromFit
+		#print "breakFromFit = ", breakFromFit
 		
 		" position of last joint iterated through "
 		self.lastPosition = originPose

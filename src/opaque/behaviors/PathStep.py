@@ -226,7 +226,7 @@ class PathStep(Behavior):
 		#self.holdSlideT.setSpliceJoint(self.spliceJoint)
 
 		self.globalCurveSlide.reset(resultJoints)
-		print "globalCurveSlide.step()"
+		#print "globalCurveSlide.step()"
 		self.globalCurveSlide.step()
 		resultJoints2 = self.globalCurveSlide.getJoints()
 		
@@ -718,7 +718,7 @@ class PathStep(Behavior):
 			pylab.scatter(xP,yP,color=str(1.0-val))
 		"""
 
-		print "plotting graph", self.plotCount
+		#print "plotting graph", self.plotCount
 
 		pylab.xlim(-4,4)
 		#pylab.xlim(-0.5,4)
@@ -870,7 +870,7 @@ class PathStep(Behavior):
 			
 				
 		" change the amplitude "
-		print "setting amp = " , nextVal		
+		#print "setting amp = " , nextVal		
 		self.frontCurve.setPeakAmp(nextVal)
 		
 			
@@ -901,8 +901,8 @@ class PathStep(Behavior):
 							break
 						self.jerkJoints.append(jointNum)
 
-				print "anchor joints =", anchorJoints
-				print "setting jerkJoints to", self.jerkJoints
+				#print "anchor joints =", anchorJoints
+				#print "setting jerkJoints to", self.jerkJoints
 				
 				if self.jerkAngle == 0 and self.prevJerkAngle == 0:
 					self.nomJerk = self.probe.getServo(self.jerkJoint) * 180.0 / pi
@@ -910,7 +910,7 @@ class PathStep(Behavior):
 					for k in range(len(self.jerkJoints)):
 						self.nomJerks[k] = self.probe.getServo(self.jerkJoints[k]) * 180.0 / pi
 				
-					print "nominal = " , self.nomJerk, self.probe.getServo(self.jerkJoint)
+					#print "nominal = " , self.nomJerk, self.probe.getServo(self.jerkJoint)
 					self.prevJerkAngle = self.jerkAngle
 					self.jerkAngle = 60	
 				
@@ -925,7 +925,7 @@ class PathStep(Behavior):
 				elif self.jerkAngle == 60:
 					
 					#print "setting jerk joint to ", self.jerkAngle + self.nomJerk
-					print "jerk angle error = " , self.probe.getServo(self.jerkJoint)-self.probe.getServoCmd(self.jerkJoint)
+					#print "jerk angle error = " , self.probe.getServo(self.jerkJoint)-self.probe.getServoCmd(self.jerkJoint)
 
 					errs = []
 					for k in range(len(self.jerkJoints)):
@@ -953,7 +953,7 @@ class PathStep(Behavior):
 						self.originPoses.append(self.contacts.getAveragePose(k))
 					
 				elif self.jerkAngle == -60:
-					print "jerk angle error = " , self.probe.getServo(self.jerkJoint)-self.probe.getServoCmd(self.jerkJoint)
+					#print "jerk angle error = " , self.probe.getServo(self.jerkJoint)-self.probe.getServoCmd(self.jerkJoint)
 					self.jerkErrors.append(self.probe.getServo(self.jerkJoint)-self.probe.getServoCmd(self.jerkJoint))
 
 					" error = (-0.09, 0.005) is good "
@@ -988,7 +988,7 @@ class PathStep(Behavior):
 			" if the anchor is not secure, lets try it again "
 			err1, err2 = self.computeAnchorErrors()
 			
-			print "anchor errors =", err1, err2
+			#print "anchor errors =", err1, err2
 			
 			if err1 > 0.1 or err2 > 0.1:
 
@@ -1022,7 +1022,7 @@ class PathStep(Behavior):
 		" 30*2.5 is maximum "
 		anchorJoints = self.frontAnchorFit.getPeakJoints()
 
-		print "anchorJoints =", len(anchorJoints), "amp =", self.frontCurve.getPeakAmp()
+		#print "anchorJoints =", len(anchorJoints), "amp =", self.frontCurve.getPeakAmp()
 		#if len(anchorJoints) > 0 and self.frontCurve.getPeakAmp() > 0 and self.isJerking:
 
 		" Lead joints of the snake are weakened when not part of front-anchoring "		
@@ -1030,13 +1030,13 @@ class PathStep(Behavior):
 			
 			if not self.direction:
 				maxJoint = max(anchorJoints)
-				print "weakening joints", range(maxJoint+1, self.probe.numSegs-2)
+				#print "weakening joints", range(maxJoint+1, self.probe.numSegs-2)
 				for i in range(maxJoint+1, self.probe.numSegs-1):
 					if i <= self.probe.numSegs-2:
 						self.probe.setJointTorque(i, 3.0)
 			else:
 				minJoint = min(anchorJoints)
-				print "weakening joints", range(0,minJoint-1)
+				#print "weakening joints", range(0,minJoint-1)
 				for i in range(0, minJoint-1):					
 					if i <= self.probe.numSegs-2:
 						self.probe.setJointTorque(i, 3.0)
@@ -1054,8 +1054,6 @@ class PathStep(Behavior):
 			endNode = self.probe.numSegs-2	
 			self.globalCurveFit.setBoundaries(startNode, endNode)
 			
-
-		
 		" Set the joints, with joints2 as priority over joints1 "
 		#self.mergeJoints([joints2, joints1])
 
@@ -1065,7 +1063,7 @@ class PathStep(Behavior):
 		self.holdT.reset(resultJoints)
 		
 		if self.isJerking:
-			print "setting jerk joints", self.jerkJoints, "to", self.nomJerk + self.jerkAngle
+			#print "setting jerk joints", self.jerkJoints, "to", self.nomJerk + self.jerkAngle
 			#self.holdT.positions[self.jerkJoint] = self.nomJerk + self.jerkAngle
 			for k in range(len(self.jerkJoints)):
 				self.holdT.positions[self.jerkJoints[k]] = self.nomJerks[k] + self.jerkAngles[k]
@@ -1087,7 +1085,7 @@ class PathStep(Behavior):
 			if fabs(err) > maxError:
 				maxError = fabs(err)
 		
-		print "maxError =", maxError
+		#print "maxError =", maxError
 		
 		" draw the state of the curve fitting "
 		#self.drawFit()
@@ -1173,14 +1171,14 @@ class PathStep(Behavior):
 			
 			if self.direction:
 				maxJoint = max(peakJoints)
-				print "weakening", maxJoint+1, "to", self.probe.numSegs-3
+				#print "weakening", maxJoint+1, "to", self.probe.numSegs-3
 				#for i in range(maxJoint+1, self.probe.numSegs-2):
 				for i in range(maxJoint+2, self.probe.numSegs-1):
 					if i <= self.probe.numSegs-2:
 						self.probe.setJointTorque(i, 3.0)
 			else:
 				minJoint = min(peakJoints)
-				print "weakening", 0, "to", minJoint-1
+				#print "weakening", 0, "to", minJoint-1
 				#for i in range(0, minJoint):					
 				for i in range(0, minJoint-1):					
 					if i <= self.probe.numSegs-2:
@@ -1193,9 +1191,9 @@ class PathStep(Behavior):
 		peakJoints = self.concertinaFit.getPeakJoints(self.currPeak) + self.concertinaFit.getPeakJoints(self.currPeak+1)
 		peakJoints.sort()
 		
-		print "amp =", nextVal, "min =", self.minAmp, "max =", self.maxAmp
-		print "peak =", self.currPeak
-		print "peakJoints =", peakJoints
+		#print "amp =", nextVal, "min =", self.minAmp, "max =", self.maxAmp
+		#print "peak =", self.currPeak
+		#print "peakJoints =", peakJoints
 		
 
 	def step(self):
@@ -1329,7 +1327,6 @@ class PathStep(Behavior):
 			joints = self.holdT.getJoints()
 		"""
 
-		
 		joints = self.holdT.getJoints()
 		
 		if self.frontAnchoringState and self.frontExtendDone:
@@ -1384,7 +1381,7 @@ class PathStep(Behavior):
 			else:
 				self.spliceJoint -= 2
 				
-			print "out of segments, switching splice joint to", self.spliceJoint
+			#print "out of segments, switching splice joint to", self.spliceJoint
 			self.mask = [0.0 for i in range(0,40)]
 			self.count = 0
 				

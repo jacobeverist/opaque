@@ -157,7 +157,7 @@ class TestMapping(SnakeControl):
 			self.contacts.step()
 			
 			if isDone:
-				self.stateA = 4
+				self.stateA = 0
 				print "going to state 0"
 
 				self.holdP.reset()
@@ -275,11 +275,11 @@ class TestMapping(SnakeControl):
 					
 					self.mapGraph.saveLocalMap()
 	
-					if self.mapGraph.numNodes >= 18:					
-						exit()
+					#if self.mapGraph.numNodes >= 18:					
+					#	exit()
 
-					self.stateA = 0
-					print "going to state 0"
+					self.stateA = 4
+					print "going to state 4"
 	
 					" anchoring turned off "
 					self.isAnchored = False
@@ -289,17 +289,16 @@ class TestMapping(SnakeControl):
 			joints1 = self.holdP.getJoints()
 			self.mergeJoints([joints1])
 			if self.globalTimer - self.prevTime > 100:
+
+				self.mapGraph.saveLocalMap()
 			
 				#if self.frontierMap.isFrontier():
 				if False:
 					self.stateA = 0
 					print "going to state 0"
-					self.mapGraph.saveLocalMap()
 
 					" anchoring turned off "
 					self.isAnchored = False
-					#exit()
-
 				else:
 					self.stateA = 5
 
@@ -354,23 +353,15 @@ class TestMapping(SnakeControl):
 								self.pathStep.computeCurve()
 							else:
 								self.stateA = 1
+								self.isAnchored = True
 								
 						elif self.distCount >= 2:
 							self.pathStep.reverseDirection()
 							self.lastDist = 1e100
 							self.distCount = 0
-							
-					"""
-					if self.pathStep == 0:
-						#self.pathStep = behave.PathConcertinaGait(self.probe, self.contacts, True, self.wayPaths[0])
-						self.pathStep = behave.PathStep(self.probe, self.contacts, self.mapGraph, False)
-						self.pathStep.setPath(self.wayPaths[0])
-						self.pathStep.computeCurve()
-					else:
-						self.pathStep.setPath(self.wayPaths[0])
-						self.pathStep.computeCurve()
-					"""
-		
+					
+					print "going to state", self.stateA
+					
 		elif self.stateA == 5:
 			
 			isDone = self.pathStep.step()
@@ -384,8 +375,8 @@ class TestMapping(SnakeControl):
 						
 			if isDone:
 				print "done!"
+				self.stateA = 6
 
-				self.mapGraph.saveLocalMap()
 
 				self.mapGraph.newNode()
 				self.mapGraph.forceUpdate(False)
@@ -405,7 +396,7 @@ class TestMapping(SnakeControl):
 						self.distCount = 0
 						
 					self.lastDist = dist
-						
+					
 				
 					if dist < 0.5:
 						self.wayPoints = self.wayPoints[1:]
@@ -422,4 +413,85 @@ class TestMapping(SnakeControl):
 						self.pathStep.reverseDirection()
 						self.lastDist = 1e100
 						self.distCount = 0
-												
+				
+				self.isAnchored = True
+				print "going to state", self.stateA
+				
+		elif self.stateA == 6:
+			
+			self.pokeWalls.setDirection(False)
+			isDone = self.pokeWalls.step()
+
+			joints2 = self.pokeWalls.getJoints()
+			self.mergeJoints([joints2])
+
+			if self.pokeWalls.hasInitialized():
+				self.mapGraph.keepStablePose()
+				
+				if self.globalTimer % 30 == 0:
+					self.mapGraph.update(False)
+	
+			if isDone:
+				self.isCapture = False
+				self.stateA = 7
+				self.prevTime = self.globalTimer
+				print "going to state 7"
+
+		elif self.stateA == 7:
+			
+			isDone = self.holdT.step()
+			joints1 = self.holdT.getJoints()
+
+			self.mergeJoints([joints1])
+
+			if isDone:
+				self.isCapture = True
+
+				centerPoints = self.adaptiveStep.getCenterPoints()
+				self.mapGraph.setCenterPoints(centerPoints)
+
+				self.stateA = 8
+				print "going to state 8"
+
+		elif self.stateA == 8:
+			
+			self.pokeWalls.setDirection(True)
+			isDone = self.pokeWalls.step()
+
+			joints2 = self.pokeWalls.getJoints()
+			self.mergeJoints([joints2])
+				
+			if self.pokeWalls.hasInitialized():
+				self.mapGraph.keepStablePose()
+
+				if self.globalTimer % 30 == 0:
+					self.mapGraph.update(True)
+	
+			if isDone:
+				self.isCapture = False				
+
+				self.prevTime = self.globalTimer
+
+				self.stateA = 9
+				print "going to state 9"
+
+		elif self.stateA == 9:
+			
+			isDone = self.holdT.step()
+			joints1 = self.holdT.getJoints()
+
+			self.mergeJoints([joints1])
+
+			if isDone:
+				self.isCapture = True
+
+				centerPoints = self.adaptiveStep.getCenterPoints()
+				self.mapGraph.setCenterPoints(centerPoints)
+
+				self.mapGraph.saveLocalMap()
+
+				" anchoring turned off "
+				self.isAnchored = False
+
+				self.stateA = 5
+				print "going to state 5"

@@ -98,8 +98,11 @@ class VoronoiFit:
 		self.curve.drawSpline()
 		#pylab.scatter(xP,yP)
 		
-		pylab.xlim(-1.0,1.0)
-		pylab.ylim(-0.5,0.5)
+		pylab.xlim(-4.5,4.5)
+		pylab.ylim(-4,4)
+				
+		#pylab.xlim(-1.0,1.0)
+		#pylab.ylim(-0.5,0.5)
 		
 		pylab.savefig("curveFit.png")
 
@@ -111,7 +114,7 @@ class VoronoiFit:
 		vecSum = [0.0,0.0]
 		for i in range(5):
 			tVec = self.curve.getUVector(0.8-i*0.01)
-			print tVec
+			#print tVec
 			vecSum[0] += tVec[0]
 			vecSum[1] += tVec[1]
 		

@@ -231,7 +231,7 @@ class Curl(Behavior):
 					errSum += fabs(initState[i]-targetState[i])
 			transTime = int(4*errSum)
 			
-			print "poke transition time =", transTime
+			#print "poke transition time =", transTime
 
 			# set target and initial poses
 			self.transition.setInit(initState)

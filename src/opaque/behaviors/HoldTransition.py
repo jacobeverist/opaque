@@ -28,7 +28,7 @@ class HoldTransition(Behavior):
 	def reset(self, joints = []):
 		self.positions = []
 		
-		print "resetting HoldTransition to:", joints
+		#print "resetting HoldTransition to:", joints
 		
 		if len(joints) > 0:
 				

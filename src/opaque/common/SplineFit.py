@@ -10,6 +10,7 @@ from math import *
 from scipy.optimize import *
 import scipy.interpolate
 import pylab
+from random import *
 
 class SplineFit:
 
@@ -27,13 +28,13 @@ class SplineFit:
 		intArray = [[],[]]
 #		for p in points:
 		for p in newP:
-			intArray[0].append(p[0])
-			intArray[1].append(p[1])
+			intArray[0].append(p[0] + gauss(0.0,0.0001))
+			intArray[1].append(p[1] + gauss(0.0,0.0001))
 
 		#print "smooth = ", self.smoothNess, "input = ", intArray
 
 		dataOutput = open("dataFile.txt", 'w')
-		dataOutput.write(repr(intArray))
+		dataOutput.write(repr(newP))
 		dataOutput.close()
 
 		#print len(intArray[0]), len(intArray[1])

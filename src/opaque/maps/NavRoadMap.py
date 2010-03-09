@@ -9,13 +9,13 @@ from Map import Map
 from copy import *
 from math import *
 
-parentNode = 0
+nodeCount = 0
 
 class NavRoadMap(Map):
 
 	# take in vertices and edges of roadmap graph
 	def __init__(self, probe, roadGraph):
-		global parentNode
+		global nodeCount
 		Map.__init__(self)
 		
 		self.probe = probe
@@ -26,16 +26,18 @@ class NavRoadMap(Map):
 		self.cleanPath = []
 		
 		# stuff for drawing purposes
-		self.nodeCount = 0
+		self.nodeCount = nodeCount
 		self.childNodes = []
 		self.childEntities = []
-		if parentNode != 0:
-			self.parentNode = parentNode
-		else:
-			self.parentNode = self.probe._mgr.getRootSceneNode().createChildSceneNode("navRoadCurveRoot" + str(self.nodeCount))
-			parentNode = self.parentNode
-			
-	def draw(self):
+
+		self.parentNode = self.probe._mgr.getRootSceneNode().createChildSceneNode("navRoadCurveRoot" + str(self.nodeCount))
+		
+		nodeCount += 1
+		
+	def __del__(self):
+		self.clearDraw()
+
+	def clearDraw(self):
 		
 		# remove all children
 		self.parentNode.removeAllChildren()
@@ -50,6 +52,10 @@ class NavRoadMap(Map):
 			self.probe._mgr.destroyEntity(child)
 	
 		self.childEntities = []
+					
+	def draw(self):
+		
+		self.clearDraw()
 		
 		# draw the points in the simulation
 		for i in range(len(self.cleanPath)):
