@@ -19,6 +19,7 @@ from LocalFrontierMap import *
 from LocalNavRoadMap import *
 from MapGraph import *
 from AlphaMapCost import *
+from Pose import *
 
 # legacy maps
 #from RoadMap import *

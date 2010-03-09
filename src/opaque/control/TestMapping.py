@@ -356,6 +356,9 @@ class TestMapping(SnakeControl):
 							else:
 								self.stateA = 1
 								self.isAnchored = True
+								self.holdP.reset()
+								self.holdT.reset()
+
 								
 						elif self.distCount >= 2:
 							self.pathStep.reverseDirection()
@@ -416,6 +419,9 @@ class TestMapping(SnakeControl):
 						self.lastDist = 1e100
 						self.distCount = 0
 				
+				self.holdP.reset()
+				self.holdT.reset()
+
 				self.isAnchored = True
 				print "going to state", self.stateA
 				

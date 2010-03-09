@@ -8,7 +8,7 @@ from common import *
 from Map import Map
 from copy import *
 from math import *
-from MapGraph import Pose
+from Pose import Pose
 
 nodeCount = 0
 
@@ -64,14 +64,14 @@ class NavRoadMap(Map):
 		# draw the points in the simulation
 		for i in range(len(self.cleanPath)):
 			
-			pnt = self.cleanPath[i]
+			pnt = copy(self.cleanPath[i])
 			
 			" convert points from estimated points to actual points in view "
-			if localNode != 0:
+			if self.currNode != 0:
 				pose = Pose(self.currNode.getEstPose())
 				localPnt = pose.convertGlobalToLocal(pnt)
 				pose2 = Pose( self.probe.getActualJointPose(self.currNode.rootNode))
-				pnt = pose.convertLocalToGlobal(localPnt)
+				pnt = pose2.convertLocalToGlobal(localPnt)
 			
 	
 			childNode = self.parentNode.createChildSceneNode("navRoadCurvePoint" + str(self.nodeCount) + "_" + str(i))
@@ -152,6 +152,8 @@ class NavRoadMap(Map):
 		# pick a vertex on both the start and goal edges
 		vStart = startEdge[0]
 		vGoal = goalEdge[0]
+		
+		print vStart, vGoal, startEdge, goalEdge
 
 		# then compute path between two points on tree
 		shortSpanTree, shortDist = self.roadGraph.shortest_path(vStart)
@@ -160,6 +162,7 @@ class NavRoadMap(Map):
 		path = []
 
 		vx = vGoal
+		print vx
 		path.append(vx)
 
 		while True:
@@ -175,10 +178,14 @@ class NavRoadMap(Map):
 			if vx == None:
 				break
 
+			print vx
 			path.append(copy(vx))
 
 		# put it into robot following order
 		path.reverse()
+
+		print "path in NavRoadMap"
+		print path
 
 		# check for degenerate paths first
 		if len(path) >= 2:
