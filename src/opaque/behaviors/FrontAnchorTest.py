@@ -220,7 +220,7 @@ class FrontAnchorTest(Behavior):
 		
 		return result
 	
-							
+		
 	def getCenterPoints(self):
 		
 		#return copy(self.cmdSegPoints)
@@ -228,8 +228,13 @@ class FrontAnchorTest(Behavior):
 		
 	def computeCenterPoints(self):
 		
-		points = [[self.adaptiveCurve.ampSpacing/2.0 + i * self.adaptiveCurve.ampSpacing, -self.frontCurve.peakAmp[0]] for i in range(self.frontCurve.numPeaks)]
-
+		self.computeCmdSegPoints()
+		
+		#points = [[self.adaptiveCurve.ampSpacing/2.0 + i * self.adaptiveCurve.ampSpacing, -self.frontCurve.peakAmp[0]] for i in range(self.frontCurve.numPeaks)]
+		
+		points = [[0.0,0.0], [pi/self.frontCurve.initFreq, 0.0], [2*pi/self.frontCurve.initFreq, 0.0]]
+		points.reverse()
+		
 		" 1. at each inflection point, find the closest segment and it's point on segment"
 		" 2. cycle through all 40 segments "
 		" 3. transform those points to current estimated positions "
@@ -265,8 +270,8 @@ class FrontAnchorTest(Behavior):
 			joint = c[0]
 			segLen = c[1]
 			
-			#pose = self.contacts.getClosestPose(joint)
-			pose = self.localNode.getJointPose(joint)
+			pose = self.contacts.getAveragePose(joint)
+			#pose = self.localNode.getJointPose(joint)
 			point = [pose[0] + segLen*cos(pose[2]), pose[1] + segLen*sin(pose[2])]
 			
 			if point not in self.cPoints:
@@ -287,12 +292,12 @@ class FrontAnchorTest(Behavior):
 			#	spliceJointAngle = self.lastDrawSpliceAngle
 
 			spliceJointAngle = self.concertinaFit.getJoints()[self.spliceJoint] * pi /180.0
-							
+			
 			#spliceJointAngle = self.concertinaFit.getJoints()[self.spliceJoint] * pi /180.0
 			#spliceJoint = 0.0
-
+			
 			#print "joint =", spliceJointAngle
-
+			
 			self.cmdSegPoints = []
 			cmdOrigin = [0.0,0.0,-spliceJointAngle]
 			self.cmdSegPoints.append(cmdOrigin)
@@ -683,7 +688,7 @@ class FrontAnchorTest(Behavior):
 		for p in self.errorPoses1:
 			xDiff += p[0]
 			yDiff += p[1]
-			
+		
 		xDiff /= numPoses
 		yDiff /= numPoses
 		
@@ -929,7 +934,7 @@ class FrontAnchorTest(Behavior):
 			" if the anchor is not secure, lets try it again "
 			err1, err2 = self.computeAnchorErrors()
 			
-			#print "anchor errors =", err1, err2
+			print "anchor errors =", err1, err2
 			
 			if err1 > 0.1 or err2 > 0.1:
 
@@ -1319,7 +1324,7 @@ class FrontAnchorTest(Behavior):
 			
 		if isDone:
 			
-			#self.computeCenterPoints()
+			self.computeCenterPoints()
 			self.mask = [0.0 for i in range(0,40)]
 			self.count = 0
 

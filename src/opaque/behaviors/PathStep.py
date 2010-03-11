@@ -278,9 +278,14 @@ class PathStep(Behavior):
 		return self.cPoints
 		
 	def computeCenterPoints(self):
-		
-		points = [[self.adaptiveCurve.ampSpacing/2.0 + i * self.adaptiveCurve.ampSpacing, -self.frontCurve.peakAmp[0]] for i in range(self.frontCurve.numPeaks)]
 
+		self.computeCmdSegPoints()
+		
+		#points = [[self.adaptiveCurve.ampSpacing/2.0 + i * self.adaptiveCurve.ampSpacing, -self.frontCurve.peakAmp[0]] for i in range(self.frontCurve.numPeaks)]
+		
+		points = [[0.0,0.0], [pi/self.frontCurve.initFreq, 0.0], [2*pi/self.frontCurve.initFreq, 0.0]]
+		points.reverse()
+		
 		" 1. at each inflection point, find the closest segment and it's point on segment"
 		" 2. cycle through all 40 segments "
 		" 3. transform those points to current estimated positions "
@@ -322,28 +327,14 @@ class PathStep(Behavior):
 			
 			if point not in self.cPoints:
 				self.cPoints.append(point)
-
-	
-	def computeCmdSegPoints(self):
 		
+
+	def computeCmdSegPoints(self):
+
 		if self.direction:
-			
-			" the configuration of the snake as we've commanded it "
-			#self.cmdSegPoints = [[-self.probe.segLength,0.0,0.0]]
-	
-			#if not self.concertinaFit.isJointSolid(self.spliceJoint):
-			#	spliceJointAngle = self.concertinaFit.getJoints()[self.spliceJoint] * pi /180.0
-			#	self.lastDrawSpliceAngle = spliceJointAngle
-			#else:
-			#	spliceJointAngle = self.lastDrawSpliceAngle
 
 			spliceJointAngle = self.concertinaFit.getJoints()[self.spliceJoint] * pi /180.0
-							
-			#spliceJointAngle = self.concertinaFit.getJoints()[self.spliceJoint] * pi /180.0
-			#spliceJoint = 0.0
-
-			#print "joint =", spliceJointAngle
-
+						
 			self.cmdSegPoints = []
 			cmdOrigin = [0.0,0.0,-spliceJointAngle]
 			self.cmdSegPoints.append(cmdOrigin)
@@ -373,7 +364,6 @@ class PathStep(Behavior):
 				pnt = [xTotal, zTotal, totalAngle]
 				cmdOrigin = pnt
 				self.cmdSegPoints.append(cmdOrigin)
-			
 			
 		else:
 			
@@ -407,7 +397,7 @@ class PathStep(Behavior):
 				pnt = [xTotal, zTotal, totalAngle]
 				cmdOrigin = pnt
 				self.cmdSegPoints.append(cmdOrigin)
-			
+					
 	def drawFit(self):
 		
 		#peakJoints = self.frontAnchorFit.getPeakJoints(self.currPeak)
@@ -1400,7 +1390,7 @@ class PathStep(Behavior):
 			
 		if isDone:
 			
-			#self.computeCenterPoints()
+			self.computeCenterPoints()
 			self.mask = [0.0 for i in range(0,40)]
 			self.count = 0
 

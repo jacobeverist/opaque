@@ -126,7 +126,7 @@ class TestMapping(SnakeControl):
 	def frameStarted(self):
 		
 		self.adjustCamera()
-		#self.grabImage()
+		self.grabImage()
 		#self.grabAngles()
 
 		if self.isAnchored:
@@ -157,14 +157,16 @@ class TestMapping(SnakeControl):
 			self.contacts.step()
 			
 			if isDone:
-				#self.stateA = 0
+				self.stateA = 0
 				print "going to state ", self.stateA
-				self.stateA = 4
+				#self.stateA = 4
 
 				self.holdP.reset()
 				self.holdT.reset()
 
-				self.mapGraph.newNode()
+				#self.mapGraph.newNode()
+				#self.mapGraph.forceUpdate(False)
+				
 				#self.mapGraph.newNode()
 				#self.mapGraph.forceUpdate(False)
 				#self.mapGraph.saveLocalMap()
@@ -210,7 +212,9 @@ class TestMapping(SnakeControl):
 
 				self.isCapture = True
 
+				#self.adaptiveStep.computeCenterPoints()
 				centerPoints = self.adaptiveStep.getCenterPoints()
+				print "centerPoints =", centerPoints
 				self.mapGraph.setCenterPoints(centerPoints)
 				
 				self.mapGraph.forceUpdate(False)
@@ -294,8 +298,8 @@ class TestMapping(SnakeControl):
 
 				self.mapGraph.saveLocalMap()
 			
-				#if self.frontierMap.isFrontier():
-				if False:
+				if self.mapGraph.isFrontier():
+				#if False:
 					self.stateA = 0
 					print "going to state 0"
 

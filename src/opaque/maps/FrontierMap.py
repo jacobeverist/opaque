@@ -15,13 +15,15 @@ import ImageDraw
 
 class FrontierMap(Map):
 
-	def __init__(self, boundMap, obstacleMap, saveCount):
+	#def __init__(self, boundMap, obstacleMap, saveCount):
+	def __init__(self, mapGraph, saveCount):
 		Map.__init__(self, mapSize = 20.0)
 				
 		self.fileName = "mapFrontierGraph%04u.png"
-		
-		self.boundMap = boundMap
-		self.obstacleMap = obstacleMap
+
+		self.mapGraph = mapGraph
+		self.boundMap = self.mapGraph.boundMapImage
+		self.obstacleMap = self.mapGraph.obstMapImage
 		
 		self.saveCount = saveCount											
 		
@@ -47,14 +49,11 @@ class FrontierMap(Map):
 		" checks if there are frontier points directly in front of snake "
 		" if there are enough, it will return true "
 		
-		centerNodes = [2, 6, 10, 14, 18, 22, 26, 30, 34]
-		centerNodes.reverse()
-		points = []
-		for n in centerNodes:
-			pnt = self.probe.getActualJointPose(n)
-			points.append([pnt[0],pnt[1]])
+		
+		points = self.mapGraph.getCenterPoints()
+		
 			
-		spline = SplineFit(points)
+		spline = SplineFit(points, kp=2)
 		self.checkSpline = spline
 		
 		vec = spline.getUVector(0.9)
@@ -95,6 +94,7 @@ class FrontierMap(Map):
 		lowIndexY = int(floor(minY*self.divPix)) + self.numPixel/2 + 1
 
 		# if needed, adjust the global bounding box
+		"""
 		if lowIndexX < self.xMin:
 			self.xMin = lowIndexX
 
@@ -106,6 +106,7 @@ class FrontierMap(Map):
 
 		if highIndexY > self.yMax:
 			self.yMax = highIndexY
+		"""
 			
 			
 		upoints = arange(0,1.0,0.01)

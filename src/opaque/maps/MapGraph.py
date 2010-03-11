@@ -71,6 +71,9 @@ class MapGraph:
 		
 	def setCenterPoints(self, centerPoints):
 		self.currNode.setCenterPoints(centerPoints)
+		
+	def getCenterPoints(self):
+		return self.currNode.getCenterPoints()
 	
 	def getCurrentNode(self):
 		return self.currNode
@@ -477,6 +480,9 @@ class MapGraph:
 	def selectNextFrontier(self):
 		return self.frontierMap.selectNextFrontier()
 
+	def isFrontier(self):
+		return self.frontierMap.isFrontier()
+
 	def getNodeOccMap(self, nodeNum):
 		localNode = self.poseGraph.get_node_attributes(nodeNum)
 		return localNode.getOccMap()
@@ -622,7 +628,8 @@ class MapGraph:
 							
 		self.obstMapImage.save("mapObstGraph%04u.png" % self.saveCount)	
 
-		self.frontierMap = FrontierMap(self.boundMapImage, self.obstMapImage, self.saveCount)
+		self.frontierMap = FrontierMap(self, self.saveCount)
+		#self.frontierMap = FrontierMap(self.boundMapImage, self.obstMapImage, self.saveCount)
 		self.frontierMap.selectNextFrontier()
 				
 		#self.frontierMap.saveMap(self.saveCount)			

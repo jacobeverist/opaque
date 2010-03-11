@@ -29,7 +29,6 @@ class AdaptiveAnchorCurve:
 		dispZ = self.peakAmp[0]			
 
 		pO = self.origin
-
 		p1 = [pO[0] + self.ampSpacing, pO[1] + dispZ]		
 		p2 = [p1[0] + self.infLength, p1[1]]		
 
@@ -106,7 +105,7 @@ class AdaptiveAnchorCurve:
 		
 		if point[0] < xNotLessThan:
 			return 1e100, 0.5, copy(point)
-					
+		
 		x_samp = point[0]
 
 		" if the sample goes beyond the anchor curve, simply return x value and the terminating y position "
