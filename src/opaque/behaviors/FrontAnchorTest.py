@@ -934,6 +934,8 @@ class FrontAnchorTest(Behavior):
 			" if the anchor is not secure, lets try it again "
 			err1, err2 = self.computeAnchorErrors()
 			
+			print "errorPoses1:", self.errorPoses1
+			print "errorPoses2:", self.errorPoses2
 			print "anchor errors =", err1, err2
 			
 			if err1 > 0.1 or err2 > 0.1:

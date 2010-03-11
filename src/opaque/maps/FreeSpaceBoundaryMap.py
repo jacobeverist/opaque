@@ -12,8 +12,8 @@ import graph
 
 class FreeSpaceBoundaryMap(Map):
 
-	def __init__(self, occMap):
-		Map.__init__(self)
+	def __init__(self, occMap, mapSize = MAPSIZE):
+		Map.__init__(self, mapSize)
 		
 		self.nodeCount = 0
 		self.fileName = "boundaryMap%04u.png"
@@ -23,10 +23,15 @@ class FreeSpaceBoundaryMap(Map):
 	def update(self, occMap):
 		
 		self.occMap = occMap
-		self.xMin = occMap.xMin
-		self.xMax = occMap.xMax
-		self.yMin = occMap.yMin
-		self.yMax = occMap.yMax
+		#self.xMin = occMap.xMin
+		#self.xMax = occMap.xMax
+		#self.yMin = occMap.yMin
+		#self.yMax = occMap.yMax
+		
+		self.xMin = 2
+		self.xMax = self.numPixel - 3
+		self.yMin = 2
+		self.yMax = self.numPixel - 3
 		
 		self.resetMap()
 
@@ -71,13 +76,6 @@ class FreeSpaceBoundaryMap(Map):
 										#self.boundGraph.add_edge((i+k,j+l),(i,j))
 
 		return self.boundGraph
-					
-					#self.boundGraph.add_node((i,j))
-		
-					#self.nodeCount += 1
-
-					#if self.numNodes > 0:
-					#	self.poseGraph.add_edge(self.numNodes-1, self.numNodes)
 		
 	def computeBoundary(self, occMap):
 		
@@ -96,6 +94,7 @@ class FreeSpaceBoundaryMap(Map):
 					# check if any neighbors are free space
 					for m in range(-1,2):
 						for n in range(-1,2):
+							#print self.numPixel, i, m, j, n
 							if occAccess[i+m,j+n] == 255:
 								isBoundary = True
 				elif occAccess[i,j] == 255:
@@ -104,4 +103,6 @@ class FreeSpaceBoundaryMap(Map):
 				# if a neighbor is free space, then this is a boundary point
 				if isBoundary:
 					self.image[i,j] = 255
+
+
 					

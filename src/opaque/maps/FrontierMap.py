@@ -16,16 +16,16 @@ import ImageDraw
 class FrontierMap(Map):
 
 	#def __init__(self, boundMap, obstacleMap, saveCount):
-	def __init__(self, mapGraph, saveCount):
-		Map.__init__(self, mapSize = 20.0)
+	def __init__(self, mapGraph, mapSize = MAPSIZE):
+		Map.__init__(self, mapSize)
 				
 		self.fileName = "mapFrontierGraph%04u.png"
 
 		self.mapGraph = mapGraph
-		self.boundMap = self.mapGraph.boundMapImage
-		self.obstacleMap = self.mapGraph.obstMapImage
+		#self.boundMap = self.mapGraph.boundMapImage
+		#self.obstacleMap = self.mapGraph.obstMapImage
 		
-		self.saveCount = saveCount											
+		#self.saveCount = saveCount											
 		
 		self.checkSpline = 0
 
@@ -35,7 +35,7 @@ class FrontierMap(Map):
 						
 		self.densityThreshold = 30
 
-		self.update()
+		#self.update()
 	
 	def saveMap(self):
 
@@ -108,7 +108,6 @@ class FrontierMap(Map):
 			self.yMax = highIndexY
 		"""
 			
-			
 		upoints = arange(0,1.0,0.01)
 		splPoints = self.checkSpline.getUSet(upoints)
 
@@ -166,6 +165,8 @@ class FrontierMap(Map):
 		# we don't consider frontier points next to the point of origin
 		# xBoundary, yBoundary = self.realToGrid((-8.0,0.0))
 		
+		self.obstacleMap = self.mapGraph.obstMapImage
+		
 		self.resetMap()
 		
 		sumRange = 3
@@ -176,7 +177,7 @@ class FrontierMap(Map):
 		densityMax = 0
 		densityMin = 1e100
 
-		boundImg = self.boundMap.load()
+		boundImg = self.mapGraph.boundMap.image
 		obstImg = self.obstacleMap.load()
 
 		for i in range(sumRange,self.numPixel-sumRange):
@@ -265,10 +266,10 @@ class FrontierMap(Map):
 					for k in range(i-frontWidth,i+frontWidth):
 						for l in range(j-frontWidth,j+frontWidth):						
 							sum += self.image[k,l]
-	
+
 					density =  sum/normFactor
 					fimg[i,j] = density
-						
+
 					if density > densityMax:
 						densityMax = density
 						xMax = k

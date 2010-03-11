@@ -14,6 +14,8 @@ from LocalNode import *
 from VoronoiMap import *
 from FrontierMap import *
 from NavRoadMap import *
+from OccupancyMap import *
+from FreeSpaceBoundaryMap import *
 from Pose import Pose
 import pylab
 from matplotlib.patches import Circle
@@ -42,6 +44,28 @@ class MapGraph:
 		self.divPix = floor((2.0 * self.mapSize / self.pixelSize) / self.mapSize)
 		self.fileName = "mapGraph%04u.png"
 		self.saveCount = 0
+
+
+		" ground truth walls of the environment "
+		self.gndMapImage = Image.new('L', (self.numPixel, self.numPixel), 0)
+		self.gndImage = self.gndMapImage.load()
+		gndDraw = ImageDraw.Draw(self.gndMapImage)
+		
+		walls = self.probe.getWalls()
+		for wall in walls:
+			wallPoints = []
+			for p in wall:
+				pGrid = self.realToGrid(p)
+				wallPoints.append((pGrid[0],pGrid[1]))
+			
+			gndDraw.line(wallPoints, fill=255)
+
+		self.gndMapImage.save("mapGndGraph.png")
+
+		self.occMap = OccupancyMap(self.probe, self, self.mapSize)
+		self.boundMap = FreeSpaceBoundaryMap(self.occMap, self.mapSize)
+		self.frontierMap = FrontierMap(self, self.mapSize)
+		self.voronoiMap = VoronoiMap(self, self.mapSize)
 
 		#self.newNode()
 
@@ -449,6 +473,49 @@ class MapGraph:
 	def synch(self):
 		self.currNode.synch()
 
+		self.occMap.update()
+		self.boundMap.update(self.occMap)
+		
+		" 1. for each node, copy local image "
+		" 2. for each point in image, transform appropriately and plot to main image "
+		self.obstMapImage = Image.new('L', (self.numPixel, self.numPixel), 0)
+		self.obstImage = self.obstMapImage.load()
+
+		for i in range(self.numNodes):
+			localNode = self.poseGraph.get_node_attributes(i)
+			#localNode.saveMap()
+			localObstMap = localNode.getObstacleMap()
+			localMap = localObstMap.getMap()
+			localImage = localMap.load()
+			
+			mapSize = localMap.size
+		
+			for j in range(mapSize[0]):
+				for k in range(mapSize[1]):
+					if localImage[j, k] == 255:
+
+						pnt = localObstMap.gridToReal([j, k])
+
+						pnt = localNode.convertLocalToGlobal(pnt)
+
+						indexX, indexY = self.realToGrid(pnt)
+						#if indexX >= 0 and indexX < self.numPixel and indexY >= 0 and indexY < self.numPixel:
+						#	self.image[indexX,indexY] = 255
+						
+						" fill in the interstitial spaces to remove aliasing "
+						#for m in range(indexX-1,indexX+2):
+						#	for n in range(indexY-1,indexY+2):
+						#		if m >= 0 and m < self.numPixel and n >= 0 and n < self.numPixel:
+						#			self.obstImage[m,n] = 255
+
+						self.obstImage[indexX, indexY] = 255
+							
+
+		
+		self.frontierMap.update()
+		
+		self.voronoiMap.update()
+
 	def forceUpdate(self, isForward=True):
 
 		self.stablePose.setDirection(isForward)
@@ -508,31 +575,13 @@ class MapGraph:
 		#	localNode.saveMap()
 			
 	def saveMap(self):
-		
-		" ground truth walls of the environment "
-		self.gndMapImage = Image.new('L', (self.numPixel, self.numPixel), 0)
-		self.gndImage = self.gndMapImage.load()
-		gndDraw = ImageDraw.Draw(self.gndMapImage)
-		
-		walls = self.probe.getWalls()
-		for wall in walls:
-			wallPoints = []
-			for p in wall:
-				pGrid = self.realToGrid(p)
-				wallPoints.append((pGrid[0],pGrid[1]))
-			
-			gndDraw.line(wallPoints, fill=255)
-		
-		self.gndMapImage.save("mapGndGraph%04u.png" % self.saveCount)
-		
-		#print self.poseGraph
-			
-		self.mapImage = Image.new('L', (self.numPixel, self.numPixel), 127)
-		self.image = self.mapImage.load()
 
 		" 1. for each node, copy local image "
 		" 2. for each point in image, transform appropriately and plot to main image "
-
+		"""
+		self.mapImage = Image.new('L', (self.numPixel, self.numPixel), 127)
+		self.image = self.mapImage.load()
+		
 		for i in range(self.numNodes):
 			localNode = self.poseGraph.get_node_attributes(i)
 			#localNode.saveMap()
@@ -541,8 +590,7 @@ class MapGraph:
 			localImage = localMap.load()
 			
 			mapSize = localMap.size
-		
-		
+			
 			for j in range(mapSize[0]):
 				for k in range(mapSize[1]):
 					if localImage[j, k] == 255:
@@ -560,14 +608,21 @@ class MapGraph:
 							for n in range(indexY - 1, indexY + 2):
 								if m >= 0 and m < self.numPixel and n >= 0 and n < self.numPixel:
 									self.image[m, n] = 255
-
-							
+		
 		self.mapImage.save(self.fileName % self.saveCount)	
+		"""
+		
+		self.occMap.saveMap()
 		#self.saveCount += 1	
 		
+		self.boundMap.saveMap()
+		
+		"""
 		" build global boundary map "
 		self.boundMapImage = Image.new('L', (self.numPixel, self.numPixel), 0)
 		self.boundImage = self.boundMapImage.load()
+		
+		image = self.occMap.image
 		
 		for i in range(1,self.numPixel-1):
 			for j in range(1,self.numPixel-1):
@@ -575,15 +630,15 @@ class MapGraph:
 				isBoundary = False
 
 				# in shadow or unexplored, so it could be a boundary
-				if self.image[i,j] <= 127:
+				if image[i,j] <= 127:
 
 					# check if any neighbors are free space
 					for m in range(-1,2):
 						for n in range(-1,2):
-							if self.image[i+m,j+n] == 255:
+							if image[i+m,j+n] == 255:
 								isBoundary = True
 				
-				elif self.image[i,j] == 255:
+				elif image[i,j] == 255:
 					self.boundImage[i,j] = 127
 
 				# if a neighbor is free space, then this is a boundary point
@@ -591,48 +646,12 @@ class MapGraph:
 					self.boundImage[i,j] = 255		
 
 		self.boundMapImage.save("mapBoundGraph%04u.png" % self.saveCount)	
+		"""
 
-		" 1. for each node, copy local image "
-		" 2. for each point in image, transform appropriately and plot to main image "
-		self.obstMapImage = Image.new('L', (self.numPixel, self.numPixel), 0)
-		self.obstImage = self.obstMapImage.load()
 
-		for i in range(self.numNodes):
-			localNode = self.poseGraph.get_node_attributes(i)
-			#localNode.saveMap()
-			localObstMap = localNode.getObstacleMap()
-			localMap = localObstMap.getMap()
-			localImage = localMap.load()
-			
-			mapSize = localMap.size
-		
-			for j in range(mapSize[0]):
-				for k in range(mapSize[1]):
-					if localImage[j, k] == 255:
-
-						pnt = localObstMap.gridToReal([j, k])
-
-						pnt = localNode.convertLocalToGlobal(pnt)
-
-						indexX, indexY = self.realToGrid(pnt)
-						#if indexX >= 0 and indexX < self.numPixel and indexY >= 0 and indexY < self.numPixel:
-						#	self.image[indexX,indexY] = 255
-						
-						" fill in the interstitial spaces to remove aliasing "
-						#for m in range(indexX-1,indexX+2):
-						#	for n in range(indexY-1,indexY+2):
-						#		if m >= 0 and m < self.numPixel and n >= 0 and n < self.numPixel:
-						#			self.obstImage[m,n] = 255
-
-						self.obstImage[indexX, indexY] = 255
-							
 		self.obstMapImage.save("mapObstGraph%04u.png" % self.saveCount)	
 
-		self.frontierMap = FrontierMap(self, self.saveCount)
-		#self.frontierMap = FrontierMap(self.boundMapImage, self.obstMapImage, self.saveCount)
-		self.frontierMap.selectNextFrontier()
-				
-		#self.frontierMap.saveMap(self.saveCount)			
+		self.frontierMap.saveMap()			
 		
 		"""
 		self.frontMapImage = Image.new('L', (self.numPixel, self.numPixel), 0)
@@ -743,8 +762,8 @@ class MapGraph:
 		self.frontMapImage.save("mapFrontierGraph%04u.png" % self.saveCount)	
 		"""						
 		
-		self.voronoiMap = VoronoiMap(self.mapImage, self.boundMapImage)
-		self.voronoiMap.saveMap(self.saveCount)			
+		#self.voronoiMap = VoronoiMap(self.mapImage, self.boundMapImage)
+		self.voronoiMap.saveMap()			
 
 		self.navRoadMap = NavRoadMap(self.probe, self.voronoiMap.getGraph(), localNode = self.currNode)
 			

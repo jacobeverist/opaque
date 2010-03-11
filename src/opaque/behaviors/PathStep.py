@@ -1374,7 +1374,7 @@ class PathStep(Behavior):
 			#print "out of segments, switching splice joint to", self.spliceJoint
 			self.mask = [0.0 for i in range(0,40)]
 			self.count = 0
-				
+			
 			self.minAmp = 0.0
 			self.maxAmp = 0.0			
 			self.ampInc = 0.04		

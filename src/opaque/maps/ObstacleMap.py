@@ -6,8 +6,6 @@ if not dir in sys.path:
 
 from common import *
 
-
-
 from Map import Map
 import Image
 import ImageDraw
@@ -21,7 +19,7 @@ class ObstacleMap(Map):
 		self.contacts = contacts
 		self.probe = probe
 		self.fileName = "obstacleMap%04u.png"
-	
+
 		self.poly = [[0.0,0.0],[0.0,0.0]]
 		self.update(boundMap)
 
@@ -34,7 +32,6 @@ class ObstacleMap(Map):
 		for p in self.poly:
 			x, y = self.realToGrid(p)
 			pixPoly.append([x,y])
-			
 		
 		num = len(self.poly)
 		
@@ -73,7 +70,6 @@ class ObstacleMap(Map):
 				if self.image[i,j] == 255:
 					if self.occMap.image[i,j] == 255:
 						self.image[i,j] = 0
-
 
 	def updateContact(self, isFront):
 		angle, x, y = self.getProbeProfile(isFront)

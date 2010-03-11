@@ -40,7 +40,7 @@ class LocalNode:
 		"""
 		
 		if inSim:
-			self.setEstPose(self.contacts.getClosestPose(self.rootNode))			
+			self.setEstPose(self.contacts.getAveragePose(self.rootNode))			
 			self.setGndPose(self.probe.getActualJointPose(self.rootNode))
 
 		self.poseProfile = pose.PoseProfile(self.contacts,self.rootNode, inSim)
@@ -61,7 +61,7 @@ class LocalNode:
 		if inSim:
 			self.centerPoints = []
 			for j in cJoints:
-				self.centerPoints.append(self.contacts.getClosestPose(j))
+				self.centerPoints.append(self.contacts.getAveragePose(j))
 			
 			self.localCenterPoints = []
 	

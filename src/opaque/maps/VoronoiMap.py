@@ -15,12 +15,11 @@ import graph
 
 class VoronoiMap(Map):
 
-	def __init__(self, occMapImage, boundMapImage):
+	def __init__(self, mapGraph, mapSize = MAPSIZE):
+		Map.__init__(self, mapSize = mapSize)
 
-		Map.__init__(self, mapSize = 20.0)
-
-		self.occMapImage = occMapImage
-		self.boundMapImage = boundMapImage
+		
+		self.mapGraph = mapGraph
 
 		self.fileName = "mapVoronoiGraph%04u.png"
 
@@ -29,7 +28,9 @@ class VoronoiMap(Map):
 	def getBoundaryPoints(self):
 		# return the boundary as a set of (x,y) points
 		
-		image = self.boundMapImage.load()
+		image = self.mapGraph.boundMap.image
+		
+		#image = self.boundMapImage.load()
 		points = []
 		
 		for i in range(0,self.numPixel):
@@ -94,7 +95,10 @@ class VoronoiMap(Map):
 		NEIGHBOR_WIDTH = 0
 
 		xSize, ySize = self.size
-		occPix = self.occMapImage.load()
+		#occPix = self.occMapImage.load()
+
+		#occPix = self.occMap.image
+		occPix = self.mapGraph.occMap.image
 
 		newVertices = {}
 		newEdges = []
@@ -158,7 +162,9 @@ class VoronoiMap(Map):
 			length = sqrt((v2[0]-v1[0])**2+(v2[1]-v1[1])**2)
 			self.roadGraph.set_edge_weight(edge[0],edge[1],length)
 			
-	def saveMap(self, num):
+	def saveMap(self):
+		
+		self.resetMap()
 		
 		draw = ImageDraw.Draw(self.mapImage)
 
@@ -173,8 +179,9 @@ class VoronoiMap(Map):
 
 			draw.line([(i1,j1),(i2,j2)], fill = 255)
 
-		self.mapImage.save(self.fileName % num)	
-		
+		Map.saveMap(self)
+
+		#self.mapImage.save(self.fileName % self.saveCount)
 		
 	def draw(self):
 		edges = self.roadGraph.edges()

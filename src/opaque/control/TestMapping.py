@@ -126,7 +126,7 @@ class TestMapping(SnakeControl):
 	def frameStarted(self):
 		
 		self.adjustCamera()
-		self.grabImage()
+		#self.grabImage()
 		#self.grabAngles()
 
 		if self.isAnchored:
@@ -259,10 +259,10 @@ class TestMapping(SnakeControl):
 			
 			self.pokeWalls.setDirection(True)
 			isDone = self.pokeWalls.step()
-
+			
 			joints2 = self.pokeWalls.getJoints()
 			self.mergeJoints([joints2])
-				
+			
 			if self.pokeWalls.hasInitialized():
 				self.mapGraph.keepStablePose()
 
@@ -333,10 +333,9 @@ class TestMapping(SnakeControl):
 					
 					" check if we're already there "
 					if len(self.wayPoints) > 0:
+						
 						dest = self.wayPoints[0]
-						#pose = self.probe.getActualSegPose(0)
 						pose = self.contacts.getAverageSegPose(0)
-	
 						
 						dist = sqrt((dest[0]-pose[0])**2 + (dest[1]-pose[1])**2)
 						print "distance from", dest, "to", pose, "=", dist
