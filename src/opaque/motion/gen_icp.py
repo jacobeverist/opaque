@@ -918,12 +918,17 @@ def gen_ICP_global(pastPose, targetPose, pastHull, targetHull, pastCircles, cost
 		offset = newOffset
 
 		" reduce the minMatch distance for each step down to a floor value "
+		"""
 		if stepOne:
 			stepOne = False
 		else:
 			minMatchDist /= 2
 			if minMatchDist < 0.25:
 				minMatchDist = 0.25
+		"""
+		minMatchDist /= 2
+		if minMatchDist < 0.25:
+			minMatchDist = 0.25
 	
 		# optionally draw the position of the points in current transform
 		if plotIter:

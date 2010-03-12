@@ -164,8 +164,8 @@ class TestMapping(SnakeControl):
 				self.holdP.reset()
 				self.holdT.reset()
 
-				#self.mapGraph.newNode()
-				#self.mapGraph.forceUpdate(False)
+				self.mapGraph.newNode()
+				self.mapGraph.forceUpdate(False)
 				
 				#self.mapGraph.newNode()
 				#self.mapGraph.forceUpdate(False)
@@ -199,6 +199,7 @@ class TestMapping(SnakeControl):
 			if isDone:
 				
 				self.stateA = 1
+				self.stateA = 4
 
 				self.holdP.reset()
 				self.holdT.reset()
@@ -303,10 +304,14 @@ class TestMapping(SnakeControl):
 					self.stateA = 0
 					print "going to state 0"
 
+					self.mapGraph.correctPoses2()
+
 					" anchoring turned off "
 					self.isAnchored = False
 				else:
 					self.stateA = 5
+
+					self.mapGraph.correctPoses2()
 
 					#self.mapGraph.saveLocalMap()
 
@@ -495,6 +500,8 @@ class TestMapping(SnakeControl):
 
 			if isDone:
 				self.isCapture = True
+
+				self.mapGraph.correctPoses2()
 
 				centerPoints = self.adaptiveStep.getCenterPoints()
 				self.mapGraph.setCenterPoints(centerPoints)

@@ -69,9 +69,9 @@ class NavRoadMap(Map):
 			" convert points from estimated points to actual points in view "
 			if self.currNode != 0:
 				pose = Pose(self.currNode.getEstPose())
-				localPnt = pose.convertGlobalToLocal(pnt)
-				pose2 = Pose( self.probe.getActualJointPose(self.currNode.rootNode))
-				pnt = pose2.convertLocalToGlobal(localPnt)
+				pnt = pose.convertGlobalToLocal(pnt)
+				#pose2 = Pose( self.probe.getActualJointPose(self.currNode.rootNode))
+				#pnt = pose2.convertLocalToGlobal(localPnt)
 			
 	
 			childNode = self.parentNode.createChildSceneNode("navRoadCurvePoint" + str(self.nodeCount) + "_" + str(i))

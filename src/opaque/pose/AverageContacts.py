@@ -37,9 +37,6 @@ class AverageContacts:
 		# data output of angles over time
 		#self.angle_output = open("frame/angle_output.txt", "w")
 
-		self._refnodes = []
-		self._refent = []
-
 		# contact parameter arrays
 		num = self.numJoints
 
@@ -101,7 +98,7 @@ class AverageContacts:
 		
 		self._allRefNodes = []
 		self._allRefEnt = []
-			
+		
 		"""
 		for i in range(0,self.numJoints):
 			## Create the visual reprsentation of active reference nodes
@@ -124,10 +121,10 @@ class AverageContacts:
 			entity.setMaterialName("Red")
 
 			#entity.setVisible(False)
-			self._refnodes.append(node)
-			self._refent.append(entity)
+			self._allRefNodes.append(node)
+			self._allRefEnt.append(entity)
 		"""
-
+		
 	def setTimerAliasing(self, timeInc):
 		self.timeInc = timeInc
 
@@ -243,9 +240,13 @@ class AverageContacts:
 			
 		# this is the first node, so reference from 0,0
 		elif self.numRef == 0:
-
-			# initialize the first reference node with its position in global coordinates
-			pose = self.probe.getActualJointPose(targetJoint)
+			
+			if forcePose != []:
+				pose = forcePose
+				print "taking forced pose of", forcePose
+			else:
+				# initialize the first reference node with its position in global coordinates
+				pose = self.probe.getActualJointPose(targetJoint)
 
 		else:
 			# no active node exists and not the first,
@@ -323,8 +324,8 @@ class AverageContacts:
 			pose = self.probe.getJointWRTJointPose(initPose, jointID, targetJoint) 
 			return pose
 		
-	def resetPose(self):
-	
+	def resetPose(self, estPose = []):
+		
 		# contact parameter arrays
 		num = self.numJoints
 
@@ -338,14 +339,26 @@ class AverageContacts:
 		self.activeRef = [False for i in range(num)]
 		self.activeRefPtr = [0 for i in range(num)]
 
+		# deference the child nodes now
+		for child in self._allRefNodes:
+			self.probe._mgr.destroySceneNode(child)
+
+		self._allRefNodes = []
+	
+		for child in self._allRefEnt:
+			self.probe._mgr.destroyEntity(child)
+	
+		self._allRefEnt = []
+
 		# proposed reference points
-		#self.numRef = 0
-		#self.refPoints = []
+		self.numRef = 0
+		self.refPoints = []
 		
 		# ref point constraints
 		self.numEdge = 0
 		self.refEdges = []
 
+		
 		# number of data constructs we produce
 		self.graphCount = 0
 		self.poseCount = 0
@@ -362,14 +375,21 @@ class AverageContacts:
 		startJoint = 2
 		endJoint = self.numJoints-2
 
+		if estPose != []:
+			newNode = self.createNewNodeAverage(19, forcePose = estPose)
+			self.createEdges(newNode)
+
+
 		for i in range(startJoint, endJoint):
-			if not self.activeRef[i] and not self.maxErrorReached[i] and (self.avgErr[i] > self.errorThresh) and (self.mask[i] > self.maskThresh) and (self.maskTime[i] > self.timeThresh):
+			#if not self.activeRef[i] and not self.maxErrorReached[i] and (self.avgErr[i] > self.errorThresh) and (self.mask[i] > self.maskThresh) and (self.maskTime[i] > self.timeThresh):
+			if not self.activeRef[i]:
 
 				# create a new reference node
 				newNode = self.createNewNode(i)
 
 				# create position constraints between all the current active reference nodes
 				self.createEdges(newNode)
+
 
 	def setMask(self, mask):
 		self.initMask = copy(mask)
@@ -692,7 +712,7 @@ class AverageContacts:
 		self.activeRefPtr[newJointID] = newNode	
 
 		" draw the estimated reference nodes "
-		if False:
+		if True:
 			i = self.numRef
 			## Create the visual reprsentation of active reference nodes
 			name = "est_node" + str(i)
@@ -722,7 +742,7 @@ class AverageContacts:
 		return newNode
 
 
-	def createNewNodeAverage(self, newJointID):
+	def createNewNodeAverage(self, newJointID, forcePose = []):
 
 		# find the first active reference from which to determine the new node's position in space
 		refExists = False
@@ -825,9 +845,14 @@ class AverageContacts:
 		# this is the first node, so reference from 0,0
 		elif self.numRef == 0:
 
-			# initialize the first reference node with its position in global coordinates
-			origin = self.probe.getActualJointPose(newJointID)
-			#print "initial pose at joint", newJointID
+			if forcePose != []:
+				origin = forcePose
+				print "taking forced pose of", forcePose
+			else:
+				
+				# initialize the first reference node with its position in global coordinates
+				origin = self.probe.getActualJointPose(newJointID)
+				#print "initial pose at joint", newJointID
 
 			#origin[2] = self.normalizeAngle(origin[2]+math.pi)
 			originNode = RefNode(-1,newJointID,origin[0],origin[1],origin[2], self.probe)
@@ -868,7 +893,7 @@ class AverageContacts:
 		self.activeRefPtr[newJointID] = newNode	
 
 		" draw the estimated reference nodes "
-		if False:
+		if True:
 			i = self.numRef
 			## Create the visual reprsentation of active reference nodes
 			name = "est_node" + str(i)

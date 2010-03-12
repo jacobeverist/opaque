@@ -104,13 +104,13 @@ class MapGraph:
 	
 	def newNode(self):
 		
-		if self.numNodes >= 2:
-			self.correctPoses2()
+		#if self.numNodes >= 2:
+		#	self.correctPoses2()
 		
 		if self.numNodes > 0:
 			if self.currNode.isDirty():
 				self.synch()
-			self.saveMap()
+			#self.saveMap()
 			self.currNode.saveToFile()
 
 		self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19)
@@ -284,7 +284,11 @@ class MapGraph:
 		" update the estimated poses "
 		for m in range(0,len(estPoses)):
 			self.setNodePose(m, estPoses[m])
-					
+			
+			
+		" update the current estimated pose in AverageContacts "
+		self.contacts.resetPose(estPose = estPoses[-1])
+
 		#self.saveMap()
 		
 	def correctPoses(self):
