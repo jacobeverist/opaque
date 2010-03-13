@@ -122,7 +122,7 @@ class FrontierMap(Map):
 			imPix[m,n] = 255
 		
 		filename = "checkMap%04u.png"
-		im.save(filename % (self.saveCount-1))
+		im.save(filename % (self.saveCount))
 		
 		numPoints = 0
 		
@@ -138,6 +138,7 @@ class FrontierMap(Map):
 		
 		print numPoints,"frontier points found: "
 		if numPoints > 10:
+			self.inhibitLocation([x,y])
 			return True
 		else:
 			# no frontier points found in current region
@@ -297,6 +298,8 @@ class FrontierMap(Map):
 		if densityMax < self.densityThreshold:
 			raise
 		
+		self.inhibitLocation([x,y])
+
 		return [x,y]
 		
 			

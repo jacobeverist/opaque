@@ -712,7 +712,7 @@ class AverageContacts:
 		self.activeRefPtr[newJointID] = newNode	
 
 		" draw the estimated reference nodes "
-		if True:
+		if False:
 			i = self.numRef
 			## Create the visual reprsentation of active reference nodes
 			name = "est_node" + str(i)
@@ -893,7 +893,7 @@ class AverageContacts:
 		self.activeRefPtr[newJointID] = newNode	
 
 		" draw the estimated reference nodes "
-		if True:
+		if False:
 			i = self.numRef
 			## Create the visual reprsentation of active reference nodes
 			name = "est_node" + str(i)

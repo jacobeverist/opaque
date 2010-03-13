@@ -1239,58 +1239,61 @@ def computeUnions(point_sets):
 
 def computeUnion(points1, points2):
 	
-	numPoints1 = len(points1)
-	numPoints2 = len(points2)
-
-	inputStr = str(numPoints1) + " " + str(numPoints2) + " "
+	try:
+		numPoints1 = len(points1)
+		numPoints2 = len(points2)
 	
-	" Removed Gaussians because were causing self-intersections ."
-	" not necessary anymore because polygons come from CGAL and are not degenerate. "
-	for p in points1:
-		p2 = copy(p)
-		#p2[0] += gauss(0.0,0.0001)
-		#p2[1] += gauss(0.0,0.0001)
-
-		inputStr += str(p2[0]) + " " + str(p2[1]) + " "
-
-	for p in points2:
-		p2 = copy(p)
-		#p2[0] += gauss(0.0,0.0001)
-		#p2[1] += gauss(0.0,0.0001)
-
-		inputStr += str(p2[0]) + " " + str(p2[1]) + " "
+		inputStr = str(numPoints1) + " " + str(numPoints2) + " "
+		
+		" Removed Gaussians because were causing self-intersections ."
+		" not necessary anymore because polygons come from CGAL and are not degenerate. "
+		for p in points1:
+			p2 = copy(p)
+			#p2[0] += gauss(0.0,0.0001)
+			#p2[1] += gauss(0.0,0.0001)
 	
-	inputStr += "\n"
+			inputStr += str(p2[0]) + " " + str(p2[1]) + " "
 	
-	print "sending input to Union:  ", inputStr
+		for p in points2:
+			p2 = copy(p)
+			#p2[0] += gauss(0.0,0.0001)
+			#p2[1] += gauss(0.0,0.0001)
 	
-	" start the subprocess "
-	subProc = Popen(["./poly_union.exe"], stdin=PIPE, stdout=PIPE)
+			inputStr += str(p2[0]) + " " + str(p2[1]) + " "
+		
+		inputStr += "\n"
+		
+		" start the subprocess "
+		subProc = Popen(["./poly_union.exe"], stdin=PIPE, stdout=PIPE)
+		
+		" send input and receive output "
+		sout, serr = subProc.communicate(inputStr)
 	
-	" send input and receive output "
-	sout, serr = subProc.communicate(inputStr)
-
-	print "rawOutput ="
-	print sout
-
-	print serr
 	
-	" convert string output to typed data "
-	sArr = sout.split(" ")
-
-	numVert = int(sArr[0])
+		
+		" convert string output to typed data "
+		sArr = sout.split(" ")
 	
-	#print "numVert =", numVert
-	#print numVert, len(sArr)
-	#print sArr
+		numVert = int(sArr[0])
+		
+		#print "numVert =", numVert
+		#print numVert, len(sArr)
+		#print sArr
+		
+		vertices = []
+		for i in range(numVert):
+			#print sArr[2*i+1], sArr[2*i+2]
+			vertices.append([float(sArr[2*i + 1]), float(sArr[2*i + 2])])
+		
+		return vertices
+	except:
+		print "polygon union failed with the following data:"
+		print "sending input to poly_union:  ", inputStr
+		print "rawOutput ="
+		print sout
 	
-	vertices = []
-	for i in range(numVert):
-		#print sArr[2*i+1], sArr[2*i+2]
-		vertices.append([float(sArr[2*i + 1]), float(sArr[2*i + 2])])
-	
-	return vertices
-				
+		print serr		
+		raise
 
 
 if __name__ == '__main__':

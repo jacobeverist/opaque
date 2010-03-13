@@ -321,8 +321,8 @@ class PathStep(Behavior):
 			joint = c[0]
 			segLen = c[1]
 			
-			#pose = self.contacts.getClosestPose(joint)
-			pose = self.localNode.getJointPose(joint)
+			pose = self.contacts.getAveragePose(joint)
+			#pose = self.localNode.getJointPose(joint)
 			point = [pose[0] + segLen*cos(pose[2]), pose[1] + segLen*sin(pose[2])]
 			
 			if point not in self.cPoints:

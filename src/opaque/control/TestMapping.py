@@ -199,7 +199,7 @@ class TestMapping(SnakeControl):
 			if isDone:
 				
 				self.stateA = 1
-				self.stateA = 4
+				#self.stateA = 4
 
 				self.holdP.reset()
 				self.holdT.reset()
@@ -280,7 +280,6 @@ class TestMapping(SnakeControl):
 				" skip the anchoring and just go to locomotion "
 				if True:
 					
-					self.mapGraph.saveLocalMap()
 	
 					#if self.mapGraph.numNodes >= 18:					
 					#	exit()
@@ -297,21 +296,23 @@ class TestMapping(SnakeControl):
 			self.mergeJoints([joints1])
 			if self.globalTimer - self.prevTime > 100:
 
+				#self.mapGraph.saveLocalMap()
+				self.mapGraph.correctPoses2()
 				self.mapGraph.saveLocalMap()
-			
+				self.mapGraph.saveMap()
+				
 				if self.mapGraph.isFrontier():
 				#if False:
 					self.stateA = 0
 					print "going to state 0"
 
-					self.mapGraph.correctPoses2()
+
+					# inhibit frontier points in front of me
 
 					" anchoring turned off "
 					self.isAnchored = False
 				else:
 					self.stateA = 5
-
-					self.mapGraph.correctPoses2()
 
 					#self.mapGraph.saveLocalMap()
 
@@ -363,6 +364,8 @@ class TestMapping(SnakeControl):
 								self.pathStep.computeCurve()
 							else:
 								self.stateA = 1
+								self.mapGraph.newNode()
+								self.mapGraph.forceUpdate(False)
 								self.isAnchored = True
 								self.holdP.reset()
 								self.holdT.reset()
@@ -507,6 +510,7 @@ class TestMapping(SnakeControl):
 				self.mapGraph.setCenterPoints(centerPoints)
 
 				self.mapGraph.saveLocalMap()
+				self.mapGraph.saveMap()
 
 				" anchoring turned off "
 				self.isAnchored = False
