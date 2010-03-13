@@ -109,7 +109,8 @@ class MapGraph:
 		
 		if self.numNodes > 0:
 			if self.currNode.isDirty():
-				self.synch()
+				self.currNode.synch()
+				#self.synch()
 			#self.saveMap()
 			self.currNode.saveToFile()
 
@@ -133,7 +134,8 @@ class MapGraph:
 	def correctPoses2(self):
 
 		if self.currNode.isDirty():
-			self.synch()
+			self.currNode.synch()
+			#self.synch()
 
 		" TUNE ME:  threshold cost difference between iterations to determine if converged "
 		costThresh = 0.1

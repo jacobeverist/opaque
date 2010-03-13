@@ -298,6 +298,7 @@ class TestMapping(SnakeControl):
 
 				#self.mapGraph.saveLocalMap()
 				self.mapGraph.correctPoses2()
+				self.mapGraph.synch()
 				self.mapGraph.saveLocalMap()
 				self.mapGraph.saveMap()
 				
@@ -509,6 +510,7 @@ class TestMapping(SnakeControl):
 				centerPoints = self.adaptiveStep.getCenterPoints()
 				self.mapGraph.setCenterPoints(centerPoints)
 
+				self.mapGraph.synch()
 				self.mapGraph.saveLocalMap()
 				self.mapGraph.saveMap()
 
