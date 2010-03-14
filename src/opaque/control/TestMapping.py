@@ -37,8 +37,11 @@ class TestMapping(SnakeControl):
 		
 		" maps "
 		self.mapGraph = maps.MapGraph(self.probe, self.contacts)
-		self.mapGraph.loadFile(9)
+		#self.mapGraph.loadFile(9)
 		
+		#self.mapGraph.correctPoses2()
+		#self.mapGraph.synch()
+		#self.mapGraph.saveMap()
 		
 		" behaviors "
 		self.anchorT = behave.AnchorTransition(self.probe)
@@ -46,7 +49,7 @@ class TestMapping(SnakeControl):
 		self.holdT = behave.HoldTransition(self.probe)
 		self.adaptiveStep = behave.FrontAnchorTest(self.probe, self.contacts, self.mapGraph, direction)
 		
-		self.sweep = behave.SpaceSweep(self.probe, direction)
+		#self.sweep = behave.SpaceSweep(self.probe, direction)
 		self.pokeWalls = behave.PokeWalls(self.probe, direction, self.mapGraph.obstCallBack)
 		
 		self.exploreRoot = [0.5,0.0]
@@ -125,7 +128,7 @@ class TestMapping(SnakeControl):
 
 	def frameStarted(self):
 		
-		self.adjustCamera()
+		#self.adjustCamera()
 		#self.grabImage()
 		#self.grabAngles()
 

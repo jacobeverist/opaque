@@ -747,9 +747,12 @@ class FrontAnchorTest(Behavior):
 		
 		if not self.isJerking:
 			" perform amplitude operation here "
+
+			print "amps before:", self.minAmp, self.maxAmp, self.ampInc, currAmp, nextVal
 			
 			" error threshold that determines we have made an anchor contact "
 			if maxError > 0.3 and self.maxAmp != 0.0:
+
 				
 				#print "errors =", errors
 				
@@ -814,6 +817,7 @@ class FrontAnchorTest(Behavior):
 				" maximum is the value we just set "
 				self.maxAmp = nextVal
 			
+			print "amps after:", self.minAmp, self.maxAmp, self.ampInc, currAmp, nextVal
 				
 		" change the amplitude "
 		#print "setting amp = " , nextVal		

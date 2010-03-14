@@ -16,7 +16,7 @@ class FreeSpaceBoundaryMap(Map):
 		Map.__init__(self, mapSize)
 		
 		self.nodeCount = 0
-		self.fileName = "boundaryMap%04u.png"
+		self.fileName = "mapBoundaryMap%04u.png"
 		self.boundGraph = graph.graph()
 		self.update(occMap)
 	

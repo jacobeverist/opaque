@@ -1016,7 +1016,9 @@ def gen_ICP_global(pastPose, targetPose, pastHull, targetHull, pastCircles, cost
 			#pylab.xlim(-3,6)
 			#pylab.ylim(-4,4)
 			pylab.xlim(-4,7)
-			pylab.ylim(-7,3)
+			#pylab.ylim(-7,3)
+			pylab.xlim(-4,9)
+			pylab.ylim(-7,5)
 			#pylab.axis('equal')
 			pylab.savefig("ICP_plot_%04u.png" % numIterations)
 			pylab.clf()			
@@ -1154,12 +1156,14 @@ def gen_ICP(offset, a_data, b_data, costThresh = 0.004, minMatchDist = 2.0, plot
 	return offset
 
 def plotEnv():
+
 	WLEN = 3.0
+	WLEN2 = 5.0
 	wall1 = [[-14.0, -0.2], [-4.0, -0.2], [-4.0 + WLEN*math.cos(math.pi/3), -0.2 - WLEN*math.sin(math.pi/3)]]
-	wall2 = [[-4.0 + WLEN*math.cos(math.pi/3), 0.2 + WLEN*math.sin(math.pi/3)], [-4.0, 0.2] ,[-14.0, 0.2]]
+	wall2 = [[-4.0 + WLEN2*math.cos(math.pi/3), 0.2 + WLEN2*math.sin(math.pi/3)], [-4.0, 0.2] ,[-14.0, 0.2]]
 	w1 = wall1[2]
 	w2 = wall2[0]
-	
+			
 	wall3 = [[w1[0] + 0.4*math.cos(math.pi/6), w1[1] + 0.4*math.sin(math.pi/6)], [0.4*math.cos(math.pi/6) - 4, 0.0], [w2[0] + 0.4*math.cos(math.pi/6), w2[1] - 0.4*math.sin(math.pi/6)], w2]
 	lp = wall3[0]
 	rp = wall3[2]

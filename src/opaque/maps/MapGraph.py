@@ -437,9 +437,11 @@ class MapGraph:
 			#gen_icp.draw(b_data, a_trans, "foo.png", fileWrite = False) 
 			
 		def plotEnv():
+	
 			WLEN = 3.0
-			wall1 = [[-14.0, -0.2], [-4.0, -0.2], [-4.0 + WLEN*math.cos(math.pi/3), -0.2 - WLEN*math.sin(math.pi/3)]]
-			wall2 = [[-4.0 + WLEN*math.cos(math.pi/3), 0.2 + WLEN*math.sin(math.pi/3)], [-4.0, 0.2] ,[-14.0, 0.2]]
+			WLEN2 = 5.0
+			wall1 = [[-14.0, -0.2], [-4.0, -0.2], [-4.0 + WLEN*cos(pi/3), -0.2 - WLEN*sin(pi/3)]]
+			wall2 = [[-4.0 + WLEN2*cos(pi/3), 0.2 + WLEN2*sin(pi/3)], [-4.0, 0.2] ,[-14.0, 0.2]]
 			w1 = wall1[2]
 			w2 = wall2[0]
 			
@@ -848,45 +850,50 @@ class MapGraph:
 		
 	def computeAlpha2(self, points):
 		
-		numPoints = len(points)
-		print numPoints, "input points"
-		inputStr = str(numPoints) + " "
-		
-		" radius 0.2 "
-		#inputStr += str(0.8) + " "
-		inputStr += str(0.2) + " "
-		
-		for p in points:
-			p2 = copy(p)
-			p2[0] += gauss(0.0,0.0001)
-			p2[1] += gauss(0.0,0.0001)
-
-			inputStr += str(p2[0]) + " " + str(p2[1]) + " "
-		
-		inputStr += "\n"
-		
-		" start the subprocess "
-		subProc = Popen(["./alpha2.exe"], stdin=PIPE, stdout=PIPE)
-		
-		
-		" send input and receive output "
-		sout, serr = subProc.communicate(inputStr)
+		try:
+			numPoints = len(points)
+			inputStr = str(numPoints) + " "
+			
+			" radius 0.2 "
+			#inputStr += str(0.8) + " "
+			inputStr += str(0.2) + " "
+			
+			for p in points:
+				p2 = copy(p)
+				p2[0] += gauss(0.0,0.0001)
+				p2[1] += gauss(0.0,0.0001)
 	
-		print "rawOutput ="
-		print sout
+				inputStr += str(p2[0]) + " " + str(p2[1]) + " "
+			
+			inputStr += "\n"
+			
+			" start the subprocess "
+			
+			" send input and receive output "
+			sout, serr = subProc.communicate(inputStr)
+		
+			" convert string output to typed data "
+			sArr = sout.split(" ")
 	
-		" convert string output to typed data "
-		sArr = sout.split(" ")
-
-		numVert = int(sArr[0])
+			numVert = int(sArr[0])
+			
+			vertices = []
+			for i in range(numVert+1):
+				vertices.append([float(sArr[2*i + 1]), float(sArr[2*i + 2])])
+			
+			return vertices
 		
-		print "numVert =", numVert
-		print numVert, len(sArr)
-		print sArr
+		except:
+			print "computeAlpha2() failed"
+			print numPoints, "input points"
+			print "rawOutput ="
+			print sout
+			print "numVert =", numVert
+			print numVert, len(sArr)
+			print sArr
+			raise
 		
-		vertices = []
-		for i in range(numVert+1):
-			vertices.append([float(sArr[2*i + 1]), float(sArr[2*i + 2])])
 		
-		return vertices
-							
+		
+		
+				

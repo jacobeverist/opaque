@@ -20,7 +20,7 @@ class NavRoadMap(Map):
 		Map.__init__(self)
 		
 		self.probe = probe
-		self.fileName = "navRoadMap%04u.png"
+		self.fileName = "mapNavRoadMap%04u.png"
 		
 		self.update(roadGraph)
 		

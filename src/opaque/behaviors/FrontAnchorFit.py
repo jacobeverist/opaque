@@ -15,7 +15,7 @@ class FrontAnchorFit(Behavior):
 	def __init__(self, probe, anterior = True, spliceJoint = 19):
 		global fastLocalNodeCount
 		
-		print "creating FrontAnchorFit behavior"
+		print "creating FrontAnchorFit behavior with spliceJoint", spliceJoint
 
 		Behavior.__init__(self, probe)
 

@@ -43,7 +43,7 @@ class FrontierMap(Map):
 		draw = ImageDraw.Draw(tempImage)
 		
 		tempImage.save(self.fileName % self.saveCount)	
-		#self.saveCount += 1
+		self.saveCount += 1
 		
 	def isFrontier(self):
 		" checks if there are frontier points directly in front of snake "
@@ -121,7 +121,7 @@ class FrontierMap(Map):
 			m,n = self.realToGrid(p)
 			imPix[m,n] = 255
 		
-		filename = "checkMap%04u.png"
+		filename = "mapCheckMap%04u.png"
 		im.save(filename % (self.saveCount))
 		
 		numPoints = 0
@@ -235,8 +235,9 @@ class FrontierMap(Map):
 					if not isTooClose:
 						density =  self.image[i,j]
 						density = density - densityMin
-						result = 255*(1.0-float(maxDen-density)/float(maxDen))
-						self.image[i,j] = result
+						if maxDen > 0:
+							result = 255*(1.0-float(maxDen-density)/float(maxDen))
+							self.image[i,j] = result
 						#print maxDen, density, result, self.image[i,j]
 
 		self.mapImage.save("mapFrontierGraph%04u.png" % self.saveCount)		
@@ -288,7 +289,7 @@ class FrontierMap(Map):
 		
 		frontierDensity.save("mapFrontierDensity%04u.png" % self.saveCount)		
 
-		self.saveCount += 1
+		#self.saveCount += 1
 			
 		x, y = self.gridToReal([xMax, yMax])
 

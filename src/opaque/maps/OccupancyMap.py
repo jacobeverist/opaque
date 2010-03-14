@@ -24,7 +24,7 @@ class OccupancyMap(Map):
 		self.yMin = self.numPixel
 		self.yMax = 0
 
-		self.fileName = "occupancyMap%04u.png"
+		self.fileName = "mapOccupancyMap%04u.png"
 
 	def resetMap(self):
 		self.mapImage = Image.new('L', (self.numPixel,self.numPixel),127)

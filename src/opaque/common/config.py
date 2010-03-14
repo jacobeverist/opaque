@@ -57,5 +57,5 @@ SERVO_DGAIN = .001
 SERVO_ERRMIN = ogre.Math.AngleUnitsToRadians(0.01) # _deg
 
 # servo stops
-HI_SERVO_STOP = ogre.Math.AngleUnitsToRadians(180.0) #_deg
-LO_SERVO_STOP = ogre.Math.AngleUnitsToRadians(-180.0) #_deg
+HI_SERVO_STOP = ogre.Math.AngleUnitsToRadians(160.0) #_deg
+LO_SERVO_STOP = ogre.Math.AngleUnitsToRadians(-160.0) #_deg

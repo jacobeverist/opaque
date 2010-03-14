@@ -18,7 +18,7 @@ class ObstacleMap(Map):
 
 		self.contacts = contacts
 		self.probe = probe
-		self.fileName = "obstacleMap%04u.png"
+		self.fileName = "mapObstacleMap%04u.png"
 
 		self.poly = [[0.0,0.0],[0.0,0.0]]
 		self.update(boundMap)
