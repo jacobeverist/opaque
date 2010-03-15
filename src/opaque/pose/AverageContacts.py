@@ -671,6 +671,7 @@ class AverageContacts:
 
 			# initialize the first reference node with its position in global coordinates
 			origin = self.probe.getActualJointPose(newJointID)
+			origin[0] += 2.0
 			#print "initial pose at joint", newJointID
 
 			#origin[2] = self.normalizeAngle(origin[2]+math.pi)

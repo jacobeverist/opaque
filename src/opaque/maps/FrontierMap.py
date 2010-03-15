@@ -52,6 +52,7 @@ class FrontierMap(Map):
 		
 		points = self.mapGraph.getCenterPoints()
 		
+		print "centerPoints =", points
 			
 		spline = SplineFit(points, kp=2)
 		self.checkSpline = spline

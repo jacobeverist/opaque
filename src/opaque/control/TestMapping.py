@@ -37,7 +37,7 @@ class TestMapping(SnakeControl):
 		
 		" maps "
 		self.mapGraph = maps.MapGraph(self.probe, self.contacts)
-		#self.mapGraph.loadFile(9)
+		self.mapGraph.loadFile(9)
 		
 		#self.mapGraph.correctPoses2()
 		#self.mapGraph.synch()
@@ -124,11 +124,11 @@ class TestMapping(SnakeControl):
 		newPose = [xPrev*0.99 + 0.01*xAvg, yPrev*0.99 + 0.01*yAvg]
 
 		self.camera.setPosition(newPose[0]-4,7,newPose[1])
-		self.camera.lookAt(newPose[0]-2.5,0.5,newPose[1])
+		self.camera.lookAt(newPose[0],0.5,newPose[1])
 
 	def frameStarted(self):
 		
-		#self.adjustCamera()
+		self.adjustCamera()
 		#self.grabImage()
 		#self.grabAngles()
 
@@ -160,9 +160,9 @@ class TestMapping(SnakeControl):
 			self.contacts.step()
 			
 			if isDone:
-				self.stateA = 0
+				#self.stateA = 0
 				print "going to state ", self.stateA
-				#self.stateA = 4
+				self.stateA = 4
 
 				self.holdP.reset()
 				self.holdT.reset()
@@ -305,8 +305,8 @@ class TestMapping(SnakeControl):
 				self.mapGraph.saveLocalMap()
 				self.mapGraph.saveMap()
 				
-				if self.mapGraph.isFrontier():
-				#if False:
+				#if self.mapGraph.isFrontier():
+				if False:
 					self.stateA = 0
 					print "going to state 0"
 
@@ -332,7 +332,6 @@ class TestMapping(SnakeControl):
 					self.wayPaths = [originPath, goalPath]
 					
 					print "originPath:", originPath
-					
 					print "goalPath:", goalPath
 					
 					#self.wayPaths[0].reverse()
@@ -374,7 +373,6 @@ class TestMapping(SnakeControl):
 								self.holdP.reset()
 								self.holdT.reset()
 
-								
 						elif self.distCount >= 2:
 							self.pathStep.reverseDirection()
 							self.lastDist = 1e100

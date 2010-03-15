@@ -110,8 +110,9 @@ class PathStep(Behavior):
 
 		self.pathCurve = VoronoiFit(self.path)
 		
-		self.globalCurveFit = GlobalCurveFit(self.probe, self.contacts, self.pathCurve)
-		self.globalCurveSlide = GlobalCurveSlide(self.probe, self.contacts, self.pathCurve)
+		#self.globalCurveFit = GlobalCurveFit(self.probe, self.contacts, self.pathCurve)
+		#print "setting localNode to GlobalCurveSlide:", self.mapGraph.currNode
+		self.globalCurveSlide = GlobalCurveSlide(self.probe, self.contacts, self.pathCurve, localNode = self.mapGraph.currNode)
 		
 		#self.setDirection(not self.globalCurveFit.getPathDirection())
 		result = self.globalCurveSlide.getPathDirection()

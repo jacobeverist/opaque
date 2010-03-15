@@ -12,12 +12,12 @@ from math import exp
 
 class GlobalCurveSlide(Behavior):
 	
-	def __init__(self, probe, contacts, curve = 0):
+	def __init__(self, probe, contacts, curve = 0, localNode = 0):
 		
 		Behavior.__init__(self, probe)
 
 		self.contacts = contacts
-
+		self.currNode = localNode
 		self.direction = True
 
 		self.setCurve(curve)
@@ -38,7 +38,8 @@ class GlobalCurveSlide(Behavior):
 	def setCurve(self, curve):
 		self.curve = curve
 
-		self.globalCurveFit = GlobalCurveFit(self.probe, self.contacts, self.curve)
+		#print "setting localNode to GlobalCurveFit:", self.currNode
+		self.globalCurveFit = GlobalCurveFit(self.probe, self.contacts, self.curve, localNode = self.currNode)
 		#self.direction = not self.getPathDirection()
 		
 		self.direction = not self.globalCurveFit.getPathDirection()
