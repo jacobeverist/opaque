@@ -110,8 +110,7 @@ class PathStep(Behavior):
 
 		self.pathCurve = VoronoiFit(self.path)
 		
-		#self.globalCurveFit = GlobalCurveFit(self.probe, self.contacts, self.pathCurve)
-		#print "setting localNode to GlobalCurveSlide:", self.mapGraph.currNode
+		self.globalCurveFit = GlobalCurveFit(self.probe, self.contacts, self.pathCurve, localNode = self.mapGraph.currNode)
 		self.globalCurveSlide = GlobalCurveSlide(self.probe, self.contacts, self.pathCurve, localNode = self.mapGraph.currNode)
 		
 		#self.setDirection(not self.globalCurveFit.getPathDirection())
@@ -208,15 +207,12 @@ class PathStep(Behavior):
 		" straighten the part of frontAnchorFit that is not actuated "
 		if self.frontAnchorFit.anterior:
 			startNode = 0
-			endNode = self.frontAnchorFit.lastJoint
-			
-			#self.globalCurveSlide.setBoundaries(startNode, 20)
-			
-			
+			endNode = self.frontAnchorFit.lastJoint			
 		else:
 			startNode = self.frontAnchorFit.lastJoint
 			endNode = self.probe.numSegs-2
-			#self.globalCurveSlide.setBoundaries(19, endNode)
+		
+		self.globalCurveFit.setBoundaries(startNode, endNode)
 			
 		for i in range(startNode, endNode+1):
 			print "changing joint", i, "from", resultJoints[i], "to 0.0"
@@ -228,8 +224,11 @@ class PathStep(Behavior):
 
 		self.globalCurveSlide.reset(resultJoints)
 		#print "globalCurveSlide.step()"
+		
 		self.globalCurveSlide.step()
 		resultJoints2 = self.globalCurveSlide.getJoints()
+		
+		self.globalCurveFit.step()
 		
 		#self.holdSlideT.reset(resultJoints, self.direction)
 		self.holdT.reset(resultJoints2)
@@ -1047,6 +1046,9 @@ class PathStep(Behavior):
 			startNode = self.frontAnchorFit.lastJoint
 			endNode = self.probe.numSegs-2	
 			self.globalCurveFit.setBoundaries(startNode, endNode)
+
+		
+		self.globalCurveFit.step()
 			
 		" Set the joints, with joints2 as priority over joints1 "
 		#self.mergeJoints([joints2, joints1])
@@ -1325,10 +1327,9 @@ class PathStep(Behavior):
 		
 		if self.frontAnchoringState and self.frontExtendDone:
 			" collect joint settings for both behaviors "
-			#joints2 = self.globalCurveFit.getJoints()
 			
-			joints2 = [0.0 for i in range(40)]
-			
+			joints2 = self.globalCurveFit.getJoints()			
+			#joints2 = [0.0 for i in range(40)]
 			
 			if self.frontAnchorFit.anterior:			
 				for p in range(0,self.frontAnchorFit.lastJoint+1):
