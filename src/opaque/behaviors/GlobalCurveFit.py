@@ -35,6 +35,8 @@ class GlobalCurveFit(Behavior):
 		globalNodeCount += 1
 		self.childNodes = []
 		self.childEntities = []
+		self.childSegNodes = []
+		self.childSegEntities = []
 		self.parentNode = self.probe._mgr.getRootSceneNode().createChildSceneNode("globalCurveRoot" + str(self.nodeCount))
 
 		self._allRefNodes = []
@@ -63,6 +65,17 @@ class GlobalCurveFit(Behavior):
 			self.probe._mgr.destroyEntity(child)
 	
 		self.childEntities = []
+		
+		for child in self.childSegNodes:
+			self.probe._mgr.destroySceneNode(child)
+
+		self.childSegNodes = []
+	
+		for child in self.childSegEntities:
+			self.probe._mgr.destroyEntity(child)
+
+		self.childSegEntities = []
+		
 
 	def draw(self):
 		
@@ -95,7 +108,7 @@ class GlobalCurveFit(Behavior):
 	
 			currEntity = self.probe._mgr.createEntity("globalCurveEnt" + str(self.nodeCount) + "_" +str(i), "Cube.mesh")
 			currEntity.setCastShadows(False)
-			currEntity.setMaterialName("Red")
+			currEntity.setMaterialName("Green")
 			self.childEntities.append(currEntity)
 
 			position = ogre.Vector3(pnt[0],0.0,pnt[1])
@@ -359,14 +372,16 @@ class GlobalCurveFit(Behavior):
 				totalAngle += finalAngle
 				xTotal = xTotal + self.probe.segLength*cos(totalAngle)
 				yTotal = yTotal + self.probe.segLength*sin(totalAngle)
-				
-			childNode = self.parentNode.createChildSceneNode("globalCurvePoint" + str(i))
-			self.childNodes.append(childNode)
+
+			self.draw()
+
+			childNode = self.parentNode.createChildSceneNode("globalSegPoint" + str(self.nodeCount) + "_" + str(i))
+			self.childSegNodes.append(childNode)
 	
-			currEntity = self.probe._mgr.createEntity("globalCurveEnt" +str(i), "Cube.mesh")
+			currEntity = self.probe._mgr.createEntity("globalSegEnt" + str(self.nodeCount) + "_" +str(i), "Cube.mesh")
 			currEntity.setCastShadows(False)
 			currEntity.setMaterialName("Red")
-			self.childEntities.append(currEntity)
+			self.childSegEntities.append(currEntity)
 
 			pnt = [xTotal,yTotal]
 			if self.currNode != 0:

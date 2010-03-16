@@ -887,6 +887,69 @@ def gen_ICP_global(pastPose, targetPose, pastHull, targetHull, pastCircles, cost
 						" we store the untransformed point, but the transformed covariance of the A point "
 						match_pairs.append([a_data_raw[a_i],b_p,Ca,Cb])
 
+
+		" plot the initial configuration "
+		if startIteration == numIterations:
+
+			pylab.clf()
+			pylab.axes()
+			match_global = []
+			
+			for pair in match_pairs:
+				p1 = pair[0]
+				p2 = pair[1]
+				
+				p1_o = dispOffset(p1, offset)
+				#p2_o = dispOffset(p2, offset)
+
+				
+				p1_g = poseOrigin.convertLocalToGlobal(p1_o)
+				p2_g = poseOrigin.convertLocalToGlobal(p2)
+				match_global.append([p1_g,p2_g])
+			
+			draw_matches(match_global, [0.0,0.0,0.0])
+			
+			xP = []
+			yP = []
+			for b in polyB:
+				p1 = poseOrigin.convertLocalToGlobal(b)
+
+				xP.append(p1[0])	
+				yP.append(p1[1])
+			
+			p1 = poseOrigin.convertLocalToGlobal(polyB[0])
+			xP.append(p1[0])	
+			yP.append(p1[1])
+			
+			pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+
+			xP = []
+			yP = []
+			for b in a_data_raw:
+				p = [b[0],b[1]]
+				p = dispOffset(p,offset)
+				
+				p1 = poseOrigin.convertLocalToGlobal(p)
+				xP.append(p1[0])	
+				yP.append(p1[1])
+			
+			p = [a_data_raw[0][0],a_data_raw[0][1]]
+			p = dispOffset(p,offset)
+
+			p1 = poseOrigin.convertLocalToGlobal(p)
+			xP.append(p1[0])	
+			yP.append(p1[1])
+
+			pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+
+			plotEnv()		
+			
+			pylab.xlim(-4,9)
+			pylab.ylim(-7,5)
+			pylab.savefig("ICP_plot_%04u.png" % numIterations)
+			pylab.clf()					
+			numIterations += 1
+			
 		if False:
 			for pair in match_pairs:
 				a = pair[0]
@@ -1015,7 +1078,7 @@ def gen_ICP_global(pastPose, targetPose, pastHull, targetHull, pastCircles, cost
 			#pylab.ylim(-4,4)
 			#pylab.xlim(-3,6)
 			#pylab.ylim(-4,4)
-			pylab.xlim(-4,7)
+			#pylab.xlim(-4,7)
 			#pylab.ylim(-7,3)
 			pylab.xlim(-4,9)
 			pylab.ylim(-7,5)

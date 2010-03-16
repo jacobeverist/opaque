@@ -50,6 +50,9 @@ class GlobalCurveSlide(Behavior):
 		#print "globalCurveSlide returning", self.direction
 		return self.direction
 
+	def clearDraw(self):
+		self.globalCurveFit.clearDraw()
+
 	def draw(self):
 		self.globalCurveFit.draw()
 
