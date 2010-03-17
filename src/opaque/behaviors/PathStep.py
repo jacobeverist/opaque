@@ -32,6 +32,8 @@ class PathStep(Behavior):
 	def __init__(self, probe, contacts, mapGraph, direction = True, path = []):
 		Behavior.__init__(self, probe)
 
+		print "creating PathStep"
+
 		self.mapGraph = mapGraph
 		self.localNode = self.mapGraph.getCurrentNode()
 		self.contacts = contacts
@@ -96,7 +98,7 @@ class PathStep(Behavior):
 		self.frontExtendDone = False
 		
 
-		self.globalCurveFit = 0
+		#self.globalCurveFit = 0
 		#self.setPath(path)
 				
 	def getMask(self):

@@ -891,6 +891,8 @@ def gen_ICP_global(pastPose, targetPose, pastHull, targetHull, pastCircles, cost
 		" plot the initial configuration "
 		if startIteration == numIterations:
 
+			numIterations += 1
+
 			pylab.clf()
 			pylab.axes()
 			match_global = []
@@ -948,7 +950,6 @@ def gen_ICP_global(pastPose, targetPose, pastHull, targetHull, pastCircles, cost
 			pylab.ylim(-7,5)
 			pylab.savefig("ICP_plot_%04u.png" % numIterations)
 			pylab.clf()					
-			numIterations += 1
 			
 		if False:
 			for pair in match_pairs:
