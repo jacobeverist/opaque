@@ -548,7 +548,7 @@ class MapGraph:
 	def computeHeadPath(self, currPose, frontierPoint, exploreRoot):
 		vals = self.navRoadMap.computeHeadPath(currPose, frontierPoint, exploreRoot)
 
-		self.navRoadMap.draw()
+		#self.navRoadMap.draw()
 		
 		return vals
 

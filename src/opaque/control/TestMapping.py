@@ -128,7 +128,7 @@ class TestMapping(SnakeControl):
 
 	def frameStarted(self):
 		
-		self.adjustCamera()
+		#self.adjustCamera()
 		#self.grabImage()
 		#self.grabAngles()
 
@@ -326,13 +326,13 @@ class TestMapping(SnakeControl):
 					frontierPoint = self.mapGraph.selectNextFrontier()
 					#currPose = self.probe.getActualSegPose(0)
 					currPose = self.contacts.getAverageSegPose(0)
-				
+					
 					originPath, goalPath, breakPoint = self.mapGraph.computeHeadPath(currPose, frontierPoint, self.exploreRoot)
 					self.wayPoints = [breakPoint, goalPath[-1]]
 					self.wayPaths = [originPath, goalPath]
 					
-					print "originPath:", originPath
-					print "goalPath:", goalPath
+					#print "originPath:", originPath
+					#print "goalPath:", goalPath
 					
 					#self.wayPaths[0].reverse()
 

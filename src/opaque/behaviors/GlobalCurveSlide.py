@@ -109,6 +109,7 @@ class GlobalCurveSlide(Behavior):
 		self.moveCount += 1
 		#print "moveCount =", self.moveCount
 		
+		#self.draw()
 		
 		if self.moveCount > 5 :
 

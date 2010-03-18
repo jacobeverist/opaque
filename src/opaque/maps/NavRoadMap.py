@@ -154,7 +154,7 @@ class NavRoadMap(Map):
 		vStart = startEdge[0]
 		vGoal = goalEdge[0]
 		
-		print vStart, vGoal, startEdge, goalEdge
+		#print vStart, vGoal, startEdge, goalEdge
 
 		# then compute path between two points on tree
 		shortSpanTree, shortDist = self.roadGraph.shortest_path(vStart)
@@ -163,7 +163,7 @@ class NavRoadMap(Map):
 		path = []
 
 		vx = vGoal
-		print vx
+		#print vx
 		path.append(vx)
 
 		while True:
@@ -179,14 +179,14 @@ class NavRoadMap(Map):
 			if vx == None:
 				break
 
-			print vx
+			#print vx
 			path.append(copy(vx))
 
 		# put it into robot following order
 		path.reverse()
 
-		print "path in NavRoadMap"
-		print path
+		#print "path in NavRoadMap"
+		#print path
 
 		# check for degenerate paths first
 		if len(path) >= 2:

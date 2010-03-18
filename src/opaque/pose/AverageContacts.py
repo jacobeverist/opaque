@@ -134,6 +134,26 @@ class AverageContacts:
 		
 		return False
 
+	def getSegPose(self, targetSegment):
+	
+		if targetSegment == 0:
+			pose = self.getClosestPose(0)
+
+			pose[2] = pose[2] + self.probe.getServo(0)
+			pose[2] = self.normalizeAngle(pose[2])
+			pose[0] = pose[0] - self.probe.segLength*cos(pose[2])
+			pose[1] = pose[1] - self.probe.segLength*sin(pose[2])
+
+			return pose
+		
+		pose = self.getClosestPose(targetSegment-1)
+
+		# adding constant offset so that we are on the joint
+		pose[0] = pose[0] + (self.probe.segLength/2)*cos(pose[2])
+		pose[1] = pose[1] + (self.probe.segLength/2)*sin(pose[2])
+
+		return pose
+	
 	def getAverageSegPose(self, targetSegment):
 	
 		if targetSegment == 0:
@@ -376,7 +396,7 @@ class AverageContacts:
 		endJoint = self.numJoints-2
 
 		if estPose != []:
-			newNode = self.createNewNodeAverage(19, forcePose = estPose)
+			newNode = self.createNewNode(19, forcePose = estPose)
 			self.createEdges(newNode)
 
 
@@ -619,7 +639,7 @@ class AverageContacts:
 				self.refEdges.append(newEdge)
 				self.numEdge += 1
 
-	def createNewNode(self, newJointID):
+	def createNewNode(self, newJointID, forcePose = []):
 
 		# find the first active reference from which to determine the new node's position in space
 		refExists = False
@@ -669,8 +689,17 @@ class AverageContacts:
 		# this is the first node, so reference from 0,0
 		elif self.numRef == 0:
 
+			if forcePose != []:
+				origin = forcePose
+				print "taking forced pose of", forcePose
+			else:
+				
+				# initialize the first reference node with its position in global coordinates
+				origin = self.probe.getActualJointPose(newJointID)
+				#print "initial pose at joint", newJointID
+
 			# initialize the first reference node with its position in global coordinates
-			origin = self.probe.getActualJointPose(newJointID)
+			#origin = self.probe.getActualJointPose(newJointID)
 			#origin[0] += 2.0
 			#print "initial pose at joint", newJointID
 

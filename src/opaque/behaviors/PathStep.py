@@ -71,7 +71,8 @@ class PathStep(Behavior):
 
 		
 		#self.computeCurve()
-
+		
+		
 		self.mask = [0.0 for i in range(0,40)]
 		self.count = 0
 		
@@ -110,10 +111,15 @@ class PathStep(Behavior):
 		self.path = deepcopy(path)
 		#self.computeCurve()
 
-		self.pathCurve = VoronoiFit(self.path)
+		self.pathCurve1 = VoronoiFit(deepcopy(self.path))
+		self.pathCurve2 = VoronoiFit(deepcopy(self.path))
 		
-		self.globalCurveFit = GlobalCurveFit(self.probe, self.contacts, self.pathCurve, localNode = self.mapGraph.currNode)
-		self.globalCurveSlide = GlobalCurveSlide(self.probe, self.contacts, self.pathCurve, localNode = self.mapGraph.currNode)
+		print "creating 1st GlobalCurveFit"
+		self.globalCurveFit = GlobalCurveFit(self.probe, self.contacts, self.pathCurve1, localNode = self.mapGraph.currNode)
+		self.globalCurveFit.setTimerAliasing(10)
+		
+		print "creating 2nd GlobalCurveFit"
+		self.globalCurveSlide = GlobalCurveSlide(self.probe, self.contacts, self.pathCurve2, localNode = self.mapGraph.currNode)
 		
 		#self.setDirection(not self.globalCurveFit.getPathDirection())
 		result = self.globalCurveSlide.getPathDirection()
@@ -122,8 +128,8 @@ class PathStep(Behavior):
 		
 		self.setDirection(result)
 		
-		#self.globalCurveFit.draw()
-		self.globalCurveSlide.draw()
+		self.globalCurveFit.clearDraw()
+		self.globalCurveSlide.clearDraw()
 		
 	def reverseDirection(self):
 		self.path.reverse()
@@ -136,7 +142,7 @@ class PathStep(Behavior):
 
 		self.direction = isForward
 		
-		print "setting direction =", self.direction
+		print "setting PathStep direction =", self.direction
 
 		self.mask = [0.0 for i in range(0,40)]
 		self.count = 0
@@ -213,7 +219,7 @@ class PathStep(Behavior):
 		else:
 			startNode = self.frontAnchorFit.lastJoint
 			endNode = self.probe.numSegs-2
-		
+						
 		self.globalCurveFit.setBoundaries(startNode, endNode)
 			
 		for i in range(startNode, endNode+1):
@@ -235,6 +241,10 @@ class PathStep(Behavior):
 		#self.holdSlideT.reset(resultJoints, self.direction)
 		self.holdT.reset(resultJoints2)
 		self.refDone = False
+		
+		self.globalCurveFit.clearDraw()
+		self.globalCurveSlide.clearDraw()
+		
 
 	def spliceFitJoints(self, isStart = False):
 		
@@ -752,10 +762,12 @@ class PathStep(Behavior):
 
 		#self.frontExtendDone = False
 		
+		
 		if self.globalCurveSlide.step():
 			self.frontExtendDone = True
 			self.frontExtending = False
-			
+			self.globalCurveSlide.clearDraw()
+				
 		joints = self.globalCurveSlide.getJoints()
 
 		self.holdT.reset(joints)
@@ -1037,7 +1049,7 @@ class PathStep(Behavior):
 						self.probe.setJointTorque(i, 3.0)
 	
 		" execute the local curve fitting "
-		self.frontAnchorFit.step()
+		#self.frontAnchorFit.step()
 
 		" compute the bounds for behavior for global curve fitting "
 		if self.frontAnchorFit.anterior:
@@ -1050,7 +1062,7 @@ class PathStep(Behavior):
 			self.globalCurveFit.setBoundaries(startNode, endNode)
 
 		
-		self.globalCurveFit.step()
+		#self.globalCurveFit.step()
 			
 		" Set the joints, with joints2 as priority over joints1 "
 		#self.mergeJoints([joints2, joints1])
@@ -1325,9 +1337,14 @@ class PathStep(Behavior):
 			joints = self.holdT.getJoints()
 		"""
 
+
+
 		joints = self.holdT.getJoints()
 		
 		if self.frontAnchoringState and self.frontExtendDone:
+			
+			self.globalCurveFit.step()
+			
 			" collect joint settings for both behaviors "
 			
 			joints2 = self.globalCurveFit.getJoints()			

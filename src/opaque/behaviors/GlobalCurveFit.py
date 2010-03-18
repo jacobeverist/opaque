@@ -45,15 +45,16 @@ class GlobalCurveFit(Behavior):
 	def __del__(self):
 
 		self.clearDraw()
+		self.probe._mgr.destroySceneNode(self.parentNode)
 				
 	def setCurve(self, curve):
 		self.curve = curve
 		self.computePathDirection()
+		
+		print "globalCurveFit Behavior direction =", self.direction
 	
 	def clearDraw(self):
 		
-		# remove all children
-		self.parentNode.removeAllChildren()
 
 		# deference the child nodes now
 		for child in self.childNodes:
@@ -76,6 +77,9 @@ class GlobalCurveFit(Behavior):
 
 		self.childSegEntities = []
 		
+		# remove all children
+		self.parentNode.removeAllChildren()
+
 
 	def draw(self):
 		
@@ -83,8 +87,10 @@ class GlobalCurveFit(Behavior):
 		self.clearDraw()
 
 		if self.currNode != 0:
-			pose = Pose(self.currNode.getEstPose())
-			pose2 = Pose( self.probe.getActualJointPose(self.currNode.rootNode))
+			#pose = Pose(self.currNode.getEstPose())
+			#pose2 = Pose( self.currNode.getGndPose())
+			onSegPose = Pose(self.contacts.getClosestPose(self.currNode.rootNode))
+			onSegActPose = Pose( self.probe.getActualJointPose(self.currNode.rootNode))
 	
 		# draw the points in the simulation
 		#for i in range(len(self.realPath)):
@@ -95,9 +101,12 @@ class GlobalCurveFit(Behavior):
 			" convert points from estimated points to actual points in view "
 			if self.currNode != 0:
 				newPnt = copy(pnt)
-				localPnt = pose.convertGlobalToLocal(pnt)
-				pnt = pose2.convertLocalToGlobal(localPnt)
-				#print "converting", newPnt, "to", pnt
+				
+				localPnt = onSegPose.convertGlobalToLocal(pnt)
+				pnt = onSegActPose.convertLocalToGlobal(localPnt)
+				
+				#localPnt = pose.convertGlobalToLocal(pnt)
+				#pnt = pose2.convertLocalToGlobal(localPnt)
 			
 			
 			# take samples from the fitted curve
@@ -114,7 +123,7 @@ class GlobalCurveFit(Behavior):
 			position = ogre.Vector3(pnt[0],0.0,pnt[1])
 			childNode.setPosition(position)
 	
-			size = ogre.Vector3(0.05,0.05,0.05)
+			size = ogre.Vector3(0.03,0.03,0.03)
 			childNode.setScale(size)
 	
 			childNode.attachObject(currEntity)
@@ -201,7 +210,8 @@ class GlobalCurveFit(Behavior):
 		#print "global curve fit segments:", segments
 		
 		#origin = self.probe.getActualSegPose(segments[0])
-		origin = self.contacts.getAverageSegPose(segments[0])
+		#origin = self.contacts.getAverageSegPose(segments[0])
+		origin = self.contacts.getSegPose(segments[0])
 
 		#origin = self.probe.getActualSegPose(segments[0])
 		xTotal = origin[0]
@@ -222,8 +232,12 @@ class GlobalCurveFit(Behavior):
 		totalVec = [cos(totalAngle),sin(totalAngle)]
 
 		if self.currNode != 0:
-			pose = Pose(self.currNode.getEstPose())
-			pose2 = Pose( self.probe.getActualJointPose(self.currNode.rootNode))
+			#pose = Pose(self.currNode.getEstPose())
+			#pose2 = Pose(self.currNode.getGndPose())
+			onSegPose = Pose(self.contacts.getClosestPose(self.currNode.rootNode))
+			onSegActPose = Pose( self.probe.getActualJointPose(self.currNode.rootNode))
+
+		self.draw()
 
 		# compute the change in joint angle for every consecutive joint
 		for i in segments:
@@ -373,8 +387,8 @@ class GlobalCurveFit(Behavior):
 				xTotal = xTotal + self.probe.segLength*cos(totalAngle)
 				yTotal = yTotal + self.probe.segLength*sin(totalAngle)
 
-			self.draw()
 
+			#print "creating child node " + "globalSegPoint" + str(self.nodeCount) + "_" + str(i)
 			childNode = self.parentNode.createChildSceneNode("globalSegPoint" + str(self.nodeCount) + "_" + str(i))
 			self.childSegNodes.append(childNode)
 	
@@ -385,14 +399,30 @@ class GlobalCurveFit(Behavior):
 
 			pnt = [xTotal,yTotal]
 			if self.currNode != 0:
-				localPnt = pose.convertGlobalToLocal(pnt)
-				pnt = pose2.convertLocalToGlobal(localPnt)
+				localPnt = onSegPose.convertGlobalToLocal(pnt)
+				pnt = onSegActPose.convertLocalToGlobal(localPnt)
+	
+				#localPnt = pose.convertGlobalToLocal(pnt)
+				#pnt = pose2.convertLocalToGlobal(localPnt)
+
+
+			if segmentOrder == -1:
+				pnt[0] = pnt[0] + 0.5*self.probe.segLength*cos(totalAngle)
+				pnt[1] = pnt[1] + 0.5*self.probe.segLength*sin(totalAngle)
+			
+			else:
+				pnt[0] = pnt[0] - 0.5*self.probe.segLength*cos(totalAngle)
+				pnt[1] = pnt[1] - 0.5*self.probe.segLength*sin(totalAngle)
 
 			position = ogre.Vector3(pnt[0],0.0,pnt[1])
 			#position = ogre.Vector3(xTotal,0.0,yTotal)
+			
+			R = ogre.Quaternion(-ogre.Radian(totalAngle), ogre.Vector3().UNIT_Y)
+			
 			childNode.setPosition(position)
-	
-			size = ogre.Vector3(0.05,0.05,0.05)
+			childNode.setOrientation(R)
+			
+			size = ogre.Vector3(ARMLENGTH, 0.01, ARMWIDTH)
 			childNode.setScale(size)
 	
 			childNode.attachObject(currEntity)
@@ -414,14 +444,15 @@ class GlobalCurveFit(Behavior):
 
 		for j in joints:
 
-			origin = self.contacts.getAveragePose(j)
+			origin = self.contacts.getClosestPose(j)
+			#origin = self.contacts.getAveragePose(j)
 			#origin = self.probe.getActualJointPose(j)
 			poseVec = [cos(origin[2]),sin(origin[2])] 
 			vecSum1[0] += poseVec[0]
 			vecSum1[1] += poseVec[1]
 
 			dist, linePoint, orientVec = self.curve.findClosestPoint([origin[0], origin[1]])
-			print dist, linePoint, orientVec
+			#print dist, linePoint, orientVec
 			vecSum2[0] += orientVec[0]
 			vecSum2[1] += orientVec[1]
 
