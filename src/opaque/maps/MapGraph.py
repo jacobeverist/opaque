@@ -67,6 +67,10 @@ class MapGraph:
 		self.frontierMap = FrontierMap(self, self.mapSize)
 		self.voronoiMap = VoronoiMap(self, self.mapSize)
 
+		self.childNodes = []
+		self.childEntities = []
+		self.boundParentNode = self.probe._mgr.getRootSceneNode().createChildSceneNode("globalBoundNode")
+
 		#self.newNode()
 
 	def loadFile(self, num_poses):
@@ -477,7 +481,53 @@ class MapGraph:
 		pylab.ylim(-4,4)
 	
 		gen_icp.save("finalMap.png")	
+	
+	def drawEstBoundary(self):
 		
+		# deference the child nodes now
+		for child in self.childNodes:
+			self.probe._mgr.destroySceneNode(child)
+
+		self.childNodes = []
+	
+		for child in self.childEntities:
+			self.probe._mgr.destroyEntity(child)
+	
+		self.childEntities = []
+
+		# remove all children
+		self.boundParentNode.removeAllChildren()
+
+		points = self.boundMap.getBoundaryPoints()
+
+		if self.currNode != 0:
+			onSegPose = Pose(self.contacts.getClosestPose(self.currNode.rootNode))
+			onSegActPose = Pose( self.probe.getActualJointPose(self.currNode.rootNode))
+
+		for i in range(len(points)):
+			pnt = points[i]
+			
+			if self.currNode != 0:
+				newPnt = copy(pnt)				
+				localPnt = onSegPose.convertGlobalToLocal(pnt)
+				pnt = onSegActPose.convertLocalToGlobal(localPnt)
+
+			childNode = self.boundParentNode.createChildSceneNode("globalBoundPoint" + "_" + str(i))
+			self.childNodes.append(childNode)
+	
+			currEntity = self.probe._mgr.createEntity("globalBoundEnt" + "_" + str(i), "Cube.mesh")
+			currEntity.setCastShadows(False)
+			currEntity.setMaterialName("Black")
+			self.childEntities.append(currEntity)
+	
+			position = ogre.Vector3(pnt[0],0.0,pnt[1])
+			childNode.setPosition(position)
+	
+			size = ogre.Vector3(0.03,0.03,0.03)
+			childNode.setScale(size)
+	
+			childNode.attachObject(currEntity)	
+	
 	def synch(self):
 		self.currNode.synch()
 

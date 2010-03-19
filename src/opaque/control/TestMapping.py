@@ -37,7 +37,7 @@ class TestMapping(SnakeControl):
 		
 		" maps "
 		self.mapGraph = maps.MapGraph(self.probe, self.contacts)
-		self.mapGraph.loadFile(9)
+		#self.mapGraph.loadFile(1)
 		
 		#self.mapGraph.correctPoses2()
 		#self.mapGraph.synch()
@@ -132,6 +132,9 @@ class TestMapping(SnakeControl):
 		#self.grabImage()
 		#self.grabAngles()
 
+		if self.globalTimer % 4000 == 0:
+			self.mapGraph.drawEstBoundary()
+		
 		if self.isAnchored:
 			body = self.probe._bodies[20]
 			body.setMass(self.anchorMass)
@@ -160,9 +163,9 @@ class TestMapping(SnakeControl):
 			self.contacts.step()
 			
 			if isDone:
-				#self.stateA = 0
+				self.stateA = 0
 				print "going to state ", self.stateA
-				self.stateA = 4
+				#self.stateA = 4
 
 				self.holdP.reset()
 				self.holdT.reset()

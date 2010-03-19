@@ -261,12 +261,8 @@ class AverageContacts:
 		# this is the first node, so reference from 0,0
 		elif self.numRef == 0:
 			
-			if forcePose != []:
-				pose = forcePose
-				print "taking forced pose of", forcePose
-			else:
-				# initialize the first reference node with its position in global coordinates
-				pose = self.probe.getActualJointPose(targetJoint)
+			print "ERROR: getAveragePose() with no references!"
+			pose = self.probe.getActualJointPose(targetJoint)
 
 		else:
 			# no active node exists and not the first,
@@ -691,7 +687,7 @@ class AverageContacts:
 
 			if forcePose != []:
 				origin = forcePose
-				print "taking forced pose of", forcePose
+				print "createNewNode() taking forced pose of", forcePose
 			else:
 				
 				# initialize the first reference node with its position in global coordinates
@@ -877,7 +873,7 @@ class AverageContacts:
 
 			if forcePose != []:
 				origin = forcePose
-				print "taking forced pose of", forcePose
+				print "createNewNodeAverage() taking forced pose of", forcePose
 			else:
 				
 				# initialize the first reference node with its position in global coordinates
