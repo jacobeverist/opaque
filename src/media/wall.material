@@ -76,3 +76,16 @@ material Blue
 		}
 	}
 }
+
+material Black
+{
+//    receive_shadows off
+	technique
+	{
+		pass
+		{
+			ambient 0.0 0.0 0.0 
+			diffuse 1 1 1 
+		}
+	}
+}
