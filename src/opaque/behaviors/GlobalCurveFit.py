@@ -87,9 +87,8 @@ class GlobalCurveFit(Behavior):
 		self.clearDraw()
 
 		if self.currNode != 0:
-			#pose = Pose(self.currNode.getEstPose())
-			#pose2 = Pose( self.currNode.getGndPose())
-			onSegPose = Pose(self.contacts.getClosestPose(self.currNode.rootNode))
+			#onSegPose = Pose(self.contacts.getClosestPose(self.currNode.rootNode))
+			onSegPose = Pose(self.contacts.getAveragePose(self.currNode.rootNode))
 			onSegActPose = Pose( self.probe.getActualJointPose(self.currNode.rootNode))
 	
 		# draw the points in the simulation
@@ -210,8 +209,8 @@ class GlobalCurveFit(Behavior):
 		#print "global curve fit segments:", segments
 		
 		#origin = self.probe.getActualSegPose(segments[0])
-		#origin = self.contacts.getAverageSegPose(segments[0])
-		origin = self.contacts.getSegPose(segments[0])
+		origin = self.contacts.getAverageSegPose(segments[0])
+		#origin = self.contacts.getSegPose(segments[0])
 
 		#origin = self.probe.getActualSegPose(segments[0])
 		xTotal = origin[0]
@@ -232,9 +231,8 @@ class GlobalCurveFit(Behavior):
 		totalVec = [cos(totalAngle),sin(totalAngle)]
 
 		if self.currNode != 0:
-			#pose = Pose(self.currNode.getEstPose())
-			#pose2 = Pose(self.currNode.getGndPose())
-			onSegPose = Pose(self.contacts.getClosestPose(self.currNode.rootNode))
+			#onSegPose = Pose(self.contacts.getClosestPose(self.currNode.rootNode))
+			onSegPose = Pose(self.contacts.getAveragePose(self.currNode.rootNode))
 			onSegActPose = Pose( self.probe.getActualJointPose(self.currNode.rootNode))
 
 		self.draw()
@@ -444,8 +442,8 @@ class GlobalCurveFit(Behavior):
 
 		for j in joints:
 
-			origin = self.contacts.getClosestPose(j)
-			#origin = self.contacts.getAveragePose(j)
+			#origin = self.contacts.getClosestPose(j)
+			origin = self.contacts.getAveragePose(j)
 			#origin = self.probe.getActualJointPose(j)
 			poseVec = [cos(origin[2]),sin(origin[2])] 
 			vecSum1[0] += poseVec[0]

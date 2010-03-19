@@ -38,7 +38,7 @@ class TestMapping(SnakeControl):
 		
 		" maps "
 		self.mapGraph = maps.MapGraph(self.probe, self.contacts)
-		self.mapGraph.loadFile(9)
+		#self.mapGraph.loadFile(9)
 		
 		#self.mapGraph.correctPoses2()
 		#self.mapGraph.synch()
@@ -170,9 +170,9 @@ class TestMapping(SnakeControl):
 			self.contacts.step()
 			
 			if isDone:
-				#self.stateA = 0
+				self.stateA = 0
 				print "going to state ", self.stateA
-				self.stateA = 4
+				#self.stateA = 4
 
 				self.holdP.reset()
 				self.holdT.reset()
@@ -494,7 +494,6 @@ class TestMapping(SnakeControl):
 			
 			isDone = self.holdT.step()
 			joints1 = self.holdT.getJoints()
-
 			self.mergeJoints([joints1])
 
 			if isDone:
@@ -530,12 +529,15 @@ class TestMapping(SnakeControl):
 
 		elif self.stateA == 9:
 			
-			isDone = self.holdT.step()
-			joints1 = self.holdT.getJoints()
+			#isDone = self.holdT.step()
+			#joints1 = self.holdT.getJoints()
+			#self.mergeJoints([joints1])
 
+			joints1 = self.holdP.getJoints()
 			self.mergeJoints([joints1])
-
-			if isDone:
+			if self.globalTimer - self.prevTime > 100:
+				
+			#if isDone:
 				self.isCapture = True
 
 				self.mapGraph.correctPoses2()

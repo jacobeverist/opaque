@@ -525,7 +525,8 @@ class MapGraph:
 		points = self.boundMap.getBoundaryPoints()
 
 		if self.currNode != 0 and self.contacts.numRef > 0:
-			onSegPose = Pose(self.contacts.getClosestPose(self.currNode.rootNode))
+			#onSegPose = Pose(self.contacts.getClosestPose(self.currNode.rootNode))
+			onSegPose = Pose(self.contacts.getAveragePose(self.currNode.rootNode))
 			onSegActPose = Pose( self.probe.getActualJointPose(self.currNode.rootNode))
 
 		for i in range(len(points)):
