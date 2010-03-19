@@ -500,14 +500,14 @@ class MapGraph:
 
 		points = self.boundMap.getBoundaryPoints()
 
-		if self.currNode != 0:
+		if self.currNode != 0 and self.contacts.numRef > 0:
 			onSegPose = Pose(self.contacts.getClosestPose(self.currNode.rootNode))
 			onSegActPose = Pose( self.probe.getActualJointPose(self.currNode.rootNode))
 
 		for i in range(len(points)):
 			pnt = points[i]
 			
-			if self.currNode != 0:
+			if self.currNode != 0 and self.contacts.numRef > 0:
 				newPnt = copy(pnt)				
 				localPnt = onSegPose.convertGlobalToLocal(pnt)
 				pnt = onSegActPose.convertLocalToGlobal(localPnt)

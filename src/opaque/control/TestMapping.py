@@ -30,6 +30,7 @@ class TestMapping(SnakeControl):
 		
 		direction = True
 		
+		
 		" pose estimation "
 		#self.contacts = pose.ContactReferences(self.probe)
 		self.contacts = pose.AverageContacts(self.probe)
@@ -37,7 +38,7 @@ class TestMapping(SnakeControl):
 		
 		" maps "
 		self.mapGraph = maps.MapGraph(self.probe, self.contacts)
-		#self.mapGraph.loadFile(1)
+		self.mapGraph.loadFile(9)
 		
 		#self.mapGraph.correctPoses2()
 		#self.mapGraph.synch()
@@ -113,22 +114,27 @@ class TestMapping(SnakeControl):
 
 	def adjustCamera(self):
 
-		pose = self.probe.getActualJointPose(1)
+		pose = self.probe.getActualJointPose(19)
 		xAvg = pose[0]
 		yAvg = pose[1]
 		
 		prevPose = self.camera.getPosition()
-		xPrev = prevPose[0] + 4
+		xPrev = prevPose[0] - 3 
 		yPrev = prevPose[2]
+		zPrev = prevPose[1]
 		
-		newPose = [xPrev*0.99 + 0.01*xAvg, yPrev*0.99 + 0.01*yAvg]
+		newPose = [xPrev*0.99 + 0.01*xAvg, yPrev*0.99 + 0.01*yAvg, zPrev*0.99 + 0.01*10]
 
-		self.camera.setPosition(newPose[0]-4,7,newPose[1])
-		self.camera.lookAt(newPose[0],0.5,newPose[1])
+		self.camera.setPosition(newPose[0]+3,newPose[2],newPose[1])
+		#self.camera.lookAt(newPose[0],0.5,newPose[1])
 
+		oriQuat = ogre.Quaternion(ogre.Radian(-math.pi/2.0), ogre.Vector3().UNIT_X)
+		#oriQuat = ogre.Quaternion(ogre.Radian(-math.pi/2.0), ogre.Vector3().UNIT_X) * ogre.Quaternion(ogre.Radian(-math.pi/2.0), ogre.Vector3().UNIT_Z)
+		self.camera.setOrientation(oriQuat)
+		
 	def frameStarted(self):
 		
-		#self.adjustCamera()
+		self.adjustCamera()
 		#self.grabImage()
 		#self.grabAngles()
 
@@ -163,9 +169,9 @@ class TestMapping(SnakeControl):
 			self.contacts.step()
 			
 			if isDone:
-				self.stateA = 0
+				#self.stateA = 0
 				print "going to state ", self.stateA
-				#self.stateA = 4
+				self.stateA = 4
 
 				self.holdP.reset()
 				self.holdT.reset()
