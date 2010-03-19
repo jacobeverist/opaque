@@ -30,8 +30,11 @@ class FrontierMap(Map):
 		self.checkSpline = 0
 
 
-		self.inhibitRadius = 1.0
-		self.inhibits = [[-3.0,0.0], [-2.0,0.0], [-1.0,0.0]]
+		#self.inhibitRadius = 1.0
+		#self.inhibits = [[-3.0,0.0], [-2.0,0.0], [-1.0,0.0]]
+
+		self.inhibitRadius = 0.5
+		self.inhibits = []
 						
 		self.densityThreshold = 30
 
@@ -182,7 +185,8 @@ class FrontierMap(Map):
 		boundImg = self.mapGraph.boundMap.image
 		obstImg = self.obstacleMap.load()
 
-		for i in range(sumRange,self.numPixel-sumRange):
+		#for i in range(sumRange,self.numPixel-sumRange):
+		for i in range(self.numPixel/2+100,self.numPixel-sumRange):
 			for j in range(sumRange,self.numPixel-sumRange):
 				if boundImg[i,j] == 255:
 	
@@ -218,7 +222,8 @@ class FrontierMap(Map):
 
 		maxDen = densityMax - densityMin
 
-		for i in range(sumRange,self.numPixel-sumRange):
+		#for i in range(sumRange,self.numPixel-sumRange):
+		for i in range(self.numPixel/2+100,self.numPixel-sumRange):
 			for j in range(sumRange,self.numPixel-sumRange):
 				if boundImg[i,j] == 255:
 
@@ -261,7 +266,8 @@ class FrontierMap(Map):
 
 		#boundImg = self.boundMap.load()
 
-		for i in range(frontWidth,self.numPixel-frontWidth):
+		#for i in range(frontWidth,self.numPixel-frontWidth):
+		for i in range(self.numPixel/2+100,self.numPixel-frontWidth):
 			for j in range(frontWidth,self.numPixel-frontWidth):
 				#if self.image[i,j] > 0:
 				if True:

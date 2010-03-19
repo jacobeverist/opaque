@@ -110,6 +110,8 @@ class MapGraph:
 		
 		#if self.numNodes >= 2:
 		#	self.correctPoses2()
+
+		print "checkN"
 		
 		if self.numNodes > 0:
 			if self.currNode.isDirty():
@@ -118,12 +120,18 @@ class MapGraph:
 			#self.saveMap()
 			self.currNode.saveToFile()
 
+		print "checkO"
+
 		self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19)
+
+		print "checkP"
 		
 		self.poseGraph.add_node(self.numNodes, self.currNode)
 		
 		if self.numNodes > 0:
 			self.poseGraph.add_edge(self.numNodes - 1, self.numNodes)
+
+		print "checkQ"
 		
 		self.numNodes += 1
 		
@@ -131,12 +139,15 @@ class MapGraph:
 		
 		self.stablePose.reset()
 		self.stablePose.setNode(self.currNode)
+
+		print "checkR"
 	
 	def keepStablePose(self):
 		self.stablePose.update()
 	
 	def correctPoses2(self):
 
+		print "check_A"
 		if self.currNode.isDirty():
 			self.currNode.synch()
 			#self.synch()
@@ -169,6 +180,7 @@ class MapGraph:
 			gndPoses.append(gndPose1)
 			poseNumbers.append(i)
 
+		print "check_B"
 
 		def decimatePoints(points):
 			result = []
@@ -195,6 +207,8 @@ class MapGraph:
 			gen_icp.addDistanceFromOriginCovariance(a_data, tan_var=0.1, perp_var=0.01)
 	
 			a_hulls.append(a_data)
+
+		print "check_C"
 	
 		occMaps = []
 		for m in range(0,len(estPoses)):
@@ -214,6 +228,8 @@ class MapGraph:
 			
 			occMaps.append(points)
 			
+
+		print "check_D"
 	
 		a_hull_trans = []
 		for m in range(0,len(estPoses)):
@@ -237,6 +253,8 @@ class MapGraph:
 			offsets.append(offset)
 				
 		k = len(estPoses)-1
+
+		print "check_E"
 	
 		" 1. target pose to correct "
 		targetPose = estPoses[-1]
@@ -257,6 +275,8 @@ class MapGraph:
 			
 			a_hull_trans.append(a_trans)
 
+		print "check_F"
+
 		pastCircles = []
 		for m in range(0,len(estPoses)-1):
 			hull = a_hull_trans[m]
@@ -268,6 +288,8 @@ class MapGraph:
 		pastHull = gen_icp.computeUnions(a_hull_trans)
 		gen_icp.addPointToLineCovariance(pastHull, high_var=1.0, low_var=0.001)
 		#gen_icp.addDistanceFromOriginCovariance(pastHull, tan_var=0.1, perp_var=0.01)
+
+		print "check_G"
 
 		" run generalized ICP (a plot is made for each iteration of the algorithm) "
 		offset = gen_icp.gen_ICP_global(pastPose, targetPose, pastHull, targetHull, pastCircles, costThresh, minMatchDist, plotIteration)
@@ -284,6 +306,8 @@ class MapGraph:
 			newEstPose2 = pose1.convertLocalOffsetToGlobal(offset)
 			newEstPoses.append(newEstPose2)
 			
+
+		print "check_H"
 			
 		estPoses = newEstPoses
 					
@@ -530,9 +554,14 @@ class MapGraph:
 	
 	def synch(self):
 		self.currNode.synch()
+		
+		print "checkA"
 
 		self.occMap.update()
+		print "checkB"
 		self.boundMap.update(self.occMap)
+
+		print "checkC"
 		
 		" 1. for each node, copy local image "
 		" 2. for each point in image, transform appropriately and plot to main image "
@@ -568,11 +597,16 @@ class MapGraph:
 
 						self.obstImage[indexX, indexY] = 255
 							
+		print "checkD"
 
 		
 		self.frontierMap.update()
 		
+		print "checkE"
+
 		self.voronoiMap.update()
+
+		print "checkF"
 
 	def forceUpdate(self, isForward=True):
 
@@ -669,12 +703,17 @@ class MapGraph:
 		
 		self.mapImage.save(self.fileName % self.saveCount)	
 		"""
+
+		print "checkG"
 		
 		self.occMap.saveMap()
 		#self.saveCount += 1	
+		print "checkH"
 		
 		self.boundMap.saveMap()
 		
+		print "checkI"
+
 		"""
 		" build global boundary map "
 		self.boundMapImage = Image.new('L', (self.numPixel, self.numPixel), 0)
@@ -709,8 +748,12 @@ class MapGraph:
 
 		self.obstMapImage.save("mapObstGraph%04u.png" % self.saveCount)	
 
+		print "checkJ"
+
 		self.frontierMap.saveMap()			
 		
+		print "checkK"
+
 		"""
 		self.frontMapImage = Image.new('L', (self.numPixel, self.numPixel), 0)
 		self.frontImage = self.frontMapImage.load()
@@ -823,7 +866,11 @@ class MapGraph:
 		#self.voronoiMap = VoronoiMap(self.mapImage, self.boundMapImage)
 		self.voronoiMap.saveMap()			
 
+		print "checkL"
+
 		self.navRoadMap = NavRoadMap(self.probe, self.voronoiMap.getGraph(), localNode = self.currNode)
+
+		print "checkM"
 			
 		self.saveCount += 1	
 			

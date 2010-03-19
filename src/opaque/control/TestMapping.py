@@ -63,6 +63,7 @@ class TestMapping(SnakeControl):
 		# error tracking for path-following
 		self.lastDist = 1e100
 		self.distCount = 0
+		self.targetReached = False
 		
 		self.isAnchored = False
 		self.anchorR = 0
@@ -308,11 +309,16 @@ class TestMapping(SnakeControl):
 			self.mergeJoints([joints1])
 			if self.globalTimer - self.prevTime > 100:
 
+				print "check1"
 				#self.mapGraph.saveLocalMap()
 				self.mapGraph.correctPoses2()
+				print "check2"
 				self.mapGraph.synch()
+				print "check3"
 				self.mapGraph.saveLocalMap()
+				print "check4"
 				self.mapGraph.saveMap()
+				print "check5"
 				
 				#if self.mapGraph.isFrontier():
 				if False:
@@ -326,15 +332,20 @@ class TestMapping(SnakeControl):
 					self.isAnchored = False
 				else:
 					self.stateA = 5
+					self.targetReached = False
 
 					#self.mapGraph.saveLocalMap()
 
 					" anchoring turned off "
 					self.isAnchored = False
 					
+					print "check6"
 					frontierPoint = self.mapGraph.selectNextFrontier()
 					#currPose = self.probe.getActualSegPose(0)
+					print "check7"
+
 					currPose = self.contacts.getAverageSegPose(0)
+					print "check8"
 					
 					originPath, goalPath, breakPoint = self.mapGraph.computeHeadPath(currPose, frontierPoint, self.exploreRoot)
 					self.wayPoints = [breakPoint, goalPath[-1]]
@@ -345,8 +356,11 @@ class TestMapping(SnakeControl):
 					
 					#self.wayPaths[0].reverse()
 
+					print "check9"
 					self.pathStep = behave.PathStep(self.probe, self.contacts, self.mapGraph, False)
+					print "check10"
 					self.pathStep.setPath(self.wayPaths[0])
+					print "check11"
 					self.pathStep.computeCurve()
 					
 					" check if we're already there "
@@ -399,6 +413,15 @@ class TestMapping(SnakeControl):
 			
 			self.contacts.setMask(val)
 			self.contacts.step()
+
+			
+			dest = self.wayPoints[0]
+			pose = self.contacts.getAverageSegPose(0)
+			dist = sqrt((dest[0]-pose[0])**2 + (dest[1]-pose[1])**2)
+			
+			if dist < 0.1:
+				print "target reached!"
+				self.targetReached = True
 						
 			if isDone:
 				print "done!"
@@ -412,8 +435,7 @@ class TestMapping(SnakeControl):
 					dest = self.wayPoints[0]
 					#pose = self.probe.getActualSegPose(0)
 					pose = self.contacts.getAverageSegPose(0)
-
-					
+			
 					dist = sqrt((dest[0]-pose[0])**2 + (dest[1]-pose[1])**2)
 					print "distance from", dest, "to", pose, "=", dist
 					
@@ -425,7 +447,8 @@ class TestMapping(SnakeControl):
 					self.lastDist = dist
 					
 				
-					if dist < 0.5:
+					#if dist < 0.5:
+					if self.targetReached:
 						self.wayPoints = self.wayPoints[1:]
 						self.wayPaths = self.wayPaths[1:]
 						if len(self.wayPoints) > 0: 

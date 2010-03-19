@@ -793,16 +793,16 @@ def gen_ICP_global(pastPose, targetPose, pastHull, targetHull, pastCircles, cost
 
 	estPoseOrigin = pastPose
 	
-	print "estPoseOrigin =", estPoseOrigin
+	#print "estPoseOrigin =", estPoseOrigin
 	
 	" set the initial guess "
 	estPose2 = targetPose
-	print "estPose2 =", estPose2
+	#print "estPose2 =", estPose2
 	
 	poseOrigin = Pose(estPoseOrigin)
 	
 	offset = poseOrigin.convertGlobalPoseToLocal(estPose2)
-	print "offset =", offset
+	#print "offset =", offset
 
 	#exit()
 	" transform the past poses "
@@ -1326,7 +1326,7 @@ def computeUnion(points1, points2):
 		numPoints1 = len(nPoints1)
 		numPoints2 = len(nPoints2)
 	
-		print numPoints1, numPoints2
+		#print numPoints1, numPoints2
 	
 		inputStr = str(numPoints1) + " " + str(numPoints2) + " "
 		
