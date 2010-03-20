@@ -186,7 +186,7 @@ class FrontierMap(Map):
 		obstImg = self.obstacleMap.load()
 
 		#for i in range(sumRange,self.numPixel-sumRange):
-		for i in range(self.numPixel/2+100,self.numPixel-sumRange):
+		for i in range(self.numPixel/2+20,self.numPixel-sumRange):
 			for j in range(sumRange,self.numPixel-sumRange):
 				if boundImg[i,j] == 255:
 	
@@ -223,7 +223,7 @@ class FrontierMap(Map):
 		maxDen = densityMax - densityMin
 
 		#for i in range(sumRange,self.numPixel-sumRange):
-		for i in range(self.numPixel/2+100,self.numPixel-sumRange):
+		for i in range(self.numPixel/2+20,self.numPixel-sumRange):
 			for j in range(sumRange,self.numPixel-sumRange):
 				if boundImg[i,j] == 255:
 
@@ -267,7 +267,7 @@ class FrontierMap(Map):
 		#boundImg = self.boundMap.load()
 
 		#for i in range(frontWidth,self.numPixel-frontWidth):
-		for i in range(self.numPixel/2+100,self.numPixel-frontWidth):
+		for i in range(self.numPixel/2+20,self.numPixel-frontWidth):
 			for j in range(frontWidth,self.numPixel-frontWidth):
 				#if self.image[i,j] > 0:
 				if True:
@@ -285,7 +285,7 @@ class FrontierMap(Map):
 						yMax = l
 					
 		draw = ImageDraw.Draw(frontierDensity)
-		draw.ellipse((xMax-10, yMax-10, xMax+10, yMax+10), outline=255)
+		draw.ellipse((xMax-5, yMax-5, xMax+5, yMax+5), outline=255)
 
 		for k in range(len(self.inhibits)):
 			cP = self.inhibits[k]
