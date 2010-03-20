@@ -418,17 +418,17 @@ class AverageContacts:
 		for i in range(self.numJoints):
 			pos = self.probe.getActualJointPose(i)
 			position = ogre.Vector3(pos[0],0.1,pos[1])
-			self._refnodes[i].setPosition(position)
+			self._allRefNodes[i].setPosition(position)
 
 			# negative the angle because the bodies are somehow flipped upside down
-			self._refnodes[i].setOrientation(ogre.Quaternion(-pos[2],ogre.Vector3().UNIT_Y))
+			self._allRefNodes[i].setOrientation(ogre.Quaternion(-pos[2],ogre.Vector3().UNIT_Y))
 
-			self._refent[i].setVisible(self.activeRef[i])
+			self._allRefEnt[i].setVisible(self.activeRef[i])
 
-			mPtr = self._refnodes[i].getMaterial()
+			mPtr = self._allRefNodes[i].getMaterial()
 			mPtr.setAmbient(0.0,1.0,0.0)
 			mPtr.setDiffuse(0.0,1.0,0.0, 1.0)
-	
+
 		
 		if True:
 
