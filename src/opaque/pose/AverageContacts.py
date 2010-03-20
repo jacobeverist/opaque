@@ -99,7 +99,7 @@ class AverageContacts:
 		self._allRefNodes = []
 		self._allRefEnt = []
 		
-		"""
+		
 		for i in range(0,self.numJoints):
 			## Create the visual reprsentation of active reference nodes
 			name = "act_node" + str(i)
@@ -118,12 +118,11 @@ class AverageContacts:
 
 			entity.setCastShadows(False)
 
-			entity.setMaterialName("Red")
+			entity.setMaterialName("Green")
 
-			#entity.setVisible(False)
+			entity.setVisible(False)
 			self._allRefNodes.append(node)
 			self._allRefEnt.append(entity)
-		"""
 		
 	def setTimerAliasing(self, timeInc):
 		self.timeInc = timeInc
@@ -416,7 +415,6 @@ class AverageContacts:
 		if not self.isStep():
 			return 
 	
-		"""
 		for i in range(self.numJoints):
 			pos = self.probe.getActualJointPose(i)
 			position = ogre.Vector3(pos[0],0.1,pos[1])
@@ -426,16 +424,11 @@ class AverageContacts:
 			self._refnodes[i].setOrientation(ogre.Quaternion(-pos[2],ogre.Vector3().UNIT_Y))
 
 			self._refent[i].setVisible(self.activeRef[i])
-			#if i <= 27:
-			#	self._refent[i].setVisible(True)
-			#else:
-			#	self._refent[i].setVisible(False)
-
 
 			mPtr = self._refnodes[i].getMaterial()
-			mPtr.setAmbient(1.0,0.0,0.0)
-			mPtr.setDiffuse(1.0,0.0,0.0, 1.0)
-		"""
+			mPtr.setAmbient(0.0,1.0,0.0)
+			mPtr.setDiffuse(0.0,1.0,0.0, 1.0)
+	
 		
 		if True:
 
