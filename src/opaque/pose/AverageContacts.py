@@ -355,15 +355,19 @@ class AverageContacts:
 		self.activeRefPtr = [0 for i in range(num)]
 
 		# deference the child nodes now
-		for child in self._allRefNodes:
-			self.probe._mgr.destroySceneNode(child)
+		#for child in self._allRefNodes:
+		#	self.probe._mgr.destroySceneNode(child)
 
-		self._allRefNodes = []
+		#self._allRefNodes = []
 	
-		for child in self._allRefEnt:
-			self.probe._mgr.destroyEntity(child)
+		#for child in self._allRefEnt:
+		#	self.probe._mgr.destroyEntity(child)
 	
-		self._allRefEnt = []
+		#self._allRefEnt = []
+
+		for i in range(self.numJoints):
+			self._allRefEnt[i].setVisible(False)
+			
 
 		# proposed reference points
 		self.numRef = 0
