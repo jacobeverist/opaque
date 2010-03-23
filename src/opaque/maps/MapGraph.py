@@ -36,6 +36,8 @@ class MapGraph:
 		self.poseGraph = graph.graph()
 		self.numNodes = 0
 		self.currNode = 0
+		
+		self.lastRootPose = copy(self.initPose)
 
 		self.pixelSize = PIXELSIZE
 		self.mapSize = 20.0
@@ -44,7 +46,6 @@ class MapGraph:
 		self.divPix = floor((2.0 * self.mapSize / self.pixelSize) / self.mapSize)
 		self.fileName = "mapGraph%04u.png"
 		self.saveCount = 0
-
 
 		" ground truth walls of the environment "
 		self.gndMapImage = Image.new('L', (self.numPixel, self.numPixel), 0)
@@ -525,17 +526,18 @@ class MapGraph:
 		points = self.boundMap.getBoundaryPoints()
 
 		if self.currNode != 0 and self.contacts.numRef > 0:
-			#onSegPose = Pose(self.contacts.getClosestPose(self.currNode.rootNode))
-			onSegPose = Pose(self.contacts.getAveragePose(self.currNode.rootNode))
-			onSegActPose = Pose( self.probe.getActualJointPose(self.currNode.rootNode))
+			self.lastRootPose = self.contacts.getAveragePose(self.currNode.rootNode)
+
+		onSegPose = Pose(self.lastRootPose)
+		onSegActPose = Pose( self.probe.getActualJointPose(self.currNode.rootNode))
+			
 
 		for i in range(len(points)):
 			pnt = points[i]
 			
-			if self.currNode != 0 and self.contacts.numRef > 0:
-				newPnt = copy(pnt)				
-				localPnt = onSegPose.convertGlobalToLocal(pnt)
-				pnt = onSegActPose.convertLocalToGlobal(localPnt)
+			newPnt = copy(pnt)				
+			localPnt = onSegPose.convertGlobalToLocal(pnt)
+			pnt = onSegActPose.convertLocalToGlobal(localPnt)
 
 			childNode = self.boundParentNode.createChildSceneNode("globalBoundPoint" + "_" + str(i))
 			self.childNodes.append(childNode)

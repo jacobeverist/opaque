@@ -38,7 +38,7 @@ class TestMapping(SnakeControl):
 		
 		" maps "
 		self.mapGraph = maps.MapGraph(self.probe, self.contacts)
-		#self.mapGraph.loadFile(9)
+		self.mapGraph.loadFile(5)
 		
 		#self.mapGraph.correctPoses2()
 		#self.mapGraph.synch()
@@ -136,11 +136,12 @@ class TestMapping(SnakeControl):
 	def frameStarted(self):
 		
 		self.adjustCamera()
-		#self.grabImage()
+		self.grabImage()
 		#self.grabAngles()
 
 		if self.globalTimer % 4000 == 0:
-			self.mapGraph.drawEstBoundary()
+			if self.stateA <= 0 or self.stateA == 5:
+				self.mapGraph.drawEstBoundary()
 		
 		if self.isAnchored:
 			body = self.probe._bodies[20]
@@ -171,8 +172,8 @@ class TestMapping(SnakeControl):
 			
 			if isDone:
 				self.stateA = 0
+				#self.stateA = 6
 				print "going to state ", self.stateA
-				#self.stateA = 4
 
 				self.holdP.reset()
 				self.holdT.reset()
@@ -186,11 +187,15 @@ class TestMapping(SnakeControl):
 				
 				self.mapGraph.synch()
 				self.mapGraph.saveMap()
+				self.mapGraph.saveLocalMap()
 						
 				#self.stateA = 0
 				#self.stateA = 1
 				self.isAnchored = False
 
+				self.holdP.reset()
+				self.holdT.reset()
+				
 				centerPoints = self.adaptiveStep.getCenterPoints()
 				self.mapGraph.setCenterPoints(centerPoints)
 
@@ -502,6 +507,8 @@ class TestMapping(SnakeControl):
 				centerPoints = self.adaptiveStep.getCenterPoints()
 				self.mapGraph.setCenterPoints(centerPoints)
 
+				self.holdT.reset()
+				
 				self.stateA = 8
 				print "going to state 8"
 
@@ -529,15 +536,15 @@ class TestMapping(SnakeControl):
 
 		elif self.stateA == 9:
 			
-			#isDone = self.holdT.step()
-			#joints1 = self.holdT.getJoints()
-			#self.mergeJoints([joints1])
-
-			joints1 = self.holdP.getJoints()
+			isDone = self.holdT.step()
+			joints1 = self.holdT.getJoints()
 			self.mergeJoints([joints1])
-			if self.globalTimer - self.prevTime > 100:
+
+			#joints1 = self.holdP.getJoints()
+			#self.mergeJoints([joints1])
+			#if self.globalTimer - self.prevTime > 100:
 				
-			#if isDone:
+			if isDone:
 				self.isCapture = True
 
 				self.mapGraph.correctPoses2()

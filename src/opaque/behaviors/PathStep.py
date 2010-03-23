@@ -1026,27 +1026,39 @@ class PathStep(Behavior):
 				" TODO " 
 				" if the anchor failed, increment the splice joint higher "
 
-				if self.direction:
-					self.spliceJoint += 2
+				#if self.direction:
+				#	self.spliceJoint = 7
+				#else:
+				#	self.spliceJoint = 31
+				
+				" if we've exhausted too many joints, lets just quit with what we have "
+				if self.direction and self.spliceJoint >= 15:
+					self.frontAnchoringDone = True
+				elif not self.direction and self.spliceJoint <= 23:
+					self.frontAnchoringDone = True
+				
 				else:
-					self.spliceJoint -= 2
+					if self.direction:
+						self.spliceJoint += 2
+					else:
+						self.spliceJoint -= 2
+						
+					#print "out of segments, switching splice joint to", self.spliceJoint
+					self.mask = [0.0 for i in range(0,40)]
+					self.count = 0
 					
-				#print "out of segments, switching splice joint to", self.spliceJoint
-				self.mask = [0.0 for i in range(0,40)]
-				self.count = 0
-				
-				self.minAmp = 0.0
-				self.maxAmp = 0.0			
-				self.ampInc = 0.04		
-				self.currPeak = 0
-				
-				self.lastSpliceAngle = 0.0
-				self.frontAnchorFit = 0
-				self.frontCurve = 0
-				self.adaptiveCurve = 0
-				self.concertinaFit = 0
-
-				self.computeCurve()
+					self.minAmp = 0.0
+					self.maxAmp = 0.0			
+					self.ampInc = 0.04		
+					self.currPeak = 0
+					
+					self.lastSpliceAngle = 0.0
+					self.frontAnchorFit = 0
+					self.frontCurve = 0
+					self.adaptiveCurve = 0
+					self.concertinaFit = 0
+	
+					self.computeCurve()
 
 			else:
 				
@@ -1436,27 +1448,34 @@ class PathStep(Behavior):
 		
 		if self.frontCurve.isOutOfSegments(self.frontAnchorFit.lastPosition):
 
-			if self.direction:
-				self.spliceJoint += 2
+			" if we've exhausted too many joints, lets just quit with what we have "
+			if self.direction and self.spliceJoint >= 15:
+				self.frontAnchoringDone = True
+			elif not self.direction and self.spliceJoint <= 23:
+				self.frontAnchoringDone = True
 			else:
-				self.spliceJoint -= 2
 				
-			#print "out of segments, switching splice joint to", self.spliceJoint
-			self.mask = [0.0 for i in range(0,40)]
-			self.count = 0
-			
-			self.minAmp = 0.0
-			self.maxAmp = 0.0			
-			self.ampInc = 0.04		
-			self.currPeak = 0
-			
-			self.lastSpliceAngle = 0.0
-			self.frontAnchorFit = 0
-			self.frontCurve = 0
-			self.adaptiveCurve = 0
-			self.concertinaFit = 0
-
-			self.computeCurve()
+				if self.direction:
+					self.spliceJoint += 2
+				else:
+					self.spliceJoint -= 2
+					
+				#print "out of segments, switching splice joint to", self.spliceJoint
+				self.mask = [0.0 for i in range(0,40)]
+				self.count = 0
+				
+				self.minAmp = 0.0
+				self.maxAmp = 0.0			
+				self.ampInc = 0.04		
+				self.currPeak = 0
+				
+				self.lastSpliceAngle = 0.0
+				self.frontAnchorFit = 0
+				self.frontCurve = 0
+				self.adaptiveCurve = 0
+				self.concertinaFit = 0
+	
+				self.computeCurve()
 			
 		if isDone:
 			
