@@ -172,13 +172,17 @@ class GlobalCurveFit(Behavior):
 		
 		# terminator point and orientation
 		tPoint = self.curve.getU(1.0)
-		tVec = self.curve.getUVector(1.0)
+		tVec = self.curve.getUVector(0.9)
 		tAngle = acos(tVec[0])
 		if asin(tVec[1]) < 0:
 			tAngle = -tAngle
 		
+		print "tPoint:", tPoint, "tVec:", tVec, "tAngle:", tAngle
+		#tVec = [cos(math.pi/2), sin(math.pi/2)]
+		#tAngle = acos(tVec[0])
+		#if asin(tVec[1]) < 0:
+		#	tAngle = -tAngle
 		#print "tPoint:", tPoint, "tVec:", tVec, "tAngle:", tAngle
-			
 		
 		# now we need to determine which segments are active
 		# start from the inner segment and work to the 0th segment

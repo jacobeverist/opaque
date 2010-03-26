@@ -39,17 +39,13 @@ class HoldTransition(Behavior):
 			for i in range(self.probe.numSegs-1):
 			
 				self.positions.append(180.0 / pi * self.probe.getServoCmd(i))
-	
-				
-		#print "resetting:"
-		#print self.positions
-		#print joints
 			
+		self.count = 0
 		self.isTransitioning = False
 		self.hasTransitioned = False
 		self.isDone = False
 				
-		#print "reseting hold transition:", self.positions
+		print "reseting hold transition:", self.positions
 
 	def step(self):
 		Behavior.step(self)
