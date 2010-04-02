@@ -409,6 +409,19 @@ class AverageContacts:
 				# create position constraints between all the current active reference nodes
 				self.createEdges(newNode)
 
+		for i in range(self.numJoints):
+			pos = self.probe.getActualJointPose(i)
+			position = ogre.Vector3(pos[0],0.1,pos[1])
+			self._allRefNodes[i].setPosition(position)
+
+			# negative the angle because the bodies are somehow flipped upside down
+			self._allRefNodes[i].setOrientation(ogre.Quaternion(-pos[2],ogre.Vector3().UNIT_Y))
+
+			self._allRefEnt[i].setVisible(self.activeRef[i])
+
+			mPtr = self._allRefNodes[i].getMaterial()
+			mPtr.setAmbient(0.0,1.0,0.0)
+			mPtr.setDiffuse(0.0,1.0,0.0, 1.0)
 
 	def setMask(self, mask):
 		self.initMask = copy(mask)

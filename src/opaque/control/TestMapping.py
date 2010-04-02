@@ -75,6 +75,7 @@ class TestMapping(SnakeControl):
 		#self.angle_output = open("angle_output_%04u.txt" % 0, "w")
 		#self.global_output = open("global_pose_output_%04u.txt" % 0, "w")
 		self.isCapture = False
+		self.renderTransition = False
 		
 		self.isInitialized = False
 
@@ -142,8 +143,9 @@ class TestMapping(SnakeControl):
 		#self.grabAngles()
 
 		if self.globalTimer % 4000 == 0:
-			if self.stateA <= 0 or self.stateA == 5:
+			if self.stateA <= 0 or self.stateA == 5 or self.renderTransition:
 				self.mapGraph.drawEstBoundary()
+				self.renderTransition = False
 		
 		if self.isAnchored:
 			body = self.probe._bodies[20]
@@ -173,8 +175,8 @@ class TestMapping(SnakeControl):
 			self.contacts.step()
 			
 			if isDone:
-				self.stateA = 0
-				#self.stateA = 6
+				#self.stateA = 0
+				self.stateA = 1
 				print "going to state ", self.stateA
 
 				self.holdP.reset()
@@ -328,6 +330,9 @@ class TestMapping(SnakeControl):
 				self.mapGraph.saveMap()
 				print "check5"
 
+				self.renderTransition = True
+
+
 				currPose = self.contacts.getAveragePose(0)
 				deltaDist = sqrt((currPose[0]-self.lastPose[0])**2 + (currPose[1]-self.lastPose[1])**2)
 
@@ -337,6 +342,8 @@ class TestMapping(SnakeControl):
 
 					#if self.mapGraph.isFrontier():
 					#if False:
+				
+
 					self.stateA = 0
 					print "going to state 0"
 
@@ -560,7 +567,8 @@ class TestMapping(SnakeControl):
 				self.isCapture = True
 
 				self.mapGraph.correctPoses2()
-
+				self.renderTransition = True
+				
 				centerPoints = self.adaptiveStep.getCenterPoints()
 				self.mapGraph.setCenterPoints(centerPoints)
 
