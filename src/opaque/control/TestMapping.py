@@ -38,7 +38,7 @@ class TestMapping(SnakeControl):
 		
 		" maps "
 		self.mapGraph = maps.MapGraph(self.probe, self.contacts)
-		self.mapGraph.loadFile(5)
+		#self.mapGraph.loadFile(9)
 		
 		#self.mapGraph.correctPoses2()
 		#self.mapGraph.synch()
@@ -77,6 +77,8 @@ class TestMapping(SnakeControl):
 		self.isCapture = False
 		
 		self.isInitialized = False
+
+		self.globalTimer = 1
 		
 	def updateMaps(self):
 		pass
@@ -189,8 +191,6 @@ class TestMapping(SnakeControl):
 				self.mapGraph.saveMap()
 				self.mapGraph.saveLocalMap()
 						
-				#self.stateA = 0
-				#self.stateA = 1
 				self.isAnchored = False
 
 				self.holdP.reset()
@@ -198,6 +198,9 @@ class TestMapping(SnakeControl):
 				
 				centerPoints = self.adaptiveStep.getCenterPoints()
 				self.mapGraph.setCenterPoints(centerPoints)
+
+				self.lastPose = self.contacts.getAveragePose(0)
+				
 
 		elif self.stateA == 0:
 			
@@ -324,12 +327,20 @@ class TestMapping(SnakeControl):
 				print "check4"
 				self.mapGraph.saveMap()
 				print "check5"
-				
-				#if self.mapGraph.isFrontier():
-				if False:
+
+				currPose = self.contacts.getAveragePose(0)
+				deltaDist = sqrt((currPose[0]-self.lastPose[0])**2 + (currPose[1]-self.lastPose[1])**2)
+
+				print "deltaDist =", deltaDist
+
+				if deltaDist > 0.4:
+
+					#if self.mapGraph.isFrontier():
+					#if False:
 					self.stateA = 0
 					print "going to state 0"
 
+					self.lastPose = self.contacts.getAveragePose(0)
 
 					# inhibit frontier points in front of me
 
@@ -339,6 +350,7 @@ class TestMapping(SnakeControl):
 					self.stateA = 5
 					self.targetReached = False
 
+					self.lastPose = self.contacts.getAveragePose(0)
 					#self.mapGraph.saveLocalMap()
 
 					" anchoring turned off "
