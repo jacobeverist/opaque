@@ -219,7 +219,8 @@ class AverageContacts:
 
 		nodes = range(maxConsec-maxSize+1,maxConsec+1)
 
-		refCount = maxSize
+		#refCount = maxSize
+		refCount = 0
 		
 		if refExists:
 			sumX = 0.0
@@ -229,7 +230,7 @@ class AverageContacts:
 			
 			for j in nodes:
 				
-				if j != targetJoint and self.activeRef[j]:
+				if self.activeRef[j]:
 					#print "ref ", j
 					# with an existing reference point, we determine the new node's position with respect to it
 					refX, refZ, refP = self.activeRefPtr[j].getRefPose()
@@ -244,6 +245,8 @@ class AverageContacts:
 					
 					# the existing reference node saved for debugging purposes 
 					self.lastNode = self.activeRefPtr[refNumber]
+					
+					refCount += 1
 			
 			sumX /= refCount
 			sumY /= refCount
@@ -844,7 +847,8 @@ class AverageContacts:
 
 		nodes = range(maxConsec-maxSize+1,maxConsec+1)
 		print maxConsec-maxSize+1, maxConsec
-		refCount = maxSize
+		#refCount = maxSize
+		refCount = 0
 		
 		if refExists:
 			sumX = 0.0
@@ -854,7 +858,7 @@ class AverageContacts:
 			
 			for j in nodes:
 				
-				if j != newJointID and self.activeRef[j]:
+				if self.activeRef[j]:
 					#print "ref ", j
 					# with an existing reference point, we determine the new node's position with respect to it
 					refX, refZ, refP = self.activeRefPtr[j].getRefPose()
@@ -869,6 +873,8 @@ class AverageContacts:
 					
 					# the existing reference node saved for debugging purposes 
 					self.lastNode = self.activeRefPtr[refNumber]
+					
+					refCount += 1
 			
 			sumX /= refCount
 			sumY /= refCount

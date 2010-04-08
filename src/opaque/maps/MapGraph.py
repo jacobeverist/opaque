@@ -44,6 +44,7 @@ class MapGraph:
 		self.divPix = floor((2.0 * self.mapSize / self.pixelSize) / self.mapSize)
 		self.fileName = "mapGraph%04u.png"
 		self.saveCount = 0
+		self.boundIteration = 0
 
 
 		" ground truth walls of the environment "
@@ -542,11 +543,14 @@ class MapGraph:
 
 		points = self.boundMap.getBoundaryPoints()
 
+		pylab.clf()
+
 		if self.currNode != 0 and self.contacts.numRef > 0:
 			#onSegPose = Pose(self.contacts.getClosestPose(self.currNode.rootNode))
 			onSegPose = Pose(self.contacts.getAveragePose(self.currNode.rootNode))
 			onSegActPose = Pose( self.probe.getActualJointPose(self.currNode.rootNode))
 
+		plotPoints = [[], []]
 		for i in range(len(points)):
 			pnt = points[i]
 			
@@ -554,6 +558,9 @@ class MapGraph:
 				newPnt = copy(pnt)				
 				localPnt = onSegPose.convertGlobalToLocal(pnt)
 				pnt = onSegActPose.convertLocalToGlobal(localPnt)
+
+			plotPoints[0].append(pnt[0])
+			plotPoints[1].append(pnt[1])
 
 			childNode = self.boundParentNode.createChildSceneNode("globalBoundPoint" + "_" + str(i))
 			self.childNodes.append(childNode)
@@ -571,9 +578,15 @@ class MapGraph:
 	
 			childNode.attachObject(currEntity)	
 
-		for i in range(40):
+		pylab.scatter(plotPoints[0],plotPoints[1], linewidth=1, color='k')
+		
+		plotPoints = [[], []]
+		for i in range(39):
 			pnt = self.contacts.getAveragePose(i)
 			
+			plotPoints[0].append(pnt[0])
+			plotPoints[1].append(pnt[1])
+						
 			childNode = self.boundParentNode.createChildSceneNode("globalPosePoint" + "_" + str(i))
 			self.childNodes.append(childNode)
 	
@@ -590,6 +603,72 @@ class MapGraph:
 	
 			childNode.attachObject(currEntity)	
 
+		pylab.scatter(plotPoints[0],plotPoints[1], linewidth=0, color=(1.0,0.6,0.6))
+
+		plotPoints = [[], []]
+		for i in range(39):
+			pnt = self.probe.getActualJointPose(i)
+			
+			plotPoints[0].append(pnt[0])
+			plotPoints[1].append(pnt[1])
+		
+		pylab.scatter(plotPoints[0],plotPoints[1], linewidth=0, color=(0.6,0.6,1.0))
+
+		plotPoints = [[], []]
+		for i in range(39):
+			if self.contacts.activeRef[i]:
+				pnt = self.contacts.getClosestPose(i)
+				
+				plotPoints[0].append(pnt[0])
+				plotPoints[1].append(pnt[1])
+		
+		pylab.scatter(plotPoints[0],plotPoints[1], linewidth=0, color=(0.6,1.0,0.6))
+			
+		self.plotEnv()	
+
+		pylab.xlim(-4,9)
+		pylab.ylim(-7,5)
+		pylab.savefig("inSituBoundary_%04u.png" % self.boundIteration)
+		pylab.clf()
+		
+		self.boundIteration += 1
+						
+	def plotEnv(self):
+	
+		WLEN = 3.0
+		WLEN2 = 5.0
+		wall1 = [[-14.0, -0.2], [-4.0, -0.2], [-4.0 + WLEN*math.cos(math.pi/3), -0.2 - WLEN*math.sin(math.pi/3)]]
+		wall2 = [[-4.0 + WLEN2*math.cos(math.pi/3), 0.2 + WLEN2*math.sin(math.pi/3)], [-4.0, 0.2] ,[-14.0, 0.2]]
+		w1 = wall1[2]
+		w2 = wall2[0]
+				
+		wall3 = [[w1[0] + 0.4*math.cos(math.pi/6), w1[1] + 0.4*math.sin(math.pi/6)], [0.4*math.cos(math.pi/6) - 4, 0.0], [w2[0] + 0.4*math.cos(math.pi/6), w2[1] - 0.4*math.sin(math.pi/6)], w2]
+		lp = wall3[0]
+		rp = wall3[2]
+		
+		wall6 = [lp, [lp[0] + WLEN*math.cos(math.pi/6), lp[1] + WLEN*math.sin(math.pi/6)]]
+		wall6.append([wall6[1][0] + 0.4*math.cos(math.pi/3), wall6[1][1] - 0.4*math.sin(math.pi/3)])
+		wall6.append([wall6[2][0] - WLEN*math.cos(math.pi/6), wall6[2][1] - WLEN*math.sin(math.pi/6)])
+		wall6.append([wall6[3][0] + WLEN*math.cos(math.pi/3), wall6[3][1] - WLEN*math.sin(math.pi/3)])
+		wall6.append([wall6[4][0] - 0.4*math.cos(math.pi/6), wall6[4][1] - 0.4*math.sin(math.pi/6)])
+		wall6.append(w1)
+		wall6.reverse()
+	
+		walls = [wall1, wall2, wall3, wall6]
+	
+		for wall in walls:
+			xP = []
+			yP = []
+			for i in range(len(wall)):
+				p = copy(wall[i])
+				p[0] += 6.0
+				wall[i] = p
+				xP.append(p[0])
+				yP.append(p[1])
+	
+			pylab.plot(xP,yP, linewidth=2, color = 'g')
+			
+			
 	def synch(self):
 		self.currNode.synch()
 		
