@@ -600,7 +600,8 @@ class LocalNode:
 
 		" radius 0.2 "
 		#inputStr += str(1.0) + " "
-		inputStr += str(0.8) + " "
+		#inputStr += str(0.8) + " "
+		inputStr += str(0.2) + " "
 		
 		for p in points:
 			p2 = copy(p)

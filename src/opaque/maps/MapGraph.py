@@ -158,6 +158,9 @@ class MapGraph:
 	
 	def correctPoses2(self):
 
+		if self.numNodes < 2:
+			return
+
 		print "check_A"
 		if self.currNode.isDirty():
 			self.currNode.synch()
@@ -568,7 +571,25 @@ class MapGraph:
 	
 			childNode.attachObject(currEntity)	
 
+		for i in range(40):
+			pnt = self.contacts.getAveragePose(i)
+			
+			childNode = self.boundParentNode.createChildSceneNode("globalPosePoint" + "_" + str(i))
+			self.childNodes.append(childNode)
 	
+			currEntity = self.probe._mgr.createEntity("globalPoseEnt" + "_" + str(i), "Cube.mesh")
+			currEntity.setCastShadows(False)
+			currEntity.setMaterialName("Red")
+			self.childEntities.append(currEntity)
+	
+			position = ogre.Vector3(pnt[0],0.0,pnt[1])
+			childNode.setPosition(position)
+	
+			size = ogre.Vector3(0.06,0.06,0.06)
+			childNode.setScale(size)
+	
+			childNode.attachObject(currEntity)	
+
 	def synch(self):
 		self.currNode.synch()
 		
@@ -970,7 +991,8 @@ class MapGraph:
 			
 			" radius 0.2 "
 			#inputStr += str(0.8) + " "
-			inputStr += str(0.2) + " "
+			#inputStr += str(0.2) + " "
+			inputStr += str(0.1) + " "
 			
 			for p in points:
 				p2 = copy(p)

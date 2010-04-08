@@ -698,6 +698,7 @@ class AverageContacts:
 			if forcePose != []:
 				origin = forcePose
 				print "createNewNode() taking forced pose of", forcePose
+				print "actual pose =", self.probe.getActualJointPose(newJointID)
 			else:
 				
 				# initialize the first reference node with its position in global coordinates
@@ -715,12 +716,15 @@ class AverageContacts:
 
 			refX, refZ, refP = originNode.getRefPose()
 			initPose = [refX, refZ, refP]
+			print "initPose =", initPose
 
 			jointID = originNode.getJointID()
 
-			#print "jointID =", jointID, "newJointID =", newJointID
+			print "jointID =", jointID, "newJointID =", newJointID
 
 			pose = self.probe.getJointWRTJointPose(initPose, jointID, newJointID) 
+			
+			print "finalPose =", pose
 			#print initPose,pose
 
 		else:
