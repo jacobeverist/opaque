@@ -230,18 +230,26 @@ def computeUnion(points1, points2):
 if __name__ == '__main__':
 
 	probe = FakeProbe(40,0.15,0.05)
-	contacts = ContactReferences(probe)
+	contacts = AverageContacts(probe)
 	mapGraph = MapGraph(probe, contacts)
 
 
 	#numPoses = 8
 	#numPoses = 11
 	#numPoses = 34
-	numPoses = 5
+	numPoses = 19
+	numPoses = 14
 
-	mapGraph.loadFile(numPoses)
-	mapGraph.saveMap()
-	#exit()
+	#mapGraph.loadFile(numPoses)
+	mapGraph.loadFile(1)
+	
+	for i in range(19):
+		mapGraph.loadNext()
+		mapGraph.correctPoses2()		
+		mapGraph.synch()
+		mapGraph.saveMap()
+
+	exit()
 
 	" TUNE ME:  threshold cost difference between iterations to determine if converged "
 	#costThresh = 0.004

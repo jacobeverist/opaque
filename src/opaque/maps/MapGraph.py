@@ -73,6 +73,17 @@ class MapGraph:
 
 		#self.newNode()
 
+	def loadNext(self):
+		self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, inSim = False)
+		self.currNode.readFromFile(self.numNodes)
+		
+		self.poseGraph.add_node(self.numNodes, self.currNode)
+
+		if self.numNodes > 0:
+			self.poseGraph.add_edge(self.numNodes-1, self.numNodes)
+
+		self.numNodes += 1	
+
 	def loadFile(self, num_poses):
 		
 		#self.saveCount = 0
@@ -309,16 +320,14 @@ class MapGraph:
 			newEstPose2 = pose1.convertLocalOffsetToGlobal(offset)
 			newEstPoses.append(newEstPose2)
 			
-
 		print "check_H"
 			
 		estPoses = newEstPoses
-					
+		
 		" update the estimated poses "
 		for m in range(0,len(estPoses)):
 			self.setNodePose(m, estPoses[m])
 			
-		
 		print len(estPoses), "poses"
 		print "new estPose:", estPoses[-1]
 		
@@ -558,6 +567,7 @@ class MapGraph:
 			childNode.setScale(size)
 	
 			childNode.attachObject(currEntity)	
+
 	
 	def synch(self):
 		self.currNode.synch()
