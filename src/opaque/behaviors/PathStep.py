@@ -1419,14 +1419,30 @@ class PathStep(Behavior):
 		if self.refDone:
 
 			self.mergeJoints([joints])
-			
 			" update mask for ContactReference "
 			for i in range(self.probe.numSegs-1):
 				#print self.frontAnchoringState, anchorJoints[i], self.concertinaFit.isJointSolid(i), joints[i]
 				if (not self.frontAnchoringState and anchorJoints[i] != None) or self.concertinaFit.isJointSolid(i) or joints[i] == None:
 					self.mask[i] = 1.0
+				
+					" for activating the back anchor joints when front anchoring or extending "
+				elif self.frontAnchoringState and self.direction and i > (self.spliceJoint + 2.0/self.probe.segLength):
+					
+					self.mask[i] = 1.0
+							
+				elif self.frontAnchoringState and not self.direction and i < (self.spliceJoint - 2.0/self.probe.segLength):
+					self.mask[i] = 1.0
+				
 				else:
 					self.mask[i] = 0.0
+								
+			" update mask for ContactReference "
+			#for i in range(self.probe.numSegs-1):
+				#print self.frontAnchoringState, anchorJoints[i], self.concertinaFit.isJointSolid(i), joints[i]
+			#	if (not self.frontAnchoringState and anchorJoints[i] != None) or self.concertinaFit.isJointSolid(i) or joints[i] == None:
+			#		self.mask[i] = 1.0
+			#	else:
+			#		self.mask[i] = 0.0
 
 		else:
 			" transition the masks, and wait for them to be stable, then change the joints "
@@ -1440,9 +1456,37 @@ class PathStep(Behavior):
 					" check if all reference points have been created "
 					if not self.contacts.activeRef[i]:
 						allActive = False
+				
+				" for activating the back anchor joints when front anchoring or extending "
+				if self.frontAnchoringState:
+					if self.direction and i > (self.spliceJoint + 2.0/self.probe.segLength):
+						self.mask[i] = 1.0
+
+						" check if all reference points have been created "
+						if not self.contacts.activeRef[i]:
+							allActive = False
+							
+					elif not self.direction and i < (self.spliceJoint - 2.0/self.probe.segLength):
+						self.mask[i] = 1.0
+				
+						" check if all reference points have been created "
+						if not self.contacts.activeRef[i]:
+							allActive = False
+					
+			#allActive = True
+			#" update mask for ContactReference "
+			#for i in range(self.probe.numSegs-1):
+			#	if (not self.frontAnchoringState and anchorJoints[i] != None) or self.concertinaFit.isJointSolid(i) or joints[i] == None:
+			#		self.mask[i] = 1.0
+
+			#		" check if all reference points have been created "
+			#		if not self.contacts.activeRef[i]:
+			#			allActive = False
 					
 			if allActive:
 				self.refDone = True
+
+
 		
 		#print self.mask
 		
@@ -1491,7 +1535,7 @@ class PathStep(Behavior):
 			self.minAmp = 0.0
 			self.maxAmp = 0.0			
 			self.ampInc = 0.04
-						
+			
 			self.currPeak = 0
 			#self.spliceJoint = 7
 			self.lastSpliceAngle = 0.0

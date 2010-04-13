@@ -45,7 +45,6 @@ class AverageContacts:
 		self.avgErr = [0.0 for i in range(num)]
 		self.mask = [False for i in range(num)]
 		self.maxErrorReached = [False for i in range(num)]
-		self.recvData = [False for i in range(num)]
 
 		# reference node ids
 		self.originNode = 0
@@ -343,6 +342,19 @@ class AverageContacts:
 			return pose
 		
 	def resetPose(self, estPose = []):
+	
+
+		#self.errorTime[i] = 0
+		#self.maskTime[i] = 0
+		#self.avgErr[i] = (1.0 - self.K) * (self.avgErr[i]) + self.K * self.probe.getError(i)
+		#self.jointVar[i].addData(self.probe.getServo(i))	
+
+		#not self.activeRef[i]
+		#not self.maxErrorReached[i]
+		#(self.avgErr[i] > self.errorThresh)
+		#(self.mask[i] > self.maskThresh)
+		#(self.maskTime[i] > self.timeThresh)
+
 		
 		# contact parameter arrays
 		num = self.numJoints
@@ -398,19 +410,25 @@ class AverageContacts:
 		endJoint = self.numJoints-2
 
 		if estPose != []:
+			print "creating forced pose reference node", 19, "with estPose =", estPose
 			newNode = self.createNewNode(19, forcePose = estPose)
 			self.createEdges(newNode)
 
+		print "self.activeRef =", self.activeRef
+		print "startJoint, endJoint =", startJoint, endJoint
 
 		for i in range(startJoint, endJoint):
 			#if not self.activeRef[i] and not self.maxErrorReached[i] and (self.avgErr[i] > self.errorThresh) and (self.mask[i] > self.maskThresh) and (self.maskTime[i] > self.timeThresh):
 			if not self.activeRef[i]:
+				print "creating reference node", i
 
 				# create a new reference node
 				newNode = self.createNewNode(i)
 
 				# create position constraints between all the current active reference nodes
 				self.createEdges(newNode)
+
+				print "self.activeRef =", self.activeRef
 
 		for i in range(self.numJoints):
 			pos = self.probe.getActualJointPose(i)
@@ -489,11 +507,6 @@ class AverageContacts:
 			# 3. hypothesize the slip mode
 			# 4. reactivate the nodes when things become stable again
 
-			# saddle points that serve as boundaries between closed sections
-			# used for determining the stability of points within the sections
-			countPoints = [0,4,8,12,16,20,24,28,32,36,38]
-			numCountPoints = 10
-
 			for i in range(startJoint,endJoint):
 
 				if self.activeRef[i]:
@@ -502,6 +515,7 @@ class AverageContacts:
 
 					if self.activeRefPtr[i].isMaxErrorReached():
 
+						print "maxErrorReached for", i, "because maxError =", self.activeRefPtr[i].maxError, "and currError =", self.activeRefPtr[i].currError
 						self.activeRef[i] = False
 						self.numActiveRef -= 1
 						self.maxErrorReached[i] = True
@@ -524,39 +538,14 @@ class AverageContacts:
 					self.createEdges(newNode)
 
 				elif self.activeRef[i] and self.mask[i] < 1.0 :
+					
+					print "deactivating", i, "because mask =", self.mask[i]
 					self.activeRef[i] = False
 					self.numActiveRef -= 1
 					#print "caseB", i, self.mask[i]
 					# reset variance calculation
 					self.jointVar[i].reset()
 
-			# add angle pose data to the active reference node
-			for i in range(self.numJoints):
-
-				if i == 2 or i == 35:
-
-					#print self.activeRef
-					#print self.activeRefPtr
-					if self.activeRef[i]:
-
-						#if self.count % 2 == 0 :
-						if True :
-							angleData = []
-							for j in range(self.numJoints):
-								angleData.append(self.probe.getServo(j))
-
-							#print "referencing ", i , self.activeRefPtr[i]
-
-							self.activeRefPtr[i].addAngleData(angleData)
-
-						self.recvData[i] = True
-
-					elif self.recvData[i]:
-
-						self.recvData[i] = False
-
-						# write this data to the map
-						#mapping.addOpenSpace(self.activeRefPtr[i])
 
 			for i in range(startJoint,endJoint):
 				if not self.activeRef[i]:
