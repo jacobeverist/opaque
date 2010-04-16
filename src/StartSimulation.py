@@ -277,7 +277,7 @@ class SnakeApp(sf.Application):
 		wall2 = [[-14.0, 0.2], [-2.0, 0.2], [-2.0,3.6], [-1.6,3.6], [-1.6,0.2], [0.0,0.2]]
 		wall2.reverse()
 		"""
-		walls = [wall1, wall2, wall3, wall6, wall7]
+		walls = [wall1, wall2, wall3, wall6]
 		
 
 		

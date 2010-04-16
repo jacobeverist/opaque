@@ -581,7 +581,8 @@ class MapGraph:
 	
 			childNode.attachObject(currEntity)	
 
-		pylab.scatter(plotPoints[0],plotPoints[1], linewidth=1, color='k')
+		if len(plotPoints) > 0:
+			pylab.scatter(plotPoints[0],plotPoints[1], linewidth=1, color='k')
 
 		print "check_Y"
 		print "self.contacts.activeRef =", self.contacts.activeRef
@@ -609,7 +610,8 @@ class MapGraph:
 	
 			childNode.attachObject(currEntity)	
 
-		pylab.scatter(plotPoints[0],plotPoints[1], linewidth=0, color=(1.0,0.6,0.6))
+		if len(plotPoints) > 0:
+			pylab.scatter(plotPoints[0],plotPoints[1], linewidth=0, color=(1.0,0.6,0.6))
 
 		print "check_X"
 		print "self.contacts.activeRef =", self.contacts.activeRef
@@ -620,8 +622,9 @@ class MapGraph:
 			
 			plotPoints[0].append(pnt[0])
 			plotPoints[1].append(pnt[1])
-		
-		pylab.scatter(plotPoints[0],plotPoints[1], linewidth=0, color=(0.6,0.6,1.0))
+
+		if len(plotPoints) > 0:
+			pylab.scatter(plotPoints[0],plotPoints[1], linewidth=0, color=(0.6,0.6,1.0))
 
 
 		print "check_V"
@@ -635,7 +638,8 @@ class MapGraph:
 				plotPoints[0].append(pnt[0])
 				plotPoints[1].append(pnt[1])
 		
-		pylab.scatter(plotPoints[0],plotPoints[1], linewidth=0, color=(0.6,1.0,0.6))
+		if len(plotPoints) > 0:
+			pylab.scatter(plotPoints[0],plotPoints[1], linewidth=0, color=(0.6,1.0,0.6))
 
 		print "check_U"
 		print "self.contacts.activeRef =", self.contacts.activeRef
