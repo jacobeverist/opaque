@@ -172,11 +172,9 @@ class FrontAnchorTest(Behavior):
 		
 		resultJoints = self.spliceFitJoints()
 		
-		#print "resultJoints =", resultJoints
-		
-		self.holdSlideT.setSpliceJoint(self.spliceJoint)
-		
+		self.holdSlideT.setSpliceJoint(self.spliceJoint)		
 		self.holdSlideT.reset(resultJoints, self.direction)
+		
 		self.holdT.reset(resultJoints)
 		self.refDone = False
 
@@ -198,7 +196,16 @@ class FrontAnchorTest(Behavior):
 				
 		joints1 = self.frontAnchorFit.getJoints()
 		joints2 = self.concertinaFit.getJoints()
-		
+	
+		if self.direction:
+			joints1[0] = 0.0
+			joints1[1] = 0.0
+			joints1[2] = 0.0
+		else:
+			joints1[-1] = 0.0
+			joints1[-2] = 0.0
+			joints1[-3] = 0.0
+			
 		#print "joints1 =", joints1
 		#print "joints2 =", joints2
 		
@@ -710,17 +717,14 @@ class FrontAnchorTest(Behavior):
 			
 	def doExtendFront(self):
 
-		print "Extend Front"
-
-		self.frontExtendDone = False
-
-		resultJoints = self.spliceFitJoints()
-		self.holdSlideT.reset(resultJoints, self.direction)
+		self.transDone = self.holdSlideT.step()
 		
+		if self.transDone:
+			self.frontExtendDone = True
+			self.frontExtending = False
 
-		#self.frontExtending = False
-		#self.frontExtendDone = False
-					
+		print "doExtendFront"
+			
 	def doFrontAnchor(self):
 				
 		" compute the maximum error of the joints in the current peak "
@@ -1168,14 +1172,16 @@ class FrontAnchorTest(Behavior):
 		self.count += 1
 		isDone = False
 		
+		#print self.count, self.transDone, self.refDone, self.frontAnchoringState, self.frontExtending, self.frontExtendDone
+		
 		if self.transDone:
 			self.transDone = False
-
 
 			if self.frontExtending:
 				self.frontExtendDone = True
 				self.frontExtending = False
 				resultJoints = self.holdSlideT.getJoints()
+				#print "case_AB"
 				self.holdT.reset(resultJoints)
 		
 			# termination cases
@@ -1215,12 +1221,12 @@ class FrontAnchorTest(Behavior):
 				if self.frontAnchoringState:
 					
 					if self.frontExtending:
-						self.doExtendFront()
-						#self.frontExtending = False
-						#self.frontExtendDone = False
+						#self.doExtendFront()
+						self.frontExtending = False
+						self.frontExtendDone = True
 		
-						if self.frontExtendDone:
-							self.frontExtending = False
+						#if self.frontExtendDone:
+						#	self.frontExtending = False
 						
 					else:
 						#print "Front Anchor Step"
@@ -1229,7 +1235,6 @@ class FrontAnchorTest(Behavior):
 						if self.frontAnchoringDone:
 							self.frontAnchoringDone = False
 							self.frontAnchoringState = False
-							self.frontExtended = False
 	
 				else:
 					peakJoints = self.concertinaFit.getPeakJoints(self.currPeak)	
@@ -1251,30 +1256,31 @@ class FrontAnchorTest(Behavior):
 
 				#print torques
 
-				if self.frontExtending:
-					self.refDone = False
-					#print "caseA"
-					self.transDone = self.holdSlideT.step()
 				
-				else:	
-					self.refDone = False
+				if not self.frontExtending:	
 					self.transDone = self.holdT.step()
+				else:
+					self.transDone = self.holdSlideT.step()
+		
+				self.refDone = False
 				
 		else:
 			
 			" make no movements until all reference nodes are activated "
 			if self.refDone:
-				if self.frontExtending:
-					#self.transDone = self.holdT.step()
-					self.transDone = self.holdSlideT.step()
-				else:
+				if not self.frontExtending:
 					self.transDone = self.holdT.step()
+				else:
+					self.transDone = self.holdSlideT.step()
+					
 
 		anchorJoints = self.frontAnchorFit.getJoints()
 		
 
-
-		joints = self.holdT.getJoints()
+		if self.frontAnchoringState and self.frontExtending:
+			joints = self.holdSlideT.getJoints()
+		else:
+			joints = self.holdT.getJoints()
 		
 		if self.frontAnchoringState and self.frontExtendDone:
 			" collect joint settings for both behaviors "
@@ -1315,10 +1321,9 @@ class FrontAnchorTest(Behavior):
 				
 					" for activating the back anchor joints when front anchoring or extending "
 				elif self.frontAnchoringState and self.direction and i > (self.spliceJoint + 2.0/self.probe.segLength):
-					
-
 					self.mask[i] = 1.0
 							
+					" add the mask for the inactive portion of the back concertina gait while front anchoring "
 				elif self.frontAnchoringState and not self.direction and i < (self.spliceJoint - 2.0/self.probe.segLength):
 					self.mask[i] = 1.0
 				
@@ -1349,6 +1354,7 @@ class FrontAnchorTest(Behavior):
 						if not self.contacts.activeRef[i]:
 							allActive = False
 							
+						" add the mask for the inactive portion of the back concertina gait while front anchoring "
 					elif not self.direction and i < (self.spliceJoint - 2.0/self.probe.segLength):
 						self.mask[i] = 1.0
 				
@@ -1359,7 +1365,6 @@ class FrontAnchorTest(Behavior):
 			if allActive:
 				self.refDone = True
 				
-			" add the mask for the inactive portion of the back concertina gait while front anchoring "
 			if self.direction:
 				for i in range(self.probe.numSegs-1):
 					pass

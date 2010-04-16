@@ -1466,6 +1466,7 @@ class PathStep(Behavior):
 						if not self.contacts.activeRef[i]:
 							allActive = False
 							
+						" add the mask for the inactive portion of the back concertina gait while front anchoring "
 					elif not self.direction and i < (self.spliceJoint - 2.0/self.probe.segLength):
 						self.mask[i] = 1.0
 				

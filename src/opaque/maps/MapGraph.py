@@ -545,6 +545,9 @@ class MapGraph:
 
 		pylab.clf()
 
+		print "check_Z"
+		print "self.contacts.activeRef =", self.contacts.activeRef
+
 		if self.currNode != 0 and self.contacts.numRef > 0:
 			#onSegPose = Pose(self.contacts.getClosestPose(self.currNode.rootNode))
 			onSegPose = Pose(self.contacts.getAveragePose(self.currNode.rootNode))
@@ -579,6 +582,9 @@ class MapGraph:
 			childNode.attachObject(currEntity)	
 
 		pylab.scatter(plotPoints[0],plotPoints[1], linewidth=1, color='k')
+
+		print "check_Y"
+		print "self.contacts.activeRef =", self.contacts.activeRef
 		
 		plotPoints = [[], []]
 		for i in range(39):
@@ -605,6 +611,9 @@ class MapGraph:
 
 		pylab.scatter(plotPoints[0],plotPoints[1], linewidth=0, color=(1.0,0.6,0.6))
 
+		print "check_X"
+		print "self.contacts.activeRef =", self.contacts.activeRef
+
 		plotPoints = [[], []]
 		for i in range(39):
 			pnt = self.probe.getActualJointPose(i)
@@ -613,6 +622,10 @@ class MapGraph:
 			plotPoints[1].append(pnt[1])
 		
 		pylab.scatter(plotPoints[0],plotPoints[1], linewidth=0, color=(0.6,0.6,1.0))
+
+
+		print "check_V"
+		print "self.contacts.activeRef =", self.contacts.activeRef
 
 		plotPoints = [[], []]
 		for i in range(39):
@@ -623,6 +636,9 @@ class MapGraph:
 				plotPoints[1].append(pnt[1])
 		
 		pylab.scatter(plotPoints[0],plotPoints[1], linewidth=0, color=(0.6,1.0,0.6))
+
+		print "check_U"
+		print "self.contacts.activeRef =", self.contacts.activeRef
 			
 		self.plotEnv()	
 
@@ -635,6 +651,7 @@ class MapGraph:
 						
 	def plotEnv(self):
 	
+		"""
 		WLEN = 3.0
 		WLEN2 = 5.0
 		wall1 = [[-14.0, -0.2], [-4.0, -0.2], [-4.0 + WLEN*math.cos(math.pi/3), -0.2 - WLEN*math.sin(math.pi/3)]]
@@ -655,14 +672,19 @@ class MapGraph:
 		wall6.reverse()
 	
 		walls = [wall1, wall2, wall3, wall6]
+		"""
+
+		
+		walls = self.probe.getWalls()
+		#walls = deepcopy(walls)
 	
 		for wall in walls:
 			xP = []
 			yP = []
 			for i in range(len(wall)):
 				p = copy(wall[i])
-				p[0] += 6.0
-				wall[i] = p
+				#p[0] += 6.0
+				#wall[i] = p
 				xP.append(p[0])
 				yP.append(p[1])
 	

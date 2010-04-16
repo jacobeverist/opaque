@@ -55,6 +55,7 @@ class AverageContacts:
 
 		self.activeRef = [False for i in range(num)]
 		self.activeRefPtr = [0 for i in range(num)]
+		self.lastActive = 0
 
 		# proposed reference points
 		self.numRef = 0
@@ -266,9 +267,19 @@ class AverageContacts:
 			pose = self.probe.getActualJointPose(targetJoint)
 
 		else:
-			# no active node exists and not the first,
-			# so lets use the latest dormant one
-			recentNode = self.refPoints[self.numRef-1]	
+			
+			" no active node exists and not the first, "
+
+			"""
+			previously we were using the last created reference
+			instead, we are now using the last active reference
+			this guarantees that the data is more up-to-date and
+			reduces the chance of wildly inaccurate re-estimation
+			from very stale and unstable old reference nodes
+			"""
+			
+			#recentNode = self.refPoints[self.numRef-1]	
+			recentNode = self.activeRefPtr[self.lastActive]
 
 			refX, refZ, refP = recentNode.getRefPose()
 			initPose = [refX, refZ, refP]
@@ -330,9 +341,19 @@ class AverageContacts:
 			return pose
 		
 		else:
-			# no active node exists and not the first,
-			# so lets use the latest dormant one
-			recentNode = self.refPoints[self.numRef-1]	
+
+			" no active node exists and not the first, "
+
+			"""
+			previously we were using the last created reference
+			instead, we are now using the last active reference
+			this guarantees that the data is more up-to-date and
+			reduces the chance of wildly inaccurate re-estimation
+			from very stale and unstable old reference nodes
+			"""
+			
+			#recentNode = self.refPoints[self.numRef-1]	
+			recentNode = self.activeRefPtr[self.lastActive]
 
 			refX, refZ, refP = recentNode.getRefPose()
 			initPose = [refX, refZ, refP]
@@ -517,9 +538,13 @@ class AverageContacts:
 
 						print "maxErrorReached for", i, "because maxError =", self.activeRefPtr[i].maxError, "and currError =", self.activeRefPtr[i].currError
 						self.activeRef[i] = False
+						self.lastActive = i
 						self.numActiveRef -= 1
 						self.maxErrorReached[i] = True
 						#print "caseA", i
+						
+						if self.numActiveRef == 0:
+							print "WARNING: all active reference nodes lost!  Last is node", i, "due to maxError"
 
 						# reset variance calculation
 						self.jointVar[i].reset()
@@ -541,7 +566,12 @@ class AverageContacts:
 					
 					print "deactivating", i, "because mask =", self.mask[i]
 					self.activeRef[i] = False
+					self.lastActive = i
 					self.numActiveRef -= 1
+					
+					if self.numActiveRef == 0:
+						print "WARNING: all active reference nodes lost!  Last is node", i, "due to mask"
+
 					#print "caseB", i, self.mask[i]
 					# reset variance calculation
 					self.jointVar[i].reset()
@@ -720,9 +750,19 @@ class AverageContacts:
 			#print initPose,pose
 
 		else:
-			# no active node exists and not the first,
-			# so lets use the latest dormant one
-			recentNode = self.refPoints[self.numRef-1]	
+
+			" no active node exists and not the first, "
+
+			"""
+			previously we were using the last created reference
+			instead, we are now using the last active reference
+			this guarantees that the data is more up-to-date and
+			reduces the chance of wildly inaccurate re-estimation
+			from very stale and unstable old reference nodes
+			"""
+			
+			#recentNode = self.refPoints[self.numRef-1]	
+			recentNode = self.activeRefPtr[self.lastActive]			
 
 			refX, refZ, refP = recentNode.getRefPose()
 			initPose = [refX, refZ, refP]
@@ -904,9 +944,18 @@ class AverageContacts:
 			#print initPose,pose
 
 		else:
-			# no active node exists and not the first,
-			# so lets use the latest dormant one
-			recentNode = self.refPoints[self.numRef-1]	
+			" no active node exists and not the first, "
+
+			"""
+			previously we were using the last created reference
+			instead, we are now using the last active reference
+			this guarantees that the data is more up-to-date and
+			reduces the chance of wildly inaccurate re-estimation
+			from very stale and unstable old reference nodes
+			"""
+			
+			#recentNode = self.refPoints[self.numRef-1]	
+			recentNode = self.activeRefPtr[self.lastActive]
 
 			refX, refZ, refP = recentNode.getRefPose()
 			initPose = [refX, refZ, refP]

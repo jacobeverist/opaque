@@ -95,7 +95,7 @@ class GlobalCurveSlide(Behavior):
 				endNode = self.probe.numSegs-2	
 				startNode = endNode - self.count
 				self.globalCurveFit.setBoundaries(startNode, endNode)
-			
+		
 		self.globalCurveFit.step()
 		targetState = self.globalCurveFit.getJoints()
 		
