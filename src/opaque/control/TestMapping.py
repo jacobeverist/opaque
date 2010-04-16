@@ -39,6 +39,7 @@ class TestMapping(SnakeControl):
 		" maps "
 		self.mapGraph = maps.MapGraph(self.probe, self.contacts)
 		#self.mapGraph.loadFile(9)
+		self.mapGraph.loadFile(1)
 		
 		#self.mapGraph.correctPoses2()
 		#self.mapGraph.synch()
@@ -139,7 +140,7 @@ class TestMapping(SnakeControl):
 	def frameStarted(self):
 		
 		self.adjustCamera()
-		self.grabImage()
+		#self.grabImage()
 		#self.grabAngles()
 
 		if self.globalTimer % 4000 == 0:
@@ -175,8 +176,8 @@ class TestMapping(SnakeControl):
 			self.contacts.step()
 			
 			if isDone:
-				#self.stateA = 0
-				self.stateA = 1
+				self.stateA = 0
+				#self.stateA = 1
 				print "going to state ", self.stateA
 
 				self.holdP.reset()
@@ -192,7 +193,7 @@ class TestMapping(SnakeControl):
 				self.mapGraph.synch()
 				self.mapGraph.saveMap()
 				self.mapGraph.saveLocalMap()
-						
+				
 				self.isAnchored = False
 
 				self.holdP.reset()
@@ -223,6 +224,7 @@ class TestMapping(SnakeControl):
 				
 				self.stateA = 1
 				#self.stateA = 4
+				#self.stateA = 3
 
 				self.holdP.reset()
 				self.holdT.reset()
@@ -323,12 +325,17 @@ class TestMapping(SnakeControl):
 				#self.mapGraph.saveLocalMap()
 				self.mapGraph.correctPoses2()
 				print "check2"
+				print "self.contacts.activeRef =", self.contacts.activeRef
+
 				self.mapGraph.synch()
 				print "check3"
+				print "self.contacts.activeRef =", self.contacts.activeRef
 				self.mapGraph.saveLocalMap()
 				print "check4"
+				print "self.contacts.activeRef =", self.contacts.activeRef
 				self.mapGraph.saveMap()
 				print "check5"
+				print "self.contacts.activeRef =", self.contacts.activeRef
 
 				self.renderTransition = True
 
@@ -348,6 +355,7 @@ class TestMapping(SnakeControl):
 					print "going to state 0"
 
 					self.lastPose = self.contacts.getAveragePose(0)
+					print "self.contacts.activeRef =", self.contacts.activeRef
 
 					# inhibit frontier points in front of me
 
@@ -370,6 +378,7 @@ class TestMapping(SnakeControl):
 
 					currPose = self.contacts.getAverageSegPose(0)
 					print "check8"
+					print "self.contacts.activeRef =", self.contacts.activeRef
 					
 					originPath, goalPath, breakPoint = self.mapGraph.computeHeadPath(currPose, frontierPoint, self.exploreRoot)
 					self.wayPoints = [breakPoint, goalPath[-1]]
@@ -428,7 +437,7 @@ class TestMapping(SnakeControl):
 					print "going to state", self.stateA
 					
 		elif self.stateA == 5:
-			
+	
 			isDone = self.pathStep.step()
 			joints = self.pathStep.getJoints()
 			self.mergeJoints([joints])
@@ -437,14 +446,15 @@ class TestMapping(SnakeControl):
 			
 			self.contacts.setMask(val)
 			self.contacts.step()
-
 			
 			dest = self.wayPoints[0]
 			pose = self.contacts.getAverageSegPose(0)
 			dist = sqrt((dest[0]-pose[0])**2 + (dest[1]-pose[1])**2)
 			
 			if dist < 0.1:
-				print "target reached!"
+
+				if not self.targetReached:
+					print "target reached!"
 				self.targetReached = True
 						
 			if isDone:
