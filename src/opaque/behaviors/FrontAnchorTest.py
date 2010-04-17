@@ -1330,8 +1330,6 @@ class FrontAnchorTest(Behavior):
 				else:
 					self.mask[i] = 0.0
 
-					
-
 		else:
 			" transition the masks, and wait for them to be stable, then change the joints "
 
@@ -1364,12 +1362,7 @@ class FrontAnchorTest(Behavior):
 					
 			if allActive:
 				self.refDone = True
-				
-			if self.direction:
-				for i in range(self.probe.numSegs-1):
-					pass
-			else:
-				pass
+
 		
 		#print self.mask
 		

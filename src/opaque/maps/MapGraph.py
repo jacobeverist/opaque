@@ -581,7 +581,7 @@ class MapGraph:
 	
 			childNode.attachObject(currEntity)	
 
-		if len(plotPoints) > 0:
+		if len(plotPoints[0]) > 0:
 			pylab.scatter(plotPoints[0],plotPoints[1], linewidth=1, color='k')
 
 		print "check_Y"
@@ -610,7 +610,7 @@ class MapGraph:
 	
 			childNode.attachObject(currEntity)	
 
-		if len(plotPoints) > 0:
+		if len(plotPoints[0]) > 0:
 			pylab.scatter(plotPoints[0],plotPoints[1], linewidth=0, color=(1.0,0.6,0.6))
 
 		print "check_X"
@@ -623,7 +623,7 @@ class MapGraph:
 			plotPoints[0].append(pnt[0])
 			plotPoints[1].append(pnt[1])
 
-		if len(plotPoints) > 0:
+		if len(plotPoints[0]) > 0:
 			pylab.scatter(plotPoints[0],plotPoints[1], linewidth=0, color=(0.6,0.6,1.0))
 
 
@@ -638,7 +638,7 @@ class MapGraph:
 				plotPoints[0].append(pnt[0])
 				plotPoints[1].append(pnt[1])
 		
-		if len(plotPoints) > 0:
+		if len(plotPoints[0]) > 0:
 			pylab.scatter(plotPoints[0],plotPoints[1], linewidth=0, color=(0.6,1.0,0.6))
 
 		print "check_U"
