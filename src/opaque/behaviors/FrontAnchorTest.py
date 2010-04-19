@@ -38,7 +38,8 @@ class FrontAnchorTest(Behavior):
 
 		self.direction = direction
 		self.isInit = False
-
+		
+		self.lastAttempt = False
 		self.holdT = HoldTransition(probe)
 		self.holdSlideT = HoldSlideTransition(probe, direction)
 
@@ -61,6 +62,8 @@ class FrontAnchorTest(Behavior):
 		else:
 			self.spliceJoint = 31
 			
+		self.topJoint = 19
+
 		self.lastSpliceAngle = 0.0
 		
 		self.computeCurve()
@@ -90,8 +93,11 @@ class FrontAnchorTest(Behavior):
 		#self.frontExtending = False
 		self.frontExtendDone = False
 		
+	def setTopJoint(self, topJoint):
+		self.topJoint = topJoint
 				
 	def getMask(self):
+		print "return mask:", self.mask
 		return self.mask
 		
 	def setDirection(self, isForward):
@@ -147,7 +153,7 @@ class FrontAnchorTest(Behavior):
 
 
 		self.adaptiveCurve = BackConcertinaCurve(4*pi)
-		self.adaptiveCurve.setTailLength(2.0)
+		#self.adaptiveCurve.setTailLength(2.0)
 
 		if self.concertinaFit == 0:
 			self.concertinaFit = FastLocalCurveFit(self.probe, self.direction, self.adaptiveCurve, 38)
@@ -952,16 +958,28 @@ class FrontAnchorTest(Behavior):
 				" if the anchor failed, increment the splice joint higher "
 
 				" if we've exhausted too many joints, lets just quit with what we have "
-				if self.direction and self.spliceJoint >= 15:
-					self.frontAnchoringDone = True
-				elif not self.direction and self.spliceJoint <= 23:
-					self.frontAnchoringDone = True
+				#if self.direction and self.spliceJoint >= 15:
+				#	self.frontAnchoringDone = True
+				#elif not self.direction and self.spliceJoint <= 23:
+				#	self.frontAnchoringDone = True
 				
+				if self.lastAttempt:
+					self.frontAnchoringDone = True
+					print "ERROR: Quit with error on jerk joints in Front Anchoring"
+					
 				else:
 					if self.direction:
 						self.spliceJoint += 2
+						
+						if self.spliceJoint >= self.topJoint:
+							self.spliceJoint = self.topJoint
+							self.lastAttempt = True
+
 					else:
 						self.spliceJoint -= 2
+						if self.spliceJoint <= self.topJoint:
+							self.spliceJoint = self.topJoint
+							self.lastAttempt = True
 						
 					#print "out of segments, switching splice joint to", self.spliceJoint
 					self.mask = [0.0 for i in range(0,40)]
@@ -1233,9 +1251,10 @@ class FrontAnchorTest(Behavior):
 						self.doFrontAnchor()
 		
 						if self.frontAnchoringDone:
+							print "front anchoring done with splice joint =", self.spliceJoint
 							self.frontAnchoringDone = False
 							self.frontAnchoringState = False
-	
+							
 				else:
 					peakJoints = self.concertinaFit.getPeakJoints(self.currPeak)	
 					
@@ -1296,7 +1315,7 @@ class FrontAnchorTest(Behavior):
 				for p in range(self.frontAnchorFit.lastJoint, self.probe.numSegs-1):
 					joints[p] = joints2[p]
 					
-		#print self.refDone, self.transDone, self.frontAnchoringState, self.frontExtending, self.frontExtendDone
+		print self.refDone, self.transDone, self.frontAnchoringState, self.frontExtending, self.frontExtendDone
 		
 		"""
 		if self.frontExtending:
@@ -1311,54 +1330,154 @@ class FrontAnchorTest(Behavior):
 		" Set the joints "
 		if self.refDone:
 
+			self.mask = [0.0 for i in range(0,40)]
+
 			self.mergeJoints([joints])
+			print "joints =", joints
+			print "frontAnchoringState:", self.frontAnchoringState
 			
 			" update mask for ContactReference "
 			for i in range(self.probe.numSegs-1):
-				#print self.frontAnchoringState, anchorJoints[i], self.concertinaFit.isJointSolid(i), joints[i]
-				if (not self.frontAnchoringState and anchorJoints[i] != None) or self.concertinaFit.isJointSolid(i) or joints[i] == None:
-					self.mask[i] = 1.0
 				
-					" for activating the back anchor joints when front anchoring or extending "
-				elif self.frontAnchoringState and self.direction and i > (self.spliceJoint + 2.0/self.probe.segLength):
+				#if self.frontAnchoringState:
+				#	if i < self.spliceJoint and i > self.topJoint:
+				#		pass
+				
+				#print self.frontAnchoringState, anchorJoints[i], self.concertinaFit.isJointSolid(i), joints[i]
+				if (not self.frontAnchoringState and anchorJoints[i] != None):
 					self.mask[i] = 1.0
+					print i, "caseA"
+				elif self.concertinaFit.isJointSolid(i):
+					self.mask[i] = 1.0
+					print i, "caseB"
+
+				elif joints[i] == None:
+					if self.frontAnchoringState:
+						if self.direction and i > self.topJoint:
+							self.mask[i] = 1.0
+							print i, "caseC1"
+						
+						if not self.direction and i < self.topJoint:
+							self.mask[i] = 1.0
+							print i, "caseC2"
+					else:
+						self.mask[i] = 1.0
+						print i, "caseC3"				
+					
+					" for activating the back anchor joints when front anchoring or extending "
+				#elif self.frontAnchoringState and self.direction and i > self.topJoint:
+				#	self.mask[i] = 1.0
+				#	print i, "caseB"
 							
 					" add the mask for the inactive portion of the back concertina gait while front anchoring "
-				elif self.frontAnchoringState and not self.direction and i < (self.spliceJoint - 2.0/self.probe.segLength):
-					self.mask[i] = 1.0
+				#elif self.frontAnchoringState and not self.direction and i < self.topJoint:
+				#	self.mask[i] = 1.0
+				#	print i, "caseC"
 				
-				else:
-					self.mask[i] = 0.0
+				
+				#else:
+				#	self.mask[i] = 0.0
+				#	print i, "caseD"
+
+				#if self.frontAnchoringState:
+				#	if self.direction and i < self.spliceJoint and i > self.topJoint:
+				#		self.mask[i] = 0.0
+				#	
+				#	if not self.direction and i > self.spliceJoint and i < self.topJoint:
+				#		self.mask[i] = 0.0
 
 		else:
 			" transition the masks, and wait for them to be stable, then change the joints "
+			print "joints =", joints
+			print "frontAnchoringState:", self.frontAnchoringState
+			print "self.frontExtending:", self.frontExtending
+			print "self.topJoint:", self.topJoint
 
+			print "activeRef:", self.contacts.activeRef
+			
+			self.mask = [0.0 for i in range(0,40)]
+			
 			allActive = True
 			" update mask for ContactReference "
 			for i in range(self.probe.numSegs-1):
-				if (not self.frontAnchoringState and anchorJoints[i] != None) or self.concertinaFit.isJointSolid(i) or joints[i] == None:
+				if (not self.frontAnchoringState and anchorJoints[i] != None):
 					self.mask[i] = 1.0
+					print i, "caseD"
+					
+					" check if all reference points have been created "
+					if not self.contacts.activeRef[i]:
+						allActive = False
+											
+				elif self.concertinaFit.isJointSolid(i):
+					self.mask[i] = 1.0
+					print i, "caseE"
 
 					" check if all reference points have been created "
 					if not self.contacts.activeRef[i]:
 						allActive = False
-				
-				" for activating the back anchor joints when front anchoring or extending "
-				if self.frontAnchoringState:
-					if self.direction and i > (self.spliceJoint + 2.0/self.probe.segLength):
+
+				elif joints[i] == None:
+					if self.frontAnchoringState:
+						if self.direction and i > self.topJoint:
+							self.mask[i] = 1.0
+							print i, "caseF1"
+
+							" check if all reference points have been created "
+							if not self.contacts.activeRef[i]:
+								print "failing on", i
+								allActive = False
+						
+						if not self.direction and i < self.topJoint:
+							self.mask[i] = 1.0
+							print i, "caseF2"
+
+							" check if all reference points have been created "
+							if not self.contacts.activeRef[i]:
+								allActive = False
+
+					else:
 						self.mask[i] = 1.0
+						print i, "caseF3"		
 
 						" check if all reference points have been created "
 						if not self.contacts.activeRef[i]:
 							allActive = False
+						
+				
+				#if (not self.frontAnchoringState and anchorJoints[i] != None) or self.concertinaFit.isJointSolid(i) or joints[i] == None:
+				#	self.mask[i] = 1.0
+				#	print i, "caseE"
+
+				#	" check if all reference points have been created "
+				#	if not self.contacts.activeRef[i]:
+				#		allActive = False
+	
+				#if self.frontAnchoringState:
+				#	if self.direction and i < self.spliceJoint and i > self.topJoint:
+				#		self.mask[i] = 0.0
+				#	
+				#	if not self.direction and i > self.spliceJoint and i < self.topJoint:
+				#		self.mask[i] = 0.0
+			
+						" for activating the back anchor joints when front anchoring or extending "
+				#elif self.frontAnchoringState:
+				#	if self.direction and i > self.topJoint:
+				#		self.mask[i] = 1.0
+
+				#		print i, "caseF"
+#
+						" check if all reference points have been created "
+				#		if not self.contacts.activeRef[i]:
+				#			allActive = False
 							
 						" add the mask for the inactive portion of the back concertina gait while front anchoring "
-					elif not self.direction and i < (self.spliceJoint - 2.0/self.probe.segLength):
-						self.mask[i] = 1.0
+				#	elif not self.direction and i < self.topJoint:
+				#		self.mask[i] = 1.0
+				#		print i, "caseG"
 				
 						" check if all reference points have been created "
-						if not self.contacts.activeRef[i]:
-							allActive = False
+				#		if not self.contacts.activeRef[i]:
+				#			allActive = False
 					
 			if allActive:
 				self.refDone = True
@@ -1369,16 +1488,28 @@ class FrontAnchorTest(Behavior):
 		if self.frontCurve.isOutOfSegments(self.frontAnchorFit.lastPosition):
 
 			" if we've exhausted too many joints, lets just quit with what we have "
-			if self.direction and self.spliceJoint >= 15:
+			#if self.direction and self.spliceJoint >= 15:
+			#	self.frontAnchoringDone = True
+			#elif not self.direction and self.spliceJoint <= 23:
+			#	self.frontAnchoringDone = True
+
+			if self.lastAttempt:
 				self.frontAnchoringDone = True
-			elif not self.direction and self.spliceJoint <= 23:
-				self.frontAnchoringDone = True
+				print "ERROR: Quit with outOfSegments error on Front Anchoring"
 			else:
 				
 				if self.direction:
 					self.spliceJoint += 2
+					
+					if self.spliceJoint >= self.topJoint:
+						self.spliceJoint = self.topJoint
+						self.lastAttempt = True
+
 				else:
 					self.spliceJoint -= 2
+					if self.spliceJoint <= self.topJoint:
+						self.spliceJoint = self.topJoint
+						self.lastAttempt = True
 					
 				#print "out of segments, switching splice joint to", self.spliceJoint
 				self.mask = [0.0 for i in range(0,40)]
@@ -1416,7 +1547,9 @@ class FrontAnchorTest(Behavior):
 			self.currPeak = 0
 			#self.spliceJoint = 7
 			self.lastSpliceAngle = 0.0
-							
+						
+			self.lastAttempt = False
+			
 			if self.direction:
 				self.spliceJoint = 7
 			else:

@@ -50,6 +50,7 @@ class TestMapping(SnakeControl):
 		self.holdP = behave.HoldPosition(self.probe)
 		self.holdT = behave.HoldTransition(self.probe)
 		self.adaptiveStep = behave.FrontAnchorTest(self.probe, self.contacts, self.mapGraph, direction)
+		self.frontExtend = behave.FrontExtend(self.probe, self.contacts, direction)
 		
 		#self.sweep = behave.SpaceSweep(self.probe, direction)
 		self.pokeWalls = behave.PokeWalls(self.probe, direction, self.mapGraph.obstCallBack)
@@ -58,7 +59,7 @@ class TestMapping(SnakeControl):
 		self.exploreRoot = [-3.5,0.0]
 		self.pathStep = 0
 		
-		self.stateA = -1
+		self.stateA = -2
 		self.prevTime = 0
 		
 		# error tracking for path-following
@@ -165,7 +166,7 @@ class TestMapping(SnakeControl):
 
 		# Anchor to the walls
 
-		if self.stateA == -1:
+		if self.stateA == -2:
 			
 			isDone = self.anchorT.step()
 			joints1 = self.anchorT.getJoints()
@@ -176,7 +177,7 @@ class TestMapping(SnakeControl):
 			self.contacts.step()
 			
 			if isDone:
-				self.stateA = 0
+				self.stateA = -1
 				#self.stateA = 1
 				print "going to state ", self.stateA
 
@@ -204,7 +205,33 @@ class TestMapping(SnakeControl):
 
 				self.lastPose = self.contacts.getAveragePose(0)
 				
+				#wall7 = [[-4.8+6.0,-0.2],[-4.5+6.0,0.2]]
+				#self.probe.createWall(wall7)
 
+		elif self.stateA == -1:
+
+			# make a blind concertina step
+			isDone = self.frontExtend.step()
+
+			joints1 = self.holdP.getJoints()
+			joints2 = self.frontExtend.getJoints()
+			self.mergeJoints([joints2,joints1])
+			
+			val = self.frontExtend.getMask()
+			
+			self.contacts.setMask(val)
+ 			self.contacts.step()
+			
+			if isDone:
+				
+				self.adaptiveStep.setTopJoint(self.frontExtend.getTopJoint())
+				self.holdP.reset()
+				self.holdT.reset()
+				
+				self.stateA = 0
+				print "going to state 0"
+
+				
 		elif self.stateA == 0:
 			
 			# make a blind concertina step
@@ -215,7 +242,7 @@ class TestMapping(SnakeControl):
 			self.mergeJoints([joints2,joints1])
 			
 			val = self.adaptiveStep.getMask()
-			#print "setting", val
+
 			
 			self.contacts.setMask(val)
 			self.contacts.step()

@@ -35,6 +35,11 @@ class HoldSlideTransition(Behavior):
 
 		self.spliceJoint = 19
 
+		self.mask = [0.0 for i in range(self.probe.numSegs-1)]
+
+	def getMask(self):
+		return self.mask
+	
 	def setSpliceJoint(self, joint):
 		self.spliceJoint = joint
 	
@@ -60,6 +65,8 @@ class HoldSlideTransition(Behavior):
 				self.targetState.append(180.0 / pi * self.probe.getServoCmd(i))
 				self.positions.append(180.0 / pi * self.probe.getServoCmd(i))
 	
+
+		self.mask = [0.0 for i in range(self.probe.numSegs-1)]
 				
 		#print "resetting:"
 		#print self.positions
@@ -116,8 +123,8 @@ class HoldSlideTransition(Behavior):
 				else:
 					initState.append(None)
 
-			#print "initState =", initState
-			#print "self.targetState =", self.targetState
+			print len(initState), "initState =", initState
+			print len(self.targetState), "self.targetState =", self.targetState
 			#print initState
 
 			targetState = copy(self.targetState)
@@ -135,6 +142,18 @@ class HoldSlideTransition(Behavior):
 						targetState[i] = initState[i] + diff
 					else:
 						targetState[i] = initState[i]
+
+			self.mask = [0.0 for i in range(self.probe.numSegs-1)]
+			if self.direction:
+				for i in range(self.probe.numSegs-1):
+					if 1. - 1. / (1. + exp(i-2*self.count)) >= 0.99:
+						self.mask[i] = 1.0
+			else:
+				for i in range(self.probe.numSegs-1):
+					if 1. - 1. / (1. + exp((self.probe.numSegs-2-i)-2*self.count)) >= 0.99:
+						self.mask[i] = 1.0
+
+
 
 			self.positions = copy(targetState)
 			#print "self.positions = ", self.positions

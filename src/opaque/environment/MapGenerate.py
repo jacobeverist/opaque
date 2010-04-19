@@ -62,7 +62,7 @@ class PipeJunctions:
 			intArray[0].append(point[0])
 			intArray[1].append(point[1])					
 		self.tck, self.u = scipy.interpolate.splprep(intArray, k=5)
-	
+		
 		walls = []
 		newWalls = self.createWalls(self.nodes)
 		walls.append(newWalls)

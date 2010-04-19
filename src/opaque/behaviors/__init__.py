@@ -31,3 +31,4 @@ from AdaptiveCosine import *
 from BackConcertinaCurve import *
 from PathStep import *
 from GlobalCurveSlide import *
+from FrontExtend import *

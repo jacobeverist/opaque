@@ -33,6 +33,7 @@ class SnakeProbe:
 
 		# control program for the snake probe
 		self.control = 0
+		self.wallEnv = 0
 
 		# reset estimated pose
 		estimatedPose = [0.0,0.0,0.0]
@@ -59,7 +60,7 @@ class SnakeProbe:
 
 		self.setupMyWorld(R, pos)
 
-		self.walls = []
+		self.wallEnv = 0
 	
 	def setJointsRigid(self, lowJ, highJ):
 		bodies = self._bodies[lowJ,highJ+2]
@@ -67,13 +68,17 @@ class SnakeProbe:
 		for b in bodies:
 			mass = b.getMass()
 		
-		
-			
-	def addWalls(self, walls):
-		self.walls = copy(walls)
+	def setWalls(self, wallEnv):
+		self.wallEnv = wallEnv
+	
+	def createWall(self, points):
+		self.wallEnv.createWall(points)
 		
 	def getWalls(self):
-		return self.walls
+		if self.wallEnv == 0:
+			return []
+		else:
+			return self.wallEnv.getWalls()
 		
 	def getNumJoints(self):
 		return self.numSegs - 1
