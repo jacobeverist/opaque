@@ -97,7 +97,7 @@ class FrontAnchorTest(Behavior):
 		self.topJoint = topJoint
 				
 	def getMask(self):
-		print "return mask:", self.mask
+		#print "return mask:", self.mask
 		return self.mask
 		
 	def setDirection(self, isForward):
@@ -1315,7 +1315,7 @@ class FrontAnchorTest(Behavior):
 				for p in range(self.frontAnchorFit.lastJoint, self.probe.numSegs-1):
 					joints[p] = joints2[p]
 					
-		print self.refDone, self.transDone, self.frontAnchoringState, self.frontExtending, self.frontExtendDone
+		#print self.refDone, self.transDone, self.frontAnchoringState, self.frontExtending, self.frontExtendDone
 		
 		"""
 		if self.frontExtending:
@@ -1333,8 +1333,8 @@ class FrontAnchorTest(Behavior):
 			self.mask = [0.0 for i in range(0,40)]
 
 			self.mergeJoints([joints])
-			print "joints =", joints
-			print "frontAnchoringState:", self.frontAnchoringState
+			#print "joints =", joints
+			#print "frontAnchoringState:", self.frontAnchoringState
 			
 			" update mask for ContactReference "
 			for i in range(self.probe.numSegs-1):
@@ -1346,23 +1346,23 @@ class FrontAnchorTest(Behavior):
 				#print self.frontAnchoringState, anchorJoints[i], self.concertinaFit.isJointSolid(i), joints[i]
 				if (not self.frontAnchoringState and anchorJoints[i] != None):
 					self.mask[i] = 1.0
-					print i, "caseA"
+					#print i, "caseA"
 				elif self.concertinaFit.isJointSolid(i):
 					self.mask[i] = 1.0
-					print i, "caseB"
+					#print i, "caseB"
 
 				elif joints[i] == None:
 					if self.frontAnchoringState:
 						if self.direction and i > self.topJoint:
 							self.mask[i] = 1.0
-							print i, "caseC1"
+							#print i, "caseC1"
 						
 						if not self.direction and i < self.topJoint:
 							self.mask[i] = 1.0
-							print i, "caseC2"
+							#print i, "caseC2"
 					else:
 						self.mask[i] = 1.0
-						print i, "caseC3"				
+						#print i, "caseC3"				
 					
 					" for activating the back anchor joints when front anchoring or extending "
 				#elif self.frontAnchoringState and self.direction and i > self.topJoint:
@@ -1388,12 +1388,12 @@ class FrontAnchorTest(Behavior):
 
 		else:
 			" transition the masks, and wait for them to be stable, then change the joints "
-			print "joints =", joints
-			print "frontAnchoringState:", self.frontAnchoringState
-			print "self.frontExtending:", self.frontExtending
-			print "self.topJoint:", self.topJoint
+			#print "joints =", joints
+			#print "frontAnchoringState:", self.frontAnchoringState
+			#print "self.frontExtending:", self.frontExtending
+			#print "self.topJoint:", self.topJoint
 
-			print "activeRef:", self.contacts.activeRef
+			#print "activeRef:", self.contacts.activeRef
 			
 			self.mask = [0.0 for i in range(0,40)]
 			
@@ -1402,7 +1402,7 @@ class FrontAnchorTest(Behavior):
 			for i in range(self.probe.numSegs-1):
 				if (not self.frontAnchoringState and anchorJoints[i] != None):
 					self.mask[i] = 1.0
-					print i, "caseD"
+					#print i, "caseD"
 					
 					" check if all reference points have been created "
 					if not self.contacts.activeRef[i]:
@@ -1410,7 +1410,7 @@ class FrontAnchorTest(Behavior):
 											
 				elif self.concertinaFit.isJointSolid(i):
 					self.mask[i] = 1.0
-					print i, "caseE"
+					#print i, "caseE"
 
 					" check if all reference points have been created "
 					if not self.contacts.activeRef[i]:
@@ -1420,16 +1420,16 @@ class FrontAnchorTest(Behavior):
 					if self.frontAnchoringState:
 						if self.direction and i > self.topJoint:
 							self.mask[i] = 1.0
-							print i, "caseF1"
+							#print i, "caseF1"
 
 							" check if all reference points have been created "
 							if not self.contacts.activeRef[i]:
-								print "failing on", i
+								#print "failing on", i
 								allActive = False
 						
 						if not self.direction and i < self.topJoint:
 							self.mask[i] = 1.0
-							print i, "caseF2"
+							#print i, "caseF2"
 
 							" check if all reference points have been created "
 							if not self.contacts.activeRef[i]:
@@ -1437,7 +1437,7 @@ class FrontAnchorTest(Behavior):
 
 					else:
 						self.mask[i] = 1.0
-						print i, "caseF3"		
+						#print i, "caseF3"		
 
 						" check if all reference points have been created "
 						if not self.contacts.activeRef[i]:

@@ -123,8 +123,8 @@ class HoldSlideTransition(Behavior):
 				else:
 					initState.append(None)
 
-			print len(initState), "initState =", initState
-			print len(self.targetState), "self.targetState =", self.targetState
+			#print len(initState), "initState =", initState
+			#print len(self.targetState), "self.targetState =", self.targetState
 			#print initState
 
 			targetState = copy(self.targetState)
