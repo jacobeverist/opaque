@@ -1385,7 +1385,6 @@ class PathStep(Behavior):
 				#if self.frontAnchoringState and not self.frontExtending:
 				#	self.globalCurveFit.step()
 		
-		anchorJoints = self.frontAnchorFit.getJoints()
 		
 		#print self.refDone, self.transDone, self.frontAnchoringState, self.frontExtending, self.frontExtendDone
 		
@@ -1470,6 +1469,9 @@ class PathStep(Behavior):
 		return isDone
 	
 	def computeMaskAndOutput(self):
+		
+
+		anchorJoints = self.frontAnchorFit.getJoints()
 		
 		joints = self.holdT.getJoints()
 		
