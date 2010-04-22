@@ -34,10 +34,7 @@ class FrontExtend(Behavior):
 		self.setDirection(direction)
 				
 		self.poses = []
-		
-		self.maxDist = 0.0
-		self.minDist = 10e100
-		
+	
 	def setDirection(self, isForward):
 
 		self.direction = isForward
@@ -76,9 +73,12 @@ class FrontExtend(Behavior):
 	def getMask(self):
 		return self.mask
 
-	def reset(self, joints = [], direction = True):
+	def reset(self, direction = True):
+		self.holdSlideT = HoldSlideTransition(self.probe)
 
 		self.setDirection(direction)
+				
+		self.poses = []
 		
 	def step(self):
 		Behavior.step(self)
@@ -177,7 +177,7 @@ class FrontExtend(Behavior):
 			self.isDone = False
 			self.isTransitioning = False
 
-			print len(self.poses), self.maxDist, self.minDist
+			#print len(self.poses), self.maxDist, self.minDist
 
 			#pylab.clf()
 			#xP = []

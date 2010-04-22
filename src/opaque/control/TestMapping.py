@@ -227,6 +227,7 @@ class TestMapping(SnakeControl):
 				self.adaptiveStep.setTopJoint(self.frontExtend.getTopJoint())
 				self.holdP.reset()
 				self.holdT.reset()
+				self.frontExtend.reset()
 				
 				self.stateA = 0
 				print "going to state 0"
@@ -378,8 +379,8 @@ class TestMapping(SnakeControl):
 					#if False:
 				
 
-					self.stateA = 0
-					print "going to state 0"
+					self.stateA = -1
+					print "going to state -1"
 
 					self.lastPose = self.contacts.getAveragePose(0)
 					print "self.contacts.activeRef =", self.contacts.activeRef
