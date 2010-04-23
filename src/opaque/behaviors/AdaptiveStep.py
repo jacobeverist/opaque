@@ -25,7 +25,7 @@ TODO
 
 """
 
-class FrontAnchorTest(Behavior):
+class AdaptiveStep(Behavior):
 
 	def __init__(self, probe, contacts, mapGraph, direction = True):
 		Behavior.__init__(self, probe)
@@ -1408,17 +1408,46 @@ class FrontAnchorTest(Behavior):
 
 	def reset(self):
 
+		self.mask = [0.0 for i in range(0,39
+									)]
+		self.frontAnchoringState = True
+		self.frontAnchoringDone = False
+		self.frontExtending = True
+		self.frontExtendDone = False
+					
+		self.minAmp = 0.0
+		self.maxAmp = 0.0			
+		self.ampInc = 0.04
+					
+		self.currPeak = 0
+		self.lastSpliceAngle = 0.0
+					
+		self.lastAttempt = False
+		
+		if self.direction:
+			self.spliceJoint = 7
+		else:
+			self.spliceJoint = 31
+		
+		"reset everything "
+		self.frontAnchorFit = 0
+		self.frontCurve = 0
+		self.adaptiveCurve = 0
+		self.concertinaFit = 0
+
+		self.computeCurve()
+			
 		#self.computeCenterPoints()
 		#self.frontCurve.saveAmps()
 		
 		"reset everything "
 		
-		self.frontAnchorFit = 0
-		self.frontCurve = 0
-		self.computeCurve()
+		#self.frontAnchorFit = 0
+		#self.frontCurve = 0
+		#self.computeCurve()
 		
-		self.mask = [0.0 for i in range(0,40)]
-		self.count = 0
+		#self.mask = [0.0 for i in range(0,40)]
+		#self.count = 0
 	
 		self.currPeak = 0
 	

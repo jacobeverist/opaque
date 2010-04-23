@@ -43,7 +43,7 @@ class TestAnchor(SnakeControl):
 		self.holdP = behave.HoldPosition(self.probe)
 		self.holdT = behave.HoldTransition(self.probe)
 		#self.adaptiveStep = behave.AdaptiveConcertinaGaitJerk(self.probe, self.contacts, self.mapGraph, direction)
-		self.adaptiveStep = behave.FrontAnchorTest(self.probe, self.contacts, self.mapGraph, direction)
+		self.adaptiveStep = behave.AdaptiveStep(self.probe, self.contacts, self.mapGraph, direction)
 
 		self.sweep = behave.SpaceSweep(self.probe, direction)
 		self.pokeWalls = behave.PokeWalls(self.probe, direction, self.mapGraph.obstCallBack)

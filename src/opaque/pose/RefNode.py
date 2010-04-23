@@ -36,8 +36,6 @@ class RefNode:
 
 		self.sweep = []
 
-		self.guideNodeID = 0
-
 		self.nom_ang = []
 		for i in range(self.numJoints):
 			self.nom_ang.append(probe.getServo(i))
@@ -153,12 +151,6 @@ class RefNode:
 
 	def isNewRoot(self):
 		return self.newRoot
-
-	def setGuideNode(self,node):
-		self.guideNodeID = node
-
-	def getGuideNode(self):
-		return self.guideNodeID
 
 	def addAngleData(self, angleSet):
 		self.sweep.append(angleSet)

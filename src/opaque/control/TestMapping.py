@@ -49,7 +49,7 @@ class TestMapping(SnakeControl):
 		self.anchorT = behave.AnchorTransition(self.probe)
 		self.holdP = behave.HoldPosition(self.probe)
 		self.holdT = behave.HoldTransition(self.probe)
-		self.adaptiveStep = behave.FrontAnchorTest(self.probe, self.contacts, self.mapGraph, direction)
+		self.adaptiveStep = behave.AdaptiveStep(self.probe, self.contacts, self.mapGraph, direction)
 		self.frontExtend = behave.FrontExtend(self.probe, self.contacts, direction)
 		
 		#self.sweep = behave.SpaceSweep(self.probe, direction)
@@ -125,13 +125,13 @@ class TestMapping(SnakeControl):
 		yAvg = pose[1]
 		
 		prevPose = self.camera.getPosition()
-		xPrev = prevPose[0] - 3 
+		xPrev = prevPose[0] - 2
 		yPrev = prevPose[2]
 		zPrev = prevPose[1]
 		
 		newPose = [xPrev*0.99 + 0.01*xAvg, yPrev*0.99 + 0.01*yAvg, zPrev*0.99 + 0.01*10]
 
-		self.camera.setPosition(newPose[0]+3,newPose[2],newPose[1])
+		self.camera.setPosition(newPose[0]+2,newPose[2],newPose[1])
 		#self.camera.lookAt(newPose[0],0.5,newPose[1])
 
 		oriQuat = ogre.Quaternion(ogre.Radian(-math.pi/2.0), ogre.Vector3().UNIT_X)
@@ -224,6 +224,7 @@ class TestMapping(SnakeControl):
 			
 			if isDone:
 				
+				self.adaptiveStep.reset()
 				self.adaptiveStep.setTopJoint(self.frontExtend.getTopJoint())
 				self.holdP.reset()
 				self.holdT.reset()
@@ -238,9 +239,10 @@ class TestMapping(SnakeControl):
 			# make a blind concertina step
 			isDone = self.adaptiveStep.step()
 
-			joints1 = self.holdP.getJoints()
+			#joints1 = self.holdP.getJoints()
 			joints2 = self.adaptiveStep.getJoints()
-			self.mergeJoints([joints2,joints1])
+			#self.mergeJoints([joints2,joints1])
+			self.mergeJoints([joints2])
 			
 			val = self.adaptiveStep.getMask()
 
@@ -454,6 +456,7 @@ class TestMapping(SnakeControl):
 								self.mapGraph.newNode()
 								self.mapGraph.forceUpdate(False)
 								self.isAnchored = True
+								
 								self.holdP.reset()
 								self.holdT.reset()
 

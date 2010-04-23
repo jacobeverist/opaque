@@ -48,7 +48,7 @@ class AverageContacts:
 
 		# reference node ids
 		self.originNode = 0
-		self.lastNode = 0
+		self.lastNodes = []
 
 		# active reference nodes
 		self.numActiveRef = 0
@@ -174,6 +174,94 @@ class AverageContacts:
 
 		return pose
 
+	def recoverPose(self, targetJoint):
+		"""
+		Recover the pose when all reference nodes are deactivated
+		
+		previously we were using the last created reference
+		instead, we are now using the last active reference
+		this guarantees that the data is more up-to-date and
+		reduces the chance of wildly inaccurate re-estimation
+		from very stale and unstable old reference nodes
+		"""
+		
+		lastNodeIndex = 1
+		success = False
+					
+		while lastNodeIndex <= len(self.lastNodes):
+			jointErrors = []
+			
+			lastNode = self.lastNodes[-lastNodeIndex]
+			allJoints = lastNode[2]
+	
+			" compute the error in the 5 closest joints "
+			if targetJoint >= self.numJoints-3:
+				for i in range(self.numJoints-5,self.numJoints+1):
+					jointErrors.append(allJoints[i] - self.probe.getServo(i))
+					
+			elif targetJoint <= 2:				
+				for i in range(0,5):
+					jointErrors.append(allJoints[i] - self.probe.getServo(i))
+			
+			else:
+				for i in range(targetJoint-2,targetJoint+2+1):
+					jointErrors.append(allJoints[i] - self.probe.getServo(i))
+					
+			"check maximum error, go to next lastNode if too great"
+			tooGreat = False
+			for i in range(len(jointErrors)):
+				if fabs(jointErrors[i]) > 0.3:
+					tooGreat = True
+					
+			if tooGreat:
+				lastNodeIndex += 1
+			else:
+				success = True
+				break
+					
+		if success:
+			
+			print "recovered with the " + str(lastNodeIndex) + "th last node out of " + str(len(self.lastNodes)) + " total nodes"
+					
+			recentNode = self.lastNodes[-lastNodeIndex][0]
+	
+			refX, refZ, refP = recentNode.getRefPose()
+			initPose = [refX, refZ, refP]
+	
+			jointID = recentNode.getJointID()
+			pose = self.probe.getJointWRTJointPose(initPose, jointID, targetJoint) 	
+			
+			return pose
+		
+		else:		
+			print "recovered with the last active node.  Unable to find stable reference out of " + str(len(self.lastNodes)) + " total nodes"
+			recentNode = self.activeRefPtr[self.lastActive]
+	
+			refX, refZ, refP = recentNode.getRefPose()
+			initPose = [refX, refZ, refP]
+	
+			jointID = recentNode.getJointID()
+			pose = self.probe.getJointWRTJointPose(initPose, jointID, targetJoint) 	
+			
+			return pose
+		
+	def deactivateNode(self, i):
+		self.activeRef[i] = False
+		self.lastActive = i
+		self.numActiveRef -= 1
+		self.jointVar[i].reset()
+		
+		" record the joints at this time step to determine what has moved in the future "
+		allJoints = []
+		for j in range(self.numJoints):
+			allJoints.append(self.probe.getServo(j))
+		
+		self.lastNodes.append([self.activeRefPtr[i], self.count, allJoints])
+		
+		" only keep the last 10 in memory "
+		if len(self.lastNodes) > 10:
+			self.lastNodes = self.lastNodes[1:]
+
 	def getAveragePose(self, targetJoint):
 		
 		# find the first active reference from which to determine the new node's position in space
@@ -243,9 +331,6 @@ class AverageContacts:
 					sumPx += cos(pose[2])
 					sumPy += sin(pose[2])
 					
-					# the existing reference node saved for debugging purposes 
-					self.lastNode = self.activeRefPtr[refNumber]
-					
 					refCount += 1
 			
 			sumX /= refCount
@@ -269,24 +354,8 @@ class AverageContacts:
 		else:
 			
 			" no active node exists and not the first, "
-
-			"""
-			previously we were using the last created reference
-			instead, we are now using the last active reference
-			this guarantees that the data is more up-to-date and
-			reduces the chance of wildly inaccurate re-estimation
-			from very stale and unstable old reference nodes
-			"""
-			
-			#recentNode = self.refPoints[self.numRef-1]	
-			recentNode = self.activeRefPtr[self.lastActive]
-
-			refX, refZ, refP = recentNode.getRefPose()
-			initPose = [refX, refZ, refP]
-
-			jointID = recentNode.getJointID()
-			pose = self.probe.getJointWRTJointPose(initPose, jointID, targetJoint) 
-
+			pose = self.recoverPose(newJointID)		
+				
 		return pose
 
 	
@@ -343,23 +412,7 @@ class AverageContacts:
 		else:
 
 			" no active node exists and not the first, "
-
-			"""
-			previously we were using the last created reference
-			instead, we are now using the last active reference
-			this guarantees that the data is more up-to-date and
-			reduces the chance of wildly inaccurate re-estimation
-			from very stale and unstable old reference nodes
-			"""
-			
-			#recentNode = self.refPoints[self.numRef-1]	
-			recentNode = self.activeRefPtr[self.lastActive]
-
-			refX, refZ, refP = recentNode.getRefPose()
-			initPose = [refX, refZ, refP]
-
-			jointID = recentNode.getJointID()
-			pose = self.probe.getJointWRTJointPose(initPose, jointID, targetJoint) 
+			pose = self.recoverPose(newJointID)			
 			return pose
 		
 	def resetPose(self, estPose = []):
@@ -382,7 +435,6 @@ class AverageContacts:
 
 		# reference node ids
 		self.originNode = 0
-		self.lastNode = 0
 
 		# active reference nodes
 		self.numActiveRef = 0
@@ -427,8 +479,8 @@ class AverageContacts:
 		self.destinationReached = False
 		self.tipPoint = [0,0,0]
 
-		startJoint = 2
-		endJoint = self.numJoints-2
+		startJoint = 0
+		endJoint = self.numJoints
 
 		if estPose != []:
 			print "creating forced pose reference node", 19, "with estPose =", estPose
@@ -537,9 +589,8 @@ class AverageContacts:
 					if self.activeRefPtr[i].isMaxErrorReached():
 
 						print "maxErrorReached for", i, "because maxError =", self.activeRefPtr[i].maxError, "and currError =", self.activeRefPtr[i].currError
-						self.activeRef[i] = False
-						self.lastActive = i
-						self.numActiveRef -= 1
+						self.deactivateNode(i)
+						
 						self.maxErrorReached[i] = True
 						#print "caseA", i
 						
@@ -564,10 +615,8 @@ class AverageContacts:
 
 				elif self.activeRef[i] and self.mask[i] < 1.0 :
 					
-					print "deactivating", i, "because mask =", self.mask[i]
-					self.activeRef[i] = False
-					self.lastActive = i
-					self.numActiveRef -= 1
+					print "deactivating", i, "because mask =", self.mask[i]					
+					self.deactivateNode(i)
 					
 					if self.numActiveRef == 0:
 						print "WARNING: all active reference nodes lost!  Last is node", i, "due to mask"
@@ -711,9 +760,6 @@ class AverageContacts:
 			jointID = self.activeRefPtr[refNumber].getJointID()
 			pose = self.probe.getJointWRTJointPose(initPose, jointID, newJointID) 
 
-			# the existing reference node saved for debugging purposes 
-			self.lastNode = self.activeRefPtr[refNumber]
-
 		# this is the first node, so reference from 0,0
 		elif self.numRef == 0:
 
@@ -734,7 +780,6 @@ class AverageContacts:
 
 			#origin[2] = self.normalizeAngle(origin[2]+math.pi)
 			originNode = RefNode(-1,newJointID,origin[0],origin[1],origin[2], self.probe)
-			self.lastNode = originNode
 
 			refX, refZ, refP = originNode.getRefPose()
 			initPose = [refX, refZ, refP]
@@ -752,32 +797,13 @@ class AverageContacts:
 		else:
 
 			" no active node exists and not the first, "
-
-			"""
-			previously we were using the last created reference
-			instead, we are now using the last active reference
-			this guarantees that the data is more up-to-date and
-			reduces the chance of wildly inaccurate re-estimation
-			from very stale and unstable old reference nodes
-			"""
-			
-			#recentNode = self.refPoints[self.numRef-1]	
-			recentNode = self.activeRefPtr[self.lastActive]			
-
-			refX, refZ, refP = recentNode.getRefPose()
-			initPose = [refX, refZ, refP]
-
-			jointID = recentNode.getJointID()
-			pose = self.probe.getJointWRTJointPose(initPose, jointID, newJointID) 
-			self.lastNode = recentNode
-
+			pose = self.recoverPose(newJointID)
 			isNewRoot = True
 
 		# create the new node
 		nodeID = self.numRef
 		newNode = RefNode(nodeID, newJointID, pose[0], pose[1], pose[2], self.probe)	
 		newNode.setNewRoot(isNewRoot)
-		newNode.setGuideNode(self.lastNode.getNodeID())
 		gndPose = self.probe.getActualJointPose(newJointID)
 		newNode.setGroundTruthPose(gndPose[0],gndPose[1],gndPose[2])
 
@@ -899,10 +925,7 @@ class AverageContacts:
 					sumY += pose[1]
 					sumPx += cos(pose[2])
 					sumPy += sin(pose[2])
-					
-					# the existing reference node saved for debugging purposes 
-					self.lastNode = self.activeRefPtr[refNumber]
-					
+
 					refCount += 1
 			
 			sumX /= refCount
@@ -931,7 +954,6 @@ class AverageContacts:
 
 			#origin[2] = self.normalizeAngle(origin[2]+math.pi)
 			originNode = RefNode(-1,newJointID,origin[0],origin[1],origin[2], self.probe)
-			self.lastNode = originNode
 
 			refX, refZ, refP = originNode.getRefPose()
 			initPose = [refX, refZ, refP]
@@ -945,32 +967,13 @@ class AverageContacts:
 
 		else:
 			" no active node exists and not the first, "
-
-			"""
-			previously we were using the last created reference
-			instead, we are now using the last active reference
-			this guarantees that the data is more up-to-date and
-			reduces the chance of wildly inaccurate re-estimation
-			from very stale and unstable old reference nodes
-			"""
-			
-			#recentNode = self.refPoints[self.numRef-1]	
-			recentNode = self.activeRefPtr[self.lastActive]
-
-			refX, refZ, refP = recentNode.getRefPose()
-			initPose = [refX, refZ, refP]
-
-			jointID = recentNode.getJointID()
-			pose = self.probe.getJointWRTJointPose(initPose, jointID, newJointID) 
-			self.lastNode = recentNode
-
+			pose = self.recoverPose(newJointID)
 			isNewRoot = True
 
 		# create the new node
 		nodeID = self.numRef
 		newNode = RefNode(nodeID, newJointID, pose[0], pose[1], pose[2], self.probe)	
 		newNode.setNewRoot(isNewRoot)
-		newNode.setGuideNode(self.lastNode.getNodeID())
 		gndPose = self.probe.getActualJointPose(newJointID)
 		newNode.setGroundTruthPose(gndPose[0],gndPose[1],gndPose[2])
 
@@ -1072,13 +1075,13 @@ class AverageContacts:
 		gndGraph.close()
 
 		# record the root nodes or orphan nodes, the breaks in the graph
-		rootNodes = open(fileName4, 'w')
-		for i in range(self.numRef):
-			if self.refPoints[i].isNewRoot():
-				nodeID = self.refPoints[i].getNodeID()
-				rootNodes.write(str(nodeID) + " " + str(self.refPoints[i].getGuideNode()) + "\n")
+		#rootNodes = open(fileName4, 'w')
+		#for i in range(self.numRef):
+		#	if self.refPoints[i].isNewRoot():
+		#		nodeID = self.refPoints[i].getNodeID()
+		#		rootNodes.write(str(nodeID) + " " + str(self.refPoints[i].getGuideNode()) + "\n")
 
-		rootNodes.close()
+		#rootNodes.close()
 
 
 	def computeActiveError(self):
