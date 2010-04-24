@@ -196,7 +196,7 @@ class AverageContacts:
 	
 			" compute the error in the 5 closest joints "
 			if targetJoint >= self.numJoints-3:
-				for i in range(self.numJoints-5,self.numJoints+1):
+				for i in range(self.numJoints-5,self.numJoints):
 					jointErrors.append(allJoints[i] - self.probe.getServo(i))
 					
 			elif targetJoint <= 2:				
