@@ -1,41 +1,33 @@
-import os
-import sys
-dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if not dir in sys.path:
-	sys.path.append(dir)
-
-from common import *
 from Behavior import *
 from Transition import Transition
-from math import exp
+from math import exp, fabs, pi
+from copy import copy
 
 class HoldSlideTransition(Behavior):
 	
-	def __init__(self, probe, direction = True):
-		Behavior.__init__(self, probe)
+	def __init__(self, robotParam, direction = True):
+		Behavior.__init__(self, robotParam)
 
-		self.transition = Transition(self.probe)
+		self.transition = Transition(robotParam)
 		self.isTransitioning = False
 		self.hasTransitioned = False
 
 		self.isDone = False
-		#self.count = 0
 		self.count = 4
 
 		self.direction = direction
 
 		self.targetState = []
-		for i in range(self.probe.numSegs-1):
+		for i in range(self.numJoints):
 			self.targetState.append(None)
 
 		self.positions = []
-		for i in range(self.probe.numSegs-1):
-			self.positions.append(180.0 / pi * self.probe.getServoCmd(i))
-		#print "reseting hold transition:", self.positions
+		for i in range(self.numJoints):
+			self.positions.append(0.0)
 
 		self.spliceJoint = 19
 
-		self.mask = [0.0 for i in range(self.probe.numSegs-1)]
+		self.mask = [0.0 for i in range(self.numJoints)]
 
 	def getMask(self):
 		return self.mask
@@ -44,52 +36,50 @@ class HoldSlideTransition(Behavior):
 		self.spliceJoint = joint
 	
 
-	def reset(self, joints = [], direction = True):
+	def reset(self, probeState, joints = [], direction = True):
 		self.targetState = []
 		self.positions = []
 
 		self.direction = direction
-		
-		#print "resetting HoldSlideTransition to:", joints
-		
+
+		cmdJoints = probeState['cmdJoints']
+
+		self.positions = []
+
 		if len(joints) > 0:
 			for i in range(len(joints)):				
 				self.targetState.append(joints[i])
 				if joints[i] != None:
-					self.positions.append(180.0 / pi * self.probe.getServoCmd(i))
+					self.positions.append(180.0 / pi * cmdJoints[i])
 				else:
 					self.positions.append(None)
-					
+							
 		else:
-			for i in range(self.probe.numSegs-1):
-				self.targetState.append(180.0 / pi * self.probe.getServoCmd(i))
-				self.positions.append(180.0 / pi * self.probe.getServoCmd(i))
+			for i in range(self.numJoints):
+				self.targetState.append(180.0 / pi * cmdJoints[i])
+				self.positions.append(180.0 / pi * cmdJoints[i])
 	
 
-		self.mask = [0.0 for i in range(self.probe.numSegs-1)]
-				
-		#print "resetting:"
-		#print self.positions
-		#print joints
-			
+		self.mask = [0.0 for i in range(self.numJoints)]
+		
 		self.isTransitioning = False
 		self.hasTransitioned = False
 		self.isDone = False
 				
-		#print "reseting hold slide transition:", self.positions
-
-	def step(self):
-		Behavior.step(self)
+	def step(self, probeState):
+		Behavior.step(self, probeState)
 
 		#print self.isTransitioning, self.hasTransitioned
 		#print self.isTransitioning, self.hasTransitioned, self.isDone
+		
+		stateJoints = probeState['joints']
 		
 		if self.isTransitioning:
 
 			self.resetJoints()
 
 			# first steps
-			isDone = self.transition.step()
+			isDone = self.transition.step(probeState)
 
 			resJoints = self.transition.getJoints()
 			self.mergeJoints([resJoints])
@@ -108,24 +98,17 @@ class HoldSlideTransition(Behavior):
 		
 		self.resetJoints()
 
-		for i in range(self.probe.numSegs-1):
+		for i in range(self.numJoints):
 			self.setJoint(i, self.positions[i])
 
 		if not self.hasTransitioned:
 
-			#print "setting next transition"
-			#print "self.positions = ", self.positions
 			initState = []
-			for i in range(self.probe.numSegs-1):
-				#print self.positions[i]
+			for i in range(self.numJoints):
 				if self.positions[i] != None:
-					initState.append(180.0*self.probe.getServo(i)/pi)
+					initState.append(180.0*stateJoints[i]/pi)
 				else:
 					initState.append(None)
-
-			#print len(initState), "initState =", initState
-			#print len(self.targetState), "self.targetState =", self.targetState
-			#print initState
 
 			targetState = copy(self.targetState)
 
@@ -137,45 +120,40 @@ class HoldSlideTransition(Behavior):
 						if self.direction:
 							diff *= 1 / (1 + exp(i-2*self.count))
 						else:
-							diff *= 1 / (1 + exp((self.probe.numSegs-2-i)-2*self.count))
+							diff *= 1 / (1 + exp((self.numJoints-1-i)-2*self.count))
 							
 						targetState[i] = initState[i] + diff
 					else:
 						targetState[i] = initState[i]
 
-			self.mask = [0.0 for i in range(self.probe.numSegs-1)]
+			self.mask = [0.0 for i in range(self.numJoints)]
 			if self.direction:
-				for i in range(self.probe.numSegs-1):
+				for i in range(self.numJoints):
 					if 1. - 1. / (1. + exp(i-2*self.count)) >= 0.99:
 						self.mask[i] = 1.0
 			else:
-				for i in range(self.probe.numSegs-1):
-					if 1. - 1. / (1. + exp((self.probe.numSegs-2-i)-2*self.count)) >= 0.99:
+				for i in range(self.numJoints):
+					if 1. - 1. / (1. + exp((self.numJoints-1-i)-2*self.count)) >= 0.99:
 						self.mask[i] = 1.0
 
 
 
 			self.positions = copy(targetState)
-			#print "self.positions = ", self.positions
 
 			errSum = 0.0
 			for i in range(len(initState)):
 				if initState[i] != None:
 					errSum += fabs(initState[i]-targetState[i])
 
-			#print "errSum = ", errSum
-			#transTime = int(errSum/2.0)
 			transTime = int(2*errSum)
 
 			# set target and initial poses
 			self.transition.setInit(initState)
 			self.transition.setTarget(targetState)
 			self.transition.resetTime(transTime)		
-			#self.transition.resetTime(200)		
-			#self.transition.resetTime(1000)		
 			
 			# first steps
-			self.transition.step()
+			self.transition.step(probeState)
 			
 			resJoints = self.transition.getJoints()
 			self.resetJoints()
@@ -190,19 +168,15 @@ class HoldSlideTransition(Behavior):
 			self.hasTransitioned = False
 			self.isTransitioning = False
 
-		#print self.count
-
 		" delay period to allow body to stabilize "
 		if self.count > 10:
 			self.count = 4
 			self.isDone = False
 			self.hasTransitioned = False
 			self.isTransitioning = False
-			
-			#print "caseC"
 
 			return True
 		
-		#print "transitions =", self.hasTransitioned, self.isTransitioning
-		#print "caseD"
 		return False
+	
+	

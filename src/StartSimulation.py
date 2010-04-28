@@ -80,6 +80,7 @@ class SimpleScenesFrameListener ( sf.FrameListener ):
 		self._demo = demo
 		self.probe = probe
 		self.rWindow = renderWindow
+		self.camera = camera
 
 		sf.FrameListener.__init__(self, renderWindow, camera)
 
@@ -98,8 +99,29 @@ class SimpleScenesFrameListener ( sf.FrameListener ):
 		self._demo.frameStarted(evt, self.Keyboard, self.Mouse)
 
 		self.probe.frameStarted(evt)
+		
+		self.adjustCamera()
+		
 		return result
 
+	def adjustCamera(self):
+
+		pose = self.probe.getActualJointPose(19)
+		xAvg = pose[0]
+		yAvg = pose[1]
+		
+		prevPose = self.camera.getPosition()
+		xPrev = prevPose[0] - 2
+		yPrev = prevPose[2]
+		zPrev = prevPose[1]
+		
+		newPose = [xPrev*0.99 + 0.01*xAvg, yPrev*0.99 + 0.01*yAvg, zPrev*0.99 + 0.01*10]
+
+		self.camera.setPosition(newPose[0]+2,newPose[2],newPose[1])
+
+		oriQuat = ogre.Quaternion(ogre.Radian(-math.pi/2.0), ogre.Vector3().UNIT_X)
+		self.camera.setOrientation(oriQuat)
+		
 	def frameEnded(self, evt):
 		self._demo.frameEnded(evt, self.Keyboard, self.Mouse)
 		return sf.FrameListener.frameEnded(self, evt)

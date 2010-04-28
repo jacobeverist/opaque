@@ -1,39 +1,34 @@
-import os
-import sys
-dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if not dir in sys.path:
-	sys.path.append(dir)
-
-from common import *
 from Behavior import *
+from Transition import Transition
+
+from math import pi
+
+#from common import *
 
 class HoldPosition(Behavior):
 	
-	def __init__(self, probe):
-		Behavior.__init__(self, probe)
+	def __init__(self, robotParam):
+		Behavior.__init__(self, robotParam)
 
-		self.positions = []
-		for i in range(self.probe.numSegs-1):
-			self.positions.append(180.0 / pi * self.probe.getServoCmd(i))
-		#print "reseting hold position:", self.positions
+		self.positions = [0.0 for i in range(self.numJoints)]
 	
-	def reset(self):
-		self.positions = []
-		#for i in range(self.probe.numSegs-1):
-		#	self.positions.append(180.0 / pi * self.probe.getServoCmd(i))		
-		for i in range(self.probe.numSegs-1):
-			self.positions.append(180.0 / pi * self.probe.getServo(i))		
-		#print "reseting hold position:", self.positions
+	def reset(self, probeState):
 		
-	def step(self):
-		Behavior.step(self)
+		joints = probeState['joints']
+		
+		self.positions = []
+		for i in range(self.numJoints):
+			self.positions.append(180.0 / pi * joints[i])		
+		
+	def step(self, probeState):
+		Behavior.step(self, probeState)
 			
 		if not self.isStep():
 			return False
 		
 		self.resetJoints()
 
-		for i in range(self.probe.numSegs-1):
+		for i in range(self.numJoints):
 			self.setJoint(i, self.positions[i])
 
 		# never finished

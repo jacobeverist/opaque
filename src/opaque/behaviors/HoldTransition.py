@@ -1,54 +1,44 @@
-import os
-import sys
-dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if not dir in sys.path:
-	sys.path.append(dir)
-
-from common import *
 from Behavior import *
 from Transition import Transition
 
+from math import pi, fabs
+
 class HoldTransition(Behavior):
 	
-	def __init__(self, probe):
-		Behavior.__init__(self, probe)
+	def __init__(self, robotParam):
+		Behavior.__init__(self, robotParam)
 
-		self.transition = Transition(self.probe)
+		self.transition = Transition(robotParam)
 		self.isTransitioning = False
 		self.hasTransitioned = False
 
 		self.isDone = False
 		self.count = 0
 
-		self.positions = []
-		for i in range(self.probe.numSegs-1):
-			self.positions.append(180.0 / pi * self.probe.getServoCmd(i))
-		#print "reseting hold transition:", self.positions
+		self.positions = [0.0 for i in range(self.numJoints)]
 
-	def reset(self, joints = []):
-		self.positions = []
+	def reset(self, probeState, joints = []):
 		
-		#print "resetting HoldTransition to:", joints
+		stateJoints = probeState['joints']
+		
+		self.positions = []
 		
 		if len(joints) > 0:
-				
-			for i in range(len(joints)):
-			
-				self.positions.append(joints[i])
+			for i in range(len(joints)):			
+				self.positions.append(joints[i])			
 		else:
-			for i in range(self.probe.numSegs-1):
-			
-				self.positions.append(180.0 / pi * self.probe.getServoCmd(i))
-			
+			for i in range(self.numJoints):
+				self.positions.append(180.0 / pi * stateJoints[i])		
+
 		self.count = 0
 		self.isTransitioning = False
 		self.hasTransitioned = False
 		self.isDone = False
-				
-		print "reseting hold transition:", self.positions
 
-	def step(self):
-		Behavior.step(self)
+		print "resetting Hold Transition:", self.positions
+
+	def step(self, probeState):
+		Behavior.step(self, probeState)
 		
 		#print self.isTransitioning, self.hasTransitioned, self.isDone
 		
@@ -57,7 +47,7 @@ class HoldTransition(Behavior):
 			self.resetJoints()
 
 			# first steps
-			isDone = self.transition.step()
+			isDone = self.transition.step(probeState)
 
 			resJoints = self.transition.getJoints()
 			self.mergeJoints([resJoints])
@@ -75,15 +65,17 @@ class HoldTransition(Behavior):
 		
 		self.resetJoints()
 
-		for i in range(self.probe.numSegs-1):
+		for i in range(self.numJoints):
 			self.setJoint(i, self.positions[i])
 
 		if not self.hasTransitioned:
 
+			joints = probeState['joints']
+
 			initState = []
-			for i in range(self.probe.numSegs-1):
+			for i in range(self.numJoints):
 				if self.positions[i] != None:
-					initState.append(180.0*self.probe.getServo(i)/pi)
+					initState.append(180.0*joints[i]/pi)
 				else:
 					initState.append(None)
 
@@ -106,19 +98,15 @@ class HoldTransition(Behavior):
 				if initState[i] != None:
 					errSum += fabs(initState[i]-targetState[i])
 
-			#print "errSum = ", errSum
-			#transTime = int(errSum/2.0)
 			transTime = int(2*errSum)
 			
 			# set target and initial poses
 			self.transition.setInit(initState)
 			self.transition.setTarget(targetState)
 			self.transition.resetTime(transTime)		
-			#self.transition.resetTime(200)		
-			#self.transition.resetTime(1000)		
 			
 			# first steps
-			self.transition.step()
+			self.transition.step(probeState)
 			
 			resJoints = self.transition.getJoints()
 			self.resetJoints()

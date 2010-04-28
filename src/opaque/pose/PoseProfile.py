@@ -1,10 +1,7 @@
 #!/usr/bin/python
 
-from math import *
-import numpy
-import pylab
-#import getopt, sys, os, shutil, csv
-from copy import *
+from math import cos, sin
+from copy import copy
 
 
 class PoseProfile:
@@ -48,7 +45,7 @@ class PoseProfile:
 		" plot all points by (x,y) "
 
 		" flipped to align with Ogre x-z coord system "
-		pylab.scatter(xP, yP, color=clr, faceted=False, linewidth=1)
+		#pylab.scatter(xP, yP, color=clr, faceted=False, linewidth=1)
 
 	def performOffset(self, offset, refPoint):
 

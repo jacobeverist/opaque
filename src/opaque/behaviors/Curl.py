@@ -1,18 +1,13 @@
-import os
-import sys
-dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if not dir in sys.path:
-	sys.path.append(dir)
 
-from common import *
-from Behavior import *
-from pose import ValueStability
+from math import sqrt, pi, fabs, cos, sin
+from Behavior import Behavior
+from ValueStability import ValueStability
 from Transition import Transition
 
 class Curl(Behavior):
 	
-	def __init__(self, probe):
-		Behavior.__init__(self, probe)	
+	def __init__(self, robotParam, contacts):
+		Behavior.__init__(self, robotParam)	
 
 		# angle value for curling joints
 		self.val = 0
@@ -21,6 +16,8 @@ class Curl(Behavior):
 		self.topJoint = 0
 
 		self.poseWindow = []
+		
+		self.contacts = contacts
 
 		self.stabilityX = ValueStability(1e-7, 10)
 		self.stabilityY = ValueStability(1e-7, 10)
@@ -34,7 +31,7 @@ class Curl(Behavior):
 		
 		self.direction = True
 
-		self.transition = Transition(self.probe)
+		self.transition = Transition(robotParam)
 		self.isTransitioning = False
 		self.hasTransitioned = False
 	
@@ -59,7 +56,7 @@ class Curl(Behavior):
 		
 		self.direction = True
 
-		self.transition = Transition(self.probe)
+		self.transition = Transition(self.robotParam)
 		self.isTransitioning = False
 		self.hasTransitioned = False
 
@@ -67,12 +64,10 @@ class Curl(Behavior):
 		self.gaitTimer = 0
 		
 		self.resetJoints()
-		#self._joints = [None for i in range(self.probe.numSegs-1)]
 			
 	def setDirection(self, val):
 		self.direction = val
-		#self.stabilityX.reset()
-		#self.stabilityY.reset()
+
 		self.resetJoints()
 		
 		if self.direction:
@@ -80,8 +75,7 @@ class Curl(Behavior):
 				# joint value
 				self.setJoint(i, self.val)
 		else:
-			#print "setting", range(self.topJoint, self.probe.numSegs-1)
-			for i in range(self.topJoint, self.probe.numSegs-1):
+			for i in range(self.topJoint, self.numJoints):
 				# joint value
 				self.setJoint(i, self.val)		
 				
@@ -91,8 +85,20 @@ class Curl(Behavior):
 	def setTopJoint(self, node):
 		self.topJoint = node
 
-	def step(self):
-		Behavior.step(self)
+	def normalizeAngle(self,angle):
+		# this function converts the angle to its equivalent
+		# in the range [-pi,pi] 
+
+		while angle>pi:
+			angle=angle-2*pi
+
+		while angle<=-pi:
+			angle=angle+2*pi
+
+		return angle
+
+	def step(self, probeState):
+		Behavior.step(self, probeState)
 
 		if not self.isStep():
 			return False
@@ -102,7 +108,7 @@ class Curl(Behavior):
 		if self.isTransitioning:
 
 			# first steps
-			isDone = self.transition.step()
+			isDone = self.transition.step(probeState)
 
 			#print "transitioning"
 			resJoints = self.transition.getJoints()
@@ -115,17 +121,32 @@ class Curl(Behavior):
 
 		if not self.isTransitioning and self.hasTransitioned:
 
+			stateJoints = probeState['joints']
+			segLength = self.robotParam['segLength']
+
 			if self.direction:
-				pose = self.probe.getActualJointPose(-1)
+				#pose = self.contacts.getAveragePose(-1)
+				pose = self.contacts.getAveragePose(0)
+
+				pose[2] = pose[2] + stateJoints[0]
+				pose[0] = pose[0] - segLength*cos(pose[2])
+				pose[1] = pose[1] - segLength*sin(pose[2])
+
+				pose[2] = self.normalizeAngle(pose[2])
+
 			else:
-				pose = self.probe.getActualJointPose(39)
+				#pose = self.contacts.getAveragePose(39)
+				pose = self.contacts.getAveragePose(38)
+
+				pose[0] = pose[0] + segLength*cos(pose[2])
+				pose[1] = pose[1] + segLength*sin(pose[2])
+
 				
 			self.stabilityX.addData(pose[0])
 			self.stabilityY.addData(pose[1])
 	
 			varX = self.stabilityX.getVar()
 			varY = self.stabilityY.getVar()
-			#print varX, varY
 		
 			if self.stabilityX.isStable() and self.stabilityY.isStable():
 				
@@ -135,8 +156,6 @@ class Curl(Behavior):
 					if not self.returnedSuccess:
 						
 						self.slipError = sqrt(diff[0]**2 + diff[1]**2)
-						#print "pose error =", self.slipError
-						
 						
 						self.returnedSuccess = True
 						return True
@@ -185,21 +204,12 @@ class Curl(Behavior):
 			if self.poseIndex <= 0:
 				self.up = True
 			
-			#if self.val >= self.rail:
-			#	self.val = self.rail
-			#	self.up = False
-			
-			#if self.val <= -self.rail:
-			#	self.val = -self.rail
-			#	self.up = True
-	
 			if self.direction:
 				for i in range(0, self.topJoint):
 					# joint value
 					self.setJoint(i, self.val)
 			else:
-				#print "setting", range(self.topJoint, self.probe.numSegs-1)
-				for i in range(self.topJoint, self.probe.numSegs-1):
+				for i in range(self.topJoint, self.numJoints):
 					# joint value
 					self.setJoint(i, self.val)
 
@@ -208,22 +218,16 @@ class Curl(Behavior):
 		if not self.hasTransitioned:
 	
 			cmdJoints = self.getJoints()
-
+			stateJoints = probeState['joints']
+			
 			initState = []
-			for i in range(self.probe.numSegs-1):
+			for i in range(self.numJoints):
 				if cmdJoints[i] != None:
-					initState.append(180.0*self.probe.getServo(i)/pi)
+					initState.append(180.0*stateJoints[i]/pi)
 				else:
 					initState.append(None)
 
-			#print self.hasTransitioned, self.isTransitioning, "joints:", joints2
 			targetState = self.getJoints()
-			#print "init", initState
-			#print "target", targetState
-
-			#for i in range(len(targetState)):
-			#	if targetState[i] == None:
-			#		targetState[i] = 180.0*self.probe.getServo(i)/pi
 
 			errSum = 0.0
 			for i in range(len(initState)):
@@ -231,16 +235,13 @@ class Curl(Behavior):
 					errSum += fabs(initState[i]-targetState[i])
 			transTime = int(4*errSum)
 			
-			#print "poke transition time =", transTime
-
 			# set target and initial poses
 			self.transition.setInit(initState)
 			self.transition.setTarget(targetState)
-			#self.transition.resetTime(200)		
 			self.transition.resetTime(transTime)		
 
 			# first steps
-			self.transition.step()
+			self.transition.step(probeState)
 
 			resJoints = self.transition.getJoints()
 			self.resetJoints()
@@ -249,12 +250,6 @@ class Curl(Behavior):
 			self.hasTransitioned = True
 			self.isTransitioning = True				
 
-		#if self.val == 0 and self.up:
-		#if self.val == self.rail or self.val == -self.rail or self.val == 0:
-		#if self.val == self.rail or self.val == -self.rail:
-		#if self.poseIndex == 0 or self.poseIndex == 4:
-		#	return True
-		#else:
 		return False
 	
 	

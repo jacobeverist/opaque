@@ -1,22 +1,11 @@
-import os
-import sys
-dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if not dir in sys.path:
-	sys.path.append(dir)
+from RefNode import RefNode
+from RefEdge import RefEdge
+from ValueStability import ValueStability
+from PoseProfile import PoseProfile
 
-from common import *
-
-from RefNode import *
-from RefEdge import *
-from ValueStability import *
-from PoseProfile import *
-
-import math
+from copy import copy, deepcopy
+from math import cos, sin, asin, acos, sqrt, fabs, pi
 import cProfile
-import pylab
-from copy import *
-
-import ogre.renderer.OGRE as ogre
 
 class AverageContacts:
 	
@@ -100,6 +89,7 @@ class AverageContacts:
 		self._allRefEnt = []
 		
 		
+		"""
 		for i in range(0,self.numJoints):
 			## Create the visual reprsentation of active reference nodes
 			name = "act_node" + str(i)
@@ -123,7 +113,19 @@ class AverageContacts:
 			entity.setVisible(False)
 			self._allRefNodes.append(node)
 			self._allRefEnt.append(entity)
+		"""
 		
+	def isStable(self):
+		stable = True
+		
+		for i in range(self.numJoints):
+			if self.initMask[i] >= self.maskThresh:
+				if not self.activeRef[i]:
+					stable = False
+					break
+			
+		return stable
+			
 	def setTimerAliasing(self, timeInc):
 		self.timeInc = timeInc
 
@@ -266,9 +268,9 @@ class AverageContacts:
 		
 		# find the first active reference from which to determine the new node's position in space
 		refExists = False
-		refNumber = 0
-		isNewRoot = False
-		refCount = 0
+		#refNumber = 0
+		#isNewRoot = False
+		#refCount = 0
 
 
 		# search for the largest consecutive section of stable reference nodes
@@ -300,7 +302,7 @@ class AverageContacts:
 		
 		if maxSize > 0:
 			refExists = True
-			refNumber = maxConsec
+			#refNumber = maxConsec
 
 		# record this as new reference point
 		pose = [0.,0.,0.]
@@ -354,7 +356,7 @@ class AverageContacts:
 		else:
 			
 			" no active node exists and not the first, "
-			pose = self.recoverPose(newJointID)		
+			pose = self.recoverPose(targetJoint)		
 				
 		return pose
 
@@ -363,7 +365,7 @@ class AverageContacts:
 		# find the first active reference from which to determine the new node's position in space
 		refExists = False
 		refNumber = 0
-		isNewRoot = False
+		#isNewRoot = False
 
 		if targetJoint == -1:
 			midJoint = 0
@@ -412,7 +414,7 @@ class AverageContacts:
 		else:
 
 			" no active node exists and not the first, "
-			pose = self.recoverPose(newJointID)			
+			pose = self.recoverPose(targetJoint)			
 			return pose
 		
 	def resetPose(self, estPose = []):
@@ -503,6 +505,7 @@ class AverageContacts:
 
 				print "self.activeRef =", self.activeRef
 
+		"""
 		for i in range(self.numJoints):
 			pos = self.probe.getActualJointPose(i)
 			position = ogre.Vector3(pos[0],0.1,pos[1])
@@ -516,6 +519,7 @@ class AverageContacts:
 			mPtr = self._allRefNodes[i].getMaterial()
 			mPtr.setAmbient(0.0,1.0,0.0)
 			mPtr.setDiffuse(0.0,1.0,0.0, 1.0)
+		"""
 
 	def setMask(self, mask):
 		self.initMask = copy(mask)
@@ -526,6 +530,7 @@ class AverageContacts:
 		if not self.isStep():
 			return 
 	
+		"""
 		for i in range(self.numJoints):
 			pos = self.probe.getActualJointPose(i)
 			position = ogre.Vector3(pos[0],0.1,pos[1])
@@ -539,6 +544,7 @@ class AverageContacts:
 			mPtr = self._allRefNodes[i].getMaterial()
 			mPtr.setAmbient(0.0,1.0,0.0)
 			mPtr.setDiffuse(0.0,1.0,0.0, 1.0)
+		"""
 
 		
 		if True:
@@ -810,6 +816,7 @@ class AverageContacts:
 		self.activeRefPtr[newJointID] = newNode	
 
 		" draw the estimated reference nodes "
+		"""
 		if False:
 			i = self.numRef
 			## Create the visual reprsentation of active reference nodes
@@ -832,6 +839,7 @@ class AverageContacts:
 			#entity.setVisible(False)
 			self._allRefNodes.append(node)
 			self._allRefEnt.append(entity)
+		"""
 
 		# record it to the array so we can access it later
 		self.refPoints.append(newNode)	
@@ -844,9 +852,9 @@ class AverageContacts:
 
 		# find the first active reference from which to determine the new node's position in space
 		refExists = False
-		refNumber = 0
+		#refNumber = 0
 		isNewRoot = False
-		refCount = 0
+		#refCount = 0
 
 
 		# search for the largest consecutive section of stable reference nodes
@@ -878,7 +886,7 @@ class AverageContacts:
 		
 		if maxSize > 0:
 			refExists = True
-			refNumber = maxConsec
+			#refNumber = maxConsec
 		
 		#print maxSize, maxConsec
 		
@@ -979,6 +987,7 @@ class AverageContacts:
 
 		self.activeRefPtr[newJointID] = newNode	
 
+		"""
 		" draw the estimated reference nodes "
 		if False:
 			i = self.numRef
@@ -1002,7 +1011,8 @@ class AverageContacts:
 			#entity.setVisible(False)
 			self._allRefNodes.append(node)
 			self._allRefEnt.append(entity)
-
+		"""
+		
 		# record it to the array so we can access it later
 		self.refPoints.append(newNode)	
 		self.numRef += 1
@@ -1017,7 +1027,7 @@ class AverageContacts:
 		fileName1 = "frame/refnodes_info_%04d.txt" % self.graphCount
 		fileName2 = "frame/snake_pipe_%04d.graph" % self.graphCount
 		fileName3 = "frame/snake_pipe_gnd_%04d.graph" % self.graphCount
-		fileName4 = "frame/newRoots_%04d.txt" % self.graphCount
+		#fileName4 = "frame/newRoots_%04d.txt" % self.graphCount
 
 		# output max errors for all references nodes:
 
@@ -1183,11 +1193,11 @@ class AverageContacts:
 		return pose
 
 	def normalizeAngle(self, angle):
-		while angle > math.pi:
-			angle = angle - 2*math.pi
+		while angle > pi:
+			angle = angle - 2*pi
 
-		while angle <= -math.pi:
-			angle = angle + 2*math.pi
+		while angle <= -pi:
+			angle = angle + 2*pi
 
 		return angle
 
@@ -1213,7 +1223,7 @@ class AverageContacts:
 			minDist = 10e100
 
 			for i in range(len(unordered)):
-				dist = math.sqrt((unordered[i][0]-origin[0])**2 + (unordered[i][1]-origin[1])**2)
+				dist = sqrt((unordered[i][0]-origin[0])**2 + (unordered[i][1]-origin[1])**2)
 				if dist < minDist:
 					minDist = dist
 					minIndex = i

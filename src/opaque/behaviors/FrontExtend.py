@@ -1,14 +1,7 @@
-import os
-import sys
-dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if not dir in sys.path:
-	sys.path.append(dir)
-
-from common import *
 from Behavior import *
 from HoldSlideTransition import HoldSlideTransition
-from math import exp
 from math import sqrt
+from copy import copy
 
 """
 FrontExtend behavior
@@ -24,22 +17,22 @@ Its name will be FrontExtendGlobal.
 
 class FrontExtend(Behavior):
 	
-	def __init__(self, probe, contacts, direction = True):
-		Behavior.__init__(self, probe)
+	def __init__(self, robotParam, contacts, direction = True):
+		Behavior.__init__(self, robotParam)
 
 		self.contacts = contacts
 		
-		self.holdSlideT = HoldSlideTransition(self.probe)
+		self.holdSlideT = HoldSlideTransition(robotParam)
 
-		self.setDirection(direction)
+		#self.setDirection(direction)
 				
 		self.poses = []
 	
-	def setDirection(self, isForward):
+	def setDirection(self, probeState, isForward):
 
 		self.direction = isForward
 
-		resultJoints = [None for i in range(self.probe.numSegs-1)]
+		resultJoints = [None for i in range(self.numJoints)]
 
 		if self.direction:
 			self.spliceJoint = 7
@@ -52,12 +45,12 @@ class FrontExtend(Behavior):
 		else:
 			self.spliceJoint = 31
 
-			for i in range(15,self.probe.numSegs-1):
+			for i in range(15,self.numJoints):
 				resultJoints[i] = 0.0
 
 			self.topJoint = self.spliceJoint
 				
-		self.holdSlideT.reset(resultJoints, self.direction)
+		self.holdSlideT.reset(probeState, resultJoints, self.direction)
 
 		self.mask = copy(self.holdSlideT.getMask())
 
@@ -73,22 +66,22 @@ class FrontExtend(Behavior):
 	def getMask(self):
 		return self.mask
 
-	def reset(self, direction = True):
-		self.holdSlideT = HoldSlideTransition(self.probe)
+	def reset(self, probeState, direction = True):
+		self.holdSlideT = HoldSlideTransition(self.robotParam)
 
-		self.setDirection(direction)
+		self.setDirection(probeState, direction)
 				
 		self.poses = []
 		
-	def step(self):
-		Behavior.step(self)
+	def step(self, probeState):
+		Behavior.step(self, probeState)
 		
 		if self.isTransitioning:
 			
 			if self.direction:
 				tipPose = self.contacts.getAveragePose(0)
 			else:
-				tipPose = self.contacts.getAveragePose(self.probe.numSegs-2)
+				tipPose = self.contacts.getAveragePose(self.numJoints-1)
 			
 			self.poses.append(tipPose)
 			
@@ -97,9 +90,9 @@ class FrontExtend(Behavior):
 				for i in range(0,20):
 					points.append([self.poses[len(self.poses)-i-1][0],self.poses[len(self.poses)-i-1][1]])
 			
-				spl = SplineFit(points, kp=2)
+				#spl = SplineFit(points, kp=2)
 				
-				uvec = spl.getUVector(1.0)
+				#uvec = spl.getUVector(1.0)
 				#print uvec
 			
 			avgDist = 1e100
@@ -112,34 +105,20 @@ class FrontExtend(Behavior):
 					distSum += dist
 					
 				avgDist = distSum / 100.0
-				
-				#print "avgDist =", avgDist	
-				
-				
-				
-				#dist = sqrt((tipPose[0]-self.poses[-2][0])**2 + (tipPose[1]-self.poses[-2][1])**2)
-				
-				#if dist > self.maxDist:
-				#	self.maxDist = dist
-				
-				#if dist < self.minDist:
-				#	self.minDist = dist
 			
 			self.resetJoints()
 			
 			# first steps
-			isDone = self.holdSlideT.step()
+			isDone = self.holdSlideT.step(probeState)
 			
 			resJoints = self.holdSlideT.getJoints()
 			self.mergeJoints([resJoints])
-			
-			#self.mask = [0.0 for i in range(self.probe.numSegs-1)]
 			
 			self.mask = copy(self.holdSlideT.getMask())
 			
 			if self.direction:
 				self.topJoint = self.spliceJoint
-				joints = range(self.spliceJoint,self.probe.numSegs-1)
+				joints = range(self.spliceJoint,self.numJoints)
 				for i in joints:
 					if self.mask[i] == 0.0:
 						self.topJoint = i
@@ -168,26 +147,9 @@ class FrontExtend(Behavior):
 		if not self.isStep():
 			return False
 		
-		#self.resetJoints()
-
-		#for i in range(self.probe.numSegs-1):
-		#	self.setJoint(i, self.positions[i])
-
 		if self.isDone:
 			self.isDone = False
 			self.isTransitioning = False
-
-			#print len(self.poses), self.maxDist, self.minDist
-
-			#pylab.clf()
-			#xP = []
-			#yP = []
-			#for p in self.poses:
-			#	xP.append(p[0])
-			#	yP.append(p[1])
-			#pylab.plot(xP,yP)
-			#pylab.scatter(xP,yP)
-			#pylab.show()
 
 			return True
 

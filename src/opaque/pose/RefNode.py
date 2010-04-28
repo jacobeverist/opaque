@@ -1,4 +1,3 @@
-import ogre.renderer.OGRE as ogre
 
 class RefNode:
 

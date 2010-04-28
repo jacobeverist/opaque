@@ -52,6 +52,13 @@ class SnakeProbe:
 		self.maxTorque = maxTorque
 		self.friction = friction
 
+		self.robotParam = {}
+		self.robotParam['numJoints'] = self.numSegs-1
+		self.robotParam['numSegs'] = self.numSegs
+		self.robotParam['segLength'] = self.segLength
+		self.robotParam['segWidth'] = self.segWidth
+		self.robotParam['maxTorque'] = self.maxTorque
+		
 		# list of bodies
 		self._bodies = []
 		self._geoms = []
@@ -62,6 +69,21 @@ class SnakeProbe:
 
 		self.wallEnv = 0
 	
+		size = ogre.Vector3(self.probe.segLength, 0.01, self.probe.segWidth)
+		self.anchorMass = OgreOde.BoxMass(STD_WEIGHT*10000.0,size)
+		self.normalMass = OgreOde.BoxMass(STD_WEIGHT,size)
+
+		self.setAnchor(False)
+	
+	def setAnchor(self, isAnchor):
+		
+		if isAnchor:
+			body = self._bodies[20]
+			body.setMass(self.anchorMass)		
+		else:
+			body = self._bodies[20]
+			body.setMass(self.normalMass)
+						
 	def setJointsRigid(self, lowJ, highJ):
 		bodies = self._bodies[lowJ,highJ+2]
 		
@@ -222,6 +244,27 @@ class SnakeProbe:
 	def getError(self, index):
 		return abs(self.getServoCmd(index) - self.getServo(index))
 
+	def getProbeState(self):
+		probeState = {}
+		
+		joints = []
+		cmdJoints = []
+		torques = []
+		errors = []
+		
+		for i in range(self.getNumJoints()):
+			joints.append(self.getServo(i))
+			cmdJoints.append(self.getSeroCmd(i))
+			torques.append(self.getJointTorque())
+			errors.append(self.getError(i))
+		
+		probeState['joints'] = joints
+		probeState['cmdJoints'] = cmdJoints
+		probeState['torques'] = torques
+		probeState['errors'] = errors
+
+		return probeState
+	
 	def getServo(self, index):
 		if index < self.numSegs :
 			return self._joints[index].phi

@@ -1,11 +1,5 @@
-import os
-import sys
-dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if not dir in sys.path:
-	sys.path.append(dir)
 
-from copy import *
-from common import *
+
 from Behavior import *
 from FrontAnchorFit import FrontAnchorFit
 from FastLocalCurveFit import FastLocalCurveFit
@@ -16,21 +10,20 @@ from BackConcertinaCurve import BackConcertinaCurve
 from GlobalCurveFit import GlobalCurveFit
 from GlobalCurveSlide import GlobalCurveSlide
 
-"""
-TODO
+from copy import copy, deepcopy
+from math import pi, cos, sin, fabs, sqrt
 
+"""
 1.  Check condition in FrontAnchorFit when curve goes beyond joint 0
 2.  If joint 0 passed and anchor is loose, start over with higher splice joint
 3.  Changing splice joint will shorten tail of BackConcertinaCurve
 4.  Add the front anchoring state and then the concertina gait state to behavior control
-
-
 """
 
 class PathStep(Behavior):
 
-	def __init__(self, probe, contacts, mapGraph, direction = True, path = []):
-		Behavior.__init__(self, probe)
+	def __init__(self, robotParam, contacts, mapGraph, direction = True, path = []):
+		Behavior.__init__(self, robotParam)
 
 		print "creating PathStep"
 
@@ -44,8 +37,8 @@ class PathStep(Behavior):
 		self.direction = direction
 		self.isInit = False
 
-		self.holdT = HoldTransition(probe)
-		self.holdSlideT = HoldSlideTransition(probe, direction)
+		self.holdT = HoldTransition(robotParam)
+		self.holdSlideT = HoldSlideTransition(robotParam, direction)
 
 		self.cPoints = []
 		
@@ -63,16 +56,11 @@ class PathStep(Behavior):
 		
 		if direction:
 			self.spliceJoint = 7
-			#self.spliceJoint = 13
 		else:
 			self.spliceJoint = 31
 			
 		self.lastSpliceAngle = 0.0
 
-		
-		#self.computeCurve()
-		
-		
 		self.mask = [0.0 for i in range(0,40)]
 		self.count = 0
 		
@@ -84,8 +72,6 @@ class PathStep(Behavior):
 			
 		self.plotCount = 0
 		
-		self.newJoints = [None for i in range(0,self.probe.numSegs-1)]
-
 		" flag true when the HoldTransition behavior has completed its behavior, select next transition "
 		self.transDone = False
 
@@ -95,12 +81,7 @@ class PathStep(Behavior):
 		self.frontAnchoringState = True
 		self.frontAnchoringDone = False
 		self.frontExtending = True
-		#self.frontExtending = False
 		self.frontExtendDone = False
-		
-
-		#self.globalCurveFit = 0
-		#self.setPath(path)
 				
 	def getMask(self):
 		return self.mask
@@ -115,11 +96,11 @@ class PathStep(Behavior):
 		self.pathCurve2 = VoronoiFit(deepcopy(self.path))
 		
 		print "creating 1st GlobalCurveFit"
-		self.globalCurveFit = GlobalCurveFit(self.probe, self.contacts, self.pathCurve1, localNode = self.mapGraph.currNode)
+		self.globalCurveFit = GlobalCurveFit(self.robotParam, self.contacts, self.pathCurve1, localNode = self.mapGraph.currNode)
 		self.globalCurveFit.setTimerAliasing(10)
 		
 		print "creating 2nd GlobalCurveFit"
-		self.globalCurveSlide = GlobalCurveSlide(self.probe, self.contacts, self.pathCurve2, localNode = self.mapGraph.currNode)
+		self.globalCurveSlide = GlobalCurveSlide(self.robotParam, self.contacts, self.pathCurve2, localNode = self.mapGraph.currNode)
 		
 		#self.setDirection(not self.globalCurveFit.getPathDirection())
 		result = self.globalCurveSlide.getPathDirection()
@@ -157,12 +138,10 @@ class PathStep(Behavior):
 		self.ampInc = 0.04
 		
 		self.currPeak = 0
-		#self.spliceJoint = 7
 		self.lastSpliceAngle = 0.0
 						
 		if self.direction:
 			self.spliceJoint = 7
-			#self.spliceJoint = 13
 		else:
 			self.spliceJoint = 31
 		
@@ -171,16 +150,14 @@ class PathStep(Behavior):
 		self.frontCurve = 0
 		self.adaptiveCurve = 0
 		self.concertinaFit = 0
-		
-		#self.computeCurve()
-		
+				
 	def computeCurve(self):
 
 				
-		self.frontCurve = AdaptiveAnchorCurve(4*pi, self.probe.segLength)				
+		self.frontCurve = AdaptiveAnchorCurve(4*pi, self.robotParam['segLength'])				
 
 		if self.frontAnchorFit == 0:
-			self.frontAnchorFit = FrontAnchorFit(self.probe, self.direction, self.spliceJoint)
+			self.frontAnchorFit = FrontAnchorFit(self.robotParam, self.direction, self.spliceJoint)
 			self.frontAnchorFit.setCurve(self.frontCurve)
 			self.frontAnchorFit.setSpliceJoint(self.spliceJoint)
 
@@ -193,7 +170,7 @@ class PathStep(Behavior):
 		self.adaptiveCurve.setTailLength(2.0)
 		
 		if self.concertinaFit == 0:
-			self.concertinaFit = FastLocalCurveFit(self.probe, self.direction, self.adaptiveCurve, 38)
+			self.concertinaFit = FastLocalCurveFit(self.robotParam, self.direction, self.adaptiveCurve, 38)
 
 			if self.direction:	
 				self.concertinaFit.setStartNode(self.spliceJoint)
@@ -206,9 +183,8 @@ class PathStep(Behavior):
 			else:
 				self.concertinaFit.setEndNode(self.spliceJoint)
 
-
-		self.frontAnchorFit.step()
-		self.concertinaFit.step()
+		self.frontAnchorFit.step(self.probeState)
+		self.concertinaFit.step(self.probeState)
 		
 		resultJoints = self.spliceFitJoints()
 		
@@ -218,7 +194,7 @@ class PathStep(Behavior):
 			endNode = self.frontAnchorFit.lastJoint			
 		else:
 			startNode = self.frontAnchorFit.lastJoint
-			endNode = self.probe.numSegs-2
+			endNode = self.numJoints-1
 						
 		self.globalCurveFit.setBoundaries(startNode, endNode)
 			
@@ -230,16 +206,14 @@ class PathStep(Behavior):
 		
 		#self.holdSlideT.setSpliceJoint(self.spliceJoint)
 
-		self.globalCurveSlide.reset(resultJoints)
-		#print "globalCurveSlide.step()"
+		self.globalCurveSlide.reset(self.probeState, resultJoints)
 		
-		self.globalCurveSlide.step()
+		self.globalCurveSlide.step(self.probeState)
 		resultJoints2 = self.globalCurveSlide.getJoints()
 		
-		self.globalCurveFit.step()
+		self.globalCurveFit.step(self.probeState)
 		
-		#self.holdSlideT.reset(resultJoints, self.direction)
-		self.holdT.reset(resultJoints2)
+		self.holdT.reset(self.probeState, resultJoints2)
 		self.refDone = False
 		
 		self.globalCurveFit.clearDraw()
@@ -249,23 +223,10 @@ class PathStep(Behavior):
 
 	def spliceFitJoints(self, isStart = False):
 		
-		result = [None for i in range(self.probe.numSegs-1)]
-		
-		#print "spliceJoint = ", self.spliceJoint
-		#print "frontAnchorJoints =", joints1
-		#print "concertinaJoints =", joints2
-
-		#if not self.concertinaFit.isJointSolid(self.spliceJoint):
-		#	newJointVal = joints1[self.spliceJoint] + joints2[self.spliceJoint]
-		#	self.lastSpliceAngle = newJointVal
-		#else:
-		#	newJointVal = self.lastSpliceAngle
-				
+		result = [None for i in range(self.numJoints)]
+						
 		joints1 = self.frontAnchorFit.getJoints()
 		joints2 = self.concertinaFit.getJoints()
-		
-		#print "joints1 =", joints1
-		#print "joints2 =", joints2
 		
 		self.concertinaFit.spliceJoint = self.spliceJoint
 		self.concertinaFit.spliceAngle = pi / 180.0 * joints1[self.spliceJoint]
@@ -277,72 +238,18 @@ class PathStep(Behavior):
 		
 		jointList = [tempJoints,joints2]
 		
-		# merge the joints prioritizing the first to last
+		" merge the joints prioritizing the first to last "
 		for joints in jointList:
 			for i in range(len(joints)):
 				if result[i] == None and joints[i] != None:
 					result[i] = joints[i]
 		
-		return result
-	
-	def getCenterPoints(self):
-		
-		#return copy(self.cmdSegPoints)
-		return self.cPoints
-		
-	def computeCenterPoints(self):
+		return result		
 
-		self.computeCmdSegPoints()
-		
-		#points = [[self.adaptiveCurve.ampSpacing/2.0 + i * self.adaptiveCurve.ampSpacing, -self.frontCurve.peakAmp[0]] for i in range(self.frontCurve.numPeaks)]
-		
-		points = [[0.0,0.0], [pi/self.frontCurve.initFreq, 0.0], [2*pi/self.frontCurve.initFreq, 0.0]]
-		points.reverse()
-		
-		" 1. at each inflection point, find the closest segment and it's point on segment"
-		" 2. cycle through all 40 segments "
-		" 3. transform those points to current estimated positions "
-
-		self.localNode = self.mapGraph.getCurrentNode()
-		
-		c_configs = []
-		
-		for p in points:
-			minDist = 1e100
-			minPoint = [0.0,0.0]
-			jointIndex = 0
-			segLen = 0.0
-			
-			for i in range(len(self.cmdSegPoints)-1):
-
-				p0 = self.cmdSegPoints[i]
-				p1 = self.cmdSegPoints[i+1]
-				seg = [p0,p1]
-				dist, cp = closestSegPoint(seg, p)
-
-				if dist < minDist:
-					minDist = dist
-					minPoint = cp
-					jointIndex = i-1
-					segLen = sqrt((p0[0]-minPoint[0])**2 + (p0[1]-minPoint[1])**2)
-
-			" return joint number and position on segment "
-			c_configs.append([jointIndex,segLen])
-
-		self.cPoints = []
-		for c in c_configs:
-			joint = c[0]
-			segLen = c[1]
-			
-			pose = self.contacts.getAveragePose(joint)
-			#pose = self.localNode.getJointPose(joint)
-			point = [pose[0] + segLen*cos(pose[2]), pose[1] + segLen*sin(pose[2])]
-			
-			if point not in self.cPoints:
-				self.cPoints.append(point)
-		
-
+	"""
 	def computeCmdSegPoints(self):
+
+		segLength = self.robotParam['segLength']
 
 		if self.direction:
 
@@ -358,22 +265,22 @@ class PathStep(Behavior):
 			for i in ind:		
 				sampAngle = self.probe.getServoCmd(i)
 				totalAngle = cmdOrigin[2] + sampAngle
-				xTotal = cmdOrigin[0] - self.probe.segLength*cos(totalAngle)
-				zTotal = cmdOrigin[1] - self.probe.segLength*sin(totalAngle)
+				xTotal = cmdOrigin[0] - segLength*cos(totalAngle)
+				zTotal = cmdOrigin[1] - segLength*sin(totalAngle)
 				pnt = [xTotal, zTotal, totalAngle]
 				cmdOrigin = pnt
 				self.cmdSegPoints.insert(0, cmdOrigin)
 
-			cmdOrigin = [self.probe.segLength*cos(-spliceJointAngle),self.probe.segLength*sin(-spliceJointAngle),-spliceJointAngle]
+			cmdOrigin = [segLength*cos(-spliceJointAngle),segLength*sin(-spliceJointAngle),-spliceJointAngle]
 			self.cmdSegPoints.append(cmdOrigin)
 
-			for i in range(self.spliceJoint+1,self.probe.numSegs-1):
+			for i in range(self.spliceJoint+1,self.numJoints):
 				
 				sampAngle = self.probe.getServoCmd(i)
 
 				totalAngle = cmdOrigin[2] - sampAngle
-				xTotal = cmdOrigin[0] + self.probe.segLength*cos(totalAngle)
-				zTotal = cmdOrigin[1] + self.probe.segLength*sin(totalAngle)
+				xTotal = cmdOrigin[0] + segLength*cos(totalAngle)
+				zTotal = cmdOrigin[1] + segLength*sin(totalAngle)
 				pnt = [xTotal, zTotal, totalAngle]
 				cmdOrigin = pnt
 				self.cmdSegPoints.append(cmdOrigin)
@@ -383,7 +290,7 @@ class PathStep(Behavior):
 			spliceJointAngle = -self.concertinaFit.getJoints()[self.spliceJoint] * pi /180.0 
 			
 			self.cmdSegPoints = []
-			cmdOrigin = [self.probe.segLength*cos(-spliceJointAngle),self.probe.segLength*sin(-spliceJointAngle),-spliceJointAngle + pi]
+			cmdOrigin = [segLength*cos(-spliceJointAngle),segLength*sin(-spliceJointAngle),-spliceJointAngle + pi]
 
 			self.cmdSegPoints.append(cmdOrigin)
 
@@ -393,8 +300,8 @@ class PathStep(Behavior):
 			for i in ind:
 				sampAngle = self.probe.getServoCmd(i)
 				totalAngle = cmdOrigin[2] + sampAngle
-				xTotal = cmdOrigin[0] - self.probe.segLength*cos(totalAngle)
-				zTotal = cmdOrigin[1] - self.probe.segLength*sin(totalAngle)
+				xTotal = cmdOrigin[0] - segLength*cos(totalAngle)
+				zTotal = cmdOrigin[1] - segLength*sin(totalAngle)
 				pnt = [xTotal, zTotal, totalAngle]
 				cmdOrigin = pnt
 				self.cmdSegPoints.insert(0,cmdOrigin)
@@ -402,11 +309,11 @@ class PathStep(Behavior):
 			cmdOrigin = [0.0,0.0,-spliceJointAngle + pi]			
 			self.cmdSegPoints.append(cmdOrigin)
 			
-			for i in range(self.spliceJoint,self.probe.numSegs-1):
+			for i in range(self.spliceJoint,self.numJoints):
 				sampAngle = self.probe.getServoCmd(i)
 				totalAngle = cmdOrigin[2] - sampAngle
-				xTotal = cmdOrigin[0] + self.probe.segLength*cos(totalAngle)
-				zTotal = cmdOrigin[1] + self.probe.segLength*sin(totalAngle)
+				xTotal = cmdOrigin[0] + segLength*cos(totalAngle)
+				zTotal = cmdOrigin[1] + segLength*sin(totalAngle)
 				pnt = [xTotal, zTotal, totalAngle]
 				cmdOrigin = pnt
 				self.cmdSegPoints.append(cmdOrigin)
@@ -438,9 +345,11 @@ class PathStep(Behavior):
 		
 		self.computeCmdSegPoints()
 
+		segLength = self.robotParam['segLength']
+
 		if self.direction:
 			" the actual configuration of the snake "
-			#actSegPoints = [[-self.probe.segLength,0.0,0.0]]
+			#actSegPoints = [[-segLength,0.0,0.0]]
 
 			#resultJoints = self.spliceFitJoints(self.frontAnchorFit.getJoints(), self.concertinaFit.getJoints())
 			#spliceJointAngle = resultJoints[self.spliceJoint]
@@ -463,20 +372,20 @@ class PathStep(Behavior):
 			for i in ind:
 				sampAngle = self.probe.getServo(i)
 				totalAngle = actOrigin[2] + sampAngle
-				xTotal = actOrigin[0] - self.probe.segLength*cos(totalAngle)
-				zTotal = actOrigin[1] - self.probe.segLength*sin(totalAngle)
+				xTotal = actOrigin[0] - segLength*cos(totalAngle)
+				zTotal = actOrigin[1] - segLength*sin(totalAngle)
 				pnt = [xTotal, zTotal, totalAngle]
 				actOrigin = pnt
 				actSegPoints.insert(0,actOrigin)
 	
-			actOrigin = [self.probe.segLength*cos(-spliceJointAngle),self.probe.segLength*sin(-spliceJointAngle),-spliceJointAngle]
+			actOrigin = [segLength*cos(-spliceJointAngle),segLength*sin(-spliceJointAngle),-spliceJointAngle]
 			actSegPoints.append(actOrigin)
 			
 			for i in range(self.spliceJoint+1,self.probe.numSegs-1):
 				sampAngle = self.probe.getServo(i)
 				totalAngle = actOrigin[2] - sampAngle
-				xTotal = actOrigin[0] + self.probe.segLength*cos(totalAngle)
-				zTotal = actOrigin[1] + self.probe.segLength*sin(totalAngle)
+				xTotal = actOrigin[0] + segLength*cos(totalAngle)
+				zTotal = actOrigin[1] + segLength*sin(totalAngle)
 				pnt = [xTotal, zTotal, totalAngle]
 				actOrigin = pnt
 				actSegPoints.append(actOrigin)
@@ -486,7 +395,7 @@ class PathStep(Behavior):
 			spliceJointAngle = -self.concertinaFit.getJoints()[self.spliceJoint] * pi /180.0 
 			
 			actSegPoints = []
-			actOrigin = [self.probe.segLength*cos(-spliceJointAngle),self.probe.segLength*sin(-spliceJointAngle),-spliceJointAngle + pi]
+			actOrigin = [segLength*cos(-spliceJointAngle),segLength*sin(-spliceJointAngle),-spliceJointAngle + pi]
 
 			actSegPoints.insert(0, actOrigin)
 
@@ -496,8 +405,8 @@ class PathStep(Behavior):
 			for i in ind:
 				sampAngle = self.probe.getServo(i)
 				totalAngle = actOrigin[2] + sampAngle
-				xTotal = actOrigin[0] - self.probe.segLength*cos(totalAngle)
-				zTotal = actOrigin[1] - self.probe.segLength*sin(totalAngle)
+				xTotal = actOrigin[0] - segLength*cos(totalAngle)
+				zTotal = actOrigin[1] - segLength*sin(totalAngle)
 				pnt = [xTotal, zTotal, totalAngle]
 				actOrigin = pnt
 				actSegPoints.insert(0,actOrigin)
@@ -508,35 +417,12 @@ class PathStep(Behavior):
 			for i in range(self.spliceJoint,self.probe.numSegs-1):
 				sampAngle = self.probe.getServo(i)
 				totalAngle = actOrigin[2] - sampAngle
-				xTotal = actOrigin[0] + self.probe.segLength*cos(totalAngle)
-				zTotal = actOrigin[1] + self.probe.segLength*sin(totalAngle)
+				xTotal = actOrigin[0] + segLength*cos(totalAngle)
+				zTotal = actOrigin[1] + segLength*sin(totalAngle)
 				pnt = [xTotal, zTotal, totalAngle]
 				actOrigin = pnt
 				actSegPoints.append(actOrigin)
-
-			
-			" the actual configuration of the snake "
-			"""
-			actSegPoints = [[-self.probe.segLength,0.0,0.0]]
-			actOrigin = [0.0,0.0,pi]
-			actSegPoints.insert(0,actOrigin)
-
-			ind = range(0,self.probe.numSegs-1)
-			ind.reverse()
 				
-			for i in ind:
-				sampAngle = self.probe.getServo(i)
-				totalAngle = actOrigin[2] + sampAngle
-				xTotal = actOrigin[0] - self.probe.segLength*cos(totalAngle)
-				zTotal = actOrigin[1] - self.probe.segLength*sin(totalAngle)
-				pnt = [xTotal, zTotal, totalAngle]
-				actOrigin = pnt
-				actSegPoints.insert(0,actOrigin)
-			
-				
-				#actSegPoints[i+2] = actOrigin		
-			"""
-		
 		if self.direction:
 
 			
@@ -545,15 +431,15 @@ class PathStep(Behavior):
 			" local peak configurations "
 			peakCurves = [[]]
 
-			peakOrigin = [self.probe.segLength*cos(-spliceJointAngle),self.probe.segLength*sin(-spliceJointAngle),-spliceJointAngle]
+			peakOrigin = [segLength*cos(-spliceJointAngle),segLength*sin(-spliceJointAngle),-spliceJointAngle]
 			peakCurves[-1].append(copy(peakOrigin))
 
 
 			for i in range(self.spliceJoint+1,self.probe.numSegs-1):
 				sampAngle = self.probe.getServo(i)
 				totalAngle = peakOrigin[2] - sampAngle
-				xTotal = peakOrigin[0] + self.probe.segLength*cos(totalAngle)
-				zTotal = peakOrigin[1] + self.probe.segLength*sin(totalAngle)
+				xTotal = peakOrigin[0] + segLength*cos(totalAngle)
+				zTotal = peakOrigin[1] + segLength*sin(totalAngle)
 				pnt = [xTotal, zTotal, totalAngle]
 				peakOrigin = pnt
 				#peakCurves[-1].append(copy(peakOrigin))
@@ -572,8 +458,8 @@ class PathStep(Behavior):
 	
 					sampAngle = self.probe.getServo(i)
 					totalAngle = peakOrigin[2] - sampAngle
-					xTotal = peakOrigin[0] + self.probe.segLength*cos(totalAngle)
-					zTotal = peakOrigin[1] + self.probe.segLength*sin(totalAngle)
+					xTotal = peakOrigin[0] + segLength*cos(totalAngle)
+					zTotal = peakOrigin[1] + segLength*sin(totalAngle)
 					pnt = [xTotal, zTotal, totalAngle]
 					peakOrigin = pnt
 					peakCurves[-1].append(copy(peakOrigin))
@@ -586,7 +472,7 @@ class PathStep(Behavior):
 			" local peak configurations "
 			peakCurves = [[]]
 
-			peakOrigin = [self.probe.segLength*cos(-spliceJointAngle),self.probe.segLength*sin(-spliceJointAngle),-spliceJointAngle + pi]
+			peakOrigin = [segLength*cos(-spliceJointAngle),segLength*sin(-spliceJointAngle),-spliceJointAngle + pi]
 			peakCurves[-1].append(copy(peakOrigin))
 			
 			ind = range(0,self.spliceJoint)
@@ -595,8 +481,8 @@ class PathStep(Behavior):
 			for i in ind:
 				sampAngle = self.probe.getServo(i)
 				totalAngle = peakOrigin[2] + sampAngle
-				xTotal = peakOrigin[0] - self.probe.segLength*cos(totalAngle)
-				zTotal = peakOrigin[1] - self.probe.segLength*sin(totalAngle)
+				xTotal = peakOrigin[0] - segLength*cos(totalAngle)
+				zTotal = peakOrigin[1] - segLength*sin(totalAngle)
 				pnt = [xTotal, zTotal, totalAngle]
 				peakOrigin = pnt
 				#peakCurves[-1].append(copy(peakOrigin))
@@ -615,67 +501,14 @@ class PathStep(Behavior):
 	
 					sampAngle = self.probe.getServo(i)
 					totalAngle = peakOrigin[2] + sampAngle
-					xTotal = peakOrigin[0] - self.probe.segLength*cos(totalAngle)
-					zTotal = peakOrigin[1] - self.probe.segLength*sin(totalAngle)
+					xTotal = peakOrigin[0] - segLength*cos(totalAngle)
+					zTotal = peakOrigin[1] - segLength*sin(totalAngle)
 					pnt = [xTotal, zTotal, totalAngle]
 					peakOrigin = pnt
 					peakCurves[-1].append(copy(peakOrigin))
 				else:
 					peakCurves[-1].append(copy(peakOrigin))
 					
-					
-							
-
-			"""
-			spliceJointAngle = -self.concertinaFit.getJoints()[self.spliceJoint] * pi /180.0
-
-			" local peak configurations "
-			peakCurves = [[]]
-
-			#peakOrigin = [self.probe.segLength*cos(-spliceJointAngle),self.probe.segLength*sin(-spliceJointAngle),-spliceJointAngle + pi]
-
-			#peakOrigin = [self.probe.segLength*cos(-spliceJointAngle),self.probe.segLength*sin(-spliceJointAngle),-spliceJointAngle]
-			
-			peakOrigin = [0.0,0.0,-spliceJointAngle + pi]	
-			peakCurves[-1].append(copy(peakOrigin))
-
-			ind = range(0,self.spliceJoint)
-			ind.reverse()
-			
-			#ind = range(0, self.spliceJoint+2)
-			#ind.reverse()
-
-			for i in ind:
-				sampAngle = self.probe.getServo(i)
-				totalAngle = peakOrigin[2] + sampAngle
-				xTotal = peakOrigin[0] - self.probe.segLength*cos(totalAngle)
-				zTotal = peakOrigin[1] - self.probe.segLength*sin(totalAngle)
-				pnt = [xTotal, zTotal, totalAngle]
-				peakOrigin = pnt
-				
-				" if current joint is the minimum of a current peak, reset the origin "
-				peakIndex = -1
-				for index in range(len(self.concertinaFit.jointClasses)):
-					if self.concertinaFit.jointClasses[index].count(i) > 0:
-						peakIndex = index
-						break
-				
-				if peakIndex >= 1 and min(self.concertinaFit.jointClasses[peakIndex]) == i:
-					peakCurves.append([])
-					peakOrigin = self.cmdSegPoints[i+1]
-					peakCurves[-1].append(copy(peakOrigin))
-	
-					sampAngle = self.probe.getServo(i)
-					totalAngle = peakOrigin[2] + sampAngle
-					xTotal = peakOrigin[0] - self.probe.segLength*cos(totalAngle)
-					zTotal = peakOrigin[1] - self.probe.segLength*sin(totalAngle)
-					pnt = [xTotal, zTotal, totalAngle]
-					peakOrigin = pnt
-					peakCurves[-1].append(copy(peakOrigin))
-				else:
-					peakCurves[-1].append(copy(peakOrigin))
-			"""
-			
 			
 		errors = []
 		for i in range(0,self.probe.numSegs-2):
@@ -710,16 +543,6 @@ class PathStep(Behavior):
 				pylab.scatter(xP,yP, linewidth=1, color='b')
 				pylab.plot(xP,yP,color='b')
 		
-		"""
-		for i in range(1, len(actSegPoints)-2):
-			xP = [actSegPoints[i][0]]
-			yP = [actSegPoints[i][1]]
-			val = errors[i-1]
-			if val > 1.0:
-				val = 1.0
-				
-			pylab.scatter(xP,yP,color=str(1.0-val))
-		"""
 
 		#print "plotting graph", self.plotCount
 
@@ -729,6 +552,7 @@ class PathStep(Behavior):
 		pylab.savefig("fitPlot%04u.png" % self.plotCount)
 		
 		self.plotCount += 1
+	"""	
 		
 	def computeAnchorErrors(self):
 		numPoses = len(self.errorPoses1)
@@ -761,9 +585,6 @@ class PathStep(Behavior):
 
 		print "Extend Front"
 
-		#self.frontExtendDone = False
-		
-		
 		if self.globalCurveSlide.step():
 			self.frontExtendDone = True
 			self.frontExtending = False
@@ -772,23 +593,16 @@ class PathStep(Behavior):
 		joints = self.globalCurveSlide.getJoints()
 
 		self.holdT.reset(joints)
-		
-		#resultJoints = self.spliceFitJoints()
-		#self.holdSlideT.reset(resultJoints, self.direction)
-		
-
-		#self.frontExtending = False
-		#self.frontExtendDone = False
-					
+							
 	def doFrontAnchor(self):
 				
 		" compute the maximum error of the joints in the current peak "
 		anchorJoints = self.frontAnchorFit.getPeakJoints()
 		anchorJoints.sort()
 
-		errors = []
-		for j in anchorJoints:
-			errors.append(self.probe.getServo(j)-self.probe.getServoCmd(j))
+		joints = self.probeState['joints']
+		cmdJoints = self.probeState['cmdJoints']
+		errors = self.probeState['errors']
 
 		maxError = 0.0	
 		for err in errors:
@@ -937,10 +751,10 @@ class PathStep(Behavior):
 				#print "setting jerkJoints to", self.jerkJoints
 				
 				if self.jerkAngle == 0 and self.prevJerkAngle == 0:
-					self.nomJerk = self.probe.getServo(self.jerkJoint) * 180.0 / pi
+					self.nomJerk = joints[self.jerkJoint] * 180.0 / pi
 				
 					for k in range(len(self.jerkJoints)):
-						self.nomJerks[k] = self.probe.getServo(self.jerkJoints[k]) * 180.0 / pi
+						self.nomJerks[k] = joints[self.jerkJoints[k]] * 180.0 / pi
 				
 					#print "nominal = " , self.nomJerk, self.probe.getServo(self.jerkJoint)
 					self.prevJerkAngle = self.jerkAngle
@@ -956,15 +770,10 @@ class PathStep(Behavior):
 
 				elif self.jerkAngle == 60:
 					
-					#print "setting jerk joint to ", self.jerkAngle + self.nomJerk
-					#print "jerk angle error = " , self.probe.getServo(self.jerkJoint)-self.probe.getServoCmd(self.jerkJoint)
-
-					errs = []
 					for k in range(len(self.jerkJoints)):
-						errs.append(self.probe.getServo(self.jerkJoints[k])-self.probe.getServoCmd(self.jerkJoints[k]))
 						self.prevJerkAngles[k] = self.jerkAngles[k]
 					
-					self.jerkErrors.append(self.probe.getServo(self.jerkJoint)-self.probe.getServoCmd(self.jerkJoint))
+					self.jerkErrors.append(joints[self.jerkJoint]-cmdJoints[self.jerkJoint])
 					self.prevJerkAngle = self.jerkAngle
 					self.jerkAngle = -60
 
@@ -986,7 +795,7 @@ class PathStep(Behavior):
 					
 				elif self.jerkAngle == -60:
 					#print "jerk angle error = " , self.probe.getServo(self.jerkJoint)-self.probe.getServoCmd(self.jerkJoint)
-					self.jerkErrors.append(self.probe.getServo(self.jerkJoint)-self.probe.getServoCmd(self.jerkJoint))
+					self.jerkErrors.append(joints[self.jerkJoint]-cmdJoints[self.jerkJoint])
 
 					" error = (-0.09, 0.005) is good "
 					" error = (-2.73, -1.99) is bad "
@@ -1081,30 +890,27 @@ class PathStep(Behavior):
 
 
 		" reset all torques of the joints to maximum "
-		for i in range(self.probe.numSegs-1):
+		for i in range(self.numJoints):
 			self.probe.setJointTorque(i, self.probe.maxTorque)
 
 		" weaken head joints "
 		" 30*2.5 is maximum "
 		anchorJoints = self.frontAnchorFit.getPeakJoints()
 
-		#print "anchorJoints =", len(anchorJoints), "amp =", self.frontCurve.getPeakAmp()
-		#if len(anchorJoints) > 0 and self.frontCurve.getPeakAmp() > 0 and self.isJerking:
-
 		" Lead joints of the snake are weakened when not part of front-anchoring "		
 		if len(anchorJoints) > 0 and self.frontCurve.getPeakAmp() > 0:
 			
 			if not self.direction:
 				maxJoint = max(anchorJoints)
-				#print "weakening joints", range(maxJoint+1, self.probe.numSegs-2)
-				for i in range(maxJoint+1, self.probe.numSegs-1):
-					if i <= self.probe.numSegs-2:
+				#print "weakening joints", range(maxJoint+1, self.numJoints)
+				for i in range(maxJoint+1, self.numJoints):
+					if i <= self.numJoints-1:
 						self.probe.setJointTorque(i, 3.0)
 			else:
 				minJoint = min(anchorJoints)
 				#print "weakening joints", range(0,minJoint-1)
 				for i in range(0, minJoint-1):					
-					if i <= self.probe.numSegs-2:
+					if i <= self.numJoints-1:
 						self.probe.setJointTorque(i, 3.0)
 	
 		" execute the local curve fitting "
@@ -1127,13 +933,10 @@ class PathStep(Behavior):
 		#self.mergeJoints([joints2, joints1])
 
 		resultJoints = self.spliceFitJoints()
-		
-
-		self.holdT.reset(resultJoints)
+	
+		self.holdT.reset(self.probeState, resultJoints)
 		
 		if self.isJerking:
-			#print "setting jerk joints", self.jerkJoints, "to", self.nomJerk + self.jerkAngle
-			#self.holdT.positions[self.jerkJoint] = self.nomJerk + self.jerkAngle
 			for k in range(len(self.jerkJoints)):
 				self.holdT.positions[self.jerkJoints[k]] = self.nomJerks[k] + self.jerkAngles[k]
 			
@@ -1145,20 +948,13 @@ class PathStep(Behavior):
 		peakJoints = self.concertinaFit.getPeakJoints(self.currPeak) + self.concertinaFit.getPeakJoints(self.currPeak+1)
 		peakJoints.sort()
 		
-		errors = []
-		for j in peakJoints:
-			errors.append(self.probe.getServo(j)-self.probe.getServoCmd(j))
-
+		errors = self.probeState['errors']
+		
 		maxError = 0.0	
 		for err in errors:
 			if fabs(err) > maxError:
 				maxError = fabs(err)
 		
-		#print "maxError =", maxError
-		
-		" draw the state of the curve fitting "
-		#self.drawFit()
-
 		currAmp = self.adaptiveCurve.getPeakAmp(self.currPeak)
 		nextVal = currAmp
 
@@ -1222,7 +1018,7 @@ class PathStep(Behavior):
 
 
 		" reset all torques of the joints to maximum "
-		for i in range(self.probe.numSegs-1):
+		for i in range(self.numJoints):
 			self.probe.setJointTorque(i, self.probe.maxTorque)
 
 		" stretch tail to remove closed-chain interference "
@@ -1240,32 +1036,26 @@ class PathStep(Behavior):
 			
 			if self.direction:
 				maxJoint = max(peakJoints)
-				#print "weakening", maxJoint+1, "to", self.probe.numSegs-3
-				#for i in range(maxJoint+1, self.probe.numSegs-2):
-				for i in range(maxJoint+2, self.probe.numSegs-1):
-					if i <= self.probe.numSegs-2:
+				#print "weakening", maxJoint+1, "to", self.numJoints
+				for i in range(maxJoint+2, self.numJoints):
+					if i <= self.numJoints-1:
 						self.probe.setJointTorque(i, 3.0)
 			else:
 				minJoint = min(peakJoints)
 				#print "weakening", 0, "to", minJoint-1
-				#for i in range(0, minJoint):					
 				for i in range(0, minJoint-1):					
 					if i <= self.probe.numSegs-2:
 						self.probe.setJointTorque(i, 3.0)
-							
 
 		resultJoints = self.spliceFitJoints()
-		self.holdT.reset(resultJoints)
+		self.holdT.reset(self.probeState, resultJoints)
 
 		peakJoints = self.concertinaFit.getPeakJoints(self.currPeak) + self.concertinaFit.getPeakJoints(self.currPeak+1)
 		peakJoints.sort()
 		
-		#print "amp =", nextVal, "min =", self.minAmp, "max =", self.maxAmp
-		#print "peak =", self.currPeak
-		#print "peakJoints =", peakJoints
+	def step(self, probeState):
 		
-
-	def step(self):
+		self.probeState = probeState
 		
 		self.count += 1
 		isDone = False
@@ -1273,14 +1063,6 @@ class PathStep(Behavior):
 		if self.transDone:
 			self.transDone = False
 
-
-			#if self.frontExtending:
-				#self.frontExtendDone = True
-				#self.frontExtending = False
-				#resultJoints = self.holdSlideT.getJoints()
-				#self.holdT.reset(resultJoints)
-				
-		
 			# termination cases
 			if not self.frontAnchoringState:
 				
@@ -1303,15 +1085,17 @@ class PathStep(Behavior):
 
 			if isDone:
 					
+				joints = probeState['joints']
+				
 				" prevent the back anchor from slithering around or buckling "
 				if self.direction:
-					for i in range(self.probe.numSegs-8, self.probe.numSegs-2):				
-						self.holdT.positions[i] = 180.0 / pi * self.probe.getServo(i)
+					for i in range(self.numJoints-9, self.numJoints-1):				
+						self.holdT.positions[i] = 180.0 / pi * joints[i]
 				else:
 					for i in range(0, 6):					
-						self.holdT.positions[i] = 180.0 / pi * self.probe.getServo(i)
+						self.holdT.positions[i] = 180.0 / pi * joints[i]
 	
-				self.holdT.step()
+				self.holdT.step(probeState)
 				
 			else:
 							
@@ -1321,9 +1105,6 @@ class PathStep(Behavior):
 						
 						print "Front Extend Step"
 						self.doExtendFront()
-						#self.frontExtending = False
-						#self.frontExtendDone = False
-		
 						if self.frontExtendDone:
 							self.frontExtending = False
 						
@@ -1343,62 +1124,17 @@ class PathStep(Behavior):
 					self.doBackConcertina()
 
 
-				solids = []
-				for i in range(self.probe.numSegs-1):
-					solids.append(self.concertinaFit.isJointSolid(i))
-				#print "solids =", solids
-
-				torques = []
-				for i in range(0,self.probe.numSegs-2):
-					torques.append(self.probe.getJointTorque(i))
-				
-				#print "joints =", self.spliceFitJoints()
-
-				#print torques
-
-				"""
-				if self.frontExtending:
-					self.refDone = False
-					print "caseA"
-					self.transDone = self.holdSlideT.step()
-				
-				else:
-				"""	
-				
 				self.refDone = False
-				self.transDone = self.holdT.step()
+				self.transDone = self.holdT.step(probeState)
 				
 		else:
 			
 			" make no movements until all reference nodes are activated "
 			if self.refDone:
-				"""
-				if self.frontExtending:
-					self.transDone = self.holdSlideT.step()
-				else:
-					self.transDone = self.holdT.step()					
-				"""
+				self.transDone = self.holdT.step(probeState)					
 				
-				self.transDone = self.holdT.step()					
-				
-				" execute the global curve fitting "
-				#if self.frontAnchoringState and not self.frontExtending:
-				#	self.globalCurveFit.step()
-		
-		
-		#print self.refDone, self.transDone, self.frontAnchoringState, self.frontExtending, self.frontExtendDone
-		
-		"""
-		if self.frontExtending:
-			joints = self.holdSlideT.getJoints()
-		else:
-			joints = self.holdT.getJoints()
-		"""
-
 		self.computeMaskAndOutput()
 
-		
-		#print self.mask
 		
 		if self.frontCurve.isOutOfSegments(self.frontAnchorFit.lastPosition):
 
@@ -1430,11 +1166,9 @@ class PathStep(Behavior):
 				self.concertinaFit = 0
 	
 				self.computeCurve()
-				#self.computeMaskAndOutput()
 			
 		if isDone:
 			
-			self.computeCenterPoints()
 			self.mask = [0.0 for i in range(0,40)]
 			self.count = 0
 
@@ -1448,12 +1182,10 @@ class PathStep(Behavior):
 			self.ampInc = 0.04
 			
 			self.currPeak = 0
-			#self.spliceJoint = 7
 			self.lastSpliceAngle = 0.0
 							
 			if self.direction:
 				self.spliceJoint = 7
-				#self.spliceJoint = 13
 			else:
 				self.spliceJoint = 31
 			
@@ -1477,55 +1209,48 @@ class PathStep(Behavior):
 		
 		if self.frontAnchoringState and self.frontExtendDone:
 			
-			self.globalCurveFit.step()
+			self.globalCurveFit.step(self.probeState)
 			
 			" collect joint settings for both behaviors "
 			
 			joints2 = self.globalCurveFit.getJoints()			
-			#joints2 = [0.0 for i in range(40)]
 			
 			if self.frontAnchorFit.anterior:			
 				for p in range(0,self.frontAnchorFit.lastJoint+1):
 					joints[p] = joints2[p]
 			else:
-				for p in range(self.frontAnchorFit.lastJoint, self.probe.numSegs-1):
+				for p in range(self.frontAnchorFit.lastJoint, self.numJoints):
 					joints[p] = joints2[p]
+
+		segLength = self.robotParam['segLength']
 
 		" Set the joints "
 		if self.refDone:
 
 			self.mergeJoints([joints])
 			" update mask for ContactReference "
-			for i in range(self.probe.numSegs-1):
-				#print self.frontAnchoringState, anchorJoints[i], self.concertinaFit.isJointSolid(i), joints[i]
+			for i in range(self.numJoints):
+
 				if (not self.frontAnchoringState and anchorJoints[i] != None) or self.concertinaFit.isJointSolid(i) or joints[i] == None:
 					self.mask[i] = 1.0
 				
 					" for activating the back anchor joints when front anchoring or extending "
-				elif self.frontAnchoringState and self.direction and i > (self.spliceJoint + 2.0/self.probe.segLength):
+				elif self.frontAnchoringState and self.direction and i > (self.spliceJoint + 2.0/segLength):
 					
 					self.mask[i] = 1.0
 							
-				elif self.frontAnchoringState and not self.direction and i < (self.spliceJoint - 2.0/self.probe.segLength):
+				elif self.frontAnchoringState and not self.direction and i < (self.spliceJoint - 2.0/segLength):
 					self.mask[i] = 1.0
 				
 				else:
 					self.mask[i] = 0.0
 								
-			" update mask for ContactReference "
-			#for i in range(self.probe.numSegs-1):
-				#print self.frontAnchoringState, anchorJoints[i], self.concertinaFit.isJointSolid(i), joints[i]
-			#	if (not self.frontAnchoringState and anchorJoints[i] != None) or self.concertinaFit.isJointSolid(i) or joints[i] == None:
-			#		self.mask[i] = 1.0
-			#	else:
-			#		self.mask[i] = 0.0
-
 		else:
 			" transition the masks, and wait for them to be stable, then change the joints "
 
 			allActive = True
 			" update mask for ContactReference "
-			for i in range(self.probe.numSegs-1):
+			for i in range(self.numJoints):
 				if (not self.frontAnchoringState and anchorJoints[i] != None) or self.concertinaFit.isJointSolid(i) or joints[i] == None:
 					self.mask[i] = 1.0
 
@@ -1535,7 +1260,7 @@ class PathStep(Behavior):
 				
 				" for activating the back anchor joints when front anchoring or extending "
 				if self.frontAnchoringState:
-					if self.direction and i > (self.spliceJoint + 2.0/self.probe.segLength):
+					if self.direction and i > (self.spliceJoint + 2.0/segLength):
 						self.mask[i] = 1.0
 
 						" check if all reference points have been created "
@@ -1543,34 +1268,20 @@ class PathStep(Behavior):
 							allActive = False
 							
 						" add the mask for the inactive portion of the back concertina gait while front anchoring "
-					elif not self.direction and i < (self.spliceJoint - 2.0/self.probe.segLength):
+					elif not self.direction and i < (self.spliceJoint - 2.0/segLength):
 						self.mask[i] = 1.0
 				
 						" check if all reference points have been created "
 						if not self.contacts.activeRef[i]:
 							allActive = False
 					
-			#allActive = True
-			#" update mask for ContactReference "
-			#for i in range(self.probe.numSegs-1):
-			#	if (not self.frontAnchoringState and anchorJoints[i] != None) or self.concertinaFit.isJointSolid(i) or joints[i] == None:
-			#		self.mask[i] = 1.0
-
-			#		" check if all reference points have been created "
-			#		if not self.contacts.activeRef[i]:
-			#			allActive = False
-					
 			if allActive:
 				self.refDone = True
 
-
-	
-
-	def reset(self):
-
-		#self.computeCenterPoints()
-		#self.frontCurve.saveAmps()
+	def reset(self, probeState):
 		
+		self.probeState = probeState
+
 		"reset everything "
 		
 		self.frontAnchorFit = 0
