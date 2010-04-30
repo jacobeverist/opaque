@@ -24,10 +24,12 @@ class TestModular(SnakeControl):
 		robotParam['segWidth'] = self.probe.segWidth
 		robotParam['maxTorque'] = self.probe.maxTorque
 		
+		self.robotParam = self.probe.robotParam
+		
 		self.setTimerAliasing(1)
 		
 		direction = True
-				
+		
 		" pose estimation "
 		self.contacts = AverageContacts(self.probe)
 		self.contacts.setTimerAliasing(5)

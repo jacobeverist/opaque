@@ -1,10 +1,3 @@
-import os
-import sys
-dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if not dir in sys.path:
-	sys.path.append(dir)
-
-from common import *
 
 from Map import Map
 import Image
@@ -13,8 +6,8 @@ import pylab
 
 class ObstacleMap(Map):
 
-	def __init__(self, probe, boundMap, contacts):
-		Map.__init__(self)
+	def __init__(self, mapSize, probe, boundMap, contacts):
+		Map.__init__(self, mapSize)
 
 		self.contacts = contacts
 		self.probe = probe

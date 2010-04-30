@@ -1,33 +1,39 @@
-import os
-import sys
-dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if not dir in sys.path:
-	sys.path.append(dir)
-
-from common import *
 
 from numpy import *
 from scipy.optimize import *
 import graph
 import csv
-from LocalNode import *
-from VoronoiMap import *
-from FrontierMap import *
-from NavRoadMap import *
-from OccupancyMap import *
-from FreeSpaceBoundaryMap import *
+
+from Map import Map
+from LocalNode import LocalNode
+from VoronoiMap import VoronoiMap
+from FrontierMap import FrontierMap
+from OccupancyMap import OccupancyMap
+from FreeSpaceBoundaryMap import FreeSpaceBoundaryMap
+#from NavRoadMap import *
+
+from StablePose import StablePose
+
 from Pose import Pose
 import pylab
 from matplotlib.patches import Circle
 from pose import *
 
 from motion import gen_icp
+from math import *
 
+import Image
+import ImageDraw
+
+# Map Space Parameters
+PIXELSIZE = 0.05
+MAPSIZE = 20.0
 
 class MapGraph:
 
 	def __init__(self, probe, contacts):
-
+		
+		# 
 		self.probe = probe
 		self.contacts = contacts
 		self.stablePose = StablePose(self.probe)
@@ -38,12 +44,12 @@ class MapGraph:
 		self.currNode = 0
 
 		self.pixelSize = PIXELSIZE
-		self.mapSize = 20.0
+		self.mapSize = MAPSIZE
 		self.numPixel = int(2.0 * self.mapSize / self.pixelSize + 1.0)
 		self.halfPix = self.pixelSize / 2.0
 		self.divPix = floor((2.0 * self.mapSize / self.pixelSize) / self.mapSize)
-		self.fileName = "mapGraph%04u.png"
 		self.saveCount = 0
+		self.fileName = "mapGraph%04u.png"
 		self.boundIteration = 0
 
 
@@ -1011,7 +1017,7 @@ class MapGraph:
 
 		print "checkL"
 
-		self.navRoadMap = NavRoadMap(self.probe, self.voronoiMap.getGraph(), localNode = self.currNode)
+		self.navRoadMap = NavRoadMap(self.mapSize, self.probe, self.voronoiMap.getGraph(), localNode = self.currNode)
 
 		print "checkM"
 			

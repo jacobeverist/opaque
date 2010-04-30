@@ -1,10 +1,3 @@
-import os
-import sys
-dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if not dir in sys.path:
-	sys.path.append(dir)
-
-from common import *
 
 from Map import Map
 import Image
@@ -12,7 +5,7 @@ import graph
 
 class FreeSpaceBoundaryMap(Map):
 
-	def __init__(self, occMap, mapSize = MAPSIZE):
+	def __init__(self, occMap, mapSize):
 		Map.__init__(self, mapSize)
 		
 		self.nodeCount = 0

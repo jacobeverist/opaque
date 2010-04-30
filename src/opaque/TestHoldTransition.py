@@ -50,24 +50,27 @@ class TestHoldTransition(SnakeControl):
 		if self.stateA == 0:	
 
 			for i in range(self.robotParam['numJoints']):
-				modVal = i % 4
-				
-				if modVal == 0:
-					self.probe.setServo(i, 0.0)
-				elif modVal == 1:
-					self.probe.setServo(i, 90.0)
-				elif modVal == 2:
-					self.probe.setServo(i, 0.0)
-				elif modVal == 3:
-					self.probe.setServo(i, -90.0)
+				self.probe.setServo(i, 0.0)
 			
 			self.stateA = 1			
 			print "step 0 complete"
 
 		elif self.stateA == 1:
-			
+
 			newJoints = [0.0 for i in range(39)]
-			
+						
+			for i in range(self.robotParam['numJoints']):
+				modVal = i % 4
+				
+				if modVal == 0:
+					newJoints[i] = 0.0
+				elif modVal == 1:
+					newJoints[i] = 90.0
+				elif modVal == 2:
+					newJoints[i] = 0.0
+				elif modVal == 3:
+					newJoints[i] = -90.0
+
 			" create and initialize behavior "
 			self.holdT = HoldTransition(self.robotParam)
 			self.holdT.reset(probeState, newJoints)

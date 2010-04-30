@@ -61,8 +61,9 @@ class TestHoldSlideTransition(SnakeControl):
 				elif modVal == 3:
 					self.probe.setServo(i, -90.0)
 				
-			self.stateA = 1			
-			print "step 0 complete"
+			if self.globalTimer > 1000:
+				self.stateA = 1			
+				print "step 0 complete"
 
 		elif self.stateA == 1:
 			
@@ -95,6 +96,7 @@ class TestHoldSlideTransition(SnakeControl):
 
 				print "step 2 complete"
 				raise
+			
 			
 								
 

@@ -1,18 +1,16 @@
 
-import os
-import sys
-dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if not dir in sys.path:
-	sys.path.append(dir)
-
-from common import *
-
 
 import ogre.renderer.OGRE as ogre
 import ogre.physics.OgreOde as OgreOde
 from Servo import Servo
 from math import *
 from copy import *
+
+ARMLENGTH = 0.15
+ARMWIDTH = 0.05
+STD_WEIGHT = 1.11
+NUM_SEGS = 40
+
 
 class SnakeProbe:
 
@@ -69,7 +67,7 @@ class SnakeProbe:
 
 		self.wallEnv = 0
 	
-		size = ogre.Vector3(self.probe.segLength, 0.01, self.probe.segWidth)
+		size = ogre.Vector3(self.segLength, 0.01, self.segWidth)
 		self.anchorMass = OgreOde.BoxMass(STD_WEIGHT*10000.0,size)
 		self.normalMass = OgreOde.BoxMass(STD_WEIGHT,size)
 
@@ -254,8 +252,8 @@ class SnakeProbe:
 		
 		for i in range(self.getNumJoints()):
 			joints.append(self.getServo(i))
-			cmdJoints.append(self.getSeroCmd(i))
-			torques.append(self.getJointTorque())
+			cmdJoints.append(self.getServoCmd(i))
+			torques.append(self.getJointTorque(i))
 			errors.append(self.getError(i))
 		
 		probeState['joints'] = joints

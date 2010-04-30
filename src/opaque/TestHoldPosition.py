@@ -91,14 +91,15 @@ class TestHoldPosition(SnakeControl):
 					if currJoints[i] != 0.0:
 						print "ERROR: joint", i, "is", currJoints[i], "not 0.0"
 
-				rootPose = self.contacts.getAveragePose(19)	
-				poses = []
-				for i in range(self.robotParam['numJoints']):
-					poses.append(self.probe.getJointWRTJointPose(rootPose, 19, i))					
-				self.drawThings.plotRobotConfiguration(poses)
+				#rootPose = self.contacts.getAveragePose(19)	
+				#poses = []
+				#for i in range(self.robotParam['numJoints']):
+				#	poses.append(self.probe.getJointWRTJointPose(rootPose, 19, i))					
+				#self.drawThings.plotRobotConfiguration(poses)
 
 				print "step 2 complete"
-				raise
+				self.stateA = 2
+				#raise
 				
 			else:
 				self.nextState = True
@@ -121,4 +122,7 @@ class TestHoldPosition(SnakeControl):
 						print "ERROR: joint", i, "is", currJoints[i], "not -90.0"
 
 				print "step 1 complete"
-				
+
+		elif self.stateA == 2:
+			pass
+		

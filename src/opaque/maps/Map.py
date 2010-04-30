@@ -1,17 +1,14 @@
-import os
-import sys
-dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if not dir in sys.path:
-	sys.path.append(dir)
-
-from common import *
 
 import Image
+from math import *
+
+# Map Space Parameters
+PIXELSIZE = 0.05
 
 
 class Map:
 
-	def __init__(self, mapSize = MAPSIZE):
+	def __init__(self, mapSize):
 		self.pixelSize = PIXELSIZE
 		self.mapSize = mapSize
 		self.numPixel = int(2.0*self.mapSize / self.pixelSize + 1.0)

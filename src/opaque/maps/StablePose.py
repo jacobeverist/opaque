@@ -1,12 +1,5 @@
-import os
-import sys
-dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if not dir in sys.path:
-	sys.path.append(dir)
 
-from common import *
-from ValueStability import *
-from DiffStability import *
+from DiffStability import DiffStability
 
 """
 1. reset the root node to (0,0,0)
@@ -20,7 +13,6 @@ from DiffStability import *
 class StablePose:
 	
 	def __init__(self, probe):
-		#self.valStabs = [ValueStability(1e-3, 50) for i in range(39)]
 		self.valStabs = [DiffStability(0.05, 1) for i in range(39)]
 		self.probe = probe
 		self.node = 0

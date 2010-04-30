@@ -1,10 +1,3 @@
-import os
-import sys
-dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if not dir in sys.path:
-	sys.path.append(dir)
-
-from common import *
 
 from Map import Map
 import Image
@@ -16,7 +9,7 @@ import ImageDraw
 class FrontierMap(Map):
 
 	#def __init__(self, boundMap, obstacleMap, saveCount):
-	def __init__(self, mapGraph, mapSize = MAPSIZE):
+	def __init__(self, mapGraph, mapSize):
 		Map.__init__(self, mapSize)
 				
 		self.fileName = "mapFrontierGraph%04u.png"

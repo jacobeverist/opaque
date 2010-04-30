@@ -1,10 +1,4 @@
-import os
-import sys
-dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if not dir in sys.path:
-	sys.path.append(dir)
 
-from common import *
 from Map import Map
 from copy import *
 from math import *
@@ -15,9 +9,9 @@ nodeCount = 0
 class NavRoadMap(Map):
 
 	# take in vertices and edges of roadmap graph
-	def __init__(self, probe, roadGraph, localNode = 0):
+	def __init__(self, mapSize, probe, roadGraph, localNode = 0):
 		global nodeCount
-		Map.__init__(self)
+		Map.__init__(self, mapSize)
 		
 		self.probe = probe
 		self.fileName = "mapNavRoadMap%04u.png"

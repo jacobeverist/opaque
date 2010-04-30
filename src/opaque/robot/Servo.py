@@ -1,15 +1,28 @@
 
-import os
-import sys
-dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if not dir in sys.path:
-	sys.path.append(dir)
-	
-from common import *
 
-import ogre.renderer.OGRE as ogre
+#import ogre.renderer.OGRE as ogre
 import ogre.physics.OgreOde as OgreOde
+from math import pi
 
+DEGREES_TO_RADIANS = pi / 180.0
+
+# servo force/speed limits
+SERVO_FMAX = 2.5 # Newton metres
+SERVO_VMAX = 116.0 * DEGREES_TO_RADIANS # degrees / sec
+
+# servo PID gains
+SERVO_PGAIN = 100
+SERVO_IGAIN = 1
+SERVO_DGAIN = .001
+
+# servo error tolerance
+SERVO_ERRMIN = 0.01 * DEGREES_TO_RADIANS # _deg
+
+# servo stops
+HI_SERVO_STOP = 160.0 * DEGREES_TO_RADIANS # _deg
+LO_SERVO_STOP = -160.0 * DEGREES_TO_RADIANS # _deg
+
+WORLD_STEP = 0.001
 
 class Servo():
 

@@ -4,6 +4,7 @@ from math import fabs
 
 from behaviors.PokeWalls import PokeWalls
 from pose.AverageContacts import AverageContacts
+from maps.MapGraph import MapGraph
 
 class TestPokeWalls(SnakeControl):
 
@@ -31,6 +32,17 @@ class TestPokeWalls(SnakeControl):
 		self.robotParam = self.probe.robotParam
 		
 		self.setTimerAliasing(1)
+
+		self.contacts = AverageContacts(self.probe)
+		self.contacts.setMask( [1.0 for i in range(39)] )	
+		self.contacts.step()
+					
+		self.mapGraph = MapGraph(self.probe, self.contacts)
+		self.mapGraph.loadFile(1)
+		
+		self.mapGraph.correctPoses2()
+		self.mapGraph.synch()
+		self.mapGraph.saveMap()
 		
 		self.nextState = False
 		
@@ -62,9 +74,7 @@ class TestPokeWalls(SnakeControl):
 				elif modVal == 3:
 					self.probe.setServo(i, -90.0)
 
-			self.contacts = AverageContacts(self.probe)
-			self.contacts.setMask( [1.0 for i in range(39)] )	
-			self.contacts.step()
+
 				
 			self.stateA = 1			
 			print "step 0 complete"
@@ -81,7 +91,7 @@ class TestPokeWalls(SnakeControl):
 		elif self.stateA == 2:
 			
 			" create and initialize behavior "
-			self.pokeWalls = PokeWalls(self.robotParam, self.contacts)
+			self.pokeWalls = PokeWalls(self.robotParam, self.contacts, obstContact = self.mapGraph.obstCallBack)
 
 			self.stateA = 3
 			

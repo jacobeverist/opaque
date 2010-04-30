@@ -65,9 +65,11 @@ class TestFrontExtend(SnakeControl):
 			self.contacts = AverageContacts(self.probe)
 			self.contacts.setMask( [1.0 for i in range(39)] )	
 			self.contacts.step()
-			
-			self.stateA = 1			
-			print "step 0 complete"
+	
+			if self.globalTimer > 1000:
+				self.stateA = 1			
+				print "step 0 complete"
+
 
 		elif self.stateA == 1:
 		
