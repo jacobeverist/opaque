@@ -77,12 +77,15 @@ class MapGraph:
 
 		self.childNodes = []
 		self.childEntities = []
-		self.boundParentNode = self.probe._mgr.getRootSceneNode().createChildSceneNode("globalBoundNode")
+		
+		self.boundParentNode = 0
 
 		#self.newNode()
 
 	def loadNext(self):
-		self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, inSim = False)
+		#self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, self.pixelSize, self.probe.robotParam, inSim = False)
+		self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, self.pixelSize, inSim = False)
+
 		self.currNode.readFromFile(self.numNodes)
 		
 		self.poseGraph.add_node(self.numNodes, self.currNode)
@@ -99,7 +102,8 @@ class MapGraph:
 		self.currNode = 0
 		
 		for i in range(0,num_poses):
-			self.currNode = LocalNode(self.probe, self.contacts, i, 19, inSim = False)
+			# def __init__(self, probe, contacts, nodeID, rootNode, pixelSize, inSim = True):
+			self.currNode = LocalNode(self.probe, self.contacts, i, 19, self.pixelSize, inSim = False)
 			self.currNode.readFromFile(i)
 			
 			self.poseGraph.add_node(i, self.currNode)
@@ -131,7 +135,8 @@ class MapGraph:
 
 		print "checkO"
 
-		self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19)
+		#self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19)
+		self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, self.pixelSize, inSim = False)
 
 		print "checkP"
 		
@@ -335,6 +340,10 @@ class MapGraph:
 		self.contacts.resetPose(estPose = estPoses[-1])
 
 	def drawEstBoundary(self):
+
+		if self.boundParentNode == 0:
+			self.boundParentNode = self.probe._mgr.getRootSceneNode().createChildSceneNode("globalBoundNode")
+
 		
 		# deference the child nodes now
 		for child in self.childNodes:
@@ -495,7 +504,6 @@ class MapGraph:
 
 		for i in range(self.numNodes):
 			localNode = self.poseGraph.get_node_attributes(i)
-			#localNode.saveMap()
 			localObstMap = localNode.getObstacleMap()
 			localMap = localObstMap.getMap()
 			localImage = localMap.load()
@@ -511,14 +519,6 @@ class MapGraph:
 						pnt = localNode.convertLocalToGlobal(pnt)
 
 						indexX, indexY = self.realToGrid(pnt)
-						#if indexX >= 0 and indexX < self.numPixel and indexY >= 0 and indexY < self.numPixel:
-						#	self.image[indexX,indexY] = 255
-						
-						" fill in the interstitial spaces to remove aliasing "
-						#for m in range(indexX-1,indexX+2):
-						#	for n in range(indexY-1,indexY+2):
-						#		if m >= 0 and m < self.numPixel and n >= 0 and n < self.numPixel:
-						#			self.obstImage[m,n] = 255
 
 						self.obstImage[indexX, indexY] = 255
 							

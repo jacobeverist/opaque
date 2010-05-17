@@ -49,16 +49,12 @@ class OccupancyMap(Map):
 						pnt = localNode.convertLocalToGlobal(pnt)
 
 						indexX, indexY = self.realToGrid(pnt)
-						#if indexX >= 0 and indexX < self.numPixel and indexY >= 0 and indexY < self.numPixel:
-						#	self.image[indexX,indexY] = 255
-						
+												
 						" fill in the interstitial spaces to remove aliasing "
 						for m in range(indexX - 1, indexX + 2):
 							for n in range(indexY - 1, indexY + 2):
 								if m >= 0 and m < self.numPixel and n >= 0 and n < self.numPixel:
 									self.image[m, n] = 255
-
-		pass
 	
 
 						

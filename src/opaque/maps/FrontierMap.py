@@ -3,8 +3,10 @@ from Map import Map
 import Image
 import pylab
 import ImageDraw
-
-
+from SplineFit import SplineFit
+from math import floor, sqrt
+from numpy import arange
+from copy import copy
 
 class FrontierMap(Map):
 
@@ -15,11 +17,7 @@ class FrontierMap(Map):
 		self.fileName = "mapFrontierGraph%04u.png"
 
 		self.mapGraph = mapGraph
-		#self.boundMap = self.mapGraph.boundMapImage
-		#self.obstacleMap = self.mapGraph.obstMapImage
-		
-		#self.saveCount = saveCount											
-		
+
 		self.checkSpline = 0
 
 
@@ -36,7 +34,6 @@ class FrontierMap(Map):
 	def saveMap(self):
 
 		tempImage = self.mapImage.copy()
-		draw = ImageDraw.Draw(tempImage)
 		
 		tempImage.save(self.fileName % self.saveCount)	
 		self.saveCount += 1
@@ -170,15 +167,12 @@ class FrontierMap(Map):
 		sumRange = 3
 		num = (2*sumRange+1) * (2*sumRange+1)
 		
-		xMax = 0
-		yMax = 0
 		densityMax = 0
 		densityMin = 1e100
 
 		boundImg = self.mapGraph.boundMap.image
 		obstImg = self.obstacleMap.load()
 
-		#for i in range(sumRange,self.numPixel-sumRange):
 		for i in range(self.numPixel/2+20,self.numPixel-sumRange):
 			for j in range(sumRange,self.numPixel-sumRange):
 				if boundImg[i,j] == 255:
@@ -206,8 +200,6 @@ class FrontierMap(Map):
 						self.image[i,j] = density
 						
 						if density > densityMax:
-							xMax = i
-							yMax = j
 							densityMax = density
 							
 						if density < densityMin:

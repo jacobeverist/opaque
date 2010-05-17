@@ -87,11 +87,11 @@ class TestAnchorTransition(SnakeControl):
 			self.mergeJoints([joints1])
 			
 			if self.globalTimer % 10 == 0:
-				#rootPose = self.contacts.getAveragePose(19)	
-				#poses = []
-				#for i in range(self.robotParam['numJoints']):
-				#	poses.append(self.probe.getJointWRTJointPose(rootPose, 19, i))					
-				#self.drawThings.plotRobotConfiguration(poses)
+				rootPose = self.contacts.getAveragePose(19)	
+				poses = []
+				for i in range(self.robotParam['numJoints']):
+					poses.append(self.probe.getJointWRTJointPose(rootPose, 19, i))					
+				self.drawThings.plotRobotConfiguration(poses)
 				pass
 			
 			if isDone:

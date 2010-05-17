@@ -2,18 +2,22 @@
 from LocalOccMap import *
 from LocalBoundaryMap import *
 from LocalObstacleMap import *
-from LocalVoronoiMap import *
-from LocalNavRoadMap import *
-from LocalFrontierMap import *
-
-import pose
 
 #import Image
+from numpy import array, dot, transpose
+
 
 
 class LocalNode:
 
-	def __init__(self, probe, contacts, nodeID, rootNode, inSim = True):
+	def __init__(self, probe, contacts, nodeID, rootNode, pixelSize, inSim = True):
+
+		self.pixelSize = pixelSize
+
+		self.robotParam = probe.robotParam
+		self.numSegs = self.robotParam['numSegs']
+		self.segLength = self.robotParam['segLength']
+		self.mapSize = self.segLength*self.numSegs + 2.0 + 2.0
 
 		self.nodeID = nodeID
 		self.probe = probe
@@ -37,15 +41,10 @@ class LocalNode:
 			self.setEstPose(self.contacts.getAveragePose(self.rootNode))			
 			self.setGndPose(self.probe.getActualJointPose(self.rootNode))
 
-		self.poseProfile = pose.PoseProfile(self.contacts,self.rootNode, inSim)
-
 		# MAPS
 		self.occMap = LocalOccMap(self)
 		self.boundaryMap = LocalBoundaryMap(self)
 		self.obstacleMap = LocalObstacleMap(self)
-		#self.voronoiMap = LocalVoronoiMap(self)
-		#self.navMap = LocalNavRoadMap(self)
-		#self.frontierMap = LocalFrontierMap(self)
 		
 		self.saveCount = 0
 	
@@ -95,71 +94,80 @@ class LocalNode:
 	def getGndPose(self):
 		return copy(self.gndPose)
 		
+	# this function converts the angle to its equivalent # in the range [-pi,pi]
+	def normalizeAngle(self, angle):
+	
+		while angle>pi:
+			angle=angle-2*pi
+	
+		while angle<=-pi:
+			angle=angle+2*pi
+	
+		return angle 
+	
 	def convertLocalOffsetToGlobal(self, offset):
 
-	   globalEst = [0.0,0.0,0.0]
+		globalEst = [0.0,0.0,0.0]
 
-	   finalVec = array([[offset[0]], [offset[1]]])
-	   transVec = dot(transpose(self.R), finalVec)
-	   resVec = dot(self.backR, transVec)
-	   resVec[0, 0] += self.dist
-	   tempVec = dot(self.foreR, resVec)
-	   globalEst[0] = tempVec[0, 0]
-	   globalEst[1] = tempVec[1, 0]
-	   globalEst[2] = normalizeAngle(self.estPose[2] + offset[2])
+		finalVec = array([[offset[0]], [offset[1]]])
+		transVec = dot(transpose(self.R), finalVec)
+		resVec = dot(self.backR, transVec)
+		resVec[0, 0] += self.dist
+		tempVec = dot(self.foreR, resVec)
+		globalEst[0] = tempVec[0, 0]
+		globalEst[1] = tempVec[1, 0]
+		globalEst[2] = self.normalizeAngle(self.estPose[2] + offset[2])
 
-	   return globalEst
+		return globalEst
 
 	def convertGlobalPoseToLocal(self, pose):
 
-	   " transform pnt to local coordinates"
-	   globalVec = array([[pose[0]],[pose[1]]])
+		" transform pnt to local coordinates"
+		globalVec = array([[pose[0]],[pose[1]]])
 
-	   " perform translation correction "
-	   tempVec = dot(self.backR, globalVec)
-	   tempVec[0,0] -= self.dist
-	   transVec = dot(self.foreR, tempVec)
+		" perform translation correction "
+		tempVec = dot(self.backR, globalVec)
+		tempVec[0,0] -= self.dist
+		transVec = dot(self.foreR, tempVec)
 
-	   " now, apply rotation correction with respect to origin "
-	   localVec = dot(self.R, transVec)
+		" now, apply rotation correction with respect to origin "
+		localVec = dot(self.R, transVec)
 
-	   localPose = [localVec[0,0], localVec[1,0], normalizeAngle(pose[2] - self.estPose[2])]
+		localPose = [localVec[0,0], localVec[1,0], self.normalizeAngle(pose[2] - self.estPose[2])]
 
-	   return localPose
+		return localPose
 
 	def convertLocalToGlobal(self, pnt):
 
-	   finalVec = array([[pnt[0]], [pnt[1]]])
-	   transVec = dot(transpose(self.R), finalVec)
-	   resVec = dot(self.backR, transVec)
-	   resVec[0, 0] += self.dist
-	   tempVec = dot(self.foreR, resVec)
+		finalVec = array([[pnt[0]], [pnt[1]]])
+		transVec = dot(transpose(self.R), finalVec)
+		resVec = dot(self.backR, transVec)
+		resVec[0, 0] += self.dist
+		tempVec = dot(self.foreR, resVec)
 
-	   newPoint = [tempVec[0,0],tempVec[1,0]]
+		newPoint = [tempVec[0,0],tempVec[1,0]]
 
-	   return newPoint
+		return newPoint
 
 	def convertGlobalToLocal(self, pnt):
 
-	   " transform pnt to local coordinates"
-	   globalVec = array([[pnt[0]],[pnt[1]]])
+		" transform pnt to local coordinates"
+		globalVec = array([[pnt[0]],[pnt[1]]])
 
-	   " perform translation correction "
-	   tempVec = dot(self.backR, globalVec)
-	   tempVec[0,0] -= self.dist
-	   transVec = dot(self.foreR, tempVec)
+		" perform translation correction "
+		tempVec = dot(self.backR, globalVec)
+		tempVec[0,0] -= self.dist
+		transVec = dot(self.foreR, tempVec)
 
-	   " now, apply rotation correction with respect to origin "
-	   localVec = dot(self.R, transVec)
+		" now, apply rotation correction with respect to origin "
+		localVec = dot(self.R, transVec)
 
-	   newPoint = [localVec[0,0], localVec[1,0]]
-	   return newPoint
-	  
+		newPoint = [localVec[0,0], localVec[1,0]]
+		return newPoint
+		
 	def getForeTip(self):
 		
 		segLength = self.probe.segLength
-		segWidth = self.probe.segWidth
-		numJoints = self.probe.numSegs-1
 		
 		xTotal = 0.0
 		zTotal = 0.0
@@ -170,7 +178,7 @@ class LocalNode:
 
 		for i in joints:
 			totalAngle = totalAngle + self.probe.getServo(i+1)
-			totalAngle = normalizeAngle(totalAngle)
+			totalAngle = self.normalizeAngle(totalAngle)
 			
 			xTotal = xTotal - segLength*cos(totalAngle)
 			zTotal = zTotal - segLength*sin(totalAngle)
@@ -179,8 +187,6 @@ class LocalNode:
 
 	def getAftTip(self):
 		segLength = self.probe.segLength
-		segWidth = self.probe.segWidth
-		numJoints = self.probe.numSegs-1
 		
 		xTotal = 0.0
 		zTotal = 0.0
@@ -194,16 +200,14 @@ class LocalNode:
 
 			if i < 38:
 				totalAngle = totalAngle - self.probe.getServo(i+1)
-				totalAngle = normalizeAngle(totalAngle)
+				totalAngle = self.normalizeAngle(totalAngle)
 						
 		return [xTotal, zTotal, totalAngle]
 
 	def getJointPose(self, jointI):
 		
 		segLength = self.probe.segLength
-		segWidth = self.probe.segWidth
-		numJoints = self.probe.numSegs-1
-		
+
 		xTotal = 0.0
 		zTotal = 0.0
 		totalAngle = 0.0
@@ -217,7 +221,7 @@ class LocalNode:
 				zTotal = zTotal + segLength*sin(totalAngle)
 	
 				totalAngle = totalAngle - self.probe.getServo(i+1)
-				totalAngle = normalizeAngle(totalAngle)
+				totalAngle = self.normalizeAngle(totalAngle)
 		
 		elif jointI < self.rootNode:
 			
@@ -226,7 +230,7 @@ class LocalNode:
 	
 			for i in joints:
 				totalAngle = totalAngle + self.probe.getServo(i+1)
-				totalAngle = normalizeAngle(totalAngle)
+				totalAngle = self.normalizeAngle(totalAngle)
 				
 				xTotal = xTotal - segLength*cos(totalAngle)
 				zTotal = zTotal - segLength*sin(totalAngle)
@@ -252,15 +256,6 @@ class LocalNode:
 	
 	def getObstacleMap(self):
 		return self.obstacleMap
-
-	def getVoronoiMap(self):
-		return self.voronoiMap
-
-	def getFrontierMap(self):
-		return self.frontierMap
-		
-	def getNavMap(self):
-		return self.navMap
 	
 	def getContacts(self):
 		return self.contacts
@@ -283,7 +278,7 @@ class LocalNode:
 		
 		#self.occMap.saveToFile("occ%04u.txt" % self.nodeID)
 		#self.occMap.saveMap("occ%04u.png" % self.nodeID)
-		self.poseProfile.saveToFile("prof%04u.txt" % self.nodeID)
+		#self.poseProfile.saveToFile("prof%04u.txt" % self.nodeID)
 		
 		f = open("estpose%04u.txt" % self.nodeID, 'w')
 		f.write(repr(self.estPose))
@@ -303,7 +298,7 @@ class LocalNode:
 	def readFromFile(self, nodeID):
 		
 		self.nodeID = nodeID
-		self.poseProfile.readFromFile("prof%04u.txt" % self.nodeID)
+		#self.poseProfile.readFromFile("prof%04u.txt" % self.nodeID)
 		
 		" occupancy map "
 		self.occMap.readFromFile()
@@ -323,12 +318,14 @@ class LocalNode:
 
 		self.setGndPose(gndPose)
 
-		self.poseProfile.setRootPose(self.estPose)
+		#self.poseProfile.setRootPose(self.estPose)
+		
+		centerPoints = []
 		
 		" read in the data "
-		f = open("cntpose%04u.txt" % self.nodeID, 'r')
-		centerPoints = eval(f.read())
-		f.close()
+		#f = open("cntpose%04u.txt" % self.nodeID, 'r')
+		#centerPoints = eval(f.read())
+		#f.close()
 		
 		#print "reading in center points", "cntpose%04u.txt" % self.nodeID
 		#print centerPoints
@@ -342,44 +339,13 @@ class LocalNode:
 	
 	def setCenterPoints(self, centerPoints):
 		self.centerPoints = copy(centerPoints)
-		
-		"""
-		for i in range(len(self.centerPoints)):
-			
-			## Create the visual representation of active reference nodes
-			name = "cnt_node" + str(i) + "_" + str(self.nodeID)
-			entity = self.probe._mgr.createEntity(name, "Cube.mesh")
-			node = self.probe._mgr.getRootSceneNode().createChildSceneNode(name)
-			node.attachObject(entity)
-
-			size = ogre.Vector3(0.05,0.05,0.05)
-			node.setScale(size)
-
-			pos = self.centerPoints[i]
-			position = ogre.Vector3(pos[0],0.1,pos[1])
-			node.setPosition(position)
-			# negative the angle because the bodies are somehow flipped upside down
-			node.setOrientation(ogre.Quaternion(0.0,ogre.Vector3().UNIT_Y))
-
-			entity.setCastShadows(False)
-			entity.setMaterialName("Green")
-
-			#entity.setVisible(False)
-			self._refnodes.append(node)
-			self._refent.append(entity)
-		"""
-		
+	
 		self.localCenterPoints = []
 
 		for pnt in self.centerPoints:
 			newPoint = self.convertGlobalToLocal(pnt)
 			self.localCenterPoints.append(newPoint)
 			
-		
-
-	def getPoseProfile(self):
-		return self.poseProfile
-
 	def obstCallBack(self, direction):
 		#self.currNode.obstCallBack(direction)		
 		self.obstacleMap.updateContact(direction)
@@ -407,7 +373,7 @@ class LocalNode:
 		" now, apply rotation correction "
 		finalVec = dot(self.R, transVec)
 		
-		finalAng = normalizeAngle( normalizeAngle(newRoot[2]) - normalizeAngle(self.estPose[2]) )
+		finalAng = self.normalizeAngle( self.normalizeAngle(newRoot[2]) - self.normalizeAngle(self.estPose[2]) )
 		
 		relRoot = [finalVec[0,0],finalVec[1,0],finalAng]
 		
@@ -423,11 +389,6 @@ class LocalNode:
 		#self.boundaryMap.update()
 		#self.obstacleMap.update()
 		
-		#self.voronoiMap.update(self.boundaryMap.getBoundaryPoints(), self.occMap.getImage())
-		#self.obstacleMap.update(self.boundaryMap)
-		#self.frontierMap.update(self.boundaryMap, self.obstacleMap)
-		#self.navRoadMap.update(self.voronoiMap.getGraph())
-
 		self.dirty = True
 	
 	def isDirty(self):
@@ -441,9 +402,6 @@ class LocalNode:
 
 		self.boundaryMap.update()
 		self.obstacleMap.update()
-		#self.voronoiMap.update()
-		#self.frontierMap.update()
-		#self.navMap.update()
 
 		self.dirty = False
 		
@@ -460,35 +418,7 @@ class LocalNode:
 		self.occMap.saveMap()
 		#self.boundaryMap.saveMap()
 		self.obstacleMap.saveMap()
-		#self.voronoiMap.saveMap()
-		#self.frontierMap.saveMap()
 		
-		"""
-		
-		self.computeGndAlphaBoundary()
-		val = repr(self.a_vert)
-		f = open("gnd_alpha_bound_%04u.txt" % self.nodeID, 'w')
-		f.write(val)
-		f.close()
-
-		val = repr(self.gndOccPoints)
-		f = open("gnd_occ_points_%04u.txt" % self.nodeID, 'w')
-		f.write(val)
-		f.close()
-
-				
-		self.computeAlphaBoundary()
-		val = repr(self.a_vert)
-		f = open("alpha_bound_%04u.txt" % self.nodeID, 'w')
-		f.write(val)
-		f.close()
-
-		val = repr(self.estOccPoints)
-		f = open("est_occ_points_%04u.txt" % self.nodeID, 'w')
-		f.write(val)
-		f.close()
-		
-		"""
 
 	def computeAlphaBoundary(self):
 
@@ -608,25 +538,51 @@ class LocalNode:
 		
 		#print inputStr
 		
-		" start the subprocess "
-		subProc = Popen(["./alpha2.exe"], stdin=PIPE, stdout=PIPE)
+		if False:
+			
+			" start the subprocess "
+			subProc = Popen(["./alpha2.exe"], stdin=PIPE, stdout=PIPE)
+			
+			" send input and receive output "
+			sout, serr = subProc.communicate(inputStr)
+	
+			#print numPoints
+			#print sout
+			
+			" convert string output to typed data "
+			sArr = sout.split(" ")
+			
+			#print sArr[0]
+			numVert = int(sArr[0])
+			
+			vertices = []
+			for i in range(numVert+1):
+				vertices.append([float(sArr[2*i + 1]), float(sArr[2*i + 2])])
+		else:
+			maxX = 0
+			minX = 1e10
+			maxY = 0
+			minY = 1e10
+			
+			for p in points:
+				if p[0] > maxX:
+					maxX = p[0]
+				
+				if p[0] < minX:
+					minX = p[0]
+				
+				if p[1] > maxY:
+					maxY = p[1]
+					
+				if p[1] < minY:
+					minY = p[1]
+			
+			vertices = []
+			vertices.append([maxX,maxY])
+			vertices.append([maxX,minY])
+			vertices.append([minX,minY])
+			vertices.append([minX,maxY])
 		
-		" send input and receive output "
-		sout, serr = subProc.communicate(inputStr)
-
-		#print numPoints
-		#print sout
-		
-		" convert string output to typed data "
-		sArr = sout.split(" ")
-		
-		#print sArr[0]
-		numVert = int(sArr[0])
-		
-		vertices = []
-		for i in range(numVert+1):
-			vertices.append([float(sArr[2*i + 1]), float(sArr[2*i + 2])])
-		
-		#print vertices
+			
 		return vertices
 							

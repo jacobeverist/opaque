@@ -1,6 +1,6 @@
 
 from Map import Map
-from copy import *
+from copy import copy
 from math import *
 from Pose import Pose
 
@@ -27,7 +27,7 @@ class NavRoadMap(Map):
 		self.childNodes = []
 		self.childEntities = []
 
-		self.parentNode = self.probe._mgr.getRootSceneNode().createChildSceneNode("navRoadCurveRoot" + str(self.nodeCount))
+		self.parentNode = 0
 		
 		self.originPose = [0.0,0.0,0.0]
 		nodeCount += 1
@@ -36,6 +36,9 @@ class NavRoadMap(Map):
 		self.clearDraw()
 
 	def clearDraw(self):
+
+		if self.parentNode == 0:
+			self.parentNode = self.probe._mgr.getRootSceneNode().createChildSceneNode("navRoadCurveRoot" + str(self.nodeCount))
 		
 		# remove all children
 		self.parentNode.removeAllChildren()
@@ -59,6 +62,7 @@ class NavRoadMap(Map):
 			pose = Pose(self.currNode.getEstPose())
 			pose2 = Pose( self.probe.getActualJointPose(self.currNode.rootNode))
 		
+		"""
 		# draw the points in the simulation
 		for i in range(len(self.cleanPath)):
 			
@@ -84,7 +88,8 @@ class NavRoadMap(Map):
 			childNode.setScale(size)
 	
 			childNode.attachObject(currEntity)
-	
+		"""
+		
 	def update(self, roadGraph):
 		self.roadGraph = roadGraph
 

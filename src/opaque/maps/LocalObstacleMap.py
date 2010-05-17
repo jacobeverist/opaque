@@ -3,12 +3,41 @@ from Map import Map
 import Image
 import ImageDraw
 import pylab
+from math import cos, sin, floor, pi
+from copy import copy
+
+
+# determines signed area of 3 points (used for solving Point in Polygon problem)
+def Area2(Ax,Ay,Bx,By,Cx,Cy):
+	return (Bx - Ax) * (Cy - Ay) - (Cx - Ax)*(By - Ay)
+
+# determines if point C is left of line segment AB
+def LeftOn(Ax,Ay,Bx,By,Cx,Cy):
+	return (Area2(Ax,Ay,Bx,By,Cx,Cy) >= 0)
+
+# determine if point is located within a bounding box specified by vertices RectVert
+def IsContained(RectVert, Point):
+	for i in range(4):
+		if not (LeftOn(RectVert[i%4][0],RectVert[i%4][1],
+					   RectVert[(i+1)%4][0],RectVert[(i+1)%4][1], Point[0], Point[1])):
+			return False
+	return True
+
+# this function converts the angle to its equivalent # in the range [-pi,pi]
+def normalizeAngle(angle):
+	
+	while angle>pi:
+		angle=angle-2*pi
+	
+	while angle<=-pi:
+		angle=angle+2*pi
+	
+	return angle 
 
 class LocalObstacleMap(Map):
 
-	#def __init__(self, probe, boundMap, contacts):
 	def __init__(self, localNode):
-		Map.__init__(self)
+		#Map.__init__(self)
 
 		self.localNode = localNode
 		self.contacts = self.localNode.getContacts()
@@ -30,14 +59,11 @@ class LocalObstacleMap(Map):
 		self.yMin = self.numPixel
 		self.yMax = -1
 			
-		#self.poly = [[0.0,0.0],[0.0,0.0]]
 		self.polygons = []
 		self.oldPolygons = []
 		self.update()
 
 	def readFromFile(self):
-		#self.nodeID = nodeID
-		#fileName = "localObstacleMap%03u" % self.nodeID + "_0000.png"
 
 		self.fileName = "localObstacleMap%03u" % self.nodeID + "_%04u.png"
 		
@@ -50,21 +76,6 @@ class LocalObstacleMap(Map):
 		self.plotPolygons()
 
 		tempImage = self.mapImage.copy()
-		
-		"""
-		draw = ImageDraw.Draw(tempImage)
-		
-		pixPoly = []
-		for p in self.poly:
-			x, y = self.realToGrid(p)
-			pixPoly.append([x,y])
-			
-		
-		num = len(self.poly)
-		
-		for i in range(num):
-			draw.line((pixPoly[i][0], pixPoly[i][1], pixPoly[(i+1) % num][0], pixPoly[(i+1) % num][1]), fill = 255)
-		"""
 		tempImage.save(self.fileName % self.saveCount)	
 		self.saveCount += 1
 		
@@ -79,21 +90,6 @@ class LocalObstacleMap(Map):
 		self.points = self.boundMap.getBoundaryPoints()
 		
 		self.plotPolygons()
-		
-		# clear out obstacle points that clearly reside within free space
-		#self.clearFreeSpace()
-
-		#self.mapImage = boundMap.copyImage()
-		#self.image = self.mapImage.load()
-	
-	def clearFreeSpace(self):
-		
-		# clear obstacle points that are clearly within free space
-		for i in range(self.xMin,self.xMax+1,1):
-			for j in range(self.yMin,self.yMax+1,1):
-				if self.image[i,j] == 255:
-					if self.occMap.image[i,j] == 255:
-						self.image[i,j] = 0
 
 	def updateContact(self, isFront):
 
@@ -111,30 +107,9 @@ class LocalObstacleMap(Map):
 		" now mark the obstacles "
 		self.markObstacle(x, y, angle)
 
-
-		# recompute the boundary points just prior to marking obstacles
-		#self.occMap.update()
-		#self.boundMap.update(self.occMap)
-		#self.update(self.boundMap)
-			
-		# if there is no collision, mark obstacles
-		#if not self.checkBoundaryCollision(polygon):
-		#	self.markObstacle(xTip, yTip, angle)
-		
-		# contact detection is good enough that I don't need to check for bad cases
-		# just mark the obstacle pixels
-		# if boundary points are within cone projected from tip, then they are contact points
-
-			
-		#self.occMap.saveMap()
-		#self.boundMap.saveMap(self.poly)
-		#self.saveMap()
-
 	def getProbeProfile(self, isFront):
 
 		segLength = self.probe.segLength
-		segWidth = self.probe.segWidth
-		numJoints = self.probe.numSegs-1
 
 		xTotal = 0.0
 		zTotal = 0.0
@@ -153,12 +128,6 @@ class LocalObstacleMap(Map):
 				xTotal = xTotal - segLength*cos(totalAngle)
 				zTotal = zTotal - segLength*sin(totalAngle)
 	
-			# get actual configuration from rootNode reference
-			#origin = self.contacts.getClosestPose(0)
-			#xTotal = origin[0] 
-			#zTotal = origin[1] 
-			#totalAngle = origin[2]
-			
 			return normalizeAngle(totalAngle + pi), xTotal, zTotal
 		
 		else:
@@ -176,42 +145,23 @@ class LocalObstacleMap(Map):
 				if i < self.probe.numSegs-2:
 					totalAngle = totalAngle - self.probe.getServo(i+1)
 					totalAngle = normalizeAngle(totalAngle)
-
-			# get actual configuration from rootNode reference
-			#origin = self.contacts.getClosestPose(38)
-			#xTotal = origin[0] 
-			#zTotal = origin[1] 
-			#totalAngle = origin[2]
 			
 			totalAngle = normalizeAngle(totalAngle)
 			
 			return totalAngle, xTotal, zTotal
-	
-
 
 
 	def markObstacle(self, x, y, angle):
 		
-		#radius = 0.05
-		radius = 0.1
-		polyX = [ x + radius, x - radius]
-		polyY = [ y + radius, y - radius]
-	
+		" mark obstacle to be 2 widths and 1 length "	
 		segLength = self.probe.segLength
 		segWidth = self.probe.segWidth	
-		#p1 = [x - 0.5*segWidth*sin(angle), y + 0.5*segWidth*cos(angle)]
-		#p2 = [x + 0.5*segWidth*sin(angle), y - 0.5*segWidth*cos(angle)]
-		#p3 = [x + segLength*cos(angle) + segWidth*sin(angle), y + segLength*sin(angle) - segWidth*cos(angle)]
-		#p4 = [x + segLength*cos(angle) - segWidth*sin(angle), y + segLength*sin(angle) + segWidth*cos(angle)]
 		p1 = [x - 2.0*segWidth*sin(angle), y + 2.0*segWidth*cos(angle)]
 		p2 = [x + 2.0*segWidth*sin(angle), y - 2.0*segWidth*cos(angle)]
 		p3 = [x + segLength*cos(angle) + 2.0*segWidth*sin(angle), y + segLength*sin(angle) - 2.0*segWidth*cos(angle)]
 		p4 = [x + segLength*cos(angle) - 2.0*segWidth*sin(angle), y + segLength*sin(angle) + 2.0*segWidth*cos(angle)]
-		#polygon = [p4,p3,p2,p1]
 		polygon = [p1,p2,p3,p4]
-		
-		#print polygon
-		
+				
 		self.polygons.append(copy(polygon))
 
 	def plotPolygons(self):
@@ -270,57 +220,6 @@ class LocalObstacleMap(Map):
 		self.oldPolygons += self.polygons
 		self.polygons = []
 
-	def checkBoundaryCollision(self, polygon):
-		
-		# vertices of the 4-sided convex polygon
-		polyX = [polygon[0][0], polygon[1][0], polygon[2][0], polygon[3][0], polygon[0][0]]
-		polyY = [polygon[0][1], polygon[1][1], polygon[2][1], polygon[3][1], polygon[0][1]]
-
-		# bounding box of polygon
-		maxX = -10000.0
-		minX = 10000.0
-		maxY = -10000.0
-		minY = 10000.0
-		for i in range(4):
-			if polyX[i] > maxX:
-				maxX = polyX[i]
-			if polyX[i] < minX:
-				minX = polyX[i]
-			if polyY[i] > maxY:
-				maxY = polyY[i]
-			if polyY[i] < minY:
-				minY = polyY[i]		
-				
-		# set boundaries of map grid
-		highIndexX = int(floor(maxX*self.divPix)) + self.numPixel/2 + 1
-		lowIndexX = int(floor(minX*self.divPix)) + self.numPixel/2 + 1
-		highIndexY = int(floor(maxY*self.divPix)) + self.numPixel/2 + 1
-		lowIndexY = int(floor(minY*self.divPix)) + self.numPixel/2 + 1
-
-		# if needed, adjust the global bounding box
-		if lowIndexX < self.xMin:
-			self.xMin = lowIndexX
-
-		if highIndexX > self.xMax:
-			self.xMax = highIndexX
-
-		if lowIndexY < self.yMin:
-			self.yMin = lowIndexY
-
-		if highIndexY > self.yMax:
-			self.yMax = highIndexY
-
-		for i in range(lowIndexX,highIndexX+1,1):
-			for j in range(lowIndexY,highIndexY+1,1):
-				
-				if self.boundMap.image[i,j] == 255:
-					xP, yP = self.gridToReal([i, j])
-					result = IsContained(polygon, [xP, yP])
-					
-					if result:
-						return True
-				
-		return False
-						
 	def getMap(self):
 		return self.mapImage
+	

@@ -4,7 +4,8 @@ from voronoi import *
 import Image
 import ImageDraw
 import graph
-
+from math import sqrt
+import pylab
 
 class VoronoiMap(Map):
 
@@ -23,7 +24,6 @@ class VoronoiMap(Map):
 		
 		image = self.mapGraph.boundMap.image
 		
-		#image = self.boundMapImage.load()
 		points = []
 		
 		for i in range(0,self.numPixel):

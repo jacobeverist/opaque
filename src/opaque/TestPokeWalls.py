@@ -3,6 +3,7 @@ from copy import copy
 from math import fabs
 
 from behaviors.PokeWalls import PokeWalls
+from behaviors.AnchorTransition import AnchorTransition
 from pose.AverageContacts import AverageContacts
 from maps.MapGraph import MapGraph
 
@@ -63,18 +64,11 @@ class TestPokeWalls(SnakeControl):
 		if self.stateA == 0:	
 
 			for i in range(self.robotParam['numJoints']):
-				modVal = i % 4
-				
-				if modVal == 0:
-					self.probe.setServo(i, 0.0)
-				elif modVal == 1:
-					self.probe.setServo(i, 90.0)
-				elif modVal == 2:
-					self.probe.setServo(i, 0.0)
-				elif modVal == 3:
-					self.probe.setServo(i, -90.0)
-
-
+				self.probe.setServo(i, 0.0)
+					
+			self.contacts = AverageContacts(self.probe)
+			self.contacts.setMask( [1.0 for i in range(39)] )	
+			self.contacts.step()
 				
 			self.stateA = 1			
 			print "step 0 complete"
@@ -91,8 +85,8 @@ class TestPokeWalls(SnakeControl):
 		elif self.stateA == 2:
 			
 			" create and initialize behavior "
-			self.pokeWalls = PokeWalls(self.robotParam, self.contacts, obstContact = self.mapGraph.obstCallBack)
-
+			self.anchorT = AnchorTransition(self.robotParam)
+			
 			self.stateA = 3
 			
 			print "step 1 complete"
@@ -100,19 +94,50 @@ class TestPokeWalls(SnakeControl):
 		# Anchor to the walls
 		elif self.stateA == 3:
 			
-			isDone = self.pokeWalls.step(probeState)
-			joints1 = self.pokeWalls.getJoints()
+			isDone = self.anchorT.step(probeState)
+			joints1 = self.anchorT.getJoints()
 			
 			self.mergeJoints([joints1])
-					
-			if isDone:
-				
+			
+			if self.globalTimer % 10 == 0:
 				rootPose = self.contacts.getAveragePose(19)	
 				poses = []
 				for i in range(self.robotParam['numJoints']):
 					poses.append(self.probe.getJointWRTJointPose(rootPose, 19, i))					
 				self.drawThings.plotRobotConfiguration(poses)
-								
+	
+			if isDone:
+				self.stateA = 4
+				print "step 3 complete"
+	
+			
+		elif self.stateA == 4:
+			
+			" create and initialize behavior "
+			self.pokeWalls = PokeWalls(self.robotParam, self.contacts, obstContact = self.mapGraph.obstCallBack)
+
+			self.stateA = 5
+			
+			print "step 4 complete"
+			
+		# Anchor to the walls
+		elif self.stateA == 5:
+			
+			isDone = self.pokeWalls.step(probeState)
+			joints1 = self.pokeWalls.getJoints()
+
+			self.mergeJoints([joints1])
+
+			if self.globalTimer % 200 == 0:
+				rootPose = self.contacts.getClosestPose(19)	
+				poses = []
+				for i in range(self.robotParam['numJoints']):
+					poses.append(self.probe.getJointWRTJointPose(rootPose, 19, i))					
+				self.drawThings.plotRobotConfiguration(poses)
+
+					
+			if isDone:
+												
 				currJoints = probeState['joints']
 
 				for i in range(0,17):
@@ -120,7 +145,7 @@ class TestPokeWalls(SnakeControl):
 					if fabs(currJoints[i]) >= 0.0001:
 						print "ERROR: joint", i, "is", currJoints[i], "not 0.0"
 
-				print "step 2 complete"
+				print "step 5 complete"
 				raise
 			
 								

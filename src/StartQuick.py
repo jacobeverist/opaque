@@ -21,9 +21,9 @@ def createTest():
 	#currControl = TestHoldPosition(probe, drawThings)
 	#currControl = TestHoldTransition(probe, drawThings)
 	#currControl = TestHoldSlideTransition(probe, drawThings)
-	currControl = TestAnchorTransition(probe, drawThings)
+	#currControl = TestAnchorTransition(probe, drawThings)
 	#currControl = TestFrontExtend(probe, drawThings)
-	#currControl = TestPokeWalls(probe, drawThings)
+	currControl = TestPokeWalls(probe, drawThings)
 	
 	probe.addControl(currControl)
 

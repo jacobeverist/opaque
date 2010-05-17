@@ -6,10 +6,7 @@ from Servo import Servo
 from math import *
 from copy import *
 
-ARMLENGTH = 0.15
-ARMWIDTH = 0.05
 STD_WEIGHT = 1.11
-NUM_SEGS = 40
 
 
 class SnakeProbe:

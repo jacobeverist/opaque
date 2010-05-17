@@ -1,7 +1,6 @@
 from RefNode import RefNode
 from RefEdge import RefEdge
 from ValueStability import ValueStability
-from PoseProfile import PoseProfile
 
 from copy import copy, deepcopy
 from math import cos, sin, asin, acos, sqrt, fabs, pi
@@ -1186,11 +1185,6 @@ class AverageContacts:
 
 	def getNumActiveRef(self):
 		return self.numActiveRef
-
-
-	def getPoseProfile(self):
-		pose = PoseProfile(self, 19, inSim = True)	
-		return pose
 
 	def normalizeAngle(self, angle):
 		while angle > pi:
