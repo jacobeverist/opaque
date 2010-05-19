@@ -89,7 +89,7 @@ class HoldTransition(Behavior):
 
 			#for i in range(len(targetState)):
 			#	if targetState[i] == None:
-			#		targetState[i] = 180.0*self.probe.getServo(i)/pi
+			#		targetState[i] = 180.0*stateJoints[i]/pi
 
 			#print targetState
 

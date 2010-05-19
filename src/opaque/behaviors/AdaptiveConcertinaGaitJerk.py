@@ -68,7 +68,7 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 		self.plotCount = 0
 		
 		self.transDone = False
-		self.newJoints = [None for i in range(0,self.probe.numSegs-1)]
+		self.newJoints = [None for i in range(0,self.numJoints)]
 		self.refDone = False
 		
 	def getMask(self):
@@ -171,11 +171,11 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 		if self.direction:
 				
 			" the configuration of the snake as we've commanded it "
-			self.cmdSegPoints = [[-self.probe.segLength,0.0,0.0]]
+			self.cmdSegPoints = [[-self.segLength,0.0,0.0]]
 			cmdOrigin = [0.0,0.0,0.0]
 			self.cmdSegPoints.append(cmdOrigin)
 	
-			for i in range(0,self.probe.numSegs-1):
+			for i in range(0,self.numJoints):
 				
 				if self.localFit.isJointSolid(i):
 					sampAngle = self.localFit.getSolidJoint(i)
@@ -183,8 +183,8 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 					sampAngle = self.probe.getServoCmd(i)
 
 				totalAngle = cmdOrigin[2] - sampAngle
-				xTotal = cmdOrigin[0] + self.probe.segLength*cos(totalAngle)
-				zTotal = cmdOrigin[1] + self.probe.segLength*sin(totalAngle)
+				xTotal = cmdOrigin[0] + self.segLength*cos(totalAngle)
+				zTotal = cmdOrigin[1] + self.segLength*sin(totalAngle)
 				pnt = [xTotal, zTotal, totalAngle]
 				cmdOrigin = pnt
 				self.cmdSegPoints.append(cmdOrigin)
@@ -192,11 +192,11 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 		else:
 				
 			" the configuration of the snake as we've commanded it "
-			self.cmdSegPoints = [[-self.probe.segLength,0.0,0.0]]
+			self.cmdSegPoints = [[-self.segLength,0.0,0.0]]
 			cmdOrigin = [0.0,0.0,pi]
 			self.cmdSegPoints.insert(0, cmdOrigin)
 		
-			ind = range(0,self.probe.numSegs-1)
+			ind = range(0,self.numJoints)
 			ind.reverse()
 	
 			for i in ind:
@@ -207,8 +207,8 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 				#sampAngle = self.probe.getServoCmd(i)
 
 				totalAngle = cmdOrigin[2] + sampAngle
-				xTotal = cmdOrigin[0] - self.probe.segLength*cos(totalAngle)
-				zTotal = cmdOrigin[1] - self.probe.segLength*sin(totalAngle)
+				xTotal = cmdOrigin[0] - self.segLength*cos(totalAngle)
+				zTotal = cmdOrigin[1] - self.segLength*sin(totalAngle)
 				pnt = [xTotal, zTotal, totalAngle]
 				cmdOrigin = pnt
 				self.cmdSegPoints.insert(0, cmdOrigin)
@@ -231,32 +231,32 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 
 		if self.direction:
 			" the actual configuration of the snake "
-			actSegPoints = [[-self.probe.segLength,0.0,0.0]]
+			actSegPoints = [[-self.segLength,0.0,0.0]]
 			actOrigin = [0.0,0.0,0.0]
 			actSegPoints.append(actOrigin)
 			
-			for i in range(0,self.probe.numSegs-1):
-				sampAngle = self.probe.getServo(i)
+			for i in range(0,self.numJoints):
+				sampAngle = stateJoints[i]
 				totalAngle = actOrigin[2] - sampAngle
-				xTotal = actOrigin[0] + self.probe.segLength*cos(totalAngle)
-				zTotal = actOrigin[1] + self.probe.segLength*sin(totalAngle)
+				xTotal = actOrigin[0] + self.segLength*cos(totalAngle)
+				zTotal = actOrigin[1] + self.segLength*sin(totalAngle)
 				pnt = [xTotal, zTotal, totalAngle]
 				actOrigin = pnt
 				actSegPoints.append(actOrigin)	
 		else:
 			" the actual configuration of the snake "
-			actSegPoints = [[-self.probe.segLength,0.0,0.0]]
+			actSegPoints = [[-self.segLength,0.0,0.0]]
 			actOrigin = [0.0,0.0,pi]
 			actSegPoints.insert(0,actOrigin)
 
-			ind = range(0,self.probe.numSegs-1)
+			ind = range(0,self.numJoints)
 			ind.reverse()
 				
 			for i in ind:
-				sampAngle = self.probe.getServo(i)
+				sampAngle = stateJoints[i]
 				totalAngle = actOrigin[2] + sampAngle
-				xTotal = actOrigin[0] - self.probe.segLength*cos(totalAngle)
-				zTotal = actOrigin[1] - self.probe.segLength*sin(totalAngle)
+				xTotal = actOrigin[0] - self.segLength*cos(totalAngle)
+				zTotal = actOrigin[1] - self.segLength*sin(totalAngle)
 				pnt = [xTotal, zTotal, totalAngle]
 				actOrigin = pnt
 				actSegPoints.insert(0,actOrigin)
@@ -268,15 +268,15 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 		if self.direction:
 			" local peak configurations "
 			peakCurves = [[]]
-			peakCurves[-1].append([-self.probe.segLength,0.0,0.0])
+			peakCurves[-1].append([-self.segLength,0.0,0.0])
 			peakOrigin = [0.0,0.0,0.0]
 			peakCurves[-1].append(copy(peakOrigin))
 
-			for i in range(0,self.probe.numSegs-1):
-				sampAngle = self.probe.getServo(i)
+			for i in range(0,self.numJoints):
+				sampAngle = stateJoints[i]
 				totalAngle = peakOrigin[2] - sampAngle
-				xTotal = peakOrigin[0] + self.probe.segLength*cos(totalAngle)
-				zTotal = peakOrigin[1] + self.probe.segLength*sin(totalAngle)
+				xTotal = peakOrigin[0] + self.segLength*cos(totalAngle)
+				zTotal = peakOrigin[1] + self.segLength*sin(totalAngle)
 				pnt = [xTotal, zTotal, totalAngle]
 				peakOrigin = pnt
 				#peakCurves[-1].append(copy(peakOrigin))
@@ -293,10 +293,10 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 					peakOrigin = self.cmdSegPoints[i+1]
 					peakCurves[-1].append(copy(peakOrigin))
 	
-					sampAngle = self.probe.getServo(i)
+					sampAngle = stateJoints[i]
 					totalAngle = peakOrigin[2] - sampAngle
-					xTotal = peakOrigin[0] + self.probe.segLength*cos(totalAngle)
-					zTotal = peakOrigin[1] + self.probe.segLength*sin(totalAngle)
+					xTotal = peakOrigin[0] + self.segLength*cos(totalAngle)
+					zTotal = peakOrigin[1] + self.segLength*sin(totalAngle)
 					pnt = [xTotal, zTotal, totalAngle]
 					peakOrigin = pnt
 					peakCurves[-1].append(copy(peakOrigin))
@@ -308,18 +308,18 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 		else:
 			" local peak configurations "
 			peakCurves = [[]]
-			peakCurves[-1].append([-self.probe.segLength,0.0,0.0])
+			peakCurves[-1].append([-self.segLength,0.0,0.0])
 			peakOrigin = [0.0,0.0,pi]
 			peakCurves[-1].append(copy(peakOrigin))
 
-			ind = range(0,self.probe.numSegs-1)
+			ind = range(0,self.numJoints)
 			ind.reverse()
 			
 			for i in ind:
-				sampAngle = self.probe.getServo(i)
+				sampAngle = stateJoints[i]
 				totalAngle = peakOrigin[2] + sampAngle
-				xTotal = peakOrigin[0] - self.probe.segLength*cos(totalAngle)
-				zTotal = peakOrigin[1] - self.probe.segLength*sin(totalAngle)
+				xTotal = peakOrigin[0] - self.segLength*cos(totalAngle)
+				zTotal = peakOrigin[1] - self.segLength*sin(totalAngle)
 				pnt = [xTotal, zTotal, totalAngle]
 				peakOrigin = pnt
 				#peakCurves[-1].append(copy(peakOrigin))
@@ -336,10 +336,10 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 					peakOrigin = self.cmdSegPoints[i+1]
 					peakCurves[-1].append(copy(peakOrigin))
 	
-					sampAngle = self.probe.getServo(i)
+					sampAngle = stateJoints[i]
 					totalAngle = peakOrigin[2] + sampAngle
-					xTotal = peakOrigin[0] - self.probe.segLength*cos(totalAngle)
-					zTotal = peakOrigin[1] - self.probe.segLength*sin(totalAngle)
+					xTotal = peakOrigin[0] - self.segLength*cos(totalAngle)
+					zTotal = peakOrigin[1] - self.segLength*sin(totalAngle)
 					pnt = [xTotal, zTotal, totalAngle]
 					peakOrigin = pnt
 					peakCurves[-1].append(copy(peakOrigin))
@@ -350,7 +350,7 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 					
 		errors = []
 		for i in range(0,self.probe.numSegs-2):
-			errors.append(fabs(self.probe.getServo(i)-self.probe.getServoCmd(i)))
+			errors.append(fabs(stateJoints[i]-self.probe.getServoCmd(i)))
 
 		xP = []
 		yP = []
@@ -421,7 +421,7 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 			if len(peakJoints) > 0:
 				maxPeak = max(peakJoints)
 			#for j in peakJoints:
-			#for j in range(self.probe.numSegs-1):
+			#for j in range(self.numJoints):
 			for j in range(0,maxPeak+1):
 				torques.append(self.probe.getJointTorque(j))
 			
@@ -741,7 +741,7 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 
 
 				" reset all torques of the joints to maximum "
-				for i in range(self.probe.numSegs-1):
+				for i in range(self.numJoints):
 					self.probe.setJointTorque(i, self.probe.maxTorque)
 
 				" increase the amplitude depending on if this is the first peak or not "
@@ -815,10 +815,10 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 				" prevent the back anchor from slithering around or buckling "
 				if self.direction:
 					for i in range(self.probe.numSegs-8, self.probe.numSegs-2):				
-						self.holdT.positions[i] = 180.0 / pi * self.probe.getServo(i)
+						self.holdT.positions[i] = 180.0 / pi * stateJoints[i]
 				else:
 					for i in range(0, 6):					
-						self.holdT.positions[i] = 180.0 / pi * self.probe.getServo(i)
+						self.holdT.positions[i] = 180.0 / pi * stateJoints[i]
 
 				self.holdT.step()
 				
@@ -841,7 +841,7 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 			self.mergeJoints([joints3])
 			
 			" update mask for ContactReference "
-			for i in range(self.probe.numSegs-1):
+			for i in range(self.numJoints):
 				if joints2[i] == None or self.localFit.isJointSolid(i):
 					self.mask[i] = 1.0
 				else:
@@ -851,7 +851,7 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 
 			allActive = True
 			" update mask for ContactReference "
-			for i in range(self.probe.numSegs-1):
+			for i in range(self.numJoints):
 				if joints2[i] == None or self.localFit.isJointSolid(i):
 					self.mask[i] = 1.0
 

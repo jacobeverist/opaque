@@ -1,28 +1,26 @@
-import os
-import sys
-dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if not dir in sys.path:
-	sys.path.append(dir)
 
-import math
-from common import *
-from Behavior import *
+from functions import Pose
+from math import sin, cos, asin, acos, sqrt, fabs, pi
+from Behavior import Behavior
 from numpy import arange
-from maps import Pose
+from copy import copy
 
 globalNodeCount = 0
 
 class GlobalCurveFit(Behavior):
 
-	def __init__(self, probe, contacts, curve = 0, localNode = 0):
+	def __init__(self, robotParam, contacts, curve = 0, localNode = 0):
 		global globalNodeCount
 
-		Behavior.__init__(self, probe)
+		Behavior.__init__(self, robotParam)
+
 
 		#print "setting currNode =", localNode
 		self.currNode = localNode
 		self.contacts = contacts
-		self.numSegs = probe.numSegs
+		self.numSegs = robotParam['numSegs']
+		self.numJoints = robotParam['numJoints']
+		self.segLength = robotParam['segLength']
 		self.setCurve(curve)
 		self.startNode = 19
 		self.endNode = 0
@@ -37,7 +35,8 @@ class GlobalCurveFit(Behavior):
 		self.childEntities = []
 		self.childSegNodes = []
 		self.childSegEntities = []
-		self.parentNode = self.probe._mgr.getRootSceneNode().createChildSceneNode("globalCurveRoot" + str(self.nodeCount))
+		
+		self.parentNode = 0
 
 		self._allRefNodes = []
 		self._allRefEnt = []
@@ -45,7 +44,7 @@ class GlobalCurveFit(Behavior):
 	def __del__(self):
 
 		self.clearDraw()
-		self.probe._mgr.destroySceneNode(self.parentNode)
+		#self.probe._mgr.destroySceneNode(self.parentNode)
 				
 	def setCurve(self, curve):
 		self.curve = curve
@@ -83,6 +82,9 @@ class GlobalCurveFit(Behavior):
 
 	def draw(self):
 		
+		if self.parentNode == 0:
+			self.parentNode = self.probe._mgr.getRootSceneNode().createChildSceneNode("globalCurveRoot" + str(self.nodeCount))
+
 	
 		self.clearDraw()
 
@@ -119,11 +121,11 @@ class GlobalCurveFit(Behavior):
 			currEntity.setMaterialName("Green")
 			self.childEntities.append(currEntity)
 
-			position = ogre.Vector3(pnt[0],0.0,pnt[1])
-			childNode.setPosition(position)
+			#position = ogre.Vector3(pnt[0],0.0,pnt[1])
+			#childNode.setPosition(position)
 	
-			size = ogre.Vector3(0.03,0.03,0.03)
-			childNode.setScale(size)
+			#size = ogre.Vector3(0.03,0.03,0.03)
+			#childNode.setScale(size)
 	
 			childNode.attachObject(currEntity)
 	
@@ -134,15 +136,18 @@ class GlobalCurveFit(Behavior):
 		print "setting boundaries:", self.startNode, self.endNode
 
 	# perform a continuous transition to a continuous fit
-	def step(self):
-		Behavior.step(self)
+	def step(self, probeState):
+		Behavior.step(self, probeState)
 		
 		if not self.isStep():
 			return False
 		
-		self.clearDraw()
+		#self.clearDraw()
 
 		self.resetJoints()
+		
+		stateJoints = probeState['joints']
+		cmdJoints = probeState['cmdJoints']
 		
 		# 2 pieces of information
 		# 1. the direction of the curve
@@ -159,7 +164,7 @@ class GlobalCurveFit(Behavior):
 		if self.startNode == -1 or self.endNode == -1:
 			return False
 		
-		if self.startNode < 0 or self.startNode >= (self.numSegs-1) or self.endNode < 0 or self.endNode >= (self.numSegs-1):
+		if self.startNode < 0 or self.startNode >= (self.numJoints) or self.endNode < 0 or self.endNode >= (self.numJoints):
 			print "Nodes out of bounds for fitBody:", self.startNode, self.endNode
 			raise
 
@@ -193,7 +198,7 @@ class GlobalCurveFit(Behavior):
 			segmentOrder = -1
 			
 		# start from inner segment and work out to the 39th segment
-		elif self.endNode == self.numSegs-2:
+		elif self.endNode == self.numJoints-1:
 			segments = range(self.startNode+1,self.endNode+2)
 			segmentOrder = 1
 		
@@ -223,23 +228,24 @@ class GlobalCurveFit(Behavior):
 
 		if segmentOrder == -1:
 			# adding constant offset so that we are on the joint
-			xTotal = xTotal + (self.probe.segLength/2)*cos(totalAngle)
-			yTotal = yTotal + (self.probe.segLength/2)*sin(totalAngle)
-			totalAngle += -self.probe.getServo(segments[0])
+			xTotal = xTotal + (self.segLength/2)*cos(totalAngle)
+			yTotal = yTotal + (self.segLength/2)*sin(totalAngle)
+			totalAngle += -stateJoints[segments[0]]
 		else:
-			xTotal = xTotal - (self.probe.segLength/2)*cos(totalAngle)
-			yTotal = yTotal - (self.probe.segLength/2)*sin(totalAngle)
-			totalAngle += self.probe.getServo(segments[0]-1)
+			xTotal = xTotal - (self.segLength/2)*cos(totalAngle)
+			yTotal = yTotal - (self.segLength/2)*sin(totalAngle)
+			totalAngle += stateJoints[segments[0]-1]
 			
 			
 		totalVec = [cos(totalAngle),sin(totalAngle)]
 
+		"""
 		if self.currNode != 0:
-			#onSegPose = Pose(self.contacts.getClosestPose(self.currNode.rootNode))
 			onSegPose = Pose(self.contacts.getAveragePose(self.currNode.rootNode))
 			onSegActPose = Pose( self.probe.getActualJointPose(self.currNode.rootNode))
-
-		self.draw()
+		"""
+		
+		#self.draw()
 
 		# compute the change in joint angle for every consecutive joint
 		for i in segments:
@@ -308,9 +314,9 @@ class GlobalCurveFit(Behavior):
 				#newQuat = ogre.Quaternion(-ogre.Radian(ang2), ogre.Vector3().UNIT_Y)
 				#self.vecNode2.setOrientation(newQuat)
 	
-				#position = ogre.Vector3(xTotal + (self.probe.segLength/2)*cos(ang1),0.0,yTotal + (self.probe.segLength/2)*sin(ang1))
+				#position = ogre.Vector3(xTotal + (self.segLength/2)*cos(ang1),0.0,yTotal + (self.segLength/2)*sin(ang1))
 				#self.vecNode1.setPosition(position)
-				#position = ogre.Vector3(xTotal + (self.probe.segLength/2)*cos(ang2),0.0,yTotal + (self.probe.segLength/2)*sin(ang2))
+				#position = ogre.Vector3(xTotal + (self.segLength/2)*cos(ang2),0.0,yTotal + (self.segLength/2)*sin(ang2))
 				#self.vecNode2.setPosition(position)
 
 			if i == 39:
@@ -319,7 +325,7 @@ class GlobalCurveFit(Behavior):
 					ang3 = -ang3
 				#newQuat = ogre.Quaternion(-ogre.Radian(ang3), ogre.Vector3().UNIT_Y)
 				#self.vecNode3.setOrientation(newQuat)
-				#position = ogre.Vector3(xTotal + (self.probe.segLength/2)*cos(ang3),0.0,yTotal + (self.probe.segLength/2)*sin(ang3))
+				#position = ogre.Vector3(xTotal + (self.segLength/2)*cos(ang3),0.0,yTotal + (self.segLength/2)*sin(ang3))
 				#self.vecNode3.setPosition(position)
 			
 				
@@ -350,11 +356,11 @@ class GlobalCurveFit(Behavior):
 
 			k = 0.1
 			if segmentOrder == -1:
-				angle = self.probe.getServoCmd(i)
+				angle = cmdJoints[i]
 			else:
-				angle = self.probe.getServoCmd(i-1)
+				angle = cmdJoints[i-1]
 				
-			#angle = self.probe.getServo(i)
+			#angle = stateJoints[i]
 			if segmentOrder == -1:
 				finalAngle = k*desAngle + (1-k)*angle
 			else:
@@ -381,15 +387,16 @@ class GlobalCurveFit(Behavior):
 			self.closePoints.append(copy([xTotal,yTotal]))
 			if segmentOrder == -1:
 				totalAngle += finalAngle
-				xTotal = xTotal - self.probe.segLength*cos(totalAngle)
-				yTotal = yTotal - self.probe.segLength*sin(totalAngle)
+				xTotal = xTotal - self.segLength*cos(totalAngle)
+				yTotal = yTotal - self.segLength*sin(totalAngle)
 			
 			else:
 				totalAngle += finalAngle
-				xTotal = xTotal + self.probe.segLength*cos(totalAngle)
-				yTotal = yTotal + self.probe.segLength*sin(totalAngle)
+				xTotal = xTotal + self.segLength*cos(totalAngle)
+				yTotal = yTotal + self.segLength*sin(totalAngle)
 
 
+			"""
 			#print "creating child node " + "globalSegPoint" + str(self.nodeCount) + "_" + str(i)
 			childNode = self.parentNode.createChildSceneNode("globalSegPoint" + str(self.nodeCount) + "_" + str(i))
 			self.childSegNodes.append(childNode)
@@ -409,12 +416,12 @@ class GlobalCurveFit(Behavior):
 
 
 			if segmentOrder == -1:
-				pnt[0] = pnt[0] + 0.5*self.probe.segLength*cos(totalAngle)
-				pnt[1] = pnt[1] + 0.5*self.probe.segLength*sin(totalAngle)
+				pnt[0] = pnt[0] + 0.5*self.segLength*cos(totalAngle)
+				pnt[1] = pnt[1] + 0.5*self.segLength*sin(totalAngle)
 			
 			else:
-				pnt[0] = pnt[0] - 0.5*self.probe.segLength*cos(totalAngle)
-				pnt[1] = pnt[1] - 0.5*self.probe.segLength*sin(totalAngle)
+				pnt[0] = pnt[0] - 0.5*self.segLength*cos(totalAngle)
+				pnt[1] = pnt[1] - 0.5*self.segLength*sin(totalAngle)
 
 			position = ogre.Vector3(pnt[0],0.0,pnt[1])
 			#position = ogre.Vector3(xTotal,0.0,yTotal)
@@ -428,6 +435,7 @@ class GlobalCurveFit(Behavior):
 			childNode.setScale(size)
 	
 			childNode.attachObject(currEntity)
+			"""
 
 		return False
 
@@ -436,7 +444,7 @@ class GlobalCurveFit(Behavior):
 		return self.direction
 	
 	def computePathDirection(self):
-		joints = range(NUM_SEGS-1)
+		joints = range(self.numJoints)
 
 		# segment angle vector
 		vecSum1 = [0.0,0.0]

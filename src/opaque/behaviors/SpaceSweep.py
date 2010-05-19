@@ -112,13 +112,13 @@ class SpaceSweep(Behavior):
 		if not self.hasTransitioned:
 
 			initState = []
-			for i in range(self.probe.numSegs-1):
-				initState.append(180.0*self.probe.getServo(i)/pi)
+			for i in range(self.numJoints):
+				initState.append(180.0*stateJoints[i]/pi)
 
 			targetState = self.getJoints()
 			for i in range(len(targetState)):
 				if targetState[i] == None:
-					targetState[i] = 180.0*self.probe.getServo(i)/pi
+					targetState[i] = 180.0*stateJoints[i]/pi
 
 			errSum = 0.0
 			for i in range(len(initState)):

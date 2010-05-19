@@ -1,5 +1,7 @@
 
-from numpy import *
+from functions import *
+from copy import copy
+from numpy import array, dot, transpose
 from math import *
 
 class Pose:

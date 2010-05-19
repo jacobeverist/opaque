@@ -1,3 +1,4 @@
+
 from math import *
 from copy import *
 from numpy import array, dot, transpose
@@ -203,6 +204,7 @@ def closestSegPoint(seg, tPoint):
 		print "failed finding closest point of seg", seg, "to tPoint", tPoint
 
 		raise
+
 
 
 class Pose:

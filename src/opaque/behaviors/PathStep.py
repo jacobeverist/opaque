@@ -1,6 +1,7 @@
 
 
-from Behavior import *
+from Behavior import Behavior
+from VoronoiFit import VoronoiFit
 from FrontAnchorFit import FrontAnchorFit
 from FastLocalCurveFit import FastLocalCurveFit
 from HoldTransition import HoldTransition
@@ -26,6 +27,10 @@ class PathStep(Behavior):
 		Behavior.__init__(self, robotParam)
 
 		print "creating PathStep"
+
+		self.numJoints = self.robotParam['numJoints']
+		self.numSegs = self.robotParam['numSegs']
+		self.maxTorque = self.robotParam['maxTorque']
 
 		self.mapGraph = mapGraph
 		self.localNode = self.mapGraph.getCurrentNode()
@@ -109,8 +114,8 @@ class PathStep(Behavior):
 		
 		self.setDirection(result)
 		
-		self.globalCurveFit.clearDraw()
-		self.globalCurveSlide.clearDraw()
+		#self.globalCurveFit.clearDraw()
+		#self.globalCurveSlide.clearDraw()
 		
 	def reverseDirection(self):
 		self.path.reverse()
@@ -216,8 +221,8 @@ class PathStep(Behavior):
 		self.holdT.reset(self.probeState, resultJoints2)
 		self.refDone = False
 		
-		self.globalCurveFit.clearDraw()
-		self.globalCurveSlide.clearDraw()
+		#self.globalCurveFit.clearDraw()
+		#self.globalCurveSlide.clearDraw()
 		
 		self.computeMaskAndOutput()
 
@@ -370,7 +375,7 @@ class PathStep(Behavior):
 			ind.reverse()
 			
 			for i in ind:
-				sampAngle = self.probe.getServo(i)
+				sampAngle = stateJoints[i]
 				totalAngle = actOrigin[2] + sampAngle
 				xTotal = actOrigin[0] - segLength*cos(totalAngle)
 				zTotal = actOrigin[1] - segLength*sin(totalAngle)
@@ -381,8 +386,8 @@ class PathStep(Behavior):
 			actOrigin = [segLength*cos(-spliceJointAngle),segLength*sin(-spliceJointAngle),-spliceJointAngle]
 			actSegPoints.append(actOrigin)
 			
-			for i in range(self.spliceJoint+1,self.probe.numSegs-1):
-				sampAngle = self.probe.getServo(i)
+			for i in range(self.spliceJoint+1,self.numJoints):
+				sampAngle = stateJoints[i]
 				totalAngle = actOrigin[2] - sampAngle
 				xTotal = actOrigin[0] + segLength*cos(totalAngle)
 				zTotal = actOrigin[1] + segLength*sin(totalAngle)
@@ -403,7 +408,7 @@ class PathStep(Behavior):
 			ind.reverse()
 			
 			for i in ind:
-				sampAngle = self.probe.getServo(i)
+				sampAngle = stateJoints[i]
 				totalAngle = actOrigin[2] + sampAngle
 				xTotal = actOrigin[0] - segLength*cos(totalAngle)
 				zTotal = actOrigin[1] - segLength*sin(totalAngle)
@@ -414,8 +419,8 @@ class PathStep(Behavior):
 			actOrigin = [0.0,0.0,-spliceJointAngle + pi]			
 			actSegPoints.append(actOrigin)
 			
-			for i in range(self.spliceJoint,self.probe.numSegs-1):
-				sampAngle = self.probe.getServo(i)
+			for i in range(self.spliceJoint,self.numJoints):
+				sampAngle = stateJoints[i]
 				totalAngle = actOrigin[2] - sampAngle
 				xTotal = actOrigin[0] + segLength*cos(totalAngle)
 				zTotal = actOrigin[1] + segLength*sin(totalAngle)
@@ -435,8 +440,8 @@ class PathStep(Behavior):
 			peakCurves[-1].append(copy(peakOrigin))
 
 
-			for i in range(self.spliceJoint+1,self.probe.numSegs-1):
-				sampAngle = self.probe.getServo(i)
+			for i in range(self.spliceJoint+1,self.numJoints):
+				sampAngle = stateJoints[i]
 				totalAngle = peakOrigin[2] - sampAngle
 				xTotal = peakOrigin[0] + segLength*cos(totalAngle)
 				zTotal = peakOrigin[1] + segLength*sin(totalAngle)
@@ -456,7 +461,7 @@ class PathStep(Behavior):
 					peakOrigin = self.cmdSegPoints[i+1]
 					peakCurves[-1].append(copy(peakOrigin))
 	
-					sampAngle = self.probe.getServo(i)
+					sampAngle = stateJoints[i]
 					totalAngle = peakOrigin[2] - sampAngle
 					xTotal = peakOrigin[0] + segLength*cos(totalAngle)
 					zTotal = peakOrigin[1] + segLength*sin(totalAngle)
@@ -479,7 +484,7 @@ class PathStep(Behavior):
 			ind.reverse()
 
 			for i in ind:
-				sampAngle = self.probe.getServo(i)
+				sampAngle = stateJoints[i]
 				totalAngle = peakOrigin[2] + sampAngle
 				xTotal = peakOrigin[0] - segLength*cos(totalAngle)
 				zTotal = peakOrigin[1] - segLength*sin(totalAngle)
@@ -499,7 +504,7 @@ class PathStep(Behavior):
 					peakOrigin = self.cmdSegPoints[i+1]
 					peakCurves[-1].append(copy(peakOrigin))
 	
-					sampAngle = self.probe.getServo(i)
+					sampAngle = stateJoints[i]
 					totalAngle = peakOrigin[2] + sampAngle
 					xTotal = peakOrigin[0] - segLength*cos(totalAngle)
 					zTotal = peakOrigin[1] - segLength*sin(totalAngle)
@@ -512,7 +517,7 @@ class PathStep(Behavior):
 			
 		errors = []
 		for i in range(0,self.probe.numSegs-2):
-			errors.append(fabs(self.probe.getServo(i)-self.probe.getServoCmd(i)))
+			errors.append(fabs(stateJoints[i]-self.probe.getServoCmd(i)))
 
 		if True:
 			xP = []
@@ -585,14 +590,14 @@ class PathStep(Behavior):
 
 		print "Extend Front"
 
-		if self.globalCurveSlide.step():
+		if self.globalCurveSlide.step(self.probeState):
 			self.frontExtendDone = True
 			self.frontExtending = False
-			self.globalCurveSlide.clearDraw()
+			#self.globalCurveSlide.clearDraw()
 				
 		joints = self.globalCurveSlide.getJoints()
 
-		self.holdT.reset(joints)
+		self.holdT.reset(self.probeState, joints)
 							
 	def doFrontAnchor(self):
 				
@@ -891,7 +896,7 @@ class PathStep(Behavior):
 
 		" reset all torques of the joints to maximum "
 		for i in range(self.numJoints):
-			self.probe.setJointTorque(i, self.probe.maxTorque)
+			self.torques[i] = self.maxTorque
 
 		" weaken head joints "
 		" 30*2.5 is maximum "
@@ -905,16 +910,16 @@ class PathStep(Behavior):
 				#print "weakening joints", range(maxJoint+1, self.numJoints)
 				for i in range(maxJoint+1, self.numJoints):
 					if i <= self.numJoints-1:
-						self.probe.setJointTorque(i, 3.0)
+						self.torques[i] = 3.0
 			else:
 				minJoint = min(anchorJoints)
 				#print "weakening joints", range(0,minJoint-1)
 				for i in range(0, minJoint-1):					
 					if i <= self.numJoints-1:
-						self.probe.setJointTorque(i, 3.0)
+						self.torques[i] = 3.0
 	
 		" execute the local curve fitting "
-		self.frontAnchorFit.step()
+		self.frontAnchorFit.step(self.probeState)
 
 		" compute the bounds for behavior for global curve fitting "
 		if self.frontAnchorFit.anterior:
@@ -923,7 +928,7 @@ class PathStep(Behavior):
 			self.globalCurveFit.setBoundaries(startNode, endNode)
 		else:
 			startNode = self.frontAnchorFit.lastJoint
-			endNode = self.probe.numSegs-2	
+			endNode = self.numJoints-1	
 			self.globalCurveFit.setBoundaries(startNode, endNode)
 
 		
@@ -1019,7 +1024,7 @@ class PathStep(Behavior):
 
 		" reset all torques of the joints to maximum "
 		for i in range(self.numJoints):
-			self.probe.setJointTorque(i, self.probe.maxTorque)
+			self.torques[i] = self.maxTorque
 
 		" stretch tail to remove closed-chain interference "
 		self.adaptiveCurve.setTailLength(5.0)
@@ -1027,7 +1032,7 @@ class PathStep(Behavior):
 		self.adaptiveCurve.setPeakAmp(self.currPeak+1,nextVal)
 
 		" execute the local curve fitting "
-		self.concertinaFit.step()
+		self.concertinaFit.step(self.probeState)
 
 		" weaken the feeder joints "
 		" 30*2.5 is maximum "
@@ -1039,13 +1044,13 @@ class PathStep(Behavior):
 				#print "weakening", maxJoint+1, "to", self.numJoints
 				for i in range(maxJoint+2, self.numJoints):
 					if i <= self.numJoints-1:
-						self.probe.setJointTorque(i, 3.0)
+						self.torques[i] = 3.0
 			else:
 				minJoint = min(peakJoints)
 				#print "weakening", 0, "to", minJoint-1
 				for i in range(0, minJoint-1):					
-					if i <= self.probe.numSegs-2:
-						self.probe.setJointTorque(i, 3.0)
+					if i <= self.numJoints-1:
+						self.torques[i] = 3.0
 
 		resultJoints = self.spliceFitJoints()
 		self.holdT.reset(self.probeState, resultJoints)
@@ -1054,11 +1059,16 @@ class PathStep(Behavior):
 		peakJoints.sort()
 		
 	def step(self, probeState):
-		
-		self.probeState = probeState
-		
+		Behavior.step(self, probeState)
+				
 		self.count += 1
 		isDone = False
+		
+		torques = self.probeState['torques']
+
+		self.torques = []
+		for i in range(0,self.numJoints):
+			self.torques.append(torques[i])
 		
 		if self.transDone:
 			self.transDone = False

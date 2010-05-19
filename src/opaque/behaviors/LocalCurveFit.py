@@ -170,8 +170,8 @@ class LocalCurveFit(Behavior):
 						sampAngle = angle*pi/180.0
 
 						totalAngle = originPose[2] + sampAngle
-						xTotal = originPose[0] - self.probe.segLength*cos(totalAngle)
-						zTotal = originPose[1] - self.probe.segLength*sin(totalAngle)
+						xTotal = originPose[0] - self.segLength*cos(totalAngle)
+						zTotal = originPose[1] - self.segLength*sin(totalAngle)
 						pnt = [xTotal, zTotal, totalAngle]
 
 						# 2. for each point, measure the distance to the closest point on the spline curve
@@ -206,8 +206,8 @@ class LocalCurveFit(Behavior):
 					for angle in arange(180.0/pi*angle1,180.0/pi*angle2,0.5):
 						sampAngle = angle*pi/180.0
 						totalAngle = originPose[2] + sampAngle
-						xTotal = originPose[0] - self.probe.segLength*cos(totalAngle)
-						zTotal = originPose[1] - self.probe.segLength*sin(totalAngle)
+						xTotal = originPose[0] - self.segLength*cos(totalAngle)
+						zTotal = originPose[1] - self.segLength*sin(totalAngle)
 						pnt = [xTotal, zTotal, totalAngle]
 						min, u, curvePoint = self.curve.findClosestPoint(pnt)
 						samples2.append([sampAngle, pnt, min, u, curvePoint])
@@ -253,11 +253,11 @@ class LocalCurveFit(Behavior):
 			else:
 
 				# origin is at the tip of segment 0, so we need to set the joint center to -self.segLength
-				#originPose = [self.probe.segLength, 0.0, 0.0]
-				originPose = [-self.probe.segLength, 0.0, 0.0]
+				#originPose = [self.segLength, 0.0, 0.0]
+				originPose = [-self.segLength, 0.0, 0.0]
 
-				#xTotal = pose[0] - self.probe.segLength*cos(pose[2])
-				#zTotal = pose[1] - self.probe.segLength*sin(pose[2])
+				#xTotal = pose[0] - self.segLength*cos(pose[2])
+				#zTotal = pose[1] - self.segLength*sin(pose[2])
 				#pose[0] = xTotal
 				#pose[1] = zTotal
 
@@ -287,8 +287,8 @@ class LocalCurveFit(Behavior):
 						sampAngle = angle*pi/180.0
 
 						totalAngle = originPose[2] - sampAngle
-						xTotal = originPose[0] + self.probe.segLength*cos(totalAngle)
-						zTotal = originPose[1] + self.probe.segLength*sin(totalAngle)
+						xTotal = originPose[0] + self.segLength*cos(totalAngle)
+						zTotal = originPose[1] + self.segLength*sin(totalAngle)
 						#totalAngle = totalAngle - sampAngle
 						pnt = [xTotal, zTotal, totalAngle]
 
@@ -340,8 +340,8 @@ class LocalCurveFit(Behavior):
 						sampAngle = angle*pi/180.0
 
 						totalAngle = originPose[2] - sampAngle
-						xTotal = originPose[0] + self.probe.segLength*cos(totalAngle)
-						zTotal = originPose[1] + self.probe.segLength*sin(totalAngle)
+						xTotal = originPose[0] + self.segLength*cos(totalAngle)
+						zTotal = originPose[1] + self.segLength*sin(totalAngle)
 						#totalAngle = originPose[2] - sampAngle
 
 						pnt = [xTotal, zTotal, totalAngle]
@@ -383,7 +383,7 @@ class LocalCurveFit(Behavior):
 			if self.backwards:
 
 				#originPose = [0.0, 0.0, pi]
-				originPose = [-self.probe.segLength, 0.0, pi]
+				originPose = [-self.segLength, 0.0, pi]
 
 				# indices
 				minJoint = self.rootNode+1
@@ -395,7 +395,7 @@ class LocalCurveFit(Behavior):
 					maxJoint = self.endNode
 					 
 				ind = range(minJoint,maxJoint+1)
-				#ind = range(self.rootNode+1, self.probe.numSegs-1) # (20,39+1) 
+				#ind = range(self.rootNode+1, self.numJoints) # (20,39+1) 
 				ind.reverse()
 
 				minNode = self.probe.numSegs-2
@@ -410,8 +410,8 @@ class LocalCurveFit(Behavior):
 						sampAngle = angle*pi/180.0
 
 						totalAngle = originPose[2] + sampAngle
-						xTotal = originPose[0] - self.probe.segLength*cos(totalAngle)
-						zTotal = originPose[1] - self.probe.segLength*sin(totalAngle)
+						xTotal = originPose[0] - self.segLength*cos(totalAngle)
+						zTotal = originPose[1] - self.segLength*sin(totalAngle)
 						pnt = [xTotal, zTotal, totalAngle]
 
 						# 2. for each point, measure the distance to the closest point on the spline curve
@@ -446,8 +446,8 @@ class LocalCurveFit(Behavior):
 					for angle in arange(180.0/pi*angle1,180.0/pi*angle2,0.5):
 						sampAngle = angle*pi/180.0
 						totalAngle = originPose[2] + sampAngle
-						xTotal = originPose[0] - self.probe.segLength*cos(totalAngle)
-						zTotal = originPose[1] - self.probe.segLength*sin(totalAngle)
+						xTotal = originPose[0] - self.segLength*cos(totalAngle)
+						zTotal = originPose[1] - self.segLength*sin(totalAngle)
 						pnt = [xTotal, zTotal, totalAngle]
 						min, u, curvePoint = self.curve.findClosestPoint(pnt)
 						samples2.append([sampAngle, pnt, min, u, curvePoint])
@@ -494,8 +494,8 @@ class LocalCurveFit(Behavior):
 				# origin is at the tip of segment 0, so we need to set the joint center to -self.segLength
 				originPose = [0.0, 0.0, 0.0]
 
-				#xTotal = pose[0] - self.probe.segLength*cos(pose[2])
-				#zTotal = pose[1] - self.probe.segLength*sin(pose[2])
+				#xTotal = pose[0] - self.segLength*cos(pose[2])
+				#zTotal = pose[1] - self.segLength*sin(pose[2])
 				#pose[0] = xTotal
 				#pose[1] = zTotal
 
@@ -509,7 +509,7 @@ class LocalCurveFit(Behavior):
 					maxJoint = self.endNode
 					 
 				ind = range(minJoint,maxJoint+1)
-				#ind = range(self.rootNode+1, self.probe.numSegs-1) # (20,39+1) 
+				#ind = range(self.rootNode+1, self.numJoints) # (20,39+1) 
 				maxNode = 0
 				maxU = 0.0
 
@@ -522,8 +522,8 @@ class LocalCurveFit(Behavior):
 						sampAngle = angle*pi/180.0
 
 						totalAngle = originPose[2] - sampAngle
-						xTotal = originPose[0] + self.probe.segLength*cos(totalAngle)
-						zTotal = originPose[1] + self.probe.segLength*sin(totalAngle)
+						xTotal = originPose[0] + self.segLength*cos(totalAngle)
+						zTotal = originPose[1] + self.segLength*sin(totalAngle)
 						#totalAngle = totalAngle - sampAngle
 						pnt = [xTotal, zTotal, totalAngle]
 
@@ -575,8 +575,8 @@ class LocalCurveFit(Behavior):
 						sampAngle = angle*pi/180.0
 
 						totalAngle = originPose[2] - sampAngle
-						xTotal = originPose[0] + self.probe.segLength*cos(totalAngle)
-						zTotal = originPose[1] + self.probe.segLength*sin(totalAngle)
+						xTotal = originPose[0] + self.segLength*cos(totalAngle)
+						zTotal = originPose[1] + self.segLength*sin(totalAngle)
 						#totalAngle = originPose[2] - sampAngle
 
 						pnt = [xTotal, zTotal, totalAngle]

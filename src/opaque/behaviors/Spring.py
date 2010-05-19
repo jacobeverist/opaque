@@ -47,8 +47,8 @@ class Spring(Behavior):
 				# joint value
 				#self.setJoint(i, self.val)
 		#else:
-			#print "setting", range(self.topJoint, self.probe.numSegs-1)
-			#for i in range(self.topJoint, self.probe.numSegs-1):
+			#print "setting", range(self.topJoint, self.numJoints)
+			#for i in range(self.topJoint, self.numJoints):
 				# joint value
 				#self.setJoint(i, self.val)		
 				
@@ -85,7 +85,7 @@ class Spring(Behavior):
 			if self.direction:
 				joints = range(0, self.topJoint)
 			else:
-				joints = range(self.topJoint, self.probe.numSegs-1)
+				joints = range(self.topJoint, self.numJoints)
 				
 			#print joints
 			
@@ -108,9 +108,9 @@ class Spring(Behavior):
 			cmdJoints = self.getJoints()
 
 			initState = []
-			for i in range(self.probe.numSegs-1):
+			for i in range(self.numJoints):
 				if cmdJoints[i] != None:
-					initState.append(180.0*self.probe.getServo(i)/pi)
+					initState.append(180.0*stateJoints[i]/pi)
 				else:
 					initState.append(None)
 

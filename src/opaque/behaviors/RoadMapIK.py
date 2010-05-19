@@ -308,7 +308,7 @@ class RoadMapIK:
 
 				k = 0.1
 				angle = self.probe.getServoCmd(i)
-				#angle = self.probe.getServo(i)
+				#angle = stateJoints[i]
 				finalAngle = k*desAngle + (1-k)*angle
 
 				# FIXME: remove this
@@ -327,8 +327,8 @@ class RoadMapIK:
 
 				self.closePoints.append(copy([xTotal,yTotal]))
 				totalAngle += finalAngle
-				xTotal = xTotal - self.probe.segLength*cos(totalAngle)
-				yTotal = yTotal - self.probe.segLength*sin(totalAngle)
+				xTotal = xTotal - self.segLength*cos(totalAngle)
+				yTotal = yTotal - self.segLength*sin(totalAngle)
 
 			#print finalAngles
 
@@ -439,7 +439,7 @@ class RoadMapIK:
 
 				k = 0.1
 				angle = self.probe.getServoCmd(i)
-				#angle = self.probe.getServo(i)
+				#angle = stateJoints[i]
 				finalAngle = k*desAngle + (1-k)*angle
 				diffAngle = finalAngle-angle
 
@@ -467,8 +467,8 @@ class RoadMapIK:
 					#totalAngle -= finalAngle
 					#print "desAngle =", desAngle, "angle =", angle, "finalAngle =", finalAngle, "totalAngle =", totalAngle
 					#print "totalVec =", totalVec
-					xTotal = xTotal + self.probe.segLength*cos(totalAngle)
-					yTotal = yTotal + self.probe.segLength*sin(totalAngle)
+					xTotal = xTotal + self.segLength*cos(totalAngle)
+					yTotal = yTotal + self.segLength*sin(totalAngle)
 					totalAngle -= nextAngle
 					#print "xTotal, yTotal =", xTotal, yTotal
 

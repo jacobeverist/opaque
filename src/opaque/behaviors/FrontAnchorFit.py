@@ -1,26 +1,31 @@
 
 from Behavior import *
-import traceback
 import math
 
+from functions import LeftOnEdge
 from math import pi , cos, sin, sqrt
 from numpy import arange
-
-from common import *
+from copy import copy
 
 fastLocalNodeCount = 0
 
 class FrontAnchorFit(Behavior):
 
-	def __init__(self, probe, anterior = True, spliceJoint = 19):
+	def __init__(self, robotParam, anterior = True, spliceJoint = 19):
 		global fastLocalNodeCount
+
+		#self.frontAnchorFit = FrontAnchorFit(self.robotParam, self.direction, self.spliceJoint)
+		#self.frontAnchorFit.setCurve(self.frontCurve)
+		#self.frontAnchorFit.setSpliceJoint(self.spliceJoint)
 		
 		print "creating FrontAnchorFit behavior with spliceJoint", spliceJoint
 
-		Behavior.__init__(self, probe)
-
-		self.numSegs = self.probe.numSegs
-
+		Behavior.__init__(self, robotParam)
+		
+		self.numSegs = self.robotParam['numSegs']
+		self.numJoints = self.robotParam['numJoints']
+		self.segLength = self.robotParam['segLength']
+		
 		" anterior or posterior "
 		self.anterior = anterior
 		
@@ -29,7 +34,7 @@ class FrontAnchorFit(Behavior):
 			self.endNode = spliceJoint
 		else:
 			self.startNode = spliceJoint
-			self.endNode = self.probe.numSegs-2	
+			self.endNode = self.numJoints-1	
 					
 		self.curve = 0
 
@@ -43,7 +48,7 @@ class FrontAnchorFit(Behavior):
 			self.endNode = spliceJoint
 		else:
 			self.startNode = spliceJoint
-			self.endNode = self.probe.numSegs-2	
+			self.endNode = self.numJoints-1	
 	
 	def setCurve(self, curve):
 		self.curve = curve
@@ -89,7 +94,7 @@ class FrontAnchorFit(Behavior):
 		
 		# indices
 		minJoint = 0
-		maxJoint = self.probe.numSegs-2
+		maxJoint = self.numJoints-1
 					
 		if minJoint < self.startNode:
 			minJoint = self.startNode
@@ -99,14 +104,14 @@ class FrontAnchorFit(Behavior):
 		ind = range(minJoint,maxJoint+1)
 		ind.reverse()
 
-		minNode = self.probe.numSegs-2
+		minNode = self.numJoints-1
 		maxU = 0.0
 
 		" positions and angles of the joints computed for this step "
-		self.jointPositions = [None for i in range(self.probe.numSegs-1)]
-		self.jointAngles = [None for i in range(self.probe.numSegs-1)]
+		self.jointPositions = [None for i in range(self.numJoints)]
+		self.jointAngles = [None for i in range(self.numJoints)]
 		
-		radius = self.probe.segLength
+		radius = self.segLength
 		breakFromFit = False
 
 		for currJoint in ind:
@@ -126,8 +131,8 @@ class FrontAnchorFit(Behavior):
 				sampAngle = angle*pi/180.0
 
 				totalAngle = originPose[2] + sampAngle
-				xTotal = originPose[0] - self.probe.segLength*cos(totalAngle)
-				zTotal = originPose[1] - self.probe.segLength*sin(totalAngle)
+				xTotal = originPose[0] - self.segLength*cos(totalAngle)
+				zTotal = originPose[1] - self.segLength*sin(totalAngle)
 				pnt = [xTotal, zTotal, totalAngle]
 
 				if pnt[0] >= originPose[0]:
@@ -200,8 +205,8 @@ class FrontAnchorFit(Behavior):
 				for angle in arange(angle1,angle2,0.1):
 					sampAngle = angle*pi/180.0
 					totalAngle = originPose[2] + sampAngle
-					xTotal = originPose[0] - self.probe.segLength*cos(totalAngle)
-					zTotal = originPose[1] - self.probe.segLength*sin(totalAngle)
+					xTotal = originPose[0] - self.segLength*cos(totalAngle)
+					zTotal = originPose[1] - self.segLength*sin(totalAngle)
 
 					pnt = [xTotal, zTotal, totalAngle]
 					
@@ -262,7 +267,7 @@ class FrontAnchorFit(Behavior):
 		originPose = [0.0, 0.0, 0.0]
 		
 		minJoint = 0
-		maxJoint = self.probe.numSegs-2
+		maxJoint = self.numJoints-1
 		
 		if minJoint < self.startNode:
 			minJoint = self.startNode
@@ -277,10 +282,10 @@ class FrontAnchorFit(Behavior):
 		maxU = 0.0
 		
 		" positions and angles of the joints computed for this step "
-		self.jointPositions = [None for i in range(self.probe.numSegs-1)]
-		self.jointAngles = [None for i in range(self.probe.numSegs-1)]
+		self.jointPositions = [None for i in range(self.numJoints)]
+		self.jointAngles = [None for i in range(self.numJoints)]
 		
-		radius = self.probe.segLength
+		radius = self.segLength
 		breakFromFit = False
 		
 		for currJoint in ind:
@@ -301,8 +306,8 @@ class FrontAnchorFit(Behavior):
 				sampAngle = angle*pi/180.0
 
 				totalAngle = originPose[2] - sampAngle
-				xTotal = originPose[0] + self.probe.segLength*cos(totalAngle)
-				zTotal = originPose[1] + self.probe.segLength*sin(totalAngle)
+				xTotal = originPose[0] + self.segLength*cos(totalAngle)
+				zTotal = originPose[1] + self.segLength*sin(totalAngle)
 				pnt = [xTotal, zTotal, totalAngle]
 
 				if pnt[0] >= originPose[0]:
@@ -376,8 +381,8 @@ class FrontAnchorFit(Behavior):
 				for angle in arange(angle1,angle2,0.1):
 					sampAngle = angle*pi/180.0
 					totalAngle = originPose[2] - sampAngle
-					xTotal = originPose[0] + self.probe.segLength*cos(totalAngle)
-					zTotal = originPose[1] + self.probe.segLength*sin(totalAngle)								
+					xTotal = originPose[0] + self.segLength*cos(totalAngle)
+					zTotal = originPose[1] + self.segLength*sin(totalAngle)								
 					pnt = [xTotal, zTotal, totalAngle]
 					#print pnt[0], originPose[0]
 					
@@ -434,6 +439,8 @@ class FrontAnchorFit(Behavior):
 		
 	def getPeakError(self):
 
+		stateJoints = self.probeState['joints']
+
 		cmdPoints = []
 		actPoints = []
 		
@@ -450,15 +457,15 @@ class FrontAnchorFit(Behavior):
 		else:
 			minIndex = 1
 			origin = self.jointPositions[minIndex-1]
-			
+		
 		cmdPoints.append(copy(origin))
 		actPoints.append(copy(origin))
 			
 		for i in joints:
-			sampAngle = self.probe.getServo(i)
+			sampAngle = stateJoints[i]
 			totalAngle = origin[2] - sampAngle
-			xTotal = origin[0] + self.probe.segLength*cos(totalAngle)
-			zTotal = origin[1] + self.probe.segLength*sin(totalAngle)
+			xTotal = origin[0] + self.segLength*cos(totalAngle)
+			zTotal = origin[1] + self.segLength*sin(totalAngle)
 			pnt = [xTotal, zTotal, totalAngle]
 			origin = pnt
 
@@ -467,10 +474,10 @@ class FrontAnchorFit(Behavior):
 			maxIndex = i
 
 		" add one more joint over the peak "
-		sampAngle = self.probe.getServo(maxIndex+1)
+		sampAngle = stateJoints[maxIndex+1]
 		totalAngle = origin[2] - sampAngle
-		xTotal = origin[0] + self.probe.segLength*cos(totalAngle)
-		zTotal = origin[1] + self.probe.segLength*sin(totalAngle)
+		xTotal = origin[0] + self.segLength*cos(totalAngle)
+		zTotal = origin[1] + self.segLength*sin(totalAngle)
 		pnt = [xTotal, zTotal, totalAngle]
 		origin = pnt
 
@@ -492,10 +499,10 @@ class FrontAnchorFit(Behavior):
 		return cost
 		
 			
-	def step(self):
+	def step(self, probeState):
 		
 		#print "caseA"
-		Behavior.step(self)
+		Behavior.step(self, probeState)
 
 		#print "caseB"
 

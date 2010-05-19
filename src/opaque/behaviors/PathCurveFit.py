@@ -228,12 +228,12 @@ class PathCurveFit(Behavior):
 		
 		if segmentOrder == -1:
 			# adding constant offset so that we are on the joint
-			xTotal = xTotal + (self.probe.segLength/2)*cos(totalAngle)
-			yTotal = yTotal + (self.probe.segLength/2)*sin(totalAngle)
+			xTotal = xTotal + (self.segLength/2)*cos(totalAngle)
+			yTotal = yTotal + (self.segLength/2)*sin(totalAngle)
 			totalAngle += -self.probe.getServo(segments[0])
 		else:
-			xTotal = xTotal - (self.probe.segLength/2)*cos(totalAngle)
-			yTotal = yTotal - (self.probe.segLength/2)*sin(totalAngle)
+			xTotal = xTotal - (self.segLength/2)*cos(totalAngle)
+			yTotal = yTotal - (self.segLength/2)*sin(totalAngle)
 			totalAngle += self.probe.getServo(segments[0]-1)
 			
 			
@@ -304,9 +304,9 @@ class PathCurveFit(Behavior):
 				newQuat = ogre.Quaternion(-ogre.Radian(ang2), ogre.Vector3().UNIT_Y)
 				self.vecNode2.setOrientation(newQuat)
 	
-				position = ogre.Vector3(xTotal + (self.probe.segLength/2)*cos(ang1),0.0,yTotal + (self.probe.segLength/2)*sin(ang1))
+				position = ogre.Vector3(xTotal + (self.segLength/2)*cos(ang1),0.0,yTotal + (self.segLength/2)*sin(ang1))
 				self.vecNode1.setPosition(position)
-				position = ogre.Vector3(xTotal + (self.probe.segLength/2)*cos(ang2),0.0,yTotal + (self.probe.segLength/2)*sin(ang2))
+				position = ogre.Vector3(xTotal + (self.segLength/2)*cos(ang2),0.0,yTotal + (self.segLength/2)*sin(ang2))
 				self.vecNode2.setPosition(position)
 			if i == 39:
 				ang3 = acos(totalVec[0])
@@ -314,7 +314,7 @@ class PathCurveFit(Behavior):
 					ang3 = -ang3
 				newQuat = ogre.Quaternion(-ogre.Radian(ang3), ogre.Vector3().UNIT_Y)
 				self.vecNode3.setOrientation(newQuat)
-				position = ogre.Vector3(xTotal + (self.probe.segLength/2)*cos(ang3),0.0,yTotal + (self.probe.segLength/2)*sin(ang3))
+				position = ogre.Vector3(xTotal + (self.segLength/2)*cos(ang3),0.0,yTotal + (self.segLength/2)*sin(ang3))
 				self.vecNode3.setPosition(position)
 			
 				
@@ -348,7 +348,7 @@ class PathCurveFit(Behavior):
 			else:
 				angle = self.probe.getServoCmd(i-1)
 				
-			#angle = self.probe.getServo(i)
+			#angle = stateJoints[i]
 			if segmentOrder == -1:
 				finalAngle = k*desAngle + (1-k)*angle
 			else:
@@ -375,13 +375,13 @@ class PathCurveFit(Behavior):
 			self.closePoints.append(copy([xTotal,yTotal]))
 			if segmentOrder == -1:
 				totalAngle += finalAngle
-				xTotal = xTotal - self.probe.segLength*cos(totalAngle)
-				yTotal = yTotal - self.probe.segLength*sin(totalAngle)
+				xTotal = xTotal - self.segLength*cos(totalAngle)
+				yTotal = yTotal - self.segLength*sin(totalAngle)
 			
 			else:
 				totalAngle += finalAngle
-				xTotal = xTotal + self.probe.segLength*cos(totalAngle)
-				yTotal = yTotal + self.probe.segLength*sin(totalAngle)
+				xTotal = xTotal + self.segLength*cos(totalAngle)
+				yTotal = yTotal + self.segLength*sin(totalAngle)
 				
 			childNode = self.parentNode.createChildSceneNode("globalCurvePoint" + str(i))
 			self.childNodes.append(childNode)
@@ -587,7 +587,7 @@ class PathCurveFit(Behavior):
 
 				k = 0.1
 				angle = self.probe.getServoCmd(i)
-				#angle = self.probe.getServo(i)
+				#angle = stateJoints[i]
 				finalAngle = k*desAngle + (1-k)*angle
 
 				#print "setting", i, "to", finalAngle*180.0/pi
@@ -600,8 +600,8 @@ class PathCurveFit(Behavior):
 
 				self.closePoints.append(copy([xTotal,yTotal]))
 				totalAngle += finalAngle
-				xTotal = xTotal - self.probe.segLength*cos(totalAngle)
-				yTotal = yTotal - self.probe.segLength*sin(totalAngle)
+				xTotal = xTotal - self.segLength*cos(totalAngle)
+				yTotal = yTotal - self.segLength*sin(totalAngle)
 
 		# forward fitting
 		# NOTE:  in this case we are modifying the current frame instead of modifying the next frame
@@ -685,7 +685,7 @@ class PathCurveFit(Behavior):
 
 				k = 0.1
 				angle = self.probe.getServoCmd(i)
-				#angle = self.probe.getServo(i)
+				#angle = stateJoints[i]
 				finalAngle = k*desAngle + (1-k)*angle
 				diffAngle = finalAngle-angle
 
@@ -701,8 +701,8 @@ class PathCurveFit(Behavior):
 
 					self.closePoints.append(copy([xTotal,yTotal]))
 					totalAngle -= diffAngle
-					xTotal = xTotal + self.probe.segLength*cos(totalAngle)
-					yTotal = yTotal + self.probe.segLength*sin(totalAngle)
+					xTotal = xTotal + self.segLength*cos(totalAngle)
+					yTotal = yTotal + self.segLength*sin(totalAngle)
 					totalAngle -= nextAngle
 
 
@@ -712,16 +712,16 @@ class PathCurveFit(Behavior):
 	
 	def getSegPose(self, segI):
 		
-		segLength = self.probe.segLength
+		segLength = self.segLength
 		segWidth = self.probe.segWidth
-		numJoints = self.probe.numSegs-1
+		numJoints = self.numJoints
 		
 		xTotal = 0.0
 		zTotal = 0.0
 		totalAngle = 0.0
 	
 		if segI > self.rootNode + 1:
-			#joints = range(self.rootNode, self.probe.numSegs-1)
+			#joints = range(self.rootNode, self.numJoints)
 			joints = range(self.rootNode, segI)
 	
 			for i in joints:
@@ -764,9 +764,9 @@ class PathCurveFit(Behavior):
 
 	def getForeTip(self):
 		
-		segLength = self.probe.segLength
+		segLength = self.segLength
 		segWidth = self.probe.segWidth
-		numJoints = self.probe.numSegs-1
+		numJoints = self.numJoints
 		
 		xTotal = 0.0
 		zTotal = 0.0
@@ -785,9 +785,9 @@ class PathCurveFit(Behavior):
 		return [xTotal, zTotal, totalAngle]
 
 	def getAftTip(self):
-		segLength = self.probe.segLength
+		segLength = self.segLength
 		segWidth = self.probe.segWidth
-		numJoints = self.probe.numSegs-1
+		numJoints = self.numJoints
 		
 		xTotal = 0.0
 		zTotal = 0.0
@@ -807,16 +807,16 @@ class PathCurveFit(Behavior):
 
 	def getJointPose(self, jointI):
 		
-		segLength = self.probe.segLength
+		segLength = self.segLength
 		segWidth = self.probe.segWidth
-		numJoints = self.probe.numSegs-1
+		numJoints = self.numJoints
 		
 		xTotal = 0.0
 		zTotal = 0.0
 		totalAngle = 0.0
 	
 		if jointI > self.rootNode:
-			#joints = range(self.rootNode, self.probe.numSegs-1)
+			#joints = range(self.rootNode, self.numJoints)
 			joints = range(self.rootNode, jointI)
 	
 			for i in joints:
@@ -861,9 +861,9 @@ class PathCurveFit(Behavior):
 		" path vector "
 		vecSum2 = [0.0,0.0]
 
-		segLength = self.probe.segLength
+		segLength = self.segLength
 		segWidth = self.probe.segWidth
-		numJoints = self.probe.numSegs-1
+		numJoints = self.numJoints
 		
 		xTotal = 0.0
 		zTotal = 0.0
@@ -893,7 +893,7 @@ class PathCurveFit(Behavior):
 		xTotal = 0.0
 		zTotal = 0.0
 		totalAngle = 0.0
-		joints = range(self.rootNode, self.probe.numSegs-1)
+		joints = range(self.rootNode, self.numJoints)
 
 		for i in joints:
 			xTotal = xTotal + 0.5*segLength*cos(totalAngle)

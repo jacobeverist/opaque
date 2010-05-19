@@ -74,8 +74,8 @@ class BackBoneIK:
 			pose = self.probe.getActualJointPose(0)
 
 			totalAngle = pose[2] + self.probe.getServo(0)
-			xTotal = pose[0] - self.probe.segLength*cos(totalAngle)
-			zTotal = pose[1] - self.probe.segLength*sin(totalAngle)
+			xTotal = pose[0] - self.segLength*cos(totalAngle)
+			zTotal = pose[1] - self.segLength*sin(totalAngle)
 			pose[0] = xTotal
 			pose[1] = zTotal
 			pose[2] = totalAngle
@@ -95,8 +95,8 @@ class BackBoneIK:
 			pose = [0.0,0.0,0.0]
 
 			#totalAngle = pose[2] + self.probe.getServo(0)
-			#xTotal = pose[0] - self.probe.segLength*cos(totalAngle)
-			#zTotal = pose[1] - self.probe.segLength*sin(totalAngle)
+			#xTotal = pose[0] - self.segLength*cos(totalAngle)
+			#zTotal = pose[1] - self.segLength*sin(totalAngle)
 			#pose[0] = xTotal
 			#pose[1] = zTotal
 			#pose[2] = totalAngle
@@ -131,8 +131,8 @@ class BackBoneIK:
 
 			# 
 			for i in range(originSeg+1, targetSeg+1):
-				xTotal = xTotal + self.probe.segLength*cos(totalAngle)
-				zTotal = zTotal + self.probe.segLength*sin(totalAngle)
+				xTotal = xTotal + self.segLength*cos(totalAngle)
+				zTotal = zTotal + self.segLength*sin(totalAngle)
 				totalAngle = totalAngle - self.probe.getServoCmd(i)
 
 			totalAngle = normalizeAngle(totalAngle)
@@ -152,8 +152,8 @@ class BackBoneIK:
 
 			for i in ind:
 				totalAngle = totalAngle + self.probe.getServoCmd(i)
-				xTotal = xTotal - self.probe.segLength*cos(totalAngle)
-				zTotal = zTotal - self.probe.segLength*sin(totalAngle)
+				xTotal = xTotal - self.segLength*cos(totalAngle)
+				zTotal = zTotal - self.segLength*sin(totalAngle)
 
 			totalAngle = normalizeAngle(totalAngle)
 
@@ -189,8 +189,8 @@ class BackBoneIK:
 					sampAngle = angle*pi/180.0
 
 					totalAngle = originPose[2] + sampAngle
-					xTotal = originPose[0] - self.probe.segLength*cos(totalAngle)
-					zTotal = originPose[1] - self.probe.segLength*sin(totalAngle)
+					xTotal = originPose[0] - self.segLength*cos(totalAngle)
+					zTotal = originPose[1] - self.segLength*sin(totalAngle)
 					pnt = [xTotal, zTotal, totalAngle]
 
 					# 2. for each point, measure the distance to the closest point on the spline curve
@@ -225,8 +225,8 @@ class BackBoneIK:
 				for angle in arange(180.0/pi*angle1,180.0/pi*angle2,0.5):
 					sampAngle = angle*pi/180.0
 					totalAngle = originPose[2] + sampAngle
-					xTotal = originPose[0] - self.probe.segLength*cos(totalAngle)
-					zTotal = originPose[1] - self.probe.segLength*sin(totalAngle)
+					xTotal = originPose[0] - self.segLength*cos(totalAngle)
+					zTotal = originPose[1] - self.segLength*sin(totalAngle)
 					pnt = [xTotal, zTotal, totalAngle]
 					min, u, curvePoint = self.curve.findClosestPoint(pnt)
 					samples2.append([sampAngle, pnt, min, u, curvePoint])
@@ -276,10 +276,10 @@ class BackBoneIK:
 		else:
 
 			# origin is at the tip of segment 0, so we need to set the joint center to -self.segLength
-			originPose = [self.probe.segLength, 0.0, 0.0]
+			originPose = [self.segLength, 0.0, 0.0]
 
-			#xTotal = pose[0] - self.probe.segLength*cos(pose[2])
-			#zTotal = pose[1] - self.probe.segLength*sin(pose[2])
+			#xTotal = pose[0] - self.segLength*cos(pose[2])
+			#zTotal = pose[1] - self.segLength*sin(pose[2])
 			#pose[0] = xTotal
 			#pose[1] = zTotal
 
@@ -298,8 +298,8 @@ class BackBoneIK:
 					sampAngle = angle*pi/180.0
 
 					totalAngle = originPose[2] - sampAngle
-					xTotal = originPose[0] + self.probe.segLength*cos(totalAngle)
-					zTotal = originPose[1] + self.probe.segLength*sin(totalAngle)
+					xTotal = originPose[0] + self.segLength*cos(totalAngle)
+					zTotal = originPose[1] + self.segLength*sin(totalAngle)
 					#totalAngle = totalAngle - sampAngle
 					pnt = [xTotal, zTotal, totalAngle]
 
@@ -351,8 +351,8 @@ class BackBoneIK:
 					sampAngle = angle*pi/180.0
 
 					totalAngle = originPose[2] - sampAngle
-					xTotal = originPose[0] + self.probe.segLength*cos(totalAngle)
-					zTotal = originPose[1] + self.probe.segLength*sin(totalAngle)
+					xTotal = originPose[0] + self.segLength*cos(totalAngle)
+					zTotal = originPose[1] + self.segLength*sin(totalAngle)
 					#totalAngle = originPose[2] - sampAngle
 
 					pnt = [xTotal, zTotal, totalAngle]

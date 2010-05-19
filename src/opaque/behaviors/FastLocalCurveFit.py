@@ -1,27 +1,26 @@
-import os
-import sys
-dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if not dir in sys.path:
-	sys.path.append(dir)
 
-from common import *
 from Behavior import *
-import traceback
+from copy import copy
+from math import sin, cos, sqrt, pi
+from numpy import arange
+from functions import LeftOnEdge, closestSegPoint
 
 fastLocalNodeCount = 0
 
 class FastLocalCurveFit(Behavior):
 
+	
 	#def __init__(self, probe, startNode = 0, endNode = NUM_SEGS, curve = 0):
-	def __init__(self, probe, anterior = True, curve = 0, cutoff = 19):
+	def __init__(self, robotParam, anterior = True, curve = 0, cutoff = 19):
 		global fastLocalNodeCount
 
 		print "creating FastLocalCurveFit behavior"
 
+		Behavior.__init__(self, robotParam)
 
-		Behavior.__init__(self, probe)
-
-		self.numSegs = self.probe.numSegs
+		self.numJoints = robotParam['numJoints']
+		self.numSegs = self.robotParam['numSegs']
+		self.segLength = self.robotParam['segLength']
 		
 		self.startNode = 0
 		self.endNode = 39		
@@ -76,7 +75,8 @@ class FastLocalCurveFit(Behavior):
 		fastLocalNodeCount += 1
 		self.childNodes = []
 		self.childEntities = []
-		self.parentNode = self.probe._mgr.getRootSceneNode().createChildSceneNode("fastLocalCurveRoot" + str(self.nodeCount))
+
+		self.parentNode = 0
 	
 	def setStartNode(self, node):
 		self.startNode = node
@@ -91,6 +91,10 @@ class FastLocalCurveFit(Behavior):
 		self.rootNode = node
 
 	def draw(self):
+
+		if self.parentNode == 0:
+			self.parentNode = self.probe._mgr.getRootSceneNode().createChildSceneNode("fastLocalCurveRoot" + str(self.nodeCount))
+
 		
 		# remove all children
 		self.parentNode.removeAllChildren()
@@ -121,12 +125,11 @@ class FastLocalCurveFit(Behavior):
 			currEntity.setMaterialName("Green")
 			self.childEntities.append(currEntity)
 
-			position = ogre.Vector3(pnt[0],0.0,pnt[1])
-			#position = ogre.Vector3(0.0,0.0,0.0)
-			childNode.setPosition(position)
+			#position = ogre.Vector3(pnt[0],0.0,pnt[1])
+			#childNode.setPosition(position)
 
-			size = ogre.Vector3(0.05,0.05,0.05)
-			childNode.setScale(size)
+			#size = ogre.Vector3(0.05,0.05,0.05)
+			#childNode.setScale(size)
 
 			childNode.attachObject(currEntity)
 
@@ -142,6 +145,8 @@ class FastLocalCurveFit(Behavior):
 		" last round setting of joint angles and origins "
 		#self.jointPositions = [None for i in range(0,39)]
 		#self.jointAngles = [None for i in range(0,39)]
+
+		stateJoints = self.probeState['joints']
 		
 		cmdPoints = []
 		actPoints = []
@@ -164,10 +169,10 @@ class FastLocalCurveFit(Behavior):
 		actPoints.append(copy(origin))
 			
 		for i in joints:
-			sampAngle = self.probe.getServo(i)
+			sampAngle = stateJoints[i]
 			totalAngle = origin[2] - sampAngle
-			xTotal = origin[0] + self.probe.segLength*cos(totalAngle)
-			zTotal = origin[1] + self.probe.segLength*sin(totalAngle)
+			xTotal = origin[0] + self.segLength*cos(totalAngle)
+			zTotal = origin[1] + self.segLength*sin(totalAngle)
 			pnt = [xTotal, zTotal, totalAngle]
 			origin = pnt
 
@@ -176,10 +181,10 @@ class FastLocalCurveFit(Behavior):
 			maxIndex = i
 
 		" add one more joint over the peak "
-		sampAngle = self.probe.getServo(maxIndex+1)
+		sampAngle = stateJoints[maxIndex+1]
 		totalAngle = origin[2] - sampAngle
-		xTotal = origin[0] + self.probe.segLength*cos(totalAngle)
-		zTotal = origin[1] + self.probe.segLength*sin(totalAngle)
+		xTotal = origin[0] + self.segLength*cos(totalAngle)
+		zTotal = origin[1] + self.segLength*sin(totalAngle)
 		pnt = [xTotal, zTotal, totalAngle]
 		origin = pnt
 
@@ -313,6 +318,8 @@ class FastLocalCurveFit(Behavior):
 
 	def setSolid(self, index):
 
+		stateJoints = self.probeState['joints']
+
 		joints = self.getPeakJoints(index)
 
 		if len(joints) == 0:
@@ -323,19 +330,19 @@ class FastLocalCurveFit(Behavior):
 		#print "setting solid", index, "with joints", joints
 		for i in joints:
 			self.solidJoints[i] = pi / 180.0 * self.getJoints()[i]
-			#self.solidJoints[i] = self.probe.getServoCmd(i)
+			#self.solidJoints[i] = cmdJoints[i)
 			
-			self.solidCompJoints[i] = self.probe.getServo(i)
+			self.solidCompJoints[i] = stateJoints[i]
 			
 			if i == self.spliceJoint:
 				self.solidCompJoints[i] -= self.spliceAngle
 			
-			#print "setting solid joint", i, self.probe.getServo(i), self.solidCompJoints[i]
+			#print "setting solid joint", i, stateJoints[i], self.solidCompJoints[i]
 			
 			self.solidJointClasses[index].append(i)
 			self.solidJointPositions[i] = copy(self.jointPositions[i])
 			#print self.solidJoints[i], self.solidCompJoints[i]
-			#actAngle = self.probe.getServo(i)
+			#actAngle = stateJoints[i]
 			#self.setJoint(i,actAngle*180.0/pi)
 
 
@@ -348,31 +355,31 @@ class FastLocalCurveFit(Behavior):
 				if minJoint >= 0:
 					#print "altering joint", minJoint, "at index", index
 					self.solidJoints[minJoint] = pi / 180.0 * self.getJoints()[minJoint]
-					#self.solidJoints[minJoint] = self.probe.getServoCmd(minJoint)
+					#self.solidJoints[minJoint] = cmdJoints[minJoint)
 					
 
-					self.solidCompJoints[minJoint] = self.probe.getServo(minJoint)
+					self.solidCompJoints[minJoint] = stateJoints[minJoint]
 					if minJoint == self.spliceJoint:
 						self.solidCompJoints[minJoint] -= self.spliceAngle
 
-					#print "setting solid joint", minJoint, self.probe.getServo(minJoint), self.solidCompJoints[minJoint]
+					#print "setting solid joint", minJoint, stateJoints[minJoint), self.solidCompJoints[minJoint]
 					
 					self.solidJointPositions[minJoint] = copy(self.jointPositions[minJoint])
 				
 			else:
 				" now set the maximum joint of the previous peak "
 				maxJoint = max(joints) + 1
-				if maxJoint <= self.probe.numSegs -2:
+				if maxJoint <= self.numJoints - 1:
 					#print "altering joint", maxJoint, "at index", index
 					self.solidJoints[maxJoint] = pi / 180.0 * self.getJoints()[maxJoint]
-					#self.solidJoints[maxJoint] = self.probe.getServoCmd(maxJoint)
+					#self.solidJoints[maxJoint] = cmdJoints[maxJoint)
 					
 
-					self.solidCompJoints[maxJoint] = self.probe.getServo(maxJoint)
+					self.solidCompJoints[maxJoint] = stateJoints[maxJoint]
 					if maxJoint == self.spliceJoint:
 						self.solidCompJoints[maxJoint] -= self.spliceAngle
 
-					#print "setting solid joint", maxJoint, self.probe.getServo(maxJoint), self.solidCompJoints[maxJoint]
+					#print "setting solid joint", maxJoint, stateJoints[maxJoint), self.solidCompJoints[maxJoint]
 
 					self.solidJointPositions[maxJoint] = copy(self.jointPositions[maxJoint])
 			
@@ -444,14 +451,13 @@ class FastLocalCurveFit(Behavior):
 		# indices	
 		ind = range(minJoint,maxJoint+1)
 		
-		maxNode = 0
 		maxU = 0.0
 
 		" positions and angles of the joints computed for this step "
-		self.jointPositions = [None for i in range(self.probe.numSegs-1)]
-		self.jointAngles = [None for i in range(self.probe.numSegs-1)]
+		self.jointPositions = [None for i in range(self.numJoints)]
+		self.jointAngles = [None for i in range(self.numJoints)]
 		
-		radius = self.probe.segLength
+		radius = self.segLength
 		breakFromFit = False
 		
 		for currJoint in ind:
@@ -479,8 +485,8 @@ class FastLocalCurveFit(Behavior):
 				sampAngle = self.solidJoints[currJoint]
 				
 				totalAngle = originPose[2] - sampAngle
-				xTotal = originPose[0] + self.probe.segLength*cos(totalAngle)
-				zTotal = originPose[1] + self.probe.segLength*sin(totalAngle)
+				xTotal = originPose[0] + self.segLength*cos(totalAngle)
+				zTotal = originPose[1] + self.segLength*sin(totalAngle)
 				pnt = [xTotal, zTotal, totalAngle]
 				originPose = pnt
 	
@@ -501,8 +507,8 @@ class FastLocalCurveFit(Behavior):
 					sampAngle = angle*pi/180.0
 
 					totalAngle = originPose[2] - sampAngle
-					xTotal = originPose[0] + self.probe.segLength*cos(totalAngle)
-					zTotal = originPose[1] + self.probe.segLength*sin(totalAngle)
+					xTotal = originPose[0] + self.segLength*cos(totalAngle)
+					zTotal = originPose[1] + self.segLength*sin(totalAngle)
 					pnt = [xTotal, zTotal, totalAngle]
 
 					if pnt[0] >= originPose[0]:
@@ -574,8 +580,8 @@ class FastLocalCurveFit(Behavior):
 					for angle in arange(angle1,angle2,0.1):
 						sampAngle = angle*pi/180.0
 						totalAngle = originPose[2] - sampAngle
-						xTotal = originPose[0] + self.probe.segLength*cos(totalAngle)
-						zTotal = originPose[1] + self.probe.segLength*sin(totalAngle)								
+						xTotal = originPose[0] + self.segLength*cos(totalAngle)
+						zTotal = originPose[1] + self.segLength*sin(totalAngle)								
 						pnt = [xTotal, zTotal, totalAngle]
 						#print pnt[0], originPose[0]
 						
@@ -650,14 +656,14 @@ class FastLocalCurveFit(Behavior):
 		ind = range(minJoint,maxJoint+1)
 		ind.reverse()
 
-		minNode = self.probe.numSegs-2
+		minNode = self.numJoints-1
 		maxU = 0.0
 
 		" positions and angles of the joints computed for this step "
-		self.jointPositions = [None for i in range(self.probe.numSegs-1)]
-		self.jointAngles = [None for i in range(self.probe.numSegs-1)]
+		self.jointPositions = [None for i in range(self.numJoints)]
+		self.jointAngles = [None for i in range(self.numJoints)]
 		
-		radius = self.probe.segLength
+		radius = self.segLength
 		breakFromFit = False
 
 		for currJoint in ind:
@@ -685,8 +691,8 @@ class FastLocalCurveFit(Behavior):
 				sampAngle = self.solidJoints[currJoint]
 				
 				totalAngle = originPose[2] + sampAngle
-				xTotal = originPose[0] - self.probe.segLength*cos(totalAngle)
-				zTotal = originPose[1] - self.probe.segLength*sin(totalAngle)
+				xTotal = originPose[0] - self.segLength*cos(totalAngle)
+				zTotal = originPose[1] - self.segLength*sin(totalAngle)
 				pnt = [xTotal, zTotal, totalAngle]
 				originPose = pnt
 	
@@ -704,8 +710,8 @@ class FastLocalCurveFit(Behavior):
 					sampAngle = angle*pi/180.0
 
 					totalAngle = originPose[2] + sampAngle
-					xTotal = originPose[0] - self.probe.segLength*cos(totalAngle)
-					zTotal = originPose[1] - self.probe.segLength*sin(totalAngle)
+					xTotal = originPose[0] - self.segLength*cos(totalAngle)
+					zTotal = originPose[1] - self.segLength*sin(totalAngle)
 					pnt = [xTotal, zTotal, totalAngle]
 
 					if pnt[0] >= originPose[0]:
@@ -775,8 +781,8 @@ class FastLocalCurveFit(Behavior):
 					for angle in arange(angle1,angle2,0.1):
 						sampAngle = angle*pi/180.0
 						totalAngle = originPose[2] + sampAngle
-						xTotal = originPose[0] - self.probe.segLength*cos(totalAngle)
-						zTotal = originPose[1] - self.probe.segLength*sin(totalAngle)
+						xTotal = originPose[0] - self.segLength*cos(totalAngle)
+						zTotal = originPose[1] - self.segLength*sin(totalAngle)
 	
 						pnt = [xTotal, zTotal, totalAngle]
 						
@@ -830,8 +836,8 @@ class FastLocalCurveFit(Behavior):
 		" now classify the joints to their assigned peaks "
 		self.classifyJoints()
 				
-	def step(self):
-		Behavior.step(self)
+	def step(self, probeState):
+		Behavior.step(self, probeState)
 
 
 		if not self.isStep():

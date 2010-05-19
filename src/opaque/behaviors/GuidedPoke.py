@@ -69,16 +69,16 @@ class GuidedPoke(Behavior):
 
 	def getJointPose(self, jointI):
 		
-		segLength = self.probe.segLength
+		segLength = self.segLength
 		segWidth = self.probe.segWidth
-		numJoints = self.probe.numSegs-1
+		numJoints = self.numJoints
 		
 		xTotal = 0.0
 		zTotal = 0.0
 		totalAngle = 0.0
 	
 		if jointI > self.rootNode:
-			#joints = range(self.rootNode, self.probe.numSegs-1)
+			#joints = range(self.rootNode, self.numJoints)
 			joints = range(self.rootNode, jointI)
 	
 			for i in joints:
@@ -177,7 +177,7 @@ class GuidedPoke(Behavior):
 				
 				self.path = self.navMap.computePath(oPoint, fPoint)
 				
-				maxDist = (13 + 1)*self.probe.segLength;
+				maxDist = (13 + 1)*self.segLength;
 
 				pathDist = self.getPathDist(self.path)
 				

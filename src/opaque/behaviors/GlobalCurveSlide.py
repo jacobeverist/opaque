@@ -1,24 +1,20 @@
-import os
-import sys
-dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if not dir in sys.path:
-	sys.path.append(dir)
 
-from common import *
-from Behavior import *
+from Behavior import Behavior
 from Transition import Transition
 from GlobalCurveFit import GlobalCurveFit
-from math import exp
+from math import exp, pi
+from copy import copy
 
 class GlobalCurveSlide(Behavior):
 	
-	def __init__(self, probe, contacts, curve = 0, localNode = 0):
+	def __init__(self, robotParam, contacts, curve = 0, localNode = 0):
 		
-		Behavior.__init__(self, probe)
+		Behavior.__init__(self, robotParam)
 
 		self.contacts = contacts
 		self.currNode = localNode
 		self.direction = True
+		self.numJoints = robotParam['numJoints']
 
 		self.setCurve(curve)
 
@@ -28,18 +24,19 @@ class GlobalCurveSlide(Behavior):
 
 
 		self.targetState = []
-		for i in range(self.probe.numSegs-1):
+		for i in range(self.numJoints):
 			self.targetState.append(None)
 
 		self.positions = []
-		for i in range(self.probe.numSegs-1):
-			self.positions.append(180.0 / pi * self.probe.getServoCmd(i))
+		for i in range(self.numJoints):
+			self.positions.append(None)
+			#self.positions.append(180.0 / pi * cmdJoints[i])
 
 	def setCurve(self, curve):
 		self.curve = curve
 
 		#print "setting localNode to GlobalCurveFit:", self.currNode
-		self.globalCurveFit = GlobalCurveFit(self.probe, self.contacts, self.curve, localNode = self.currNode)
+		self.globalCurveFit = GlobalCurveFit(self.robotParam, self.contacts, self.curve, localNode = self.currNode)
 		#self.direction = not self.getPathDirection()
 		
 		self.direction = not self.globalCurveFit.getPathDirection()
@@ -56,8 +53,11 @@ class GlobalCurveSlide(Behavior):
 	def draw(self):
 		self.globalCurveFit.draw()
 
-	def reset(self, joints = []):
+	def reset(self, probeState, joints = []):
 
+		self.probeState = probeState
+		
+		cmdJoints = self.probeState['cmdJoints']
 		#print "globalCurveSlide reset:", joints
 		
 		self.targetState = []
@@ -69,19 +69,19 @@ class GlobalCurveSlide(Behavior):
 			for i in range(len(joints)):				
 				self.targetState.append(joints[i])
 				if joints[i] != None:
-					self.positions.append(180.0 / pi * self.probe.getServoCmd(i))
+					self.positions.append(180.0 / pi * cmdJoints[i])
 				else:
 					self.positions.append(None)
 					
 		else:
-			for i in range(self.probe.numSegs-1):
-				self.targetState.append(180.0 / pi * self.probe.getServoCmd(i))
-				self.positions.append(180.0 / pi * self.probe.getServoCmd(i))
+			for i in range(self.numJoints):
+				self.targetState.append(180.0 / pi * cmdJoints[i])
+				self.positions.append(180.0 / pi * cmdJoints[i])
 	
 		self.isDone = False
 				
-	def step(self):
-		Behavior.step(self)
+	def step(self, probeState):
+		Behavior.step(self, probeState)
 
 		self.resetJoints()
 
@@ -92,11 +92,11 @@ class GlobalCurveSlide(Behavior):
 				endNode = self.count
 				self.globalCurveFit.setBoundaries(startNode, endNode)
 			else:
-				endNode = self.probe.numSegs-2	
+				endNode = self.numJoints-1	
 				startNode = endNode - self.count
 				self.globalCurveFit.setBoundaries(startNode, endNode)
 		
-		self.globalCurveFit.step()
+		self.globalCurveFit.step(self.probeState)
 		targetState = self.globalCurveFit.getJoints()
 		
 		#print "globalCurveFit:", targetState

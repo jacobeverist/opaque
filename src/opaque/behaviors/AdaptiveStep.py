@@ -1,12 +1,9 @@
-import os
-import sys
-dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if not dir in sys.path:
-	sys.path.append(dir)
 
-from copy import *
-from common import *
-from Behavior import *
+from functions import *
+from copy import copy, deepcopy
+import pylab
+from math import pi, sin, cos, sqrt, fabs, acos
+from Behavior import Behavior
 from FrontAnchorFit import FrontAnchorFit
 from FastLocalCurveFit import FastLocalCurveFit
 from HoldTransition import HoldTransition
@@ -22,26 +19,30 @@ TODO
 3.  Changing splice joint will shorten tail of BackConcertinaCurve
 4.  Add the front anchoring state and then the concertina gait state to behavior control
 
-
 """
 
 class AdaptiveStep(Behavior):
 
-	def __init__(self, probe, contacts, mapGraph, direction = True):
-		Behavior.__init__(self, probe)
+	def __init__(self, robotParam, probeState, contacts, mapGraph, direction = True):
+		Behavior.__init__(self, robotParam)
 
+		self.probeState = probeState
 		self.mapGraph = mapGraph
 		self.localNode = self.mapGraph.getCurrentNode()
 		self.contacts = contacts
 		self.frontAnchorFit = 0
 		self.concertinaFit = 0
-
+		
+		self.segLength = self.robotParam['segLength']
+		self.numJoints = self.robotParam['numJoints'] 
+		self.maxTorque = self.robotParam['maxTorque']
+		
 		self.direction = direction
 		self.isInit = False
 		
 		self.lastAttempt = False
-		self.holdT = HoldTransition(probe)
-		self.holdSlideT = HoldSlideTransition(probe, direction)
+		self.holdT = HoldTransition(robotParam)
+		self.holdSlideT = HoldSlideTransition(robotParam, direction)
 
 		self.cPoints = []
 		
@@ -76,8 +77,9 @@ class AdaptiveStep(Behavior):
 		self.ampInc = 0.04
 			
 		self.plotCount = 0
-		
-		self.newJoints = [None for i in range(0,self.probe.numSegs-1)]
+
+		self.torques = [None for i in range(0,self.numJoints)]
+		self.newJoints = [None for i in range(0,self.numJoints)]
 
 		" flag true when the HoldTransition behavior has completed its behavior, select next transition "
 		self.transDone = False
@@ -119,7 +121,7 @@ class AdaptiveStep(Behavior):
 		self.minAmp = 0.0
 		self.maxAmp = 0.0			
 		self.ampInc = 0.04
-					
+		
 		self.currPeak = 0
 		#self.spliceJoint = 7
 		self.lastSpliceAngle = 0.0
@@ -139,10 +141,10 @@ class AdaptiveStep(Behavior):
 		
 	def computeCurve(self):
 		
-		self.frontCurve = AdaptiveAnchorCurve(4*pi, self.probe.segLength)				
+		self.frontCurve = AdaptiveAnchorCurve(4*pi, self.segLength)				
 
 		if self.frontAnchorFit == 0:
-			self.frontAnchorFit = FrontAnchorFit(self.probe, self.direction, self.spliceJoint)
+			self.frontAnchorFit = FrontAnchorFit(self.robotParam, self.direction, self.spliceJoint)
 			self.frontAnchorFit.setCurve(self.frontCurve)
 			self.frontAnchorFit.setSpliceJoint(self.spliceJoint)
 
@@ -155,7 +157,7 @@ class AdaptiveStep(Behavior):
 		#self.adaptiveCurve.setTailLength(2.0)
 
 		if self.concertinaFit == 0:
-			self.concertinaFit = FastLocalCurveFit(self.probe, self.direction, self.adaptiveCurve, 38)
+			self.concertinaFit = FastLocalCurveFit(self.robotParam, self.direction, self.adaptiveCurve, 38)
 
 			if self.direction:	
 				self.concertinaFit.setStartNode(self.spliceJoint)
@@ -172,15 +174,15 @@ class AdaptiveStep(Behavior):
 		#self.adaptiveCurve.setPeakAmp(0,0.2)
 		#self.adaptiveCurve.setPeakAmp(1,0.2)
 		#self.adaptiveCurve.setPeakAmp(4,0.33)
-		self.frontAnchorFit.step()
-		self.concertinaFit.step()
+		self.frontAnchorFit.step(self.probeState)
+		self.concertinaFit.step(self.probeState)
 		
 		resultJoints = self.spliceFitJoints()
 		
 		self.holdSlideT.setSpliceJoint(self.spliceJoint)		
-		self.holdSlideT.reset(resultJoints, self.direction)
+		self.holdSlideT.reset(self.probeState, resultJoints, self.direction)
 		
-		self.holdT.reset(resultJoints)
+		self.holdT.reset(self.probeState, resultJoints)
 		self.refDone = False
 
 		self.computeMaskAndOutput()
@@ -189,7 +191,7 @@ class AdaptiveStep(Behavior):
 
 	def spliceFitJoints(self, isStart = False):
 		
-		result = [None for i in range(self.probe.numSegs-1)]
+		result = [None for i in range(self.numJoints)]
 		
 		#print "spliceJoint = ", self.spliceJoint
 		#print "frontAnchorJoints =", joints1
@@ -293,11 +295,13 @@ class AdaptiveStep(Behavior):
 
 	
 	def computeCmdSegPoints(self):
+
+		cmdJoints = self.probeState['cmdJoints']
 		
 		if self.direction:
 			
 			" the configuration of the snake as we've commanded it "
-			#self.cmdSegPoints = [[-self.probe.segLength,0.0,0.0]]
+			#self.cmdSegPoints = [[-self.segLength,0.0,0.0]]
 	
 			#if not self.concertinaFit.isJointSolid(self.spliceJoint):
 			#	spliceJointAngle = self.concertinaFit.getJoints()[self.spliceJoint] * pi /180.0
@@ -320,24 +324,24 @@ class AdaptiveStep(Behavior):
 			ind.reverse()
 			
 			for i in ind:		
-				sampAngle = self.probe.getServoCmd(i)
+				sampAngle = cmdJoints[i]
 				totalAngle = cmdOrigin[2] + sampAngle
-				xTotal = cmdOrigin[0] - self.probe.segLength*cos(totalAngle)
-				zTotal = cmdOrigin[1] - self.probe.segLength*sin(totalAngle)
+				xTotal = cmdOrigin[0] - self.segLength*cos(totalAngle)
+				zTotal = cmdOrigin[1] - self.segLength*sin(totalAngle)
 				pnt = [xTotal, zTotal, totalAngle]
 				cmdOrigin = pnt
 				self.cmdSegPoints.insert(0, cmdOrigin)
 
-			cmdOrigin = [self.probe.segLength*cos(-spliceJointAngle),self.probe.segLength*sin(-spliceJointAngle),-spliceJointAngle]
+			cmdOrigin = [self.segLength*cos(-spliceJointAngle),self.segLength*sin(-spliceJointAngle),-spliceJointAngle]
 			self.cmdSegPoints.append(cmdOrigin)
 
-			for i in range(self.spliceJoint+1,self.probe.numSegs-1):
+			for i in range(self.spliceJoint+1,self.numJoints):
 				
-				sampAngle = self.probe.getServoCmd(i)
+				sampAngle = cmdJoints[i]
 
 				totalAngle = cmdOrigin[2] - sampAngle
-				xTotal = cmdOrigin[0] + self.probe.segLength*cos(totalAngle)
-				zTotal = cmdOrigin[1] + self.probe.segLength*sin(totalAngle)
+				xTotal = cmdOrigin[0] + self.segLength*cos(totalAngle)
+				zTotal = cmdOrigin[1] + self.segLength*sin(totalAngle)
 				pnt = [xTotal, zTotal, totalAngle]
 				cmdOrigin = pnt
 				self.cmdSegPoints.append(cmdOrigin)
@@ -348,7 +352,7 @@ class AdaptiveStep(Behavior):
 			spliceJointAngle = -self.concertinaFit.getJoints()[self.spliceJoint] * pi /180.0 
 			
 			self.cmdSegPoints = []
-			cmdOrigin = [self.probe.segLength*cos(-spliceJointAngle),self.probe.segLength*sin(-spliceJointAngle),-spliceJointAngle + pi]
+			cmdOrigin = [self.segLength*cos(-spliceJointAngle),self.segLength*sin(-spliceJointAngle),-spliceJointAngle + pi]
 
 			self.cmdSegPoints.append(cmdOrigin)
 
@@ -356,10 +360,10 @@ class AdaptiveStep(Behavior):
 			ind.reverse()
 			
 			for i in ind:
-				sampAngle = self.probe.getServoCmd(i)
+				sampAngle = cmdJoints[i]
 				totalAngle = cmdOrigin[2] + sampAngle
-				xTotal = cmdOrigin[0] - self.probe.segLength*cos(totalAngle)
-				zTotal = cmdOrigin[1] - self.probe.segLength*sin(totalAngle)
+				xTotal = cmdOrigin[0] - self.segLength*cos(totalAngle)
+				zTotal = cmdOrigin[1] - self.segLength*sin(totalAngle)
 				pnt = [xTotal, zTotal, totalAngle]
 				cmdOrigin = pnt
 				self.cmdSegPoints.insert(0,cmdOrigin)
@@ -367,16 +371,18 @@ class AdaptiveStep(Behavior):
 			cmdOrigin = [0.0,0.0,-spliceJointAngle + pi]			
 			self.cmdSegPoints.append(cmdOrigin)
 			
-			for i in range(self.spliceJoint,self.probe.numSegs-1):
-				sampAngle = self.probe.getServoCmd(i)
+			for i in range(self.spliceJoint,self.numJoints):
+				sampAngle = cmdJoints[i]
 				totalAngle = cmdOrigin[2] - sampAngle
-				xTotal = cmdOrigin[0] + self.probe.segLength*cos(totalAngle)
-				zTotal = cmdOrigin[1] + self.probe.segLength*sin(totalAngle)
+				xTotal = cmdOrigin[0] + self.segLength*cos(totalAngle)
+				zTotal = cmdOrigin[1] + self.segLength*sin(totalAngle)
 				pnt = [xTotal, zTotal, totalAngle]
 				cmdOrigin = pnt
 				self.cmdSegPoints.append(cmdOrigin)
 			
 	def drawFit(self):
+
+		cmdJoints = self.probeState['cmdJoints']
 		
 		#peakJoints = self.frontAnchorFit.getPeakJoints(self.currPeak)
 
@@ -403,9 +409,11 @@ class AdaptiveStep(Behavior):
 		
 		self.computeCmdSegPoints()
 
+		stateJoints = self.probeState['joints']
+
 		if self.direction:
 			" the actual configuration of the snake "
-			#actSegPoints = [[-self.probe.segLength,0.0,0.0]]
+			#actSegPoints = [[-self.segLength,0.0,0.0]]
 
 			#resultJoints = self.spliceFitJoints(self.frontAnchorFit.getJoints(), self.concertinaFit.getJoints())
 			#spliceJointAngle = resultJoints[self.spliceJoint]
@@ -426,22 +434,22 @@ class AdaptiveStep(Behavior):
 			ind.reverse()
 			
 			for i in ind:
-				sampAngle = self.probe.getServo(i)
+				sampAngle = stateJoints[i]
 				totalAngle = actOrigin[2] + sampAngle
-				xTotal = actOrigin[0] - self.probe.segLength*cos(totalAngle)
-				zTotal = actOrigin[1] - self.probe.segLength*sin(totalAngle)
+				xTotal = actOrigin[0] - self.segLength*cos(totalAngle)
+				zTotal = actOrigin[1] - self.segLength*sin(totalAngle)
 				pnt = [xTotal, zTotal, totalAngle]
 				actOrigin = pnt
 				actSegPoints.insert(0,actOrigin)
 	
-			actOrigin = [self.probe.segLength*cos(-spliceJointAngle),self.probe.segLength*sin(-spliceJointAngle),-spliceJointAngle]
+			actOrigin = [self.segLength*cos(-spliceJointAngle),self.segLength*sin(-spliceJointAngle),-spliceJointAngle]
 			actSegPoints.append(actOrigin)
 			
-			for i in range(self.spliceJoint+1,self.probe.numSegs-1):
-				sampAngle = self.probe.getServo(i)
+			for i in range(self.spliceJoint+1,):
+				sampAngle = stateJoints[i]
 				totalAngle = actOrigin[2] - sampAngle
-				xTotal = actOrigin[0] + self.probe.segLength*cos(totalAngle)
-				zTotal = actOrigin[1] + self.probe.segLength*sin(totalAngle)
+				xTotal = actOrigin[0] + self.segLength*cos(totalAngle)
+				zTotal = actOrigin[1] + self.segLength*sin(totalAngle)
 				pnt = [xTotal, zTotal, totalAngle]
 				actOrigin = pnt
 				actSegPoints.append(actOrigin)
@@ -451,7 +459,7 @@ class AdaptiveStep(Behavior):
 			spliceJointAngle = -self.concertinaFit.getJoints()[self.spliceJoint] * pi /180.0 
 			
 			actSegPoints = []
-			actOrigin = [self.probe.segLength*cos(-spliceJointAngle),self.probe.segLength*sin(-spliceJointAngle),-spliceJointAngle + pi]
+			actOrigin = [self.segLength*cos(-spliceJointAngle),self.segLength*sin(-spliceJointAngle),-spliceJointAngle + pi]
 
 			actSegPoints.insert(0, actOrigin)
 
@@ -459,10 +467,10 @@ class AdaptiveStep(Behavior):
 			ind.reverse()
 			
 			for i in ind:
-				sampAngle = self.probe.getServo(i)
+				sampAngle = stateJoints[i]
 				totalAngle = actOrigin[2] + sampAngle
-				xTotal = actOrigin[0] - self.probe.segLength*cos(totalAngle)
-				zTotal = actOrigin[1] - self.probe.segLength*sin(totalAngle)
+				xTotal = actOrigin[0] - self.segLength*cos(totalAngle)
+				zTotal = actOrigin[1] - self.segLength*sin(totalAngle)
 				pnt = [xTotal, zTotal, totalAngle]
 				actOrigin = pnt
 				actSegPoints.insert(0,actOrigin)
@@ -470,11 +478,11 @@ class AdaptiveStep(Behavior):
 			actOrigin = [0.0,0.0,-spliceJointAngle + pi]			
 			actSegPoints.append(actOrigin)
 			
-			for i in range(self.spliceJoint,self.probe.numSegs-1):
-				sampAngle = self.probe.getServo(i)
+			for i in range(self.spliceJoint,self.numJoints):
+				sampAngle = stateJoints[i]
 				totalAngle = actOrigin[2] - sampAngle
-				xTotal = actOrigin[0] + self.probe.segLength*cos(totalAngle)
-				zTotal = actOrigin[1] + self.probe.segLength*sin(totalAngle)
+				xTotal = actOrigin[0] + self.segLength*cos(totalAngle)
+				zTotal = actOrigin[1] + self.segLength*sin(totalAngle)
 				pnt = [xTotal, zTotal, totalAngle]
 				actOrigin = pnt
 				actSegPoints.append(actOrigin)
@@ -487,15 +495,15 @@ class AdaptiveStep(Behavior):
 			" local peak configurations "
 			peakCurves = [[]]
 
-			peakOrigin = [self.probe.segLength*cos(-spliceJointAngle),self.probe.segLength*sin(-spliceJointAngle),-spliceJointAngle]
+			peakOrigin = [self.segLength*cos(-spliceJointAngle),self.segLength*sin(-spliceJointAngle),-spliceJointAngle]
 			peakCurves[-1].append(copy(peakOrigin))
 
 
-			for i in range(self.spliceJoint+1,self.probe.numSegs-1):
-				sampAngle = self.probe.getServo(i)
+			for i in range(self.spliceJoint+1,self.numJoints):
+				sampAngle = stateJoints[i]
 				totalAngle = peakOrigin[2] - sampAngle
-				xTotal = peakOrigin[0] + self.probe.segLength*cos(totalAngle)
-				zTotal = peakOrigin[1] + self.probe.segLength*sin(totalAngle)
+				xTotal = peakOrigin[0] + self.segLength*cos(totalAngle)
+				zTotal = peakOrigin[1] + self.segLength*sin(totalAngle)
 				pnt = [xTotal, zTotal, totalAngle]
 				peakOrigin = pnt
 				#peakCurves[-1].append(copy(peakOrigin))
@@ -512,10 +520,10 @@ class AdaptiveStep(Behavior):
 					peakOrigin = self.cmdSegPoints[i+1]
 					peakCurves[-1].append(copy(peakOrigin))
 	
-					sampAngle = self.probe.getServo(i)
+					sampAngle = stateJoints[i]
 					totalAngle = peakOrigin[2] - sampAngle
-					xTotal = peakOrigin[0] + self.probe.segLength*cos(totalAngle)
-					zTotal = peakOrigin[1] + self.probe.segLength*sin(totalAngle)
+					xTotal = peakOrigin[0] + self.segLength*cos(totalAngle)
+					zTotal = peakOrigin[1] + self.segLength*sin(totalAngle)
 					pnt = [xTotal, zTotal, totalAngle]
 					peakOrigin = pnt
 					peakCurves[-1].append(copy(peakOrigin))
@@ -528,17 +536,17 @@ class AdaptiveStep(Behavior):
 			" local peak configurations "
 			peakCurves = [[]]
 
-			peakOrigin = [self.probe.segLength*cos(-spliceJointAngle),self.probe.segLength*sin(-spliceJointAngle),-spliceJointAngle + pi]
+			peakOrigin = [self.segLength*cos(-spliceJointAngle),self.segLength*sin(-spliceJointAngle),-spliceJointAngle + pi]
 			peakCurves[-1].append(copy(peakOrigin))
 			
 			ind = range(0,self.spliceJoint)
 			ind.reverse()
 
 			for i in ind:
-				sampAngle = self.probe.getServo(i)
+				sampAngle = stateJoints[i]
 				totalAngle = peakOrigin[2] + sampAngle
-				xTotal = peakOrigin[0] - self.probe.segLength*cos(totalAngle)
-				zTotal = peakOrigin[1] - self.probe.segLength*sin(totalAngle)
+				xTotal = peakOrigin[0] - self.segLength*cos(totalAngle)
+				zTotal = peakOrigin[1] - self.segLength*sin(totalAngle)
 				pnt = [xTotal, zTotal, totalAngle]
 				peakOrigin = pnt
 				#peakCurves[-1].append(copy(peakOrigin))
@@ -555,10 +563,10 @@ class AdaptiveStep(Behavior):
 					peakOrigin = self.cmdSegPoints[i+1]
 					peakCurves[-1].append(copy(peakOrigin))
 	
-					sampAngle = self.probe.getServo(i)
+					sampAngle = stateJoints[i]
 					totalAngle = peakOrigin[2] + sampAngle
-					xTotal = peakOrigin[0] - self.probe.segLength*cos(totalAngle)
-					zTotal = peakOrigin[1] - self.probe.segLength*sin(totalAngle)
+					xTotal = peakOrigin[0] - self.segLength*cos(totalAngle)
+					zTotal = peakOrigin[1] - self.segLength*sin(totalAngle)
 					pnt = [xTotal, zTotal, totalAngle]
 					peakOrigin = pnt
 					peakCurves[-1].append(copy(peakOrigin))
@@ -568,8 +576,8 @@ class AdaptiveStep(Behavior):
 				
 			
 		errors = []
-		for i in range(0,self.probe.numSegs-1):
-			errors.append(fabs(self.probe.getServo(i)-self.probe.getServoCmd(i)))
+		for i in range(0,self.numJoints):
+			errors.append(fabs(stateJoints[i]-cmdJoints[i]))
 
 		if True:
 			xP = []
@@ -649,7 +657,7 @@ class AdaptiveStep(Behavior):
 			
 	def doExtendFront(self):
 
-		self.transDone = self.holdSlideT.step()
+		self.transDone = self.holdSlideT.step(self.probeState)
 		
 		if self.transDone:
 			self.frontExtendDone = True
@@ -658,6 +666,10 @@ class AdaptiveStep(Behavior):
 		print "doExtendFront"
 			
 	def doFrontAnchor(self):
+
+		stateJoints = self.probeState['joints']
+		cmdJoints = self.probeState['cmdJoints']
+
 				
 		" compute the maximum error of the joints in the current peak "
 		anchorJoints = self.frontAnchorFit.getPeakJoints()
@@ -665,19 +677,17 @@ class AdaptiveStep(Behavior):
 
 		errors = []
 		for j in anchorJoints:
-			errors.append(self.probe.getServo(j)-self.probe.getServoCmd(j))
+			errors.append(stateJoints[j]-cmdJoints[j])
 
 		maxError = 0.0	
 		for err in errors:
 			if fabs(err) > maxError:
 				maxError = fabs(err)
 		
-		" check for terminating criteria "
-		currAmp = self.frontCurve.getPeakAmp()	
-		
 		" draw the state of the curve fitting "
 		#self.drawFit()
 
+		" check for terminating criteria "
 		currAmp = self.frontCurve.getPeakAmp()
 		nextVal = currAmp	
 		
@@ -791,12 +801,12 @@ class AdaptiveStep(Behavior):
 				#print "setting jerkJoints to", self.jerkJoints
 								
 				if self.jerkAngle == 0 and self.prevJerkAngle == 0:
-					self.nomJerk = self.probe.getServo(self.jerkJoint) * 180.0 / pi
+					self.nomJerk = stateJoints[self.jerkJoint] * 180.0 / pi
 				
 					for k in range(len(self.jerkJoints)):
-						self.nomJerks[k] = self.probe.getServo(self.jerkJoints[k]) * 180.0 / pi
+						self.nomJerks[k] = stateJoints[self.jerkJoints[k]] * 180.0 / pi
 				
-					#print "nominal = " , self.nomJerk, self.probe.getServo(self.jerkJoint)
+					#print "nominal = " , self.nomJerk, stateJoints[self.jerkJoint)
 					self.prevJerkAngle = self.jerkAngle
 					self.jerkAngle = 60	
 				
@@ -811,14 +821,14 @@ class AdaptiveStep(Behavior):
 				elif self.jerkAngle == 60:
 					
 					#print "setting jerk joint to ", self.jerkAngle + self.nomJerk
-					#print "jerk angle error = " , self.probe.getServo(self.jerkJoint)-self.probe.getServoCmd(self.jerkJoint)
+					#print "jerk angle error = " , stateJoints[self.jerkJoint]-cmdJoints[self.jerkJoint]
 
 					errs = []
 					for k in range(len(self.jerkJoints)):
-						errs.append(self.probe.getServo(self.jerkJoints[k])-self.probe.getServoCmd(self.jerkJoints[k]))
+						errs.append(stateJoints[self.jerkJoints[k]]-cmdJoints[self.jerkJoints[k]])
 						self.prevJerkAngles[k] = self.jerkAngles[k]
 					
-					self.jerkErrors.append(self.probe.getServo(self.jerkJoint)-self.probe.getServoCmd(self.jerkJoint))
+					self.jerkErrors.append(stateJoints[self.jerkJoint]-cmdJoints[self.jerkJoint])
 					self.prevJerkAngle = self.jerkAngle
 					self.jerkAngle = -60
 
@@ -839,8 +849,8 @@ class AdaptiveStep(Behavior):
 						self.originPoses.append(self.contacts.getAveragePose(k))
 					
 				elif self.jerkAngle == -60:
-					#print "jerk angle error = " , self.probe.getServo(self.jerkJoint)-self.probe.getServoCmd(self.jerkJoint)
-					self.jerkErrors.append(self.probe.getServo(self.jerkJoint)-self.probe.getServoCmd(self.jerkJoint))
+					#print "jerk angle error = " , stateJoints[self.jerkJoint]-cmdJoints[self.jerkJoint]
+					self.jerkErrors.append(stateJoints[self.jerkJoint]-cmdJoints[self.jerkJoint])
 
 					" error = (-0.09, 0.005) is good "
 					" error = (-2.73, -1.99) is bad "
@@ -867,7 +877,7 @@ class AdaptiveStep(Behavior):
 						self.prevJerkAngles[k] = self.jerkAngles[k]
 
 				#print "setting jerk joint to ", self.jerkAngle + self.nomJerk
-				#print "jerk angle error = " , self.probe.getServo(j)-self.probe.getServoCmd(j)
+				#print "jerk angle error = " , stateJoints[j]-cmdJoints[j]
 
 		if self.isJerking and self.jerkingDone:
 			
@@ -944,8 +954,8 @@ class AdaptiveStep(Behavior):
 
 
 		" reset all torques of the joints to maximum "
-		for i in range(self.probe.numSegs-1):
-			self.probe.setJointTorque(i, self.probe.maxTorque)
+		for i in range(self.numJoints):
+			self.torques[i] =  self.maxTorque
 
 		" weaken head joints "
 		" 30*2.5 is maximum "
@@ -959,22 +969,21 @@ class AdaptiveStep(Behavior):
 			
 			if not self.direction:
 				maxJoint = max(anchorJoints)
-				#print "weakening joints", range(maxJoint+1, self.probe.numSegs-2)
-				for i in range(maxJoint+1, self.probe.numSegs-1):
-					if i <= self.probe.numSegs-2:
-						self.probe.setJointTorque(i, 3.0)
+				for i in range(maxJoint+1, self.numJoints):
+					if i <= self.numJoints-1:
+						self.torques[i] = 3.0
 			else:
 				minJoint = min(anchorJoints)
 				#print "weakening joints", range(0,minJoint-1)
 				for i in range(0, minJoint-1):					
-					if i <= self.probe.numSegs-2:
-						self.probe.setJointTorque(i, 3.0)
+					if i <= self.numJoints-1:
+						self.torques[i] = 3.0
 
 		" execute the local curve fitting "
-		self.frontAnchorFit.step()
+		self.frontAnchorFit.step(self.probeState)
 
 		resultJoints = self.spliceFitJoints()
-		self.holdT.reset(resultJoints)
+		self.holdT.reset(self.probeState, resultJoints)
 		
 		if self.isJerking:
 			#print "setting jerk joints", self.jerkJoints, "to", self.nomJerk + self.jerkAngle
@@ -985,6 +994,9 @@ class AdaptiveStep(Behavior):
 			
 	def doBackConcertina(self):
 		
+		stateJoints = self.probeState['joints']
+		cmdJoints = self.probeState['cmdJoints']
+
 		self.transDone = False
 		
 		" compute the maximum error of the joints in the current peak "
@@ -993,7 +1005,7 @@ class AdaptiveStep(Behavior):
 		
 		errors = []
 		for j in peakJoints:
-			errors.append(self.probe.getServo(j)-self.probe.getServoCmd(j))
+			errors.append(stateJoints[j]-cmdJoints[j])
 
 		maxError = 0.0	
 		for err in errors:
@@ -1068,8 +1080,8 @@ class AdaptiveStep(Behavior):
 
 
 		" reset all torques of the joints to maximum "
-		for i in range(self.probe.numSegs-1):
-			self.probe.setJointTorque(i, self.probe.maxTorque)
+		for i in range(self.numJoints):
+			self.torques[i] = self.maxTorque
 
 		" stretch tail to remove closed-chain interference "
 		self.adaptiveCurve.setTailLength(5.0)
@@ -1077,7 +1089,7 @@ class AdaptiveStep(Behavior):
 		self.adaptiveCurve.setPeakAmp(self.currPeak+1,nextVal)
 
 		" execute the local curve fitting "
-		self.concertinaFit.step()
+		self.concertinaFit.step(self.probeState)
 
 		" weaken the feeder joints "
 		" 30*2.5 is maximum "
@@ -1086,22 +1098,20 @@ class AdaptiveStep(Behavior):
 			
 			if self.direction:
 				maxJoint = max(peakJoints)
-				#print "weakening", maxJoint+1, "to", self.probe.numSegs-3
-				#for i in range(maxJoint+1, self.probe.numSegs-2):
-				for i in range(maxJoint+2, self.probe.numSegs-1):
-					if i <= self.probe.numSegs-2:
-						self.probe.setJointTorque(i, 3.0)
+				for i in range(maxJoint+2, self.numJoints):
+					if i <= self.numJoints-1:
+						self.torques[i] = 3.0
 			else:
 				minJoint = min(peakJoints)
 				#print "weakening", 0, "to", minJoint-1
 				#for i in range(0, minJoint):					
 				for i in range(0, minJoint-1):					
-					if i <= self.probe.numSegs-2:
-						self.probe.setJointTorque(i, 3.0)
+					if i <= self.numJoints-1:
+						self.torques[i] = 3.0
 							
 
 		resultJoints = self.spliceFitJoints()
-		self.holdT.reset(resultJoints)
+		self.holdT.reset(self.probeState, resultJoints)
 
 		peakJoints = self.concertinaFit.getPeakJoints(self.currPeak) + self.concertinaFit.getPeakJoints(self.currPeak+1)
 		peakJoints.sort()
@@ -1111,11 +1121,19 @@ class AdaptiveStep(Behavior):
 		#print "peakJoints =", peakJoints
 		
 
-	def step(self):
+	def step(self, probeState):
+		Behavior.step(self, probeState)
 		
 		self.count += 1
 		isDone = False
-		
+
+		stateJoints = self.probeState['joints']
+		torques = self.probeState['torques']
+
+		self.torques = []
+		for i in range(0,self.numJoints):
+			self.torques.append(torques[i])
+			
 		#print self.count, self.transDone, self.refDone, self.frontAnchoringState, self.frontExtending, self.frontExtendDone
 		
 		if self.transDone:
@@ -1126,7 +1144,7 @@ class AdaptiveStep(Behavior):
 				self.frontExtending = False
 				resultJoints = self.holdSlideT.getJoints()
 				#print "case_AB"
-				self.holdT.reset(resultJoints)
+				self.holdT.reset(self.probeState, resultJoints)
 		
 			# termination cases
 			if not self.frontAnchoringState:
@@ -1152,13 +1170,13 @@ class AdaptiveStep(Behavior):
 					
 				" prevent the back anchor from slithering around or buckling "
 				if self.direction:
-					for i in range(self.probe.numSegs-8, self.probe.numSegs-1):				
-						self.holdT.positions[i] = 180.0 / pi * self.probe.getServo(i)
+					for i in range(self.numJoints-7, self.numJoints):				
+						self.holdT.positions[i] = 180.0 / pi * stateJoints[i]
 				else:
 					for i in range(0, 6):					
-						self.holdT.positions[i] = 180.0 / pi * self.probe.getServo(i)
+						self.holdT.positions[i] = 180.0 / pi * stateJoints[i]
 	
-				self.holdT.step()
+				self.holdT.step(self.probeState)
 				
 			else:
 							
@@ -1174,8 +1192,11 @@ class AdaptiveStep(Behavior):
 						
 					else:
 						#print "Front Anchor Step"
+
 						self.doFrontAnchor()
-		
+
+						print "after doFrontAnchor, received frontAnchoringDone =", self.frontAnchoringDone
+	
 						if self.frontAnchoringDone:
 							print "front anchoring done with splice joint =", self.spliceJoint
 							self.frontAnchoringDone = False
@@ -1184,18 +1205,14 @@ class AdaptiveStep(Behavior):
 				else:
 					peakJoints = self.concertinaFit.getPeakJoints(self.currPeak)	
 					
-					#print "Concertina Step"
+					print "Concertina Step"
 					self.doBackConcertina()
 
 
 				solids = []
-				for i in range(self.probe.numSegs-1):
+				for i in range(self.numJoints):
 					solids.append(self.concertinaFit.isJointSolid(i))
 				#print "solids =", solids
-
-				torques = []
-				for i in range(0,self.probe.numSegs-1):
-					torques.append(self.probe.getJointTorque(i))
 				
 				#print "joints =", self.spliceFitJoints()
 
@@ -1203,9 +1220,9 @@ class AdaptiveStep(Behavior):
 
 				
 				if not self.frontExtending:	
-					self.transDone = self.holdT.step()
+					self.transDone = self.holdT.step(self.probeState)
 				else:
-					self.transDone = self.holdSlideT.step()
+					self.transDone = self.holdSlideT.step(self.probeState)
 		
 				self.refDone = False
 				
@@ -1214,14 +1231,14 @@ class AdaptiveStep(Behavior):
 			" make no movements until all reference nodes are activated "
 			if self.refDone:
 				if not self.frontExtending:
-					self.transDone = self.holdT.step()
+					self.transDone = self.holdT.step(self.probeState)
 				else:
-					self.transDone = self.holdSlideT.step()
+					self.transDone = self.holdSlideT.step(self.probeState)
 
 		" compute the mask "
 		self.computeMaskAndOutput()
 		
-		if self.frontCurve.isOutOfSegments(self.frontAnchorFit.lastPosition):
+		if self.frontAnchoringState and self.frontCurve.isOutOfSegments(self.frontAnchorFit.lastPosition):
 
 			" if we've exhausted too many joints, lets just quit with what we have "
 			#if self.direction and self.spliceJoint >= 15:
@@ -1230,8 +1247,13 @@ class AdaptiveStep(Behavior):
 			#	self.frontAnchoringDone = True
 
 			if self.lastAttempt:
-				self.frontAnchoringDone = True
+				#self.frontAnchoringDone = True
+				self.frontAnchoringDone = False
+				self.frontAnchoringState = False
+
 				print "ERROR: Quit with outOfSegments error on Front Anchoring"
+				print "received frontAnchoringDone =", self.frontAnchoringDone
+				
 			else:
 				
 				if self.direction:
@@ -1308,7 +1330,7 @@ class AdaptiveStep(Behavior):
 	def computeMaskAndOutput(self):
 
 
-		self.mask = [0.0 for i in range(0,self.probe.numSegs-1)]
+		self.mask = [0.0 for i in range(0,self.numJoints)]
 
 		anchorJoints = self.frontAnchorFit.getJoints()
 		
@@ -1322,13 +1344,13 @@ class AdaptiveStep(Behavior):
 			" collect joint settings for both behaviors "
 			#joints2 = self.globalCurveFit.getJoints()
 			
-			joints2 = [0.0 for i in range(self.probe.numSegs-1)]
+			joints2 = [0.0 for i in range(self.numJoints)]
 			
 			if self.frontAnchorFit.anterior:			
 				for p in range(0,self.frontAnchorFit.lastJoint+1):
 					joints[p] = joints2[p]
 			else:
-				for p in range(self.frontAnchorFit.lastJoint, self.probe.numSegs-1):
+				for p in range(self.frontAnchorFit.lastJoint, self.numJoints):
 					joints[p] = joints2[p]
 
 		" Set the joints "
@@ -1339,7 +1361,7 @@ class AdaptiveStep(Behavior):
 			#print "frontAnchoringState:", self.frontAnchoringState
 			
 			" update mask for ContactReference "
-			for i in range(self.probe.numSegs-1):
+			for i in range(self.numJoints):
 
 				if (not self.frontAnchoringState and anchorJoints[i] != None):
 					self.mask[i] = 1.0
@@ -1364,7 +1386,7 @@ class AdaptiveStep(Behavior):
 			
 			allActive = True
 			" update mask for ContactReference "
-			for i in range(self.probe.numSegs-1):
+			for i in range(self.numJoints):
 				if (not self.frontAnchoringState and anchorJoints[i] != None):
 					self.mask[i] = 1.0
 					
