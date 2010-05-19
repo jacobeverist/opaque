@@ -95,7 +95,7 @@ class MapGraph:
 
 		self.numNodes += 1	
 
-	def loadFile(self, num_poses):
+	def loadFile(self, dirName, num_poses):
 		
 		self.poseGraph = graph.graph()
 		self.numNodes = 0
@@ -104,7 +104,7 @@ class MapGraph:
 		for i in range(0,num_poses):
 			# def __init__(self, probe, contacts, nodeID, rootNode, pixelSize, inSim = True):
 			self.currNode = LocalNode(self.probe, self.contacts, i, 19, self.pixelSize, inSim = False)
-			self.currNode.readFromFile(i)
+			self.currNode.readFromFile(dirName, i)
 			
 			self.poseGraph.add_node(i, self.currNode)
 

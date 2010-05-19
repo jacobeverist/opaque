@@ -948,32 +948,66 @@ def computeUnion(points1, points2):
 		
 		#print inputStr 
 		
-		f = open("input2.txt", 'w')
-		f.write(inputStr)
-		f.close()
+		#f = open("input2.txt", 'w')
+		#f.write(inputStr)
+		#f.close()
 		
-		" start the subprocess "
-		subProc = Popen(["./poly_union.exe"], stdin=PIPE, stdout=PIPE)
+		if False:
+			
+			" start the subprocess "
+			subProc = Popen(["./poly_union.exe"], stdin=PIPE, stdout=PIPE)
+			
+			" send input and receive output "
+			sout, serr = subProc.communicate(inputStr)
 		
-		" send input and receive output "
-		sout, serr = subProc.communicate(inputStr)
-	
-	
+			" convert string output to typed data "
+			sArr = sout.split(" ")
 		
-		" convert string output to typed data "
-		sArr = sout.split(" ")
-	
-		numVert = int(sArr[0])
+			numVert = int(sArr[0])
+			
+			vertices = []
+			for i in range(numVert):
+				#print sArr[2*i+1], sArr[2*i+2]
+				vertices.append([float(sArr[2*i + 1]), float(sArr[2*i + 2])])
 		
-		#print "numVert =", numVert
-		#print numVert, len(sArr)
-		#print sArr
-		
-		vertices = []
-		for i in range(numVert):
-			#print sArr[2*i+1], sArr[2*i+2]
-			vertices.append([float(sArr[2*i + 1]), float(sArr[2*i + 2])])
-		
+		else:
+			maxX = 0
+			minX = 1e10
+			maxY = 0
+			minY = 1e10
+			
+			for p in nPoints1:
+				if p[0] > maxX:
+					maxX = p[0]
+				
+				if p[0] < minX:
+					minX = p[0]
+				
+				if p[1] > maxY:
+					maxY = p[1]
+					
+				if p[1] < minY:
+					minY = p[1]
+			
+			for p in nPoints2:
+				if p[0] > maxX:
+					maxX = p[0]
+				
+				if p[0] < minX:
+					minX = p[0]
+				
+				if p[1] > maxY:
+					maxY = p[1]
+					
+				if p[1] < minY:
+					minY = p[1]
+
+			vertices = []
+			vertices.append([maxX,maxY])
+			vertices.append([maxX,minY])
+			vertices.append([minX,minY])
+			vertices.append([minX,maxY])
+
 		return vertices
 	except:
 		print "polygon union failed with the following data:"

@@ -39,7 +39,7 @@ class TestPokeWalls(SnakeControl):
 		self.contacts.step()
 					
 		self.mapGraph = MapGraph(self.probe, self.contacts)
-		self.mapGraph.loadFile(1)
+		self.mapGraph.loadFile("testData/behaviorTest", 1)
 		
 		self.mapGraph.correctPoses2()
 		self.mapGraph.synch()

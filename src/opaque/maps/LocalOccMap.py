@@ -114,9 +114,9 @@ class LocalOccMap:
 		f.write(val)
 		f.close()
 
-	def readFromFile(self):
+	def readFromFile(self, dirName):
 		
-		self.fileName = "localOccMap%03u" % self.nodeID + "_%04u.png"
+		self.fileName = dirName + "/localOccMap%03u" % self.nodeID + "_%04u.png"
 		
 		self.mapImage = Image.open(self.fileName % 0)
 		self.image = self.mapImage.load()

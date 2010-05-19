@@ -36,8 +36,8 @@ class TestModular(SnakeControl):
 		
 		" maps "
 		#self.mapGraph = maps.MapGraph(self.probe, self.contacts)
-		#self.mapGraph.loadFile(9)
-		#self.mapGraph.loadFile(1)
+		#self.mapGraph.loadFile("testData/behaviorTest", 9)
+		#self.mapGraph.loadFile("testData/behaviorTest", 1)
 		
 		#self.mapGraph.correctPoses2()
 		#self.mapGraph.synch()

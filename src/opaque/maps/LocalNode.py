@@ -295,25 +295,25 @@ class LocalNode:
 		f.write("\n")
 		f.close()
 	
-	def readFromFile(self, nodeID):
+	def readFromFile(self, dirName, nodeID):
 		
 		self.nodeID = nodeID
 		#self.poseProfile.readFromFile("prof%04u.txt" % self.nodeID)
 		
 		" occupancy map "
-		self.occMap.readFromFile()
+		self.occMap.readFromFile(dirName)
 	
 		" obstacle map "
-		self.obstacleMap.readFromFile()
+		self.obstacleMap.readFromFile(dirName)
 		
-		f = open("estpose%04u.txt" % self.nodeID, 'r')
-		estPose = eval(f.read())
+		f = open(dirName + "/estpose%04u.txt" % self.nodeID, 'r')
+		estPose = eval(f.read().rstrip())
 		f.close()
 
 		self.setEstPose(estPose)
 
-		f = open("gndpose%04u.txt" % self.nodeID, 'r')
-		gndPose = eval(f.read())
+		f = open(dirName + "/gndpose%04u.txt" % self.nodeID, 'r')
+		gndPose = eval(f.read().rstrip())
 		f.close()
 
 		self.setGndPose(gndPose)

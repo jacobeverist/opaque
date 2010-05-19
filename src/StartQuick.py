@@ -9,6 +9,7 @@ from opaque.TestFrontExtend import TestFrontExtend
 from opaque.TestPokeWalls import TestPokeWalls
 from opaque.TestAdaptiveStep import TestAdaptiveStep
 from opaque.TestPathStep import TestPathStep
+from opaque.TestMapGraph import TestMapGraph
 from DrawThings import DrawThings
 
 import traceback 
@@ -27,7 +28,8 @@ def createTest():
 	#currControl = TestFrontExtend(probe, drawThings)
 	#currControl = TestPokeWalls(probe, drawThings)
 	#currControl = TestAdaptiveStep(probe, drawThings)
-	currControl = TestPathStep(probe, drawThings)
+	#currControl = TestPathStep(probe, drawThings)
+	currControl = TestMapGraph(probe, drawThings)
 	
 	probe.addControl(currControl)
 

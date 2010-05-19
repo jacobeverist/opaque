@@ -452,10 +452,8 @@ class AverageContacts:
 		#for child in self._allRefEnt:
 		#	self.probe._mgr.destroyEntity(child)
 	
-		#self._allRefEnt = []
-
-		for i in range(self.numJoints):
-			self._allRefEnt[i].setVisible(False)
+		#for i in range(self.numJoints):
+		#	self._allRefEnt[i].setVisible(False)
 			
 
 		# proposed reference points

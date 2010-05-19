@@ -63,9 +63,9 @@ class LocalObstacleMap(Map):
 		self.oldPolygons = []
 		self.update()
 
-	def readFromFile(self):
+	def readFromFile(self, dirName):
 
-		self.fileName = "localObstacleMap%03u" % self.nodeID + "_%04u.png"
+		self.fileName = dirName + "/localObstacleMap%03u" % self.nodeID + "_%04u.png"
 		
 		self.mapImage = Image.open(self.fileName % 0)
 					
