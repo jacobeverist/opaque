@@ -8,10 +8,16 @@ class DrawThings():
 		self.robotParam = robotParam
 		self.count = 0
 
+	def setSim(self):
+		self.isSim = True
+
 	def setRenderView(self, renderView):
 		self.renderView = renderView
 		
 	def plotRobotConfiguration(self, poses, clr = (0.0,0.0,0.0)):
+		
+		if self.isSim:
+			return
 		
 		segWidth = self.robotParam['segWidth']
 		segLength = self.robotParam['segLength']

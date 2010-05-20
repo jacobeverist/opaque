@@ -5,39 +5,13 @@ import ImageDraw
 import pylab
 from math import cos, sin, floor, pi
 from copy import copy
-
-
-# determines signed area of 3 points (used for solving Point in Polygon problem)
-def Area2(Ax,Ay,Bx,By,Cx,Cy):
-	return (Bx - Ax) * (Cy - Ay) - (Cx - Ax)*(By - Ay)
-
-# determines if point C is left of line segment AB
-def LeftOn(Ax,Ay,Bx,By,Cx,Cy):
-	return (Area2(Ax,Ay,Bx,By,Cx,Cy) >= 0)
-
-# determine if point is located within a bounding box specified by vertices RectVert
-def IsContained(RectVert, Point):
-	for i in range(4):
-		if not (LeftOn(RectVert[i%4][0],RectVert[i%4][1],
-					   RectVert[(i+1)%4][0],RectVert[(i+1)%4][1], Point[0], Point[1])):
-			return False
-	return True
-
-# this function converts the angle to its equivalent # in the range [-pi,pi]
-def normalizeAngle(angle):
-	
-	while angle>pi:
-		angle=angle-2*pi
-	
-	while angle<=-pi:
-		angle=angle+2*pi
-	
-	return angle 
+from functions import *
 
 class LocalObstacleMap(Map):
 
 	def __init__(self, localNode):
 		#Map.__init__(self)
+
 
 		self.localNode = localNode
 		self.contacts = self.localNode.getContacts()
@@ -46,12 +20,14 @@ class LocalObstacleMap(Map):
 
 		self.nodeID = self.localNode.getNodeID()
 		self.fileName = "localObstacleMap%03u" % self.nodeID + "_%04u.png"
+		self.saveCount = 0
 
 		self.pixelSize = self.boundMap.pixelSize
 		self.mapSize = self.boundMap.mapSize
 		self.numPixel = self.boundMap.numPixel
 		self.halfPix = self.boundMap.halfPix
 		self.divPix = self.boundMap.divPix
+
 		self.resetMap()
 
 		self.xMin = self.numPixel

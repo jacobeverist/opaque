@@ -1428,7 +1428,9 @@ class AdaptiveStep(Behavior):
 				self.refDone = True
 
 
-	def reset(self):
+	def reset(self, probeState):
+
+		self.probeState = probeState
 
 		self.mask = [0.0 for i in range(0,39
 									)]

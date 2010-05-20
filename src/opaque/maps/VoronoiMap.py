@@ -87,7 +87,7 @@ class VoronoiMap(Map):
 		#NEIGHBOR_WIDTH = 3
 		NEIGHBOR_WIDTH = 0
 
-		xSize, ySize = self.size
+		xSize, ySize = self.getMapSize()
 		#occPix = self.occMapImage.load()
 
 		#occPix = self.occMap.image

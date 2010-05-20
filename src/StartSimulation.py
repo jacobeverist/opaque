@@ -16,7 +16,7 @@ import ogre.io.OIS as OIS
 import sf_OIS as sf
 
 from opaque.robot.SnakeProbe import SnakeProbe
-#from opaque.TestModular import TestModular
+from opaque.TestModular import TestModular
 from opaque.TestHoldPosition import TestHoldPosition
 from opaque.TestHoldTransition import TestHoldTransition
 from opaque.TestHoldTransition import TestHoldTransition
@@ -267,18 +267,19 @@ class SnakeApp(sf.Application):
 		self.probe = SnakeProbe(self._world,yRot,pos,40,0.15,0.05,30.0*2.5,0.9)
 
 		self.drawThings = DrawThings(self.probe.robotParam)
+		self.drawThings.setSim()
 
 		#currControl = controls.TestJunction(self.probe)
 		#currControl = controls.TestMap(self.probe)
 		#currControl = controls.TestMapping(self.probe)
-		#currControl = TestModular(self.probe, self.drawThings)
+		currControl = TestModular(self.probe, self.drawThings)
 		
 		#currControl = TestAnchorTransition(self.probe, self.drawThings)
 		#currControl = TestHoldPosition(self.probe, self.drawThings)
 		#currControl = TestHoldTransition(self.probe, self.drawThings)
 		#currControl = TestHoldSlideTransition(self.probe, self.drawThings)
 		#currControl = TestFrontExtend(self.probe, self.drawThings)
-		currControl = TestPokeWalls(self.probe, self.drawThings)
+		#currControl = TestPokeWalls(self.probe, self.drawThings)
 
 
 		

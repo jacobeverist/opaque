@@ -27,6 +27,9 @@ class Map:
 		self.halfPix = self.pixelSize/2.0
 		self.divPix = floor((2.0*self.mapSize/self.pixelSize)/self.mapSize)
 		
+	def getMapSize(self):
+		return self.mapImage.size
+		
 	def resetMap(self):
 		self.mapImage = Image.new('L', (self.numPixel,self.numPixel),0)
 		self.image = self.mapImage.load()
@@ -52,12 +55,13 @@ class Map:
 						self.yMin = j
 					if j > self.yMax:
 						self.yMax = j
-						
-	def __getattr__(self, name):
-		if name == 'size':
-			return self.mapImage.size
-		else:
-			raise AttributeError
+	
+	#def __getattr__(self, name):
+	#	if name == 'size':
+	#		return self.mapImage.size
+	#	else:
+	#		return self.__getattr__(name)
+			#raise AttributeError
 
 	def getImage(self):
 		return self.mapImage

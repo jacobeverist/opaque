@@ -99,7 +99,7 @@ class TestHoldPosition(SnakeControl):
 
 				print "step 2 complete"
 				self.stateA = 2
-				#raise
+				#self.testSuccess()
 				
 			else:
 				self.nextState = True

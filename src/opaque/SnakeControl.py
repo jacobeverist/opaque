@@ -1,9 +1,16 @@
+from ControlError import ControlError
 
 class SnakeControl():
 
 	def __init__(self):
 		self.timeInc = 1
 		self.globalTimer = 0
+
+	def testSuccess(self):
+		raise ControlError("test success")
+	
+	def testFail(self):
+		raise ControlError("test fail")
 
 	def setProbe(self, probe):
 		self.probe = probe

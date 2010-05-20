@@ -2,9 +2,16 @@ from SnakeControl import SnakeControl
 from copy import *
 from math import *
 
-#from behaviors import AnchorTransition, HoldPosition, HoldTransition, AdaptiveStep, FrontExtend, PokeWalls, PathStep
-from behaviors import AnchorTransition, HoldPosition, HoldTransition, FrontExtend, PokeWalls
-from pose import AverageContacts		
+from behaviors.AnchorTransition import AnchorTransition
+from behaviors.HoldTransition import HoldTransition
+from behaviors.HoldPosition import HoldPosition
+from behaviors.FrontExtend import FrontExtend
+from behaviors.PokeWalls import PokeWalls
+from behaviors.PathStep import PathStep
+from behaviors.AdaptiveStep import AdaptiveStep
+
+from pose.AverageContacts import AverageContacts
+from maps.MapGraph import MapGraph
 
 class TestModular(SnakeControl):
 
@@ -35,19 +42,23 @@ class TestModular(SnakeControl):
 		self.contacts.setTimerAliasing(5)
 		
 		" maps "
-		#self.mapGraph = maps.MapGraph(self.probe, self.contacts)
-		#self.mapGraph.loadFile("testData/behaviorTest", 9)
-		#self.mapGraph.loadFile("testData/behaviorTest", 1)
+		self.mapGraph = MapGraph(self.probe, self.contacts)
+		#self.mapGraph.loadFile("testData/correctionTest", 9)
+		self.mapGraph.loadFile("testData/correctionTest", 3)
 		
-		#self.mapGraph.correctPoses2()
-		#self.mapGraph.synch()
-		#self.mapGraph.saveMap()
+		self.mapGraph.correctPoses2()
+		self.mapGraph.synch()
+		self.mapGraph.saveMap()
 		
 		" behaviors "
 		self.anchorT = AnchorTransition(robotParam)
 		self.holdP = HoldPosition(robotParam)
 		self.holdT = HoldTransition(robotParam)
-		#self.adaptiveStep = AdaptiveStep(robotParam, self.contacts, self.mapGraph, direction)
+
+		" get the probe state "
+		probeState = self.probe.getProbeState()
+
+		self.adaptiveStep = AdaptiveStep(robotParam, probeState, self.contacts, self.mapGraph, direction)
 		self.frontExtend = FrontExtend(robotParam, self.contacts, direction)
 		self.pokeWalls = PokeWalls(robotParam, direction, self.mapGraph.obstCallBack)
 		
@@ -169,7 +180,9 @@ class TestModular(SnakeControl):
 				self.mapGraph.setCenterPoints(centerPoints)
 
 				self.lastPose = self.contacts.getAveragePose(0)
-				
+	
+				self.frontExtend.reset(probeState, True)			
+
 				#wall7 = [[-4.8+6.0,-0.2],[-4.5+6.0,0.2]]
 				#self.probe.createWall(wall7)
 

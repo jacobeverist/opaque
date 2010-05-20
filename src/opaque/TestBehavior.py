@@ -110,7 +110,7 @@ class TestBehavior(SnakeControl):
 							print "ERROR: joint", i, "is", currJoints[i], "not -90.0"
 
 				print "step 2 complete"
-				raise
+				self.testSuccess()
 				
 			else:
 				self.nextState = True

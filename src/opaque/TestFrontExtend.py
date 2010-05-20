@@ -82,11 +82,10 @@ class TestFrontExtend(SnakeControl):
 
 		elif self.stateA == 2:
 			
-			newJoints = [0.0 for i in range(39)]
 
 			" create and initialize behavior "
 			self.frontExtend = FrontExtend(self.robotParam, self.contacts)
-			self.frontExtend.reset(probeState, newJoints)
+			self.frontExtend.reset(probeState, True)
 								
 			self.stateA = 3
 			
@@ -119,7 +118,7 @@ class TestFrontExtend(SnakeControl):
 				#		print "ERROR: joint", i, "is", currJoints[i], "not 0.0"
 
 				print "step 2 complete"
-				raise
+				self.testSuccess()
 			
 								
 

@@ -14,6 +14,7 @@ class LocalBoundaryMap(Map):
 		self.nodeCount = 0
 		self.nodeID = self.localNode.getNodeID()
 		self.fileName = "localBoundaryMap%03u" % self.nodeID + "_%04u.png"
+		self.saveCount = 0
 
 		self.pixelSize = self.occMap.pixelSize
 		self.mapSize = self.occMap.mapSize

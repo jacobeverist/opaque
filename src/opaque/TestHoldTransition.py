@@ -91,12 +91,31 @@ class TestHoldTransition(SnakeControl):
 				
 				currJoints = probeState['joints']
 
-				for i in range(self.robotParam['numJoints']):					
-					if currJoints[i] != 0.0:
+				isError = False
+
+				for i in range(self.robotParam['numJoints']):
+					modVal = i % 4
+					compJoint = 0.0
+					
+					if modVal == 0:
+						modJoint = 0.0 * pi / 180.0
+					elif modVal == 1:
+						modJoint = 90.0 * pi / 180.0
+					elif modVal == 2:
+						modJoint = 0.0 * pi / 180.0
+					elif modVal == 3:	
+						modJoint = -90.0 * pi / 180.0
+										
+					if currJoints[i] != modJoint:
+						isError = True
 						print "ERROR: joint", i, "is", currJoints[i], "not 0.0"
 
 				print "step 2 complete"
-				raise
+				
+				if isError:
+					self.testFail()
+				else:
+					self.testSuccess()
 			
 								
 

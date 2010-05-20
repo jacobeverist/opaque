@@ -482,7 +482,7 @@ class AverageContacts:
 		endJoint = self.numJoints
 
 		if estPose != []:
-			print "creating forced pose reference node", 19, "with estPose =", estPose
+			#print "creating forced pose reference node", 19, "with estPose =", estPose
 			newNode = self.createNewNode(19, forcePose = estPose)
 			self.createEdges(newNode)
 
@@ -500,7 +500,7 @@ class AverageContacts:
 				# create position constraints between all the current active reference nodes
 				self.createEdges(newNode)
 
-				print "self.activeRef =", self.activeRef
+				#print "self.activeRef =", self.activeRef
 
 		"""
 		for i in range(self.numJoints):
@@ -522,7 +522,7 @@ class AverageContacts:
 		self.initMask = copy(mask)
 		#print "setting mask:", self.initMask
 		
-	def step(self):
+	def step(self, probeState):
 		self.count += 1
 		if not self.isStep():
 			return 

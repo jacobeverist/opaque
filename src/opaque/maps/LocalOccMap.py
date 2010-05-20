@@ -8,54 +8,7 @@ from random import *
 from math import floor, cos, sin, sqrt, asin, acos, pi
 from numpy import array, dot
 from copy import deepcopy, copy
-
-# determines signed area of 3 points (used for solving Point in Polygon problem)
-def Area2(Ax,Ay,Bx,By,Cx,Cy):
-	return (Bx - Ax) * (Cy - Ay) - (Cx - Ax)*(By - Ay)
-
-# determines if point C is left of line segment AB
-def LeftOn(Ax,Ay,Bx,By,Cx,Cy):
-	return (Area2(Ax,Ay,Bx,By,Cx,Cy) >= 0)
-
-# determine if point is located within a bounding box specified by vertices RectVert
-def IsContained(RectVert, Point):
-	for i in range(4):
-		if not (LeftOn(RectVert[i%4][0],RectVert[i%4][1],
-					   RectVert[(i+1)%4][0],RectVert[(i+1)%4][1], Point[0], Point[1])):
-			return False
-	return True
-
-# this function converts the angle to its equivalent # in the range [-pi,pi]
-def normalizeAngle(angle):
-	
-	while angle>pi:
-		angle=angle-2*pi
-	
-	while angle<=-pi:
-		angle=angle+2*pi
-	
-	return angle 
-
-def point_inside_polygon(x,y,poly):
-
-	n = len(poly)
-	inside = False
-	
-	xinters = -1e30
-	
-	p1x,p1y = poly[0]
-	for i in range(n+1):
-		p2x,p2y = poly[i % n]
-		if y > min(p1y,p2y):
-			if y <= max(p1y,p2y):
-				if x <= max(p1x,p2x):
-					if p1y != p2y:
-						xinters = (y-p1y)*(p2x-p1x)/(p2y-p1y)+p1x
-					if p1x == p2x or x <= xinters:
-						inside = not inside
-		p1x,p1y = p2x,p2y
-	
-	return inside
+from functions import *
 
 class LocalOccMap:
 

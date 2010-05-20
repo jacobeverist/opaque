@@ -5,6 +5,7 @@ from math import *
 from behaviors.AnchorTransition import AnchorTransition
 from pose.AverageContacts import AverageContacts
 
+
 class TestAnchorTransition(SnakeControl):
 
 	"""
@@ -112,7 +113,9 @@ class TestAnchorTransition(SnakeControl):
 
 
 				print "step 2 complete"
-				raise
+
+				self.testSuccess()
+
 			
 								
 

@@ -146,7 +146,7 @@ class TestPokeWalls(SnakeControl):
 						print "ERROR: joint", i, "is", currJoints[i], "not 0.0"
 
 				print "step 5 complete"
-				raise
+				self.testSuccess()
 			
 								
 

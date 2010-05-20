@@ -1,4 +1,5 @@
 
+from functions import *
 from DiffStability import DiffStability
 
 """

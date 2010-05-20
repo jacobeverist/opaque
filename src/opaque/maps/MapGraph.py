@@ -84,7 +84,8 @@ class MapGraph:
 
 	def loadNext(self):
 		#self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, self.pixelSize, self.probe.robotParam, inSim = False)
-		self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, self.pixelSize, inSim = False)
+		#self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, self.pixelSize, inSim = False)
+		self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, self.pixelSize)
 
 		self.currNode.readFromFile(self.numNodes)
 		
@@ -102,8 +103,12 @@ class MapGraph:
 		self.currNode = 0
 		
 		for i in range(0,num_poses):
+			
+			print "loading file", i
+			
 			# def __init__(self, probe, contacts, nodeID, rootNode, pixelSize, inSim = True):
-			self.currNode = LocalNode(self.probe, self.contacts, i, 19, self.pixelSize, inSim = False)
+			#self.currNode = LocalNode(self.probe, self.contacts, i, 19, self.pixelSize, inSim = False)
+			self.currNode = LocalNode(self.probe, self.contacts, i, 19, self.pixelSize)
 			self.currNode.readFromFile(dirName, i)
 			
 			self.poseGraph.add_node(i, self.currNode)
@@ -136,7 +141,8 @@ class MapGraph:
 		print "checkO"
 
 		#self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19)
-		self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, self.pixelSize, inSim = False)
+		#self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, self.pixelSize, inSim = False)
+		self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, self.pixelSize)
 
 		print "checkP"
 		
