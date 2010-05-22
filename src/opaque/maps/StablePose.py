@@ -23,7 +23,7 @@ class StablePose:
 		self.maxWidth = 0
 	
 		#self.sectFile = open("sectFile.txt", 'w')
-		self.rootFile = open("rootFile.txt", 'w')
+		#self.rootFile = open("rootFile.txt", 'w')
 
 		self.lowIndex = 0
 		self.highIndex = 0
@@ -176,7 +176,7 @@ class StablePose:
 		zTotal = self.refPoses[self.node.rootNode][1]
 		totalAngle = self.refPoses[self.node.rootNode][2]
 
-		self.rootFile.write(str(xTotal) + " " + str(zTotal) + " " + str(totalAngle) + "\n")
+		#self.rootFile.write(str(xTotal) + " " + str(zTotal) + " " + str(totalAngle) + "\n")
 	
 		joints = range(-1,self.node.rootNode)
 		joints.reverse()
@@ -235,7 +235,7 @@ class StablePose:
 		zTotal = 0.0
 		totalAngle = 0.0
 
-		self.rootFile.write(str(xTotal) + " " + str(zTotal) + " " + str(totalAngle) + "\n")
+		#self.rootFile.write(str(xTotal) + " " + str(zTotal) + " " + str(totalAngle) + "\n")
 	
 		joints = range(-1,self.node.rootNode)
 		joints.reverse()

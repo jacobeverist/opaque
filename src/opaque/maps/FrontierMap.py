@@ -231,7 +231,7 @@ class FrontierMap(Map):
 							self.image[i,j] = result
 						#print maxDen, density, result, self.image[i,j]
 
-		self.mapImage.save("mapFrontierGraph%04u.png" % self.saveCount)		
+		#self.mapImage.save("mapFrontierGraph%04u.png" % self.saveCount)		
 	
 	
 	def inhibitLocation(self, point):

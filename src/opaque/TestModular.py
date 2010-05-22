@@ -31,6 +31,8 @@ class TestModular(SnakeControl):
 		robotParam['segWidth'] = self.probe.segWidth
 		robotParam['maxTorque'] = self.probe.maxTorque
 		
+		self.numJoints = robotParam['numJoints']
+		
 		self.robotParam = self.probe.robotParam
 		
 		self.setTimerAliasing(1)
@@ -42,31 +44,37 @@ class TestModular(SnakeControl):
 		self.contacts.setTimerAliasing(5)
 		
 		" maps "
-		self.mapGraph = MapGraph(self.probe, self.contacts)
+		#self.mapGraph = MapGraph(self.probe, self.contacts)
 		#self.mapGraph.loadFile("testData/correctionTest", 9)
-		self.mapGraph.loadFile("testData/correctionTest", 3)
+		#self.mapGraph.loadFile("testData/correctionTest", 3)
 		
-		self.mapGraph.correctPoses2()
-		self.mapGraph.synch()
-		self.mapGraph.saveMap()
+		#self.mapGraph.correctPoses2()
+		#self.mapGraph.synch()
+		#self.mapGraph.saveMap()
+		
 		
 		" behaviors "
+		"""
 		self.anchorT = AnchorTransition(robotParam)
 		self.holdP = HoldPosition(robotParam)
 		self.holdT = HoldTransition(robotParam)
-
+		"""
+		
 		" get the probe state "
 		probeState = self.probe.getProbeState()
 
+		"""
 		self.adaptiveStep = AdaptiveStep(robotParam, probeState, self.contacts, self.mapGraph, direction)
 		self.frontExtend = FrontExtend(robotParam, self.contacts, direction)
 		self.pokeWalls = PokeWalls(robotParam, direction, self.mapGraph.obstCallBack)
+		"""
 		
 		self.exploreRoot = [0.5,0.0]
 		self.exploreRoot = [-3.5,0.0]
 		self.pathStep = 0
 		
-		self.stateA = -2
+		self.localState = 0
+		self.globalState = 0
 		self.prevTime = 0
 		
 		# error tracking for path-following
@@ -123,10 +131,10 @@ class TestModular(SnakeControl):
 		#self.grabImage()
 		#self.grabAngles()
 
-		if self.globalTimer % 4000 == 0:
-			if self.stateA <= 0 or self.stateA == 5 or self.renderTransition:
-				self.mapGraph.drawEstBoundary()
-				self.renderTransition = False
+		#if self.globalTimer % 4000 == 0:
+		#	if self.stateA <= 0 or self.stateA == 5 or self.renderTransition:
+		#		self.mapGraph.drawEstBoundary()
+		#		self.renderTransition = False
 
 		self.probe.setAnchor(self.isAnchored)
 
@@ -138,10 +146,52 @@ class TestModular(SnakeControl):
 		" get the probe state "
 		probeState = self.probe.getProbeState()
 
-		# behavior steps and return values
 
-		# Anchor to the walls
+		if self.globalState == 0:
+			
+			" anchor the robot initially "
 
+			isDone = self.doInitAnchor()
+			
+			if isDone:
+				self.globalState = 1
+				
+		elif self.globalState == 1:
+			
+			" create the motion model object "
+			self.contacts = AverageContacts(self.probe)
+			
+			self.globalState = 2
+
+		elif self.globalState == 2:
+
+			" get stable reference nodes on the snake body "
+			self.contacts.setMask( [1.0 for i in range(self.numJoints)] )	
+			self.contacts.step(probeState)
+			
+			if self.contacts.isStable():
+				self.globalState = 3
+
+		elif self.globalState == 3:
+			
+			" create the mapping object "
+			self.mapGraph = MapGraph(self.probe, self.contacts)
+			self.mapGraph.loadFile("testData/correctionTest", 3)
+
+			self.mapGraph.newNode()
+			self.mapGraph.forceUpdate(False)
+
+			self.mapGraph.synch()
+			self.mapGraph.saveMap()
+			self.mapGraph.saveLocalMap()
+			
+			self.globalState = 4
+			
+		else:
+			pass
+		
+		
+		"""
 		if self.stateA == -2:
 			
 			isDone = self.anchorT.step(probeState)
@@ -241,7 +291,7 @@ class TestModular(SnakeControl):
 				" set anchoring "
 				self.isAnchored = True
 
-				""" create a new pose node since we are in stable anchor position"""
+				" create a new pose node since we are in stable anchor position"
 				self.mapGraph.newNode()
 
 				self.isCapture = True
@@ -600,3 +650,38 @@ class TestModular(SnakeControl):
 
 				self.stateA = 5
 				print "going to state 5"
+		"""
+		
+		
+	def doInitAnchor(self):
+		
+		" get the probe state "
+		probeState = self.probe.getProbeState()
+
+		# behavior steps and return values
+
+		" create the first behavior "
+		if self.localState == 0:
+			
+			print "START:  doInitAnchor()"
+			
+			self.behavior = AnchorTransition(self.robotParam)
+			
+			self.localState = 1
+
+		" immediately begin running behavior "
+		if self.localState == 1:
+			
+			isDone = self.behavior.step(probeState)
+			joints1 = self.behavior.getJoints()
+			
+			self.mergeJoints([joints1])
+			
+			if isDone:
+				self.localState = 0
+				
+				print "FINISH:  doInitAnchor()"
+				return True
+		
+		return False
+		

@@ -1,5 +1,6 @@
 from Behavior import *
 from HoldSlideTransition import HoldSlideTransition
+from HoldPosition import HoldPosition
 from math import sqrt
 from copy import copy
 
@@ -22,6 +23,7 @@ class FrontExtend(Behavior):
 
 		self.contacts = contacts
 		
+		self.holdP = HoldPosition(robotParam)
 		self.holdSlideT = HoldSlideTransition(robotParam)
 
 		#self.setDirection(direction)
@@ -68,7 +70,9 @@ class FrontExtend(Behavior):
 
 	def reset(self, probeState, direction = True):
 		self.holdSlideT = HoldSlideTransition(self.robotParam)
-
+		
+		self.holdP.reset(probeState)
+		
 		self.setDirection(probeState, direction)
 				
 		self.poses = []

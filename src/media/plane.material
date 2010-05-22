@@ -11,7 +11,7 @@ material Ac3d/Plane/Mat001_Tex00
 
 			texture_unit
 			{
-				texture tiled_floor.jpg
+				texture grid.jpg
 				filtering anisotropic
 				max_anisotropy 8
 			}

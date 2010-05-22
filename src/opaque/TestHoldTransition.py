@@ -108,7 +108,7 @@ class TestHoldTransition(SnakeControl):
 										
 					if currJoints[i] != modJoint:
 						isError = True
-						print "ERROR: joint", i, "is", currJoints[i], "not 0.0"
+						print "ERROR: joint", i, "is", currJoints[i], "not", modJoint
 
 				print "step 2 complete"
 				

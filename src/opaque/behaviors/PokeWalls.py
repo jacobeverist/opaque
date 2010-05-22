@@ -37,8 +37,6 @@ class PokeWalls(Behavior):
 		self.isTransitioning = False
 		self.hasTransitioned = False
 
-		self.f = open("pokeJoints.txt",'w')
-		
 		self.isInit = False
 
 	def hasInitialized(self):
