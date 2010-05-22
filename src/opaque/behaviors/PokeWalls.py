@@ -7,7 +7,7 @@ class PokeWalls(Behavior):
 	def __init__(self, robotParam, contacts, direction = False, obstContact = 0):
 		Behavior.__init__(self, robotParam)
 
-		self.dir = direction
+		self.direction = direction
 		self.obstContact = obstContact
 
 
@@ -23,6 +23,8 @@ class PokeWalls(Behavior):
 		self.anchor = Anchor(robotParam)
 
 		self.curl = Curl(robotParam, self.contacts)
+		
+		self.setDirection(self.direction)
 		#self.curl.setTimerAliasing(10)
 		self.curl.setTopJoint(self.topJoint)
 

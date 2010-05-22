@@ -37,7 +37,7 @@ class TestModular(SnakeControl):
 		
 		self.setTimerAliasing(1)
 		
-		direction = True
+		self.direction = True
 		
 		" pose estimation "
 		self.contacts = AverageContacts(self.probe)
@@ -162,7 +162,7 @@ class TestModular(SnakeControl):
 			self.contacts = AverageContacts(self.probe)
 			
 			self.globalState = 2
-
+			
 		elif self.globalState == 2:
 
 			" get stable reference nodes on the snake body "
@@ -176,7 +176,7 @@ class TestModular(SnakeControl):
 			
 			" create the mapping object "
 			self.mapGraph = MapGraph(self.probe, self.contacts)
-			self.mapGraph.loadFile("testData/correctionTest", 3)
+			self.mapGraph.loadFile("testData/correctionTest", 1)
 
 			self.mapGraph.newNode()
 			self.mapGraph.forceUpdate(False)
@@ -185,11 +185,34 @@ class TestModular(SnakeControl):
 			self.mapGraph.saveMap()
 			self.mapGraph.saveLocalMap()
 			
-			self.globalState = 4
+			self.globalState = 6
 			
-		else:
+		elif self.globalState == 4:
+			
+			" extend the front of the snake "
+			isDone = self.doFrontExtend()
+			
+			if isDone:
+				self.globalState = 5
+
+		elif self.globalState == 5:
+
+			" do a concertina gait step "
+			isDone = self.doAdaptiveStep()
+			
+			if isDone:
+				self.globalState = 6
+				
+		elif self.globalState == 6:
+
+			" do a forward poking behavior to sense the environment"
+			isDone = self.doPokeWalls()
+			
+			if isDone:
+				self.globalState = 7
+			
+		elif self.globalState == 7:
 			pass
-		
 		
 		"""
 		if self.stateA == -2:
@@ -658,8 +681,6 @@ class TestModular(SnakeControl):
 		" get the probe state "
 		probeState = self.probe.getProbeState()
 
-		# behavior steps and return values
-
 		" create the first behavior "
 		if self.localState == 0:
 			
@@ -679,9 +700,133 @@ class TestModular(SnakeControl):
 			
 			if isDone:
 				self.localState = 0
+				self.behavior = 0
 				
 				print "FINISH:  doInitAnchor()"
 				return True
 		
 		return False
 		
+	def doFrontExtend(self):
+
+		" get the probe state "
+		probeState = self.probe.getProbeState()
+
+		" create the first behavior "
+		if self.localState == 0:
+			print "START:  doFrontExtend()"
+			
+			" extend the front "
+			self.behavior = FrontExtend(self.robotParam, self.contacts, self.direction)
+			self.behavior.reset(probeState, True)
+			
+			" hold the back pose anchor "
+			self.holdP = HoldPosition(self.robotParam)
+			self.holdP.reset(probeState)
+			
+			self.localState = 1
+			
+		elif self.localState == 1:
+	
+			" step the main behavior "
+			isDone = self.behavior.step(probeState)
+
+			" get and merge the joints for the two behaviors "
+			joints1 = self.holdP.getJoints()
+			joints2 = self.behavior.getJoints()
+			self.mergeJoints([joints2,joints1])
+			
+			val = self.behavior.getMask()
+			self.contacts.setMask(val)
+			
+ 			self.contacts.step(probeState)
+				
+			if isDone:
+				
+				self.topJoint = self.behavior.getTopJoint()
+				
+				self.localState = 0
+				self.behavior = 0
+				self.holdP = 0
+				
+				print "FINISH:  doFrontExtend()"
+				return True
+			
+		return False
+	
+	def doAdaptiveStep(self):
+
+		" get the probe state "
+		probeState = self.probe.getProbeState()
+				
+		if self.localState == 0:
+			print "START:  doAdaptiveStep()"
+			
+			self.behavior = AdaptiveStep(self.robotParam, probeState, self.contacts, self.mapGraph, self.direction)
+			self.behavior.reset(probeState)
+			self.behavior.setTopJoint(self.topJoint)
+			
+			self.localState = 1
+
+		elif self.localState == 1:
+
+			isDone = self.behavior.step(probeState)
+
+			joints2 = self.behavior.getJoints()
+			self.mergeJoints([joints2])
+			
+			val = self.behavior.getMask()
+			self.contacts.setMask(val)
+			
+			self.contacts.step(probeState)			
+			
+			if isDone:
+				self.behavior = 0
+				self.localState = 0
+				
+				print "FINISH:  doAdaptiveStep()"
+				return True
+			
+		return False
+		
+	def doPokeWalls(self):
+
+		" get the probe state "
+		probeState = self.probe.getProbeState()
+				
+		if self.localState == 0:
+			print "START:  doPokeWalls()"
+
+			self.behavior = PokeWalls(self.robotParam, self.contacts, False, self.mapGraph.obstCallBack)
+			
+			self.localState = 1			
+
+		elif self.localState == 1:
+			
+			#self.behavior.setDirection(False)
+			isDone = self.behavior.step(probeState)
+
+			joints2 = self.behavior.getJoints()
+			self.mergeJoints([joints2])
+
+			val = self.behavior.getMask()
+			self.contacts.setMask(val)
+			
+ 			self.contacts.step(probeState)
+
+			if self.behavior.hasInitialized():
+				self.mapGraph.keepStablePose()
+				
+				if self.globalTimer % 30 == 0:
+					self.mapGraph.update(False)
+	
+			if isDone:
+				self.behavior = 0
+				self.localState = 0
+				
+				print "FINISH:  doPokeWalls()"
+				return True
+			
+		return False
+				
+				

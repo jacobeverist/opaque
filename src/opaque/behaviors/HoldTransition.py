@@ -98,7 +98,8 @@ class HoldTransition(Behavior):
 				if initState[i] != None:
 					errSum += fabs(initState[i]-targetState[i])
 
-			transTime = int(2*errSum)
+			#transTime = int(2*errSum)
+			transTime = int(errSum)
 			
 			# set target and initial poses
 			self.transition.setInit(initState)
