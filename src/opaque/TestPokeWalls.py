@@ -114,7 +114,7 @@ class TestPokeWalls(SnakeControl):
 		elif self.stateA == 4:
 			
 			" create and initialize behavior "
-			self.pokeWalls = PokeWalls(self.robotParam, self.contacts, obstContact = self.mapGraph.obstCallBack)
+			self.pokeWalls = PokeWalls(self.robotParam, self.contacts, True, obstContact = self.mapGraph.obstCallBack)
 
 			self.stateA = 5
 			

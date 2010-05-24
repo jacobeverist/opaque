@@ -952,7 +952,7 @@ def computeUnion(points1, points2):
 		#f.write(inputStr)
 		#f.close()
 		
-		if False:
+		if True:
 			
 			" start the subprocess "
 			subProc = Popen(["./poly_union.exe"], stdin=PIPE, stdout=PIPE)

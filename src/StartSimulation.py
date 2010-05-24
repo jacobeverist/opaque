@@ -264,7 +264,8 @@ class SnakeApp(sf.Application):
 		pos = ogre.Vector3(1.8,0.04,0.0)
 		pos = ogre.Vector3(1.65,0.04,0.0)
 
-		self.probe = SnakeProbe(self._world,yRot,pos,40,0.15,0.05,30.0*2.5,0.9)
+		#self.probe = SnakeProbe(self._world,yRot,pos,40,0.15,0.05,30.0*2.5,0.9)
+		self.probe = SnakeProbe(self._world,yRot,pos,40,0.15,0.15,30.0*2.5,0.9)
 
 		self.drawThings = DrawThings(self.probe.robotParam)
 		self.drawThings.setSim()

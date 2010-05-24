@@ -22,15 +22,15 @@ class PokeWalls(Behavior):
 
 		self.anchor = Anchor(robotParam)
 
-		self.curl = Curl(robotParam, self.contacts)
+		self.curl = Curl(robotParam, self.contacts, self.direction)
 		
-		self.setDirection(self.direction)
+		self.updateCurl()
 		#self.curl.setTimerAliasing(10)
 		self.curl.setTopJoint(self.topJoint)
 
 		self.doneCount = 0
 
-		self.direction = True
+		self.direction = direction
 
 		self.reverse = False
 
@@ -44,9 +44,9 @@ class PokeWalls(Behavior):
 	def hasInitialized(self):
 		return self.isInit
 	
-	def setDirection(self, val):
+	def updateCurl(self):
 		#print "setting direction", val
-		self.direction = val
+		#self.direction = val
 
 		if self.direction:
 			self.curl.setTopJoint(self.topJoint)
@@ -57,6 +57,8 @@ class PokeWalls(Behavior):
 
 	def step(self, probeState):
 		Behavior.step(self, probeState)
+		
+		self.updateCurl()
 		
 		if not self.isStep():
 			return False
@@ -72,7 +74,7 @@ class PokeWalls(Behavior):
 		if self.state == 0:
 	
 			isDone = self.curl.step(probeState)
-	
+				
 			if isDone:
 				self.doneCount += 1
 				self.state = 1

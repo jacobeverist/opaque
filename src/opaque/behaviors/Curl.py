@@ -6,7 +6,7 @@ from Transition import Transition
 
 class Curl(Behavior):
 	
-	def __init__(self, robotParam, contacts):
+	def __init__(self, robotParam, contacts, direction):
 		Behavior.__init__(self, robotParam)	
 
 		# angle value for curling joints
@@ -19,8 +19,10 @@ class Curl(Behavior):
 		
 		self.contacts = contacts
 
-		self.stabilityX = ValueStability(1e-7, 10)
-		self.stabilityY = ValueStability(1e-7, 10)
+		#self.stabilityX = ValueStability(1e-7, 10)
+		#self.stabilityY = ValueStability(1e-7, 10)
+		self.stabilityX = ValueStability(1e-5, 10)
+		self.stabilityY = ValueStability(1e-5, 10)
 		
 		self.lastPose = [0.0,0.0,0.0]
 		
@@ -29,7 +31,7 @@ class Curl(Behavior):
 		self.returnedSuccess = False
 		self.slipError = 0.0
 		
-		self.direction = True
+		self.direction = direction
 
 		self.transition = Transition(robotParam)
 		self.isTransitioning = False
@@ -144,10 +146,10 @@ class Curl(Behavior):
 				
 			self.stabilityX.addData(pose[0])
 			self.stabilityY.addData(pose[1])
-	
+			
 			varX = self.stabilityX.getVar()
 			varY = self.stabilityY.getVar()
-		
+						
 			if self.stabilityX.isStable() and self.stabilityY.isStable():
 				
 				diff = [pose[0]-self.lastPose[0], pose[1]-self.lastPose[1]]
@@ -168,8 +170,10 @@ class Curl(Behavior):
 				self.resetJoints()
 				
 				if self.val == 0:
-					self.stabilityX.setThresh(1e-7)
-					self.stabilityY.setThresh(1e-7)
+					#self.stabilityX.setThresh(1e-7)
+					#self.stabilityY.setThresh(1e-7)
+					self.stabilityX.setThresh(1e-5)
+					self.stabilityY.setThresh(1e-5)
 				else:
 					self.stabilityX.setThresh(1e-5)
 					self.stabilityY.setThresh(1e-5)
@@ -233,7 +237,9 @@ class Curl(Behavior):
 			for i in range(len(initState)):
 				if initState[i] != None:
 					errSum += fabs(initState[i]-targetState[i])
-			transTime = int(4*errSum)
+
+			#transTime = int(4*errSum)
+			transTime = int(errSum)
 			
 			# set target and initial poses
 			self.transition.setInit(initState)

@@ -62,7 +62,7 @@ class TestModular(SnakeControl):
 		
 		" get the probe state "
 		probeState = self.probe.getProbeState()
-
+		
 		"""
 		self.adaptiveStep = AdaptiveStep(robotParam, probeState, self.contacts, self.mapGraph, direction)
 		self.frontExtend = FrontExtend(robotParam, self.contacts, direction)
@@ -171,12 +171,13 @@ class TestModular(SnakeControl):
 			
 			if self.contacts.isStable():
 				self.globalState = 3
+				self.lastPose = self.contacts.getAveragePose(0)
 
 		elif self.globalState == 3:
 			
 			" create the mapping object "
 			self.mapGraph = MapGraph(self.probe, self.contacts)
-			self.mapGraph.loadFile("testData/correctionTest", 1)
+			self.mapGraph.loadFile("testData/correctionTest", 6)
 
 			self.mapGraph.newNode()
 			self.mapGraph.forceUpdate(False)
@@ -185,7 +186,11 @@ class TestModular(SnakeControl):
 			self.mapGraph.saveMap()
 			self.mapGraph.saveLocalMap()
 			
-			self.globalState = 6
+			self.restState = deepcopy(probeState)
+			
+			#self.globalState = 6
+			#self.globalState = 4
+			self.globalState = 9
 			
 		elif self.globalState == 4:
 			
@@ -194,6 +199,7 @@ class TestModular(SnakeControl):
 			
 			if isDone:
 				self.globalState = 5
+				#self.globalState = 7
 
 		elif self.globalState == 5:
 
@@ -201,19 +207,92 @@ class TestModular(SnakeControl):
 			isDone = self.doAdaptiveStep()
 			
 			if isDone:
+				self.restState = deepcopy(probeState)
+
+				self.mapGraph.newNode()
+				self.mapGraph.forceUpdate(False)
+				
 				self.globalState = 6
 				
 		elif self.globalState == 6:
 
 			" do a forward poking behavior to sense the environment"
-			isDone = self.doPokeWalls()
+			isDone = self.doPokeWalls(True)
 			
 			if isDone:
 				self.globalState = 7
 			
 		elif self.globalState == 7:
-			pass
+
+			" return to the rest position "
+			isDone = self.doReturnToRest()
+			
+			if isDone:
+				self.globalState = 8			
+			
+		elif self.globalState == 8:
+	
+			" do a backward poking behavior to sense the environment"
+			isDone = self.doPokeWalls(False)
+			
+			if isDone:
+				self.globalState = 9
 		
+		elif self.globalState == 9:
+			
+			" return to the rest position "
+			isDone = self.doReturnToRest()
+			
+			if isDone:
+				self.mapGraph.correctPoses2()
+				self.mapGraph.synch()
+				self.mapGraph.saveMap()
+				self.mapGraph.saveLocalMap()
+				
+		
+				self.currPose = self.contacts.getAveragePose(0)
+				deltaDist = sqrt((self.currPose[0]-self.lastPose[0])**2 + (self.currPose[1]-self.lastPose[1])**2)
+
+				print "deltaDist =", deltaDist
+	
+				self.lastPose = self.contacts.getAveragePose(0)
+
+				if deltaDist > 0.4:
+					self.globalState = 4
+				else:
+					self.globalState = 10
+		
+		elif self.globalState == 10:
+			
+			" select the destination and generate path "
+			
+			" select the point to go to "
+			frontierPoint = self.mapGraph.selectNextFrontier()
+			
+			" generate the path "
+			originPath, goalPath, breakPoint = self.mapGraph.computeHeadPath(self.currPose, frontierPoint, self.exploreRoot)
+			self.wayPoints = [breakPoint, goalPath[-1]]
+			self.wayPaths = [originPath, goalPath]
+			
+			self.globalState = 11
+
+		elif self.globalState == 11:
+			
+			" Instantiate the Path Step behavior and give it the path to follow "
+		
+			" do the path following behavior "
+			isDone = self.doPathStep(self.wayPoints, self.wayPaths)
+			
+			if isDone:
+				self.restState = deepcopy(probeState)
+				
+				self.globalState = 12
+		
+		elif self.globalState == 12:
+			
+			pass
+
+
 		"""
 		if self.stateA == -2:
 			
@@ -223,7 +302,7 @@ class TestModular(SnakeControl):
 			self.mergeJoints([joints1])
 			
 			self.contacts.setMask( [1.0 for i in range(39)] )
-			self.contacts.step(probeState)
+			self.contactsu8step(probeState)
 			
 			if isDone:
 				self.stateA = -1
@@ -442,39 +521,25 @@ class TestModular(SnakeControl):
 
 					" anchoring turned off "
 					self.isAnchored = False
+					
 				else:
 					self.stateA = 5
 					self.targetReached = False
 
 					self.lastPose = self.contacts.getAveragePose(0)
-					#self.mapGraph.saveLocalMap()
 
 					" anchoring turned off "
 					self.isAnchored = False
 					
-					print "check6"
 					frontierPoint = self.mapGraph.selectNextFrontier()
-					#currPose = self.probe.getActualSegPose(0)
-					print "check7"
 
 					currPose = self.contacts.getAverageSegPose(0)
-					print "check8"
-					print "self.contacts.activeRef =", self.contacts.activeRef
 					
 					originPath, goalPath, breakPoint = self.mapGraph.computeHeadPath(currPose, frontierPoint, self.exploreRoot)
 					self.wayPoints = [breakPoint, goalPath[-1]]
 					self.wayPaths = [originPath, goalPath]
 					
-					#print "originPath:", originPath
-					#print "goalPath:", goalPath
-					
-					#self.wayPaths[0].reverse()
-
-					print "check9"
-					#self.pathStep = PathStep(self.probe, self.contacts, self.mapGraph, False)
-					print "check10"
 					self.pathStep.setPath(self.wayPaths[0])
-					print "check11"
 					self.pathStep.computeCurve()
 					
 					" check if we're already there "
@@ -484,7 +549,6 @@ class TestModular(SnakeControl):
 						pose = self.contacts.getAverageSegPose(0)
 						
 						dist = sqrt((dest[0]-pose[0])**2 + (dest[1]-pose[1])**2)
-						print "distance from", dest, "to", pose, "=", dist
 						
 						if dist > self.lastDist:
 							self.distCount += 1
@@ -498,8 +562,6 @@ class TestModular(SnakeControl):
 							self.wayPoints = self.wayPoints[1:]
 							self.wayPaths = self.wayPaths[1:]
 							if len(self.wayPoints) > 0: 
-								#curve = VoronoiFit(self.wayPaths[0])
-								#self.pathStep.setCurve(curve)
 								self.pathStep.setPath(self.wayPaths[0])
 								self.pathStep.computeCurve()
 							else:
@@ -516,7 +578,6 @@ class TestModular(SnakeControl):
 							self.lastDist = 1e100
 							self.distCount = 0
 					
-					print "going to state", self.stateA
 					
 		elif self.stateA == 5:
 	
@@ -627,7 +688,7 @@ class TestModular(SnakeControl):
 			
 			self.pokeWalls.setDirection(True)
 			isDone = self.pokeWalls.step(probeState)
-
+			
 			joints2 = self.pokeWalls.getJoints()
 			self.mergeJoints([joints2])
 				
@@ -654,7 +715,7 @@ class TestModular(SnakeControl):
 			#joints1 = self.holdP.getJoints()
 			#self.mergeJoints([joints1])
 			#if self.globalTimer - self.prevTime > 100:
-				
+			
 			if isDone:
 				self.isCapture = True
 
@@ -702,6 +763,8 @@ class TestModular(SnakeControl):
 				self.localState = 0
 				self.behavior = 0
 				
+				self.isAnchored = True
+				
 				print "FINISH:  doInitAnchor()"
 				return True
 		
@@ -725,7 +788,8 @@ class TestModular(SnakeControl):
 			self.holdP.reset(probeState)
 			
 			self.localState = 1
-			
+			self.isAnchored = False
+		
 		elif self.localState == 1:
 	
 			" step the main behavior "
@@ -753,7 +817,7 @@ class TestModular(SnakeControl):
 				return True
 			
 		return False
-	
+		
 	def doAdaptiveStep(self):
 
 		" get the probe state "
@@ -767,6 +831,7 @@ class TestModular(SnakeControl):
 			self.behavior.setTopJoint(self.topJoint)
 			
 			self.localState = 1
+			self.isAnchored = False
 
 		elif self.localState == 1:
 
@@ -789,7 +854,7 @@ class TestModular(SnakeControl):
 			
 		return False
 		
-	def doPokeWalls(self):
+	def doPokeWalls(self, direction):
 
 		" get the probe state "
 		probeState = self.probe.getProbeState()
@@ -797,36 +862,190 @@ class TestModular(SnakeControl):
 		if self.localState == 0:
 			print "START:  doPokeWalls()"
 
-			self.behavior = PokeWalls(self.robotParam, self.contacts, False, self.mapGraph.obstCallBack)
+			self.behavior = PokeWalls(self.robotParam, self.contacts, direction, self.mapGraph.obstCallBack)
 			
-			self.localState = 1			
+			self.localState = 1
+			self.isAnchored = True
 
 		elif self.localState == 1:
 			
-			#self.behavior.setDirection(False)
 			isDone = self.behavior.step(probeState)
-
+			
 			joints2 = self.behavior.getJoints()
 			self.mergeJoints([joints2])
-
-			val = self.behavior.getMask()
-			self.contacts.setMask(val)
+			
+			#val = self.behavior.getMask()
+			#self.contacts.setMask(val)
 			
  			self.contacts.step(probeState)
-
+ 			
 			if self.behavior.hasInitialized():
 				self.mapGraph.keepStablePose()
 				
-				if self.globalTimer % 30 == 0:
-					self.mapGraph.update(False)
+				if self.globalTimer % 200 == 0:
+					self.mapGraph.update(direction)
 	
 			if isDone:
 				self.behavior = 0
 				self.localState = 0
-				
+			
 				print "FINISH:  doPokeWalls()"
 				return True
 			
 		return False
+	
+	def doReturnToRest(self):
+		
+		" get the probe state "
+		probeState = self.probe.getProbeState()
+
+		" create the first behavior "
+		if self.localState == 0:
+			
+			print "START:  doReturnToRest()"
+			
+			self.behavior = HoldTransition(self.robotParam)
+			self.behavior.reset(self.restState)
+			
+			self.localState = 1
+			self.isAnchored = True
+						
+		" immediately begin running behavior "
+		if self.localState == 1:
+			
+			isDone = self.behavior.step(probeState)
+			joints1 = self.behavior.getJoints()
+			
+			self.mergeJoints([joints1])
+			
+			if isDone:
+				self.localState = 0
+				self.behavior = 0
+
+				print "FINISH:  doReturnToRest()"
+				return True
+								
+		return False
+	
+	def doPathStep(self, wayPoints, wayPaths):
+
+		
+		" get the probe state "
+		probeState = self.probe.getProbeState()
+
+		" create the first behavior "
+		if self.localState == 0:
+			
+			print "START:  doPathStep()"
+			self.targetReached = False
+			
+			self.localWayPoints = deepcopy(wayPoints)
+			self.localWayPaths = deepcopy(wayPaths)
+			
+			" determine distance to the next way point "
+			dest = self.localWayPoints[0]			
+			self.lastDist = sqrt((dest[0]-self.currPose[0])**2 + (dest[1]-self.currPose[1])**2)
+			
+			" pop the next way point if we are already close to the first one "
+			if self.lastDist < 0.5:
+				self.localWayPoints = self.localWayPoints[1:]
+				self.localWayPaths = self.localWayPaths[1:]
 				
+				" determine distance to the next way point "
+				dest = self.localWayPoints[0]			
+				self.lastDist = sqrt((dest[0]-self.currPose[0])**2 + (dest[1]-self.currPose[1])**2)
 				
+			self.distCount = 0
+			
+			" instantiate the behavior "
+			self.behavior = PathStep(self.robotParam, probeState, self.contacts, self.mapGraph, False)
+			self.behavior.setPath(self.localWayPaths[0])
+			self.behavior.computeCurve()
+
+			" anchoring turned off "
+			self.isAnchored = False
+			
+			self.localState = 1
+			
+		elif self.localState == 1:
+
+			" step the behavior forward "
+			isDone = self.behavior.step(probeState)
+			
+			" get the joints from the behavior "
+			joints = self.behavior.getJoints()
+			self.mergeJoints([joints])
+
+			" set the active nodes mask "
+			val = self.behavior.getMask()
+			self.contacts.setMask(val)
+			
+			" update the motion model "
+			self.contacts.step(probeState)
+
+			" compute distance to the target destination point "
+			self.currPose = self.contacts.getAverageSegPose(0)
+			dest = self.localWayPoints[0]
+			dist = sqrt((dest[0]-self.currPose[0])**2 + (dest[1]-self.currPose[1])**2)
+			
+			" check if we've crossed the destination "
+			if dist < 0.1:
+				if not self.targetReached:
+					print "target reached!"
+				self.targetReached = True
+						
+			if isDone:
+
+				self.mapGraph.newNode()
+				self.mapGraph.forceUpdate(False)
+		
+				if len(self.localWayPoints) > 0:
+					
+					dest = self.localWayPoints[0]			
+					dist = sqrt((dest[0]-self.currPose[0])**2 + (dest[1]-self.currPose[1])**2)
+					print "distance from", dest, "to", self.currPose, "=", dist
+					
+					" FIXME: need better directional detection when more complicated maps "
+					" check if we're going away from our target "
+					if dist > self.lastDist:
+						self.distCount += 1
+					else:
+						self.distCount = 0
+						
+					self.lastDist = dist
+
+					" if we've reached our target after this step, go to next waypoint "
+					if self.targetReached:
+						
+						" if there is another way point, set the path and begin "
+						self.localWayPoints = self.localWayPoints[1:]
+						self.localWayPaths = self.localWayPaths[1:]
+						
+						if len(self.localWayPoints) > 0: 
+							self.behavior.setPath(self.localWayPaths[0])
+							self.behavior.computeCurve()
+							self.targetReached = False
+						else:
+							" all points traveled, end behavior "
+							self.localState = 2
+							
+					elif self.distCount >= 2:
+						" if we're going the wrong way, reverse our direction "
+						self.behavior.reverseDirection()
+						self.lastDist = 1e100
+						self.distCount = 0
+
+		elif self.localState == 2:
+			
+			" anchoring turned on "			
+			self.isAnchored = True
+
+			self.localState = 0
+			self.behavior = 0
+
+			print "FINISH:  doReturnToRest()"
+			return True
+				
+
+		return False
+

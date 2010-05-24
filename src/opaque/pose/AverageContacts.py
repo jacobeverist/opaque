@@ -484,7 +484,7 @@ class AverageContacts:
 		if estPose != []:
 			#print "creating forced pose reference node", 19, "with estPose =", estPose
 			newNode = self.createNewNode(19, forcePose = estPose)
-			self.createEdges(newNode)
+			##self.createEdges(newNode)
 
 		print "self.activeRef =", self.activeRef
 		print "startJoint, endJoint =", startJoint, endJoint
@@ -498,7 +498,7 @@ class AverageContacts:
 				newNode = self.createNewNode(i)
 
 				# create position constraints between all the current active reference nodes
-				self.createEdges(newNode)
+				##self.createEdges(newNode)
 
 				#print "self.activeRef =", self.activeRef
 
@@ -614,7 +614,7 @@ class AverageContacts:
 					newNode = self.createNewNode(i)
 
 					# create position constraints between all the current active reference nodes
-					self.createEdges(newNode)
+					#self.createEdges(newNode)
 
 				elif self.activeRef[i] and self.mask[i] < 1.0 :
 					
@@ -653,7 +653,7 @@ class AverageContacts:
 						newNode = self.createNewNode(i)
 
 						# create position constraints between all the current active reference nodes
-						self.createEdges(newNode)
+						#self.createEdges(newNode)
 
 			# compute the active node local configuration error
 			#self.computeActiveError()

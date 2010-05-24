@@ -23,7 +23,7 @@ from math import pi, cos, sin, fabs, sqrt
 
 class PathStep(Behavior):
 
-	def __init__(self, robotParam, contacts, mapGraph, direction = True, path = []):
+	def __init__(self, robotParam, probeState, contacts, mapGraph, direction = True, path = []):
 		Behavior.__init__(self, robotParam)
 
 		print "creating PathStep"
@@ -31,6 +31,7 @@ class PathStep(Behavior):
 		self.numJoints = self.robotParam['numJoints']
 		self.numSegs = self.robotParam['numSegs']
 		self.maxTorque = self.robotParam['maxTorque']
+		self.probeState = probeState
 
 		self.mapGraph = mapGraph
 		self.localNode = self.mapGraph.getCurrentNode()
