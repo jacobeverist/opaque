@@ -119,7 +119,7 @@ class QuickProbe:
 
 	# gets pose of joint affixed to the i'th segment, should it be the i+1'th segment instead?
 	def getActualJointPose(self, i):
-		return [0.0, 0.0, 0.0]
+		return [0.1, 0.0, 0.0]
 
 	def getJointWRTJointPose(self, originPose, originJoint, targetJoint):
 

@@ -10,6 +10,7 @@ from opaque.TestPokeWalls import TestPokeWalls
 from opaque.TestAdaptiveStep import TestAdaptiveStep
 from opaque.TestPathStep import TestPathStep
 from opaque.TestMapGraph import TestMapGraph
+from opaque.TestModular import TestModular
 from opaque.ControlError import *
 from DrawThings import DrawThings
 
@@ -22,7 +23,7 @@ def createTest():
 	
 	drawThings = DrawThings(probe.robotParam)
 	#currControl = TestHoldPosition(probe, drawThings)
-	currControl = TestHoldTransition(probe, drawThings)
+	#currControl = TestHoldTransition(probe, drawThings)
 	#currControl = TestHoldSlideTransition(probe, drawThings)
 	#currControl = TestAnchorTransition(probe, drawThings)
 	#currControl = TestFrontExtend(probe, drawThings)
@@ -30,6 +31,7 @@ def createTest():
 	#currControl = TestAdaptiveStep(probe, drawThings)
 	#currControl = TestPathStep(probe, drawThings)
 	#currControl = TestMapGraph(probe, drawThings)
+	currControl = TestModular(probe, drawThings)
 	
 	probe.addControl(currControl)
 

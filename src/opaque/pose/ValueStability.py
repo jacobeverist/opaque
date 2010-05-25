@@ -77,13 +77,13 @@ class ValueStability:
 
 		self.sampleVar = self.sampleSum/self.sampleCount
 
-		max = -1e200
-		min = 1e200
-		for i in range(0,self.sampleCount):
-			if self.samples[i] > max:
-				max = self.samples[i]
-			if self.samples[i] < min:
-				min = self.samples[i]
+		#max = -1e200
+		#min = 1e200
+		#for i in range(0,self.sampleCount):
+		#	if self.samples[i] > max:
+		#		max = self.samples[i]
+		#	if self.samples[i] < min:
+		#		min = self.samples[i]
 
 		# should have at least 10 values before we compute the variance
 		if self.sampleCount < self.sampleSize :

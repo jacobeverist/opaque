@@ -60,6 +60,7 @@ class AverageContacts:
 
 		# variance threshold for determining joint stability
 		self.varThresh = 0.001
+		#self.varThresh = 0.005
 
 		# forgetting factor of error average
 		self.K = 0.05
