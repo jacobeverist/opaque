@@ -79,18 +79,44 @@ class TestTransform(SnakeControl):
 			#		poses.append(self.probe.getJointFromJoint(rootPose, 19, i))					
 			#	self.drawThings.plotRobotConfiguration(poses)
 
-			rootPose = [0.0,0.0,0.0]				
+			rootPose = [1.0,1.0,pi/4]				
+			for j in range(self.robotParam['numJoints']):
+				for i in range(self.robotParam['numJoints']):
+					self.probe.getJointFromJoint(rootPose, j, i)				
+					#self.probe.getJointWRTJointPose(rootPose, j, i)					
 
-			poses = []
 			#for i in range(self.robotParam['numJoints']):
+
+			"""
+			poses = []
 			for i in range(19,39):
 				poses.append(self.probe.getJointFromJoint(rootPose, 19, i))					
-				#poses.append(self.probe.getJointWRTJointPose(rootPose, 19, i))					
-
 			self.drawThings.plotRobotConfiguration(poses)
+
+			poses = []
+			for i in range(19,39):
+				poses.append(self.probe.getJointWRTJointPose(rootPose, 19, i))					
+			self.drawThings.plotRobotConfiguration(poses)
+			"""
+			"""
+			poses1 = []
+			for i in range(self.robotParam['numJoints']):
+				poses1.append(self.probe.getJointFromJoint(rootPose, 19, i))					
+			self.drawThings.plotRobotConfiguration(poses1)
+
+			poses2 = []
+			for i in range(self.robotParam['numJoints']):
+				poses2.append(self.probe.getJointWRTJointPose(rootPose, 19, i))					
+			self.drawThings.plotRobotConfiguration(poses2)
 			
-			if self.globalTimer == 3:
-			#if self.globalTimer == 40000:
+			for i in range(len(poses1)):
+				for j in range(3):
+					if poses1[i][j] != poses2[i][j]:
+						print poses1[i][j], "!=", poses2[i][j]
+			"""				
+			
+			#if self.globalTimer == 3:
+			if self.globalTimer == 4000:
 
 				t2 = time.time()
 

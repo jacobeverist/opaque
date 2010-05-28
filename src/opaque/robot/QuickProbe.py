@@ -145,7 +145,7 @@ class QuickProbe:
 			if self.jointTransforms[originJoint][targetJoint] == None:
 
 				" combine [originJoint, targetJoint-1] with [targetJoint-1, targetJoint] "
-				if abs(targetJoint-originJoint) == 1:
+				if targetJoint-originJoint == 1:
 					" compute it right now "
 
 					totalAngle = self.joints[targetJoint]
@@ -156,7 +156,7 @@ class QuickProbe:
 
 					" store result back into the dynamic programming table "
 					self.jointTransforms[originJoint][targetJoint] = offset
-					print originJoint,targetJoint,": ", offset
+					#print originJoint,targetJoint,": ", offset
 				
 				else:
 					
@@ -176,7 +176,7 @@ class QuickProbe:
 						" store result back into the dynamic programming table "
 						self.jointTransforms[targetJoint-1][targetJoint] = offset2
 						#offset2 = self.jointTransforms[targetJoint-1][targetJoint]
-						print targetJoint-1,targetJoint,": ", offset2
+						#print targetJoint-1,targetJoint,": ", offset2
 					
 					else:
 						#print "case2"
@@ -206,7 +206,77 @@ class QuickProbe:
 					
 					" store result back into the dynamic programming table "
 					self.jointTransforms[originJoint][targetJoint] = finalOffset
-					print originJoint,targetJoint,": ", finalOffset, "from", x1, x2, y1, y2, theta_1, theta_2
+					#print originJoint,targetJoint,": ", finalOffset, "from", x1, x2, y1, y2, theta_1, theta_2
+	
+		# backward kinematics
+		else:
+
+			if self.jointTransforms[originJoint][targetJoint] == None:
+				" originJoint > targetJoint "
+
+				" combine [originJoint, targetJoint+1] with [targetJoint+1, targetJoint] "
+				if originJoint-targetJoint == 1:
+					" compute it right now "
+
+					totalAngle = self.joints[originJoint]
+					xTotal = -self.segLength*cos(totalAngle)
+					yTotal = -self.segLength*sin(totalAngle)
+
+					offset = [xTotal, yTotal, totalAngle]
+
+					" store result back into the dynamic programming table "
+					self.jointTransforms[originJoint][targetJoint] = offset
+					#print originJoint,targetJoint,": ", offset
+				
+				else:
+					
+					" take two components of the dynamic programming table and combine them together for the solution "
+					" store the result back in the table so it doesn't need to be recomputed "
+					self.computeTransform(originJoint, targetJoint+1)
+					offset1 = self.jointTransforms[originJoint][targetJoint+1]
+					
+					if self.jointTransforms[targetJoint+1][targetJoint] == None:
+						
+						totalAngle = self.joints[targetJoint+1]
+						xTotal = -self.segLength*cos(totalAngle)
+						yTotal = -self.segLength*sin(totalAngle)
+	
+						offset2 = [xTotal, yTotal, totalAngle]
+	
+						" store result back into the dynamic programming table "
+						self.jointTransforms[targetJoint+1][targetJoint] = offset2
+						#offset2 = self.jointTransforms[targetJoint-1][targetJoint]
+						#print targetJoint+1,targetJoint,": ", offset2
+					
+					else:
+						#print "case2"
+						offset2 = self.jointTransforms[targetJoint+1][targetJoint]
+					
+					
+					x1 = offset1[0]
+					y1 = offset1[1]
+					theta_1 = offset1[2]
+					
+					" rotate x2,y2 by theta_1 "
+					x2 = cos(theta_1) * offset2[0] - sin(theta_1) * offset2[1]
+					y2 = sin(theta_1) * offset2[0] + cos(theta_1) * offset2[1]
+					theta_2 = offset2[2]
+					
+					" add x1+x2`, y1+y2`, theta_1 + theta_2 "
+					xTotal = x1+x2
+					yTotal = y1+y2
+
+					angle = theta_1+theta_2
+					while angle>pi:
+						angle=angle-2*pi
+					while angle<=-pi:
+						angle=angle+2*pi
+						
+					finalOffset = [xTotal, yTotal, angle]
+					
+					" store result back into the dynamic programming table "
+					self.jointTransforms[originJoint][targetJoint] = finalOffset
+					#print originJoint,targetJoint,": ", finalOffset, "from", x1, x2, y1, y2, theta_1, theta_2
 	
 
 	def getJointFromJoint(self, originPose, originJoint, targetJoint):
@@ -217,7 +287,6 @@ class QuickProbe:
 
 		targetPose = [0.0,0.0,0.0]
 
-		#probeState = self.getProbeState()
 		joints = self.probeState['joints']
 		self.joints = joints
 
@@ -226,88 +295,15 @@ class QuickProbe:
 			targetPose = copy(originPose)
 			return targetPose
 
+		if self.jointTransforms[originJoint][targetJoint] == None:
+			self.computeTransform(originJoint,targetJoint)
+
+		" get transform from dynamic transform table "
+		offset = self.jointTransforms[originJoint][targetJoint]
+			
 		# forward kinematics
 		if targetJoint > originJoint:
 
-			if self.jointTransforms[originJoint][targetJoint] == None:
-				#print originJoint, targetJoint
-
-				" combine [originJoint, targetJoint-1] with [targetJoint-1, targetJoint] "
-				if abs(targetJoint-originJoint) == 1:
-					" compute it right now "
-
-					totalAngle = joints[targetJoint]
-					#xTotal = self.segLength*cos(totalAngle)
-					#yTotal = self.segLength*sin(totalAngle)
-					xTotal = self.segLength
-					yTotal = 0.0
-
-					offset = [xTotal, yTotal, totalAngle]
-
-					" store result back into the dynamic programming table "
-					self.jointTransforms[originJoint][targetJoint] = offset
-					print originJoint,targetJoint,": ", offset
-				
-				else:
-					
-					" take two components of the dynamic programming table and combine them together for the solution "
-					" store the result back in the table so it doesn't need to be recomputed "
-					offset1 = self.getJointFromJoint([0.0,0.0,0.0], originJoint, targetJoint-1)
-					
-					if self.jointTransforms[targetJoint-1][targetJoint] == None:
-						#print "case1"
-						#offset2 = self.getJointFromJoint([0.0,0.0,0.0], targetJoint-1, targetJoint)
-						
-						totalAngle = joints[targetJoint]
-						#xTotal = self.segLength*cos(totalAngle)
-						#yTotal = self.segLength*sin(totalAngle)
-						xTotal = self.segLength
-						yTotal = 0.0
-	
-						offset = [xTotal, yTotal, totalAngle]
-	
-						" store result back into the dynamic programming table "
-						self.jointTransforms[targetJoint-1][targetJoint] = offset
-						offset2 = self.jointTransforms[targetJoint-1][targetJoint]
-						print targetJoint-1,targetJoint,": ", offset2
-					
-					else:
-						#print "case2"
-						offset2 = self.jointTransforms[targetJoint-1][targetJoint]
-					
-					
-					x1 = offset1[0]
-					y1 = offset1[1]
-					theta_1 = offset1[2]
-					
-					" rotate x2,y2 by theta_1 "
-					x2 = cos(theta_1) * offset2[0] + sin(theta_1) * offset2[1]
-					y2 = -sin(theta_1) * offset2[0] + cos(theta_1) * offset2[1]
-					theta_2 = offset2[2]
-					
-					" add x1+x2`, y1+y2`, theta_1 + theta_2 "
-					xTotal = x1+x2
-					yTotal = y1+y2
-
-					angle = theta_1+theta_2
-					while angle>pi:
-						angle=angle-2*pi
-					while angle<=-pi:
-						angle=angle+2*pi
-						
-					finalOffset = [xTotal, yTotal, angle]
-					
-					" store result back into the dynamic programming table "
-					self.jointTransforms[originJoint][targetJoint] = finalOffset
-					print originJoint,targetJoint,": ", finalOffset, "from", x1, x2, y1, y2, theta_1, theta_2
-
-				
-			" store result back into the dynamic programming table "
-			offset = self.jointTransforms[originJoint][targetJoint]
-
-			#xTotal = xTotal + self.segLength*cos(totalAngle)
-			#zTotal = zTotal + self.segLength*sin(totalAngle)
-			
 			# segment origin starts
 			xTotal = originPose[0] 
 			zTotal = originPose[1] 
@@ -335,118 +331,31 @@ class QuickProbe:
 		# backward kinematics
 		else:
 
-			if self.jointTransforms[originJoint][targetJoint] == None:
-				#print originJoint, targetJoint
-	
-				" combine [originJoint, targetJoint-1] with [targetJoint-1, targetJoint] "
-				if abs(targetJoint-originJoint) == 1:
-					" compute it right now "
-	
-					totalAngle = joints[targetJoint]
-					xTotal = -self.segLength*cos(totalAngle)
-					yTotal = -self.segLength*sin(totalAngle)
-	
-					offset = [xTotal, yTotal, totalAngle]
-	
-					" store result back into the dynamic programming table "
-					self.jointTransforms[originJoint][targetJoint] = offset
-					#print originJoint,targetJoint,": ", offset
-				
-				else:
-					
-					" take two components of the dynamic programming table and combine them together for the solution "
-					" store the result back in the table so it doesn't need to be recomputed "
-					offset1 = self.getJointFromJoint([0.0,0.0,0.0], originJoint, targetJoint+1)
-					#offset2 = self.getJointFromJoint([0.0,0.0,0.0], targetJoint+1, targetJoint)
-
-					if self.jointTransforms[targetJoint-1][targetJoint] == None:
-						#offset2 = self.getJointFromJoint([0.0,0.0,0.0], targetJoint+1, targetJoint)
-						
-						totalAngle = joints[targetJoint+1]
-						xTotal = -self.segLength*cos(totalAngle)
-						yTotal = -self.segLength*sin(totalAngle)
-	
-						offset = [xTotal, yTotal, totalAngle]
-	
-						" store result back into the dynamic programming table "
-						self.jointTransforms[targetJoint+1][targetJoint] = offset
-						offset2 = self.jointTransforms[targetJoint+1][targetJoint]
-											
-					else:
-						offset2 = self.jointTransforms[targetJoint+1][targetJoint]
-
-					
-					x1 = offset1[0]
-					y1 = offset1[1]
-					theta_1 = offset1[2]
-					
-					" rotate x2,y2 by theta_1 "
-					x2 = cos(theta_1) * offset2[0] - sin(theta_1) * offset2[1]
-					y2 = sin(theta_1) * offset2[0] + cos(theta_1) * offset2[1]
-					theta_2 = offset2[2]
-					
-					" add x1+x2`, y1+y2`, theta_1 + theta_2 "
-					xTotal = x1+x2
-					yTotal = y1+y2
-
-
-					angle = theta_1+theta_2
-					while angle>pi:
-						angle=angle-2*pi	
-					while angle<=-pi:
-						angle=angle+2*pi
-
-					finalOffset = [xTotal, yTotal, angle]
-					
-					" store result back into the dynamic programming table "
-					self.jointTransforms[originJoint][targetJoint] = finalOffset
-					#print originJoint,targetJoint,": ", finalOffset
-
-				
-			" store result back into the dynamic programming table "
-			offset = self.jointTransforms[originJoint][targetJoint]
-			
 			# segment origin starts
 			xTotal = originPose[0] 
 			zTotal = originPose[1] 
 			totalAngle = originPose[2]
+			
+			" rotate base offset by current angle "
+			xOff = cos(totalAngle) * offset[0] - sin(totalAngle) * offset[1]
+			yOff = sin(totalAngle) * offset[0] + cos(totalAngle) * offset[1]			
 
-			xTotal = xTotal + offset[0]
-			zTotal = zTotal + offset[1]
+			xTotal = xTotal + xOff
+			zTotal = zTotal + yOff
 			if targetJoint != self.numSegs-1:
-				totalAngle = totalAngle - offset[2]
+				totalAngle = totalAngle + offset[2]
 
 			angle = totalAngle
 			while angle>pi:
 				angle=angle-2*pi	
 			while angle<=-pi:
 				angle=angle+2*pi
-
+			
 			targetPose = [xTotal, zTotal, angle] 
+			#print "transforming", originPose, "by", offset, "resulting in", targetPose
 
 			return targetPose
-			
-			"""
-			# segment origin starts
-			xTotal = originPose[0] 
-			zTotal = originPose[1] 
-			totalAngle = originPose[2] 
-
-			ind = range(targetJoint+1, originJoint + 1) # (28, 11) 
-			ind.reverse()
-
-			for i in ind:
-				totalAngle = totalAngle + joints[i]
-				xTotal = xTotal - self.segLength*cos(totalAngle)
-				zTotal = zTotal - self.segLength*sin(totalAngle)
-
-			totalAngle = self.normalizeAngle(totalAngle)
-
-			targetPose = [xTotal, zTotal, totalAngle] 
-			"""
-			
-		return targetPose
-	
+						
 	def getJointWRTJointPose(self, originPose, originJoint, targetJoint):
 
 		targetPose = [0.0,0.0,0.0]
