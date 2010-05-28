@@ -54,6 +54,10 @@ class SnakeProbe:
 		self.robotParam['segWidth'] = self.segWidth
 		self.robotParam['maxTorque'] = self.maxTorque
 		
+		self.isStateChanged = True
+		self.isJointChanged = True
+		self.probeState = {}
+		
 		# list of bodies
 		self._bodies = []
 		self._geoms = []
@@ -106,6 +110,10 @@ class SnakeProbe:
 	def frameStarted(self, evt):
 
 		self.timer += 0.001
+
+		self.isStateChanged = True
+		self.isJointChanged = True
+		self.probeState = {}
 
 		if self.control:
 			self.control.frameStarted()
@@ -240,25 +248,29 @@ class SnakeProbe:
 		return abs(self.getServoCmd(index) - self.getServo(index))
 
 	def getProbeState(self):
-		probeState = {}
-		
-		joints = []
-		cmdJoints = []
-		torques = []
-		errors = []
-		
-		for i in range(self.getNumJoints()):
-			joints.append(self.getServo(i))
-			cmdJoints.append(self.getServoCmd(i))
-			torques.append(self.getJointTorque(i))
-			errors.append(self.getError(i))
-		
-		probeState['joints'] = joints
-		probeState['cmdJoints'] = cmdJoints
-		probeState['torques'] = torques
-		probeState['errors'] = errors
 
-		return probeState
+		if self.isStateChanged:
+			self.isStateChanged = False
+			
+			self.probeState = {}
+			
+			joints = []
+			cmdJoints = []
+			torques = []
+			errors = []
+			
+			for i in range(self.getNumJoints()):
+				joints.append(self.getServo(i))
+				cmdJoints.append(self.getServoCmd(i))
+				torques.append(self.getJointTorque(i))
+				errors.append(self.getError(i))
+			
+			self.probeState['joints'] = joints
+			self.probeState['cmdJoints'] = cmdJoints
+			self.probeState['torques'] = torques
+			self.probeState['errors'] = errors
+
+		return self.probeState
 	
 	def getServo(self, index):
 		if index < self.numSegs :
@@ -351,6 +363,100 @@ class SnakeProbe:
 
 		return pose
 
+	def getJointFromJoint(self, originPose, originJoint, targetJoint):
+
+		if self.isJointChanged:
+			self.isJointChanged = False
+			self.jointTransforms = [[None for j in range(0,39)] for i in range(0,39)]
+
+		targetPose = [0.0,0.0,0.0]
+
+		probeState = self.getProbeState()
+		joints = probeState['joints']
+
+		# origin and target are the same, so return origin pose
+		if originJoint == targetJoint :
+			targetPose = copy(originPose)
+			return targetPose
+
+		# forward kinematics
+		if targetJoint > originJoint:
+
+			if self.jointTransforms[originJoint][targetJoint] != None:
+
+				offset = self.jointTransforms[originJoint][targetJoint]
+
+				# segment origin starts
+				xTotal = originPose[0] 
+				zTotal = originPose[1] 
+				totalAngle = originPose[2]
+
+				xTotal = xTotal + offset[0]
+				zTotal = zTotal + offset[1]
+				if i != self.numSegs-1:
+					totalAngle = totalAngle + offset[2]
+
+				totalAngle = self.normalizeAngle(totalAngle)	
+				targetPose = [xTotal, zTotal, totalAngle] 
+
+			else:
+				
+				" combine [originJoint, targetJoint-1] with [targetJoint-1, targetJoint] "
+				if abs(targetJoint-originJoint) == 1:
+					" compute it right now "
+					
+				else:
+					
+					" take two components of the dynamic programming table and combine them together for the solution "
+					" store the result back in the table so it doesn't need to be recomputed "
+					offset1 = self.getJointFromJoint([0.0,0.0,0.0], originJoint, targetJoint-1)
+					offset2 = self.getJointFromJoint([0.0,0.0,0.0], targetJoint-1, targetJoint)
+					
+					x1 = offset1[0]
+					y1 = offset1[1]
+					theta_1 = offset1[2]
+					
+					" rotate x2,y2 by theta_1 "
+					x2 = cos(theta_1) * offset2[0] - sin(theta_1) * offset2[1]
+					y2 = sin(theta_1) * offset2[0] + cos(theta_1) * offset2[1]
+					theta_2 = offset2[2]
+					
+					" add x1+x2`, y1+y2`, theta_1 + theta_2 "
+					xTotal = x1+x2
+					yTotal = y1+y2
+					totalAngle = self.normalizeAngle(theta_1+theta_2)
+					finalOffset = [xTotal, yTotal, totalAngle]
+					
+					" store result back into the dynamic programming table "
+					self.jointTransforms[originJoint][targetJoint] = finalOffset
+					
+					return targetPose
+
+
+		# backward kinematics
+		else:
+
+			# segment origin starts
+			xTotal = originPose[0] 
+			zTotal = originPose[1] 
+			totalAngle = originPose[2] 
+
+			ind = range(targetJoint+1, originJoint + 1) # (28, 11) 
+			ind.reverse()
+
+			for i in ind:
+				totalAngle = totalAngle + joints[i]
+				xTotal = xTotal - self.segLength*cos(totalAngle)
+				zTotal = zTotal - self.segLength*sin(totalAngle)
+
+			totalAngle = self.normalizeAngle(totalAngle)
+
+			targetPose = [xTotal, zTotal, totalAngle] 
+
+		return targetPose
+
+
+
 	def getJointWRTJointPose(self, originPose, originJoint, targetJoint):
 
 		targetPose = [0.0,0.0,0.0]
@@ -360,6 +466,8 @@ class SnakeProbe:
 			print "Received joint", originJoint , "and" , targetJoint , "with pose"
 			print originPose[0], originPose[1], originPose[2]
 			raise
+
+		#joints = self.getProbeState()
 
 		# origin and target are the same, so return origin pose
 		if originJoint == targetJoint :
@@ -373,6 +481,8 @@ class SnakeProbe:
 			xTotal = originPose[0] 
 			zTotal = originPose[1] 
 			totalAngle = originPose[2]
+
+			
 
 			#joints = range(originJoint, targetJoint)			
 			#xTotal = xTotal + segLength*cos(totalAngle)

@@ -7,6 +7,7 @@ class DrawThings():
 		self.renderView = 0
 		self.robotParam = robotParam
 		self.count = 0
+		self.isSim = False
 
 	def setSim(self):
 		self.isSim = True
