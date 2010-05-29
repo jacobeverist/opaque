@@ -153,9 +153,11 @@ class QuickProbe:
 					yTotal = 0.0
 
 					offset = [xTotal, yTotal, totalAngle]
+					offsetT = [-xTotal*cos(totalAngle) + yTotal*sin(totalAngle), -xTotal*sin(totalAngle) - yTotal*cos(totalAngle), totalAngle]
 
 					" store result back into the dynamic programming table "
 					self.jointTransforms[originJoint][targetJoint] = offset
+					self.jointTransforms[targetJoint][originJoint] = offsetT
 					#print originJoint,targetJoint,": ", offset
 				
 				else:
@@ -172,9 +174,11 @@ class QuickProbe:
 						yTotal = 0.0
 	
 						offset2 = [xTotal, yTotal, totalAngle]
+						offsetT = [-xTotal*cos(totalAngle) + yTotal*sin(totalAngle), -xTotal*sin(totalAngle) - yTotal*cos(totalAngle), totalAngle]
 	
 						" store result back into the dynamic programming table "
 						self.jointTransforms[targetJoint-1][targetJoint] = offset2
+						self.jointTransforms[targetJoint][targetJoint-1] = offsetT
 						#offset2 = self.jointTransforms[targetJoint-1][targetJoint]
 						#print targetJoint-1,targetJoint,": ", offset2
 					
@@ -203,9 +207,11 @@ class QuickProbe:
 						angle=angle+2*pi
 						
 					finalOffset = [xTotal, yTotal, angle]
-					
+					offsetT = [-xTotal*cos(angle) + yTotal*sin(angle), -xTotal*sin(angle) - yTotal*cos(angle), angle]
+				
 					" store result back into the dynamic programming table "
 					self.jointTransforms[originJoint][targetJoint] = finalOffset
+					self.jointTransforms[targetJoint][originJoint] = offsetT
 					#print originJoint,targetJoint,": ", finalOffset, "from", x1, x2, y1, y2, theta_1, theta_2
 	
 		# backward kinematics
@@ -223,9 +229,11 @@ class QuickProbe:
 					yTotal = -self.segLength*sin(totalAngle)
 
 					offset = [xTotal, yTotal, totalAngle]
+					offsetT = [-xTotal*cos(totalAngle) - yTotal*sin(totalAngle), xTotal*sin(totalAngle) - yTotal*cos(totalAngle), totalAngle]
 
 					" store result back into the dynamic programming table "
 					self.jointTransforms[originJoint][targetJoint] = offset
+					self.jointTransforms[targetJoint][originJoint] = offsetT
 					#print originJoint,targetJoint,": ", offset
 				
 				else:
@@ -242,9 +250,11 @@ class QuickProbe:
 						yTotal = -self.segLength*sin(totalAngle)
 	
 						offset2 = [xTotal, yTotal, totalAngle]
+						offsetT = [-xTotal*cos(totalAngle) - yTotal*sin(totalAngle), xTotal*sin(totalAngle) - yTotal*cos(totalAngle), totalAngle]
 	
 						" store result back into the dynamic programming table "
 						self.jointTransforms[targetJoint+1][targetJoint] = offset2
+						self.jointTransforms[targetJoint][targetJoint+1] = offsetT
 						#offset2 = self.jointTransforms[targetJoint-1][targetJoint]
 						#print targetJoint+1,targetJoint,": ", offset2
 					
@@ -273,9 +283,11 @@ class QuickProbe:
 						angle=angle+2*pi
 						
 					finalOffset = [xTotal, yTotal, angle]
+					offsetT = [-xTotal*cos(angle) - yTotal*sin(angle), xTotal*sin(angle) - yTotal*cos(angle), angle]
 					
 					" store result back into the dynamic programming table "
 					self.jointTransforms[originJoint][targetJoint] = finalOffset
+					self.jointTransforms[targetJoint][originJoint] = offsetT
 					#print originJoint,targetJoint,": ", finalOffset, "from", x1, x2, y1, y2, theta_1, theta_2
 	
 
