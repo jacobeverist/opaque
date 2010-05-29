@@ -79,11 +79,17 @@ class TestTransform(SnakeControl):
 			#		poses.append(self.probe.getJointFromJoint(rootPose, 19, i))					
 			#	self.drawThings.plotRobotConfiguration(poses)
 
-			rootPose = [1.0,1.0,pi/4]				
-			for j in range(self.robotParam['numJoints']):
+			rootPose = [1.0,1.0,pi/4]		
+			for j in range(39):		
 				for i in range(self.robotParam['numJoints']):
 					self.probe.getJointFromJoint(rootPose, j, i)				
 					#self.probe.getJointWRTJointPose(rootPose, j, i)					
+
+			#print self.probe.jointTransforms[18][19], self.probe.jointTransforms[19][18]
+			#print self.probe.jointTransforms[0][19], self.probe.jointTransforms[19][0]
+			#print self.probe.jointTransforms[0][20], self.probe.jointTransforms[20][0]
+			#print self.probe.jointTransforms[1][20], self.probe.jointTransforms[20][1]
+			#print self.probe.jointTransforms[0][38], self.probe.jointTransforms[38][0]
 
 			#for i in range(self.robotParam['numJoints']):
 
@@ -111,12 +117,11 @@ class TestTransform(SnakeControl):
 			
 			for i in range(len(poses1)):
 				for j in range(3):
-					if poses1[i][j] != poses2[i][j]:
+					if fabs(poses1[i][j] - poses2[i][j]) > 1e-10:
 						print poses1[i][j], "!=", poses2[i][j]
-			"""				
-			
-			#if self.globalTimer == 3:
-			if self.globalTimer == 4000:
+			"""
+			if self.globalTimer == 1000:
+				#if self.globalTimer == 3:
 
 				t2 = time.time()
 

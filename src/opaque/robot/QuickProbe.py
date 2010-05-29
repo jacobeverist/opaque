@@ -135,6 +135,8 @@ class QuickProbe:
 
 	def computeTransform(self, originJoint, targetJoint):
 
+		" We exploit symmetry here.  If the normal calls are not NxN and are 1xN instead, remove symmetric computation "
+
 		# origin and target are the same, so return origin pose
 		if originJoint == targetJoint :
 			return
@@ -153,7 +155,7 @@ class QuickProbe:
 					yTotal = 0.0
 
 					offset = [xTotal, yTotal, totalAngle]
-					offsetT = [-xTotal*cos(totalAngle) + yTotal*sin(totalAngle), -xTotal*sin(totalAngle) - yTotal*cos(totalAngle), totalAngle]
+					offsetT = [-xTotal*cos(totalAngle), -xTotal*sin(totalAngle), totalAngle]
 
 					" store result back into the dynamic programming table "
 					self.jointTransforms[originJoint][targetJoint] = offset
@@ -174,7 +176,7 @@ class QuickProbe:
 						yTotal = 0.0
 	
 						offset2 = [xTotal, yTotal, totalAngle]
-						offsetT = [-xTotal*cos(totalAngle) + yTotal*sin(totalAngle), -xTotal*sin(totalAngle) - yTotal*cos(totalAngle), totalAngle]
+						offsetT = [-xTotal*cos(totalAngle), -xTotal*sin(totalAngle), totalAngle]
 	
 						" store result back into the dynamic programming table "
 						self.jointTransforms[targetJoint-1][targetJoint] = offset2
@@ -310,6 +312,14 @@ class QuickProbe:
 		if self.jointTransforms[originJoint][targetJoint] == None:
 			self.computeTransform(originJoint,targetJoint)
 
+			" force us to use forward kinematics which takes advantage of more zeros "
+			
+			" FIXME:  using this snippet will double the computation time, not sure why "
+			#if originJoint > targetJoint:
+			#	self.computeTransform(targetJoint,originJoint)
+			#else:
+			#	self.computeTransform(originJoint,targetJoint)
+				
 		" get transform from dynamic transform table "
 		offset = self.jointTransforms[originJoint][targetJoint]
 			
