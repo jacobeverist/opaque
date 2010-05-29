@@ -8,6 +8,7 @@
 #from common import *
 from math import *
 from copy import *
+from transform import getCJointPose
 
 class QuickProbe:
 
@@ -132,7 +133,11 @@ class QuickProbe:
 	def getActualJointPose(self, i):
 		return [0.1, 0.0, 0.0]
 
-
+	def getJointPose(self, originPose, originJoint, targetJoint):
+		joints = self.probeState['joints']
+		return getCJointPose(joints, originPose,originJoint, targetJoint)
+		
+		
 	def computeTransform(self, originJoint, targetJoint):
 
 		" We exploit symmetry here.  If the normal calls are not NxN and are 1xN instead, remove symmetric computation "

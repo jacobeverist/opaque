@@ -82,7 +82,8 @@ class TestTransform(SnakeControl):
 			rootPose = [1.0,1.0,pi/4]		
 			for j in range(39):		
 				for i in range(self.robotParam['numJoints']):
-					self.probe.getJointFromJoint(rootPose, j, i)				
+					#self.probe.getJointFromJoint(rootPose, j, i)
+					self.probe.getJointPose(rootPose, j, i)			
 					#self.probe.getJointWRTJointPose(rootPose, j, i)					
 
 			#print self.probe.jointTransforms[18][19], self.probe.jointTransforms[19][18]
