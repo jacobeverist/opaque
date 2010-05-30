@@ -1,5 +1,5 @@
 #include "RefNode.h"
-#include <cstdlib>
+#include <cmath>
 
 RefNode::RefNode(int nid, int jid, double x, double z, double p, int numJoints, double *joints) {
 
@@ -95,7 +95,7 @@ double RefNode::computeStabilityError(double *joints) {
 
 	double error = 0.0;
 	for (int i = low_index; i <= high_index ; i++ ) 
-		error += abs(nom_ang[i] - joints[i]);
+		error += fabs(nom_ang[i] - joints[i]);
 
 	if (error > maxError)
 		maxError = error;

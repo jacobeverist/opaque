@@ -618,7 +618,7 @@ class AverageContacts:
 					
 					if self.activeRefPtr[i].isMaxErrorReached():
 
-						print "maxErrorReached for", i, "because maxError =", self.activeRefPtr[i].maxError, "and currError =", self.activeRefPtr[i].currError
+						print "maxErrorReached for", i, "because maxError =", self.activeRefPtr[i].getMaxStabilityError(), "and currError =", self.activeRefPtr[i].getStabilityError()
 						self.deactivateNode(i)
 						
 						self.maxErrorReached[i] = True
