@@ -1,4 +1,5 @@
 #include "RefNode.h"
+#include <cstdlib>
 
 RefNode::RefNode(int nid, int jid, double x, double z, double p, int numJoints, double *joints) {
 
@@ -70,6 +71,43 @@ double RefNode::getGroundTruthPoseP() {
 }
 
 double RefNode::computeStabilityError(double *joints) {
+
+	// saddle points: 4,8,12,16,20,24,28,32,36
+	int interval = jointID % 4;
+	int low_index, high_index;
+
+	// find the saddle point joints to which to check stability
+	if (interval == 0) {
+		low_index = jointID;
+		high_index = jointID + 4;
+	}
+	else {
+		low_index = jointID - interval;
+		high_index = low_index + 4;
+	}
+	
+	// set the max and min limits if they go over
+	if (low_index < 0) 
+		low_index = 0;
+
+	if (high_index >= numJoints)
+		high_index = numJoints - 1;
+
+	double error = 0.0;
+	for (int i = low_index; i <= high_index ; i++ ) 
+		error += abs(nom_ang[i] - joints[i]);
+
+	if (error > maxError)
+		maxError = error;
+
+	currError = error;
+	errSum += error;
+
+	if (currError > 0.1)
+		maxErrorReached = 1; 
+
+	return error;
+
 }
 
 double RefNode::getStabilityError() {
