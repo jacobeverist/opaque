@@ -8,13 +8,16 @@
 #from common import *
 from math import *
 from copy import *
-from transform import getCJointPose
+from transform import Transform
+
 
 class QuickProbe:
 
 	def __init__(self, numSegs, segLength, segWidth, maxTorque):
 		
 		self.timer = 0.000
+
+		self.transform = Transform()
 
 		# control program for the snake probe
 		self.control = 0
@@ -94,6 +97,7 @@ class QuickProbe:
 
 		for i in range(self.getNumJoints()):
 			self.joints[i] = self.cmdJoints[i]
+			self.transform.setJoints(self.joints)
 
 	def normalizeAngle(self,angle):
 		# this function converts the angle to its equivalent
@@ -134,8 +138,8 @@ class QuickProbe:
 		return [0.1, 0.0, 0.0]
 
 	def getJointPose(self, originPose, originJoint, targetJoint):
-		joints = self.probeState['joints']
-		return getCJointPose(joints, originPose,originJoint, targetJoint)
+		#return self.transform.getCJointPose(originPose,originJoint, targetJoint)
+		return self.transform.getJointFromJoint(originPose,originJoint, targetJoint)
 		
 		
 	def computeTransform(self, originJoint, targetJoint):
