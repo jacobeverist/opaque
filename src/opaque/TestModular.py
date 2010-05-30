@@ -256,7 +256,9 @@ class TestModular(SnakeControl):
 
 				print "deltaDist =", deltaDist
 	
-				self.lastPose = self.contacts.getAveragePose(0)
+				self.lastPose = self.currPose
+				
+				deltaDist = 0.0
 
 				if deltaDist > 0.4:
 					self.globalState = 4
@@ -930,8 +932,6 @@ class TestModular(SnakeControl):
 	
 	def doPathStep(self, wayPaths, direction):
 
-		print "doPathStep: localState =", self.localState
-		
 		" get the probe state "
 		probeState = self.probe.getProbeState()
 
@@ -983,8 +983,6 @@ class TestModular(SnakeControl):
 
 	
 	def doPathFollow(self, wayPoints, wayPaths):
-
-		print "doPathFollow: localPathState =", self.localPathState
 
 		" get the probe state "
 		probeState = self.probe.getProbeState()

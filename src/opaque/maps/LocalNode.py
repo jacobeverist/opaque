@@ -538,7 +538,7 @@ class LocalNode:
 		
 		#print inputStr
 		
-		if True:
+		if False:
 			
 			" start the subprocess "
 			subProc = Popen(["./alpha2.exe"], stdin=PIPE, stdout=PIPE)

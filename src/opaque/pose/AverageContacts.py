@@ -1,6 +1,8 @@
-from RefNode import RefNode
+#from RefNode import RefNode
 from RefEdge import RefEdge
-from ValueStability import ValueStability
+#from ValueStability import ValueStability
+from stability import ValueStability
+from reference import RefNode
 
 from copy import copy, deepcopy
 from math import cos, sin, asin, acos, sqrt, fabs, pi
@@ -72,7 +74,8 @@ class AverageContacts:
 		# variance estimator for determining stability
 		self.jointVar = []
 		for i in range(self.numJoints):
-			self.jointVar.append(ValueStability(self.varThresh))
+			#self.jointVar.append(ValueStability(self.varThresh))
+			self.jointVar.append(ValueStability(self.varThresh, 20))
 	
 		self.L_saddlePoses = []
 		self.R_saddlePoses = []
@@ -227,7 +230,10 @@ class AverageContacts:
 					
 			recentNode = self.lastNodes[-lastNodeIndex][0]
 	
-			refX, refZ, refP = recentNode.getRefPose()
+			#refX, refZ, refP = recentNode.getRefPose()
+			refX = recentNode.getRefPoseX()
+			refZ = recentNode.getRefPoseZ()
+			refP = recentNode.getRefPoseP()
 			initPose = [refX, refZ, refP]
 	
 			jointID = recentNode.getJointID()
@@ -239,7 +245,11 @@ class AverageContacts:
 			print "recovered with the last active node.  Unable to find stable reference out of " + str(len(self.lastNodes)) + " total nodes"
 			recentNode = self.activeRefPtr[self.lastActive]
 	
-			refX, refZ, refP = recentNode.getRefPose()
+			#refX, refZ, refP = recentNode.getRefPose()
+			refX = recentNode.getRefPoseX()
+			refZ = recentNode.getRefPoseZ()
+			refP = recentNode.getRefPoseP()
+
 			initPose = [refX, refZ, refP]
 	
 			jointID = recentNode.getJointID()
@@ -323,7 +333,12 @@ class AverageContacts:
 				if self.activeRef[j]:
 					#print "ref ", j
 					# with an existing reference point, we determine the new node's position with respect to it
-					refX, refZ, refP = self.activeRefPtr[j].getRefPose()
+					#refX, refZ, refP = self.activeRefPtr[j].getRefPose()
+
+					refX = self.activeRefPtr[j].getRefPoseX()
+					refZ = self.activeRefPtr[j].getRefPoseZ()
+					refP = self.activeRefPtr[j].getRefPoseP()
+
 			
 					initPose = [refX,refZ,refP]
 					jointID = self.activeRefPtr[j].getJointID()
@@ -375,7 +390,12 @@ class AverageContacts:
 			midJoint = targetJoint
 			
 			if self.activeRef[midJoint]:
-				refX, refZ, refP = self.activeRefPtr[midJoint].getRefPose()
+				#refX, refZ, refP = self.activeRefPtr[midJoint].getRefPose()
+
+				refX = self.activeRefPtr[midJoint].getRefPoseX()
+				refZ = self.activeRefPtr[midJoint].getRefPoseZ()
+				refP = self.activeRefPtr[midJoint].getRefPoseP()
+				
 				return [refX, refZ, refP]
 
 		# FIXME: find the *closest* recent node, not the *first*
@@ -404,7 +424,12 @@ class AverageContacts:
 		if refExists:
 
 			# with an existing reference point, we determine the new node's position with respect to it
-			refX, refZ, refP = self.activeRefPtr[refNumber].getRefPose()
+			#refX, refZ, refP = self.activeRefPtr[refNumber].getRefPose()
+			
+			refX = self.activeRefPtr[refNumber].getRefPoseX()
+			refZ = self.activeRefPtr[refNumber].getRefPoseZ()
+			refP = self.activeRefPtr[refNumber].getRefPoseP()
+
 
 			initPose = [refX,refZ,refP]
 			jointID = self.activeRefPtr[refNumber].getJointID()
@@ -552,11 +577,11 @@ class AverageContacts:
 				self.mask[i] = self.initMask[i]
 
 			# update error timers
-			for i in range(self.numJoints):
-				if self.probe.getError(i) > self.errorThresh: 
-					self.errorTime[i] += 1	
-				else:
-					self.errorTime[i] = 0
+			#for i in range(self.numJoints):
+			#	if self.probe.getError(i) > self.errorThresh: 
+			#		self.errorTime[i] += 1	
+			#	else:
+			#		self.errorTime[i] = 0
 
 			# update mask timers
 			for i in range(self.numJoints):
@@ -576,8 +601,6 @@ class AverageContacts:
 			# include all joints for node creation
 			startJoint = 0
 			endJoint = self.numJoints
-			#startJoint = 2
-			#endJoint = self.numJoints-2
 
 			# 1. compute the stability of a length between contact points
 			# 2. deactive the whole length
@@ -588,8 +611,11 @@ class AverageContacts:
 
 				if self.activeRef[i]:
 
-					self.activeRefPtr[i].computeStabilityError()
+					probeState = self.probe.getProbeState()
+					joints = probeState['joints']
 
+					self.activeRefPtr[i].computeStabilityError(joints)
+					
 					if self.activeRefPtr[i].isMaxErrorReached():
 
 						print "maxErrorReached for", i, "because maxError =", self.activeRefPtr[i].maxError, "and currError =", self.activeRefPtr[i].currError
@@ -625,7 +651,6 @@ class AverageContacts:
 					if self.numActiveRef == 0:
 						print "WARNING: all active reference nodes lost!  Last is node", i, "due to mask"
 
-					#print "caseB", i, self.mask[i]
 					# reset variance calculation
 					self.jointVar[i].reset()
 
@@ -656,19 +681,6 @@ class AverageContacts:
 						# create position constraints between all the current active reference nodes
 						#self.createEdges(newNode)
 
-			# compute the active node local configuration error
-			#self.computeActiveError()
-			
-			#self.prof.runcall(self.computeActiveError)
-			#self.prof.dump_stats("profile_info2")	
-
-			#for i in range(self.numJoints):
-			#	self.angle_output.write(str(self.probe.getServo(i)) + " ")
-
-			#for i in range(self.numJoints):
-			#	self.angle_output.write(str(self.activeRef[i]) + " ")
-
-			#self.angle_output.write("\n")
 
 		# save the gray map every 5 frames
 		if self.count % 100 == 0:
@@ -758,7 +770,11 @@ class AverageContacts:
 		if refExists:
 
 			# with an existing reference point, we determine the new node's position with respect to it
-			refX, refZ, refP = self.activeRefPtr[refNumber].getRefPose()
+			#refX, refZ, refP = self.activeRefPtr[refNumber].getRefPose()
+			
+			refX = self.activeRefPtr[refNumber].getRefPoseX()
+			refZ = self.activeRefPtr[refNumber].getRefPoseZ()
+			refP = self.activeRefPtr[refNumber].getRefPoseP()
 
 			initPose = [refX,refZ,refP]
 			jointID = self.activeRefPtr[refNumber].getJointID()
@@ -783,9 +799,19 @@ class AverageContacts:
 			#print "initial pose at joint", newJointID
 
 			#origin[2] = self.normalizeAngle(origin[2]+math.pi)
-			originNode = RefNode(-1,newJointID,origin[0],origin[1],origin[2], self.probe)
+			
+			probeState = self.probe.getProbeState()
+			joints = probeState['joints']
+			
+			#originNode = RefNode(-1,newJointID,origin[0],origin[1],origin[2], self.probe)
+			originNode = RefNode(-1,newJointID,origin[0],origin[1],origin[2], len(joints), joints)
 
-			refX, refZ, refP = originNode.getRefPose()
+			#refX, refZ, refP = originNode.getRefPose()
+
+			refX = originNode.getRefPoseX()
+			refZ = originNode.getRefPoseZ()
+			refP = originNode.getRefPoseP()
+			
 			initPose = [refX, refZ, refP]
 			print "initPose =", initPose
 
@@ -806,7 +832,12 @@ class AverageContacts:
 
 		# create the new node
 		nodeID = self.numRef
-		newNode = RefNode(nodeID, newJointID, pose[0], pose[1], pose[2], self.probe)	
+		#newNode = RefNode(nodeID, newJointID, pose[0], pose[1], pose[2], self.probe)	
+
+		probeState = self.probe.getProbeState()
+		joints = probeState['joints']
+		newNode = RefNode(nodeID, newJointID, pose[0], pose[1], pose[2], len(joints), joints)
+		
 		newNode.setNewRoot(isNewRoot)
 		gndPose = self.probe.getActualJointPose(newJointID)
 		newNode.setGroundTruthPose(gndPose[0],gndPose[1],gndPose[2])
@@ -922,8 +953,12 @@ class AverageContacts:
 				if self.activeRef[j]:
 					#print "ref ", j
 					# with an existing reference point, we determine the new node's position with respect to it
-					refX, refZ, refP = self.activeRefPtr[j].getRefPose()
-			
+					#refX, refZ, refP = self.activeRefPtr[j].getRefPose()
+					
+					refX = self.activeRefPtr[j].getRefPoseX()
+					refZ = self.activeRefPtr[j].getRefPoseZ()
+					refP = self.activeRefPtr[j].getRefPoseP()
+		
 					initPose = [refX,refZ,refP]
 					jointID = self.activeRefPtr[j].getJointID()
 					pose = self.probe.getJointWRTJointPose(initPose, jointID, newJointID) 
@@ -959,9 +994,20 @@ class AverageContacts:
 				#print "initial pose at joint", newJointID
 
 			#origin[2] = self.normalizeAngle(origin[2]+math.pi)
-			originNode = RefNode(-1,newJointID,origin[0],origin[1],origin[2], self.probe)
+			#originNode = RefNode(-1,newJointID,origin[0],origin[1],origin[2], self.probe)
 
-			refX, refZ, refP = originNode.getRefPose()
+			probeState = self.probe.getProbeState()
+			joints = probeState['joints']
+			originNode = RefNode(-1, newJointID, origin[0], origin[1], origin[2], len(joints), joints)
+
+
+			#refX, refZ, refP = originNode.getRefPose()
+			
+			refX = originNode.getRefPoseX()
+			refZ = originNode.getRefPoseZ()
+			refP = originNode.getRefPoseP()
+
+			
 			initPose = [refX, refZ, refP]
 
 			jointID = originNode.getJointID()
@@ -978,7 +1024,12 @@ class AverageContacts:
 
 		# create the new node
 		nodeID = self.numRef
-		newNode = RefNode(nodeID, newJointID, pose[0], pose[1], pose[2], self.probe)	
+		#newNode = RefNode(nodeID, newJointID, pose[0], pose[1], pose[2], self.probe)	
+
+		probeState = self.probe.getProbeState()
+		joints = probeState['joints']
+		newNode = RefNode(nodeID, newJointID, pose[0], pose[1], pose[2], len(joints), joints)
+		
 		newNode.setNewRoot(isNewRoot)
 		gndPose = self.probe.getActualJointPose(newJointID)
 		newNode.setGroundTruthPose(gndPose[0],gndPose[1],gndPose[2])
@@ -1048,7 +1099,11 @@ class AverageContacts:
 		for i in range(self.numRef):
 			nodeID = self.refPoints[i].getNodeID()
 			jointID = self.refPoints[i].getJointID()
-			x, z, p = self.refPoints[i].getRefPose()
+			#x, z, p = self.refPoints[i].getRefPose()
+			
+			x = self.refPoints[i].getRefPoseX()
+			z = self.refPoints[i].getRefPoseZ()
+			p = self.refPoints[i].getRefPoseP()
 
 			toroGraph.write("VERTEX " + str(nodeID) + " ")
 			toroGraph.write(str(x) + " " + str(z) + " " + str(p) + "\n")
@@ -1075,7 +1130,12 @@ class AverageContacts:
 
 			nodeID = self.refPoints[i].getNodeID()
 			jointID = self.refPoints[i].getJointID()
-			x, z, p = self.refPoints[i].getGroundTruthPose()
+			#x, z, p = self.refPoints[i].getGroundTruthPose()
+
+			x = self.refPoints[i].getGroundTruthPoseX()
+			z = self.refPoints[i].getGroundTruthPoseZ()
+			p = self.refPoints[i].getGroundTruthPoseP()
+
 
 			gndGraph.write("VERTEX " + str(nodeID) + " ")
 			gndGraph.write(str(x) + " " + str(z) + " " + str(p) + "\n")
@@ -1091,83 +1151,6 @@ class AverageContacts:
 
 		#rootNodes.close()
 
-
-	def computeActiveError(self):
-
-		totalErrorX = 0.0
-		totalErrorZ = 0.0
-		totalErrorP = 0.0
-
-		for i in range(self.numJoints):
-			if self.activeRef[i]:
-				activeNode = self.activeRefPtr[i]
-				activeNode.resetPoseError()
-				activeNode.updateTime()
-
-		for i in range(self.numJoints):
-			if self.activeRef[i]:
-
-				activeNode = self.activeRefPtr[i]
-				aID = activeNode.getNodeID()
-
-				# compute the actual offset
-				numEdges = activeNode.getNumEdges()
-
-				# cycle through each edge
-				# 1. check if this node is origin or target
-				# 2. determine if edge is active
-				# 3. determine if we haven't already found this edge
-
-				for j in range(numEdges):
-					origin = activeNode.getEdge(j).origin
-					target = activeNode.getEdge(j).target
-
-					oID = origin.getNodeID()
-					tID = target.getNodeID()
-					other = 0
-					otherID = 0
-
-					# origin is this node
-					if aID == oID:
-						otherID = tID	
-						other = target
-
-					# target is this node
-					else:
-						otherID = oID	
-						other = origin
-
-					# determine if other joint is active, the current active node, and a joint we haven't come to yet
-					otherJoint = other.getJointID()
-					otherActive = False
-
-					if self.activeRef[otherJoint] and self.activeRefPtr[otherJoint].getNodeID() == otherID and otherJoint > i:
-						otherActive = True
-
-					# compute error of previous offset to current
-					if otherActive:
-
-						oX, oZ, oP = activeNode.getEdge(j).getRefConstraint()
-
-						initPose = [0.0,0.0,0.0]
-						targetPose = [0.,0.,0.]
-
-						targetPose = self.probe.getJointWRTJointPose(initPose, origin.getJointID(), target.getJointID()) 
-
-						errorX = targetPose[0] - oX
-						errorZ = targetPose[1] - oZ
-						errorP = targetPose[2] - oP
-
-						totalErrorX += abs(errorX)
-						totalErrorZ += abs(errorZ)
-						totalErrorP += abs(errorP)
-
-						origin.addPoseError(errorP)	
-						target.addPoseError(errorP)
-						
-		return totalErrorP
-
-
 	def isJointActive(self, jointID):
 		if jointID >= self.numJoints:
 			return False
@@ -1179,7 +1162,17 @@ class AverageContacts:
 		if jointID >= self.numJoints or not self.activeRef[jointID]:
 			raise
 
-		return copy(self.activeRefPtr[jointID].getRefPose())
+		#return copy(self.activeRefPtr[jointID].getRefPose())
+		
+		refPose = [0.0,0.0,0.0]
+		
+		refPose[0] = self.activeRefPtr[jointID].getRefPoseX()
+		refPose[1] = self.activeRefPtr[jointID].getRefPoseZ()
+		refPose[2] = self.activeRefPtr[jointID].getRefPoseP()
+		
+		return refPose
+		
+		#return copy(self.activeRefPtr[jointID].getRefPose())
 
 
 	def getNumActiveRef(self):

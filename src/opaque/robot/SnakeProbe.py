@@ -107,6 +107,24 @@ class SnakeProbe:
 			return []
 		else:
 			return self.wallEnv.getWalls()
+
+	def getProbeState(self):
+		if self.isStateChanged:
+			self.isStateChanged = False
+	
+			self.probeState = {}
+			self.probeState['joints'] = copy(self.joints)
+			self.probeState['cmdJoints'] = copy(self.cmdJoints)
+			self.probeState['torques'] = copy(self.torques)
+			
+			errors = []
+			for i in range(self.getNumJoints()):
+				errors.append(self.getError(i))
+	
+			self.probeState['errors'] = errors
+		
+		return self.probeState	
+
 		
 	def getNumJoints(self):
 		return self.numSegs - 1

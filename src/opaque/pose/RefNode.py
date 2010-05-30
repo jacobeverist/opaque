@@ -3,21 +3,6 @@ class RefNode:
 
 	def __init__(self, nid, jid, x, z, p, probe):
 
-		#self.statNode = probe.statNode
-
-		#self.currEntity = probe._mgr.createEntity("ent"+str(nid), "Cube.mesh")
-		#self.currEntity.setCastShadows(False)
-		#self.currEntity.setMaterialName("Green")
-
-		#position = ogre.Vector3(x,1.0,z)
-		#size = ogre.Vector3(0.05,0.05,0.05)
-		#self.statNode.addEntity(self.currEntity, position, scale = size)
-		#self.statNode.build()
-
-		self.poseError = 0.
-
-		self.edges = []
-
 		self.refX = x
 		self.refZ = z
 		self.refP = p
@@ -33,11 +18,9 @@ class RefNode:
 
 		self.numJoints = self.probe.getNumJoints()
 
-		self.sweep = []
-
-		self.nom_ang = []
+		self.nom_ang = [0.0 for i in range(self.numJoints)]
 		for i in range(self.numJoints):
-			self.nom_ang.append(probe.getServo(i))
+			self.nom_ang[i] = probe.getServo(i)
 
 		self.maxError = 0.
 		self.active_time = 0
@@ -64,34 +47,8 @@ class RefNode:
 	def getGroundTruthPose(self):
 		return self.gndX, self.gndZ, self.gndP
 
-	def resetPoseError(self):
-		self.poseError = 0.0
-
-	def getPoseError(self):
-		return self.poseError
-
-	def addPoseError(self, error):
-		self.poseError += error
-
 	def getNumEdges(self):
 		return len(self.edges)
-
-	def addEdge(self, newEdge):
-
-		if newEdge.origin != self and newEdge.target != self:
-			print "invalid edge attempted to add to node"
-			raise
-
-		for i in range(len(self.edges)):
-			if self.edges[i] == newEdge:
-				print "tried to add duplicate edge!"
-				return 
-
-		self.edges.append(newEdge)
-
-
-	def getEdge(self, i):
-		return self.edges[i]
 
 	def computeStabilityError(self):
 	
@@ -150,13 +107,4 @@ class RefNode:
 
 	def isNewRoot(self):
 		return self.newRoot
-
-	def addAngleData(self, angleSet):
-		self.sweep.append(angleSet)
-
-	def getAngleData(self):
-		return self.sweep
-
-	def getNumJoints(self):
-		return self.numJoints
 

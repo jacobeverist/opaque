@@ -32,8 +32,8 @@ def createTest():
 	#currControl = TestAdaptiveStep(probe, drawThings)
 	#currControl = TestPathStep(probe, drawThings)
 	#currControl = TestMapGraph(probe, drawThings)
-	#currControl = TestModular(probe, drawThings)
-	currControl = TestTransform(probe, drawThings)
+	currControl = TestModular(probe, drawThings)
+	#currControl = TestTransform(probe, drawThings)
 	
 	probe.addControl(currControl)
 
