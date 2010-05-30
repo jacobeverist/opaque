@@ -5,6 +5,7 @@ import ogre.physics.OgreOde as OgreOde
 from Servo import Servo
 from math import *
 from copy import *
+from transform import Transform
 
 STD_WEIGHT = 1.11
 
@@ -16,6 +17,8 @@ class SnakeProbe:
 
 	def __init__(self, world, R, pos, numSegs, segLength, segWidth, maxTorque, friction):
 		mode = -1
+
+		self.transform = Transform()
 
 		self.timer = 0.000
 		self._world = world
@@ -57,6 +60,10 @@ class SnakeProbe:
 		self.isStateChanged = True
 		self.isJointChanged = True
 		self.probeState = {}
+
+		self.cmdJoints = [0.0 for i in range(self.getNumJoints())]
+		self.joints = [0.0 for i in range(self.getNumJoints())]
+		self.torques = [self.maxTorque for i in range(self.getNumJoints())]
 		
 		# list of bodies
 		self._bodies = []
@@ -126,6 +133,10 @@ class SnakeProbe:
 		for i in range(39):
 			err = self._joints[i].error()
 			self.segMaterials[i].setAmbient(err,0.0,1.0-err)
+
+		for i in range(self.getNumJoints()):
+			self.joints[i] = self._joints[i].phi
+			self.transform.setJoints(self.joints)
 		
 		#for i in range(16,23):
 		#	self.segMaterials[i].setAmbient(0.0,1.0,0.0)
@@ -362,6 +373,10 @@ class SnakeProbe:
 		pose[1] = pose[1] - (self.segLength/2)*sin(pose[2])
 
 		return pose
+
+	def getJointPose(self, originPose, originJoint, targetJoint):
+		#return self.transform.getCJointPose(originPose,originJoint, targetJoint)
+		return self.transform.getJointFromJoint(originPose,originJoint, targetJoint)
 
 	def getJointFromJoint(self, originPose, originJoint, targetJoint):
 
