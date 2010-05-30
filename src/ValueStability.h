@@ -6,7 +6,7 @@ class ValueStability {
 public:
 	int sampleCount, sampleIndex, sampleSize;
 	double sampleMean, sampleVar, varThresh;
-	int samples[SAMPLES];
+	double samples[SAMPLES];
     ValueStability(double thresh, int sample_size);
     ~ValueStability();
 

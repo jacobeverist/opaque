@@ -3,7 +3,7 @@ cdef extern from "ValueStability.h":
 
 		int sampleCount, sampleIndex, sampleSize
 		double sampleMean, sampleVar, varThresh
-		int *samples
+		double *samples
 
 		void setThresh(double val)
 		int isStable()
