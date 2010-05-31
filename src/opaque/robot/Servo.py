@@ -3,6 +3,7 @@
 #import ogre.renderer.OGRE as ogre
 import ogre.physics.OgreOde as OgreOde
 from math import pi
+from servo import commandServo
 
 DEGREES_TO_RADIANS = pi / 180.0
 
@@ -141,7 +142,20 @@ class Servo():
 		self.rigid = False
 
 	def frameStarted(self, evt):
+
+
+		if not self.rigid:
+			self.phi = self.joint.getAngle()
+			self._done = False	
+			vel = 0.0	
+			if not self._done:
+				#print self.phi, WORLD_STEP, self.goal_phi, self.init_phi, self.tol, self.pgain, self.igain, self.dgain, self.last_err, self.maxVel
+				self.errSum, self.last_err, self._done, vel = commandServo(self.phi, WORLD_STEP, self.goal_phi, self.init_phi, self.tol, self.pgain, self.igain, self.dgain, self.last_err, self.maxVel)	
+				#commandServo(Phi, step, goalPhi, initPhi, tolerance, PGain, IGain, DGain, lastErr, maxVelocity)
+				
+			self.joint.setParameter(OgreOde.Joint.Parameter.Parameter_MotorVelocity, vel) 
 		
+		"""
 		if not self.rigid:
 			self.phi = self.joint.getAngle()
 	
@@ -175,6 +189,7 @@ class Servo():
 		else:
 			
 			pass
+		"""
 		
 		
 	def setMaxTorque(self, torque):
