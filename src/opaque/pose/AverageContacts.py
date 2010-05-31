@@ -591,8 +591,9 @@ class AverageContacts:
 					self.maskTime[i] = 0
 
 			# compute the position of each joint with a moving average
+			
 			for i in range(self.numJoints):
-				self.avgErr[i] = (1.0 - self.K) * (self.avgErr[i]) + self.K * self.probe.getError(i)
+				self.avgErr[i] = (1.0 - self.K) * (self.avgErr[i]) + self.K * self.probe.errors[i]
 
 			# joint variance computation for stability checking
 			for i in range(self.numJoints):

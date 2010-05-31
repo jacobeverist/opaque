@@ -42,6 +42,7 @@ class QuickProbe:
 		self.cmdJoints = [0.0 for i in range(self.getNumJoints())]
 		self.joints = [0.0 for i in range(self.getNumJoints())]
 		self.torques = [self.maxTorque for i in range(self.getNumJoints())]
+		self.errors = [fabs(self.cmdJoints[i] - self.joints[i]) for i in range(self.getNumJoints())]
 		
 	def __del(self):
 		del self.control
@@ -64,18 +65,17 @@ class QuickProbe:
 	def getProbeState(self):
 		if self.isStateChanged:
 			self.isStateChanged = False
-	
-			self.probeState = {}
+
+			torques = []
+			
+			for i in range(self.getNumJoints()):
+				torques.append(self.getJointTorque(i))
+			
 			self.probeState['joints'] = copy(self.joints)
 			self.probeState['cmdJoints'] = copy(self.cmdJoints)
-			self.probeState['torques'] = copy(self.torques)
+			self.probeState['torques'] = torques
+			self.probeState['errors'] = copy(self.errors)
 			
-			errors = []
-			for i in range(self.getNumJoints()):
-				errors.append(self.getError(i))
-	
-			self.probeState['errors'] = errors
-		
 		return self.probeState	
 		
 	def getNumJoints(self):
@@ -95,9 +95,14 @@ class QuickProbe:
 		if self.control:
 			self.control.frameStarted()
 
+		#for i in range(self.getNumJoints()):
+		#	self.joints[i] = self.cmdJoints[i]
+
 		for i in range(self.getNumJoints()):
 			self.joints[i] = self.cmdJoints[i]
-			self.transform.setJoints(self.joints)
+			self.errors[i] = abs(self.cmdJoints[i] - self.joints[i])
+					
+		self.transform.setJoints(self.joints)
 
 	def normalizeAngle(self,angle):
 		# this function converts the angle to its equivalent

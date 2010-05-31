@@ -64,6 +64,7 @@ class SnakeProbe:
 		self.cmdJoints = [0.0 for i in range(self.getNumJoints())]
 		self.joints = [0.0 for i in range(self.getNumJoints())]
 		self.torques = [self.maxTorque for i in range(self.getNumJoints())]
+		self.errors = [fabs(self.cmdJoints[i] - self.joints[i]) for i in range(self.getNumJoints())]
 		
 		# list of bodies
 		self._bodies = []
@@ -148,13 +149,19 @@ class SnakeProbe:
 
 		" update the color based on the joint error "
 
-		for i in range(39):
+		numJoints = self.getNumJoints()
+
+		for i in range(numJoints):
 			err = self._joints[i].error()
 			self.segMaterials[i].setAmbient(err,0.0,1.0-err)
 
-		for i in range(self.getNumJoints()):
+		for i in range(numJoints):
 			self.joints[i] = self._joints[i].phi
-			self.transform.setJoints(self.joints)
+			self.cmdJoints[i] = self._joints[i].goal_phi
+			self.errors[i] = abs(self.cmdJoints[i] - self.joints[i])
+		
+		self.transform.setJoints(self.joints)
+
 		
 		#for i in range(16,23):
 		#	self.segMaterials[i].setAmbient(0.0,1.0,0.0)
@@ -283,21 +290,15 @@ class SnakeProbe:
 			
 			self.probeState = {}
 			
-			joints = []
-			cmdJoints = []
 			torques = []
-			errors = []
 			
 			for i in range(self.getNumJoints()):
-				joints.append(self.getServo(i))
-				cmdJoints.append(self.getServoCmd(i))
 				torques.append(self.getJointTorque(i))
-				errors.append(self.getError(i))
 			
-			self.probeState['joints'] = joints
-			self.probeState['cmdJoints'] = cmdJoints
+			self.probeState['joints'] = copy(self.joints)
+			self.probeState['cmdJoints'] = copy(self.cmdJoints)
 			self.probeState['torques'] = torques
-			self.probeState['errors'] = errors
+			self.probeState['errors'] = copy(self.errors)
 
 		return self.probeState
 	
