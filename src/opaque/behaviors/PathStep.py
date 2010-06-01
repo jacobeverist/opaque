@@ -1149,6 +1149,8 @@ class PathStep(Behavior):
 		
 		if self.frontCurve.isOutOfSegments(self.frontAnchorFit.lastPosition):
 
+			print "NOTE: ran out of segments on splice joint", self.spliceJoint
+			
 			" if we've exhausted too many joints, lets just quit with what we have "
 			if self.direction and self.spliceJoint >= 15:
 				self.frontAnchoringDone = True

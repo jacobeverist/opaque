@@ -269,6 +269,7 @@ class SnakeApp(sf.Application):
 
 		self.drawThings = DrawThings(self.probe.robotParam)
 		self.drawThings.setSim()
+		self.drawThings.setRenderView(self.renderWindow)
 
 		#currControl = controls.TestJunction(self.probe)
 		#currControl = controls.TestMap(self.probe)
@@ -408,8 +409,8 @@ if __name__ == '__main__':
 		#prof = Profile()
 
 		application = SnakeApp()
-		cProfile.run('application.go()', 'fooprof')
-
+		cProfile.run('application.go()', 'prof_sim')
+		
 		#prof.runcall(application.go)
 		#prof.dump_stats("profile_info2") 
 	except ogre.OgreException, e:

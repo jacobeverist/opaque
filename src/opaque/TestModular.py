@@ -62,6 +62,9 @@ class TestModular(SnakeControl):
 		
 		" get the probe state "
 		probeState = self.probe.getProbeState()
+		torques = probeState['torques']
+
+		self.torques = [torques[i] for i in range(self.numJoints)]
 		
 		"""
 		self.adaptiveStep = AdaptiveStep(robotParam, probeState, self.contacts, self.mapGraph, direction)
@@ -129,7 +132,7 @@ class TestModular(SnakeControl):
 
 	def frameStarted(self):
 		
-		#self.grabImage()
+		self.grabImage()
 		#self.grabAngles()
 
 		#if self.globalTimer % 4000 == 0:
@@ -295,6 +298,8 @@ class TestModular(SnakeControl):
 			
 			pass
 
+		for i in range(self.numJoints):
+			self.probe.setJointTorque(self.torques[i])
 
 		"""
 		if self.stateA == -2:
@@ -960,6 +965,9 @@ class TestModular(SnakeControl):
 			joints = self.behavior.getJoints()
 			self.mergeJoints([joints])
 
+			" set the new torques "
+			self.torques = [self.behavior.torques[i] for i in range(self.numJoints)]
+			
 			" set the active nodes mask "
 			val = self.behavior.getMask()
 			self.contacts.setMask(val)
@@ -1034,6 +1042,8 @@ class TestModular(SnakeControl):
 				self.targetReached = True
 			
 			if isDone:
+
+				exit()
 
 				self.restState = deepcopy(probeState)
 

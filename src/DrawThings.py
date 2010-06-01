@@ -58,5 +58,5 @@ class DrawThings():
 
 	def saveView(self, filename):
 		if self.renderView != 0:
-			self.renderWindow.writeContentsToFile(filename)
+			self.renderView.writeContentsToFile(filename)
 			
