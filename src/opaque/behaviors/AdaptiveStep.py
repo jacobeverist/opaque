@@ -737,6 +737,11 @@ class AdaptiveStep(Behavior):
 						
 						" FIXME:  sometimes the amplitude goes below zero. "
 						self.minAmp -= self.ampInc
+						
+						" do not allow the amplitude to go negative "
+						if self.minAmp < 0.0:
+							self.minAmp = 0.0
+												
 						self.maxAmp = currAmp
 						nextVal = self.minAmp
 						
@@ -1052,6 +1057,11 @@ class AdaptiveStep(Behavior):
 					" Reduce amplitude minimum, set current to maximum"
 					
 					self.minAmp -= self.ampInc
+					
+					" do not allow the amplitude to go negative "
+					if self.minAmp < 0.0:
+						self.minAmp = 0.0
+						
 					self.maxAmp = currAmp
 					nextVal = self.minAmp
 

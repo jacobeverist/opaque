@@ -103,7 +103,7 @@ class TestModular(SnakeControl):
 
 	def grabImage(self):
 
-		inc = 250
+		inc = 1000
 
 		if self.globalTimer % inc == 0:
 			self.drawThings.saveView("scene%06u.png" % (self.globalTimer/inc))
@@ -299,7 +299,10 @@ class TestModular(SnakeControl):
 			pass
 
 		for i in range(self.numJoints):
-			self.probe.setJointTorque(self.torques[i])
+			self.probe.setJointTorque(i, self.torques[i])
+		
+		if self.globalTimer % 200 == 0:
+			print self.globalTimer, "setting torques:", self.torques
 
 		"""
 		if self.stateA == -2:
@@ -1043,7 +1046,7 @@ class TestModular(SnakeControl):
 			
 			if isDone:
 
-				exit()
+				#exit()
 
 				self.restState = deepcopy(probeState)
 

@@ -70,6 +70,8 @@ class PathStep(Behavior):
 		self.mask = [0.0 for i in range(0,40)]
 		self.count = 0
 		
+		self.frozenJoints = [None for i in range(self.numJoints)]
+		
 		self.currPeak = 0
 		
 		self.minAmp = 0.0
@@ -230,8 +232,12 @@ class PathStep(Behavior):
 	def spliceFitJoints(self, isStart = False):
 		
 		result = [None for i in range(self.numJoints)]
-						
-		joints1 = self.frontAnchorFit.getJoints()
+		
+		if self.frontAnchoringState:
+			joints1 = self.frontAnchorFit.getJoints()
+		else:
+			joints1 = self.frozenJoints
+		
 		joints2 = self.concertinaFit.getJoints()
 		
 		self.concertinaFit.spliceJoint = self.spliceJoint
@@ -241,6 +247,10 @@ class PathStep(Behavior):
 				
 		tempJoints = copy(joints1)
 		tempJoints[self.spliceJoint] = newJointVal
+		
+		print "splicing:"
+		print tempJoints
+		print joints2
 		
 		jointList = [tempJoints,joints2]
 		
@@ -965,6 +975,10 @@ class PathStep(Behavior):
 		nextVal = currAmp
 
 		" perform amplitude operation here "
+		print "errors:", maxError, errors
+		print self.probeState['joints']
+		print self.probeState['cmdJoints']
+		print "amps before:", self.minAmp, self.maxAmp, self.ampInc, currAmp, nextVal
 		
 		" error threshold that determines we have made an anchor contact "
 		if maxError > 0.3 and self.maxAmp != 0.0:
@@ -985,9 +999,9 @@ class PathStep(Behavior):
 				self.ampInc = 0.04
 				
 			else:
-			
+				
 				" B: Section of snake experiencing error, now narrow down a tight fit"
-			
+				
 				currAmp = self.adaptiveCurve.getPeakAmp(self.currPeak)
 				
 				if currAmp == self.minAmp:
@@ -996,6 +1010,11 @@ class PathStep(Behavior):
 					" Reduce amplitude minimum, set current to maximum"
 					
 					self.minAmp -= self.ampInc
+
+					" do not allow the amplitude to go negative "
+					if self.minAmp < 0.0:
+						self.minAmp = 0.0
+
 					self.maxAmp = currAmp
 					nextVal = self.minAmp
 
@@ -1022,6 +1041,7 @@ class PathStep(Behavior):
 			" maximum is the value we just set "
 			self.maxAmp = nextVal
 
+		print "amps after:", self.minAmp, self.maxAmp, self.ampInc, currAmp, nextVal
 
 		" reset all torques of the joints to maximum "
 		for i in range(self.numJoints):
@@ -1042,13 +1062,13 @@ class PathStep(Behavior):
 			
 			if self.direction:
 				maxJoint = max(peakJoints)
-				#print "weakening", maxJoint+1, "to", self.numJoints
+
 				for i in range(maxJoint+2, self.numJoints):
 					if i <= self.numJoints-1:
 						self.torques[i] = 3.0
 			else:
 				minJoint = min(peakJoints)
-				#print "weakening", 0, "to", minJoint-1
+
 				for i in range(0, minJoint-1):					
 					if i <= self.numJoints-1:
 						self.torques[i] = 3.0
@@ -1127,7 +1147,21 @@ class PathStep(Behavior):
 							self.frontAnchoringDone = False
 							self.frontAnchoringState = False
 							self.frontExtended = False
-	
+							
+							" save the current joints and use them from now on "
+
+							joints = probeState['joints']
+							
+							" prevent the front anchor from causing error "
+							if self.direction:
+								for i in range(0, self.spliceJoint):				
+									self.frozenJoints[i] = 180.0 / pi * joints[i]
+								self.frozenJoints[self.spliceJoint] = self.frontAnchorFit.getJoints()[self.spliceJoint]
+							else:
+								for i in range(self.spliceJoint+1, self.numJoints):					
+									self.frozenJoints[i] = 180.0 / pi * joints[i]
+								self.frozenJoints[self.spliceJoint] = self.frontAnchorFit.getJoints()[self.spliceJoint]
+					
 				else:
 					peakJoints = self.concertinaFit.getPeakJoints(self.currPeak)	
 					
@@ -1215,7 +1249,6 @@ class PathStep(Behavior):
 	
 	def computeMaskAndOutput(self):
 		
-
 		anchorJoints = self.frontAnchorFit.getJoints()
 		
 		joints = self.holdT.getJoints()
