@@ -52,25 +52,13 @@ class TestModular(SnakeControl):
 		#self.mapGraph.synch()
 		#self.mapGraph.saveMap()
 		
-		
-		" behaviors "
-		"""
-		self.anchorT = AnchorTransition(robotParam)
-		self.holdP = HoldPosition(robotParam)
-		self.holdT = HoldTransition(robotParam)
-		"""
-		
+				
 		" get the probe state "
 		probeState = self.probe.getProbeState()
 		torques = probeState['torques']
 
 		self.torques = [torques[i] for i in range(self.numJoints)]
 		
-		"""
-		self.adaptiveStep = AdaptiveStep(robotParam, probeState, self.contacts, self.mapGraph, direction)
-		self.frontExtend = FrontExtend(robotParam, self.contacts, direction)
-		self.pokeWalls = PokeWalls(robotParam, direction, self.mapGraph.obstCallBack)
-		"""
 		
 		self.exploreRoot = [0.5,0.0]
 		self.exploreRoot = [-3.5,0.0]
@@ -107,6 +95,11 @@ class TestModular(SnakeControl):
 
 		if self.globalTimer % inc == 0:
 			self.drawThings.saveView("scene%06u.png" % (self.globalTimer/inc))
+			
+			#poses = self.probe.getPose()		
+			#f = open("poses%06u.txt" % (self.globalTimer/inc), 'w')
+			#f.write(repr(poses))
+			#f.close()
 
 	def grabAngles(self):
 
@@ -151,11 +144,14 @@ class TestModular(SnakeControl):
 		probeState = self.probe.getProbeState()
 
 
-		if self.globalState == 0:
+		#print probeState['joints']
+
+		if self.globalState == 0 and self.globalTimer > 2:
 			
 			" anchor the robot initially "
 
-			isDone = self.doInitAnchor()
+			#isDone = self.doInitAnchor()
+			isDone = self.doHoldPosition()
 			
 			if isDone:
 				self.globalState = 1
@@ -301,8 +297,8 @@ class TestModular(SnakeControl):
 		for i in range(self.numJoints):
 			self.probe.setJointTorque(i, self.torques[i])
 		
-		if self.globalTimer % 200 == 0:
-			print self.globalTimer, "setting torques:", self.torques
+		#if self.globalTimer % 200 == 0:
+		#	print self.globalTimer, "setting torques:", self.torques
 
 		"""
 		if self.stateA == -2:
@@ -746,7 +742,44 @@ class TestModular(SnakeControl):
 				self.stateA = 5
 				print "going to state 5"
 		"""
+
+	def doHoldPosition(self):
 		
+		" get the probe state "
+		probeState = self.probe.getProbeState()
+
+		" create the first behavior "
+		if self.localState == 0:
+			
+			print "START:  doHoldPosition()"
+			
+			self.behavior = HoldPosition(self.robotParam)
+			self.behavior.reset(probeState)
+			
+			self.localState = 1
+
+		" immediately begin running behavior "
+		if self.localState == 1:
+			
+		
+			
+			isDone = self.behavior.step(probeState)
+			joints1 = self.behavior.getJoints()
+			
+			self.mergeJoints([joints1])
+			
+			"isDone always returns False"
+			
+			if self.globalTimer > 10:
+				self.localState = 0
+				self.behavior = 0
+				
+				self.isAnchored = True
+				
+				print "FINISH:  doHoldPosition()"
+				return True
+		
+		return False		
 		
 	def doInitAnchor(self):
 		

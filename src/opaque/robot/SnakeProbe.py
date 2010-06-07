@@ -159,6 +159,47 @@ class SnakeProbe:
 		#	self._dnodes[i].setPosition(ogre.Vector3(pos[0],0.3,pos[1]))
 		#	self._dnodes[i].setOrientation(ogre.Quaternion(pos[2],ogre.Vector3().UNIT_Y))
 
+	def restorePose(self, poses):
+
+		"""
+		1. layout the snake in a straight line and create the joints 
+		2. re-position the segments to restore a pose
+		"""
+
+		for i in range(self.numSegs):
+			
+			segPose = poses[i]
+
+			print segPose
+			
+			pos = ogre.Vector3(segPose[0], segPose[1], segPose[2])			
+			self._bodies[i].setPosition(pos)
+
+			vec = ogre.Vector3(segPose[4],segPose[5],segPose[6])
+			radAngle = ogre.Radian(segPose[3])			
+			R = ogre.Quaternion(radAngle, vec)
+			self._bodies[i].setOrientation(R)
+
+
+	def getPose(self):
+		
+		poses = []
+		
+
+		for i in range(self.numSegs):
+			
+			pos = self._bodies[i].getPosition()
+			
+			oriQuat = self._bodies[i].getOrientation()			
+			vec = ogre.Vector3(0.0,0.0,0.0)
+			radAngle = ogre.Radian(0.0)
+			val = oriQuat.ToAngleAxis(radAngle,vec)
+			curAngle = radAngle.valueRadians()
+			curAngle = self.normalizeAngle(curAngle)
+			
+			poses.append([pos[0],pos[1],pos[2],curAngle,vec[0],vec[1],vec[2]])
+			
+		return poses
 
 	def setupMyWorld(self, R, pos):
 
@@ -201,6 +242,7 @@ class SnakeProbe:
 			node.setScale(size.x,size.y,size.z)
 			body.setMass(mass)
 
+			" control the position of each segment "
 			segPos = ogre.Vector3(i*self.segLength, 0.011*(i%2), 0.0)
 			actPos = R*segPos
 
