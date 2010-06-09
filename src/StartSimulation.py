@@ -260,14 +260,11 @@ class SnakeApp(sf.Application):
 		#self.probe = SnakeProbe(self._world,yRot,pos,40,0.15,0.05,30.0*2.5,0.9)
 		self.probe = SnakeProbe(self._world,yRot,pos,40,0.15,0.15,30.0*2.5,0.9)
 
-
-		#poses = [[-6.0+i*self.probe.segLength,0.0,pi] for i in range(self.probe.numSegs)]
-		
-		f = open("poses000160.txt", 'r')
-		str_f = f.read()
-		poses = eval(str_f)
-		print poses
-		self.probe.restorePose(poses)
+		#f = open("poses000160.txt", 'r')
+		#str_f = f.read()
+		#poses = eval(str_f)
+		#print poses
+		#self.probe.restorePose(poses)
 		
 		self.drawThings = DrawThings(self.probe.robotParam)
 		self.drawThings.setSim()

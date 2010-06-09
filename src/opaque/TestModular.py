@@ -94,12 +94,13 @@ class TestModular(SnakeControl):
 		inc = 1000
 
 		if self.globalTimer % inc == 0:
+			pass
 			self.drawThings.saveView("scene%06u.png" % (self.globalTimer/inc))
 			
-			#poses = self.probe.getPose()		
-			#f = open("poses%06u.txt" % (self.globalTimer/inc), 'w')
-			#f.write(repr(poses))
-			#f.close()
+			poses = self.probe.getPose()		
+			f = open("poses%06u.txt" % (self.globalTimer/inc), 'w')
+			f.write(repr(poses))
+			f.close()
 
 	def grabAngles(self):
 
@@ -150,8 +151,8 @@ class TestModular(SnakeControl):
 			
 			" anchor the robot initially "
 
-			#isDone = self.doInitAnchor()
-			isDone = self.doHoldPosition()
+			isDone = self.doInitAnchor()
+			#isDone = self.doHoldPosition()
 			
 			if isDone:
 				self.globalState = 1
@@ -288,7 +289,7 @@ class TestModular(SnakeControl):
 			if isDone:
 				self.restState = deepcopy(probeState)
 				
-				self.globalState = 12
+				self.globalState = 4
 		
 		elif self.globalState == 12:
 			

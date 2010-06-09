@@ -621,7 +621,8 @@ class PathStep(Behavior):
 		errors = self.probeState['errors']
 
 		maxError = 0.0	
-		for err in errors:
+		for j in anchorJoints:
+			err = errors[j]
 			if fabs(err) > maxError:
 				maxError = fabs(err)
 		
@@ -965,9 +966,10 @@ class PathStep(Behavior):
 		peakJoints.sort()
 		
 		errors = self.probeState['errors']
-		
+				
 		maxError = 0.0	
-		for err in errors:
+		for j in peakJoints:
+			err = errors[j]
 			if fabs(err) > maxError:
 				maxError = fabs(err)
 		

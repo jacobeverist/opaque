@@ -675,14 +675,14 @@ class AdaptiveStep(Behavior):
 		anchorJoints = self.frontAnchorFit.getPeakJoints()
 		anchorJoints.sort()
 
-		errors = []
-		for j in anchorJoints:
-			errors.append(stateJoints[j]-cmdJoints[j])
+		errors = self.probeState['errors']
 
 		maxError = 0.0	
-		for err in errors:
+		for j in anchorJoints:
+			err = errors[j]
 			if fabs(err) > maxError:
 				maxError = fabs(err)
+		
 		
 		" draw the state of the curve fitting "
 		#self.drawFit()
@@ -1008,12 +1008,11 @@ class AdaptiveStep(Behavior):
 		peakJoints = self.concertinaFit.getPeakJoints(self.currPeak) + self.concertinaFit.getPeakJoints(self.currPeak+1)
 		peakJoints.sort()
 		
-		errors = []
-		for j in peakJoints:
-			errors.append(stateJoints[j]-cmdJoints[j])
-
+		errors = self.probeState['errors']
+				
 		maxError = 0.0	
-		for err in errors:
+		for j in peakJoints:
+			err = errors[j]
 			if fabs(err) > maxError:
 				maxError = fabs(err)
 		
