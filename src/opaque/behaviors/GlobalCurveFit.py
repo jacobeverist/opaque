@@ -181,8 +181,8 @@ class GlobalCurveFit(Behavior):
 		tAngle = acos(tVec[0])
 		if asin(tVec[1]) < 0:
 			tAngle = -tAngle
+		#print "tPoint:", tPoint, "tVec:", tVec, "tAngle:", tAngle
 		
-		print "tPoint:", tPoint, "tVec:", tVec, "tAngle:", tAngle
 		#tVec = [cos(math.pi/2), sin(math.pi/2)]
 		#tAngle = acos(tVec[0])
 		#if asin(tVec[1]) < 0:

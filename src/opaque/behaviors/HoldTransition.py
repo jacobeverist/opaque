@@ -35,7 +35,7 @@ class HoldTransition(Behavior):
 		self.hasTransitioned = False
 		self.isDone = False
 
-		print "resetting Hold Transition:", self.positions
+		#print "resetting Hold Transition:", self.positions
 
 	def step(self, probeState):
 		Behavior.step(self, probeState)

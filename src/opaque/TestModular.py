@@ -980,7 +980,7 @@ class TestModular(SnakeControl):
 		" create the first behavior "
 		if self.localState == 0:
 	
-			print "START:  doPathStep()"
+			print "START:  doPathStep()", direction
 
 			" instantiate the behavior "
 			self.behavior = PathStep(self.robotParam, probeState, self.contacts, self.mapGraph, direction)
