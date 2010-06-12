@@ -159,6 +159,18 @@ class SnakeProbe:
 		#	self._dnodes[i].setPosition(ogre.Vector3(pos[0],0.3,pos[1]))
 		#	self._dnodes[i].setOrientation(ogre.Quaternion(pos[2],ogre.Vector3().UNIT_Y))
 
+	def translatePose(self, transDist):
+
+		poses = []
+
+		for i in range(self.numSegs):
+			
+			pos = self._bodies[i].getPosition()
+			newPose = ogre.Vector3(pos[0] + transDist, pos[1], pos[2])
+			self._bodies[i].setPosition(newPose)			
+			
+		return poses
+
 	def restorePose(self, poses):
 
 		"""

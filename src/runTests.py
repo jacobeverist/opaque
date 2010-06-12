@@ -10,36 +10,27 @@ import sys, os
 
 """
 
-os.system("rm convexHull*.png")
-os.system("rm gndLocal*.png")
-os.system("rm localOcc*.png")
-os.system("rm costFile*.txt")
-os.system("rm estpose*.txt")
-os.system("rm prof*.txt")
-os.system("rm comparison*.png")
-
-for i in range(1,8):
-
-	" run the test "
-	os.system("python StartSimulation.py " + "completeFile%04u.txt" % i)
+for i in range(0,16):
 	
-	"paste results together"
-	os.system("python compileResults3.py")
+	for j in range(0,4):
+		
+		dist = 0.2*j + 0.5
 	
-	" mkdir "
-	testDir = "results%02u" % i
-	os.system("mkdir " + testDir)
+		" run the test "
+		os.system("python StartTest.py " + "completeFile%04u.txt " % i + str(dist))
+		
+		"paste results together"
+		#os.system("python compileResults3.py")
+		
+		" mkdir "
+		testDir = "results%02u_%f" % (i,dist)
+		os.system("mkdir " + testDir)
+		
+		" move files "
+		os.system("mv scene*.png " + testDir )
+		os.system("mv poses*.txt " + testDir )
 	
-	" move files "
-	os.system("mv convexHull*.png " + testDir )
-	os.system("mv gndLocal*.png " + testDir)
-	os.system("mv localOcc*.png " + testDir)
-	os.system("mv costFile*.txt " + testDir)
-	os.system("mv estpose*.txt " + testDir)
-	os.system("mv prof*.txt " + testDir)
-	os.system("mv comparison*.png " + testDir)
+		" clean up "
+		pass
 	
-	" clean up "
-	pass
-
 

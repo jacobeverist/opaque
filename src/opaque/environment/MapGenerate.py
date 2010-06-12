@@ -9,14 +9,145 @@ import pylab
 import getopt, sys, os, shutil, csv
 from copy import *
 import time
-from common import *
+#from common import *
 import graph
 
 #from os import *
 
 mapCount = 0
 
+# determines signed area of 3 points (used for solving Point in Polygon problem)
+def Area2(Ax,Ay,Bx,By,Cx,Cy):
+	return (Bx - Ax) * (Cy - Ay) - (Cx - Ax)*(By - Ay)
 
+# determines if point is left of line segment
+def LeftOnEdge(edge, point):
+	return (Area2(edge[0][0],edge[0][1],edge[1][0],edge[1][1],point[0],point[1]) >= 0)
+
+# determines if point C is left of line segment AB
+def LeftOn(Ax,Ay,Bx,By,Cx,Cy):
+	return (Area2(Ax,Ay,Bx,By,Cx,Cy) >= 0)
+
+def segIntersection(seg1, seg2):
+
+	p0 = seg1[0]
+	p1 = seg1[1]
+	p2 = seg2[0]
+	p3 = seg2[1]
+
+	test1 = LeftOn(p0[0],p0[1],p1[0],p1[1],p2[0],p2[1])
+	test2 = LeftOn(p0[0],p0[1],p1[0],p1[1],p3[0],p3[1])
+
+	if test1 == test2:
+		return False
+
+	test3 = LeftOn(p2[0],p2[1],p3[0],p3[1],p0[0],p0[1])
+	test4 = LeftOn(p2[0],p2[1],p3[0],p3[1],p1[0],p1[1])
+
+	if test3 == test4:
+		return False
+
+	return True
+
+
+def Intersect(seg1, seg2):
+
+	denom = (seg2[1][1] - seg2[0][1])*(seg1[1][0] - seg1[0][0]) - (seg2[1][0] - seg2[0][0])*(seg1[1][1] - seg1[0][1])
+
+	nume_a = (seg2[1][0] - seg2[0][0])*(seg1[0][1] - seg2[0][1]) - (seg2[1][1] - seg2[0][1])*(seg1[0][0] - seg2[0][0])
+
+	nume_b = (seg1[1][0] - seg1[0][0])*(seg1[0][1] - seg2[0][1]) - (seg1[1][1] - seg1[0][1])*(seg1[0][0] - seg2[0][0])
+
+	intersection = [0.0,0.0]
+
+	if denom == 0.0:
+		if nume_a == 0.0 and nume_b == 0.0:
+			return False, intersection
+		return False, intersection
+
+	ua = nume_a / denom
+	ub = nume_b / denom
+
+	if ua >= 0.0 and ua <= 1.0 and ub >= 0.0 and ub <= 1.0:
+		# Get the intersection point.
+		intersection[0] = seg1[0][0] + ua*(seg1[1][0] - seg1[0][0])
+		intersection[1] = seg1[0][1] + ua*(seg1[1][1] - seg1[0][1])
+		return True, intersection
+
+	return False, intersection
+
+
+class StraightJunction:
+	
+	def __init__(self, pipe_len, entr_len, pipe_width, turn_angle):
+		global mapCount
+
+		self.pipeWidth = pipe_width
+		self.pipeLen = pipe_len
+		self.origin = [0.0,0.0]
+		self.entrLen = entr_len
+		self.turnAngle = turn_angle
+		
+		WLEN = self.pipeLen
+		wall1 = [[-14.0, -0.2], [-4.0, -0.2]]
+		angle = 0.0
+		
+		angle += self.turnAngle
+		wall1.append([wall1[-1][0] + WLEN*cos(angle), wall1[-1][1] - WLEN*sin(angle)])
+
+		angle += -pi/2
+		wall1.append([wall1[-1][0] + self.pipeWidth*cos(angle), wall1[-1][1] - self.pipeWidth*sin(angle)])
+		
+		angle += -pi/2
+		" compute the length to reach x = 0.2 "
+		dist = (wall1[-1][1]-self.pipeWidth/2.0) / sin(angle)
+		wall1.append([wall1[-1][0] + dist*cos(angle), wall1[-1][1] - dist*sin(angle)])
+		
+		wall1.append([-14.0, self.pipeWidth/2.0])
+		
+		self.walls = [wall1]
+		
+		
+		for wall in self.walls:
+			for i in range(len(wall)):
+				p = copy(wall[i])
+				p[0] += 6.0
+				wall[i] = p			
+		
+		
+		self.writeToFile(".")
+		self.draw()
+
+		mapCount += 1
+		
+	def writeToFile(self, testDir):
+
+		global mapCount
+		
+		fileName = "completeFile%04d.txt" % mapCount
+
+		# record the corridor points
+		fd = open(testDir + "/" + fileName, 'w')
+		fd.write(repr(self.walls))
+		fd.close()
+		
+		return fileName
+
+	def draw(self):
+		global mapCount
+		
+		pylab.clf()
+		
+		wall = self.walls[0]
+				
+		for i in range(len(wall)-1):
+			n1 = wall[i]
+			n2 = wall[i+1]
+			
+			xP = [n1[0], n2[0]]
+			yP = [n1[1], n2[1]]
+			pylab.plot(xP,yP, color="b")
+	
 class PipeJunctions:
 	
 	def __init__(self, pipe_len, entr_len, turn_angle):
@@ -72,7 +203,7 @@ class PipeJunctions:
 		self.reorderWallPoints()
 		
 		self.writeToFile(".")
-		self.draw()
+		#self.draw()
 		
 	def writeToFile(self, testDir):
 
@@ -412,7 +543,8 @@ class PipeJunctions:
 
 		for i in range(1,len(dir[0])):
 
-			widthR = self.rd.uniform(self.pipeMin,self.pipeMax)
+			#widthR = self.rd.uniform(self.pipeMin,self.pipeMax)
+			widthR = self.rd.uniform(0.39,0.41)
 
 			newP =[pos[0][i] + (widthR/2.0)*rightP[0][i], pos[1][i] + (widthR/2.0)*rightP[1][i]]
 			points.append(newP)
@@ -428,7 +560,8 @@ class PipeJunctions:
 
 		for i in range(1,len(dir[0])):
 		
-			widthL = self.rd.uniform(self.pipeMin,self.pipeMax)
+			#widthL = self.rd.uniform(self.pipeMin,self.pipeMax)
+			widthL = self.rd.uniform(0.39,0.41)
 			newP =[pos[0][i] + (widthL/2.0)*leftP[0][i], pos[1][i] + (widthL/2.0)*leftP[1][i]]
 			points.append(newP)
 
@@ -628,7 +761,7 @@ class ForkEnv:
 		self.mergeWalls()
 		
 		self.writeToFile(".")
-		self.draw()
+		#self.draw()
 		
 	def writeToFile(self, testDir):
 

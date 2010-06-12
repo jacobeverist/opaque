@@ -974,6 +974,7 @@ class AdaptiveStep(Behavior):
 			
 			if not self.direction:
 				maxJoint = max(anchorJoints)
+				#print "weakening joints", range(maxJoint+1,self.numJoints)
 				for i in range(maxJoint+1, self.numJoints):
 					if i <= self.numJoints-1:
 						self.torques[i] = 3.0
@@ -1157,6 +1158,8 @@ class AdaptiveStep(Behavior):
 		
 			# termination cases
 			if not self.frontAnchoringState:
+				
+				return True
 				
 				peakJoints = self.concertinaFit.getPeakJoints(self.currPeak) + self.concertinaFit.getPeakJoints(self.currPeak+1)
 				peakJoints.sort()
