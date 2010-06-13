@@ -34,6 +34,14 @@ for dirName in dirs:
 		#print "cp " + dirName + "/" + scene + " scene%06u.png" % globalCount
 		os.system("cp " + dirName + "/" + scene + " scene%06u.png" % globalCount)
 		globalCount += 1
+		
+	anchorCount = 0
+	f = open(dirName + "/out.txt", 'r')
+	for line in f:
+		if line[:13] == "anchor errors":
+			anchorCount += 1
+	
+	print dirName, "failed anchors:", anchorCount-1
 
 #exit()
 
