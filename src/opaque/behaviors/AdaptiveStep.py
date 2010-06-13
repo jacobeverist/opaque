@@ -53,9 +53,19 @@ class AdaptiveStep(Behavior):
 		self.jerkErrors = []
 		self.jerkJoint = 0
 		self.jerkJoints = [0,1,2,3]
+		self.jerkState = 0
+
+		self.errorJoint = 0
+		self.errorPose1 = [0.0,0.0,0.0]
+		self.errorPose2 = [0.0,0.0,0.0]
+		self.originPose = [0.0,0.0,0.0]
+		
+		#self.jerkState = -1
 		self.nomJerk = 0.0
 		self.nomJerks = [0.0,0.0,0.0,0.0]
+		self.nomJerks2 = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
 		self.jerkAngles = [0.0,0.0,0.0,0.0]
+		self.jerkAngles2 = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
 		self.prevJerkAngles = [0.0,0.0,0.0,0.0]
 		
 		if direction:
@@ -641,6 +651,8 @@ class AdaptiveStep(Behavior):
 		
 		err1 = sqrt(xDiff**2 + yDiff**2)
 
+		err1 = sqrt(self.errorPose1[0]**2 + self.errorPose1[1]**2)
+
 		numPoses = len(self.errorPoses2)
 		xDiff = 0.0
 		yDiff = 0.0
@@ -652,8 +664,22 @@ class AdaptiveStep(Behavior):
 		yDiff /= numPoses
 		
 		err2 = sqrt(xDiff**2 + yDiff**2)
+
+		err2 = sqrt(self.errorPose2[0]**2 + self.errorPose2[1]**2)
+
+		numPoses = len(self.errorPoses3)
+		xDiff = 0.0
+		yDiff = 0.0
+		for p in self.errorPoses3:
+			xDiff += p[0]
+			yDiff += p[1]
+			
+		xDiff /= numPoses
+		yDiff /= numPoses
 		
-		return err1, err2
+		err3 = sqrt(xDiff**2 + yDiff**2)
+				
+		return err1, err2, err3
 			
 	def doExtendFront(self):
 
@@ -716,10 +742,8 @@ class AdaptiveStep(Behavior):
 						nextVal = 0.0
 						self.ampInc = 0.04
 	
-					else:
-						
+					else:						
 						self.isJerking = True
-						
 
 				else:
 				
@@ -790,6 +814,17 @@ class AdaptiveStep(Behavior):
 						if jointNum > 38:
 							break
 						self.jerkJoints.append(jointNum)
+
+					self.errorJoint = maxJoint
+
+					"""
+					self.jerkJoints2 = []
+					for k in range(4,12):
+						jointNum = maxJoint + k + 1
+						if jointNum > 38:
+							break
+						self.jerkJoints2.append(jointNum)
+					"""
 						
 				else:
 					minJoint = min(anchorJoints)
@@ -802,14 +837,39 @@ class AdaptiveStep(Behavior):
 							break
 						self.jerkJoints.append(jointNum)
 
+					self.errorJoint = minJoint
+
+					"""
+					self.jerkJoints2 = []
+					for k in range(4,12):
+						jointNum = minJoint - k - 1
+						if jointNum < 0:
+							break
+						self.jerkJoints2.append(jointNum)
+					"""
+
 				#print "anchor joints =", anchorJoints
 				#print "setting jerkJoints to", self.jerkJoints
-								
-				if self.jerkAngle == 0 and self.prevJerkAngle == 0:
+
+				if self.jerkState == -1:
+					
+					for k in range(len(self.jerkJoints2)):
+						self.nomJerks2[k] = stateJoints[self.jerkJoints2[k]] * 180.0 / pi
+				
+					for k in range(len(self.jerkJoints2)):
+						if k % 2 == 0:
+							self.jerkAngles2[k] = 80
+						else:
+							self.jerkAngles2[k] = -80
+
+					self.jerkState = 0
+				
+				elif self.jerkState == 0:
 					self.nomJerk = stateJoints[self.jerkJoint] * 180.0 / pi
 				
 					for k in range(len(self.jerkJoints)):
 						self.nomJerks[k] = stateJoints[self.jerkJoints[k]] * 180.0 / pi
+
 				
 					#print "nominal = " , self.nomJerk, stateJoints[self.jerkJoint)
 					self.prevJerkAngle = self.jerkAngle
@@ -823,7 +883,15 @@ class AdaptiveStep(Behavior):
 					for k in anchorJoints:
 						self.originPoses.append(self.contacts.getAveragePose(k))
 
-				elif self.jerkAngle == 60:
+					self.originPose = self.contacts.getAveragePose(self.errorJoint)
+
+					#self.originGndPoses = []
+					#for k in anchorJoints:
+					#	self.originGndPoses.append(self.contacs.getActualJointPose(k))
+
+					self.jerkState = 1
+
+				elif self.jerkState == 1:
 					
 					#print "setting jerk joint to ", self.jerkAngle + self.nomJerk
 					#print "jerk angle error = " , stateJoints[self.jerkJoint]-cmdJoints[self.jerkJoint]
@@ -846,14 +914,19 @@ class AdaptiveStep(Behavior):
 						tempPose = self.contacts.getAveragePose(anchorJoints[k])
 						originPose = self.originPoses[k]
 						self.errorPoses1.append([tempPose[0]-originPose[0],tempPose[1]-originPose[1],tempPose[2]-originPose[2]])
+
+					tempPose = self.contacts.getAveragePose(self.errorJoint)
+					self.errorPose1 = [tempPose[0]-self.originPose[0],tempPose[1]-self.originPose[1],tempPose[2]-self.originPose[2]]
 				
 					#print self.errorPoses1
 					
 					self.originPoses = []
 					for k in anchorJoints:
 						self.originPoses.append(self.contacts.getAveragePose(k))
+
+					self.jerkState = 2
 					
-				elif self.jerkAngle == -60:
+				elif self.jerkState == 2:
 					#print "jerk angle error = " , stateJoints[self.jerkJoint]-cmdJoints[self.jerkJoint]
 					self.jerkErrors.append(stateJoints[self.jerkJoint]-cmdJoints[self.jerkJoint])
 
@@ -866,20 +939,64 @@ class AdaptiveStep(Behavior):
 						self.prevJerkAngles[k] = self.jerkAngles[k]
 						self.jerkAngles[k] = 0
 
+					#for k in range(len(self.jerkJoints2)):
+					#	self.jerkAngles2[k] = 0
+
 					self.errorPoses2 = []
 					for k in range(len(anchorJoints)):
 						tempPose = self.contacts.getAveragePose(anchorJoints[k])
 						originPose = self.originPoses[k]
 						self.errorPoses2.append([tempPose[0]-originPose[0],tempPose[1]-originPose[1],tempPose[2]-originPose[2]])
+
+					tempPose = self.contacts.getAveragePose(self.errorJoint)
+					self.errorPose2 = [tempPose[0]-self.originPose[0],tempPose[1]-self.originPose[1],tempPose[2]-self.originPose[2]]
+
+					#self.jerkState = 3
+					self.jerkState = 5
+					self.errorPoses3 = [[0.0,0.0,0.0] for i in range(4)]
 				
 					#print self.errorPoses2
-				
-				else:
+
+				elif self.jerkState == 3:
 					self.prevJerkAngle = self.jerkAngle
+
+					for k in range(len(self.jerkJoints)):
+						self.prevJerkAngles[k] = self.jerkAngles[k]
+
+					for k in range(len(self.jerkJoints)):
+						if k % 2 == 0:
+							self.jerkAngles[k] = 80
+						else:
+							self.jerkAngles[k] = -80
+						
+					self.jerkState = 4
+				
+				elif self.jerkState == 4:
+					self.prevJerkAngle = self.jerkAngle
+
+					for k in range(len(self.jerkJoints)):
+						self.prevJerkAngles[k] = self.jerkAngles[k]
+						self.jerkAngles[k] = 0
+
+					self.errorPoses3 = []
+					for k in range(len(anchorJoints)):
+						tempPose = self.contacts.getAveragePose(anchorJoints[k])
+						originPose = self.originPoses[k]
+						self.errorPoses3.append([tempPose[0]-originPose[0],tempPose[1]-originPose[1],tempPose[2]-originPose[2]])
+
+					#print "errorPoses3:", self.errorPoses3
+
+					self.jerkState = 5
+										
+				elif self.jerkState == 5:
 					self.jerkingDone = True
 
 					for k in range(len(self.jerkJoints)):
 						self.prevJerkAngles[k] = self.jerkAngles[k]
+						
+					self.jerkState = 0
+					#self.jerkState = -1
+					
 
 				#print "setting jerk joint to ", self.jerkAngle + self.nomJerk
 				#print "jerk angle error = " , stateJoints[j]-cmdJoints[j]
@@ -887,12 +1004,14 @@ class AdaptiveStep(Behavior):
 		if self.isJerking and self.jerkingDone:
 			
 			" if the anchor is not secure, lets try it again "
-			err1, err2 = self.computeAnchorErrors()
+			err1, err2, err3 = self.computeAnchorErrors()
 			
 			print "errorPoses1:", self.errorPoses1
 			print "errorPoses2:", self.errorPoses2
-			print "anchor errors =", err1, err2
+			print "errorPoses3:", self.errorPoses3
+			print "anchor errors =", err1, err2, err3
 			
+			#if err1 > 0.1 or err2 > 0.1 or err3 > 0.08:
 			if err1 > 0.1 or err2 > 0.1:
 
 				" TODO " 
@@ -996,6 +1115,9 @@ class AdaptiveStep(Behavior):
 			#self.holdT.positions[self.jerkJoint] = self.nomJerk + self.jerkAngle
 			for k in range(len(self.jerkJoints)):
 				self.holdT.positions[self.jerkJoints[k]] = self.nomJerks[k] + self.jerkAngles[k]
+
+			#for k in range(len(self.jerkJoints2)):
+			#	self.holdT.positions[self.jerkJoints2[k]] = self.nomJerks2[k] + self.jerkAngles2[k]
 		
 			
 	def doBackConcertina(self):

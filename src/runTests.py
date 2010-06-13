@@ -10,12 +10,12 @@ import sys, os
 
 """
 
-for i in range(0,16):
+for i in range(0,17):
 	
 	for j in range(0,4):
 		
 		dist = 0.2*j + 0.5
-	
+		
 		" run the test "
 		os.system("python StartTest.py " + "completeFile%04u.txt " % i + str(dist))
 		

@@ -77,6 +77,107 @@ def Intersect(seg1, seg2):
 	return False, intersection
 
 
+def closestSegPoint(seg, tPoint):
+
+	try:
+		# distance to each of the end points
+		p0 = seg[0]
+		p1 = seg[1]
+
+		if tPoint[0] == p1[0] and tPoint[1] == p1[1]:
+			return 0.0, deepcopy(p1)
+
+		if tPoint[0] == p0[0] and tPoint[1] == p0[1]:
+			return 0.0, deepcopy(p0)
+
+
+		# vec1 from p0 to p1
+		vec1 = [p1[0]-p0[0], p1[1]-p0[1]]
+
+		# vec2 from p1 to p0
+		vec2 = [p0[0]-p1[0], p0[1]-p1[1]]
+
+		# vector from seg point to tPoint
+		vecA = [tPoint[0]-p0[0], tPoint[1]-p0[1]]
+		vecB = [tPoint[0]-p1[0], tPoint[1]-p1[1]]
+
+		dist0 = sqrt((p0[0]-tPoint[0])**2 + (p0[1]-tPoint[1])**2)
+		dist1 = sqrt((p1[0]-tPoint[0])**2 + (p1[1]-tPoint[1])**2)
+
+		dotP1 = vecA[0] * vec1[0] + vecA[1] * vec1[1]
+		magA = sqrt(vecA[0]*vecA[0] + vecA[1]*vecA[1])
+		mag1 = sqrt(vec1[0]*vec1[0] + vec1[1]*vec1[1])
+		val = dotP1/(magA*mag1)
+		if val >= 1.0:
+			val = 1.0
+			
+		if val <= -1.0:
+			val = -1.0
+		a0 = acos(val)
+
+		dotP2 = vecB[0] * vec2[0] + vecB[1] * vec2[1]
+		magB = sqrt(vecB[0]*vecB[0] + vecB[1]*vecB[1])
+		mag2 = sqrt(vec2[0]*vec2[0] + vec2[1]*vec2[1])
+		
+		val = dotP2/(magB*mag2)
+		if val >= 1.0:
+			val = 1.0
+			
+		if val <= -1.0:
+			val = -1.0
+		a1 = acos(val)
+		#a1 = acos(dotP2/(magB*mag2))
+		
+		# obtuse angle, so p0 is closest
+		if a0 > pi/2:
+			return dist0, deepcopy(p0)
+			
+		# obtuse angle, so p1 is closest
+		if a1 > pi/2:
+			return dist1, deepcopy(p1)
+
+		segLength = sqrt((p0[0]-p1[0])**2 + (p0[1]-p1[1])**2)
+
+		# derived Aug, 4, 2008, Jacob's journal
+		# otherwise, the closest point is determined by perpedicular line to segment
+		v = dist0 
+		w = dist1
+		d = segLength
+
+		c = (d**2 - v**2 + w**2)/(2*d)
+		a = d - c
+
+		# this is the minimum distance to the segment
+		val = v**2 - a**2 
+		if val < 0.0:
+			val = 0.0
+		b = sqrt(val)
+
+		# now let's determine the intersection point
+
+		# normalized vec1
+		mag1 = sqrt(vec1[0]**2 + vec1[1]**2)
+		n1 = [vec1[0]/mag1, vec1[1]/mag1]
+
+		mag2 = sqrt(vec2[0]**2 + vec2[1]**2)
+		n2 = [vec2[0]/mag2, vec2[1]/mag2]
+
+		bVec = [a*n1[0], a*n1[1]]
+
+		resultP = [bVec[0] + p0[0], bVec[1] + p0[1]] 
+
+		#print vec1, n1, bVec, resultP
+
+		return b, resultP
+
+	except:
+
+		# find the point on a segment that is closest to "tPoint"
+		print "failed finding closest point of seg", seg, "to tPoint", tPoint
+
+		raise
+
+
 class StraightJunction:
 	
 	def __init__(self, pipe_len, entr_len, pipe_width, turn_angle):
@@ -147,14 +248,13 @@ class StraightJunction:
 			xP = [n1[0], n2[0]]
 			yP = [n1[1], n2[1]]
 			pylab.plot(xP,yP, color="b")
-	
+
 class PipeJunctions:
 	
 	def __init__(self, pipe_len, entr_len, turn_angle):
 		global mapCount
 
 		self.rd = Random()
-
 
 		self.pipeLen = pipe_len
 		self.origin = [0.0,0.0]
@@ -163,8 +263,8 @@ class PipeJunctions:
 		self.nodeCount = 0
 		#self.featureRes= 0.01
 		self.featureRes= 0.02
-		self.pipeMax = 0.4
-		self.pipeMin = 0.3
+		self.pipeMax = 0.45
+		self.pipeMin = 0.35
 		self.perturbRange = 0.01
 		
 		self.genCount = 0
@@ -584,11 +684,11 @@ class PipeJunctions:
 		1. path goes forward 0.2
 		2. take a turn for the remainder of pipe_len
 		"""
-				
+		
 		points = []
 		nodes = []
 		totalLen = 0.0
-
+		
 		originNode = self.pathTree.get_node_attributes(0)
 		points.append([originNode[0],originNode[1],originNode[2],0.0, self.branchCount])
 		nodes.append(0)
@@ -1379,6 +1479,14 @@ class Corridor:
 		
 			self.tck, self.u = scipy.interpolate.splprep(intArray)
 
+			unew = scipy.arange(0, 1.01, self.featureRes)
+			#self.pos = scipy.interpolate.splev([0.0], self.tck, der=0)
+			#self.dir = scipy.interpolate.splev([0.0], self.tck, der=1)
+			self.pos = scipy.interpolate.splev(unew, self.tck, der=0)
+			self.dir = scipy.interpolate.splev(unew, self.tck, der=1)
+			
+
+
 			wallCount = 0
 			self.wall1, self.wall2 = self.createWalls()
 
@@ -1405,12 +1513,12 @@ class Corridor:
 			"""
 
 			# rotate the points from the origin until the opening goes straight in the positive Y
-			pos = scipy.interpolate.splev([0.0], self.tck, der=0)
-			dir = scipy.interpolate.splev([0.0], self.tck, der=1)
+			#pos = scipy.interpolate.splev([0.0], self.tck, der=0)
+			#dir = scipy.interpolate.splev([0.0], self.tck, der=1)
 
-			org = [pos[0], pos[1]]
-			dirMag = sqrt(dir[0]**2 + dir[1]**2)
-			dirVec = [dir[0]/dirMag, dir[1]/dirMag]
+			org = [self.pos[0][0], self.pos[1][0]]
+			dirMag = sqrt(self.dir[0][0]**2 + self.dir[1][0]**2)
+			dirVec = [self.dir[0][0]/dirMag, self.dir[1][0]/dirMag]
 
 			rotAng = 0.0
 			
@@ -1487,6 +1595,17 @@ class Corridor:
 			
 			self.wall1.points.insert(0,newP1)
 			self.wall2.points.insert(0,newP2)
+
+			" adjust the Y so the entrance is centered on the X axis "
+			yAdj = self.pipeMin/2.0 - newP1[1]
+
+			for i in range(len(self.wall1.points)):
+				self.wall1.points[i][1] += yAdj
+			for i in range(len(self.wall2.points)):
+				self.wall2.points[i][1] += yAdj
+
+
+			print "entrance points:", self.wall1.points[0], self.wall2.points[0]
 
 			print "checkC"
 			
@@ -1580,37 +1699,40 @@ class Corridor:
 		# now sample points at regular intervals
 
 		unew = scipy.arange(0, 1.01, self.featureRes)
-		pos = scipy.interpolate.splev(unew, self.tck, der=0)
-		dir = scipy.interpolate.splev(unew, self.tck, der=1)
+		#pos = scipy.interpolate.splev(unew, self.tck, der=0)
+		#dir = scipy.interpolate.splev(unew, self.tck, der=1)
 
 		rightP = [[],[]]
 		leftP = [[],[]]
 
-		for i in range(0,len(dir[0])):
-			mag = sqrt(dir[0][i]**2 + dir[1][i]**2)
-			dir[0][i] /= mag
-			dir[1][i] /= mag
+		for i in range(0,len(self.dir[0])):
+			mag = sqrt(self.dir[0][i]**2 + self.dir[1][i]**2)
+			self.dir[0][i] /= mag
+			self.dir[1][i] /= mag
 		
 			# rotate 90 degrees
-			rightP[0].append(dir[0][i]*cos(pi/2) - dir[1][i]*sin(pi/2))
-			rightP[1].append(dir[0][i]*sin(pi/2) + dir[1][i]*cos(pi/2))
+			rightP[0].append(self.dir[0][i]*cos(pi/2) - self.dir[1][i]*sin(pi/2))
+			rightP[1].append(self.dir[0][i]*sin(pi/2) + self.dir[1][i]*cos(pi/2))
 
 			# rotate -90 degrees
-			leftP[0].append(dir[0][i]*cos(-pi/2) - dir[1][i]*sin(-pi/2))
-			leftP[1].append(dir[0][i]*sin(-pi/2) + dir[1][i]*cos(-pi/2))
+			leftP[0].append(self.dir[0][i]*cos(-pi/2) - self.dir[1][i]*sin(-pi/2))
+			leftP[1].append(self.dir[0][i]*sin(-pi/2) + self.dir[1][i]*cos(-pi/2))
+
+
+		print "pos:", self.pos[0][0], self.pos[1][0]
 
 		points = []
 
 		# the first point has maximum width for the entrance
-		#newP =[pos[0][0] + (self.pipeMax/2.0)*rightP[0][0], pos[1][0] + (self.pipeMax/2.0)*rightP[1][0]]
-		newP =[pos[0][0] + (self.pipeMin/2.0)*rightP[0][0], pos[1][0] + (self.pipeMin/2.0)*rightP[1][0]]
+		#newP =[self.pos[0][0] + (self.pipeMax/2.0)*rightP[0][0], self.pos[1][0] + (self.pipeMax/2.0)*rightP[1][0]]
+		newP =[self.pos[0][0] + (self.pipeMin/2.0)*rightP[0][0], self.pos[1][0] + (self.pipeMin/2.0)*rightP[1][0]]
 		points.append(newP)
 
-		for i in range(1,len(dir[0])):
+		for i in range(1,len(self.dir[0])):
 
 			widthR = self.rd.uniform(self.pipeMin,self.pipeMax)
 
-			newP =[pos[0][i] + (widthR/2.0)*rightP[0][i], pos[1][i] + (widthR/2.0)*rightP[1][i]]
+			newP =[self.pos[0][i] + (widthR/2.0)*rightP[0][i], self.pos[1][i] + (widthR/2.0)*rightP[1][i]]
 			points.append(newP)
 
 		wall1 = Wall(self.pipeMin, self.pipeMax, self.perturbRange)
@@ -1619,14 +1741,14 @@ class Corridor:
 		points = []
 
 		# the first point has maximum width for the entrance
-		#newP =[pos[0][0] + (self.pipeMax/2.0)*leftP[0][0], pos[1][0] + (self.pipeMax/2.0)*leftP[1][0]]
-		newP =[pos[0][0] + (self.pipeMin/2.0)*leftP[0][0], pos[1][0] + (self.pipeMin/2.0)*leftP[1][0]]
+		#newP =[self.pos[0][0] + (self.pipeMax/2.0)*leftP[0][0], self.pos[1][0] + (self.pipeMax/2.0)*leftP[1][0]]
+		newP =[self.pos[0][0] + (self.pipeMin/2.0)*leftP[0][0], self.pos[1][0] + (self.pipeMin/2.0)*leftP[1][0]]
 		points.append(newP)
 
-		for i in range(1,len(dir[0])):
+		for i in range(1,len(self.dir[0])):
 		
 			widthL = self.rd.uniform(self.pipeMin,self.pipeMax)
-			newP =[pos[0][i] + (widthL/2.0)*leftP[0][i], pos[1][i] + (widthL/2.0)*leftP[1][i]]
+			newP =[self.pos[0][i] + (widthL/2.0)*leftP[0][i], self.pos[1][i] + (widthL/2.0)*leftP[1][i]]
 			points.append(newP)
 
 		wall2 = Wall(self.pipeMin, self.pipeMax, self.perturbRange)
