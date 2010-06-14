@@ -55,10 +55,26 @@ class PathStep(Behavior):
 		self.jerkErrors = []
 		self.jerkJoint = 0
 		self.jerkJoints = [0,1,2,3]
+		self.jerkState = 0
+
+		self.errorJoint = 0
+		self.errorPose1 = [0.0,0.0,0.0]
+		self.errorPose2 = [0.0,0.0,0.0]
+		self.originPose = [0.0,0.0,0.0]
+		
+		#self.jerkState = -1
 		self.nomJerk = 0.0
 		self.nomJerks = [0.0,0.0,0.0,0.0]
+		self.nomJerks2 = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
 		self.jerkAngles = [0.0,0.0,0.0,0.0]
+		self.jerkAngles2 = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
 		self.prevJerkAngles = [0.0,0.0,0.0,0.0]
+		
+		
+		#self.nomJerk = 0.0
+		#self.nomJerks = [0.0,0.0,0.0,0.0]
+		#self.jerkAngles = [0.0,0.0,0.0,0.0]
+		#self.prevJerkAngles = [0.0,0.0,0.0,0.0]
 		
 		if direction:
 			self.spliceJoint = 7
@@ -579,11 +595,13 @@ class PathStep(Behavior):
 		for p in self.errorPoses1:
 			xDiff += p[0]
 			yDiff += p[1]
-			
+		
 		xDiff /= numPoses
 		yDiff /= numPoses
 		
 		err1 = sqrt(xDiff**2 + yDiff**2)
+
+		err1 = sqrt(self.errorPose1[0]**2 + self.errorPose1[1]**2)
 
 		numPoses = len(self.errorPoses2)
 		xDiff = 0.0
@@ -596,8 +614,22 @@ class PathStep(Behavior):
 		yDiff /= numPoses
 		
 		err2 = sqrt(xDiff**2 + yDiff**2)
+
+		err2 = sqrt(self.errorPose2[0]**2 + self.errorPose2[1]**2)
+
+		numPoses = len(self.errorPoses3)
+		xDiff = 0.0
+		yDiff = 0.0
+		for p in self.errorPoses3:
+			xDiff += p[0]
+			yDiff += p[1]
+			
+		xDiff /= numPoses
+		yDiff /= numPoses
 		
-		return err1, err2
+		err3 = sqrt(xDiff**2 + yDiff**2)
+				
+		return err1, err2, err3
 			
 	def doExtendFront(self):
 
@@ -755,6 +787,17 @@ class PathStep(Behavior):
 							break
 						self.jerkJoints.append(jointNum)
 						
+					self.errorJoint = maxJoint
+
+					"""
+					self.jerkJoints2 = []
+					for k in range(4,12):
+						jointNum = maxJoint + k + 1
+						if jointNum > 38:
+							break
+						self.jerkJoints2.append(jointNum)
+					"""
+
 				else:
 					minJoint = min(anchorJoints)
 					self.jerkJoint = minJoint - 1
@@ -766,16 +809,41 @@ class PathStep(Behavior):
 							break
 						self.jerkJoints.append(jointNum)
 
+					self.errorJoint = minJoint
+
+					"""
+					self.jerkJoints2 = []
+					for k in range(4,12):
+						jointNum = minJoint - k - 1
+						if jointNum < 0:
+							break
+						self.jerkJoints2.append(jointNum)
+					"""
+
 				#print "anchor joints =", anchorJoints
 				#print "setting jerkJoints to", self.jerkJoints
 				
-				if self.jerkAngle == 0 and self.prevJerkAngle == 0:
+				if self.jerkState == -1:
+					
+					for k in range(len(self.jerkJoints2)):
+						self.nomJerks2[k] = joints[self.jerkJoints2[k]] * 180.0 / pi
+				
+					for k in range(len(self.jerkJoints2)):
+						if k % 2 == 0:
+							self.jerkAngles2[k] = 80
+						else:
+							self.jerkAngles2[k] = -80
+
+					self.jerkState = 0
+				
+				elif self.jerkState == 0:
 					self.nomJerk = joints[self.jerkJoint] * 180.0 / pi
 				
 					for k in range(len(self.jerkJoints)):
 						self.nomJerks[k] = joints[self.jerkJoints[k]] * 180.0 / pi
+
 				
-					#print "nominal = " , self.nomJerk, self.probe.getServo(self.jerkJoint)
+					#print "nominal = " , self.nomJerk, joints[self.jerkJoint)
 					self.prevJerkAngle = self.jerkAngle
 					self.jerkAngle = 60	
 				
@@ -787,9 +855,22 @@ class PathStep(Behavior):
 					for k in anchorJoints:
 						self.originPoses.append(self.contacts.getAveragePose(k))
 
-				elif self.jerkAngle == 60:
+					self.originPose = self.contacts.getAveragePose(self.errorJoint)
+
+					#self.originGndPoses = []
+					#for k in anchorJoints:
+					#	self.originGndPoses.append(self.contacs.getActualJointPose(k))
+
+					self.jerkState = 1
+
+				elif self.jerkState == 1:
 					
+					#print "setting jerk joint to ", self.jerkAngle + self.nomJerk
+					#print "jerk angle error = " , joints[self.jerkJoint]-cmdJoints[self.jerkJoint]
+
+					errs = []
 					for k in range(len(self.jerkJoints)):
+						errs.append(joints[self.jerkJoints[k]]-cmdJoints[self.jerkJoints[k]])
 						self.prevJerkAngles[k] = self.jerkAngles[k]
 					
 					self.jerkErrors.append(joints[self.jerkJoint]-cmdJoints[self.jerkJoint])
@@ -805,15 +886,20 @@ class PathStep(Behavior):
 						tempPose = self.contacts.getAveragePose(anchorJoints[k])
 						originPose = self.originPoses[k]
 						self.errorPoses1.append([tempPose[0]-originPose[0],tempPose[1]-originPose[1],tempPose[2]-originPose[2]])
+
+					tempPose = self.contacts.getAveragePose(self.errorJoint)
+					self.errorPose1 = [tempPose[0]-self.originPose[0],tempPose[1]-self.originPose[1],tempPose[2]-self.originPose[2]]
 				
 					#print self.errorPoses1
 					
 					self.originPoses = []
 					for k in anchorJoints:
 						self.originPoses.append(self.contacts.getAveragePose(k))
+
+					self.jerkState = 2
 					
-				elif self.jerkAngle == -60:
-					#print "jerk angle error = " , self.probe.getServo(self.jerkJoint)-self.probe.getServoCmd(self.jerkJoint)
+				elif self.jerkState == 2:
+					#print "jerk angle error = " , joints[self.jerkJoint]-cmdJoints[self.jerkJoint]
 					self.jerkErrors.append(joints[self.jerkJoint]-cmdJoints[self.jerkJoint])
 
 					" error = (-0.09, 0.005) is good "
@@ -825,20 +911,63 @@ class PathStep(Behavior):
 						self.prevJerkAngles[k] = self.jerkAngles[k]
 						self.jerkAngles[k] = 0
 
+					#for k in range(len(self.jerkJoints2)):
+					#	self.jerkAngles2[k] = 0
+
 					self.errorPoses2 = []
 					for k in range(len(anchorJoints)):
 						tempPose = self.contacts.getAveragePose(anchorJoints[k])
 						originPose = self.originPoses[k]
 						self.errorPoses2.append([tempPose[0]-originPose[0],tempPose[1]-originPose[1],tempPose[2]-originPose[2]])
+
+					tempPose = self.contacts.getAveragePose(self.errorJoint)
+					self.errorPose2 = [tempPose[0]-self.originPose[0],tempPose[1]-self.originPose[1],tempPose[2]-self.originPose[2]]
+
+					#self.jerkState = 3
+					self.jerkState = 5
+					self.errorPoses3 = [[0.0,0.0,0.0] for i in range(4)]
 				
 					#print self.errorPoses2
-				
-				else:
+
+				elif self.jerkState == 3:
 					self.prevJerkAngle = self.jerkAngle
+
+					for k in range(len(self.jerkJoints)):
+						self.prevJerkAngles[k] = self.jerkAngles[k]
+
+					for k in range(len(self.jerkJoints)):
+						if k % 2 == 0:
+							self.jerkAngles[k] = 80
+						else:
+							self.jerkAngles[k] = -80
+						
+					self.jerkState = 4
+				
+				elif self.jerkState == 4:
+					self.prevJerkAngle = self.jerkAngle
+
+					for k in range(len(self.jerkJoints)):
+						self.prevJerkAngles[k] = self.jerkAngles[k]
+						self.jerkAngles[k] = 0
+
+					self.errorPoses3 = []
+					for k in range(len(anchorJoints)):
+						tempPose = self.contacts.getAveragePose(anchorJoints[k])
+						originPose = self.originPoses[k]
+						self.errorPoses3.append([tempPose[0]-originPose[0],tempPose[1]-originPose[1],tempPose[2]-originPose[2]])
+
+					#print "errorPoses3:", self.errorPoses3
+
+					self.jerkState = 5
+										
+				elif self.jerkState == 5:
 					self.jerkingDone = True
 
 					for k in range(len(self.jerkJoints)):
 						self.prevJerkAngles[k] = self.jerkAngles[k]
+						
+					self.jerkState = 0
+					#self.jerkState = -1
 
 				#print "setting jerk joint to ", self.jerkAngle + self.nomJerk
 				#print "jerk angle error = " , self.probe.getServo(j)-self.probe.getServoCmd(j)
@@ -846,9 +975,12 @@ class PathStep(Behavior):
 		if self.isJerking and self.jerkingDone:
 			
 			" if the anchor is not secure, lets try it again "
-			err1, err2 = self.computeAnchorErrors()
+			err1, err2, err3 = self.computeAnchorErrors()
 			
-			print "anchor errors =", err1, err2
+			print "errorPoses1:", self.errorPoses1
+			print "errorPoses2:", self.errorPoses2
+			print "errorPoses3:", self.errorPoses3
+			print "anchor errors =", err1, err2, err3
 			
 			if err1 > 0.1 or err2 > 0.1:
 
