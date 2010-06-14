@@ -1,6 +1,7 @@
 
 from Map import Map
 import Image
+from functions import point_inside_polygon
 
 
 class OccupancyMap(Map):
@@ -27,6 +28,18 @@ class OccupancyMap(Map):
 		self.xMax = 0
 		self.yMin = self.numPixel
 		self.yMax = 0
+	
+	def loadMap(self, polygon):
+
+		self.resetMap()
+
+		for j in range(self.mapSize[0]):
+			for k in range(self.mapSize[1]):
+				pnt = self.gridToReal([j,k])
+
+				if point_inside_polygon(pnt[0],pnt[1],polygon):
+					self.image[j, k] = 255
+
 	
 	def update(self):
 		
