@@ -67,7 +67,7 @@ class MapFlatGround:
 				
 	def synch(self):
 
-		self.occMap.update()
+		#self.occMap.update()
 		self.boundMap.update(self.occMap)
 
 		" 1. for each node, copy local image "
@@ -104,8 +104,8 @@ class MapFlatGround:
 
 		self.voronoiMap.saveMap()			
 
-		self.navRoadMap = NavRoadMap(self.mapSize, self.probe, self.voronoiMap.getGraph(), localNode = self.currNode)
-			
+		self.navRoadMap = NavRoadMap(self.mapSize, self.probe, self.voronoiMap.getGraph())
+		
 		self.saveCount += 1	
 			
 	def realToGrid(self, point):

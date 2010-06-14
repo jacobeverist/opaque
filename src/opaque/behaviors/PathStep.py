@@ -34,7 +34,7 @@ class PathStep(Behavior):
 		self.probeState = probeState
 
 		self.mapGraph = mapGraph
-		self.localNode = self.mapGraph.getCurrentNode()
+		#self.localNode = self.mapGraph.getCurrentNode()
 		self.contacts = contacts
 		self.frontAnchorFit = 0
 		self.concertinaFit = 0
@@ -104,11 +104,13 @@ class PathStep(Behavior):
 		self.pathCurve2 = VoronoiFit(deepcopy(self.path))
 		
 		print "creating 1st GlobalCurveFit"
-		self.globalCurveFit = GlobalCurveFit(self.robotParam, self.contacts, self.pathCurve1, localNode = self.mapGraph.currNode)
+		#self.globalCurveFit = GlobalCurveFit(self.robotParam, self.contacts, self.pathCurve1, localNode = self.mapGraph.currNode)
+		self.globalCurveFit = GlobalCurveFit(self.robotParam, self.contacts, self.pathCurve1)
 		self.globalCurveFit.setTimerAliasing(10)
 		
 		print "creating 2nd GlobalCurveFit"
-		self.globalCurveSlide = GlobalCurveSlide(self.robotParam, self.contacts, self.pathCurve2, localNode = self.mapGraph.currNode)
+		#self.globalCurveSlide = GlobalCurveSlide(self.robotParam, self.contacts, self.pathCurve2, localNode = self.mapGraph.currNode)
+		self.globalCurveSlide = GlobalCurveSlide(self.robotParam, self.contacts, self.pathCurve2)
 		
 		#self.setDirection(not self.globalCurveFit.getPathDirection())
 		result = self.globalCurveSlide.getPathDirection()

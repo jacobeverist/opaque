@@ -25,6 +25,7 @@ from opaque.TestAnchorTransition import TestAnchorTransition
 from opaque.TestFrontExtend import TestFrontExtend
 from opaque.TestPokeWalls import TestPokeWalls
 from opaque.TestAnchor import TestAnchor
+from opaque.TestPathAnchor import TestPathAnchor
 from opaque.environment.WallSections import WallSections
 from DrawThings import DrawThings
 
@@ -260,7 +261,8 @@ class SnakeApp(sf.Application):
 		self.drawThings.setSim()
 		self.drawThings.setRenderView(self.renderWindow)
 
-		currControl = TestAnchor(self.probe, self.drawThings)	
+		#currControl = TestAnchor(self.probe, self.drawThings)	
+		currControl = TestPathAnchor(self.probe, self.drawThings)	
 		
 		currControl.setRenderWindow(self.renderWindow)
 		currControl.setCamera(self.camera)

@@ -33,8 +33,8 @@ class OccupancyMap(Map):
 
 		self.resetMap()
 
-		for j in range(self.mapSize[0]):
-			for k in range(self.mapSize[1]):
+		for j in range(self.numPixel):
+			for k in range(self.numPixel):
 				pnt = self.gridToReal([j,k])
 
 				if point_inside_polygon(pnt[0],pnt[1],polygon):

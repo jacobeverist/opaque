@@ -6,14 +6,14 @@ from behaviors.AnchorTransition import AnchorTransition
 from behaviors.HoldTransition import HoldTransition
 from behaviors.HoldPosition import HoldPosition
 from behaviors.FrontExtend import FrontExtend
-#from behaviors.PokeWalls import PokeWalls
-#from behaviors.PathStep import PathStep
+from behaviors.PokeWalls import PokeWalls
+from behaviors.PathStep import PathStep
 from behaviors.AdaptiveStep import AdaptiveStep
 
 from pose.AverageContacts import AverageContacts
-from maps.MapGraph import MapGraph
+from maps.MapFlatGround import MapFlatGround
 
-class TestAnchor(SnakeControl):
+class TestPathAnchor(SnakeControl):
 
 	# 3 Steps, go right path, go left path, go back to origin
 	# compute path at each step
@@ -144,12 +144,13 @@ class TestAnchor(SnakeControl):
 		elif self.globalState == 3:
 			
 			" create the mapping object "
-			self.mapGraph = MapGraph(self.probe)
+			self.mapGraph = MapFlatGround(self.probe)
 
 			walls = self.probe.getWalls()
 			polygon = []
 			for wall in walls:
 				for p in wall:
+					print p
 					polygon.append(copy(p))
 			
 			self.mapGraph.loadMap(polygon)
@@ -158,28 +159,35 @@ class TestAnchor(SnakeControl):
 			self.restState = deepcopy(probeState)
 			
 			self.globalState = 4
-			
+
 		elif self.globalState == 4:
 			
-			" extend the front of the snake "
-			isDone = self.doFrontExtend()
+			self.currPose = self.contacts.getAveragePose(0)
 			
-			if isDone:
-				self.globalState = 5
+			" select the destination and generate path "
+			
+			" select the point to go to "
+			frontierPoint = self.mapGraph.selectNextFrontier()
+			
+			" generate the path "
+			originPath, goalPath, breakPoint = self.mapGraph.computeHeadPath(self.currPose, frontierPoint, self.exploreRoot)
+			self.wayPoints = [breakPoint, goalPath[-1]]
+			self.wayPaths = [originPath, goalPath]
+			
+			self.globalState = 5
 
 		elif self.globalState == 5:
-
-			" do a concertina gait step "
-			isDone = self.doAdaptiveStep()
+			
+			" Instantiate the Path Step behavior and give it the path to follow "
+		
+			" do the path following behavior "
+			isDone = self.doPathFollow(self.wayPoints, self.wayPaths)
 			
 			if isDone:
 				self.restState = deepcopy(probeState)
-
-				self.mapGraph.newNode()
-				self.mapGraph.forceUpdate(False)
 				
-				#self.globalState = 6
-				exit()
+				self.globalState = 6
+
 
 		for i in range(self.numJoints):
 			self.probe.setJointTorque(i, self.torques[i])
