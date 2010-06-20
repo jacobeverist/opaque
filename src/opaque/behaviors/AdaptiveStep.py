@@ -1281,7 +1281,7 @@ class AdaptiveStep(Behavior):
 			# termination cases
 			if not self.frontAnchoringState:
 				
-				return True
+				#return True
 				
 				peakJoints = self.concertinaFit.getPeakJoints(self.currPeak) + self.concertinaFit.getPeakJoints(self.currPeak+1)
 				peakJoints.sort()
