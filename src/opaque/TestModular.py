@@ -178,7 +178,7 @@ class TestModular(SnakeControl):
 			
 			" create the mapping object "
 			self.mapGraph = MapGraph(self.probe, self.contacts)
-			self.mapGraph.loadFile("testData/correctionTest", 6)
+			#self.mapGraph.loadFile("testData/correctionTest", 6)
 
 			self.mapGraph.newNode()
 			self.mapGraph.forceUpdate(False)
@@ -258,7 +258,7 @@ class TestModular(SnakeControl):
 	
 				self.lastPose = self.currPose
 				
-				deltaDist = 0.0
+				#deltaDist = 0.0
 
 				if deltaDist > 0.4:
 					self.globalState = 4
@@ -271,6 +271,8 @@ class TestModular(SnakeControl):
 			
 			" select the point to go to "
 			frontierPoint = self.mapGraph.selectNextFrontier()
+			
+			#frontierPoint = [1.07-0.4, 0.0]
 			
 			" generate the path "
 			originPath, goalPath, breakPoint = self.mapGraph.computeHeadPath(self.currPose, frontierPoint, self.exploreRoot)
@@ -823,6 +825,8 @@ class TestModular(SnakeControl):
 		" create the first behavior "
 		if self.localState == 0:
 			print "START:  doFrontExtend()"
+
+			self.lastPose = self.contacts.getAveragePose(0)
 			
 			" extend the front "
 			self.behavior = FrontExtend(self.robotParam, self.contacts, self.direction)
@@ -984,7 +988,11 @@ class TestModular(SnakeControl):
 
 			" instantiate the behavior "
 			self.behavior = PathStep(self.robotParam, probeState, self.contacts, self.mapGraph, direction)
-			self.behavior.setPath(wayPaths)
+
+			newPaths = deepcopy(wayPaths)
+			if not direction:
+				newPaths.reverse()
+			self.behavior.setPath(newPaths)
 			self.behavior.computeCurve()
 
 			" anchoring turned off "
@@ -1101,7 +1109,9 @@ class TestModular(SnakeControl):
 						self.distCount += 1
 					else:
 						self.distCount = 0
-						
+					
+					print "lastDist =", self.lastDist
+					print "distCount =", self.distCount
 					self.lastDist = dist
 
 					" if we've reached our target after this step, go to next waypoint "
@@ -1118,11 +1128,12 @@ class TestModular(SnakeControl):
 						else:
 							" all points traveled, end behavior "
 							self.localPathState = 0
-				
+							
 							print "FINISH:  doPathFollow()"
 							return True
 							
 					elif self.distCount >= 2:
+						print "changing direction from", self.localDirection, "to", not self.localDirection
 						" if we're going the wrong way, reverse our direction "
 						self.localDirection = not self.localDirection
 						self.lastDist = 1e100
