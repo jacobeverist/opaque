@@ -190,8 +190,8 @@ class TestModular(SnakeControl):
 			self.restState = deepcopy(probeState)
 			
 			#self.globalState = 6
-			#self.globalState = 4
-			self.globalState = 9
+			self.globalState = 4
+			#self.globalState = 9
 			
 		elif self.globalState == 4:
 			
