@@ -1447,6 +1447,7 @@ class Corridor:
 		self.points = []
 		self.lengths = []
 		self.pipeLen = pipe_len
+		self.entrWidth = 0.4
 		self.segLenMin = seg_len_min
 		self.segLenMax = seg_len_max
 		self.segAngMax = seg_ang_max
@@ -1638,13 +1639,25 @@ class Corridor:
 		walls = []
 		wall1 = []
 		wall2 = []
+
+		for wall in walls:
+			for i in range(len(wall)):
+				p = copy(wall[i])
+				p[0] += 2.0
+				wall[i] = p
+	
 		for p in self.wall1.points:
-			wall1.append(p)
+			np = copy(p)
+			np[0] += 2.0
+			wall1.append(np)
 		for p in self.wall2.points:
-			wall2.append(p)
+			np = copy(p)
+			np[0] += 2.0
+			wall2.append(np)
 			
 		
-		walls = [wall1, wall2]
+		#walls = [wall1, wall2]
+		walls = [wall2 + wall1]
 		fd.write(repr(walls))
 		fd.close()
 		
@@ -1725,7 +1738,8 @@ class Corridor:
 
 		# the first point has maximum width for the entrance
 		#newP =[self.pos[0][0] + (self.pipeMax/2.0)*rightP[0][0], self.pos[1][0] + (self.pipeMax/2.0)*rightP[1][0]]
-		newP =[self.pos[0][0] + (self.pipeMin/2.0)*rightP[0][0], self.pos[1][0] + (self.pipeMin/2.0)*rightP[1][0]]
+		#newP =[self.pos[0][0] + (self.pipeMin/2.0)*rightP[0][0], self.pos[1][0] + (self.pipeMin/2.0)*rightP[1][0]]
+		newP =[self.pos[0][0] + (self.entrWidth/2.0)*rightP[0][0], self.pos[1][0] + (self.entrWidth/2.0)*rightP[1][0]]
 		points.append(newP)
 
 		for i in range(1,len(self.dir[0])):

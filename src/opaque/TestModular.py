@@ -91,7 +91,8 @@ class TestModular(SnakeControl):
 
 	def grabImage(self):
 
-		inc = 1000
+		#inc = 1000
+		inc = 500
 
 		if self.globalTimer % inc == 0:
 			pass
@@ -179,6 +180,7 @@ class TestModular(SnakeControl):
 			" create the mapping object "
 			self.mapGraph = MapGraph(self.probe, self.contacts)
 			#self.mapGraph.loadFile("testData/correctionTest", 6)
+			#self.mapGraph.loadFile("testData/mapBuild_21June2010", 66)
 
 			self.mapGraph.newNode()
 			self.mapGraph.forceUpdate(False)
@@ -186,6 +188,8 @@ class TestModular(SnakeControl):
 			self.mapGraph.synch()
 			self.mapGraph.saveMap()
 			self.mapGraph.saveLocalMap()
+			
+			#exit()
 			
 			self.restState = deepcopy(probeState)
 			
@@ -214,6 +218,7 @@ class TestModular(SnakeControl):
 				self.mapGraph.forceUpdate(False)
 				
 				self.globalState = 6
+				#self.globalState = 9
 				
 		elif self.globalState == 6:
 
@@ -254,6 +259,7 @@ class TestModular(SnakeControl):
 				self.currPose = self.contacts.getAveragePose(0)
 				deltaDist = sqrt((self.currPose[0]-self.lastPose[0])**2 + (self.currPose[1]-self.lastPose[1])**2)
 
+				deltaDist = 1.0
 				print "deltaDist =", deltaDist
 	
 				self.lastPose = self.currPose

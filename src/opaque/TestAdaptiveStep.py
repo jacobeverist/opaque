@@ -35,12 +35,16 @@ class TestAdaptiveStep(SnakeControl):
 		
 		self.setTimerAliasing(1)
 
+		" get the probe state "
+		probeState = self.probe.getProbeState()
+
 		self.contacts = AverageContacts(self.probe)
 		self.contacts.setMask( [1.0 for i in range(39)] )	
-		self.contacts.step()
+		self.contacts.step(probeState)
 					
 		self.mapGraph = MapGraph(self.probe, self.contacts)
 		self.mapGraph.loadFile("testData/behaviorTest", 1)
+
 		
 		self.mapGraph.correctPoses2()
 		self.mapGraph.synch()
@@ -69,7 +73,7 @@ class TestAdaptiveStep(SnakeControl):
 					
 			self.contacts = AverageContacts(self.probe)
 			self.contacts.setMask( [1.0 for i in range(39)] )	
-			self.contacts.step()
+			self.contacts.step(probeState)
 				
 			self.stateA = 1			
 			print "step 0 complete"
@@ -77,7 +81,7 @@ class TestAdaptiveStep(SnakeControl):
 		elif self.stateA == 1:
 
 			self.contacts.setMask( [1.0 for i in range(39)] )	
-			self.contacts.step()
+			self.contacts.step(probeState)
 
 			if self.contacts.isStable():
 				self.stateA = 2

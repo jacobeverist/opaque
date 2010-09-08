@@ -62,11 +62,11 @@ class AdaptiveAnchorCurve:
 		for p in points:
 			xP.append(p[0])
 			zP.append(p[1])
-		pylab.plot(xP,zP)
+		pylab.plot(xP,zP, linewidth=3, color=(0.0,0.0,0.0))
 	
-		pylab.xlim(-1,5)
-		pylab.ylim(-4,2)
-		pylab.show()
+		pylab.xlim(-0.5,2.5)
+		pylab.ylim(-1,1)
+		#pylab.show()
 
 	def isOutOfSegments(self, tipPoint):
 		p1 = self.controlA['p1']

@@ -2,7 +2,7 @@
 
 #import ogre.renderer.OGRE as ogre
 import ogre.physics.OgreOde as OgreOde
-from math import pi
+from math import pi, modf
 from servo import commandServo
 
 DEGREES_TO_RADIANS = pi / 180.0
@@ -24,6 +24,9 @@ HI_SERVO_STOP = 160.0 * DEGREES_TO_RADIANS # _deg
 LO_SERVO_STOP = -160.0 * DEGREES_TO_RADIANS # _deg
 
 WORLD_STEP = 0.001
+
+# minimum sensor resolution
+ANGLE_RESOLUTION = 0.016
 
 class Servo():
 
@@ -112,7 +115,7 @@ class Servo():
 			self._done = False
 
 	def error(self):
-		return self.goal_phi - (self.joint.getAngle() + self.init_phi)
+		return self.goal_phi - (self.discAngle(self.joint.getAngle()) + self.init_phi)
 
 	def lim(self, value, low, high):
 		if value > high:
@@ -141,11 +144,24 @@ class Servo():
 	def setRegular(self):
 		self.rigid = False
 
+	def discAngle(self, angle):
+		
+		frac, iCount = modf(angle/ANGLE_RESOLUTION)
+		
+		if iCount > 0:
+			if frac >= 0.5:
+				iCount += 1.0
+		elif iCount < 0:
+			if frac < -0.5:
+				iCount += -1.0
+				
+		return iCount * ANGLE_RESOLUTION
+
 	def frameStarted(self, evt):
 
 
 		if not self.rigid:
-			self.phi = self.joint.getAngle()
+			self.phi = self.discAngle(self.joint.getAngle())
 			self._done = False	
 			vel = 0.0	
 			if not self._done:
