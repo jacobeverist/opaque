@@ -21,8 +21,10 @@ class Curl(Behavior):
 
 		#self.stabilityX = ValueStability(1e-7, 10)
 		#self.stabilityY = ValueStability(1e-7, 10)
-		self.stabilityX = ValueStability(1e-5, 10)
-		self.stabilityY = ValueStability(1e-5, 10)
+		#self.stabilityX = ValueStability(1e-5, 10)
+		#self.stabilityY = ValueStability(1e-5, 10)
+		self.stabilityX = ValueStability(1e-4, 10)
+		self.stabilityY = ValueStability(1e-4, 10)
 		
 		self.lastPose = [0.0,0.0,0.0]
 		
@@ -149,6 +151,8 @@ class Curl(Behavior):
 			
 			varX = self.stabilityX.getVar()
 			varY = self.stabilityY.getVar()
+					
+			print "variances =", varX, varY
 						
 			if self.stabilityX.isStable() and self.stabilityY.isStable():
 				
@@ -172,11 +176,11 @@ class Curl(Behavior):
 				if self.val == 0:
 					#self.stabilityX.setThresh(1e-7)
 					#self.stabilityY.setThresh(1e-7)
-					self.stabilityX.setThresh(1e-5)
-					self.stabilityY.setThresh(1e-5)
+					self.stabilityX.setThresh(1e-4)
+					self.stabilityY.setThresh(1e-4)
 				else:
-					self.stabilityX.setThresh(1e-5)
-					self.stabilityY.setThresh(1e-5)
+					self.stabilityX.setThresh(1e-4)
+					self.stabilityY.setThresh(1e-4)
 				
 			else:
 				return False
