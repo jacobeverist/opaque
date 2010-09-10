@@ -15,7 +15,7 @@ import ogre.physics.OgreOde as OgreOde
 import ogre.io.OIS as OIS
 import sf_OIS as sf
 
-from opaque.robot.SnakeProbe import SnakeProbe
+from opaque.robot.SuperbotSnake import SuperbotSnake
 from opaque.TestModular import TestModular
 from opaque.TestHoldPosition import TestHoldPosition
 from opaque.TestHoldTransition import TestHoldTransition
@@ -268,8 +268,8 @@ class SnakeApp(sf.Application):
 
 		pos = ogre.Vector3(1.65,0.04,0.0)
 
-		#self.probe = SnakeProbe(self._world,yRot,pos,40,0.15,0.05,30.0*2.5,0.9)
-		self.probe = SnakeProbe(self._world,yRot,pos,40,0.15,0.15,30.0*2.5,0.9)
+		#self.probe = SuperbotSnake(self._world,yRot,pos,40,0.15,0.05,30.0*2.5,0.9)
+		self.probe = SuperbotSnake(self._world,yRot,pos,40,0.15,0.15,30.0*2.5,0.9)
 
 		self.probe.translatePose(probeDisplacement)
 
