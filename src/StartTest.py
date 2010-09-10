@@ -272,7 +272,7 @@ class SnakeApp(sf.Application):
 		f = open(targetMapFile, 'r')
 		str_f = f.read()
 		walls = eval(str_f)
-
+		
 		self.walls = WallSections(self._world, walls)
 
 		" make accessible to our mapping algorithms for comparison purposes "

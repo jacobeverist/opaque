@@ -178,6 +178,184 @@ def closestSegPoint(seg, tPoint):
 		raise
 
 
+class CrossJunction:
+	
+	def __init__(self, pipe_len, entr_len, pipe_width, turn_angle):
+		global mapCount
+
+		self.pipeWidth = pipe_width
+		self.pipeLen = pipe_len
+		self.origin = [0.0,0.0]
+		self.entrLen = entr_len
+		self.turnAngle = turn_angle
+
+		"""
+		WLEN = 3.0
+		WLEN2 = 5.0
+		wall1 = [[-14.0, -0.2], [-4.0, -0.2], [-4.0 + WLEN*cos(pi/3), -0.2 - WLEN*sin(pi/3)]]
+		wall2 = [[-4.0 + WLEN2*cos(pi/3), 0.2 + WLEN2*sin(pi/3)], [-4.0, 0.2] ,[-14.0, 0.2]]
+		w1 = wall1[2]
+		w2 = wall2[0]
+		
+		wall3 = [[w1[0] + 0.4*cos(pi/6), w1[1] + 0.4*sin(pi/6)], [0.4*cos(pi/6) - 4, 0.0], [w2[0] + 0.4*cos(pi/6), w2[1] - 0.4*sin(pi/6)], w2]
+		lp = wall3[0]
+		rp = wall3[2]
+		
+		wall6 = [lp, [lp[0] + WLEN*cos(pi/6), lp[1] + WLEN*sin(pi/6)]]
+		wall6.append([wall6[1][0] + 0.4*cos(pi/3), wall6[1][1] - 0.4*sin(pi/3)])
+		wall6.append([wall6[2][0] - WLEN*cos(pi/6), wall6[2][1] - WLEN*sin(pi/6)])
+		wall6.append([wall6[3][0] + WLEN*cos(pi/3), wall6[3][1] - WLEN*sin(pi/3)])
+		wall6.append([wall6[4][0] - 0.4*cos(pi/6), wall6[4][1] - 0.4*sin(pi/6)])
+		wall6.append(w1)
+		wall6.reverse()
+		
+		wall7 = [[-4.6+6.0,-0.2],[-4.6+6.0,0.2]]
+		"""
+		
+		WLEN = self.pipeLen
+		wall1 = [[-14.0, -self.pipeWidth/2.0], [-4.0, -self.pipeWidth/2.0]]
+		angle = 0.0
+
+		cornerPoint = wall1[-1]
+		
+		angle += pi/2
+		wall1.append([wall1[-1][0] + WLEN*cos(angle), wall1[-1][1] - WLEN*sin(angle)])
+
+
+		pPoint = wall1[-1]
+		
+		angle += self.turnAngle
+		wall1.append([wall1[-1][0] + WLEN*cos(angle), wall1[-1][1] - WLEN*sin(angle)])
+
+		angle += -pi/2
+		wall1.append([wall1[-1][0] + self.pipeWidth*cos(angle), wall1[-1][1] - self.pipeWidth*sin(angle)])
+		
+		angle += -pi/2
+		dist = (pPoint[0]+self.pipeWidth  - wall1[-1][0]) / cos(angle)
+		wall1.append([wall1[-1][0] + dist*cos(angle), wall1[-1][1] - dist*sin(angle)])
+
+		angle += -self.turnAngle
+		wall1.append([wall1[-1][0], cornerPoint[1]])
+		
+		cornerPoint = wall1[-1]
+
+		angle += pi/2
+		wall1.append([wall1[-1][0] + WLEN*cos(angle), wall1[-1][1] - WLEN*sin(angle)])
+
+		pPoint = wall1[-1]
+		
+		angle += self.turnAngle
+		wall1.append([wall1[-1][0] + WLEN*cos(angle), wall1[-1][1] - WLEN*sin(angle)])
+
+		angle += -pi/2
+		wall1.append([wall1[-1][0] + self.pipeWidth*cos(angle), wall1[-1][1] - self.pipeWidth*sin(angle)])
+
+		angle += -pi/2
+		dist = -(pPoint[1]+self.pipeWidth  - wall1[-1][1]) / sin(angle)
+		wall1.append([wall1[-1][0] + dist*cos(angle), wall1[-1][1] - dist*sin(angle)])
+
+		angle += -self.turnAngle
+		wall1.append([cornerPoint[0], wall1[-1][1]])
+
+		cornerPoint = wall1[-1]
+
+		angle += pi/2
+		wall1.append([wall1[-1][0] + WLEN*cos(angle), wall1[-1][1] - WLEN*sin(angle)])
+
+		pPoint = wall1[-1]
+		
+		angle += self.turnAngle
+		wall1.append([wall1[-1][0] + WLEN*cos(angle), wall1[-1][1] - WLEN*sin(angle)])
+
+		angle += -pi/2
+		wall1.append([wall1[-1][0] + self.pipeWidth*cos(angle), wall1[-1][1] - self.pipeWidth*sin(angle)])
+
+		angle += -pi/2
+		dist = (pPoint[0]-self.pipeWidth  - wall1[-1][0]) / cos(angle)
+		wall1.append([wall1[-1][0] + dist*cos(angle), wall1[-1][1] - dist*sin(angle)])
+
+		angle += -self.turnAngle
+		wall1.append([wall1[-1][0], cornerPoint[1]])
+
+		wall1.append([-14.0, self.pipeWidth/2.0])
+		
+		"""
+		angle += -pi/2
+		wall1.append([wall1[-1][0] + self.pipeWidth*cos(angle), wall1[-1][1] - self.pipeWidth*sin(angle)])
+		"""
+		
+		#angle += -pi/2
+		#wall1.append([wall1[-1][0] + WLEN*cos(angle), wall1[-1][1] - WLEN*sin(angle)])
+
+		"""
+		angle += pi/2
+		wall1.append([wall1[-1][0] + WLEN*cos(angle), wall1[-1][1] - WLEN*sin(angle)])
+
+		angle += -pi/2
+		wall1.append([wall1[-1][0] + self.pipeWidth*cos(angle), wall1[-1][1] - self.pipeWidth*sin(angle)])
+
+		angle += -pi/2
+		wall1.append([wall1[-1][0] + WLEN*cos(angle), wall1[-1][1] - WLEN*sin(angle)])
+
+		angle += pi/2
+		wall1.append([wall1[-1][0] + WLEN*cos(angle), wall1[-1][1] - WLEN*sin(angle)])
+
+		angle += -pi/2
+		wall1.append([wall1[-1][0] + self.pipeWidth*cos(angle), wall1[-1][1] - self.pipeWidth*sin(angle)])
+
+		angle += -pi/2
+		wall1.append([wall1[-1][0] + WLEN*cos(angle), wall1[-1][1] - WLEN*sin(angle)])
+
+		angle += pi/2
+		wall1.append([wall1[-1][0] + WLEN*cos(angle), wall1[-1][1] - WLEN*sin(angle)])
+
+		wall1.append([-14.0, self.pipeWidth/2.0])
+		"""
+		
+		self.walls = [wall1]
+		
+		
+		for wall in self.walls:
+			for i in range(len(wall)):
+				p = copy(wall[i])
+				p[0] += 6.0
+				wall[i] = p			
+		
+		
+		self.writeToFile(".")
+		self.draw()
+
+		mapCount += 1
+		
+	def writeToFile(self, testDir):
+
+		global mapCount
+		
+		fileName = "completeFile%04d.txt" % mapCount
+
+		# record the corridor points
+		fd = open(testDir + "/" + fileName, 'w')
+		fd.write(repr(self.walls))
+		fd.close()
+		
+		return fileName
+
+	def draw(self):
+		global mapCount
+		
+		pylab.clf()
+		
+		wall = self.walls[0]
+				
+		for i in range(len(wall)-1):
+			n1 = wall[i]
+			n2 = wall[i+1]
+			
+			xP = [n1[0], n2[0]]
+			yP = [n1[1], n2[1]]
+			pylab.plot(xP,yP, color="b")
+
+
 class StraightJunction:
 	
 	def __init__(self, pipe_len, entr_len, pipe_width, turn_angle):
@@ -190,7 +368,7 @@ class StraightJunction:
 		self.turnAngle = turn_angle
 		
 		WLEN = self.pipeLen
-		wall1 = [[-14.0, -0.2], [-4.0, -0.2]]
+		wall1 = [[-14.0, -self.pipeWidth/2.0], [-4.0, -self.pipeWidth/2.0]]
 		angle = 0.0
 		
 		angle += self.turnAngle
