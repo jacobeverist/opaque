@@ -37,7 +37,7 @@ class DrawThings():
 			xP = [p4[0],p3[0],p2[0],p1[0],p4[0]]
 			yP = [p4[1],p3[1],p2[1],p1[1],p4[1]]
 			
-			pylab.plot(xP,yP, color = clr)
+			pylab.plot(xP,yP, linewidth=3, color = clr)
 			
 		pylab.xlim(-4,9)
 		pylab.ylim(-7,5)
