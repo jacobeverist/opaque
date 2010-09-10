@@ -91,16 +91,16 @@ class TestModular(SnakeControl):
 
 	def grabImage(self):
 
-		inc = 1000
+		inc = 200
 
 		if self.globalTimer % inc == 0:
 			pass
 			self.drawThings.saveView("scene%06u.png" % (self.globalTimer/inc))
 			
-			poses = self.probe.getPose()		
-			f = open("poses%06u.txt" % (self.globalTimer/inc), 'w')
-			f.write(repr(poses))
-			f.close()
+			#poses = self.probe.getPose()		
+			#f = open("poses%06u.txt" % (self.globalTimer/inc), 'w')
+			#f.write(repr(poses))
+			#f.close()
 
 	def grabAngles(self):
 
@@ -179,6 +179,7 @@ class TestModular(SnakeControl):
 			" create the mapping object "
 			self.mapGraph = MapGraph(self.probe, self.contacts)
 			#self.mapGraph.loadFile("testData/correctionTest", 6)
+			#self.mapGraph.loadFile("testData/mapBuild_21June2010", 66)
 
 			self.mapGraph.newNode()
 			self.mapGraph.forceUpdate(False)
@@ -251,7 +252,7 @@ class TestModular(SnakeControl):
 				self.mapGraph.saveLocalMap()
 				
 		
-				self.currPose = self.contacts.getAveragePose(0)
+				self.currPose = self.contacts.getAverageSegPose(0)
 				deltaDist = sqrt((self.currPose[0]-self.lastPose[0])**2 + (self.currPose[1]-self.lastPose[1])**2)
 
 				print "deltaDist =", deltaDist
@@ -260,19 +261,24 @@ class TestModular(SnakeControl):
 				
 				#deltaDist = 0.0
 
-				if deltaDist > 0.4:
+				#if deltaDist > 0.4:
+				if deltaDist > 0.2:
 					self.globalState = 4
 				else:
 					self.globalState = 10
+					
+				#self.globalState = 10
 		
 		elif self.globalState == 10:
 			
 			" select the destination and generate path "
 			
 			" select the point to go to "
-			frontierPoint = self.mapGraph.selectNextFrontier()
+			#frontierPoint = self.mapGraph.selectNextFrontier()
 			
-			#frontierPoint = [1.07-0.4, 0.0]
+			frontierPoint = [1.07-0.4, 0.0]
+			#649, 358
+			#frontierPoint = [6.0, -1.5]
 			
 			" generate the path "
 			originPath, goalPath, breakPoint = self.mapGraph.computeHeadPath(self.currPose, frontierPoint, self.exploreRoot)
@@ -611,6 +617,8 @@ class TestModular(SnakeControl):
 			self.localWayPoints = deepcopy(wayPoints)
 			self.localWayPaths = deepcopy(wayPaths)
 			
+			self.currPose = self.contacts.getAverageSegPose(0)
+
 			" determine distance to the next way point "
 			dest = self.localWayPoints[0]			
 			self.lastDist = sqrt((dest[0]-self.currPose[0])**2 + (dest[1]-self.currPose[1])**2)
@@ -624,7 +632,6 @@ class TestModular(SnakeControl):
 				dest = self.localWayPoints[0]			
 				self.lastDist = sqrt((dest[0]-self.currPose[0])**2 + (dest[1]-self.currPose[1])**2)
 				
-			self.currPose = self.contacts.getAverageSegPose(0)
 			self.distCount = 0
 			self.localPathState = 1
 			
@@ -656,23 +663,55 @@ class TestModular(SnakeControl):
 
 				self.mapGraph.newNode()
 				self.mapGraph.forceUpdate(False)
-		
+					
 				if len(self.localWayPoints) > 0:
 					
+
 					dest = self.localWayPoints[0]			
-					dist = sqrt((dest[0]-self.currPose[0])**2 + (dest[1]-self.currPose[1])**2)
-					print "distance from", dest, "to", self.currPose, "=", dist
+					#dist = sqrt((dest[0]-self.currPose[0])**2 + (dest[1]-self.currPose[1])**2)
+					
+					indexA = 0
+					distA = 1e100
+					indexB = 0
+					distB = 1e100
+					path = self.localWayPaths[0]
+
+					for i in range(len(path)):
+						dist = sqrt((dest[0]-path[i][0])**2 + (dest[1]-path[i][1])**2)
+						if dist < distA:
+							indexA = i
+							distA = dist
+
+						dist = sqrt((self.currPose[0]-path[i][0])**2 + (self.currPose[1]-path[i][1])**2)
+						if dist < distB:
+							indexB = i
+							distB = dist
+					
+					
+					pathLen = 0.0
+					if indexB >= indexA:
+						for i in range(indexA, indexB):
+							pathLen += sqrt((path[i][0]-path[i+1][0])**2 + (path[i][1]-path[i+1][1])**2)
+					else:
+						for i in range(indexB, indexA):
+							pathLen += sqrt((path[i][0]-path[i+1][0])**2 + (path[i][1]-path[i+1][1])**2)
+					
+						
+					
+					totalDist = distA + distB + pathLen
+					
+					print "distance from", dest, "to", self.currPose, "=", totalDist
 					
 					" FIXME: need better directional detection when more complicated maps "
 					" check if we're going away from our target "
-					if dist > self.lastDist:
+					if totalDist > self.lastDist:
 						self.distCount += 1
 					else:
 						self.distCount = 0
 					
 					print "lastDist =", self.lastDist
 					print "distCount =", self.distCount
-					self.lastDist = dist
+					self.lastDist = totalDist
 
 					" if we've reached our target after this step, go to next waypoint "
 					if self.targetReached:
@@ -692,7 +731,8 @@ class TestModular(SnakeControl):
 							print "FINISH:  doPathFollow()"
 							return True
 							
-					elif self.distCount >= 2:
+						#elif self.distCount >= 2:
+					elif self.distCount >= 1:
 						print "changing direction from", self.localDirection, "to", not self.localDirection
 						" if we're going the wrong way, reverse our direction "
 						self.localDirection = not self.localDirection

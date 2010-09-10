@@ -13,6 +13,8 @@ mapOccMaps = []
 mapObstMaps = []
 scenes = []
 
+sceneCount = 0
+
 for nameF in files:
 	if "mapOccupancyMap" == nameF[0:15]:
 		mapOccMaps.append(nameF)
@@ -21,7 +23,9 @@ for nameF in files:
 		mapObstMaps.append(nameF)
 
 	if "scene" == nameF[0:5]:
-		scenes.append(nameF)
+		if sceneCount % 10 == 0:
+			scenes.append(nameF)		
+		sceneCount += 1
 
 
 mapOccMaps.sort()
@@ -65,6 +69,9 @@ for i in range(len(scenes)):
 
 	if occTime < sceneTime:
 		occImg = Image.open(mapOccMaps[0])
+		#draw = ImageDraw.Draw(frontierDensity)
+		#draw.ellipse((xMax-5, yMax-5, xMax+5, yMax+5), outline=255)
+
 		occResizeImg = occImg.resize((size3[0]/2,size3[0]/2))
 		saveOcc = occImg
 		mapOccMaps = mapOccMaps[1:]

@@ -2,7 +2,7 @@
 #from opaque.common import *
 #import opaque.environment as envs
 
-from opaque.environment.MapGenerate import ForkEnv, PipeJunctions, Corridor, StraightJunction
+from opaque.environment.MapGenerate import ForkEnv, PipeJunctions, Corridor, StraightJunction, CrossJunction
 from math import pi
 import pylab
 
@@ -12,6 +12,7 @@ if __name__ == '__main__':
 	
 	maps = []
 	for i in range(17):
+	#for i in range(1):
 		
 		angle = i * pi/16 - pi/2
 		#angle = i * 0.1 + 0.1
@@ -22,6 +23,7 @@ if __name__ == '__main__':
 		#newmap = ForkEnv(10.0, 0.1, 0.5, pi/512, 0.3, 0.4, 0.2, 5.0, 0.00)
 
 		
+		#newmap = CrossJunction(3.0, 5.0, 0.4, pi/4)
 		newmap = StraightJunction(3.0, 5.0, 0.4, angle)
 		#newmap = PipeJunctions(5.0, 5.0, angle)
 		
@@ -30,13 +32,13 @@ if __name__ == '__main__':
 		newmap.writeToFile(".")
 		maps.append(newmap)
 		
-		#pylab.clf()
+		pylab.clf()
 		#newmap.drawCorridor()
-		#newmap.draw()
+		newmap.draw()
 
-		#pylab.xlim(-10,10)
-		#pylab.ylim(-10,10)
-		#pylab.savefig("genMap_%04u.png" % i)
+		pylab.xlim(-10,10)
+		pylab.ylim(-10,10)
+		pylab.savefig("genMap_%04u.png" % i)
 	
 	#newmap.draw()
 	

@@ -290,10 +290,10 @@ class LocalNode:
 		f.write("\n")
 		f.close()
 
-		f = open("cntpose%04u.txt" % self.nodeID, 'w')
-		f.write(repr(self.localCenterPoints))
-		f.write("\n")
-		f.close()
+		#f = open("cntpose%04u.txt" % self.nodeID, 'w')
+		#f.write(repr(self.localCenterPoints))
+		#f.write("\n")
+		#f.close()
 	
 	def readFromFile(self, dirName, nodeID):
 		

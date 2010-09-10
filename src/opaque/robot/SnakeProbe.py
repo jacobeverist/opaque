@@ -133,9 +133,9 @@ class SnakeProbe:
 
 		numJoints = self.getNumJoints()
 
-		for i in range(numJoints):
-			err = self._joints[i].error()
-			self.segMaterials[i].setAmbient(err,0.0,1.0-err)
+		#for i in range(numJoints):
+		#	err = self._joints[i].error()
+		#	self.segMaterials[i].setAmbient(err,0.0,1.0-err)
 
 		for i in range(numJoints):
 			self.joints[i] = self._joints[i].phi
