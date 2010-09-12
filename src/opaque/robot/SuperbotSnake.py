@@ -221,7 +221,8 @@ class SuperbotSnake:
 
 			## Create the visual representation (the Ogre entity and scene node)
 			name = "segment" + str(len(self._bodies))
-			entity = self._mgr.createEntity(name, "Cube.mesh")
+			#entity = self._mgr.createEntity(name, "Cube.mesh")
+			entity = self._mgr.createEntity(name, "Cylinder.mesh")
 			node = self._mgr.getRootSceneNode().createChildSceneNode(name)
 			node.attachObject(entity)
 			entity.setCastShadows(False)
@@ -237,35 +238,43 @@ class SuperbotSnake:
 			self.segMaterials.append(newMaterial)
 			entity.getSubEntity(0).setMaterialName("custom" + str(i))
 
-			## Pick a size
-			size = ogre.Vector3(self.segLength, 0.01, self.segWidth)
-
-			## Set the mass and geometry to match the visual representation
-			size *= 1.0
 
 			## Create a body associated with the node we created
 			body = OgreOde.Body(self._world) 
 			node.attachObject(body)
 
-			cylDir = ogre.Vector3(0.0,1.0,0.0)
-			cylMass = OgreOde.CylinderMass(STD_WEIGHT, cylDir, self.segLength/2.0, 0.01)
+			#cylDir = ogre.Vector3(0.0,1.0,0.0)
+			#cylMass = OgreOde.CylinderMass(STD_WEIGHT, cylDir, self.segLength/2.0, 0.01)
+			cylMass = OgreOde.BoxMass(STD_WEIGHT,ogre.Vector3(1.0,1.0,1.0))
 			#mass = OgreOde.BoxMass(STD_WEIGHT,size)
 			#mass.setDensity(1.0,size)
 
-			cylGeom = OgreOde.CylinderGeometry(self.segLength/2.0, 0.01, self._world, self._space)
+			cylGeom = OgreOde.CylinderGeometry(self.segLength/2.0, 0.5, self._world, self._space)
+			#cylGeom = OgreOde.CylinderGeometry(self.segLength/2.0, 0.01, self._world, self._space)
 			#geom = OgreOde.BoxGeometry(size, self._world, self._space)
 
+			#yRot = ogre.Quaternion(ogre.Degree(90.0), ogre.Vector3().UNIT_Y)
+			#zRot = ogre.Quaternion(ogre.Degree(90.0), ogre.Vector3().UNIT_Z)
+			#xRot = ogre.Quaternion(ogre.Degree(90.0), ogre.Vector3().UNIT_X)
+			#cylGeom.setOrientation(yRot)
+
+
+			" scale the render to the geometry and mass "
+			size = ogre.Vector3(self.segLength, 0.25, self.segLength)
+			#size *= 1.0
 			node.setScale(size.x,size.y,size.z)
 			#body.setMass(mass)
 
 			body.setMass(cylMass)
 
 			" control the position of each segment "
-			segPos = ogre.Vector3(i*self.segLength, 0.011*(i%2), 0.0)
+			segPos = ogre.Vector3(i*self.segLength, 3.61 + 0.011*(i%2), 0.0)
 			actPos = R*segPos
 
 			body.setPosition(actPos + pos)
-			body.setOrientation(R)
+			#zRot = ogre.Quaternion(ogre.Degree(90.0), ogre.Vector3().UNIT_Z)
+			#xRot = ogre.Quaternion(ogre.Degree(180.0), ogre.Vector3().UNIT_X)
+			#body.setOrientation(xRot)
 
 			#geom.setBody(body)
 			#entity.setUserObject(geom)

@@ -128,7 +128,7 @@ class TestModular(SnakeControl):
 
 	def frameStarted(self):
 		
-		self.grabImage()
+		#self.grabImage()
 		#self.grabAngles()
 
 		#if self.globalTimer % 4000 == 0:
@@ -153,9 +153,9 @@ class TestModular(SnakeControl):
 			
 			" anchor the robot initially "
 
-			isDone = self.doInitAnchor()
+			#isDone = self.doInitAnchor()
 			#isDone = self.doHoldPosition()
-			
+			isDone = False
 			if isDone:
 				self.globalState = 1
 				

@@ -120,7 +120,7 @@ class SimpleScenesFrameListener ( sf.FrameListener ):
 
 		self.probe.frameStarted(evt)
 		
-		self.adjustCamera()
+		#self.adjustCamera()
 		
 		return result
 
@@ -263,13 +263,14 @@ class SnakeApp(sf.Application):
 
 		s.build()
 
-		yRot = ogre.Quaternion(ogre.Degree(180.0), ogre.Vector3().UNIT_Y)
-		zRot = ogre.Quaternion(ogre.Degree(0.0), ogre.Vector3().UNIT_Z)
+		yRot = ogre.Quaternion(ogre.Degree(0.0), ogre.Vector3().UNIT_Y)
+		zRot = ogre.Quaternion(ogre.Degree(90.0), ogre.Vector3().UNIT_Z)
 
-		pos = ogre.Vector3(1.65,0.04,0.0)
+		#pos = ogre.Vector3(1.65,0.04,0.0)
+		pos = ogre.Vector3(3.65,0.04,0.0)
 
-		#self.probe = SuperbotSnake(self._world,yRot,pos,40,0.15,0.05,30.0*2.5,0.9)
 		self.probe = SuperbotSnake(self._world,yRot,pos,40,0.15,0.15,30.0*2.5,0.9)
+		#self.probe = SuperbotSnake(self._world,zRot,pos,40,0.15,0.15,30.0*2.5,0.9)
 
 		self.probe.translatePose(probeDisplacement)
 
