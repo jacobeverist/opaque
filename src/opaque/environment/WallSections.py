@@ -7,15 +7,11 @@ from copy import deepcopy
 
 class WallSections:
 
-	def __init__(self, world, lpnts, mapFile = ""):
+	def __init__(self, sceneManager, lpnts, mapFile = ""):
 
-		self._world = world
-		self._mgr = world.getSceneManager()
-		self._space = world.getDefaultSpace()
+		self._mgr = sceneManager
 
 		self.count = 0
-		
-		self.trimeshes =  []
 
 		self.npnts = []
 
@@ -128,7 +124,7 @@ class WallSections:
 		entity1_top.setCastShadows(False)
 
 		# create the ODE geometry
-		self.trimeshes.append(OgreOde.makeTriangleMeshGeometry(wall1Points, len(wall1Points), indices1, len(indices1), self._world, self._space))
+		#self.trimeshes.append(OgreOde.makeTriangleMeshGeometry(wall1Points, len(wall1Points), indices1, len(indices1), self._world, self._space))
 		#self.trimeshes.append(OgreOde.makeTriangleMeshGeometry(wall1Points, len(wall1Points), indices2, len(indices2), self._world, self._space))
 
 		# add the entity to the Ogre static geometry
@@ -245,8 +241,7 @@ class WallSections:
 				entity1_top.setCastShadows(False)
 	
 				# create the ODE geometry
-				self.trimeshes.append(OgreOde.makeTriangleMeshGeometry(wall1Points, len(wall1Points), indices1, len(indices1), self._world, self._space))
-				#self.trimeshes.append(OgreOde.makeTriangleMeshGeometry(wall1Points, len(wall1Points), indices2, len(indices2), self._world, self._space))
+				#self.trimeshes.append(OgreOde.makeTriangleMeshGeometry(wall1Points, len(wall1Points), indices1, len(indices1), self._world, self._space))
 	
 				# add the entity to the Ogre static geometry
 				s.addEntity(entity1_int, ogre.Vector3(0.0,0.0,0.0))

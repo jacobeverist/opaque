@@ -79,7 +79,6 @@ class PokeWalls(Behavior):
 				self.doneCount += 1
 				self.state = 1
 				self.isInit = True
-
 	
 		elif self.state == 1:
 			

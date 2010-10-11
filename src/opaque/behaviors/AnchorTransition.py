@@ -65,7 +65,8 @@ class AnchorTransition(Behavior):
 			# set target and initial poses
 			self.transition.setInit(initState)
 			self.transition.setTarget(targetState)
-			self.transition.resetTime(200)		
+			#self.transition.resetTime(200)		
+			self.transition.resetTime(10)		
 			
 			# first steps
 			self.transition.step(probeState)

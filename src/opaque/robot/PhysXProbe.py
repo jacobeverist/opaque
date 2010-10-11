@@ -6,24 +6,27 @@ from Servo import Servo
 from math import *
 from copy import *
 from transform import Transform
+from nxsnakeprobe import NxSnakeProbe
+
+
 
 STD_WEIGHT = 1.11
 
 
-class SuperbotSnake:
+class PhysXProbe:
 
 	def __del(self):
 		del self.control
 
-	def __init__(self, world, R, pos, numSegs, segLength, segWidth, maxTorque, friction):
+	def __init__(self, sceneManager, R, pos, numSegs, segLength, segHeight, segWidth, maxTorque, friction):
 		mode = -1
 
 		self.transform = Transform()
+		
+		self.nx_snake = NxSnakeProbe([R.x,R.y,R.z,R.w], [pos.x, pos.y, pos.z], numSegs, segLength, segHeight, segWidth)
 
 		self.timer = 0.000
-		self._world = world
-		self._mgr = self._world.getSceneManager()
-		self._space = self._world.getDefaultSpace()
+		self._mgr = sceneManager
 		#self._world.setCollisionListener(self)
 
 		self.statNode = self._mgr.createStaticGeometry("contacts")
@@ -46,9 +49,12 @@ class SuperbotSnake:
 
 		self.numSegs = numSegs
 		self.segLength = segLength
+		self.segHeight = segHeight
 		self.segWidth = segWidth
 		self.maxTorque = maxTorque
 		self.friction = friction
+
+		self.wallCount = 0
 
 		self.robotParam = {}
 		self.robotParam['numJoints'] = self.numSegs-1
@@ -67,10 +73,8 @@ class SuperbotSnake:
 		self.errors = [fabs(self.cmdJoints[i] - self.joints[i]) for i in range(self.getNumJoints())]
 		
 		# list of bodies
-		self._bodies = []
-		self._geoms = []
-		self._joints = []
 		self._ent = []
+		self._nodes = []
 
 		self.setupMyWorld(R, pos)
 
@@ -81,34 +85,147 @@ class SuperbotSnake:
 		self.normalMass = OgreOde.BoxMass(STD_WEIGHT,size)
 
 		self.setAnchor(False)
+
+		self.walls = []
+		self.npnts = []
 	
 	def setAnchor(self, isAnchor):
 		
+		pass
+	
+		"""
 		if isAnchor:
 			body = self._bodies[20]
 			body.setMass(self.anchorMass)		
 		else:
 			body = self._bodies[20]
 			body.setMass(self.normalMass)
-						
-	def setJointsRigid(self, lowJ, highJ):
-		bodies = self._bodies[lowJ,highJ+2]
-		
-		for b in bodies:
-			mass = b.getMass()
-		
-	def setWalls(self, wallEnv):
-		self.wallEnv = wallEnv
+		"""
 	
+	def setWalls(self, walls):
+		self.walls = walls
+		self.npnts = []
+	
+		for pnts in walls:
+			self.createWall(pnts)
+			self.nx_snake.createWall(pnts)
+			#self.npnts.append(pnts)
+
 	def createWall(self, points):
-		self.wallEnv.createWall(points)
+				
+		self.npnts.append(points)
 		
+		# create the static geometry
+		s = self._mgr.createStaticGeometry("corridor_%04u" % self.wallCount)
+
+		self.wallCount += 1
+		
+		# region dimensions (FIXME: what does this mean?)
+		s.setRegionDimensions((160.0, 100.0, 160.0))
+
+		## Set the region origin so the center is at 0 world
+		s.setOrigin(ogre.Vector3().ZERO)
+
+		# start with a ManualObject for the mesh
+		# create the wall1 mesh
+		mo1_int = ogre.ManualObject("WallObject_Interior" + str(self.wallCount))
+		mo1_int.begin("WallMaterial_Int", ogre.RenderOperation.OT_TRIANGLE_LIST)
+
+		mo1_ext = ogre.ManualObject("WallObject_Exterior" + str(self.wallCount))
+		mo1_ext.begin("WallMaterial_Ext", ogre.RenderOperation.OT_TRIANGLE_LIST)
+
+		mo1_top = ogre.ManualObject("WallObject_Top" + str(self.wallCount))
+		mo1_top.begin("WallMaterial_Top", ogre.RenderOperation.OT_TRIANGLE_LIST)
+
+		topPoints = []
+		for i in range(len(points)-1):
+			vec = [points[i][0]-points[i+1][0], points[i][1]-points[i+1][1]]
+			vecMag = sqrt(vec[0]**2 + vec[1]**2)
+			vec[0] /= vecMag
+			vec[1] /= vecMag
+			
+			orthoVec = [vec[0]*cos(pi/2) - vec[1]*sin(pi/2), vec[0]*sin(pi/2) + vec[1]*cos(pi/2)]
+			
+			topPoints.append(ogre.Vector3(points[i][0], 0.2, points[i][1]))
+			topPoints.append(ogre.Vector3(points[i][0] + 0.05*orthoVec[0], 0.2, points[i][1] + 0.05*orthoVec[1]))
+			topPoints.append(ogre.Vector3(points[i+1][0], 0.2, points[i+1][1]))
+			topPoints.append(ogre.Vector3(points[i+1][0] + 0.05*orthoVec[0], 0.2, points[i+1][1] + 0.05*orthoVec[1]))
+		
+		for p in topPoints:
+			mo1_top.position(p[0], p[1], p[2])
+
+		for i in range(len(points) - 1):
+			mo1_top.triangle(4*i+2, 4*i+1, 4*i)
+			mo1_top.triangle(4*i+1, 4*i+2, 4*i+3)
+			if i < len(points)-2:
+				mo1_top.triangle(4*i+2, 4*i+5, 4*i+3)
+				
+		wall1Points = []
+		for i in range(len(points)):
+			wall1Points.append(ogre.Vector3(points[i][0], -100.0, points[i][1]))
+			wall1Points.append(ogre.Vector3(points[i][0], 1.5, points[i][1]))
+
+		# build the triangle meshes of the wall
+		for p in wall1Points:
+			#mo1_int.position(p[0],p[1],p[2])
+			#mo1_ext.position(p[0],p[1],p[2])
+			if p[1] < 0.0:
+				mo1_int.position(p[0],0.0,p[2])
+				mo1_ext.position(p[0],0.0,p[2])
+			else:
+				mo1_int.position(p[0],0.2,p[2])
+				mo1_ext.position(p[0],0.2,p[2])
+
+		# indices for ODE geometry
+		indices1 = []
+		indices2 = []
+
+		for i in range(len(points) - 1):
+			indices1 += [2*i+2, 2*i+1, 2*i]
+			indices1 += [2*i+1, 2*i+2, 2*i+3]
+			mo1_int.triangle(2*i+2, 2*i+1, 2*i)
+			mo1_int.triangle(2*i+1, 2*i+2, 2*i+3)
+
+			indices2 += [2*i, 2*i+1, 2*i+2]
+			indices2 += [2*i+3, 2*i+2, 2*i+1]
+			mo1_ext.triangle(2*i, 2*i+1, 2*i+2)
+			mo1_ext.triangle(2*i+3, 2*i+2, 2*i+1)
+
+
+		mo1_int.end()
+		mo1_ext.end()
+		mo1_top.end()
+
+		# convert to mesh
+		mo1_int.convertToMesh("WallMesh_Interior_" + str(self.wallCount))
+		mo1_ext.convertToMesh("WallMesh_Exterior_" + str(self.wallCount))
+		mo1_top.convertToMesh("WallMesh_Top_" + str(self.wallCount))
+		# create Ogre entity
+		print "creating entity " + str(self.wallCount)
+		entity1_int = self._mgr.createEntity("WallEntity_Interior_" + str(self.wallCount), "WallMesh_Interior_" + str(self.wallCount))
+		entity1_ext = self._mgr.createEntity("WallEntity_Exterior_" + str(self.wallCount), "WallMesh_Exterior_" + str(self.wallCount))
+		entity1_top = self._mgr.createEntity("WallEntity_Top_" + str(self.wallCount), "WallMesh_Top_" + str(self.wallCount))
+
+		# add ODE geometry to the entity
+		entity1_int.setCastShadows(False)
+		entity1_ext.setCastShadows(False)
+		entity1_top.setCastShadows(False)
+
+		# create the ODE geometry
+		#self.trimeshes.append(OgreOde.makeTriangleMeshGeometry(wall1Points, len(wall1Points), indices1, len(indices1), self._world, self._space))
+		#self.trimeshes.append(OgreOde.makeTriangleMeshGeometry(wall1Points, len(wall1Points), indices2, len(indices2), self._world, self._space))
+
+		# add the entity to the Ogre static geometry
+		s.addEntity(entity1_int, ogre.Vector3(0.0,0.0,0.0))
+		s.addEntity(entity1_ext, ogre.Vector3(0.0,0.0,0.0))
+		s.addEntity(entity1_top, ogre.Vector3(0.0,0.0,0.0))
+
+		# now build the StaticGeometry so it will be rendered
+		s.build()
+
 	def getWalls(self):
-		if self.wallEnv == 0:
-			return []
-		else:
-			return self.wallEnv.getWalls()
-		
+		return self.walls
+	
 	def getNumJoints(self):
 		return self.numSegs - 1
 
@@ -123,44 +240,33 @@ class SuperbotSnake:
 		self.isJointChanged = True
 		self.probeState = {}
 
+		self.nx_snake.frameStarted()
+
 		if self.control:
 			self.control.frameStarted()
-
-		for joint in self._joints:
-			joint.frameStarted(evt)
 
 		" update the color based on the joint error "
 
 		numJoints = self.getNumJoints()
 
-		#for i in range(numJoints):
-		#	err = self._joints[i].error()
-		#	self.segMaterials[i].setAmbient(err,0.0,1.0-err)
-
 		for i in range(numJoints):
-			self.joints[i] = self._joints[i].phi
-			self.cmdJoints[i] = self._joints[i].goal_phi
+			self.joints[i] = self.nx_snake.getServo(i)
+			self.cmdJoints[i] = self.nx_snake.getServoCmd(i)
 			self.errors[i] = abs(self.cmdJoints[i] - self.joints[i])
 		
 		self.transform.setJoints(self.joints)
 
-		
-		#for i in range(16,23):
-		#	self.segMaterials[i].setAmbient(0.0,1.0,0.0)
-
-		# lets also created meshes to visualize our joint positions
-
-		#pos = self.getActualJointPose(4)
-		#self._dnodes[4].setPosition(ogre.Vector3(pos[0],0.3,pos[1]))
-		#self._dnodes[4].setOrientation(ogre.Quaternion(pos[2],ogre.Vector3().UNIT_Y))
-
-		#for i in range(len(self._joints)):
-		#	pos = self.getActualJointPose(i)
-		#	self._dnodes[i].setPosition(ogre.Vector3(pos[0],0.3,pos[1]))
-		#	self._dnodes[i].setOrientation(ogre.Quaternion(pos[2],ogre.Vector3().UNIT_Y))
-
+		"render the positions"
+		for i in range(len(self._nodes)):
+			currPos = self.getWorldPose(i)
+			#print i, currPos
+			self._nodes[i].setPosition(currPos[0], currPos[1], currPos[2])
+			self._nodes[i].setOrientation(self.getWorldOrientation(i))
+			
 	def translatePose(self, transDist):
 
+		pass
+		"""
 		poses = []
 
 		for i in range(self.numSegs):
@@ -170,14 +276,21 @@ class SuperbotSnake:
 			self._bodies[i].setPosition(newPose)			
 			
 		return poses
-
-	def restorePose(self, poses):
-
+		"""
+		
+	def savePose(self):
+		
+		self.nx_snake.savePose()
+		
+	def restorePose(self):
+		
+		self.nx_snake.restorePose()
+		pass
 		"""
 		1. layout the snake in a straight line and create the joints 
 		2. re-position the segments to restore a pose
 		"""
-
+		"""
 		for i in range(self.numSegs):
 			
 			segPose = poses[i]
@@ -191,13 +304,13 @@ class SuperbotSnake:
 			radAngle = ogre.Radian(segPose[3])			
 			R = ogre.Quaternion(radAngle, vec)
 			self._bodies[i].setOrientation(R)
-
+		"""
 
 	def getPose(self):
 		
 		poses = []
 		
-
+		"""
 		for i in range(self.numSegs):
 			
 			pos = self._bodies[i].getPosition()
@@ -212,7 +325,8 @@ class SuperbotSnake:
 			poses.append([pos[0],pos[1],pos[2],curAngle,vec[0],vec[1],vec[2]])
 			
 		return poses
-
+		"""
+		
 	def setupMyWorld(self, R, pos):
 
 		self.segMaterials = []
@@ -220,101 +334,33 @@ class SuperbotSnake:
 		for i in range(self.numSegs):
 
 			## Create the visual representation (the Ogre entity and scene node)
-			name = "segment" + str(len(self._bodies))
-
-			" entity "
-			entity = self._mgr.createEntity(name, "Cylinder.mesh")
-			entity.setCastShadows(False)
-
-			" node "
+			name = "segment" + str(len(self._ent))
+			entity = self._mgr.createEntity(name, "Cube.mesh")
 			node = self._mgr.getRootSceneNode().createChildSceneNode(name)
 			node.attachObject(entity)
+			entity.setCastShadows(False)
 
-			" scale the render to the geometry and mass "
-			size = ogre.Vector3(self.segLength, 0.25, self.segLength)
-			node.setScale(size.x,size.y,size.z)
-			
-			" material "
 			newMaterial = entity.getSubEntity(0).getMaterial().clone("custom" + str(i))
-			newMaterial.setAmbient(0.0,0.0,1.0)
-			
-			self.segMaterials.append(newMaterial)
+			val = float(self.numSegs - i)/self.numSegs
 
+			newMaterial.setAmbient(0.0,0.0,1.0)
+			#newMaterial.setAmbient(val,0.0,1.0-val)
+			#newMaterial.setDiffuse(0.9,0.9,0.0, 0.1)
+			#newMaterial.setSpecular(0.5,0.5,0.0, 0.5)
+
+			self.segMaterials.append(newMaterial)
 			entity.getSubEntity(0).setMaterialName("custom" + str(i))
 
-
-
-			" Create a body associated with the node we created "
-			body = OgreOde.Body(self._world) 
-			node.attachObject(body)
-
-			" body mass "
-			#cylDir = ogre.Vector3(0.0,1.0,0.0)
-			#cylMass = OgreOde.CylinderMass(STD_WEIGHT, cylDir, self.segLength/2.0, 0.01)
-			cylMass = OgreOde.BoxMass(STD_WEIGHT,ogre.Vector3(1.0,1.0,1.0))
-			cylMass.setDensity(1.0,ogre.Vector3(1.0,1.0,1.0))
-			body.setMass(cylMass)
-
-			" geometry "
-			cylGeom = OgreOde.CylinderGeometry(0.0001, 0.5, self._world, self._space)
-			#cylGeom = OgreOde.CylinderGeometry(self.segLength/2.0, 0.5, self._world, self._space)
-			#yRot = ogre.Quaternion(ogre.Degree(90.0), ogre.Vector3().UNIT_Y)
-			#cylGeom.setOrientation(yRot)
+			## Pick a size
+			size = ogre.Vector3(self.segLength, self.segHeight, self.segWidth)
+			node.setScale(size.x,size.y,size.z)
 			
-			cylGeom.setBody(body)
-			entity.setUserObject(cylGeom)
-
-
-			" control the position of each segment "
-			segPos = ogre.Vector3(i*self.segLength, 3.61 + 0.011*(i%2), 0.0)
-			actPos = R*segPos
-
-			body.setPosition(actPos + pos)
-			body.setOrientation(R)
-			#node.setPosition(actPos + pos)
-			#node.setOrientation(R)
-
-
-
-			if len(self._bodies) > 0:
-
-				# joint positions
-				armJointPos = ogre.Vector3(self.segLength/2.0 + (i-1)*self.segLength, 0.0, 0.0)
-				actJointPos = R*armJointPos
-
-				anch = actJointPos + pos
-				axis = R*ogre.Vector3(0.0,1.0,0.0)
-
-				b1 = self._bodies[-1]
-				b2 = body
-
-				# attach the joint with reference to b2, 
-				# i.e. positive angle is positive globally with respect to b2
-				joint = Servo(self._world, b1, b2, anch, axis, 0.0)
-				self._joints.append(joint)
-				joint.setMaxTorque(self.maxTorque)
-
-			self._bodies.append(body)
-			self._geoms.append(cylGeom)
+			currPos = self.getWorldPose(i)
+			node.setPosition(currPos[0], currPos[1], currPos[2])
+			node.setOrientation(self.getWorldOrientation(i))
+			
 			self._ent.append(entity)
-
-		self._dnodes = []
-
-		# lets also created meshes to visualize our joint positions
-		#for i in range(len(self._joints)):
-		#	name = "test_j" + str(i)
-		#	entity = self._mgr.createEntity(name, "Cube.mesh")
-		#	entity.setMaterialName("WallMaterial_Int")
-		#	node = self._mgr.getRootSceneNode().createChildSceneNode(name)
-		#	node.setScale(size.x*2,size.y,size.z)
-
-		#	pos = self.getActualJointPose(i)
-		#	node.setPosition(ogre.Vector3(pos[0],0.3,pos[1]))
-		#	node.setOrientation(ogre.Quaternion(pos[2],ogre.Vector3().UNIT_Y))
-
-		#	node.attachObject(entity)
-
-		#	self._dnodes.append(node)
+			self._nodes.append(node)
 
 	def normalizeAngle(self,angle):
 		# this function converts the angle to its equivalent
@@ -352,34 +398,39 @@ class SuperbotSnake:
 	
 	def getServo(self, index):
 		if index < self.numSegs :
-			return self._joints[index].phi
-
+			return self.nx_snake.getServo(index)
 		raise
 
 	def getServoCmd(self, index):
 		if index < self.numSegs:
-			#return ogre.Math.RadiansToAngleUnits(self._joints[index].goal_phi)
-			return self._joints[index].goal_phi
-
+			return self.nx_snake.getServoCmd(index)
 		raise
 
 	def getWorldPose(self, i):
-		currPos = self._bodies[i].getPosition()
+		currPos = self.nx_snake.getGlobalPosition(i)
 		return currPos
 
+	def getWorldOrientation(self, i):
+		quat_vars = self.nx_snake.getGlobalOrientation(i)
+		angQuat = ogre.Quaternion(quat_vars[3], quat_vars[0], quat_vars[1], quat_vars[2])
+		return angQuat
+
 	def setJointTorque(self, i, torque):
-		self._joints[i].setMaxTorque(torque)
+		self.nx_snake.setJointTorque(i, 0.0005)
+		#self.nx_snake.setJointTorque(i, torque)
 
 	def getJointTorque(self, i):
-		return self._joints[i].getMaxTorque()
+		return self.nx_snake.getJointTorque(i)
 
 	def setServo(self, i, angle):
-		self._joints[i].go_to(ogre.Math.AngleUnitsToRadians(angle))
+		self.nx_snake.setServo(i, ogre.Math.AngleUnitsToRadians(angle))
+		#self._joints[i].go_to(ogre.Math.AngleUnitsToRadians(angle))
 
 	def getActualSegPose(self, i):
 
-		currPos = self._bodies[i].getPosition()
-		angQuat = self._bodies[i].getOrientation()
+		currPos = self.nx_snake.getGlobalPosition(i)
+		quat_vars = self.nx_snake.getGlobalOrientation(i)
+		angQuat = ogre.Quaternion(quat_vars[3], quat_vars[0], quat_vars[1], quat_vars[2])
 
 		vec = ogre.Vector3(0.0,0.0,0.0)
 		radAngle = ogre.Radian(0.0)
@@ -399,8 +450,9 @@ class SuperbotSnake:
 	def getActualJointPose(self, i):
 		
 		if i == 39:
-			currPos = self._bodies[i].getPosition()
-			angQuat = self._bodies[i].getOrientation()
+			currPos = self.nx_snake.getGlobalPosition(i)
+			quat_vars = self.nx_snake.getGlobalOrientation(i)
+			angQuat = ogre.Quaternion(quat_vars[3], quat_vars[0], quat_vars[1], quat_vars[2])
 			
 			vec = ogre.Vector3(0.0,0.0,0.0)
 			radAngle = ogre.Radian(0.0)
@@ -420,8 +472,9 @@ class SuperbotSnake:
 
 		# we use the i+1'th body as the fixed frame of reference for the joint i
 		# NEGATE any angle going in or coming out of a Quaternion
-		currPos = self._bodies[i+1].getPosition()
-		angQuat = self._bodies[i+1].getOrientation()
+		currPos = self.nx_snake.getGlobalPosition(i)
+		quat_vars = self.nx_snake.getGlobalOrientation(i)
+		angQuat = ogre.Quaternion(quat_vars[3], quat_vars[0], quat_vars[1], quat_vars[2])
 
 		vec = ogre.Vector3(0.0,0.0,0.0)
 		radAngle = ogre.Radian(0.0)

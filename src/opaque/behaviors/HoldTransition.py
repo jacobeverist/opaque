@@ -98,8 +98,10 @@ class HoldTransition(Behavior):
 				if initState[i] != None:
 					errSum += fabs(initState[i]-targetState[i])
 
-			transTime = int(2*errSum)
-			#transTime = int(errSum)
+			#transTime = int(2*errSum)
+			#transTime = int(errSum/4.0)
+			transTime = int(errSum/16.0)
+			#print "HoldTransition transTime:", transTime
 			
 			# set target and initial poses
 			self.transition.setInit(initState)
@@ -119,7 +121,8 @@ class HoldTransition(Behavior):
 		if self.isDone:
 			self.count += 1
 
-		if self.count > 300:
+		#if self.count >= 300:
+		if self.count >= 3:
 			self.count = 0
 			self.isDone = False
 			self.hasTransitioned = False

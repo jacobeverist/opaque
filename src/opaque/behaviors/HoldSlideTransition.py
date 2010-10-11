@@ -146,7 +146,9 @@ class HoldSlideTransition(Behavior):
 					errSum += fabs(initState[i]-targetState[i])
 
 			#transTime = int(2.0*errSum)
-			transTime = int(errSum)
+			#transTime = int(errSum/8.0)
+			transTime = int(errSum/8.0)
+			#print "HoldSlideTransition transTime:", transTime
 
 			# set target and initial poses
 			self.transition.setInit(initState)

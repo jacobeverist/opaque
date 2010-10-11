@@ -18,7 +18,7 @@ class FrontAnchorFit(Behavior):
 		#self.frontAnchorFit.setCurve(self.frontCurve)
 		#self.frontAnchorFit.setSpliceJoint(self.spliceJoint)
 		
-		print "creating FrontAnchorFit behavior with spliceJoint", spliceJoint
+		#print "creating FrontAnchorFit behavior with spliceJoint", spliceJoint
 
 		Behavior.__init__(self, robotParam)
 		

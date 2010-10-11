@@ -1,6 +1,7 @@
 from SnakeControl import SnakeControl
 from copy import *
 from math import *
+import time
 
 from behaviors.AnchorTransition import AnchorTransition
 from behaviors.HoldTransition import HoldTransition
@@ -147,17 +148,19 @@ class TestModular(SnakeControl):
 		probeState = self.probe.getProbeState()
 
 
+		#print "state", self.globalState
 		#print probeState['joints']
 
 		if self.globalState == 0 and self.globalTimer > 2:
 			
 			" anchor the robot initially "
 
-			#isDone = self.doInitAnchor()
+			isDone = self.doInitAnchor()
 			#isDone = self.doHoldPosition()
-			isDone = False
+			#isDone = False
 			if isDone:
 				self.globalState = 1
+				self.probe.savePose()
 				
 		elif self.globalState == 1:
 			
@@ -197,6 +200,8 @@ class TestModular(SnakeControl):
 			#self.globalState = 6
 			self.globalState = 4
 			#self.globalState = 9
+
+			print "Start Time:", time.clock()
 			
 		elif self.globalState == 4:
 			
@@ -220,6 +225,8 @@ class TestModular(SnakeControl):
 				
 				self.globalState = 6
 				#self.globalState = 9
+
+				#self.probe.restorePose()
 				
 		elif self.globalState == 6:
 
@@ -251,6 +258,9 @@ class TestModular(SnakeControl):
 			isDone = self.doReturnToRest()
 			
 			if isDone:
+				print "Stop Time:", time.clock()
+				exit()
+
 				self.mapGraph.correctPoses2()
 				self.mapGraph.synch()
 				self.mapGraph.saveMap()

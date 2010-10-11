@@ -114,7 +114,7 @@ class Curl(Behavior):
 			# first steps
 			isDone = self.transition.step(probeState)
 
-			#print "transitioning"
+			print "transitioning"
 			resJoints = self.transition.getJoints()
 			self.mergeJoints([resJoints])
 
@@ -152,7 +152,7 @@ class Curl(Behavior):
 			varX = self.stabilityX.getVar()
 			varY = self.stabilityY.getVar()
 					
-			print "variances =", varX, varY
+			#print "variances =", varX, varY
 						
 			if self.stabilityX.isStable() and self.stabilityY.isStable():
 				
@@ -243,7 +243,9 @@ class Curl(Behavior):
 					errSum += fabs(initState[i]-targetState[i])
 
 			#transTime = int(4*errSum)
-			transTime = int(errSum)
+			#transTime = int(errSum)
+			transTime = int(errSum/16.0)
+			print "Curl transitions =", transTime
 			
 			# set target and initial poses
 			self.transition.setInit(initState)

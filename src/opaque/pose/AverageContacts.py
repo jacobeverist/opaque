@@ -58,11 +58,14 @@ class AverageContacts:
 		# tunable constants
 		self.errorThresh = 0.15
 		self.maskThresh = 0.98
-		self.timeThresh = 50.0
+		#self.timeThresh = 50.0
+		#self.timeThresh = 5.0
+		self.timeThresh = 1.0
 
 		# variance threshold for determining joint stability
-		self.varThresh = 0.001
+		#self.varThresh = 0.001
 		#self.varThresh = 0.005
+		self.varThresh = 0.1
 
 		# forgetting factor of error average
 		self.K = 0.05
@@ -75,7 +78,7 @@ class AverageContacts:
 		self.jointVar = []
 		for i in range(self.numJoints):
 			#self.jointVar.append(ValueStability(self.varThresh))
-			self.jointVar.append(ValueStability(self.varThresh, 20))
+			self.jointVar.append(ValueStability(self.varThresh, 2))
 	
 		self.L_saddlePoses = []
 		self.R_saddlePoses = []
@@ -126,7 +129,9 @@ class AverageContacts:
 				if not self.activeRef[i]:
 					stable = False
 					break
-			
+		
+		if not stable:
+			print "not stable"
 		return stable
 			
 	def setTimerAliasing(self, timeInc):
@@ -619,7 +624,7 @@ class AverageContacts:
 					
 					if self.activeRefPtr[i].isMaxErrorReached():
 
-						print "maxErrorReached for", i, "because maxError =", self.activeRefPtr[i].getMaxStabilityError(), "and currError =", self.activeRefPtr[i].getStabilityError()
+						#print "maxErrorReached for", i, "because maxError =", self.activeRefPtr[i].getMaxStabilityError(), "and currError =", self.activeRefPtr[i].getStabilityError()
 						self.deactivateNode(i)
 						
 						self.maxErrorReached[i] = True
@@ -646,7 +651,7 @@ class AverageContacts:
 
 				elif self.activeRef[i] and self.mask[i] < 1.0 :
 					
-					print "deactivating", i, "because mask =", self.mask[i]					
+					#print "deactivating", i, "because mask =", self.mask[i]					
 					self.deactivateNode(i)
 					
 					if self.numActiveRef == 0:

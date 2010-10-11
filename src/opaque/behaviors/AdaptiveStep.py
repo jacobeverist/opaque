@@ -720,7 +720,7 @@ class AdaptiveStep(Behavior):
 		if not self.isJerking:
 			" perform amplitude operation here "
 
-			print "amps before:", self.minAmp, self.maxAmp, self.ampInc, currAmp, nextVal
+			#print "amps before:", self.minAmp, self.maxAmp, self.ampInc, currAmp, nextVal
 			
 			" error threshold that determines we have made an anchor contact "
 			if maxError > 0.3 and self.maxAmp != 0.0:
@@ -792,7 +792,7 @@ class AdaptiveStep(Behavior):
 				" maximum is the value we just set "
 				self.maxAmp = nextVal
 			
-			print "amps after:", self.minAmp, self.maxAmp, self.ampInc, currAmp, nextVal
+			#print "amps after:", self.minAmp, self.maxAmp, self.ampInc, currAmp, nextVal
 				
 		" change the amplitude "
 		#print "setting amp = " , nextVal		
@@ -1256,6 +1256,8 @@ class AdaptiveStep(Behavior):
 	def step(self, probeState):
 		Behavior.step(self, probeState)
 		
+		#print "refDone:", self.refDone, "transDone:", self.transDone
+		
 		self.count += 1
 		isDone = False
 
@@ -1329,17 +1331,17 @@ class AdaptiveStep(Behavior):
 
 						self.doFrontAnchor()
 
-						print "after doFrontAnchor, received frontAnchoringDone =", self.frontAnchoringDone
+						#print "after doFrontAnchor, received frontAnchoringDone =", self.frontAnchoringDone
 	
 						if self.frontAnchoringDone:
-							print "front anchoring done with splice joint =", self.spliceJoint
+							#print "front anchoring done with splice joint =", self.spliceJoint
 							self.frontAnchoringDone = False
 							self.frontAnchoringState = False
 							
 				else:
 					peakJoints = self.concertinaFit.getPeakJoints(self.currPeak)	
 					
-					print "Concertina Step"
+					#print "Concertina Step"
 					self.doBackConcertina()
 
 
