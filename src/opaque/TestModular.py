@@ -129,7 +129,7 @@ class TestModular(SnakeControl):
 
 	def frameStarted(self):
 		
-		#self.grabImage()
+		self.grabImage()
 		#self.grabAngles()
 
 		#if self.globalTimer % 4000 == 0:
@@ -201,7 +201,7 @@ class TestModular(SnakeControl):
 			self.globalState = 4
 			#self.globalState = 9
 
-			print "Start Time:", time.clock()
+			#print "Start Time:", time.clock()
 			
 		elif self.globalState == 4:
 			
@@ -258,8 +258,8 @@ class TestModular(SnakeControl):
 			isDone = self.doReturnToRest()
 			
 			if isDone:
-				print "Stop Time:", time.clock()
-				exit()
+				#print "Stop Time:", time.clock()
+				#exit()
 
 				self.mapGraph.correctPoses2()
 				self.mapGraph.synch()
@@ -513,7 +513,7 @@ class TestModular(SnakeControl):
 			if self.behavior.hasInitialized():
 				self.mapGraph.keepStablePose()
 				
-				if self.globalTimer % 200 == 0:
+				if self.globalTimer % 20 == 0:
 					self.mapGraph.update(direction)
 	
 			if isDone:
@@ -657,7 +657,7 @@ class TestModular(SnakeControl):
 			isDone = self.doPathStep(self.localWayPaths[0], self.localDirection)
 
 			" compute distance to the target destination point "
-			if self.globalTimer % 100 == 0:
+			if self.globalTimer % 10 == 0:
 				self.currPose = self.contacts.getAverageSegPose(0)
 
 			dest = self.localWayPoints[0]

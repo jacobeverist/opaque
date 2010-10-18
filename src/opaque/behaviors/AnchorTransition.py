@@ -81,7 +81,8 @@ class AnchorTransition(Behavior):
 		if self.isDone:
 			self.count += 1
 
-		if self.count > 300:
+		#if self.count > 300:
+		if self.count > 10:
 			self.count = 0
 			self.isDone = False
 			self.hasTransitioned = False

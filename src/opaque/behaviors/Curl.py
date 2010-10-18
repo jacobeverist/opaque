@@ -114,7 +114,7 @@ class Curl(Behavior):
 			# first steps
 			isDone = self.transition.step(probeState)
 
-			print "transitioning"
+			#print "transitioning"
 			resJoints = self.transition.getJoints()
 			self.mergeJoints([resJoints])
 

@@ -160,7 +160,7 @@ void NxSnake::Step()
 		for ( int i = 0 ; i < 1 ; i++ ) {
 			GetPhysicsResults();
 
-			printf("Contacts: %d\n", gMyContactReport.getNumContacts());
+			//printf("Contacts: %d\n", gMyContactReport.getNumContacts());
 			
 			
 			RunPID();
@@ -181,9 +181,19 @@ NxActor* NxSnake::CreateGroundPlane()
 {
     // Create a plane with default descriptor
     NxPlaneShapeDesc planeDesc;
+
+	
+	NxMaterial* floorMaterial = gScene->getMaterialFromIndex(1); 
+	floorMaterial->setRestitution(0.5);
+	floorMaterial->setStaticFriction(0.1);
+	floorMaterial->setDynamicFriction(0.1);
+	floorMaterial->setFrictionCombineMode(NX_CM_MIN);
+	planeDesc.materialIndex	= floorMaterial->getMaterialIndex();
+
     NxActorDesc actorDesc;
     actorDesc.shapes.pushBack(&planeDesc);
-    return gScene->createActor(actorDesc);
+
+	return gScene->createActor(actorDesc);
 }
 
 NxCCDSkeleton* NxSnake::CreateCCDSkeleton(float sizex, float sizey, float sizez)
@@ -360,7 +370,7 @@ NxActor* NxSnake::CreateSnake()
 		actorDesc.shapes.pushBack(&boxDesc);
 
 		actorDesc.body			= &bodyDesc;
-		actorDesc.density		= 1.0f;
+		actorDesc.density		= 0.2f;
 		
 		
 		//" control the position of each segment "
@@ -507,8 +517,10 @@ void NxSnake::InitNx()
 	// Create the default material
 	NxMaterial* defaultMaterial = gScene->getMaterialFromIndex(0); 
 	defaultMaterial->setRestitution(0.5);
-	defaultMaterial->setStaticFriction(0.1);
-	defaultMaterial->setDynamicFriction(0.1);
+	defaultMaterial->setStaticFriction(1.0);
+	defaultMaterial->setDynamicFriction(1.0);
+
+
 
 	// Create the objects in the scene
 	groundPlane		= CreateGroundPlane();
