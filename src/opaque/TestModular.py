@@ -183,7 +183,7 @@ class TestModular(SnakeControl):
 			
 			" create the mapping object "
 			self.mapGraph = MapGraph(self.probe, self.contacts)
-			#self.mapGraph.loadFile("testData/correctionTest", 6)
+			self.mapGraph.loadFile("testData/correctionTest", 6)
 			#self.mapGraph.loadFile("testData/mapBuild_21June2010", 66)
 
 			self.mapGraph.newNode()
@@ -192,6 +192,8 @@ class TestModular(SnakeControl):
 			self.mapGraph.synch()
 			self.mapGraph.saveMap()
 			self.mapGraph.saveLocalMap()
+	
+			self.mapGraph.correctPoses3()
 			
 			#exit()
 			
@@ -261,7 +263,7 @@ class TestModular(SnakeControl):
 				#print "Stop Time:", time.clock()
 				#exit()
 
-				self.mapGraph.correctPoses2()
+				#self.mapGraph.correctPoses2()
 				self.mapGraph.synch()
 				self.mapGraph.saveMap()
 				self.mapGraph.saveLocalMap()
