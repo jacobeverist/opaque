@@ -12,7 +12,6 @@ from opaque.TestPathStep import TestPathStep
 from opaque.TestMapGraph import TestMapGraph
 from opaque.TestModular import TestModular
 from opaque.TestTransform import TestTransform
-from opaque.TestCurveFit import TestCurveFit
 from opaque.ControlError import *
 from DrawThings import DrawThings
 
@@ -35,8 +34,8 @@ def createTest():
 	#currControl = TestMapGraph(probe, drawThings)
 	#currControl = TestModular(probe, drawThings)
 	#currControl = TestTransform(probe, drawThings)
-	#currControl = TestModular(probe, drawThings)
-	currControl = TestCurveFit(probe, drawThings)
+	currControl = TestModular(probe, drawThings)
+	#currControl = TestCurveFit(probe, drawThings)
 	
 	probe.addControl(currControl)
 

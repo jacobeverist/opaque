@@ -140,11 +140,15 @@ class MapGraph:
 			pose2[1] = yRot
 			
 			transform = matrix([[pose2[0]], [pose2[1]], [pose2[2]]])
-			covE = matrix([[ 0.01866183, 0.00099555, 0.0004255 ],
-				[ 0.00099555, 0.00145845, -0.00017733],
-				[ 0.0004255,  -0.00017733,  0.0003789 ]])
-	
-			
+			covE = matrix([[ 0.1, 0.0, 0.0 ],
+							[ 0.0, 0.1, 0.0],
+							[ 0.0, -0.0, pi/4.0 ]])
+
+			#covE = matrix([[ 0.01866183, 0.00099555, 0.0004255 ],
+			#	[ 0.00099555, 0.00145845, -0.00017733],
+			#	[ 0.0004255,  -0.00017733,  0.0003789 ]])
+
+
 			self.poseGraph.add_edge(i, j, attrs = [transform, covE])
 
 	def setCenterPoints(self, centerPoints):
@@ -378,9 +382,11 @@ class MapGraph:
 		paths = {}
 		
 		visited = [False for i in range(self.numNodes)]
+		distances = [Inf for i in range(self.numNodes)]
 		optimals = {}
 		
 		" initial node 0 "
+		distances[0] = 0.0
 		visited[0] = True
 		
 		" for each edge out of 0, add to path "
@@ -396,6 +402,10 @@ class MapGraph:
 					paths[neigh] = []
 				
 				paths[neigh].append([transform, covE])
+				dist = linalg.det(covE)
+				if dist < distances[neigh]:
+					distances[neigh] = linalg.det(covE)
+
 
 		for incid in incidents:
 			if not visited[incid]:
@@ -404,33 +414,53 @@ class MapGraph:
 					paths[incid]
 				except:
 					paths[incid] = []
+
 				
-				" TODO: invert the transform and covariance "
+				" TODO: invert the transform "
 				#paths[incid].append([transform, covE])
-		
-		
+				#dist = linalg.det(covE)
+				#if dist < distances[incid]:
+				#	distances[incid] = linalg.det(covE)
+
+
 		" while some nodes unvisited "
 		while visited.count(False) > 0:
 			print visited
 			" find the minimum uncertainty path p "
-			minUnc = 1e100
-			dest = 0
+			#minUnc = 1e100
+			#dest = 0
+			#minTrans = 0
+			#minCov = 0
+			#for key, value in paths.iteritems():
+			#	if not visited[key]:
+			#		for p in value:
+			#			uncertainty = linalg.det(p[1]) 
+			#			if uncertainty < minUnc:
+			#				minUnc = uncertainty
+			#				dest = key
+			#				minTrans = p[0]
+			#				minCov = p[1]
+
+			minDist = Inf
+			minDest = 0
+			for i in range(self.numNodes):
+				if not visited[i]:
+					if distances[i] < minDist:
+						minDist = distances[i]
+						minDest = i
+
+			minUnc = Inf
 			minTrans = 0
 			minCov = 0
-			#print paths
-			for key, value in paths.iteritems():
-				#print "key:", key
-				#print "value:", value
-				if not visited[key]:
-					for p in value:
-						#print "p:", p
-						uncertainty = linalg.det(p[1]) 
-						if uncertainty < minUnc:
-							minUnc = uncertainty
-							dest = key
-							minTrans = p[0]
-							minCov = p[1]
+			
+			for p in paths[minDest]:
+				uncertainty = linalg.det(p[1]) 
+				if uncertainty < minUnc:
+					minUnc = uncertainty
+					minTrans = p[0]
+					minCov = p[1]
 					
+
 			" mark this as visited and record the optimal path "
 			visited[dest] = True
 			optimals[dest] = [minTrans, minCov]

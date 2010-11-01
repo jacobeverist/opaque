@@ -160,7 +160,7 @@ class TestModular(SnakeControl):
 			#isDone = False
 			if isDone:
 				self.globalState = 1
-				self.probe.savePose()
+				#self.probe.savePose()
 				
 		elif self.globalState == 1:
 			
