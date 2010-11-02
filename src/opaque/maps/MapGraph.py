@@ -125,21 +125,35 @@ class MapGraph:
 			
 			pose1 = copy(self.poseGraph.get_node_attributes(i).getEstPose())
 			pose2 = copy(self.poseGraph.get_node_attributes(j).getEstPose())
-		
-			pose2[0] -= pose1[0]
-			pose2[1] -= pose1[1]
-			pose2[2] -= pose1[2]
-			pose2[2] = normalizeAngle(pose2[2])
-		
-			ang = pose1[2]
-		
-			xRot = pose2[0] * cos(ang) + pose2[1] * sin(ang)
-			yRot = -pose2[0] * sin(ang) + pose2[1] * cos(ang)
-		
-			pose2[0] = xRot
-			pose2[1] = yRot
+
+			xA = pose1[0]
+			yA = pose1[1]
+			pA = pose1[2]
 			
-			transform = matrix([[pose2[0]], [pose2[1]], [pose2[2]]])
+			xB = pose2[0]
+			yB = pose2[1]
+			pB = pose2[2]
+
+			xT = cos(pA)*(xB-xA) + sin(pA)*(yB-yA)
+			yT = -sin(pA)*(xB-xA) + cos(pA)*(yB-yA)
+			pT = pB - pA
+			
+			#pose2[0] -= pose1[0]
+			#pose2[1] -= pose1[1]
+			#pose2[2] -= pose1[2]
+			#pose2[2] = normalizeAngle(pose2[2])
+		
+			#ang = pose1[2]
+		
+			#xRot = pose2[0] * cos(ang) + pose2[1] * sin(ang)
+			#yRot = -pose2[0] * sin(ang) + pose2[1] * cos(ang)
+		
+			#pose2[0] = xRot
+			#pose2[1] = yRot
+			
+			#transform = matrix([[pose2[0]], [pose2[1]], [pose2[2]]])
+			
+			transform = matrix([[xT], [yT], [pT]])
 			covE = matrix([[ 0.1, 0.0, 0.0 ],
 							[ 0.0, 0.1, 0.0],
 							[ 0.0, -0.0, pi/4.0 ]])
@@ -377,7 +391,7 @@ class MapGraph:
 		" update the current estimated pose in AverageContacts "
 		self.contacts.resetPose(estPose = estPoses[-1])
 
-	def dijkstra_proj(self):
+	def dijkstra_proj(self, initNode = 0):
 		
 		paths = {}
 		
@@ -386,146 +400,232 @@ class MapGraph:
 		optimals = {}
 		
 		" initial node 0 "
-		distances[0] = 0.0
-		visited[0] = True
+		distances[initNode] = 0.0
+		visited[initNode] = True
 		
 		" for each edge out of 0, add to path "
-		neighbors = self.poseGraph.neighbors(0)
-		incidents = self.poseGraph.incidents(0)
+		neighbors = self.poseGraph.neighbors(initNode)
+		incidents = self.poseGraph.incidents(initNode)
 		
 		for neigh in neighbors:
 			if not visited[neigh]:
-				transform, covE = self.poseGraph.get_edge_attributes(0,neigh)
-				try:
-					paths[neigh]
-				except:
-					paths[neigh] = []
-				
-				paths[neigh].append([transform, covE])
+				transform, covE = self.poseGraph.get_edge_attributes(initNode,neigh)
+								
 				dist = linalg.det(covE)
 				if dist < distances[neigh]:
-					distances[neigh] = linalg.det(covE)
+					paths[neigh] = [transform, covE]
+					distances[neigh] = dist
 
 
 		for incid in incidents:
 			if not visited[incid]:
-				transform, covE = self.poseGraph.get_edge_attributes(incid, 0)
-				try:
-					paths[incid]
-				except:
-					paths[incid] = []
-
+				transform, covE = self.poseGraph.get_edge_attributes(incid, initNode)
 				
 				" TODO: invert the transform "
 				#paths[incid].append([transform, covE])
 				#dist = linalg.det(covE)
 				#if dist < distances[incid]:
 				#	distances[incid] = linalg.det(covE)
+				
+				#print "incid:", incid
+				#print transform
+				
+				#x2 = transform[0,0]
+				#y2 = transform[1,0]
+				#p2 = transform[2,0]
+				
+				#x3 = -x2*cos(-p2) + y2*sin(-p2)
+				#y3 = -x2*sin(-p2) - y2*cos(-p2)
+				#p3 = -p2
+										
+				#newTransform = matrix([[x3], [y3], [p3]])
+
+				xA = transform[0,0]
+				yA = transform[1,0]
+				pA = transform[2,0]
+				
+				x1 = -cos(pA)*xA - sin(pA)*yA
+				y1 = sin(pA)*xA - cos(pA)*yA
+				p1 = -pA
+
+				newTransform = matrix([[x1], [y1], [p1]])
+
+				paths[incid] = [newTransform, covE]
+				dist = linalg.det(covE)
+				if dist < distances[incid]:
+					paths[incid] = [newTransform, covE]
+					distances[incid] = dist
 
 
 		" while some nodes unvisited "
 		while visited.count(False) > 0:
-			print visited
+
 			" find the minimum uncertainty path p "
-			#minUnc = 1e100
-			#dest = 0
-			#minTrans = 0
-			#minCov = 0
-			#for key, value in paths.iteritems():
-			#	if not visited[key]:
-			#		for p in value:
-			#			uncertainty = linalg.det(p[1]) 
-			#			if uncertainty < minUnc:
-			#				minUnc = uncertainty
-			#				dest = key
-			#				minTrans = p[0]
-			#				minCov = p[1]
 
 			minDist = Inf
-			minDest = 0
+			minDest = -1
+			print visited
+			print distances
 			for i in range(self.numNodes):
 				if not visited[i]:
 					if distances[i] < minDist:
 						minDist = distances[i]
 						minDest = i
 
-			minUnc = Inf
-			minTrans = 0
-			minCov = 0
 			
-			for p in paths[minDest]:
+			" an unvisited node is unreachable "
+			if minDest == -1:
+				break
+			else:
+				dest = minDest
+				minUnc = Inf
+				minTrans = 0
+				minCov = 0
+				
+				p = paths[dest]
 				uncertainty = linalg.det(p[1]) 
 				if uncertainty < minUnc:
 					minUnc = uncertainty
 					minTrans = p[0]
 					minCov = p[1]
-					
-
-			" mark this as visited and record the optimal path "
-			visited[dest] = True
-			optimals[dest] = [minTrans, minCov]
-		
-			" for all edges leaving dest, add the composed path "
-
-			" for each edge out of dest, add to path "
-			neighbors = self.poseGraph.neighbors(dest)
-			incidents = self.poseGraph.incidents(dest)
+						
+				" mark this as visited and record the optimal path "
+				visited[dest] = True
+				optimals[dest] = [minTrans, minCov]
 			
-			print "neighbors of", dest, "=", neighbors
-			
-			for neigh in neighbors:
-				if not visited[neigh]:
-					print dest, neigh
-					transform, covE = self.poseGraph.get_edge_attributes(dest,neigh)
-					try:
-						paths[neigh]
-					except:
-						paths[neigh] = []
-
-					T_b_a = optimals[dest][0]
-					T_c_b = transform
-					
-					E_a_b = optimals[dest][1]
-					E_b_c = covE
-					
-					x1 = T_b_a[0,0]
-					y1 = T_b_a[1,0]
-					p1 = T_b_a[2,0]
-					
-					x2 = T_c_b[0,0]
-					y2 = T_c_b[1,0]
-					p2 = T_c_b[2,0]
-					
-					T_c_a = matrix([[x1 + x2*cos(p1) - y2*sin(p1)], [y1 + x2*sin(p1) + y2*cos(p1)], [p1+p2]])
-					
-					J1 = matrix([[1,0,-x2*sin(p1) - y2*cos(p1)],[0,1,x2*cos(p1) - y2*sin(p1)],[0,0,1]])
-					J2 = matrix([[cos(p1), -sin(p1), 0], [sin(p1), cos(p1), 0], [0, 0, 1]])
-					
-					E_a_c = J1 * E_a_b * J1.T + J2 * E_b_c * J2.T
-
-					paths[neigh].append([T_c_a, E_a_c])
+				" for all edges leaving dest, add the composed path "
 	
-			for incid in incidents:
-				if not visited[incid]:
-					transform, covE = self.poseGraph.get_edge_attributes(incid, dest)
-					try:
-						paths[incid]
-					except:
-						paths[incid] = []
-					
-					" TODO: invert the transform and covariance "
-					#paths[incid].append([transform, covE])
-					
-		
-			" compute the set of pairwise poses to consider using djikstra projection "
-		
-		print paths	
+				" for each edge out of dest, add to path "
+				neighbors = self.poseGraph.neighbors(dest)
+				incidents = self.poseGraph.incidents(dest)
+				
+				print "neighbors of", dest, "=", neighbors
+				
+				for neigh in neighbors:
+					if not visited[neigh]:
+						print dest, neigh
+						transform, covE = self.poseGraph.get_edge_attributes(dest,neigh)
+	
+						T_b_a = optimals[dest][0]
+						T_c_b = transform
 
-		#for i in range(self.numNodes):
-		#	for j in range(i+1, self.numNodes):
-		#		trans, cov = self.findMinPath(i,j)
+						
+						E_a_b = optimals[dest][1]
+						E_b_c = covE
+						
+						x1 = T_b_a[0,0]
+						y1 = T_b_a[1,0]
+						p1 = T_b_a[2,0]
+						
+						x2 = T_c_b[0,0]
+						y2 = T_c_b[1,0]
+						p2 = T_c_b[2,0]
+						
+						T_c_a = matrix([[x1 + x2*cos(p1) - y2*sin(p1)],
+										[y1 + x2*sin(p1) + y2*cos(p1)],
+										[p1+p2]])
+						
+						J1 = matrix([[1,0,-x2*sin(p1) - y2*cos(p1)],[0,1,x2*cos(p1) - y2*sin(p1)],[0,0,1]])
+						J2 = matrix([[cos(p1), -sin(p1), 0], [sin(p1), cos(p1), 0], [0, 0, 1]])
+						
+						E_a_c = J1 * E_a_b * J1.T + J2 * E_b_c * J2.T
+	
+						dist = linalg.det(E_a_c)
+						if dist < distances[neigh]:
+							paths[neigh] = [T_c_a, E_a_c]
+							distances[neigh] = dist
+		
+				for incid in incidents:
+					if not visited[incid]:
+						transform, covE = self.poseGraph.get_edge_attributes(incid, dest)
+
+						T_b_a = optimals[dest][0]
+						T_c_b = transform
+
+						E_a_b = optimals[dest][1]
+						E_b_c = covE
+						
+						x1 = T_b_a[0,0]
+						y1 = T_b_a[1,0]
+						p1 = T_b_a[2,0]
+
+						xA = T_c_b[0,0]
+						yA = T_c_b[1,0]
+						pA = T_c_b[2,0]
+						
+						x2 = -cos(pA)*xA - sin(pA)*yA
+						y2 = sin(pA)*xA - cos(pA)*yA
+						p2 = -pA
+					
+						#J1 = matrix([[1,0, x2*sin(p1-p2) + y2*cos(p1-p2)],
+						#			[0,1,-x2*cos(p1-p2) + y2*sin(p1-p2)],
+						#			[0,0,1]])
+						#J2 = matrix([[-cos(p1-p2), sin(p1-p2), -x2*sin(p1-p2) - y2*cos(p1-p2)],
+						#			[-sin(p1-p2), -cos(p1-p2), x2*cos(p1-p2) - y2*sin(p1-p2)],
+						#			[0, 0, -1]])
+
+						T_c_a = matrix([[x1 + x2*cos(p1) - y2*sin(p1)],
+										[y1 + x2*sin(p1) + y2*cos(p1)],
+										[p1+p2]])
+				
+						J1 = matrix([[1,0,-x2*sin(p1) - y2*cos(p1)],[0,1,x2*cos(p1) - y2*sin(p1)],[0,0,1]])
+						J2 = matrix([[cos(p1), -sin(p1), 0], [sin(p1), cos(p1), 0], [0, 0, 1]])
+
+						#J1 = matrix([[1,0,-x2*sin(p1) - y2*cos(p1)],[0,1,x2*cos(p1) - y2*sin(p1)],[0,0,1]])
+						#J2 = matrix([[cos(p1), -sin(p1), 0], [sin(p1), cos(p1), 0], [0, 0, 1]])
+						
+						E_a_c = J1 * E_a_b * J1.T + J2 * E_b_c * J2.T
+	
+						dist = linalg.det(E_a_c)
+						if dist < distances[incid]:
+							paths[incid] = [T_c_a, E_a_c]
+							distances[incid] = dist
+								
+						" TODO: invert the transform and covariance "
+						#paths[incid].append([transform, covE])
+						#dist = linalg.det(E_a_c)
+						#if dist < distances[incid]:
+						#	distances[incid] = dist
+						
+			
+				" compute the set of pairwise poses to consider using djikstra projection "
+		
+		for key, value in paths.iteritems():
+			#print key, value
+			offset = value[0]
+			covE = value[1]
+			print key, ":", offset[0,0], offset[1,0], offset[2,0], linalg.det(covE)
+			
+		return paths
 
 	def correctPoses3(self):
+
+
+		def mahab_dist(c1, c2, r1, r2, E):
+			
+			d = c2 - c1
+			
+			#print "Euclidian Distance =", sqrt(d[0,0]**2 + d[1,0]**2)
+			
+			s = max(0, sqrt(d[0,0]**2 + d[1,0]**2) - r1 - r2) * d / sqrt(d[0,0]**2 + d[1,0]**2)
+			
+			E_inv = linalg.inv(E)
+			
+			#print s.T
+			#print E_inv
+			#print s
+			
+			#print s.T * E_inv
+			
+			#print s.T * E_inv * s
+			
+			dist = s.T * E_inv * s
+			
+			#print dist[0,0]
+			#print "Mahalanobis Distance =", dist[0,0]
+			
+			return dist[0,0]
+
 
 		if self.numNodes < 2:
 			return
@@ -534,8 +634,110 @@ class MapGraph:
 		if self.currNode.isDirty():
 			self.currNode.synch()
 			#self.synch()
+
+		" perform dijkstra projection over all nodes"
+		paths = []
+		for i in range(7):
+			paths.append(self.dijkstra_proj(i))
+		
+		" select pairs to attempt a sensor constraint "
+		pair_candidates = []
+		for i in range(7):
+			path_set = paths[i]
 			
-		self.dijkstra_proj()
+			ind = range(i+1,7)
+
+			for j in ind:				
+				loc2 = path_set[j][0]
+				
+				c1 = matrix([[0.0],[0.0]])
+				c2 = matrix([[loc2[0,0]],[loc2[1,0]]])
+				E_param = path_set[j][1]
+				E = matrix([[E_param[0,0], E_param[0,1]],[E_param[1,0], E_param[1,1]]])
+				
+				dist = mahab_dist(c1, c2, 0.25, 0.25, E)
+				
+				if dist <= 3.0:
+					print "fitting", i, "and", j, "with dist =", dist
+					pair_candidates.append([dist,i,j,loc2])
+				
+			ind = range(0,i)
+			ind.reverse()
+			
+			for j in ind:
+				
+				loc2 = path_set[j][0]
+				
+				c1 = matrix([[0.0],[0.0]])
+				c2 = matrix([[loc2[0,0]],[loc2[1,0]]])
+				E_param = path_set[j][1]
+				E = matrix([[E_param[0,0], E_param[0,1]],[E_param[1,0], E_param[1,1]]])
+				
+				dist = mahab_dist(c1, c2, 0.25, 0.25, E)
+				
+				if dist <= 3.0:
+					print "fitting", i, "and", j, "with dist =", dist
+					pair_candidates.append([dist,i,j,loc2])
+
+		" remove duplicates "
+		pair_unique = []
+		is_free = [True for i in range(len(pair_candidates))]
+		for i in range(len(pair_candidates)):
+			
+			if is_free[i]:
+				dest1 = pair_candidates[i][0]
+				x1 = pair_candidates[i][1]
+				x2 = pair_candidates[i][2]
+				
+				" find the opposing pair if it exists "
+				for j in range(i+1, len(pair_candidates)):
+					
+					if pair_candidates[j][1] == x2 and pair_candidates[j][2] == x1:
+						
+						dest2 = pair_candidates[j][0]
+						
+						if dest1 < dest2:
+							pair_unique.append(pair_candidates[i])
+						else:
+							pair_unique.append(pair_candidates[j])
+						
+						is_free[i] = False
+						is_free[j] = False
+						
+						break
+
+				if is_free[i]:
+					pair_unique.append(pair_candidates[i])
+					is_free[i] = False
+		
+		for p in pair_unique:
+			print p[1], p[2], p[0]
+	
+		pylab.clf()
+		for i in range(7):
+			path_set = paths[i]
+
+			xP = [0.0]
+			yP = [0.0]
+			
+			ind = range(i+1,7)
+
+			for j in ind:
+				loc = path_set[j][0]
+				xP.append(loc[0,0])
+				yP.append(loc[1,0])
+
+			ind = range(0,i)
+			ind.reverse()
+			
+			for j in ind:
+				loc = path_set[j][0]
+				xP.insert(0, loc[0,0])
+				yP.insert(0, loc[1,0])
+			
+			pylab.plot(xP,yP)
+		pylab.show()			
+		
 		
 		return
 
