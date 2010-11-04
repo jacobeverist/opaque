@@ -658,7 +658,6 @@ class MapGraph:
 				dist = mahab_dist(c1, c2, 0.25, 0.25, E)
 				
 				if dist <= 3.0:
-					print "fitting", i, "and", j, "with dist =", dist
 					pair_candidates.append([dist,i,j,loc2])
 				
 			ind = range(0,i)
@@ -676,7 +675,6 @@ class MapGraph:
 				dist = mahab_dist(c1, c2, 0.25, 0.25, E)
 				
 				if dist <= 3.0:
-					print "fitting", i, "and", j, "with dist =", dist
 					pair_candidates.append([dist,i,j,loc2])
 
 		" remove duplicates "
@@ -709,10 +707,91 @@ class MapGraph:
 				if is_free[i]:
 					pair_unique.append(pair_candidates[i])
 					is_free[i] = False
+
+		def decimatePoints(points):
+			result = []
+		
+			for i in range(len(points)):
+				if i%2 == 0:
+					result.append(points[i])
+		
+			return result
+		
+		def computeHull(i):
+			" Read in data of Alpha-Shapes and add their associated covariances "
+		
+			node1 = self.poseGraph.get_node_attributes(i)
+			node1.computeAlphaBoundary()			
+			a_data = node1.getAlphaBoundary()
+			a_data = decimatePoints(a_data)
+			
+			" treat the points with the point-to-line constraint "
+			gen_icp.addPointToLineCovariance(a_data, high_var=1.0, low_var=0.001)
+	
+			" treat the points with the distance-from-origin increasing error constraint "
+			gen_icp.addDistanceFromOriginCovariance(a_data, tan_var=0.1, perp_var=0.01)
+			
+			return a_data
+			
+		hull_computed = [False for i in range(self.numNodes)]
+		a_hulls = [0 for i in range(self.numNodes)]
 		
 		for p in pair_unique:
+			if not hull_computed[p[1]]:
+				print "compute hull", p[1]
+				a_hulls[p[1]] = computeHull(p[1])
+				hull_computed[p[1]] = True
+
+			if not hull_computed[p[2]]:
+				print "compute hull", p[2]
+				a_hulls[p[2]] = computeHull(p[2])
+				hull_computed[p[2]] = True
+										
 			print p[1], p[2], p[0]
+
+
+
+
+		" TUNE ME:  threshold cost difference between iterations to determine if converged "
+		costThresh = 0.1
 	
+		" TUNE ME:   minimum match distance before point is discarded from consideration "
+		minMatchDist = 2.0
+	
+		" plot the best fit at each iteration of the algorithm? "
+		plotIteration = True
+		#plotIteration = False
+	
+		" initial guess for x, y, theta parameters "
+		offset = [0.0,0.0,0.0]
+	
+		" Extract the data from the files and put them into arrays "
+		estPoses = []
+		gndPoses = []
+		for i in range(0,self.numNodes):	
+			node1 = self.poseGraph.get_node_attributes(i)		
+			estPose1 = node1.getEstPose()	
+			gndPose1 = node1.getGndPose()
+			estPoses.append(estPose1)
+			gndPoses.append(gndPose1)
+
+		a_hull_trans = [0 for i in range(self.numNodes)]
+		for m in range(0,self.numNodes):
+			if hull_computed[m]:
+				
+				offset = estPoses[m]
+		
+				" transform the past poses "
+				past_data = a_hulls[m]
+				a_trans = []
+				for p in past_data:
+					a_trans.append(gen_icp.dispPoint(p, offset))
+				
+				a_hull_trans[m] = a_trans
+		
+		
+		
+		
 		pylab.clf()
 		for i in range(7):
 			path_set = paths[i]
@@ -739,103 +818,16 @@ class MapGraph:
 		pylab.show()			
 		
 		
-		return
-
-
-		" TUNE ME:  threshold cost difference between iterations to determine if converged "
-		costThresh = 0.1
-	
-		" TUNE ME:   minimum match distance before point is discarded from consideration "
-		minMatchDist = 2.0
-	
-		" plot the best fit at each iteration of the algorithm? "
-		plotIteration = True
-		#plotIteration = False
-	
-		" initial guess for x, y, theta parameters "
-		offset = [0.0,0.0,0.0]
-	
-		" Extract the data from the files and put them into arrays "
-		estPoses = []
-		gndPoses = []
-		poseNumbers = []
-		for i in range(0,self.numNodes):
+		return	
 		
-			node1 = self.poseGraph.get_node_attributes(i)
-				
-			estPose1 = node1.getEstPose()	
-			gndPose1 = node1.getGndPose()
-	
-			estPoses.append(estPose1)
-			gndPoses.append(gndPose1)
-			poseNumbers.append(i)
-
-		print len(estPoses), "poses"
-		print "old estPose:", estPoses[-1]
-
-		print "check_B"
-
-		def decimatePoints(points):
-			result = []
 		
-			for i in range(len(points)):
-				if i%2 == 0:
-					result.append(points[i])
 		
-			return result
-				
-		" Read in data of Alpha-Shapes and add their associated covariances "
-		a_hulls = []
-		for i in range(len(estPoses)):
-
-			node1 = self.poseGraph.get_node_attributes(i)
-			node1.computeAlphaBoundary()			
-			a_data = node1.getAlphaBoundary()
-			a_data = decimatePoints(a_data)
-	
-			" treat the points with the point-to-line constraint "
-			gen_icp.addPointToLineCovariance(a_data, high_var=1.0, low_var=0.001)
-	
-			" treat the points with the distance-from-origin increasing error constraint "
-			gen_icp.addDistanceFromOriginCovariance(a_data, tan_var=0.1, perp_var=0.01)
-	
-			a_hulls.append(a_data)
-
-		print "check_C"
-	
-		occMaps = []
-		for m in range(0,len(estPoses)):
-			offset = estPoses[m]
-			occMap = self.getNodeOccMap(m)
-	
-			mapImage = occMap.getMap()
-			image = mapImage.load()
-			
-			" 1. pick out the points "
-			points = []
-			for j in range(occMap.numPixel):
-				for k in range(occMap.numPixel):
-					if image[j,k] == 255:
-						pnt = occMap.gridToReal([j,k])
-						points.append(gen_icp.dispOffset(pnt, offset))
-			
-			occMaps.append(points)
-			
-
-		print "check_D"
-	
-		a_hull_trans = []
-		for m in range(0,len(estPoses)):
-			offset = estPoses[m]
-	
-			" transform the past poses "
-			past_data = a_hulls[m]
-			a_trans = []
-			for p in past_data:
-				a_trans.append(gen_icp.dispPoint(p, offset))
-			
-			a_hull_trans.append(a_trans)
-			
+		
+		
+		
+		
+		
+		
 		offsets = []
 		for i in range(len(estPoses)-1):
 			estPose1 = estPoses[i]
@@ -1159,31 +1151,31 @@ class MapGraph:
 		
 		" save the global maps to file "
 
-		print "checkG"
+		print "saving global occupancy map"
 		
 		self.occMap.saveMap()
 
-		print "checkH"
+		print "saving global boundary map"
 		
 		self.boundMap.saveMap()
 		
-		print "checkI"
+		print "saving global obstacle map"
 
 		self.obstMapImage.save("mapObstGraph%04u.png" % self.saveCount)	
 
-		print "checkJ"
+		print "saving global frontier map"
 
 		self.frontierMap.saveMap()			
 		
-		print "checkK"
+		print "saving global voronoi map"
 
 		self.voronoiMap.saveMap()			
 
-		print "checkL"
+		print "building global navigation road map"
 
 		self.navRoadMap = NavRoadMap(self.mapSize, self.probe, self.voronoiMap.getGraph(), localNode = self.currNode)
 
-		print "checkM"
+		print "done building global maps"
 			
 		self.saveCount += 1	
 			
