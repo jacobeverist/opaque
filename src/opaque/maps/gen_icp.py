@@ -62,6 +62,56 @@ fig = pylab.figure()
 
 " displace the point by the offset plus modify it's covariance "
 def dispPoint(p, offset):
+	
+
+
+
+	xd = offset[0]
+	yd = offset[1]
+	theta = offset[2]
+
+	#T = numpy.matrix([	[math.cos(theta), -math.sin(theta), xd],
+	#		[math.sin(theta), math.cos(theta), yd],
+	#		[0.0, 0.0, 1.0]
+	#		])
+	
+	px = p[0]
+	py = p[1]
+	
+	tx = px*math.cos(theta) - py*math.sin(theta) + xd
+	ty = px*math.sin(theta) + py*math.cos(theta) + yd
+	
+	#p_hom = numpy.matrix([[p[0]],[p[1]],[1.0]])
+	#temp = T*p_hom
+	#p_off = [temp[0,0],temp[1,0]]
+	p_off = [tx, ty]
+
+	Cv = p[2]
+	
+	r11 = math.cos(theta)
+	r12 = -math.sin(theta)
+	r21 = math.sin(theta)
+	r22 = r11
+
+	c11 = Cv[0][0]
+	c12 = Cv[0][1]
+	c21 = Cv[1][0]
+	c22 = Cv[1][1]
+	
+	res11 = r11*(c11*r11 + c12*r12) + r12*(c21*r11 + c22*r12)
+	res12 = r11*(c11*r21 + c12*r22) + r12*(c21*r21 + c22*r22)
+	res21 = r21*(c11*r11 + c12*r12) + r22*(c21*r11 + c22*r12)
+	res22 = r21*(c11*r21 + c12*r22) + r22*(c21*r21 + c22*r22)
+
+	Ca = [[res11, res12], [res21, res22]]
+	p_off.append(Ca)
+	
+	#print 
+	#print p_off
+
+	return p_off
+	
+	
 	xd = offset[0]
 	yd = offset[1]
 	theta = offset[2]
@@ -79,8 +129,12 @@ def dispPoint(p, offset):
 		[math.sin(theta), math.cos(theta)] ])
 
 	Cv = p[2]
+	Cv = numpy.matrix([[Cv[0][0],Cv[0][1]], [Cv[1][0], Cv[1][1]]])
+
 	Ca = R * Cv * numpy.transpose(R)
 	p_off.append(Ca)
+
+	#print p_off
 
 	return p_off
 
@@ -90,16 +144,33 @@ def dispOffset(p, offset):
 	yd = offset[1]
 	theta = offset[2]
 
-	T = numpy.matrix([	[math.cos(theta), -math.sin(theta), xd],
-			[math.sin(theta), math.cos(theta), yd],
-			[0.0, 0.0, 1.0]
-			])
+	px = p[0]
+	py = p[1]
+	
+	#p_off = [0.0,0.0]
+	#p_off[0] = px*math.cos(theta) - py*math.sin(theta) + xd
+	#p_off[1] = px*math.sin(theta) + py*math.cos(theta) + yd
 
-	p_hom = numpy.matrix([[p[0]],[p[1]],[1.0]])
-	temp = T*p_hom
-	p_off = [temp[0,0],temp[1,0]]
-
+	#p_off = [0.0,0.0]
+	p_off = [px*math.cos(theta) - py*math.sin(theta) + xd, px*math.sin(theta) + py*math.cos(theta) + yd]
+	
 	return p_off
+
+	#print
+	#print p_off
+
+	#T = numpy.matrix([	[math.cos(theta), -math.sin(theta), xd],
+	#		[math.sin(theta), math.cos(theta), yd],
+	#		[0.0, 0.0, 1.0]
+	#		])
+
+	#p_hom = numpy.matrix([[p[0]],[p[1]],[1.0]])
+	#temp = T*p_hom
+	#p_off = [temp[0,0],temp[1,0]]
+
+	#print p_off
+
+	#return p_off
 
 def dispOffsetMany(points, offset):
 	xd = offset[0]
@@ -133,6 +204,94 @@ def disp(ai, bi, T):
 
 def computeMatchError(offset, a, b, Ca, Cb):
 
+
+	#xd = offset[0]
+	#yd = offset[1]
+	#theta = offset[2]
+	
+	#T = numpy.matrix([	[math.cos(theta), -math.sin(theta), xd],
+	#		[math.sin(theta), math.cos(theta), yd],
+	#		[0.0, 0.0, 1.0]
+	#		])
+
+	#R = numpy.matrix([	[math.cos(theta), -math.sin(theta)],
+	#	[math.sin(theta), math.cos(theta)] ])
+
+	#Cv = Ca
+
+	#d_vec = disp(numpy.concatenate((a,numpy.matrix([1.0]))), numpy.concatenate((b,numpy.matrix([1.0]))), T)
+	#ai = numpy.concatenate((a,numpy.matrix([1.0])))
+	#bi = numpy.concatenate((b,numpy.matrix([1.0])))
+	#temp = T*ai
+	#d_vec = bi-temp
+	#d_vec[2] = 1.0	
+
+	#res = Cb + R * Cv * numpy.transpose(R)
+
+	#invMat = scipy.linalg.inv(res)
+
+	# add homogeneous dimension back
+	#invMat = numpy.concatenate((invMat,numpy.matrix([[0.0],[0.0]])), 1)
+	#invMat = numpy.concatenate((invMat,numpy.matrix([0.0,0.0,0.0])))
+
+	#error = numpy.transpose(d_vec)*invMat*d_vec
+	#errVal = error[0,0]
+
+	#return errVal
+
+	xd = offset[0]
+	yd = offset[1]
+	theta = offset[2]
+	
+	#ax = a[0,0]
+	#ay = a[1,0]
+	ax = a[0]
+	ay = a[1]
+	
+	#bx = b[0,0]
+	#by = b[1,0]
+	bx = b[0]
+	by = b[1]
+
+	tx = ax*math.cos(theta) - ay*math.sin(theta) + xd
+	ty = ax*math.sin(theta) + ay*math.cos(theta) + yd
+	dx = bx - tx
+	dy = by - ty
+
+	r11 = math.cos(theta)
+	r12 = -math.sin(theta)
+	r21 = math.sin(theta)
+	r22 = r11
+
+	c11 = Ca[0][0]
+	c12 = Ca[0][1]
+	c21 = Ca[1][0]
+	c22 = Ca[1][1]
+	
+	b11 = Cb[0][0]
+	b12 = Cb[0][1]
+	b21 = Cb[1][0]
+	b22 = Cb[1][1]
+	
+	res11 = b11 + r11*(c11*r11 + c12*r12) + r12*(c21*r11 + c22*r12)
+	res12 = b12 + r11*(c11*r21 + c12*r22) + r12*(c21*r21 + c22*r22)
+	res21 = b21 + r21*(c11*r11 + c12*r12) + r22*(c21*r11 + c22*r12)
+	res22 = b22 + r21*(c11*r21 + c12*r22) + r22*(c21*r21 + c22*r22)
+	
+	resDet = res22*res11 - res12*res21
+	
+	q11 = res22/resDet
+	q12 = -res12/resDet
+	q21 = -res21/resDet
+	q22 = res11/resDet
+
+	errVal = dx*(dx*q11 + dy*q12) + dy*(dx*q21 + dy*q22)
+
+	return errVal
+
+
+def computeMatchErrorSimple(offset, a, b, Ca, Cb):
+
 	xd = offset[0]
 	yd = offset[1]
 	theta = offset[2]
@@ -142,12 +301,32 @@ def computeMatchError(offset, a, b, Ca, Cb):
 			[0.0, 0.0, 1.0]
 			])
 
+	#R = [[math.cos(theta), -math.sin(theta)], [math.sin(theta), math.cos(theta)]]
+	
 	R = numpy.matrix([	[math.cos(theta), -math.sin(theta)],
 		[math.sin(theta), math.cos(theta)] ])
 
-	Cv = Ca
+	r00 = math.cos(theta)
+	r01 = -math.sin(theta)
+	r10 = math.sin(theta)
+	r11 = math.cos(theta)
 
-	d_vec = disp(numpy.concatenate((a,numpy.matrix([1.0]))), numpy.concatenate((b,numpy.matrix([1.0]))), T)
+	#[high_var, 0.0],
+	#[0.0, high_var]
+	
+	#Cv = Ca
+	#v00 = c[0,0]
+	#v01 = c[0,1]
+	#v10 = c[1,0]
+	#v11 = c[1,1]
+
+	#d_vec = disp(numpy.concatenate((a,numpy.matrix([1.0]))), numpy.concatenate((b,numpy.matrix([1.0]))), T)
+
+	ai = numpy.concatenate((a,numpy.matrix([1.0])))
+	bi = numpy.concatenate((b,numpy.matrix([1.0])))
+	temp = T*ai
+	d_vec = bi-temp
+	d_vec[2] = 1.0	
 
 	res = Cb + R * Cv * numpy.transpose(R)
 
@@ -211,28 +390,57 @@ def findLocalNormal(pnt,points):
 
 def computeVectorCovariance(vec,x_var,y_var):
 
-	Cv = numpy.matrix([	[x_var, 0.0],
-			[0.0, y_var]
-			])
+	c11 = x_var
+	c12 = c21 = 0.0
+	c22 = y_var
 
 	mag = math.sqrt(vec[0]**2 + vec[1]**2)
 	normVec = [vec[0]/mag, vec[1]/mag]
 
 	if normVec[1] == 0:
-		R = numpy.matrix([	[1.0, 0.0],
-				[0.0, 1.0]
-				])
+		r22 = r11 = 1.0
+		r12 = r21 = 0.0
 
 	else:
 		B = -1 / (normVec[1] + normVec[0]**2/normVec[1])
 		A = -normVec[0]*B/normVec[1]
-		R = numpy.matrix([	[A, -B],
-				[B, A]
-				])
+		#R = [[A, -B], [B, A]]
 
-	Ca = numpy.transpose(R) * Cv * R
+		r22 = r11 = A
+		r12 = -B
+		r21 = B
 
+	res11 = r11*(c11*r11 + c12*r21) + r21*(c21*r11 + c22*r21)
+	res12 = r11*(c11*r12 + c12*r22) + r21*(c21*r12 + c22*r22)
+	res21 = r12*(c11*r11 + c12*r21) + r22*(c21*r11 + c22*r21)
+	res22 = r12*(c11*r12 + c12*r22) + r22*(c21*r12 + c22*r22)
+	
+	Ca = [[res11, res12], [res21, res22]]
+	
 	return Ca
+
+	#Cv = numpy.matrix([	[x_var, 0.0],
+	#		[0.0, y_var]
+	#		])
+
+	#mag = math.sqrt(vec[0]**2 + vec[1]**2)
+	#normVec = [vec[0]/mag, vec[1]/mag]
+
+	#if normVec[1] == 0:
+	#	R = numpy.matrix([	[1.0, 0.0],
+	#			[0.0, 1.0]
+	#			])
+
+	#else:
+	#	B = -1 / (normVec[1] + normVec[0]**2/normVec[1])
+	#	A = -normVec[0]*B/normVec[1]
+	#	R = numpy.matrix([	[A, -B],
+	#			[B, A]
+	#			])
+
+	#Ca = numpy.transpose(R) * Cv * R
+
+	#return Ca
 
 def findClosestPointInA(a_trans, b):
 
@@ -260,20 +468,30 @@ def findClosestPointInA(a_trans, b):
 # for point T*a, find the closest point b in B
 def findClosestPointInB(b_data, a, offset):
 
+	#xd = offset[0]
+	#yd = offset[1]
+	#theta = offset[2]
+
+	#T = numpy.matrix([	[math.cos(theta), -math.sin(theta), xd],
+	#		[math.sin(theta), math.cos(theta), yd],
+	#		[0.0, 0.0, 1.0]
+	#		])
+
+
+	#a_hom = numpy.matrix([[a[0]],[a[1]],[1.0]])
+	#temp = T*a_hom
+	#a_off = [temp[0,0],temp[1,0]]
+
 	xd = offset[0]
 	yd = offset[1]
 	theta = offset[2]
 
-	T = numpy.matrix([	[math.cos(theta), -math.sin(theta), xd],
-			[math.sin(theta), math.cos(theta), yd],
-			[0.0, 0.0, 1.0]
-			])
-
-
-	a_hom = numpy.matrix([[a[0]],[a[1]],[1.0]])
-	temp = T*a_hom
-	a_off = [temp[0,0],temp[1,0]]
-
+	ax = a[0]
+	ay = a[1]	
+	a_off = [ax*math.cos(theta) - ay*math.sin(theta) + xd, ax*math.sin(theta) + ay*math.cos(theta) + yd]
+	
+	#print a_off
+	
 	minDist = 1e100
 	minPoint = None
 
@@ -295,10 +513,10 @@ def cost_func(offset, match_pairs, a_data_raw = [], polyB = [], circles = []):
 	global numIterations
 	global fig
 
-	fig.clf()
-	ax = fig.add_subplot(111)
 	
 	if False and len(a_data_raw) > 0 and len(polyB) > 0:
+		fig.clf()
+		ax = fig.add_subplot(111)
 
 		numIterations += 1
 		
@@ -353,13 +571,17 @@ def cost_func(offset, match_pairs, a_data_raw = [], polyB = [], circles = []):
 	sum = 0.0
 	for pair in match_pairs:
 
-		a = numpy.matrix([[pair[0][0]],[pair[0][1]]])
-		b = numpy.matrix([[pair[1][0]],[pair[1][1]]])
+		#a = numpy.matrix([[pair[0][0]],[pair[0][1]]])
+		#b = numpy.matrix([[pair[1][0]],[pair[1][1]]])
+		
+		a = pair[0]
+		b = pair[1]
+		
 		sum += computeMatchError(offset, a, b, pair[2], pair[3])
 
 		#polyA_trans = dispOffsetMany(polyA, offset)
-		originA = dispOffset([0.0,0.0], [offset[0], offset[1], 0.0])
-		originB = dispOffset([0.0,0.0], [-offset[0], -offset[1], 0.0])
+		#originA = dispOffset([0.0,0.0], [offset[0], offset[1], 0.0])
+		#originB = dispOffset([0.0,0.0], [-offset[0], -offset[1], 0.0])
 
 		#print polyA_trans
 
@@ -410,7 +632,12 @@ def addDistanceFromOriginCovariance(points, tan_var=0.1, perp_var=0.01):
 		if len(p) <= 2:
 			p.append(C)
 		else:
-			p[2] += C
+			p[2][0][0] += C[0][0]
+			p[2][0][1] += C[0][1]
+			p[2][1][0] += C[1][0]
+			p[2][1][1] += C[1][1]
+			
+			#p[2] += C
 
 def addPointToLineCovariance(points, high_var=1.0, low_var=0.001):
 
@@ -430,7 +657,12 @@ def addPointToLineCovariance(points, high_var=1.0, low_var=0.001):
 		if len(p) <= 2:
 			p.append(C)
 		else:
-			p[2] += C
+			p[2][0][0] += C[0][0]
+			p[2][0][1] += C[0][1]
+			p[2][1][0] += C[1][0]
+			p[2][1][1] += C[1][1]
+			
+			#p[2] += C
 
 " check if a point is contained in the polygon, use radius and center to quicken check "
 def isValid(p, radius, center, poly):
@@ -814,11 +1046,308 @@ def gen_ICP(pastPose, targetPose, pastHull, targetHull, pastCircles, costThresh 
 		# save the current offset and cost
 		offset = newOffset
 		lastCost = newCost
-	
-	
-
 
 	return offset
+
+def gen_ICP2(estPose1, offset, pastHull, targetHull, pastCircles, costThresh = 0.004, minMatchDist = 2.0, plotIter = False):
+
+	global numIterations
+	
+	lastCost = 1e100
+	
+	startIteration = numIterations
+
+	" set the initial guess "
+	poseOrigin = Pose(estPose1)
+	
+	#offset = poseOrigin.convertGlobalPoseToLocal(estPose2)
+	#print "offset =", offset
+
+	#exit()
+	" transform the past poses "
+	a_data_raw = targetHull
+	a_data = []
+	for p in a_data_raw:
+		result = dispPoint(p, offset)
+		#print offset, p, result
+		#print
+		
+		a_data.append(result)
+	
+	#print "targetHull =", targetHull
+	#print "a_trans =", a_trans
+	
+
+	
+	polyB = []		
+	for p in pastHull:
+		polyB.append([p[0],p[1]])	
+
+	while True:
+		" find the matching pairs "
+		match_pairs = []
+
+		a_data_raw = targetHull
+		b_data = pastHull			
+
+		" transform the target Hull with the latest offset "
+		a_data = []
+		for p in a_data_raw:
+			result = dispPoint(p, offset)
+			a_data.append(result)
+
+		" transformed points without associated covariance "
+		polyA = []
+		for p in a_data:
+			polyA.append([p[0],p[1]])	
+		
+		" get the circles and radii "
+		radiusA, centerA = computeEnclosingCircle(a_data)
+		#radiusB, centerB = computeEnclosingCircle(pastHull)
+		
+		if True:
+			for i in range(len(a_data)):
+				a_p = polyA[i]
+	
+				#if isValid(a_p, radiusB, centerB, polyB):
+				if isValidPast(a_p, pastCircles, polyB):
+	
+					" for every transformed point of A, find it's closest neighbor in B "
+					b_p, minDist = findClosestPointInB(b_data, a_p, [0.0,0.0,0.0])
+		
+					if minDist <= minMatchDist:
+			
+						" add to the list of match pairs less than 1.0 distance apart "
+						" keep A points and covariances untransformed "
+						Ca = a_data_raw[i][2]
+						Cb = b_p[2]
+		
+						" we store the untransformed point, but the transformed covariance of the A point "
+						match_pairs.append([a_data_raw[i],b_p,Ca,Cb])
+
+		if True:
+			for i in range(len(b_data)):
+				b_p = polyB[i]
+		
+				if isValid(b_p, radiusA, centerA, polyA):
+			
+					#print "selected", b_p, "in circle", radiusA, centerA, "with distance"
+					" for every point of B, find it's closest neighbor in transformed A "
+					a_p, a_i, minDist = findClosestPointInA(a_data, b_p)
+		
+					if minDist <= minMatchDist:
+			
+						" add to the list of match pairs less than 1.0 distance apart "
+						" keep A points and covariances untransformed "
+						Ca = a_data_raw[a_i][2]
+						
+						Cb = b_data[i][2]
+		
+						" we store the untransformed point, but the transformed covariance of the A point "
+						match_pairs.append([a_data_raw[a_i],b_p,Ca,Cb])
+
+
+		" plot the initial configuration "
+		if plotIter and startIteration == numIterations:
+
+			numIterations += 1
+
+			pylab.clf()
+			pylab.axes()
+			match_global = []
+			
+			for pair in match_pairs:
+				p1 = pair[0]
+				p2 = pair[1]
+				
+				p1_o = dispOffset(p1, offset)
+				#p2_o = dispOffset(p2, offset)
+
+				
+				p1_g = poseOrigin.convertLocalToGlobal(p1_o)
+				p2_g = poseOrigin.convertLocalToGlobal(p2)
+				match_global.append([p1_g,p2_g])
+			
+			draw_matches(match_global, [0.0,0.0,0.0])
+			
+			xP = []
+			yP = []
+			for b in polyB:
+				p1 = poseOrigin.convertLocalToGlobal(b)
+
+				xP.append(p1[0])	
+				yP.append(p1[1])
+			
+			p1 = poseOrigin.convertLocalToGlobal(polyB[0])
+			xP.append(p1[0])	
+			yP.append(p1[1])
+			
+			pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+
+			xP = []
+			yP = []
+			for b in a_data_raw:
+				p = [b[0],b[1]]
+				p = dispOffset(p,offset)
+				
+				p1 = poseOrigin.convertLocalToGlobal(p)
+				xP.append(p1[0])	
+				yP.append(p1[1])
+			
+			p = [a_data_raw[0][0],a_data_raw[0][1]]
+			p = dispOffset(p,offset)
+
+			p1 = poseOrigin.convertLocalToGlobal(p)
+			xP.append(p1[0])	
+			yP.append(p1[1])
+
+			pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+
+			plotEnv()		
+			
+			pylab.xlim(-4,9)
+			pylab.ylim(-3,9)
+			#pylab.ylim(-7,5)
+			pylab.savefig("ICP_plot_%04u.png" % numIterations)
+			pylab.clf()					
+			
+		if False:
+			for pair in match_pairs:
+				a = pair[0]
+				b = pair[1]
+			
+				pylab.plot([a[0],b[0]], [a[1],b[1]],color=(1.0,0.0,0.0))
+			
+			pylab.show()
+			
+		#allCircles = deepcopy(pastCircles)
+		#allCircles.append([radiusA,centerA])
+
+		allCircles = [[radiusA,centerA]]
+
+		# optimize the match error for the current list of match pairs
+		newOffset = scipy.optimize.fmin(cost_func, offset, [match_pairs, a_data_raw, polyB, allCircles])
+	
+		# get the current cost
+		newCost = cost_func(newOffset, match_pairs)
+	
+		# check for convergence condition, different between last and current cost is below threshold
+		if abs(lastCost - newCost) < costThresh or (numIterations - startIteration) > 10:
+			offset = newOffset
+			lastCost = newCost
+			break
+	
+		numIterations += 1
+
+		offset = newOffset
+
+		" reduce the minMatch distance for each step down to a floor value "
+		minMatchDist /= 2
+		if minMatchDist < 0.25:
+			minMatchDist = 0.25
+	
+		# optionally draw the position of the points in current transform
+		if plotIter:
+			pylab.clf()
+			pylab.axes()
+			match_global = []
+			
+			#match_pairs.append([a_data_raw[a_i],b_p,Ca,Cb])
+			
+			for pair in match_pairs:
+				p1 = pair[0]
+				p2 = pair[1]
+				
+				p1_o = dispOffset(p1, offset)
+				#p2_o = dispOffset(p2, offset)
+
+				
+				p1_g = poseOrigin.convertLocalToGlobal(p1_o)
+				p2_g = poseOrigin.convertLocalToGlobal(p2)
+				match_global.append([p1_g,p2_g])
+			
+			#draw_matches(match_pairs, offset)
+			draw_matches(match_global, [0.0,0.0,0.0])
+			
+			xP = []
+			yP = []
+			for b in polyB:
+				p1 = poseOrigin.convertLocalToGlobal(b)
+
+				xP.append(p1[0])	
+				yP.append(p1[1])
+				#xP.append(b[0])	
+				#yP.append(b[1])
+			
+			p1 = poseOrigin.convertLocalToGlobal(polyB[0])
+			xP.append(p1[0])	
+			yP.append(p1[1])
+			#xP.append(polyB[0][0])	
+			#yP.append(polyB[0][1])
+			
+			pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+
+			xP = []
+			yP = []
+			for b in a_data_raw:
+				p = [b[0],b[1]]
+				p = dispOffset(p,offset)
+				
+				p1 = poseOrigin.convertLocalToGlobal(p)
+				xP.append(p1[0])	
+				yP.append(p1[1])
+				
+				#xP.append(p[0])	
+				#yP.append(p[1])
+			
+			p = [a_data_raw[0][0],a_data_raw[0][1]]
+			p = dispOffset(p,offset)
+
+			p1 = poseOrigin.convertLocalToGlobal(p)
+			xP.append(p1[0])	
+			yP.append(p1[1])
+
+			#xP.append(p[0])	
+			#yP.append(p[1])
+			
+			pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+
+			#cir = Circle( (0,0), radius=0.5)
+			#a.add_patch(cir)
+
+			plotEnv()		
+			
+			#for circle in pastCircles:
+			#	radius, center = circle
+			#	cir = pylab.Circle((center[0],center[1]), radius=radius,  fc='r')
+			#	pylab.gca().add_patch(cir)
+				
+			#cir = pylab.Circle((centerA[0],centerA[1]), radius=radiusA,  fc='r')
+			#pylab.gca().add_patch(cir)
+			#cir = pylab.Circle((.5,.5), radius=0.25, alpha =.2, fc='b')
+			#pylab.gca().add_patch(cir)
+
+			#pylab.xlim(-4.5,4.5)
+			#pylab.ylim(-4,4)
+			#pylab.xlim(-3,6)
+			#pylab.ylim(-4,4)
+			#pylab.xlim(-4,7)
+			#pylab.ylim(-7,3)
+			#pylab.xlim(-4,9)
+			#pylab.ylim(-7,5)
+			pylab.xlim(-4,9)
+			pylab.ylim(-3,9)
+			#pylab.axis('equal')
+			pylab.savefig("ICP_plot_%04u.png" % numIterations)
+			pylab.clf()			
+						
+		# save the current offset and cost
+		offset = newOffset
+		lastCost = newCost
+
+	offset[2] =  functions.normalizeAngle(offset[2])
+	return offset
+
 
 def plotEnv():
 

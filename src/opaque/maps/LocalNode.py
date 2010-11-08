@@ -2,9 +2,11 @@
 from LocalOccMap import *
 from LocalBoundaryMap import *
 from LocalObstacleMap import *
+from SplineFit import *
 
 #import Image
 from numpy import array, dot, transpose
+
 
 
 
@@ -48,20 +50,25 @@ class LocalNode:
 		
 		self.saveCount = 0
 	
-		" by default, the center points are the estimated positions of joints: "
-		cJoints = [2, 6, 10, 14, 18, 22, 26, 30, 34, 38]
-
 		if inSim:
-			self.centerPoints = []
-			for j in cJoints:
-				self.centerPoints.append(self.contacts.getAveragePose(j))
 			
-			self.localCenterPoints = []
+			self.localPosture = []
+			
+			for j in range(self.numSegs-1):
+				self.localPosture.append(self.probe.getJointPose([0.0,0.0,0.0], 19, j))
+				
+			" compute a fitted curve of a center point "
+			self.centerCurve = SplineFit(self.localPosture, smooth = 0.1, kp = 5)
+			upoints = arange(0,1.0,0.01)
+			self.splPoints = self.centerCurve.getUSet(upoints)
+			
+			#xP = []
+			#yP = []
+			#for p in self.splPoints:
+			#	xP.append(p[0])
+			#	yP.append(p[1])
+				
 	
-			for pnt in self.centerPoints:
-				newPoint = self.convertGlobalToLocal(pnt)
-				self.localCenterPoints.append(newPoint)
-
 	def setEstPose(self, newPose):
 
 		self.estPose = copy(newPose)
@@ -290,10 +297,11 @@ class LocalNode:
 		f.write("\n")
 		f.close()
 
-		#f = open("cntpose%04u.txt" % self.nodeID, 'w')
-		#f.write(repr(self.localCenterPoints))
-		#f.write("\n")
-		#f.close()
+		f = open("posture%04u.txt" % self.nodeID, 'w')
+		f.write(repr(self.localPosture))
+		f.write("\n")
+		f.close()
+
 	
 	def readFromFile(self, dirName, nodeID):
 		
@@ -318,76 +326,24 @@ class LocalNode:
 
 		self.setGndPose(gndPose)
 
-		#self.poseProfile.setRootPose(self.estPose)
-		
-		centerPoints = []
-		
-		" read in the data "
-		#f = open("cntpose%04u.txt" % self.nodeID, 'r')
-		#centerPoints = eval(f.read())
-		#f.close()
-		
-		#print "reading in center points", "cntpose%04u.txt" % self.nodeID
-		#print centerPoints
-		
-		self.setCenterPoints(centerPoints)
+		f = open(dirName + "/posture%04u.txt" % self.nodeID, 'r')
+		self.localPosture = eval(f.read().rstrip())
+		f.close()
 
+		" compute a fitted curve of a center point "
+		self.centerCurve = SplineFit(self.localPosture, smooth = 0.5, kp = 2)
+		upoints = arange(0,1.0,0.01)
+		self.splPoints = self.centerCurve.getUSet(upoints)
+		
 		self.synch()
 		
-	def getCenterPoints(self):
-		return copy(self.centerPoints)
-	
-	def setCenterPoints(self, centerPoints):
-		self.centerPoints = copy(centerPoints)
-	
-		self.localCenterPoints = []
-
-		for pnt in self.centerPoints:
-			newPoint = self.convertGlobalToLocal(pnt)
-			self.localCenterPoints.append(newPoint)
-			
 	def obstCallBack(self, direction):
 		#self.currNode.obstCallBack(direction)		
 		self.obstacleMap.updateContact(direction)
 		
 	def update(self, isForward = True):
-		
-		" update the local occupancy "
-		#if isForward:
-		#	newRoot = self.contacts.getClosestPose(34)
-		#else:
-		#	newRoot = self.contacts.getClosestPose(5)
-
-		"""
-		newRoot = self.contacts.getClosestPose(19)
-		
-		" transform newRoot to local coordinates"
-		relVec = [newRoot[0],newRoot[1]]
-		relDist = sqrt(relVec[0]**2 + relVec[1]**2)
-		
-		tempVec = array([[relVec[0]],[relVec[1]]])
-		resVec = dot(self.backR,tempVec)
-		resVec[0,0] += -self.dist
-		transVec = dot(self.foreR, resVec)
-		
-		" now, apply rotation correction "
-		finalVec = dot(self.R, transVec)
-		
-		finalAng = self.normalizeAngle( self.normalizeAngle(newRoot[2]) - self.normalizeAngle(self.estPose[2]) )
-		
-		relRoot = [finalVec[0,0],finalVec[1,0],finalAng]
-		
-		#if isForward:
-		#	self.occMap.setRootPose(relRoot, 34)
-		#else:
-		#	self.occMap.setRootPose(relRoot, 5)
-		
-		self.occMap.setRootPose(relRoot, 19)
-		"""	
-		
+				
 		self.occMap.update(isForward)
-		#self.boundaryMap.update()
-		#self.obstacleMap.update()
 		
 		self.dirty = True
 	
@@ -414,9 +370,7 @@ class LocalNode:
 			self.synch()
 
 		# save a copy of each version of the map
-		#self.saveCount += 1
 		self.occMap.saveMap()
-		#self.boundaryMap.saveMap()
 		self.obstacleMap.saveMap()
 		
 

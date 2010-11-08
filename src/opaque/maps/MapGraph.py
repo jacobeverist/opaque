@@ -91,7 +91,7 @@ class MapGraph:
 		
 		self.poseGraph.add_node(self.numNodes, self.currNode)
 		if self.numNodes > 0:
-			self.addConstraint(self.numNodes-1, self.numNodes)
+			self.addMotionConstraint(self.numNodes-1, self.numNodes)
 
 		self.numNodes += 1	
 
@@ -113,11 +113,41 @@ class MapGraph:
 			print "adding node", i
 			self.poseGraph.add_node(i, self.currNode)
 			if self.numNodes > 0:
-				self.addConstraint(i-1, i)
+				#self.addMotionConstraint(i-1, i)
+				self.addNaiveMotionConstraint(i-1, i, 0.14, True)
 
 			self.numNodes += 1
+
+		#pylab.clf()			
+		#for i in range(num_poses):
 			
-	def addConstraint(self, i, j):
+			#currNode = self.poseGraph.get_node_attributes(i)
+			
+			#localPosture = currNode.localPosture
+			#splPoints = currNode.splPoints
+
+			#print localPosture
+			#print splPoints
+		
+			#xP = []
+			#yP = []
+			#for p in localPosture:
+			#	xP.append(p[0])
+			#	yP.append(p[1])
+			
+			#pylab.plot(xP,yP)
+			
+			#xP = []
+			#yP = []
+			#for p in splPoints:
+			#	xP.append(p[0])
+			#	yP.append(p[1])
+			#pylab.plot(xP,yP)
+
+			#pylab.savefig("plotCenter%04u.png" % i)
+			#pylab.clf()		
+			
+	def addMotionConstraint(self, i, j):
 
 		if self.numNodes > 0:		
 			
@@ -163,7 +193,53 @@ class MapGraph:
 			#	[ 0.0004255,  -0.00017733,  0.0003789 ]])
 
 
+
+
+
+	def addNaiveMotionConstraint(self, i, j, stepDist, direction):
+
+		if self.numNodes > 0:		
+
+			" do stepDist in the direction of the centerline "
+			if direction:
+				firstGuess = self.makeGuess(i, j, stepDist)
+			else:
+				firstGuess = self.makeGuess(i, j, -stepDist)
+
+			print
+			print "adding naive motion constraint", i, j
+			print firstGuess
+			print "dist =", sqrt(firstGuess[0]*firstGuess[0] + firstGuess[1]*firstGuess[1])
+
+			pose1 = copy(self.poseGraph.get_node_attributes(i).getGndPose())
+			pose2 = copy(self.poseGraph.get_node_attributes(j).getGndPose())
+
+			xA = pose1[0]
+			yA = pose1[1]
+			pA = pose1[2]
+			
+			xB = pose2[0]
+			yB = pose2[1]
+			pB = pose2[2]
+
+			#xOff = stepDist * cos(angle1)
+			#yOff = stepDist * sin(angle1)
+
+			xT = cos(pA)*(xB-xA) + sin(pA)*(yB-yA)
+			yT = -sin(pA)*(xB-xA) + cos(pA)*(yB-yA)
+			pT = pB - pA
+			
+			print [xT, yT, pT]
+			print "dist =", sqrt(xT*xT + yT*yT)
+			
+
+			transform = matrix([[firstGuess[0]], [firstGuess[1]], [firstGuess[2]]])
+			covE = matrix([[ 0.1, 0.0, 0.0 ],
+							[ 0.0, 0.1, 0.0],
+							[ 0.0, -0.0, pi/4.0 ]])
+			
 			self.poseGraph.add_edge(i, j, attrs = [transform, covE])
+
 
 	def setCenterPoints(self, centerPoints):
 		self.currNode.setCenterPoints(centerPoints)
@@ -174,7 +250,7 @@ class MapGraph:
 	def getCurrentNode(self):
 		return self.currNode
 	
-	def newNode(self):
+	def newNode(self, stepDist, direction):
 		
 		print "checkN"
 		
@@ -195,7 +271,8 @@ class MapGraph:
 		
 		self.poseGraph.add_node(self.numNodes, self.currNode)
 		if self.numNodes > 0:
-			self.addConstraint(self.numNodes-1, self.numNodes)
+			self.addMotionConstraint(self.numNodes-1, self.numNodes)
+			#self.addNaiveMotionConstraint(self.numNodes-1, self.numNodes, stepDist, direction)
 	
 		print "checkQ"
 		
@@ -446,7 +523,7 @@ class MapGraph:
 				
 				x1 = -cos(pA)*xA - sin(pA)*yA
 				y1 = sin(pA)*xA - cos(pA)*yA
-				p1 = -pA
+				p1 = normalizeAngle(-pA)
 
 				newTransform = matrix([[x1], [y1], [p1]])
 
@@ -602,30 +679,12 @@ class MapGraph:
 
 
 		def mahab_dist(c1, c2, r1, r2, E):
-			
-			d = c2 - c1
-			
-			#print "Euclidian Distance =", sqrt(d[0,0]**2 + d[1,0]**2)
-			
-			s = max(0, sqrt(d[0,0]**2 + d[1,0]**2) - r1 - r2) * d / sqrt(d[0,0]**2 + d[1,0]**2)
-			
-			E_inv = linalg.inv(E)
-			
-			#print s.T
-			#print E_inv
-			#print s
-			
-			#print s.T * E_inv
-			
-			#print s.T * E_inv * s
-			
-			dist = s.T * E_inv * s
-			
-			#print dist[0,0]
-			#print "Mahalanobis Distance =", dist[0,0]
-			
-			return dist[0,0]
 
+			d = c2 - c1
+			s = max(0, sqrt(d[0,0]**2 + d[1,0]**2) - r1 - r2) * d / sqrt(d[0,0]**2 + d[1,0]**2)
+			E_inv = linalg.inv(E)
+			dist = s.T * E_inv * s
+			return dist[0,0]
 
 		if self.numNodes < 2:
 			return
@@ -637,15 +696,16 @@ class MapGraph:
 
 		" perform dijkstra projection over all nodes"
 		paths = []
-		for i in range(7):
+		for i in range(self.numNodes):
 			paths.append(self.dijkstra_proj(i))
 		
 		" select pairs to attempt a sensor constraint "
 		pair_candidates = []
-		for i in range(7):
+		print "CANDIDATES:"
+		for i in range(self.numNodes):
 			path_set = paths[i]
 			
-			ind = range(i+1,7)
+			ind = range(i+1,self.numNodes)
 
 			for j in ind:				
 				loc2 = path_set[j][0]
@@ -657,6 +717,7 @@ class MapGraph:
 				
 				dist = mahab_dist(c1, c2, 0.25, 0.25, E)
 				
+				print i, j, dist
 				if dist <= 3.0:
 					pair_candidates.append([dist,i,j,loc2])
 				
@@ -674,6 +735,7 @@ class MapGraph:
 				
 				dist = mahab_dist(c1, c2, 0.25, 0.25, E)
 				
+				print i, j, dist
 				if dist <= 3.0:
 					pair_candidates.append([dist,i,j,loc2])
 
@@ -708,18 +770,23 @@ class MapGraph:
 					pair_unique.append(pair_candidates[i])
 					is_free[i] = False
 
+		print "UNIQUE PAIRS"
+		for p in pair_unique:
+			print p[0], p[1], p[2]
+
 		def decimatePoints(points):
 			result = []
 		
 			for i in range(len(points)):
-				if i%2 == 0:
+				#if i%2 == 0:
+				if i%4 == 0:
 					result.append(points[i])
 		
 			return result
 		
 		def computeHull(i):
+			
 			" Read in data of Alpha-Shapes and add their associated covariances "
-		
 			node1 = self.poseGraph.get_node_attributes(i)
 			node1.computeAlphaBoundary()			
 			a_data = node1.getAlphaBoundary()
@@ -732,7 +799,7 @@ class MapGraph:
 			gen_icp.addDistanceFromOriginCovariance(a_data, tan_var=0.1, perp_var=0.01)
 			
 			return a_data
-			
+		
 		hull_computed = [False for i in range(self.numNodes)]
 		a_hulls = [0 for i in range(self.numNodes)]
 		
@@ -749,8 +816,85 @@ class MapGraph:
 										
 			print p[1], p[2], p[0]
 
+		
+		#trans_hulls = [0 for i in range(self.numNodes)]
+		#for i in range(self.numNodes):
+		#	if hull_computed[i]:
+		#		node1 = self.poseGraph.get_node_attributes(i)
+		#		estPose1 = node1.getEstPose()
+		#		hull1 = a_hulls[i]
+		#		hull_trans = []
+		#		for p in hull1:
+		#			hull_trans.append(gen_icp.dispPoint(p, estPose1))
+		#		
+		#		trans_hulls[i] = hull_trans
+					
+		
+		#hull_trans1 = []
+		#for p in hull1:
+		#	hull_trans1.append(gen_icp.dispPoint(p, estPose1))
 
+		hypotheses = []
+		
+		for p in pair_unique:
+			transform = p[3]
+			n1 = p[1]
+			n2 = p[2]
+			offset = self.makeSensorConstraint(transform, n1, n2, a_hulls[n1], a_hulls[n2])
+			#offset = self.makeSensorConstraint(transform, n1, n2, trans_hulls[n1], trans_hulls[n2])
 
+			#old = [p[3][0,0],p[3][1,0],p[3][2,0]]
+			#print old
+
+			hypotheses.append([p[1],p[2],offset])
+
+		" need more hypotheses "
+		" add a more naive motion model constraint "
+
+		for hyp in hypotheses:
+			print hyp[0], hyp[1], hyp[2]
+			
+		
+		
+		
+		#p = pair_unique[-1]
+		#print self.makeSensorConstraint(p[0],p[1],p[2], a_hulls[p[1]], a_hulls[p[2]])
+		#print p[3]
+
+	def makeGuess(self, n1, n2, stepDist):
+		
+		node1 = self.poseGraph.get_node_attributes(n1)	
+		node2 = self.poseGraph.get_node_attributes(n2)	
+		
+		" align the root vectors "
+		vec1 = node1.centerCurve.getUVector(0.5)
+		vec2 = node2.centerCurve.getUVector(0.5)
+		
+		angle1 = acos(vec1[0])
+		if asin(vec1[1]) < 0:
+			angle1 = -angle1
+
+		angle2 = acos(vec2[0])
+		if asin(vec2[1]) < 0:
+			angle2 = -angle2
+			
+		angle = angle2 - angle1
+		
+		" center the root node positions "
+		
+		xOff = stepDist * cos(angle1)
+		yOff = stepDist * sin(angle1)
+		
+		return [xOff, yOff, -angle]
+	
+
+	def makeSensorConstraint(self, transform, n1, n2, hull1, hull2):
+
+		print "hypothesizing sensor constraint between", n1, "and", n2
+
+		" initial guess for x, y, theta parameters "
+		firstGuess = self.makeGuess(n1, n2, 0.145)
+		print "guess =", firstGuess
 
 		" TUNE ME:  threshold cost difference between iterations to determine if converged "
 		costThresh = 0.1
@@ -762,36 +906,34 @@ class MapGraph:
 		plotIteration = True
 		#plotIteration = False
 	
-		" initial guess for x, y, theta parameters "
-		offset = [0.0,0.0,0.0]
+		#offset = [0.0,0.0,0.0]
 	
 		" Extract the data from the files and put them into arrays "
-		estPoses = []
-		gndPoses = []
-		for i in range(0,self.numNodes):	
-			node1 = self.poseGraph.get_node_attributes(i)		
-			estPose1 = node1.getEstPose()	
-			gndPose1 = node1.getGndPose()
-			estPoses.append(estPose1)
-			gndPoses.append(gndPose1)
+		
+		node1 = self.poseGraph.get_node_attributes(n1)
+		node2 = self.poseGraph.get_node_attributes(n2)
+		
+		estPose1 = node1.getEstPose()
+		estPose2 = node2.getEstPose()
+		
+		hull_trans1 = []
+		for p in hull1:
+			hull_trans1.append(gen_icp.dispPoint(p, estPose1))
 
-		a_hull_trans = [0 for i in range(self.numNodes)]
-		for m in range(0,self.numNodes):
-			if hull_computed[m]:
+		hull_trans2 = []
+		for p in hull2:
+			hull_trans2.append(gen_icp.dispPoint(p, estPose2))
+
+		#offset2 = [transform[0,0],transform[1,0],transform[2,0]]
 				
-				offset = estPoses[m]
+		radius, center = gen_icp.computeEnclosingCircle(hull1)
+		circle1 = [radius, center]
 		
-				" transform the past poses "
-				past_data = a_hulls[m]
-				a_trans = []
-				for p in past_data:
-					a_trans.append(gen_icp.dispPoint(p, offset))
-				
-				a_hull_trans[m] = a_trans
+		offset = gen_icp.gen_ICP2(estPose1, firstGuess, hull1, hull2, [circle1], costThresh, minMatchDist, plotIteration)
 		
+		return offset
 		
-		
-		
+		"""
 		pylab.clf()
 		for i in range(7):
 			path_set = paths[i]
@@ -816,94 +958,10 @@ class MapGraph:
 			
 			pylab.plot(xP,yP)
 		pylab.show()			
-		
-		
-		return	
-		
+		"""
 		
 		
 		
-		
-		
-		
-		
-		
-		offsets = []
-		for i in range(len(estPoses)-1):
-			estPose1 = estPoses[i]
-			estPose2 = estPoses[i+1]
-			
-			pose1 = Pose(estPose1)
-			offset = pose1.convertGlobalPoseToLocal(estPose2)
-			offsets.append(offset)
-				
-		k = len(estPoses)-1
-
-		print "check_E"
-	
-		" 1. target pose to correct "
-		targetPose = estPoses[-1]
-		targetHull = a_hulls[-1]
-	
-		a_hull_trans = []
-		estPoseOrigin = estPoses[-2]
-		for m in range(0,len(estPoses)-1):
-			estPose2 = estPoses[m]
-			poseOrigin = Pose(estPoseOrigin)
-			offset = poseOrigin.convertGlobalPoseToLocal(estPose2)
-
-			" transform the past poses "
-			past_data = a_hulls[m]
-			a_trans = []
-			for p in past_data:
-				a_trans.append(gen_icp.dispPoint(p, offset))
-			
-			a_hull_trans.append(a_trans)
-
-		print "check_F"
-
-		pastCircles = []
-		for m in range(0,len(estPoses)-1):
-			hull = a_hull_trans[m]
-			radius, center = gen_icp.computeEnclosingCircle(hull)
-			pastCircles.append([radius,center])
-			
-		pastPose = estPoseOrigin
-		
-		pastHull = gen_icp.computeUnions(a_hull_trans)
-		gen_icp.addPointToLineCovariance(pastHull, high_var=1.0, low_var=0.001)
-		#gen_icp.addDistanceFromOriginCovariance(pastHull, tan_var=0.1, perp_var=0.01)
-
-		print "check_G"
-
-		" run generalized ICP (a plot is made for each iteration of the algorithm) "
-		offset = gen_icp.gen_ICP(pastPose, targetPose, pastHull, targetHull, pastCircles, costThresh, minMatchDist, plotIteration)
-		
-		offsets[k-1] = offset
-		
-		" recompute the estimated poses with the new offset "
-		newEstPoses = []
-		newEstPoses.append(estPoses[0])
-		
-		for m in range(len(offsets)):
-			pose1 = Pose(newEstPoses[m])
-			offset = offsets[m]
-			newEstPose2 = pose1.convertLocalOffsetToGlobal(offset)
-			newEstPoses.append(newEstPose2)
-			
-		print "check_H"
-			
-		estPoses = newEstPoses
-		
-		" update the estimated poses "
-		for m in range(0,len(estPoses)):
-			self.setNodePose(m, estPoses[m])
-			
-		print len(estPoses), "poses"
-		print "new estPose:", estPoses[-1]
-		
-		" update the current estimated pose in AverageContacts "
-		self.contacts.resetPose(estPose = estPoses[-1])
 
 
 	def drawEstBoundary(self):

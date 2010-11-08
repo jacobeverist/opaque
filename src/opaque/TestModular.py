@@ -14,6 +14,7 @@ from behaviors.AdaptiveStep import AdaptiveStep
 from pose.AverageContacts import AverageContacts
 from maps.MapGraph import MapGraph
 
+
 class TestModular(SnakeControl):
 
 	# 3 Steps, go right path, go left path, go back to origin
@@ -69,6 +70,8 @@ class TestModular(SnakeControl):
 		self.localState = 0
 		self.globalState = 0
 		self.prevTime = 0
+		
+		self.stepDist = 0.14
 		
 		# error tracking for path-following
 		self.lastDist = 1e100
@@ -183,19 +186,24 @@ class TestModular(SnakeControl):
 			
 			" create the mapping object "
 			self.mapGraph = MapGraph(self.probe, self.contacts)
-			self.mapGraph.loadFile("testData/correctionTest", 6)
+			#self.mapGraph.loadFile("testData/correctionTest", 43)
+			#self.mapGraph.loadFile("uncorrectedNX", 6)
 			#self.mapGraph.loadFile("testData/mapBuild_21June2010", 66)
+			self.mapGraph.loadFile(".", 6)
 
-			self.mapGraph.newNode()
+
+			#self.mapGraph.newNode(0.0, self.direction)
 			self.mapGraph.forceUpdate(False)
-
 			self.mapGraph.synch()
 			self.mapGraph.saveMap()
-			self.mapGraph.saveLocalMap()
+			#self.mapGraph.saveLocalMap()
 	
+	
+	
+
 			self.mapGraph.correctPoses3()
 			
-			#exit()
+			exit()
 			
 			self.restState = deepcopy(probeState)
 			
@@ -222,7 +230,7 @@ class TestModular(SnakeControl):
 			if isDone:
 				self.restState = deepcopy(probeState)
 
-				self.mapGraph.newNode()
+				self.mapGraph.newNode(self.stepDist, self.direction)
 				self.mapGraph.forceUpdate(False)
 				
 				self.globalState = 6
@@ -679,7 +687,7 @@ class TestModular(SnakeControl):
 
 				self.localPathState = 2
 
-				self.mapGraph.newNode()
+				self.mapGraph.newNode(self.stepDist, self.localDirection)
 				self.mapGraph.forceUpdate(False)
 					
 				if len(self.localWayPoints) > 0:

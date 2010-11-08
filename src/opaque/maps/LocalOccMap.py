@@ -397,6 +397,7 @@ class LocalOccMap:
 		if fileName != "":
 			self.mapImage.save(fileName)
 		else:
+			print "saving as", self.fileName % self.saveCount
 			self.mapImage.save(self.fileName % self.saveCount)	
 			self.gndMapImage.save(self.gndFileName % self.saveCount)
 			self.saveCount += 1
