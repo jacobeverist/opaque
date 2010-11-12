@@ -424,7 +424,7 @@ NxActor* NxSnake::CreateSnake()
 
 
 		NxVec3 globalAnchor = tPos + armJointPos;
-		NxVec3 globalAxis = NxVec3(0,1,0);
+		NxVec3 globalAxis = NxVec3(0,-1,0);
 		NxRevoluteJoint* revJoint = CreateRevoluteJoint(seg1, seg2, globalAnchor, globalAxis);
 		joints[i] = revJoint;
 

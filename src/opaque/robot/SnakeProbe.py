@@ -390,6 +390,7 @@ class SnakeProbe:
 			currPos = self._bodies[i].getPosition()
 			angQuat = self._bodies[i].getOrientation()
 			
+			
 			vec = ogre.Vector3(0.0,0.0,0.0)
 			radAngle = ogre.Radian(0.0)
 			val = angQuat.ToAngleAxis(radAngle,vec)
@@ -410,6 +411,7 @@ class SnakeProbe:
 		# NEGATE any angle going in or coming out of a Quaternion
 		currPos = self._bodies[i+1].getPosition()
 		angQuat = self._bodies[i+1].getOrientation()
+
 
 		vec = ogre.Vector3(0.0,0.0,0.0)
 		radAngle = ogre.Radian(0.0)
@@ -433,6 +435,7 @@ class SnakeProbe:
 		#return self.transform.getCJointPose(originPose,originJoint, targetJoint)
 		return self.transform.getJointFromJoint(originPose,originJoint, targetJoint)
 
+	" DEPRECATED "
 	def getJointFromJoint(self, originPose, originJoint, targetJoint):
 
 		if self.isJointChanged:

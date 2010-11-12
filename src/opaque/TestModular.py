@@ -184,26 +184,32 @@ class TestModular(SnakeControl):
 
 		elif self.globalState == 3:
 			
+			
+			
+			
+			
 			" create the mapping object "
 			self.mapGraph = MapGraph(self.probe, self.contacts)
+			exit()
 			#self.mapGraph.loadFile("testData/correctionTest", 43)
 			#self.mapGraph.loadFile("uncorrectedNX", 6)
 			#self.mapGraph.loadFile("testData/mapBuild_21June2010", 66)
-			self.mapGraph.loadFile(".", 6)
+			self.mapGraph.loadFile(".", 8)
+
 
 
 			#self.mapGraph.newNode(0.0, self.direction)
-			self.mapGraph.forceUpdate(False)
+			#self.mapGraph.forceUpdate(False)
 			self.mapGraph.synch()
 			self.mapGraph.saveMap()
 			#self.mapGraph.saveLocalMap()
 	
 	
+			exit()
 	
 
-			self.mapGraph.correctPoses3()
+			#self.mapGraph.correctPoses3()
 			
-			exit()
 			
 			self.restState = deepcopy(probeState)
 			

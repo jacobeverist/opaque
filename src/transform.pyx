@@ -20,9 +20,9 @@ cdef inline void copyToFrom(double *vec2, double *vec1):
 
 
 cdef class Transform:
-	cdef double joints[39]
-	cdef double jointTransforms[39][39][3]
-	cdef int transformComputed[39][39]
+	cdef double joints[40]
+	cdef double jointTransforms[40][40][3]
+	cdef int transformComputed[40][40]
 	cdef double segLength
 	cdef int numSegs
 
@@ -34,12 +34,12 @@ cdef class Transform:
 		
 
 		for i in range(39):
-			self.joints[i] = joints[i]
+			self.joints[i+1] = joints[i]
 
 		#print "set joint 36 to:", self.joints[36]
 			
-		for i in range(39):
-			for j in range(39):
+		for i in range(40):
+			for j in range(40):
 				self.transformComputed[i][j] = 0
 
 	
@@ -50,8 +50,8 @@ cdef class Transform:
 		cdef double totalAngle
 		cdef int i
 	
-		cdef int oj = originJoint
-		cdef int tj = targetJoint
+		cdef int oj = originJoint + 1
+		cdef int tj = targetJoint + 1
 	
 		targetPose = [0.0,0.0,0.0]
 	
@@ -73,7 +73,8 @@ cdef class Transform:
 			for i in range(oj+1, tj+1):
 				xTotal = xTotal + self.segLength*cos(totalAngle)
 				zTotal = zTotal + self.segLength*sin(totalAngle)
-				if i != self.numSegs-1:
+				#if i != self.numSegs-1:
+				if i != self.numSegs:
 					totalAngle = totalAngle - self.joints[i]
 	
 			totalAngle = normalizeAngle(totalAngle)
@@ -119,22 +120,26 @@ cdef class Transform:
 		if originJoint == targetJoint :
 			return
 
-		cdef double jointTransforms[39][39][3]
-		cdef int transformComputed[39][39]
+		cdef int oj, tj
+		#cdef double jointTransforms[40][40][3]
+		#cdef int transformComputed[40][40]
 		cdef double totalAngle, xTotal, yTotal, angle
 		cdef double offset[3], offsetT[3], offset1[3], offset2[3], finalOffset[3]
 		cdef double x1, x2, y1, y2, theta_1, theta_2
 
-		# forward kinematics
-		if targetJoint > originJoint:
-#
-			if self.transformComputed[originJoint][targetJoint] == 0:
+		oj = originJoint
+		tj = targetJoint 
 
-				" combine [originJoint, targetJoint-1] with [targetJoint-1, targetJoint] "
-				if targetJoint-originJoint == 1:
+		# forward kinematics
+		if tj > oj:
+#
+			if self.transformComputed[oj][tj] == 0:
+
+				" combine [oj, tj-1] with [tj-1, tj] "
+				if tj-oj == 1:
 					" compute it right now "
 
-					totalAngle = self.joints[targetJoint]
+					totalAngle = self.joints[tj]
 					xTotal = self.segLength
 					yTotal = 0.0
 
@@ -156,25 +161,25 @@ cdef class Transform:
 					offsetT[2] = totalAngle
 
 					" store result back into the dynamic programming table "
-					self.transformComputed[originJoint][targetJoint] = 1					
-					copyToFrom(self.jointTransforms[originJoint][targetJoint], offset)
+					self.transformComputed[oj][tj] = 1					
+					copyToFrom(self.jointTransforms[oj][tj], offset)
 
-					self.transformComputed[targetJoint][originJoint] = 1
-					copyToFrom(self.jointTransforms[targetJoint][originJoint], offsetT)
+					self.transformComputed[tj][oj] = 1
+					copyToFrom(self.jointTransforms[tj][oj], offsetT)
 
-					#if targetJoint == 36:
-					#	print originJoint,targetJoint,": ", offset[0], offset[1], offset[2]
+					#if tj == 36:
+					#	print oj,tj,": ", offset[0], offset[1], offset[2]
 				
 				else:
 					
 					" take two components of the dynamic programming table and combine them together for the solution "
 					" store the result back in the table so it doesn't need to be recomputed "
-					self.computeTransform(originJoint, targetJoint-1)
-					copyToFrom(offset1, self.jointTransforms[originJoint][targetJoint-1])
+					self.computeTransform(oj, tj-1)
+					copyToFrom(offset1, self.jointTransforms[oj][tj-1])
 
-					if self.transformComputed[targetJoint-1][targetJoint] == 0:
+					if self.transformComputed[tj-1][tj] == 0:
 						
-						totalAngle = self.joints[targetJoint]
+						totalAngle = self.joints[tj]
 						xTotal = self.segLength
 						yTotal = 0.0
 	
@@ -187,18 +192,18 @@ cdef class Transform:
 						offsetT[2] = totalAngle
 	
 						" store result back into the dynamic programming table "
-						self.transformComputed[targetJoint-1][targetJoint] = 1
-						copyToFrom(self.jointTransforms[targetJoint-1][targetJoint], offset2)
+						self.transformComputed[tj-1][tj] = 1
+						copyToFrom(self.jointTransforms[tj-1][tj], offset2)
 
-						self.transformComputed[targetJoint][targetJoint-1] = 1
-						copyToFrom(self.jointTransforms[targetJoint][targetJoint-1], offsetT)
+						self.transformComputed[tj][tj-1] = 1
+						copyToFrom(self.jointTransforms[tj][tj-1], offsetT)
 						
-						#offset2 = self.jointTransforms[targetJoint-1][targetJoint]
-						#print targetJoint-1,targetJoint,": ", offset2
+						#offset2 = self.jointTransforms[tj-1][tj]
+						#print tj-1,tj,": ", offset2
 					
 					else:
 						#print "case2"
-						copyToFrom(offset2, self.jointTransforms[targetJoint-1][targetJoint])
+						copyToFrom(offset2, self.jointTransforms[tj-1][tj])
 		
 					
 					x1 = offset1[0]
@@ -225,29 +230,29 @@ cdef class Transform:
 					offsetT[2] = angle
 				
 					" store result back into the dynamic programming table "
-					copyToFrom(self.jointTransforms[originJoint][targetJoint], finalOffset)
-					self.transformComputed[originJoint][targetJoint] = 1
+					copyToFrom(self.jointTransforms[oj][tj], finalOffset)
+					self.transformComputed[oj][tj] = 1
 
-					copyToFrom(self.jointTransforms[targetJoint][originJoint], offsetT)
-					self.transformComputed[targetJoint][originJoint] = 1
+					copyToFrom(self.jointTransforms[tj][oj], offsetT)
+					self.transformComputed[tj][oj] = 1
 
-					#if targetJoint > 19:
-					#	print originJoint,targetJoint,": ", finalOffset[0], finalOffset[1], finalOffset[2], "from", x1, x2, y1, y2, theta_1, theta_2
+					#if tj > 19:
+					#	print oj,tj,": ", finalOffset[0], finalOffset[1], finalOffset[2], "from", x1, x2, y1, y2, theta_1, theta_2
 
-					#	result = self.getCJointPose([0.0,0.0,0.0], originJoint, targetJoint)
+					#	result = self.getCJointPose([0.0,0.0,0.0], oj, tj)
 					#	print result[0], result[1], result[2]
 
 		# backward kinematics
 		else:
 
-			if self.transformComputed[originJoint][targetJoint] == 0:
-				" originJoint > targetJoint "
+			if self.transformComputed[oj][tj] == 0:
+				" oj > tj "
 
-				" combine [originJoint, targetJoint+1] with [targetJoint+1, targetJoint] "
-				if originJoint-targetJoint == 1:
+				" combine [oj, tj+1] with [tj+1, tj] "
+				if oj-tj == 1:
 					" compute it right now "
 
-					totalAngle = self.joints[originJoint]
+					totalAngle = self.joints[oj]
 					xTotal = -self.segLength*cos(totalAngle)
 					yTotal = -self.segLength*sin(totalAngle)
 
@@ -260,23 +265,23 @@ cdef class Transform:
 					offsetT[2] = totalAngle
 
 					" store result back into the dynamic programming table "
-					copyToFrom(self.jointTransforms[originJoint][targetJoint], offset)
-					self.transformComputed[originJoint][targetJoint] = 1
+					copyToFrom(self.jointTransforms[oj][tj], offset)
+					self.transformComputed[oj][tj] = 1
 
-					copyToFrom(self.jointTransforms[targetJoint][originJoint], offsetT)
-					self.transformComputed[targetJoint][originJoint] = 1
-					#print originJoint,targetJoint,": ", offset
+					copyToFrom(self.jointTransforms[tj][oj], offsetT)
+					self.transformComputed[tj][oj] = 1
+					#print oj,tj,": ", offset
 				
 				else:
 					
 					" take two components of the dynamic programming table and combine them together for the solution "
 					" store the result back in the table so it doesn't need to be recomputed "
-					self.computeTransform(originJoint, targetJoint+1)
-					copyToFrom(offset1, self.jointTransforms[originJoint][targetJoint+1])
+					self.computeTransform(oj, tj+1)
+					copyToFrom(offset1, self.jointTransforms[oj][tj+1])
 					
-					if self.transformComputed[targetJoint+1][targetJoint] == 0:
+					if self.transformComputed[tj+1][tj] == 0:
 						
-						totalAngle = self.joints[targetJoint+1]
+						totalAngle = self.joints[tj+1]
 						xTotal = -self.segLength*cos(totalAngle)
 						yTotal = -self.segLength*sin(totalAngle)
 	
@@ -289,17 +294,17 @@ cdef class Transform:
 						offsetT[2] = totalAngle
 	
 						" store result back into the dynamic programming table "
-						copyToFrom(self.jointTransforms[targetJoint+1][targetJoint], offset2)
-						self.transformComputed[targetJoint+1][targetJoint] = 1
+						copyToFrom(self.jointTransforms[tj+1][tj], offset2)
+						self.transformComputed[tj+1][tj] = 1
 						
-						copyToFrom(self.jointTransforms[targetJoint][targetJoint+1], offsetT)
-						self.transformComputed[targetJoint][targetJoint+1] = 1
-						#offset2 = self.jointTransforms[targetJoint-1][targetJoint]
-						#print targetJoint+1,targetJoint,": ", offset2
+						copyToFrom(self.jointTransforms[tj][tj+1], offsetT)
+						self.transformComputed[tj][tj+1] = 1
+						#offset2 = self.jointTransforms[tj-1][tj]
+						#print tj+1,tj,": ", offset2
 					
 					else:
 						#print "case2"
-						copyToFrom(offset2, self.jointTransforms[targetJoint+1][targetJoint])
+						copyToFrom(offset2, self.jointTransforms[tj+1][tj])
 					
 					
 					x1 = offset1[0]
@@ -327,17 +332,17 @@ cdef class Transform:
 	
 						
 					" store result back into the dynamic programming table "
-					copyToFrom(self.jointTransforms[originJoint][targetJoint], finalOffset)
-					self.transformComputed[originJoint][targetJoint] = 1
+					copyToFrom(self.jointTransforms[oj][tj], finalOffset)
+					self.transformComputed[oj][tj] = 1
 
-					copyToFrom(self.jointTransforms[targetJoint][originJoint], offsetT)
-					self.transformComputed[targetJoint][originJoint] = 1
-					#print originJoint,targetJoint,": ", finalOffset[0], finalOffset[1], finalOffset[2], "from", x1, x2, y1, y2, theta_1, theta_2
+					copyToFrom(self.jointTransforms[tj][oj], offsetT)
+					self.transformComputed[tj][oj] = 1
+					#print oj,tj,": ", finalOffset[0], finalOffset[1], finalOffset[2], "from", x1, x2, y1, y2, theta_1, theta_2
 	
 	def getJointFromJoint(self, originPose, originJoint, targetJoint):
 
-		cdef int oj = originJoint
-		cdef int tj = targetJoint
+		cdef int oj = originJoint + 1
+		cdef int tj = targetJoint + 1
 		cdef double offset[3] 
 		cdef double xTotal, yTotal, totalAngle, xOff, yOff, angle
 
@@ -379,7 +384,8 @@ cdef class Transform:
 
 			xTotal = xTotal + xOff
 			yTotal = yTotal + yOff
-			if tj != self.numSegs-1:
+			#if tj != self.numSegs-1:
+			if tj != self.numSegs:
 				totalAngle = totalAngle - offset[2]
 
 			angle = totalAngle
@@ -415,7 +421,8 @@ cdef class Transform:
 
 			xTotal = xTotal + xOff
 			yTotal = yTotal + yOff
-			if tj != self.numSegs-1:
+			#if tj != self.numSegs-1:
+			if tj != self.numSegs:
 				totalAngle = totalAngle + offset[2]
 
 			angle = totalAngle

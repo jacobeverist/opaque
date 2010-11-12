@@ -23,7 +23,12 @@ class PhysXProbe:
 
 		self.transform = Transform()
 		
+		print "initial quaternion:", R.x, R.y, R.z, R.w
+		print "initial starting position:", pos.x, pos.y, pos.z
+		
 		self.nx_snake = NxSnakeProbe([R.x,R.y,R.z,R.w], [pos.x, pos.y, pos.z], numSegs, segLength, segHeight, segWidth)
+
+		#self.transform.setJoints(self.joints)
 
 		self.timer = 0.000
 		self._mgr = sceneManager
@@ -67,8 +72,8 @@ class PhysXProbe:
 		self.isJointChanged = True
 		self.probeState = {}
 
-		self.cmdJoints = [0.0 for i in range(self.getNumJoints())]
-		self.joints = [0.0 for i in range(self.getNumJoints())]
+		self.cmdJoints = [self.nx_snake.getServo(i) for i in range(self.getNumJoints())]
+		self.joints = [self.nx_snake.getServoCmd(i) for i in range(self.getNumJoints())]
 		self.torques = [self.maxTorque for i in range(self.getNumJoints())]
 		self.errors = [fabs(self.cmdJoints[i] - self.joints[i]) for i in range(self.getNumJoints())]
 		
@@ -106,7 +111,9 @@ class PhysXProbe:
 		self.walls = walls
 		self.npnts = []
 	
+		print "creating walls:"
 		for pnts in walls:
+			print "wall: ",pnts
 			self.createWall(pnts)
 			self.nx_snake.createWall(pnts)
 			#self.npnts.append(pnts)
@@ -248,7 +255,7 @@ class PhysXProbe:
 		" update the color based on the joint error "
 
 		numJoints = self.getNumJoints()
-
+		
 		for i in range(numJoints):
 			self.joints[i] = self.nx_snake.getServo(i)
 			self.cmdJoints[i] = self.nx_snake.getServoCmd(i)
@@ -408,6 +415,8 @@ class PhysXProbe:
 
 	def getWorldPose(self, i):
 		currPos = self.nx_snake.getGlobalPosition(i)
+		#if i == 0:
+		#	print "sim position:", currPos
 		return currPos
 
 	def getWorldOrientation(self, i):
@@ -423,10 +432,11 @@ class PhysXProbe:
 		return self.nx_snake.getJointTorque(i)
 
 	def setServo(self, i, angle):
+			
 		self.nx_snake.setServo(i, ogre.Math.AngleUnitsToRadians(angle))
 		#self._joints[i].go_to(ogre.Math.AngleUnitsToRadians(angle))
 
-	def getActualSegPose(self, i):
+	def getActualSegPose(self, i, phi = 0.0):
 
 		currPos = self.nx_snake.getGlobalPosition(i)
 		quat_vars = self.nx_snake.getGlobalOrientation(i)
@@ -439,15 +449,15 @@ class PhysXProbe:
 		curAngle = self.normalizeAngle(curAngle)
 
 		if vec[1] < 0:
-			pose = [currPos[0], currPos[2], curAngle]
+			pose = [currPos[0], currPos[2], curAngle - pi]
 		else:
-			pose = [currPos[0], currPos[2], -curAngle]
+			pose = [currPos[0], currPos[2], -curAngle - pi]
 		#pose = [currPos[0], currPos[2], -curAngle]  # angle negated for display reasons
 
 		return pose
 
-	# gets pose of joint affixed to the i'th segment, should it be the i+1'th segment instead?
-	def getActualJointPose(self, i):
+	" gets pose of local axis centered on i'th joint but affixed to the i+1'th segment "
+	def getActualJointPose(self, i, phi = 0.0):
 		
 		if i == 39:
 			currPos = self.nx_snake.getGlobalPosition(i)
@@ -461,19 +471,20 @@ class PhysXProbe:
 			curAngle = self.normalizeAngle(curAngle)
 			
 			if vec[1] < 0:
-				pose = [currPos[0], currPos[2], curAngle]
+				pose = [currPos[0], currPos[2], curAngle - pi]
 			else:
-				pose = [currPos[0], currPos[2], -curAngle]
+				pose = [currPos[0], currPos[2], -curAngle - pi]
+
 			
 			pose[0] = pose[0] + (self.segLength/2)*cos(pose[2])
 			pose[1] = pose[1] + (self.segLength/2)*sin(pose[2])
 			
 			return pose
 
-		# we use the i+1'th body as the fixed frame of reference for the joint i
-		# NEGATE any angle going in or coming out of a Quaternion
-		currPos = self.nx_snake.getGlobalPosition(i)
-		quat_vars = self.nx_snake.getGlobalOrientation(i)
+		" we use the i+1'th body as the fixed frame of reference for the joint i "
+		" NEGATE any angle going in or coming out of a Quaternion "
+		currPos = self.nx_snake.getGlobalPosition(i+1)
+		quat_vars = self.nx_snake.getGlobalOrientation(i+1)
 		angQuat = ogre.Quaternion(quat_vars[3], quat_vars[0], quat_vars[1], quat_vars[2])
 
 		vec = ogre.Vector3(0.0,0.0,0.0)
@@ -482,11 +493,13 @@ class PhysXProbe:
 		curAngle = radAngle.valueRadians()
 		curAngle = self.normalizeAngle(curAngle)
 
+		#print vec, curAngle
+
 		# curAngle is negated because the returned angle of the body is upside down wrt to the global frame
 		if vec[1] < 0:
-			pose = [currPos[0], currPos[2], curAngle]
+			pose = [currPos[0], currPos[2], curAngle - pi]
 		else:
-			pose = [currPos[0], currPos[2], -curAngle]
+			pose = [currPos[0], currPos[2], -curAngle - pi]
 
 		# adding constant offset so that we are on the joint
 		pose[0] = pose[0] - (self.segLength/2)*cos(pose[2])
@@ -495,9 +508,13 @@ class PhysXProbe:
 		return pose
 
 	def getJointPose(self, originPose, originJoint, targetJoint):
-		#return self.transform.getCJointPose(originPose,originJoint, targetJoint)
-		return self.transform.getJointFromJoint(originPose,originJoint, targetJoint)
+		
+		#result1 = self.transform.getCJointPose(originPose,originJoint, targetJoint)
+		result2 = self.transform.getJointFromJoint(originPose,originJoint, targetJoint)
+		return result2
 
+
+	" DEPRECATED "
 	def getJointFromJoint(self, originPose, originJoint, targetJoint):
 
 		if self.isJointChanged:

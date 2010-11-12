@@ -80,6 +80,130 @@ class MapGraph:
 		
 		self.boundParentNode = 0
 
+		for k in range(1):
+			pylab.clf()
+			
+			#[-4.0, 0.2] ,[-14.0, 0.2]
+			#[-4.0, -0.2],[-14.0, -0.2]
+			
+			#xP = [-4.,-14.0]
+			#yP = [0.2, 0.2]
+			#pylab.plot(xP, yP, color='k')
+			#yP = [-0.2, -0.2]
+			#pylab.plot(xP, yP, color='k')
+
+			self.plotEnv()
+
+			theta = k*0.05
+			 
+			for i in range(self.probe.numSegs):
+				
+	
+				pose = self.probe.getActualSegPose(i, phi = theta)
+				#pose = self.probe.getActualJointPose(i, phi = theta)
+				xTotal = pose[0]
+				zTotal = pose[1]
+				totalAngle = pose[2]
+				segWidth = self.probe.segWidth
+				segLength = self.probe.segLength
+				
+				
+				p1 = [xTotal + 0.5*segLength*cos(totalAngle) - 0.5*segWidth*sin(totalAngle), zTotal + 0.5*segLength*sin(totalAngle) + 0.5*segWidth*cos(totalAngle)]
+				p2 = [xTotal + 0.5*segLength*cos(totalAngle) + 0.5*segWidth*sin(totalAngle), zTotal + 0.5*segLength*sin(totalAngle) - 0.5*segWidth*cos(totalAngle)]
+				p3 = [xTotal - 0.5*segLength*cos(totalAngle) + 0.5*segWidth*sin(totalAngle), zTotal - 0.5*segLength*sin(totalAngle) - 0.5*segWidth*cos(totalAngle)]
+				p4 = [xTotal - 0.5*segLength*cos(totalAngle) - 0.5*segWidth*sin(totalAngle), zTotal - 0.5*segLength*sin(totalAngle) + 0.5*segWidth*cos(totalAngle)]
+
+
+				xP = [p1[0], p2[0], p3[0], p4[0], p1[0]]
+				yP = [p1[1], p2[1], p3[1], p4[1], p1[1]]
+
+				pylab.plot(xP,yP, color='b')
+				
+			#for i in range(-1,20):
+			for i in range(-1,self.probe.numSegs-1):
+				
+				pose = self.probe.getActualJointPose(i, phi = theta)
+				xTotal = pose[0]
+				zTotal = pose[1]
+				totalAngle = pose[2]
+				segWidth = self.probe.segWidth
+				segLength = self.probe.segLength
+				
+				p1 = [xTotal - 0.5*segWidth*sin(totalAngle), zTotal + 0.5*segWidth*cos(totalAngle)]
+				p2 = [xTotal + 0.5*segWidth*sin(totalAngle), zTotal - 0.5*segWidth*cos(totalAngle)]
+				p3 = [xTotal + segLength*cos(totalAngle) + 0.5*segWidth*sin(totalAngle), zTotal + segLength*sin(totalAngle) - 0.5*segWidth*cos(totalAngle)]
+				p4 = [xTotal + segLength*cos(totalAngle) - 0.5*segWidth*sin(totalAngle), zTotal + segLength*sin(totalAngle) + 0.5*segWidth*cos(totalAngle)]
+
+				xP = [p1[0], p2[0], p3[0], p4[0], p1[0]]
+				yP = [p1[1], p2[1], p3[1], p4[1], p1[1]]
+	
+				if i == 19:
+					pylab.plot(xP,yP, color='r', linewidth='2')
+					pylab.scatter([pose[0]], [pose[1]], color='r', linewidth=8)
+				else:
+					pylab.plot(xP,yP, color='r')				
+					pylab.scatter([pose[0]], [pose[1]], color='r', linewidth=1)
+
+			rootPose = self.probe.getActualJointPose(19)
+
+			for i in range(-1,self.probe.numSegs-1):
+			#for i in range(-1,20):
+				
+				#pose = self.probe.getActualJointPose(i, phi = theta)
+				pose = self.probe.getJointPose(rootPose, 19, i)
+				
+				xTotal = pose[0]
+				zTotal = pose[1]
+				totalAngle = pose[2]
+				segWidth = self.probe.segWidth
+				segLength = self.probe.segLength
+				
+				p1 = [xTotal - 0.5*segWidth*sin(totalAngle), zTotal + 0.5*segWidth*cos(totalAngle)]
+				p2 = [xTotal + 0.5*segWidth*sin(totalAngle), zTotal - 0.5*segWidth*cos(totalAngle)]
+				p3 = [xTotal + segLength*cos(totalAngle) + 0.5*segWidth*sin(totalAngle), zTotal + segLength*sin(totalAngle) - 0.5*segWidth*cos(totalAngle)]
+				p4 = [xTotal + segLength*cos(totalAngle) - 0.5*segWidth*sin(totalAngle), zTotal + segLength*sin(totalAngle) + 0.5*segWidth*cos(totalAngle)]
+
+				xP = [p1[0], p2[0], p3[0], p4[0], p1[0]]
+				yP = [p1[1], p2[1], p3[1], p4[1], p1[1]]
+
+				if i == 19:
+					pylab.plot(xP,yP, color='k', linewidth='2')
+					pylab.scatter([pose[0]], [pose[1]], color='k', linewidth=4)
+				else:
+					pylab.plot(xP,yP, color='k')
+					pylab.scatter([pose[0]], [pose[1]], color='k', linewidth=1)
+
+			for i in range(-1,self.probe.numSegs-1):
+				
+				#pose = self.probe.getJointWRTJointPose([0.0,0.0,0.0], 19, i)
+				pose = self.probe.getJointPose([0.0,0.0,0.0], 19, i)
+				
+				xTotal = pose[0]
+				zTotal = pose[1]
+				totalAngle = pose[2]
+				segWidth = self.probe.segWidth
+				segLength = self.probe.segLength
+				
+				p1 = [xTotal - 0.5*segWidth*sin(totalAngle), zTotal + 0.5*segWidth*cos(totalAngle)]
+				p2 = [xTotal + 0.5*segWidth*sin(totalAngle), zTotal - 0.5*segWidth*cos(totalAngle)]
+				p3 = [xTotal + segLength*cos(totalAngle) + 0.5*segWidth*sin(totalAngle), zTotal + segLength*sin(totalAngle) - 0.5*segWidth*cos(totalAngle)]
+				p4 = [xTotal + segLength*cos(totalAngle) - 0.5*segWidth*sin(totalAngle), zTotal + segLength*sin(totalAngle) + 0.5*segWidth*cos(totalAngle)]
+
+				xP = [p1[0], p2[0], p3[0], p4[0], p1[0]]
+				yP = [p1[1]+3.0, p2[1]+3.0, p3[1]+3.0, p4[1]+3.0, p1[1]+3.0]
+
+				if i == 19:
+					pylab.plot(xP,yP, color='g', linewidth='2')
+					pylab.scatter([pose[0]], [pose[1]+3.0], color='g', linewidth=4)
+				else:
+					pylab.plot(xP,yP, color='k')
+					pylab.scatter([pose[0]], [pose[1]+3.0], color='g', linewidth=1)
+								
+			pylab.xlim(-4,4)
+			pylab.ylim(-4,4)
+			pylab.savefig("testplot%04u.png" % k)
+			pylab.show()
+
 		#self.newNode()
 
 	def loadNext(self):
@@ -229,7 +353,9 @@ class MapGraph:
 			yT = -sin(pA)*(xB-xA) + cos(pA)*(yB-yA)
 			pT = pB - pA
 			
-			print [xT, yT, pT]
+			gndOffset = [xT, yT, pT]
+			
+			print gndOffset
 			print "dist =", sqrt(xT*xT + yT*yT)
 			
 
@@ -240,6 +366,72 @@ class MapGraph:
 			
 			self.poseGraph.add_edge(i, j, attrs = [transform, covE])
 
+			" ################ "
+
+			pylab.clf()
+			currNode1 = self.poseGraph.get_node_attributes(i)
+			currNode2 = self.poseGraph.get_node_attributes(j)
+			
+			
+			localPosture = currNode1.localPosture
+			splPoints = currNode1.splPoints
+
+			poseProfile1 = Pose(pose1)
+
+			xP = []
+			yP = []
+			for p in localPosture:
+				#nP = p
+				nP = poseProfile1.convertLocalToGlobal(p)
+
+				xP.append(nP[0])
+				yP.append(nP[1])
+			pylab.plot(xP,yP, color='b')
+			
+			xP = []
+			yP = []
+			for p in splPoints:
+				#nP = p
+				nP = poseProfile1.convertLocalToGlobal(p)
+
+				xP.append(nP[0])
+				yP.append(nP[1])
+			pylab.plot(xP,yP, color='b')
+
+
+			localPosture = currNode2.localPosture
+			splPoints = currNode2.splPoints
+
+			estPose2 = poseProfile1.convertLocalOffsetToGlobal(gndOffset) 
+			poseProfile2 = Pose(estPose2)
+			poseProfile2 = Pose(pose2)
+			print pose2, estPose2
+
+
+			xP = []
+			yP = []
+			for p in localPosture:
+				#nP = gen_icp.dispOffset(p,firstGuess)
+				#nP = gen_icp.dispOffset(p,gndOffset)
+				nP = poseProfile2.convertLocalToGlobal(p)
+				xP.append(nP[0])
+				yP.append(nP[1])
+			pylab.plot(xP,yP, color='r')
+			
+			xP = []
+			yP = []
+			for p in splPoints:
+				#nP = gen_icp.dispOffset(p,firstGuess)
+				#nP = gen_icp.dispOffset(p,gndOffset)
+				nP = poseProfile2.convertLocalToGlobal(p)
+				xP.append(nP[0])
+				yP.append(nP[1])
+			pylab.plot(xP,yP, color='r')
+
+			pylab.xlim(-4,4)
+			pylab.ylim(-4,4)
+			pylab.savefig("plotCenter%04u.png" % self.numNodes)
+			pylab.clf()		
 
 	def setCenterPoints(self, centerPoints):
 		self.currNode.setCenterPoints(centerPoints)
