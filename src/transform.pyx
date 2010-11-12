@@ -32,8 +32,11 @@ cdef class Transform:
 		self.numSegs = 40
 		self.segLength = 0.15
 		
+
 		for i in range(39):
 			self.joints[i] = joints[i]
+
+		#print "set joint 36 to:", self.joints[36]
 			
 		for i in range(39):
 			for j in range(39):
@@ -108,6 +111,8 @@ cdef class Transform:
 		
 	cdef computeTransform(self, int originJoint, int targetJoint):
 
+		" NOTE:  Memory is corrupted if we attempt to reference joint -1 "
+
 		" We exploit symmetry here.  If the normal calls are not NxN and are 1xN instead, remove symmetric computation "
 
 		# origin and target are the same, so return origin pose
@@ -122,7 +127,7 @@ cdef class Transform:
 
 		# forward kinematics
 		if targetJoint > originJoint:
-
+#
 			if self.transformComputed[originJoint][targetJoint] == 0:
 
 				" combine [originJoint, targetJoint-1] with [targetJoint-1, targetJoint] "
@@ -132,6 +137,15 @@ cdef class Transform:
 					totalAngle = self.joints[targetJoint]
 					xTotal = self.segLength
 					yTotal = 0.0
+
+					#for i in range(oj+1, tj+1):
+					#	xTotal = xTotal + self.segLength*cos(totalAngle)
+					#	zTotal = zTotal + self.segLength*sin(totalAngle)
+					#	if i != self.numSegs-1:
+					#		totalAngle = totalAngle - self.joints[i]
+	
+					#totalAngle = normalizeAngle(totalAngle)
+
 
 					offset[0] = xTotal
 					offset[1] = yTotal
@@ -147,7 +161,9 @@ cdef class Transform:
 
 					self.transformComputed[targetJoint][originJoint] = 1
 					copyToFrom(self.jointTransforms[targetJoint][originJoint], offsetT)
-					#print originJoint,targetJoint,": ", offset
+
+					#if targetJoint == 36:
+					#	print originJoint,targetJoint,": ", offset[0], offset[1], offset[2]
 				
 				else:
 					
@@ -214,8 +230,13 @@ cdef class Transform:
 
 					copyToFrom(self.jointTransforms[targetJoint][originJoint], offsetT)
 					self.transformComputed[targetJoint][originJoint] = 1
-					#print originJoint,targetJoint,": ", finalOffset, "from", x1, x2, y1, y2, theta_1, theta_2
-	
+
+					#if targetJoint > 19:
+					#	print originJoint,targetJoint,": ", finalOffset[0], finalOffset[1], finalOffset[2], "from", x1, x2, y1, y2, theta_1, theta_2
+
+					#	result = self.getCJointPose([0.0,0.0,0.0], originJoint, targetJoint)
+					#	print result[0], result[1], result[2]
+
 		# backward kinematics
 		else:
 
@@ -311,7 +332,7 @@ cdef class Transform:
 
 					copyToFrom(self.jointTransforms[targetJoint][originJoint], offsetT)
 					self.transformComputed[targetJoint][originJoint] = 1
-					#print originJoint,targetJoint,": ", finalOffset, "from", x1, x2, y1, y2, theta_1, theta_2
+					#print originJoint,targetJoint,": ", finalOffset[0], finalOffset[1], finalOffset[2], "from", x1, x2, y1, y2, theta_1, theta_2
 	
 	def getJointFromJoint(self, originPose, originJoint, targetJoint):
 
@@ -319,10 +340,15 @@ cdef class Transform:
 		cdef int tj = targetJoint
 		cdef double offset[3] 
 		cdef double xTotal, yTotal, totalAngle, xOff, yOff, angle
+
+		result = [0.0, 0.0, 0.0]
 		
 		# origin and target are the same, so return origin pose
 		if oj == tj :
-			return [originPose[0], originPose[1], originPose[2]]
+			#return [originPose[0], originPose[1], originPose[2]]
+			return originPose
+
+		#return self.getCJointPose(originPose, originJoint, targetJoint)
 
 		if self.transformComputed[oj][tj] == 0:
 			self.computeTransform(oj,tj)
@@ -361,8 +387,19 @@ cdef class Transform:
 				angle=angle-2*pi	
 			while angle<=-pi:
 				angle=angle+2*pi
+
+			#result = self.getCJointPose(originPose, oj, tj)
+			#print
+			#print oj, tj, result[0], result[1], result[2]
+			#print oj, tj, xTotal, yTotal, angle
+
+
+			result[0] = xTotal
+			result[1] = yTotal
+			result[2] = angle
+
+			return result
 			
-			return [xTotal, yTotal, angle] 
 
 		# backward kinematics
 		else:
@@ -386,7 +423,15 @@ cdef class Transform:
 				angle=angle-2*pi	
 			while angle<=-pi:
 				angle=angle+2*pi
+
+			#result = self.getCJointPose(originPose, oj, tj)
+			#print
+			#print oj, tj, result[0], result[1], result[2]
+			#print oj, tj, xTotal, yTotal, angle
 			
-			return [xTotal, yTotal, angle] 
+			result[0] = xTotal
+			result[1] = yTotal
+			result[2] = angle
+			return result
 			#print "transforming", originPose, "by", offset, "resulting in", targetPose
 
