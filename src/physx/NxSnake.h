@@ -42,7 +42,7 @@
 class NxSnake
 {
 public:
-	NxSnake(double *quatR, double *pos, int numSegs, double segLength, double segHeight, double segWidth);
+	NxSnake(double *quatR, double *pos, int numSegs, double segLength, double segHeight, double segWidth, double friction);
 	~NxSnake(void);
 
 	// parameters
@@ -52,6 +52,11 @@ public:
 	double segLength;
 	double segWidth;
 	double segHeight;
+	double friction;
+
+	// material indices
+	int dIndex;
+	int pIndex;
 
 	// Physics SDK globals
 	NxPhysicsSDK*     gPhysicsSDK;
@@ -60,6 +65,10 @@ public:
 
 	// Actor globals
 	NxActor* groundPlane;
+
+	int numWalls;
+	NxVec3 *wallSet[100];
+	int wallSize[100];
 
 	NxActor **segments;
 	NxRevoluteJoint **joints;
@@ -87,6 +96,9 @@ public:
 	//void getServoCmd();
 	//void setJointTorque();
 	//void getJointTorque();
+
+	void addWall(int numPoints, double *points);
+	void createWalls();
 
 	void createWall(int numPoints, double *points);
 	void setServo(int i, double angle);

@@ -26,7 +26,8 @@ class PhysXProbe:
 		print "initial quaternion:", R.x, R.y, R.z, R.w
 		print "initial starting position:", pos.x, pos.y, pos.z
 		
-		self.nx_snake = NxSnakeProbe([R.x,R.y,R.z,R.w], [pos.x, pos.y, pos.z], numSegs, segLength, segHeight, segWidth)
+		self.nx_snake = NxSnakeProbe([R.x,R.y,R.z,R.w], [pos.x, pos.y, pos.z], numSegs, segLength, segHeight, segWidth, friction)
+		#self.nx_snake.frameStarted()
 
 		#self.transform.setJoints(self.joints)
 
@@ -36,14 +37,14 @@ class PhysXProbe:
 
 		self.statNode = self._mgr.createStaticGeometry("contacts")
 		self.statNode.setOrigin(ogre.Vector3().ZERO)
-
+		
 		# control program for the snake probe
 		self.control = 0
 		self.wallEnv = 0
-
+		
 		# reset estimated pose
 		estimatedPose = [0.0,0.0,0.0]
-
+		
 		goForwardState = False
 		goBackwardState = False
 		goRightState = False
@@ -112,11 +113,15 @@ class PhysXProbe:
 		self.npnts = []
 	
 		print "creating walls:"
+		print walls
 		for pnts in walls:
 			print "wall: ",pnts
 			self.createWall(pnts)
-			self.nx_snake.createWall(pnts)
+			self.nx_snake.addWall(pnts)
+			#self.nx_snake.createWall(pnts)
 			#self.npnts.append(pnts)
+
+		self.nx_snake.createWalls()
 
 	def createWall(self, points):
 				

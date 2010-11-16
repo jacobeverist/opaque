@@ -95,6 +95,7 @@ class TestModular(SnakeControl):
 
 	def grabImage(self):
 
+		#inc = 50
 		inc = 200
 		#inc = 1000
 		#inc = 500
@@ -184,31 +185,23 @@ class TestModular(SnakeControl):
 
 		elif self.globalState == 3:
 			
-			
-			
-			
-			
 			" create the mapping object "
 			self.mapGraph = MapGraph(self.probe, self.contacts)
-			exit()
+			
+			#exit()
 			#self.mapGraph.loadFile("testData/correctionTest", 43)
 			#self.mapGraph.loadFile("uncorrectedNX", 6)
 			#self.mapGraph.loadFile("testData/mapBuild_21June2010", 66)
-			self.mapGraph.loadFile(".", 8)
+			#self.mapGraph.loadFile(".", 17)
 
-
-
-			#self.mapGraph.newNode(0.0, self.direction)
-			#self.mapGraph.forceUpdate(False)
+			self.mapGraph.newNode(0.0, self.direction)
+			self.mapGraph.forceUpdate(False)
 			self.mapGraph.synch()
 			self.mapGraph.saveMap()
-			#self.mapGraph.saveLocalMap()
+			self.mapGraph.saveLocalMap()
 	
-	
-			exit()
-	
-
 			#self.mapGraph.correctPoses3()
+			#exit()
 			
 			
 			self.restState = deepcopy(probeState)

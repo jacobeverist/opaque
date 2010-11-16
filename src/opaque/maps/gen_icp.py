@@ -1049,7 +1049,7 @@ def gen_ICP(pastPose, targetPose, pastHull, targetHull, pastCircles, costThresh 
 
 	return offset
 
-def gen_ICP2(estPose1, offset, pastHull, targetHull, pastCircles, costThresh = 0.004, minMatchDist = 2.0, plotIter = False):
+def gen_ICP2(estPose1, offset, pastHull, targetHull, pastCircles, costThresh = 0.004, minMatchDist = 2.0, plotIter = False, n1 = 0, n2 = 0):
 
 	global numIterations
 	
@@ -1207,6 +1207,7 @@ def gen_ICP2(estPose1, offset, pastHull, targetHull, pastCircles, costThresh = 0
 			
 			pylab.xlim(-4,9)
 			pylab.ylim(-3,9)
+			pylab.title("%u %u" % (n1, n2))
 			#pylab.ylim(-7,5)
 			pylab.savefig("ICP_plot_%04u.png" % numIterations)
 			pylab.clf()					
@@ -1335,6 +1336,7 @@ def gen_ICP2(estPose1, offset, pastHull, targetHull, pastCircles, costThresh = 0
 			#pylab.ylim(-7,3)
 			#pylab.xlim(-4,9)
 			#pylab.ylim(-7,5)
+			pylab.title("%u %u" % (n1, n2))
 			pylab.xlim(-4,9)
 			pylab.ylim(-3,9)
 			#pylab.axis('equal')

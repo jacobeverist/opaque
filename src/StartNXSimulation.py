@@ -80,7 +80,7 @@ class SimpleScenesFrameListener ( sf.FrameListener ):
 		yAvg = pose[1]
 		
 		prevPose = self.camera.getPosition()
-		xPrev = prevPose[0] - 1
+		xPrev = prevPose[0] + 1
 		yPrev = prevPose[2]
 		zPrev = prevPose[1]
 		
@@ -90,8 +90,8 @@ class SimpleScenesFrameListener ( sf.FrameListener ):
 		#newPose[0] = -6.0
 		#newPose[2] = 0.0
 
-		#self.camera.setPosition(newPose[0]+2,newPose[2],newPose[1])
-		self.camera.setPosition(-2.0,9.0,0.0)
+		self.camera.setPosition(newPose[0]-1,newPose[2],newPose[1])
+		#self.camera.setPosition(-2.0,9.0,0.0)
 
 		oriQuat = ogre.Quaternion(ogre.Radian(-pi/2.0), ogre.Vector3().UNIT_X)
 		self.camera.setOrientation(oriQuat)
@@ -187,7 +187,9 @@ class SnakeApp(sf.Application):
 		#pos = ogre.Vector3(1.65,0.04,0.0)
 		pos = ogre.Vector3(1.65,0.04,0.0)
 
-		self.probe = PhysXProbe(self.sceneManager,yRot,pos,40,0.15,0.2,0.15,30.0*2.5,0.9)
+		#self.probe = PhysXProbe(self.sceneManager,yRot,pos,40,0.15,0.2,0.15,30.0*2.5,0.9)
+		self.probe = PhysXProbe(self.sceneManager,yRot,pos,40,0.15,0.2,0.15,1000.0,0.9)
+
 		#self.probe = SuperbotSnake(self._world,yRot,pos,40,0.15,0.15,30.0*2.5,0.9)
 		#self.probe = SuperbotSnake(self._world,zRot,pos,40,0.15,0.15,30.0*2.5,0.9)
 

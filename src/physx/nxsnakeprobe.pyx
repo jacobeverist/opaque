@@ -13,7 +13,11 @@ cdef extern from "NxSnake.h":
 		void savePose()
 		void restorePose()
 
-	c_NxSnake *new_NxSnake "new NxSnake" (double *quatR, double *pos, int numSegs, double segLength, double segHeight, double segWidth)
+		void addWall(int numPoints, double *points)
+		void createWalls()
+		
+
+	c_NxSnake *new_NxSnake "new NxSnake" (double *quatR, double *pos, int numSegs, double segLength, double segHeight, double segWidth, double friction)
 	void del_NxSnake "delete" (c_NxSnake *refNode)
 	
 cdef class NxSnakeProbe:
@@ -24,7 +28,7 @@ cdef class NxSnakeProbe:
 	#def __cinit__(self, double thresh, int sample_size):
 	#	self.thisptr = new_ValueStability(thresh, sample_size)
 	
-	def __cinit__(self, quatR, pos, int numSegs, double segLength, double segHeight, double segWidth):
+	def __cinit__(self, quatR, pos, int numSegs, double segLength, double segHeight, double segWidth, double friction):
 		
 		self.numJ = numSegs
 
@@ -42,7 +46,7 @@ cdef class NxSnakeProbe:
 		for i in range(self.numJ):
 			self.js[i] = 0.0
 
-		self.thisptr = new_NxSnake(c_quatR, c_pos, numSegs, segLength, segHeight, segWidth)
+		self.thisptr = new_NxSnake(c_quatR, c_pos, numSegs, segLength, segHeight, segWidth, friction)
 		
 	def __dealloc__(self):
 		del_NxSnake(self.thisptr)
@@ -64,6 +68,19 @@ cdef class NxSnakeProbe:
 
 	def getJointTorque(self, int i):
 		return self.thisptr.getJointTorque(i)
+
+	def addWall(self, points):
+
+		numPoints = len(points)
+		cdef double cPoints[1000]
+		for i in range(numPoints):
+			cPoints[i*2] = points[i][0]
+			cPoints[i*2+1] = points[i][1]
+
+		self.thisptr.addWall(numPoints, cPoints)
+
+	def createWalls(self):
+		self.thisptr.createWalls()
 
 	def createWall(self, points):
 

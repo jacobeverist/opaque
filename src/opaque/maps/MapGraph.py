@@ -80,129 +80,130 @@ class MapGraph:
 		
 		self.boundParentNode = 0
 
-		for k in range(1):
-			pylab.clf()
-			
-			#[-4.0, 0.2] ,[-14.0, 0.2]
-			#[-4.0, -0.2],[-14.0, -0.2]
-			
-			#xP = [-4.,-14.0]
-			#yP = [0.2, 0.2]
-			#pylab.plot(xP, yP, color='k')
-			#yP = [-0.2, -0.2]
-			#pylab.plot(xP, yP, color='k')
-
-			self.plotEnv()
-
-			theta = k*0.05
-			 
-			for i in range(self.probe.numSegs):
+		if False:
+			for k in range(1):
+				pylab.clf()
 				
+				#[-4.0, 0.2] ,[-14.0, 0.2]
+				#[-4.0, -0.2],[-14.0, -0.2]
+				
+				#xP = [-4.,-14.0]
+				#yP = [0.2, 0.2]
+				#pylab.plot(xP, yP, color='k')
+				#yP = [-0.2, -0.2]
+				#pylab.plot(xP, yP, color='k')
 	
-				pose = self.probe.getActualSegPose(i, phi = theta)
-				#pose = self.probe.getActualJointPose(i, phi = theta)
-				xTotal = pose[0]
-				zTotal = pose[1]
-				totalAngle = pose[2]
-				segWidth = self.probe.segWidth
-				segLength = self.probe.segLength
-				
-				
-				p1 = [xTotal + 0.5*segLength*cos(totalAngle) - 0.5*segWidth*sin(totalAngle), zTotal + 0.5*segLength*sin(totalAngle) + 0.5*segWidth*cos(totalAngle)]
-				p2 = [xTotal + 0.5*segLength*cos(totalAngle) + 0.5*segWidth*sin(totalAngle), zTotal + 0.5*segLength*sin(totalAngle) - 0.5*segWidth*cos(totalAngle)]
-				p3 = [xTotal - 0.5*segLength*cos(totalAngle) + 0.5*segWidth*sin(totalAngle), zTotal - 0.5*segLength*sin(totalAngle) - 0.5*segWidth*cos(totalAngle)]
-				p4 = [xTotal - 0.5*segLength*cos(totalAngle) - 0.5*segWidth*sin(totalAngle), zTotal - 0.5*segLength*sin(totalAngle) + 0.5*segWidth*cos(totalAngle)]
-
-
-				xP = [p1[0], p2[0], p3[0], p4[0], p1[0]]
-				yP = [p1[1], p2[1], p3[1], p4[1], p1[1]]
-
-				pylab.plot(xP,yP, color='b')
-				
-			#for i in range(-1,20):
-			for i in range(-1,self.probe.numSegs-1):
-				
-				pose = self.probe.getActualJointPose(i, phi = theta)
-				xTotal = pose[0]
-				zTotal = pose[1]
-				totalAngle = pose[2]
-				segWidth = self.probe.segWidth
-				segLength = self.probe.segLength
-				
-				p1 = [xTotal - 0.5*segWidth*sin(totalAngle), zTotal + 0.5*segWidth*cos(totalAngle)]
-				p2 = [xTotal + 0.5*segWidth*sin(totalAngle), zTotal - 0.5*segWidth*cos(totalAngle)]
-				p3 = [xTotal + segLength*cos(totalAngle) + 0.5*segWidth*sin(totalAngle), zTotal + segLength*sin(totalAngle) - 0.5*segWidth*cos(totalAngle)]
-				p4 = [xTotal + segLength*cos(totalAngle) - 0.5*segWidth*sin(totalAngle), zTotal + segLength*sin(totalAngle) + 0.5*segWidth*cos(totalAngle)]
-
-				xP = [p1[0], p2[0], p3[0], p4[0], p1[0]]
-				yP = [p1[1], p2[1], p3[1], p4[1], p1[1]]
+				self.plotEnv()
 	
-				if i == 19:
-					pylab.plot(xP,yP, color='r', linewidth='2')
-					pylab.scatter([pose[0]], [pose[1]], color='r', linewidth=8)
-				else:
-					pylab.plot(xP,yP, color='r')				
-					pylab.scatter([pose[0]], [pose[1]], color='r', linewidth=1)
-
-			rootPose = self.probe.getActualJointPose(19)
-
-			for i in range(-1,self.probe.numSegs-1):
-			#for i in range(-1,20):
-				
-				#pose = self.probe.getActualJointPose(i, phi = theta)
-				pose = self.probe.getJointPose(rootPose, 19, i)
-				
-				xTotal = pose[0]
-				zTotal = pose[1]
-				totalAngle = pose[2]
-				segWidth = self.probe.segWidth
-				segLength = self.probe.segLength
-				
-				p1 = [xTotal - 0.5*segWidth*sin(totalAngle), zTotal + 0.5*segWidth*cos(totalAngle)]
-				p2 = [xTotal + 0.5*segWidth*sin(totalAngle), zTotal - 0.5*segWidth*cos(totalAngle)]
-				p3 = [xTotal + segLength*cos(totalAngle) + 0.5*segWidth*sin(totalAngle), zTotal + segLength*sin(totalAngle) - 0.5*segWidth*cos(totalAngle)]
-				p4 = [xTotal + segLength*cos(totalAngle) - 0.5*segWidth*sin(totalAngle), zTotal + segLength*sin(totalAngle) + 0.5*segWidth*cos(totalAngle)]
-
-				xP = [p1[0], p2[0], p3[0], p4[0], p1[0]]
-				yP = [p1[1], p2[1], p3[1], p4[1], p1[1]]
-
-				if i == 19:
-					pylab.plot(xP,yP, color='k', linewidth='2')
-					pylab.scatter([pose[0]], [pose[1]], color='k', linewidth=4)
-				else:
-					pylab.plot(xP,yP, color='k')
-					pylab.scatter([pose[0]], [pose[1]], color='k', linewidth=1)
-
-			for i in range(-1,self.probe.numSegs-1):
-				
-				#pose = self.probe.getJointWRTJointPose([0.0,0.0,0.0], 19, i)
-				pose = self.probe.getJointPose([0.0,0.0,0.0], 19, i)
-				
-				xTotal = pose[0]
-				zTotal = pose[1]
-				totalAngle = pose[2]
-				segWidth = self.probe.segWidth
-				segLength = self.probe.segLength
-				
-				p1 = [xTotal - 0.5*segWidth*sin(totalAngle), zTotal + 0.5*segWidth*cos(totalAngle)]
-				p2 = [xTotal + 0.5*segWidth*sin(totalAngle), zTotal - 0.5*segWidth*cos(totalAngle)]
-				p3 = [xTotal + segLength*cos(totalAngle) + 0.5*segWidth*sin(totalAngle), zTotal + segLength*sin(totalAngle) - 0.5*segWidth*cos(totalAngle)]
-				p4 = [xTotal + segLength*cos(totalAngle) - 0.5*segWidth*sin(totalAngle), zTotal + segLength*sin(totalAngle) + 0.5*segWidth*cos(totalAngle)]
-
-				xP = [p1[0], p2[0], p3[0], p4[0], p1[0]]
-				yP = [p1[1]+3.0, p2[1]+3.0, p3[1]+3.0, p4[1]+3.0, p1[1]+3.0]
-
-				if i == 19:
-					pylab.plot(xP,yP, color='g', linewidth='2')
-					pylab.scatter([pose[0]], [pose[1]+3.0], color='g', linewidth=4)
-				else:
-					pylab.plot(xP,yP, color='k')
-					pylab.scatter([pose[0]], [pose[1]+3.0], color='g', linewidth=1)
-								
-			pylab.xlim(-4,4)
-			pylab.ylim(-4,4)
-			pylab.savefig("testplot%04u.png" % k)
-			pylab.show()
+				theta = k*0.05
+				 
+				for i in range(self.probe.numSegs):
+					
+		
+					pose = self.probe.getActualSegPose(i, phi = theta)
+					#pose = self.probe.getActualJointPose(i, phi = theta)
+					xTotal = pose[0]
+					zTotal = pose[1]
+					totalAngle = pose[2]
+					segWidth = self.probe.segWidth
+					segLength = self.probe.segLength
+					
+					
+					p1 = [xTotal + 0.5*segLength*cos(totalAngle) - 0.5*segWidth*sin(totalAngle), zTotal + 0.5*segLength*sin(totalAngle) + 0.5*segWidth*cos(totalAngle)]
+					p2 = [xTotal + 0.5*segLength*cos(totalAngle) + 0.5*segWidth*sin(totalAngle), zTotal + 0.5*segLength*sin(totalAngle) - 0.5*segWidth*cos(totalAngle)]
+					p3 = [xTotal - 0.5*segLength*cos(totalAngle) + 0.5*segWidth*sin(totalAngle), zTotal - 0.5*segLength*sin(totalAngle) - 0.5*segWidth*cos(totalAngle)]
+					p4 = [xTotal - 0.5*segLength*cos(totalAngle) - 0.5*segWidth*sin(totalAngle), zTotal - 0.5*segLength*sin(totalAngle) + 0.5*segWidth*cos(totalAngle)]
+	
+	
+					xP = [p1[0], p2[0], p3[0], p4[0], p1[0]]
+					yP = [p1[1], p2[1], p3[1], p4[1], p1[1]]
+	
+					pylab.plot(xP,yP, color='b')
+					
+				#for i in range(-1,20):
+				for i in range(-1,self.probe.numSegs-1):
+					
+					pose = self.probe.getActualJointPose(i, phi = theta)
+					xTotal = pose[0]
+					zTotal = pose[1]
+					totalAngle = pose[2]
+					segWidth = self.probe.segWidth
+					segLength = self.probe.segLength
+					
+					p1 = [xTotal - 0.5*segWidth*sin(totalAngle), zTotal + 0.5*segWidth*cos(totalAngle)]
+					p2 = [xTotal + 0.5*segWidth*sin(totalAngle), zTotal - 0.5*segWidth*cos(totalAngle)]
+					p3 = [xTotal + segLength*cos(totalAngle) + 0.5*segWidth*sin(totalAngle), zTotal + segLength*sin(totalAngle) - 0.5*segWidth*cos(totalAngle)]
+					p4 = [xTotal + segLength*cos(totalAngle) - 0.5*segWidth*sin(totalAngle), zTotal + segLength*sin(totalAngle) + 0.5*segWidth*cos(totalAngle)]
+	
+					xP = [p1[0], p2[0], p3[0], p4[0], p1[0]]
+					yP = [p1[1], p2[1], p3[1], p4[1], p1[1]]
+		
+					if i == 19:
+						pylab.plot(xP,yP, color='r', linewidth='2')
+						pylab.scatter([pose[0]], [pose[1]], color='r', linewidth=8)
+					else:
+						pylab.plot(xP,yP, color='r')				
+						pylab.scatter([pose[0]], [pose[1]], color='r', linewidth=1)
+	
+				rootPose = self.probe.getActualJointPose(19)
+	
+				for i in range(-1,self.probe.numSegs-1):
+				#for i in range(-1,20):
+					
+					#pose = self.probe.getActualJointPose(i, phi = theta)
+					pose = self.probe.getJointPose(rootPose, 19, i)
+					
+					xTotal = pose[0]
+					zTotal = pose[1]
+					totalAngle = pose[2]
+					segWidth = self.probe.segWidth
+					segLength = self.probe.segLength
+					
+					p1 = [xTotal - 0.5*segWidth*sin(totalAngle), zTotal + 0.5*segWidth*cos(totalAngle)]
+					p2 = [xTotal + 0.5*segWidth*sin(totalAngle), zTotal - 0.5*segWidth*cos(totalAngle)]
+					p3 = [xTotal + segLength*cos(totalAngle) + 0.5*segWidth*sin(totalAngle), zTotal + segLength*sin(totalAngle) - 0.5*segWidth*cos(totalAngle)]
+					p4 = [xTotal + segLength*cos(totalAngle) - 0.5*segWidth*sin(totalAngle), zTotal + segLength*sin(totalAngle) + 0.5*segWidth*cos(totalAngle)]
+	
+					xP = [p1[0], p2[0], p3[0], p4[0], p1[0]]
+					yP = [p1[1], p2[1], p3[1], p4[1], p1[1]]
+	
+					if i == 19:
+						pylab.plot(xP,yP, color='k', linewidth='2')
+						pylab.scatter([pose[0]], [pose[1]], color='k', linewidth=4)
+					else:
+						pylab.plot(xP,yP, color='k')
+						pylab.scatter([pose[0]], [pose[1]], color='k', linewidth=1)
+	
+				for i in range(-1,self.probe.numSegs-1):
+					
+					#pose = self.probe.getJointWRTJointPose([0.0,0.0,0.0], 19, i)
+					pose = self.probe.getJointPose([0.0,0.0,0.0], 19, i)
+					
+					xTotal = pose[0]
+					zTotal = pose[1]
+					totalAngle = pose[2]
+					segWidth = self.probe.segWidth
+					segLength = self.probe.segLength
+					
+					p1 = [xTotal - 0.5*segWidth*sin(totalAngle), zTotal + 0.5*segWidth*cos(totalAngle)]
+					p2 = [xTotal + 0.5*segWidth*sin(totalAngle), zTotal - 0.5*segWidth*cos(totalAngle)]
+					p3 = [xTotal + segLength*cos(totalAngle) + 0.5*segWidth*sin(totalAngle), zTotal + segLength*sin(totalAngle) - 0.5*segWidth*cos(totalAngle)]
+					p4 = [xTotal + segLength*cos(totalAngle) - 0.5*segWidth*sin(totalAngle), zTotal + segLength*sin(totalAngle) + 0.5*segWidth*cos(totalAngle)]
+	
+					xP = [p1[0], p2[0], p3[0], p4[0], p1[0]]
+					yP = [p1[1]+3.0, p2[1]+3.0, p3[1]+3.0, p4[1]+3.0, p1[1]+3.0]
+	
+					if i == 19:
+						pylab.plot(xP,yP, color='g', linewidth='2')
+						pylab.scatter([pose[0]], [pose[1]+3.0], color='g', linewidth=4)
+					else:
+						pylab.plot(xP,yP, color='k')
+						pylab.scatter([pose[0]], [pose[1]+3.0], color='g', linewidth=1)
+									
+				pylab.xlim(-4,4)
+				pylab.ylim(-4,4)
+				pylab.savefig("testplot%04u.png" % k)
+				pylab.show()
 
 		#self.newNode()
 
@@ -358,7 +359,7 @@ class MapGraph:
 			print gndOffset
 			print "dist =", sqrt(xT*xT + yT*yT)
 			
-
+			" FIXME:  add covariance from vector in guess direction "
 			transform = matrix([[firstGuess[0]], [firstGuess[1]], [firstGuess[2]]])
 			covE = matrix([[ 0.1, 0.0, 0.0 ],
 							[ 0.0, 0.1, 0.0],
@@ -1121,7 +1122,7 @@ class MapGraph:
 		radius, center = gen_icp.computeEnclosingCircle(hull1)
 		circle1 = [radius, center]
 		
-		offset = gen_icp.gen_ICP2(estPose1, firstGuess, hull1, hull2, [circle1], costThresh, minMatchDist, plotIteration)
+		offset = gen_icp.gen_ICP2(estPose1, firstGuess, hull1, hull2, [circle1], costThresh, minMatchDist, plotIteration, n1, n2)
 		
 		return offset
 		

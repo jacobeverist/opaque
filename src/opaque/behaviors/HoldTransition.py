@@ -8,6 +8,7 @@ class HoldTransition(Behavior):
 	def __init__(self, robotParam):
 		Behavior.__init__(self, robotParam)
 
+		self.transitionTime = -1.0
 		self.transition = Transition(robotParam)
 		self.isTransitioning = False
 		self.hasTransitioned = False
@@ -17,7 +18,7 @@ class HoldTransition(Behavior):
 
 		self.positions = [0.0 for i in range(self.numJoints)]
 
-	def reset(self, probeState, joints = []):
+	def reset(self, probeState, joints = [], transitionTime = -1.0):
 		
 		stateJoints = probeState['joints']
 		
@@ -34,6 +35,8 @@ class HoldTransition(Behavior):
 		self.isTransitioning = False
 		self.hasTransitioned = False
 		self.isDone = False
+		
+		self.transitionTime = transitionTime
 
 		#print "resetting Hold Transition:", self.positions
 
@@ -101,7 +104,12 @@ class HoldTransition(Behavior):
 			#transTime = int(2*errSum)
 			#transTime = int(errSum/4.0)
 			transTime = int(errSum/16.0)
-			#print "HoldTransition transTime:", transTime
+			
+			if self.transitionTime > 0.0:
+				transTime = int(self.transitionTime)
+			
+			#transTime = int(errSum/16.0)
+			print "HoldTransition transTime:", transTime
 			
 			# set target and initial poses
 			self.transition.setInit(initState)

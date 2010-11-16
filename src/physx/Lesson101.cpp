@@ -5,6 +5,7 @@
 //						    Written by QA BJ, 6-2-2008
 // ===============================================================================
 
+
 #include "Lesson101.h"
 #include "Timing.h"
 
@@ -1038,10 +1039,43 @@ int main(int argc, char** argv)
 int main(int argc, char** argv)
 {
 
-	NxQuat yRot(0.0, NxVec3(0.0,1.0,0.0));
-	double quat_param[4] = {yRot.x, yRot.y, yRot.z, yRot.w};
-	double pos[3] = {3.65, 0.04, 0.0};
-	NxSnake *ns = new NxSnake(quat_param, pos, 40, 0.15, 0.2, 0.15);
+	//NxQuat yRot(0.0, NxVec3(0.0,1.0,0.0));
+	//double quat_param[4] = {yRot.x, yRot.y, yRot.z, yRot.w};
+	double quat_param[4] = {0.0, 1.0, 0.0, 0.0};
+	double pos[3] = {1.65, 0.04, 0.0};
+	NxSnake *ns = new NxSnake(quat_param, pos, 40, 0.15, 0.2, 0.15, 0.7);
+
+	// create the walls
+	double wall1[] = {-8.0, -0.20000000000000001, 2.0, -0.20000000000000001, 3.5, -2.7980763912200928};
+	double wall2[] = {4.5, 4.5301270484924316, 2.0, 0.20000000000000001, -8.0, 0.20000000000000001};
+	double wall3[] = {3.8464102745056152, -2.598076343536377, 2.3464102745056152, 0.0, 4.846409797668457, 4.3301272392272949, 4.5, 4.5301270484924316};
+	double wall4[] = {3.5, -2.7980763912200928, 5.1999998092651367, -5.7425627708435059, 5.546410083770752, -5.5425629615783691, 4.0464105606079102, -2.9444866180419922, 6.6444864273071289, -1.4444864988327026, 6.4444866180419922, -1.098076343536377, 3.8464102745056152, -2.598076343536377};
+
+	//ns->createWall(3, wall1);
+	//ns->createWall(3, wall2);
+	//ns->createWall(4, wall3);
+	//ns->createWall(7, wall4);
+
+	ns->addWall(3, wall1);
+	ns->addWall(3, wall2);
+	ns->addWall(4, wall3);
+	ns->addWall(7, wall4);
+
+	ns->createWalls();
+
+	for ( int i = 0 ; i < 39 ; i++ ) {
+		double val1 = ns->getServo(i);
+		double val2 = ns->getServoCmd(i);
+
+		//printf("%f %f\n", val1, val2);
+	}
+
+	double per_seg = 2*NxPi / (40 / 5.0);
+	for ( int i = 0 ; i < 39 ; i++ ) {
+		double val = 70.0*cos(i*per_seg)*NxPi/180.0;
+		ns->setServo(i, val);
+		ns->setJointTorque(i, 30.0*2.5);
+	}
 
 	while(1) {
 		ns->Step();
@@ -1062,13 +1096,13 @@ int main(int argc, char** argv)
 		//NxF32 foo[16];
 		//ns->getGlobalPose(9, foo);
 
-		double x, y, z, w;
+		//double x, y, z, w;
 
-		ns->getGlobalPosition(9, &x, &y, &z);
-		printf("%f %f %f\n", x, y, z);
+		//ns->getGlobalPosition(9, &x, &y, &z);
+		//printf("%f %f %f\n", x, y, z);
 
-		ns->getGlobalOrientationQuat(9, &x, &y, &z, &w);
-		printf("%f %f %f %f\n", x, y, z, w);
+		//ns->getGlobalOrientationQuat(9, &x, &y, &z, &w);
+		//printf("%f %f %f %f\n", x, y, z, w);
 
 		//return 1;
 		//printf("%f %f %f %f\n", foo[0], foo[1], foo[2], foo[3]);

@@ -101,6 +101,7 @@ class AdaptiveStep(Behavior):
 		self.frontAnchoringDone = False
 		self.frontExtending = True
 		self.frontExtendDone = False
+		self.backExtendDone = False
 
 		self.computeCurve()
 		
@@ -1012,7 +1013,8 @@ class AdaptiveStep(Behavior):
 			print "anchor errors =", err1, err2, err3
 			
 			#if err1 > 0.1 or err2 > 0.1 or err3 > 0.08:
-			if err1 > 0.1 or err2 > 0.1:
+			#if err1 > 0.1 or err2 > 0.1:
+			if False:
 
 				" TODO " 
 				" if the anchor failed, increment the splice joint higher "
@@ -1243,7 +1245,13 @@ class AdaptiveStep(Behavior):
 							
 
 		resultJoints = self.spliceFitJoints()
-		self.holdT.reset(self.probeState, resultJoints)
+		
+		if self.backExtendDone:
+			self.holdT.reset(self.probeState, resultJoints)
+		else:
+			self.holdT.reset(self.probeState, resultJoints, transitionTime = 160)
+			self.backExtendDone = True
+			
 
 		peakJoints = self.concertinaFit.getPeakJoints(self.currPeak) + self.concertinaFit.getPeakJoints(self.currPeak+1)
 		peakJoints.sort()
@@ -1574,6 +1582,7 @@ class AdaptiveStep(Behavior):
 		self.frontAnchoringDone = False
 		self.frontExtending = True
 		self.frontExtendDone = False
+		self.backExtendDone = False
 					
 		self.minAmp = 0.0
 		self.maxAmp = 0.0			
