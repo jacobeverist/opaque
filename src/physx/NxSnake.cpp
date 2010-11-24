@@ -196,23 +196,34 @@ void NxSnake::RunPID() {
 
 	float pgain = 10;
 	float dgain = .001f;
+	float tolerance = 0.01 * NxPi/180.0;
 
+	//SERVO_ERRMIN = 0.01 * DEGREES_TO_RADIANS
+	
 	for ( int i = 0 ; i < numSegs-1 ; i++ ) {
 		NxRevoluteJointDesc revDesc;
 		joints[i]->saveToDesc(revDesc);
 	
+		//cdef double err = goal_phi - (phi + init_phi)
+		//if fabs(err) > tol:
+
 		NxReal init_phi = 0.0;
 		NxReal phi = joints[i]->getAngle();
 
 		NxReal err = targetAngle[i] - (phi + init_phi);
-		//printf("%d %f %f\n", i, phi, targetAngle[i]);
-		NxReal vel = pgain*err + dgain*joints[i]->getVelocity();
-		revDesc.motor.velTarget = vel;
-		//printf("%f %f %f %f\n", pgain*err, dgain*joints[i]->getVelocity(), phi, vel);
-		//printf("Angle: %f\n", phi);
-		//printf("Velocity = %f\n", vel);
 
-		joints[i]->loadFromDesc(revDesc);
+		if (fabs(err) > tolerance) {
+
+			//printf("%d %f %f\n", i, phi, targetAngle[i]);
+			NxReal vel = pgain*err + dgain*joints[i]->getVelocity();
+			revDesc.motor.velTarget = vel;
+			//printf("%f %f %f %f\n", pgain*err, dgain*joints[i]->getVelocity(), phi, vel);
+			//printf("Angle: %f\n", phi);
+			//printf("Velocity = %f\n", vel);
+
+			joints[i]->loadFromDesc(revDesc);
+		}
+
 	}
 }
 
@@ -294,6 +305,27 @@ NxCCDSkeleton* NxSnake::CreateCCDSkeleton(float sizex, float sizey, float sizez)
 	NxSimpleTriangleMesh stm;
 	stm.numVertices = 8;
 	stm.numTriangles = 6*2;
+	stm.pointStrideBytes = sizeof(NxVec3);
+	stm.triangleStrideBytes = sizeof(NxU32)*3;
+
+	stm.points = points;
+	stm.triangles = triangles;
+	stm.flags |= NX_MF_FLIPNORMALS;
+	return gPhysicsSDK->createCCDSkeleton(stm);
+}
+
+
+NxCCDSkeleton* NxSnake::CreateCCDSkeleton2() {
+
+	NxU32 triangles[3] = {0,0,0};
+	NxVec3 points[1];
+
+	// Static mesh
+	points[0].set( 0,0,0);
+
+	NxSimpleTriangleMesh stm;
+	stm.numVertices = 1;
+	stm.numTriangles = 0;
 	stm.pointStrideBytes = sizeof(NxVec3);
 	stm.triangleStrideBytes = sizeof(NxU32)*3;
 
@@ -584,8 +616,14 @@ NxActor* NxSnake::CreateSnake()
 		boxDesc.localPose.t = NxVec3(0, 0, 0);
 		boxDesc.materialIndex	= dIndex;
 
-		boxDesc.ccdSkeleton = CreateCCDSkeleton(segLength/2.0, 0.1f, segWidth/2.0);
-	    if (1)  boxDesc.shapeFlags |= NX_SF_DYNAMIC_DYNAMIC_CCD;  
+		boxDesc.ccdSkeleton = CreateCCDSkeleton2();
+		//if ( i == 0 || i == numSegs-1 ) 
+		//	boxDesc.ccdSkeleton = CreateCCDSkeleton2();
+		
+		//boxDesc.ccdSkeleton = CreateCCDSkeleton(segLength, 0.2f, segWidth);
+		//boxDesc.ccdSkeleton = CreateCCDSkeleton(segLength/2.0, 0.1f, segWidth/2.0);
+		//boxDesc.ccdSkeleton = CreateCCDSkeleton(segLength/4.0, 0.05f, segWidth/4.0);
+	    //if (1)  boxDesc.shapeFlags |= NX_SF_DYNAMIC_DYNAMIC_CCD;  
 
 		actorDesc.shapes.pushBack(&boxDesc);
 
@@ -736,12 +774,17 @@ void NxSnake::InitNx()
 		if(!gScene) return;
 	}
 
+	//gScene->setTiming(NxReal maxTimestep=1.0f/60.0f, NxU32 maxIter=8, NxTimeStepMethod method=NX_TIMESTEP_FIXED); 
+
+	gScene->setTiming(1.0f/120.0f, 16); 
 
 	// Create the default material
 	NxMaterial* defaultMaterial = gScene->getMaterialFromIndex(0); 
 	defaultMaterial->setRestitution(0.01);
 	defaultMaterial->setStaticFriction(friction);
-	defaultMaterial->setDynamicFriction(0.01);
+	//defaultMaterial->setDynamicFriction(0.5);
+	defaultMaterial->setDynamicFriction(0.4);
+	//defaultMaterial->setDynamicFriction(0.01);
 	//defaultMaterial->setStaticFriction(0.7);
 	//defaultMaterial->setDynamicFriction(0.7);
 

@@ -101,7 +101,7 @@ class TestModular(SnakeControl):
 		#inc = 500
 
 		if self.globalTimer % inc == 0:
-			pass
+			print "saving scene%06u.png" % (self.globalTimer/inc)
 			self.drawThings.saveView("scene%06u.png" % (self.globalTimer/inc))
 			
 			#poses = self.probe.getPose()		
@@ -514,6 +514,13 @@ class TestModular(SnakeControl):
 			joints2 = self.behavior.getJoints()
 			self.mergeJoints([joints2])
 			
+			" set the new torques "
+			self.torques = [self.behavior.torques[i] for i in range(self.numJoints)]
+
+			for i in range(len(self.torques)):
+				if self.torques[i] == None:
+					self.torques[i] = self.probe.maxTorque
+
 			#val = self.behavior.getMask()
 			#self.contacts.setMask(val)
 			
@@ -549,6 +556,10 @@ class TestModular(SnakeControl):
 			
 			self.localState = 1
 			self.isAnchored = True
+	
+			self.torques = [self.probe.maxTorque for i in range(self.numJoints)]
+
+						
 						
 		" immediately begin running behavior "
 		if self.localState == 1:

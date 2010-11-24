@@ -430,8 +430,8 @@ class PhysXProbe:
 		return angQuat
 
 	def setJointTorque(self, i, torque):
-		self.nx_snake.setJointTorque(i, 0.0005)
-		#self.nx_snake.setJointTorque(i, torque)
+		#self.nx_snake.setJointTorque(i, 0.0005)
+		self.nx_snake.setJointTorque(i, torque)
 
 	def getJointTorque(self, i):
 		return self.nx_snake.getJointTorque(i)

@@ -41,6 +41,17 @@ class PokeWalls(Behavior):
 
 		self.isInit = False
 
+		self.torques = [None for i in range(0,self.numJoints)]
+
+		if not self.direction:
+			for i in range(-self.topJoint + self.numJoints-1, self.numJoints):
+				if i <= self.numJoints-1:
+					self.torques[i] = 3.0
+		else:
+			for i in range(0, self.topJoint):					
+				if i <= self.numJoints-1:
+					self.torques[i] = 3.0
+
 	def hasInitialized(self):
 		return self.isInit
 	
@@ -101,6 +112,15 @@ class PokeWalls(Behavior):
 						self.curl.setTopJoint(-self.topJoint + 1 + self.numJoints-1)
 						self.curl.step(probeState)
 					self.doneCount = 0
+					
+			if not self.direction:
+				for i in range(-self.topJoint + self.numJoints-1, self.numJoints):
+					if i <= self.numJoints-1:
+						self.torques[i] = 3.0
+			else:
+				for i in range(0, self.topJoint):					
+					if i <= self.numJoints-1:
+						self.torques[i] = 3.0	
 	
 			self.state = 0
 	

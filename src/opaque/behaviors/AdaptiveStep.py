@@ -1134,7 +1134,7 @@ class AdaptiveStep(Behavior):
 		peakJoints.sort()
 		
 		errors = self.probeState['errors']
-				
+		
 		maxError = 0.0	
 		for j in peakJoints:
 			err = errors[j]
@@ -1251,6 +1251,8 @@ class AdaptiveStep(Behavior):
 		else:
 			self.holdT.reset(self.probeState, resultJoints, transitionTime = 160)
 			self.backExtendDone = True
+		
+		self.holdT.reset(self.probeState, resultJoints)
 			
 
 		peakJoints = self.concertinaFit.getPeakJoints(self.currPeak) + self.concertinaFit.getPeakJoints(self.currPeak+1)

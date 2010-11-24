@@ -135,7 +135,7 @@
 				AdditionalOptions="/DEBUG "
 				AdditionalDependencies="&quot;PhysXLoader.lib&quot; &quot;PhysXCooking.lib&quot; &quot;NxCharacter.lib&quot;"
 				OutputFile="$(OutDir)/$(ProjectName)_DEBUG.exe"
-				AdditionalLibraryDirectories="&quot;$(PHYSX_DIR)/Graphics/lib/win32/glut&quot;;&quot;$(PHYSX_DIR)/SDKs/lib/Win32&quot;"
+				AdditionalLibraryDirectories="&quot;$(PHYSX_DIR)/Bin/win32&quot;;&quot;$(PHYSX_DIR)/Graphics/lib/win32/glut&quot;;&quot;$(PHYSX_DIR)/SDKs/lib/Win32&quot;"
 				ProgramDatabaseFile="$(OutDir)/$(ProjectName)_DEBUG.exe.pdb"
 				GenerateMapFile="true"
 				MapFileName="$(OutDir)/$(ProjectName)_DEBUG.exe.map"

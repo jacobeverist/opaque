@@ -20,8 +20,10 @@ class Transition(Behavior):
 	def resetTime(self, newTime=500):
 		self.transitionTime = 0
 		
-		if newTime == 0:
-			self.timeLength = 1
+		#if newTime == 0:
+		if newTime <= 1:
+			#self.timeLength = 1
+			self.timeLength = 2
 		else:
 			self.timeLength = newTime
 	

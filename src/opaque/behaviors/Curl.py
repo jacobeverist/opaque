@@ -119,6 +119,7 @@ class Curl(Behavior):
 			self.mergeJoints([resJoints])
 
 			if isDone:
+				print "Curl Transition done"
 				self.isTransitioning = False
 
 			return False
@@ -152,7 +153,7 @@ class Curl(Behavior):
 			varX = self.stabilityX.getVar()
 			varY = self.stabilityY.getVar()
 					
-			#print "variances =", varX, varY
+			print "variances =", varX, varY, self.stabilityX.isStable(), self.stabilityY.isStable()
 						
 			if self.stabilityX.isStable() and self.stabilityY.isStable():
 				
@@ -172,15 +173,18 @@ class Curl(Behavior):
 				self.stabilityY.reset()
 				self.lastPose = pose
 				self.resetJoints()
+
+				self.stabilityX.setThresh(1e-4)
+				self.stabilityY.setThresh(1e-4)
 				
-				if self.val == 0:
+				#if self.val == 0:
 					#self.stabilityX.setThresh(1e-7)
 					#self.stabilityY.setThresh(1e-7)
-					self.stabilityX.setThresh(1e-4)
-					self.stabilityY.setThresh(1e-4)
-				else:
-					self.stabilityX.setThresh(1e-4)
-					self.stabilityY.setThresh(1e-4)
+					#self.stabilityX.setThresh(1e-4)
+					#self.stabilityY.setThresh(1e-4)
+				#else:
+					#self.stabilityX.setThresh(1e-4)
+					#self.stabilityY.setThresh(1e-4)
 				
 			else:
 				return False
@@ -244,7 +248,8 @@ class Curl(Behavior):
 
 			#transTime = int(4*errSum)
 			#transTime = int(errSum)
-			transTime = int(errSum/16.0)
+			transTime = int(errSum/4.0)
+			#transTime = int(errSum/16.0)
 			print "Curl transitions =", transTime
 			
 			# set target and initial poses

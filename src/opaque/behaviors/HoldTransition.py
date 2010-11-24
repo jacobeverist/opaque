@@ -56,6 +56,8 @@ class HoldTransition(Behavior):
 			self.mergeJoints([resJoints])
 		
 			if isDone:
+				print "HoldTransition Transition done"
+
 				self.isDone = True
 				self.isTransitioning = False
 

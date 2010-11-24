@@ -82,6 +82,7 @@ public:
 	void ExitCallback();
 	NxActor* CreateGroundPlane();
 	NxCCDSkeleton* CreateCCDSkeleton(float sizex, float sizey, float sizez);
+	NxCCDSkeleton* CreateCCDSkeleton2();
 	NxActor* CreateTriangleMeshWall(int size, NxVec3 *points);
 	NxActor* CreateSnake();
 	NxRevoluteJoint* CreateRevoluteJoint(NxActor* a0, NxActor* a1, NxVec3 globalAnchor, NxVec3 globalAxis);
