@@ -23,8 +23,11 @@ class Curl(Behavior):
 		#self.stabilityY = ValueStability(1e-7, 10)
 		#self.stabilityX = ValueStability(1e-5, 10)
 		#self.stabilityY = ValueStability(1e-5, 10)
-		self.stabilityX = ValueStability(1e-4, 10)
-		self.stabilityY = ValueStability(1e-4, 10)
+		#self.stabilityX = ValueStability(1e-4, 10)
+		#self.stabilityY = ValueStability(1e-4, 10)
+
+		self.stabilityX = ValueStability(1e-3, 10)
+		self.stabilityY = ValueStability(1e-3, 10)
 		
 		self.lastPose = [0.0,0.0,0.0]
 		
@@ -174,8 +177,8 @@ class Curl(Behavior):
 				self.lastPose = pose
 				self.resetJoints()
 
-				self.stabilityX.setThresh(1e-4)
-				self.stabilityY.setThresh(1e-4)
+				self.stabilityX.setThresh(1e-3)
+				self.stabilityY.setThresh(1e-3)
 				
 				#if self.val == 0:
 					#self.stabilityX.setThresh(1e-7)
