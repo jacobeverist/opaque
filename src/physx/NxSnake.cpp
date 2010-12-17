@@ -614,7 +614,13 @@ NxActor* NxSnake::CreateSnake()
 		NxBoxShapeDesc boxDesc;
 		boxDesc.dimensions.set(segLength/2.0,segHeight/2.0,segWidth/2.0);
 		boxDesc.localPose.t = NxVec3(0, 0, 0);
-		boxDesc.materialIndex	= dIndex;
+
+		if ( i == 0 || i == numSegs-1 ) {
+			boxDesc.materialIndex	= pIndex;
+		}
+		else {
+			boxDesc.materialIndex	= dIndex;
+		}
 
 		boxDesc.ccdSkeleton = CreateCCDSkeleton2();
 		//if ( i == 0 || i == numSegs-1 ) 
@@ -780,13 +786,17 @@ void NxSnake::InitNx()
 
 	// Create the default material
 	NxMaterial* defaultMaterial = gScene->getMaterialFromIndex(0); 
-	defaultMaterial->setRestitution(0.01);
+	//defaultMaterial->setRestitution(0.01);
+	defaultMaterial->setRestitution(0.5);
+	
 	defaultMaterial->setStaticFriction(friction);
+	//defaultMaterial->setDynamicFriction(0.4);
+	
+	defaultMaterial->setDynamicFriction(0.9);
+
 	//defaultMaterial->setDynamicFriction(0.5);
-	defaultMaterial->setDynamicFriction(0.4);
 	//defaultMaterial->setDynamicFriction(0.01);
 	//defaultMaterial->setStaticFriction(0.7);
-	//defaultMaterial->setDynamicFriction(0.7);
 
 
 	NxMaterialDesc materialDesc;

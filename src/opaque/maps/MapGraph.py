@@ -1306,6 +1306,7 @@ class MapGraph:
 			
 	def synch(self):
 		self.currNode.synch()
+		return
 		
 		print "checkA"
 
@@ -1341,7 +1342,6 @@ class MapGraph:
 						self.obstImage[indexX, indexY] = 255
 							
 		print "checkD"
-
 		
 		self.frontierMap.update()
 		

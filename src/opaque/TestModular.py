@@ -197,7 +197,7 @@ class TestModular(SnakeControl):
 			self.mapGraph.newNode(0.0, self.direction)
 			self.mapGraph.forceUpdate(False)
 			self.mapGraph.synch()
-			self.mapGraph.saveMap()
+			#self.mapGraph.saveMap()
 			self.mapGraph.saveLocalMap()
 	
 			#self.mapGraph.correctPoses3()
@@ -272,7 +272,7 @@ class TestModular(SnakeControl):
 
 				#self.mapGraph.correctPoses2()
 				self.mapGraph.synch()
-				self.mapGraph.saveMap()
+				#self.mapGraph.saveMap()
 				self.mapGraph.saveLocalMap()
 				
 		
@@ -809,7 +809,7 @@ class TestModular(SnakeControl):
 				self.mapGraph.correctPoses2()
 				self.mapGraph.synch()
 				self.mapGraph.saveLocalMap()
-				self.mapGraph.saveMap()
+				#self.mapGraph.saveMap()
 
 				self.localPathState = 1
 											
