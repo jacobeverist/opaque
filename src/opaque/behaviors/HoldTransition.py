@@ -56,7 +56,7 @@ class HoldTransition(Behavior):
 			self.mergeJoints([resJoints])
 		
 			if isDone:
-				print "HoldTransition Transition done"
+				#print "HoldTransition Transition done"
 
 				self.isDone = True
 				self.isTransitioning = False
@@ -111,7 +111,7 @@ class HoldTransition(Behavior):
 				transTime = int(self.transitionTime)
 			
 			#transTime = int(errSum/16.0)
-			print "HoldTransition transTime:", transTime
+			#print "HoldTransition transTime:", transTime
 			
 			# set target and initial poses
 			self.transition.setInit(initState)

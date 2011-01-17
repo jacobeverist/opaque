@@ -130,8 +130,8 @@ class AverageContacts:
 					stable = False
 					break
 		
-		if not stable:
-			print "not stable"
+		#if not stable:
+			#print "not stable"
 		return stable
 			
 	def setTimerAliasing(self, timeInc):
@@ -231,7 +231,7 @@ class AverageContacts:
 					
 		if success:
 			
-			print "recovered with the " + str(lastNodeIndex) + "th last node out of " + str(len(self.lastNodes)) + " total nodes"
+			#print "recovered with the " + str(lastNodeIndex) + "th last node out of " + str(len(self.lastNodes)) + " total nodes"
 					
 			recentNode = self.lastNodes[-lastNodeIndex][0]
 	
@@ -247,7 +247,7 @@ class AverageContacts:
 			return pose
 		
 		else:		
-			print "recovered with the last active node.  Unable to find stable reference out of " + str(len(self.lastNodes)) + " total nodes"
+			#print "recovered with the last active node.  Unable to find stable reference out of " + str(len(self.lastNodes)) + " total nodes"
 			recentNode = self.activeRefPtr[self.lastActive]
 	
 			#refX, refZ, refP = recentNode.getRefPose()
@@ -630,8 +630,8 @@ class AverageContacts:
 						self.maxErrorReached[i] = True
 						#print "caseA", i
 						
-						if self.numActiveRef == 0:
-							print "WARNING: all active reference nodes lost!  Last is node", i, "due to maxError"
+						#if self.numActiveRef == 0:
+							#print "WARNING: all active reference nodes lost!  Last is node", i, "due to maxError"
 
 						# reset variance calculation
 						self.jointVar[i].reset()
@@ -654,8 +654,8 @@ class AverageContacts:
 					#print "deactivating", i, "because mask =", self.mask[i]					
 					self.deactivateNode(i)
 					
-					if self.numActiveRef == 0:
-						print "WARNING: all active reference nodes lost!  Last is node", i, "due to mask"
+					#if self.numActiveRef == 0:
+					#	print "WARNING: all active reference nodes lost!  Last is node", i, "due to mask"
 
 					# reset variance calculation
 					self.jointVar[i].reset()

@@ -14,10 +14,52 @@ class MyContactReport : public NxUserContactReport
 		NxActor *plane;
 		int defaultIndex;
 		int planeIndex;
+	
+		double maxFriction;
+		double totalForce;
+		
+		NxVec3 frictionVec;
+		NxVec3 normalVec;
+
+
+		int numWalls;
+		NxActor **walls;
+
+		int numSegs; 
+		NxActor **segs;
+
+		NxVec3 *contacts;
+		NxVec3 *normals;
 
 	public:
 		MyContactReport() {
+			totalForce = 0.0;
+			maxFriction = 0.0;
 			numContacts = 0;
+			numWalls = 0;
+			numSegs = 0;
+			walls = new NxActor * [20];
+			segs = new NxActor * [100];
+			contacts = new NxVec3[500];
+			normals = new NxVec3[500];
+
+			frictionVec = NxVec3(0,0,0);
+			normalVec = NxVec3(0,0,0);
+
+		
+		}
+
+		const char *byte_to_binary (NxU32 x) {
+			static char b[32];
+			b[0] = '\0';
+
+			NxU32 z;
+			for (z = (1<<31); z > 0; z >>= 1)
+			{
+				strcat(b, ((x & z) == z) ? "1" : "0");
+			}
+
+			return b;
 		}
 
 		void setIndices(int def, int pl) {
@@ -25,20 +67,135 @@ class MyContactReport : public NxUserContactReport
 			planeIndex = pl;
 		}
 
+		void addSeg(NxActor *actor) {
+			segs[numSegs] = actor;
+			printf("Segment %d\n", actor);
+			numSegs++;
+		}
+
+		void addWall(NxActor *actor) {
+			walls[numWalls] = actor;
+			printf("Wall %d\n", actor);
+			numWalls++;
+		}
+
 		void setPlane(NxActor *groundPlane) {
 			plane = groundPlane;
+
+			printf("Ground Plane %d\n", plane);
+
+		}
+
+		NxVec3 getNormalVec() {
+			return normalVec;
+		}
+
+		NxVec3 getFrictionVec() {
+			return frictionVec;
+		}
+
+		double getTotalForce() {
+			return totalForce;
+		}
+
+		NxVec3 getContactPoint(int i) {
+			return contacts[i];
+		}
+
+		NxVec3 getNormalPoint(int i) {
+			return normals[i];
 		}
 
 		int getNumContacts() {
 			int copyNum = numContacts;
-			numContacts = 0;
+			//numContacts = 0;
 			return copyNum;
+		}
+
+		void reset() {
+			numContacts = 0;
+			totalForce = 0.0;
+			frictionVec = NxVec3(0,0,0);
+			normalVec = NxVec3(0,0,0);
 		}
 
 	virtual void  onContactNotify(NxContactPair& pair, NxU32 events)
 	{
+		
+		NxVec3 frictionForceVec = NxVec3(0,0,0);
+		frictionForceVec = pair.sumFrictionForce;
 
-		return;
+		NxVec3 normalForceVec = NxVec3(0,0,0);
+		normalForceVec = pair.sumNormalForce;
+
+		//if ( events != (1<<3))
+		//	printf("events: %s\n", byte_to_binary(events));
+
+		double normalMag = normalForceVec.magnitude();
+		double frictionMag = frictionForceVec.magnitude();
+		totalForce += frictionMag;
+		
+		frictionVec += frictionForceVec;
+		normalVec = normalForceVec;
+
+
+		normals[numContacts] = normalForceVec;
+
+		//printf("%3.20f %3.20f\n", normalMag, frictionMag);
+
+
+		//double normalMag = sqrt(pair.sumNormalForce.x * pair.sumNormalForce.x + pair.sumNormalForce.y * pair.sumNormalForce.y + pair.sumNormalForce.z * pair.sumNormalForce.z);
+		//double frictionMag = sqrt(pair.sumFrictionForce.x * pair.sumFrictionForce.x + pair.sumFrictionForce.y * pair.sumFrictionForce.y + pair.sumFrictionForce.z * pair.sumFrictionForce.z);
+
+		
+
+		if ( frictionMag > maxFriction ) {
+			maxFriction = frictionMag;
+			//if ( frictionMag > 0.0 ) {
+			printf("Friction %3.20f: ", frictionMag);
+
+			//printf("contact: ");
+			if ( pair.actors[0] == plane ) {
+				printf("plane ");
+			}
+			else {
+				for ( int i = 0 ; i < numSegs ; i++ ) {
+					if (pair.actors[0] == segs[i]) {
+						printf("segment%d ", i);
+					}
+				}
+				for ( int i = 0 ; i < numWalls ; i++ ) {
+					if (pair.actors[0] == walls[i]) {
+						printf("wall%d ", i);
+					}
+				}
+			}
+
+
+			printf("+ ");
+			if ( pair.actors[1] == plane ) {
+				printf("plane\n");
+			}
+			else {
+				
+				for ( int i = 0 ; i < numSegs ; i++ ) {
+					if (pair.actors[1] == segs[i]) {
+						printf("segment%d\n", i);
+					}
+				}
+				for ( int i = 0 ; i < numWalls ; i++ ) {
+					if (pair.actors[1] == walls[i]) {
+						printf("wall%d\n", i);
+					}
+				}
+			}
+			
+			//printf("Normal Force: %f, %f, %f\n", pair.sumNormalForce.x, pair.sumNormalForce.y, pair.sumNormalForce.z);
+			//printf("Friction Force: %f, %f, %f\n\n", pair.sumFrictionForce.x, pair.sumFrictionForce.y, pair.sumFrictionForce.z);
+		}
+
+		//return;
+
 		/*
 		if(!pair.isDeletedActor[0])
 			{
@@ -53,8 +210,13 @@ class MyContactReport : public NxUserContactReport
 			}
 		*/
 
-		//if ( pair.actors[0] != plane && pair.actors[1] != plane ) {
-		if ( 1 ) {
+		
+
+
+
+
+		if ( pair.actors[0] != plane && pair.actors[1] != plane ) {
+		//if ( 1 ) {
 
 			//printf("Non-Plane contact %d %d\n", pair.actors[0], pair.actors[1]);
 			//NxVec3 fricForce = pair.sumFrictionForce;
@@ -79,13 +241,18 @@ class MyContactReport : public NxUserContactReport
 
 		}
 		else {
-			printf("Plane contact\n\n");
+			//printf("Plane contact\n\n");
 		}
 
 		//printf("Normal Force: %f, %f, %f\n", pair.sumNormalForce.x, pair.sumNormalForce.y, pair.sumNormalForce.z);
 		//printf("Friction Force: %f, %f, %f\n\n", pair.sumFrictionForce.x, pair.sumFrictionForce.y, pair.sumFrictionForce.z);
 //		if(events & NX_NOTIFY_ON_START_TOUCH)	printf("Start touch\n");
 //		if(events & NX_NOTIFY_ON_END_TOUCH)		printf("End touch\n");
+
+		double xAvg, yAvg, zAvg = 0.0;
+		int totalPoints = 0;
+		NxVec3 averagePoint = NxVec3(0,0,0);
+
 
 		// Iterate through contact points
 		NxContactStreamIterator i(pair.stream);
@@ -100,10 +267,17 @@ class MyContactReport : public NxUserContactReport
 				while(i.goNextPoint())
 					{
 
-					numContacts++;
+					totalPoints ++;
 
 					//user can also call getPoint() and getSeparation() here
 					const NxVec3& contactPoint = i.getPoint();
+
+					averagePoint += contactPoint;
+
+					//printf("point: %f %f %f\n", contactPoint.x, contactPoint.y, contactPoint.z);
+					xAvg += contactPoint.x;
+					yAvg += contactPoint.y;
+					zAvg += contactPoint.z;
 
 					//printf("%f  - %f\n", i.getPointNormalForce(), pair.sumNormalForce.magnitude());
 					//NxVec3 contactForce = (showPointContacts /*&& i.getShapeFlags()&NX_SF_POINT_CONTACT_FORCE*/) ?  contactNormal * i.getPointNormalForce() : pair.sumNormalForce; 
@@ -115,6 +289,20 @@ class MyContactReport : public NxUserContactReport
 					}
 				}
 			}
+
+		xAvg /= totalPoints;
+		yAvg /= totalPoints;
+		zAvg /= totalPoints;
+
+		averagePoint.x = averagePoint.x / (double) totalPoints;
+		averagePoint.y = averagePoint.y / (double) totalPoints;
+		averagePoint.z = averagePoint.z / (double) totalPoints;
+
+		normals[numContacts] = normalForceVec;
+		contacts[numContacts] = averagePoint;
+		numContacts++;
+
+		//printf("%d contacts: %f %f %f\n", totalPoints, xAvg, yAvg, zAvg);
 	}
 
 }gMyContactReport;
@@ -133,11 +321,15 @@ NxSnake::NxSnake(double *quatR, double *pos, int numSegs, double segLength, doub
 	dIndex = 0;
 	pIndex = 0;
 
+	isPerturb = false;
+
 	tPos = NxVec3(pos[0],pos[1],pos[2]);
 	ori = NxQuat();
 	ori.setXYZW(quatR[0], quatR[1], quatR[2], quatR[3]);
 
 	printf("NxVec3: %f, %f, %f\n", tPos.x, tPos.y, tPos.z);
+	printf("NxQuat: %f, %f, %f, %f\n", ori.x, ori.y, ori.z, ori.w);
+	
 
 	//this->pos.sety(pos[1]);
 	//this->pos.setz(pos[2]);
@@ -148,11 +340,13 @@ NxSnake::NxSnake(double *quatR, double *pos, int numSegs, double segLength, doub
 	this->segHeight = segHeight;
 	this->friction = friction;
 
+
 	// Physics SDK globals
 	gPhysicsSDK = NULL;
 	gScene = NULL;
+	//gDefaultGravity = NxVec3(9.8f * cos(NxPi/6),-9.8f * cos(2*NxPi/6),0);
 	gDefaultGravity = NxVec3(0,-9.8f,0);
-
+	
 	// Actor globals
 	groundPlane = NULL;
 
@@ -192,6 +386,19 @@ NxSnake::~NxSnake(void)
 	ReleaseNx();
 }
 
+
+NxVec3 NxSnake::ApplyForceToActor(NxActor* actor, const NxVec3& forceDir, const NxReal forceStrength)
+{
+	NxVec3 forceVec = forceStrength*forceDir*1.0;
+	actor->addForce(forceVec);
+
+	//if (forceMode)
+	//else 
+	//	actor->addTorque(forceVec);
+
+	return forceVec;
+}
+
 void NxSnake::RunPID() {
 
 	float pgain = 10;
@@ -227,6 +434,10 @@ void NxSnake::RunPID() {
 	}
 }
 
+void NxSnake::perturb() {
+
+	isPerturb = true;
+}
 
 void NxSnake::Step()
 {
@@ -234,14 +445,45 @@ void NxSnake::Step()
     if (gScene)
 	{
 		for ( int i = 0 ; i < 1 ; i++ ) {
+			
+			
+	
+			gMyContactReport.reset();
+
 			GetPhysicsResults();
 
 			//printf("Contacts: %d\n", gMyContactReport.getNumContacts());
-			
+
+			if ( isPerturb ) {
+				printf("adding force 20.0\n");
+				//ApplyForceToActor(segments[19], NxVec3(1.0,0.0,0.0), 100.0);
+				for ( int j = 17 ; j < 22 ; j++ ) {
+					ApplyForceToActor(segments[j], NxVec3(1.0,0.0,0.0), 20.0);
+				}
+				isPerturb = false;
+			}
 			
 			RunPID();
 
 			StartPhysics();
+			NxVec3 normVec = gMyContactReport.getNormalVec();
+			NxVec3 fricVec = gMyContactReport.getFrictionVec();
+
+			//printf("normal: %3.10f %3.10f %3.10f\n", normVec.x, normVec.y, normVec.z);
+			//printf("friction: %3.10f %3.10f %3.10f\n", fricVec.x, fricVec.y, fricVec.z);
+
+			int numContacts = gMyContactReport.getNumContacts();
+			//printf("Contacts: %d\n", numContacts);
+
+			for ( int j = 0 ; j < numContacts ; j++ ) {
+				NxVec3 avgPoint = gMyContactReport.getContactPoint(j);
+				NxVec3 normalPoint = gMyContactReport.getNormalPoint(j);
+
+				//printf("first contact: %3.10f %3.10f %3.10f\n", avgPoint.x, avgPoint.y, avgPoint.z);
+				//printf("first normal: %3.10f %3.10f %3.10f\n", normalPoint.x, normalPoint.y, normalPoint.z);
+			}
+			//printf("Total Friction: %f\n", gMyContactReport.getTotalForce());
+
 		}
 	}
 }
@@ -260,16 +502,124 @@ NxActor* NxSnake::CreateGroundPlane()
 
 	
 	NxMaterial* floorMaterial = gScene->getMaterialFromIndex(pIndex); 
-	//floorMaterial->setRestitution(0.5);
-	//floorMaterial->setStaticFriction(0.1);
-	//floorMaterial->setDynamicFriction(0.1);
-	//floorMaterial->setFrictionCombineMode(NX_CM_MIN);
+	floorMaterial->setRestitution(0.5);
+	floorMaterial->setStaticFriction(0.1);
+	floorMaterial->setDynamicFriction(0.1);
+	floorMaterial->setFrictionCombineMode(NX_CM_MIN);
 	planeDesc.materialIndex	= floorMaterial->getMaterialIndex();
 
     NxActorDesc actorDesc;
     actorDesc.shapes.pushBack(&planeDesc);
 
 	return gScene->createActor(actorDesc);
+
+	/*
+	NxInitCooking();
+
+	// (1,1), (1,-1), (-1,-1), (-1,1)
+	NxVec3 *points = new NxVec3[4];	
+	points[0] = NxVec3(1.0, 0.0, 1.0);
+	points[1] = NxVec3(1.0, 0.0, -1.0);
+	points[2] = NxVec3(-1.0, 0.0, -1.0);
+	points[3] = NxVec3(-1.0, 0.0, 1.0);
+
+	NxU32 *indices = new NxU32[6];
+
+	indices[0] = 0;
+	indices[1] = 1;
+	indices[2] = 2;
+	indices[3] = 2;
+	indices[4] = 3;
+	indices[5] = 0;
+
+	// Create descriptor for triangle mesh
+	if (!triangleMeshDesc)
+	{
+		triangleMeshDesc	= new NxTriangleMeshDesc();
+		assert(triangleMeshDesc);
+	}
+	triangleMeshDesc->numVertices			= 4;
+	triangleMeshDesc->pointStrideBytes		= sizeof(NxVec3);
+	triangleMeshDesc->points				= points;
+	triangleMeshDesc->numTriangles			= 2;
+	triangleMeshDesc->flags					= 0;
+	triangleMeshDesc->triangles				= indices;
+	triangleMeshDesc->triangleStrideBytes	= 3 * sizeof(NxU32);
+
+	// The actor has one shape, a triangle mesh
+	MemoryWriteBuffer buf;
+
+	for ( int i = 0 ; i < size ; i++ ) {
+
+		NxVec3 temp = points[i];
+		//printf("Mesh Point: %f %f %f\n", temp[0], temp[1], temp[2]);
+	}
+
+	bool status = NxCookTriangleMesh(*triangleMeshDesc, buf);
+	NxTriangleMesh* pMesh = NULL;
+	if (status)
+	{
+		int tryCount = 1000;
+
+		// keep trying to create mesh until it succeeds
+		//while ( pMesh == NULL && tryCount != 0) {
+		//while ( pMesh == NULL ) {
+		//	pMesh = gPhysicsSDK->createTriangleMesh(MemoryReadBuffer(buf.data));
+			//tryCount = tryCount - 1;
+		//}
+
+		pMesh = gPhysicsSDK->createTriangleMesh(MemoryReadBuffer(buf.data));
+
+		if ( pMesh == NULL ) {
+			printf("createTriangleMesh failed!\n");
+			assert(false);
+		}
+
+	}
+	else
+	{
+		assert(false);
+		pMesh = NULL;
+	}
+	// Create TriangleMesh above code segment.
+
+	NxTriangleMeshShapeDesc tmsd;
+	tmsd.meshData		= pMesh;
+	tmsd.userData		= triangleMeshDesc;
+	tmsd.localPose.t	= NxVec3(0, boxDim.y, 0);
+	tmsd.meshPagingMode = NX_MESH_PAGING_AUTO;
+	tmsd.materialIndex	= 0;
+
+	NxActorDesc actorDesc;
+	NxBodyDesc  bodyDesc;
+	
+	assert(tmsd.isValid());
+	actorDesc.shapes.pushBack(&tmsd);
+	//Dynamic triangle mesh don't be supported anymore. So body = NULL
+	actorDesc.body			= NULL;		
+	actorDesc.globalPose.t	= NxVec3(0.0f, 0.0f, 0.0f);
+
+	NxActor *actor = NULL;
+	if (pMesh)
+	{
+		// Save mesh in userData for drawing
+		pMesh->saveToDesc(*triangleMeshDesc);
+		//
+		assert(actorDesc.isValid());
+		actor = gScene->createActor(actorDesc);
+		assert(actor);
+
+		gMyContactReport.setPlane(actor);
+	}
+
+	for ( int i = 0 ; i < this->numSegs ; i++ ) {
+		//gScene->setActorPairFlags(*actor,*segments[i],NX_NOTIFY_ON_TOUCH|NX_NOTIFY_ON_START_TOUCH|NX_NOTIFY_ON_END_TOUCH|NX_NOTIFY_FORCES);
+		gScene->setActorPairFlags(*actor,*segments[i],NX_NOTIFY_ALL);
+	}
+	
+
+	NxCloseCooking();
+	*/
 }
 
 NxCCDSkeleton* NxSnake::CreateCCDSkeleton(float sizex, float sizey, float sizez)
@@ -400,7 +750,7 @@ void NxSnake::createWalls() {
 		for ( int i = 0 ; i < 2*size ; i++ ) {
 
 			NxVec3 temp = verts[i];
-			printf("Mesh Point: %f %f %f\n", temp[0], temp[1], temp[2]);
+			//printf("Mesh Point: %f %f %f\n", temp[0], temp[1], temp[2]);
 		}
 
 		bool status = NxCookTriangleMesh(*triangleMeshDesc, buf);
@@ -456,10 +806,14 @@ void NxSnake::createWalls() {
 			assert(actorDesc.isValid());
 			actor = gScene->createActor(actorDesc);
 			assert(actor);
+
+			gMyContactReport.addWall(actor);
+
 		}
 
 		for ( int i = 0 ; i < this->numSegs ; i++ ) {
-			gScene->setActorPairFlags(*actor,*segments[i],NX_NOTIFY_ON_TOUCH|NX_NOTIFY_ON_START_TOUCH|NX_NOTIFY_ON_END_TOUCH|NX_NOTIFY_FORCES);
+			//gScene->setActorPairFlags(*actor,*segments[i],NX_NOTIFY_ON_TOUCH|NX_NOTIFY_ON_START_TOUCH|NX_NOTIFY_ON_END_TOUCH|NX_NOTIFY_FORCES);
+			gScene->setActorPairFlags(*actor,*segments[i],NX_NOTIFY_ALL);
 		}
 	}
 
@@ -535,7 +889,7 @@ NxActor* NxSnake::CreateTriangleMeshWall(int size, NxVec3 *points)
 	for ( int i = 0 ; i < 2*size ; i++ ) {
 
 		NxVec3 temp = verts[i];
-		printf("Mesh Point: %f %f %f\n", temp[0], temp[1], temp[2]);
+		//printf("Mesh Point: %f %f %f\n", temp[0], temp[1], temp[2]);
 	}
 
 	bool status = NxCookTriangleMesh(*triangleMeshDesc, buf);
@@ -615,16 +969,18 @@ NxActor* NxSnake::CreateSnake()
 		boxDesc.dimensions.set(segLength/2.0,segHeight/2.0,segWidth/2.0);
 		boxDesc.localPose.t = NxVec3(0, 0, 0);
 
+		
 		if ( i == 0 || i == numSegs-1 ) {
 			boxDesc.materialIndex	= pIndex;
 		}
 		else {
 			boxDesc.materialIndex	= dIndex;
 		}
+		
 
-		boxDesc.ccdSkeleton = CreateCCDSkeleton2();
-		//if ( i == 0 || i == numSegs-1 ) 
-		//	boxDesc.ccdSkeleton = CreateCCDSkeleton2();
+		//boxDesc.ccdSkeleton = CreateCCDSkeleton2();
+		if ( i == 0 || i == numSegs-1 ) 
+			boxDesc.ccdSkeleton = CreateCCDSkeleton2();
 		
 		//boxDesc.ccdSkeleton = CreateCCDSkeleton(segLength, 0.2f, segWidth);
 		//boxDesc.ccdSkeleton = CreateCCDSkeleton(segLength/2.0, 0.1f, segWidth/2.0);
@@ -634,7 +990,8 @@ NxActor* NxSnake::CreateSnake()
 		actorDesc.shapes.pushBack(&boxDesc);
 
 		actorDesc.body			= &bodyDesc;
-		actorDesc.density		= 0.001f;
+		//actorDesc.density		= 0.001f;
+		actorDesc.density		= 1.0f;
 		
 		
 		//" control the position of each segment "
@@ -699,6 +1056,10 @@ NxActor* NxSnake::CreateSnake()
 		//targetAngle[i] = val;
 		targetAngle[i] = 0.0;
 		//revJoint.setBreakable(False);
+	}
+
+	for ( int i = 0 ; i < numSegs ; i++ ) {
+		gMyContactReport.addSeg(segments[i]);
 	}
 
 	return pActor;
@@ -786,23 +1147,23 @@ void NxSnake::InitNx()
 
 	// Create the default material
 	NxMaterial* defaultMaterial = gScene->getMaterialFromIndex(0); 
-	//defaultMaterial->setRestitution(0.01);
-	defaultMaterial->setRestitution(0.5);
-	
-	defaultMaterial->setStaticFriction(friction);
-	//defaultMaterial->setDynamicFriction(0.4);
-	
-	defaultMaterial->setDynamicFriction(0.9);
+	//defaultMaterial->setRestitution(0.5);
+	//defaultMaterial->setStaticFriction(friction);	
+	//defaultMaterial->setDynamicFriction(0.9);
 
-	//defaultMaterial->setDynamicFriction(0.5);
+	defaultMaterial->setRestitution(0.01);
+	//defaultMaterial->setDynamicFriction(0.4);
+	defaultMaterial->setDynamicFriction(0.5);
 	//defaultMaterial->setDynamicFriction(0.01);
-	//defaultMaterial->setStaticFriction(0.7);
+	defaultMaterial->setStaticFriction(0.7);
 
 
 	NxMaterialDesc materialDesc;
 	materialDesc.restitution = 0.01;
 	materialDesc.dynamicFriction = 0.01;
 	materialDesc.staticFriction = 0.01;
+
+
 	materialDesc.frictionCombineMode = NX_CM_MIN;
 	pIndex = gScene->createMaterial(materialDesc)->getMaterialIndex();
 	printf("New material = %d\n", pIndex);
@@ -815,10 +1176,15 @@ void NxSnake::InitNx()
 	// Create the objects in the scene
 	groundPlane		= CreateGroundPlane();
 
-	//gMyContactReport.setPlane(groundPlane);
+	gMyContactReport.setPlane(groundPlane);
 
 	CreateSnake();
+
 	
+	//for ( int i = 0 ; i < this->numSegs ; i++ ) {
+	//	gScene->setActorPairFlags(*groundPlane,*segments[i],NX_NOTIFY_ALL);
+	//}
+
 	NxVec3 points[4] = {NxVec3(-10.0, 0.0, -0.2),
 						NxVec3(10.0, 0.0, -0.2),
 						NxVec3(10.0, 0.0, 0.2),

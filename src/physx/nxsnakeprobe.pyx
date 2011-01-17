@@ -2,6 +2,7 @@ cdef extern from "NxSnake.h":
 	ctypedef struct c_NxSnake "NxSnake":
 
 		void Step()
+		void perturb()
 		void createWall(int numPoints, double *points)
 		void setServo(int i, double angle)
 		double getServo(int i)
@@ -53,6 +54,9 @@ cdef class NxSnakeProbe:
 
 	def frameStarted(self):
 		self.thisptr.Step()
+
+	def perturb(self):
+		self.thisptr.perturb()
 
 	def getServoCmd(self, int i):
 		return self.thisptr.getServoCmd(i)

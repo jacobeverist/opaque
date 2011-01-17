@@ -67,6 +67,7 @@ class SimpleScenesFrameListener ( sf.FrameListener ):
 		# render window
 		self._demo.frameStarted(evt, self.Keyboard, self.Mouse)
 
+		self.probe.perturbProbe(self.Keyboard.isKeyDown(OIS.KC_O))
 		self.probe.frameStarted(evt)
 		
 		self.adjustCamera()
@@ -189,7 +190,10 @@ class SnakeApp(sf.Application):
 
 		#self.probe = PhysXProbe(self.sceneManager,yRot,pos,40,0.15,0.2,0.15,30.0*2.5,0.9)
 		#self.probe = PhysXProbe(self.sceneManager,yRot,pos,40,0.15,0.2,0.15,1000.0,0.9)
-		self.probe = PhysXProbe(self.sceneManager,yRot,pos,40,0.15,0.2,0.15,100.0,0.9)
+
+		
+		#self.probe = PhysXProbe(self.sceneManager,yRot,pos,40,0.15,0.2,0.15,100.0,0.9)
+		self.probe = PhysXProbe(self.sceneManager,yRot,pos,40,0.15,0.1,0.15,1000.0,0.9)
 
 		#self.probe = SuperbotSnake(self._world,yRot,pos,40,0.15,0.15,30.0*2.5,0.9)
 		#self.probe = SuperbotSnake(self._world,zRot,pos,40,0.15,0.15,30.0*2.5,0.9)

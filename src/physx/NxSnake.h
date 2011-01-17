@@ -76,6 +76,9 @@ public:
 	NxVec3 *savePoses;
 	NxQuat *saveOrientations;
 
+	bool isPerturb;
+	NxVec3 ApplyForceToActor(NxActor* actor, const NxVec3& forceDir, const NxReal forceStrength);
+	void perturb();
 
 	void RunPID();
 	void Step();

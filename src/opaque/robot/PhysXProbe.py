@@ -94,6 +94,11 @@ class PhysXProbe:
 
 		self.walls = []
 		self.npnts = []
+		
+	def perturbProbe(self, doForce):
+		if doForce:
+			print "PERTURB"
+			self.nx_snake.perturb()
 	
 	def setAnchor(self, isAnchor):
 		

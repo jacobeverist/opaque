@@ -133,7 +133,7 @@ class TestModular(SnakeControl):
 
 	def frameStarted(self):
 		
-		self.grabImage()
+		#self.grabImage()
 		#self.grabAngles()
 
 		#if self.globalTimer % 4000 == 0:
@@ -163,7 +163,9 @@ class TestModular(SnakeControl):
 			#isDone = self.doHoldPosition()
 			#isDone = False
 			if isDone:
-				self.globalState = 1
+				pass
+				#self.globalState = 1
+				
 				#self.probe.savePose()
 				
 		elif self.globalState == 1:
