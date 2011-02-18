@@ -164,7 +164,7 @@ class TestModular(SnakeControl):
 			#isDone = False
 			if isDone:
 				pass
-				#self.globalState = 1
+				self.globalState = 1
 				
 				#self.probe.savePose()
 				
@@ -194,16 +194,16 @@ class TestModular(SnakeControl):
 			#self.mapGraph.loadFile("testData/correctionTest", 43)
 			#self.mapGraph.loadFile("uncorrectedNX", 6)
 			#self.mapGraph.loadFile("testData/mapBuild_21June2010", 66)
-			#self.mapGraph.loadFile(".", 17)
+			self.mapGraph.loadFile("testData/poseTest", 16)
 
-			self.mapGraph.newNode(0.0, self.direction)
-			self.mapGraph.forceUpdate(False)
-			self.mapGraph.synch()
+			#self.mapGraph.newNode(0.0, self.direction)
+			#self.mapGraph.forceUpdate(False)
+			#self.mapGraph.synch()
 			#self.mapGraph.saveMap()
-			self.mapGraph.saveLocalMap()
+			#self.mapGraph.saveLocalMap()
 	
-			#self.mapGraph.correctPoses3()
-			#exit()
+			self.mapGraph.correctPoses3()
+			exit()
 			
 			
 			self.restState = deepcopy(probeState)

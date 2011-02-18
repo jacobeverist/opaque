@@ -677,10 +677,15 @@ class MapGraph:
 		neighbors = self.poseGraph.neighbors(initNode)
 		incidents = self.poseGraph.incidents(initNode)
 		
+		#[[ 0.1         0.          0.        ]
+		# [ 0.          0.1         0.        ]
+		# [ 0.         -0.          0.78539819]]		
+		
+		
 		for neigh in neighbors:
 			if not visited[neigh]:
 				transform, covE = self.poseGraph.get_edge_attributes(initNode,neigh)
-								
+				
 				dist = linalg.det(covE)
 				if dist < distances[neigh]:
 					paths[neigh] = [transform, covE]
@@ -734,8 +739,8 @@ class MapGraph:
 
 			minDist = Inf
 			minDest = -1
-			print visited
-			print distances
+			#print visited
+			#print distances
 			for i in range(self.numNodes):
 				if not visited[i]:
 					if distances[i] < minDist:
@@ -769,11 +774,11 @@ class MapGraph:
 				neighbors = self.poseGraph.neighbors(dest)
 				incidents = self.poseGraph.incidents(dest)
 				
-				print "neighbors of", dest, "=", neighbors
+				#print "neighbors of", dest, "=", neighbors
 				
 				for neigh in neighbors:
 					if not visited[neigh]:
-						print dest, neigh
+						#print dest, neigh
 						transform, covE = self.poseGraph.get_edge_attributes(dest,neigh)
 	
 						T_b_a = optimals[dest][0]
@@ -864,16 +869,20 @@ class MapGraph:
 			#print key, value
 			offset = value[0]
 			covE = value[1]
-			print key, ":", offset[0,0], offset[1,0], offset[2,0], linalg.det(covE)
+			#print key, ":", offset[0,0], offset[1,0], offset[2,0], linalg.det(covE)
 			
 		return paths
 
 	def correctPoses3(self):
 
+		DIST_THRESHOLD = 3.0
 
 		def mahab_dist(c1, c2, r1, r2, E):
 
+			" distance between centroids "
 			d = c2 - c1
+			
+			
 			s = max(0, sqrt(d[0,0]**2 + d[1,0]**2) - r1 - r2) * d / sqrt(d[0,0]**2 + d[1,0]**2)
 			E_inv = linalg.inv(E)
 			dist = s.T * E_inv * s
@@ -899,6 +908,7 @@ class MapGraph:
 			path_set = paths[i]
 			
 			ind = range(i+1,self.numNodes)
+			#print i, self.numNodes, ind
 
 			for j in ind:				
 				loc2 = path_set[j][0]
@@ -910,8 +920,8 @@ class MapGraph:
 				
 				dist = mahab_dist(c1, c2, 0.25, 0.25, E)
 				
-				print i, j, dist
-				if dist <= 3.0:
+				#print i, j, dist
+				if dist <= DIST_THRESHOLD:
 					pair_candidates.append([dist,i,j,loc2])
 				
 			ind = range(0,i)
@@ -928,8 +938,8 @@ class MapGraph:
 				
 				dist = mahab_dist(c1, c2, 0.25, 0.25, E)
 				
-				print i, j, dist
-				if dist <= 3.0:
+				#print i, j, dist
+				if dist <= DIST_THRESHOLD:
 					pair_candidates.append([dist,i,j,loc2])
 
 		" remove duplicates "
@@ -964,8 +974,8 @@ class MapGraph:
 					is_free[i] = False
 
 		print "UNIQUE PAIRS"
-		for p in pair_unique:
-			print p[0], p[1], p[2]
+		#for p in pair_unique:
+		#	print p[0], p[1], p[2]
 
 		def decimatePoints(points):
 			result = []
@@ -1085,8 +1095,11 @@ class MapGraph:
 
 		print "hypothesizing sensor constraint between", n1, "and", n2
 
+		" TUNE: estimated step distance from empirical results "
+		STEP_DIST = 0.145
+
 		" initial guess for x, y, theta parameters "
-		firstGuess = self.makeGuess(n1, n2, 0.145)
+		firstGuess = self.makeGuess(n1, n2, STEP_DIST)
 		print "guess =", firstGuess
 
 		" TUNE ME:  threshold cost difference between iterations to determine if converged "
