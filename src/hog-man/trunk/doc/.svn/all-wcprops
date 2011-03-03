@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 38
+/data/svn/hog-man/!svn/ver/3/trunk/doc
+END
+license-gpl.txt
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/data/svn/hog-man/!svn/ver/3/trunk/doc/license-gpl.txt
+END
+hogman.dox
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/data/svn/hog-man/!svn/ver/3/trunk/doc/hogman.dox
+END
+main.txt
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/data/svn/hog-man/!svn/ver/3/trunk/doc/main.txt
+END
+README.txt
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/data/svn/hog-man/!svn/ver/3/trunk/doc/README.txt
+END
+license-lgpl.txt
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/data/svn/hog-man/!svn/ver/3/trunk/doc/license-lgpl.txt
+END

@@ -1,0 +1,197 @@
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/data/svn/hog-man/!svn/ver/8/trunk/EXTERNAL/qglviewer
+END
+ui_VRenderInterface.Qt4.h
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/data/svn/hog-man/!svn/ver/3/trunk/EXTERNAL/qglviewer/ui_VRenderInterface.Qt4.h
+END
+frame.h
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/data/svn/hog-man/!svn/ver/3/trunk/EXTERNAL/qglviewer/frame.h
+END
+ImageInterface.Qt4.ui
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/data/svn/hog-man/!svn/ver/3/trunk/EXTERNAL/qglviewer/ImageInterface.Qt4.ui
+END
+domUtils.h
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/data/svn/hog-man/!svn/ver/3/trunk/EXTERNAL/qglviewer/domUtils.h
+END
+keyFrameInterpolator.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/data/svn/hog-man/!svn/ver/3/trunk/EXTERNAL/qglviewer/keyFrameInterpolator.cpp
+END
+qglviewer.h
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/data/svn/hog-man/!svn/ver/3/trunk/EXTERNAL/qglviewer/qglviewer.h
+END
+config.h
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/data/svn/hog-man/!svn/ver/3/trunk/EXTERNAL/qglviewer/config.h
+END
+vec.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/data/svn/hog-man/!svn/ver/3/trunk/EXTERNAL/qglviewer/vec.cpp
+END
+qglviewer-icon.xpm
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/data/svn/hog-man/!svn/ver/3/trunk/EXTERNAL/qglviewer/qglviewer-icon.xpm
+END
+mouseGrabber.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/data/svn/hog-man/!svn/ver/3/trunk/EXTERNAL/qglviewer/mouseGrabber.cpp
+END
+saveSnapshot.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/data/svn/hog-man/!svn/ver/3/trunk/EXTERNAL/qglviewer/saveSnapshot.cpp
+END
+GPL_EXCEPTION
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/data/svn/hog-man/!svn/ver/3/trunk/EXTERNAL/qglviewer/GPL_EXCEPTION
+END
+manipulatedFrame.h
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/data/svn/hog-man/!svn/ver/3/trunk/EXTERNAL/qglviewer/manipulatedFrame.h
+END
+manipulatedCameraFrame.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/data/svn/hog-man/!svn/ver/3/trunk/EXTERNAL/qglviewer/manipulatedCameraFrame.cpp
+END
+camera.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/data/svn/hog-man/!svn/ver/3/trunk/EXTERNAL/qglviewer/camera.cpp
+END
+constraint.h
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/data/svn/hog-man/!svn/ver/3/trunk/EXTERNAL/qglviewer/constraint.h
+END
+frame.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/data/svn/hog-man/!svn/ver/3/trunk/EXTERNAL/qglviewer/frame.cpp
+END
+quaternion.h
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/data/svn/hog-man/!svn/ver/3/trunk/EXTERNAL/qglviewer/quaternion.h
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/data/svn/hog-man/!svn/ver/3/trunk/EXTERNAL/qglviewer/Makefile
+END
+LICENSE
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/data/svn/hog-man/!svn/ver/3/trunk/EXTERNAL/qglviewer/LICENSE
+END
+qglviewer.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/data/svn/hog-man/!svn/ver/3/trunk/EXTERNAL/qglviewer/qglviewer.cpp
+END
+keyFrameInterpolator.h
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/data/svn/hog-man/!svn/ver/3/trunk/EXTERNAL/qglviewer/keyFrameInterpolator.h
+END
+README
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/data/svn/hog-man/!svn/ver/3/trunk/EXTERNAL/qglviewer/README
+END
+ui_ImageInterface.Qt4.h
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/data/svn/hog-man/!svn/ver/3/trunk/EXTERNAL/qglviewer/ui_ImageInterface.Qt4.h
+END
+manipulatedFrame.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/data/svn/hog-man/!svn/ver/3/trunk/EXTERNAL/qglviewer/manipulatedFrame.cpp
+END
+vec.h
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/data/svn/hog-man/!svn/ver/3/trunk/EXTERNAL/qglviewer/vec.h
+END
+mouseGrabber.h
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/data/svn/hog-man/!svn/ver/3/trunk/EXTERNAL/qglviewer/mouseGrabber.h
+END
+constraint.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/data/svn/hog-man/!svn/ver/3/trunk/EXTERNAL/qglviewer/constraint.cpp
+END
+quaternion.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/data/svn/hog-man/!svn/ver/3/trunk/EXTERNAL/qglviewer/quaternion.cpp
+END
+VRenderInterface.Qt4.ui
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/data/svn/hog-man/!svn/ver/3/trunk/EXTERNAL/qglviewer/VRenderInterface.Qt4.ui
+END
+manipulatedCameraFrame.h
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/data/svn/hog-man/!svn/ver/3/trunk/EXTERNAL/qglviewer/manipulatedCameraFrame.h
+END
+camera.h
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/data/svn/hog-man/!svn/ver/3/trunk/EXTERNAL/qglviewer/camera.h
+END

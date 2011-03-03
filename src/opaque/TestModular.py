@@ -194,7 +194,9 @@ class TestModular(SnakeControl):
 			#self.mapGraph.loadFile("testData/correctionTest", 43)
 			#self.mapGraph.loadFile("uncorrectedNX", 6)
 			#self.mapGraph.loadFile("testData/mapBuild_21June2010", 66)
-			self.mapGraph.loadFile("testData/poseTest", 16)
+			#self.mapGraph.loadFile("testData/poseTest", 3)
+			self.mapGraph.loadFile("testData/poseTest", 5)
+			#self.mapGraph.loadFile("testData/poseTest", 8)
 
 			#self.mapGraph.newNode(0.0, self.direction)
 			#self.mapGraph.forceUpdate(False)

@@ -1,6 +1,12 @@
 
 from numpy import *
 from scipy.optimize import *
+import scipy
+import scipy.linalg
+import numpy
+import numpy.linalg
+
+
 import graph
 import csv
 
@@ -15,6 +21,7 @@ from StablePose import StablePose
 from Pose import Pose
 import gen_icp
 from functions import *
+import toro
 
 
 import pylab
@@ -663,7 +670,11 @@ class MapGraph:
 
 	def dijkstra_proj(self, initNode = 0):
 		
-		paths = {}
+		identTransform = matrix([[0.], [0.], [0.]])
+		zeroCov = matrix([[0.,0.,0.],[0.,0.,0.],[0.,0.,0.]])
+		
+		paths = {initNode : [identTransform, zeroCov] }
+		
 		
 		visited = [False for i in range(self.numNodes)]
 		distances = [Inf for i in range(self.numNodes)]
@@ -875,6 +886,7 @@ class MapGraph:
 
 	def correctPoses3(self):
 
+
 		DIST_THRESHOLD = 3.0
 
 		def mahab_dist(c1, c2, r1, r2, E):
@@ -1016,7 +1028,7 @@ class MapGraph:
 				print "compute hull", p[2]
 				a_hulls[p[2]] = computeHull(p[2])
 				hull_computed[p[2]] = True
-										
+			
 			print p[1], p[2], p[0]
 
 		
@@ -1043,26 +1055,245 @@ class MapGraph:
 			transform = p[3]
 			n1 = p[1]
 			n2 = p[2]
-			offset = self.makeSensorConstraint(transform, n1, n2, a_hulls[n1], a_hulls[n2])
-			#offset = self.makeSensorConstraint(transform, n1, n2, trans_hulls[n1], trans_hulls[n2])
-
-			#old = [p[3][0,0],p[3][1,0],p[3][2,0]]
-			#print old
-
-			hypotheses.append([p[1],p[2],offset])
+			offset, covar = self.makeSensorConstraint(transform, n1, n2, a_hulls[n1], a_hulls[n2])
+			transform = matrix([ [offset[0]], [offset[1]], [offset[2]] ])
+			hypotheses.append([p[1],p[2],transform,covar])
 
 		" need more hypotheses "
 		" add a more naive motion model constraint "
 
 		for hyp in hypotheses:
 			print hyp[0], hyp[1], hyp[2]
+		
+		def doTransform(T1, T2, E1, E2):
+		
+			x1 = T1[0,0]	
+			y1 = T1[1,0]
+			p1 = T1[2,0]
+		
+			x2 = T2[0,0]	
+			y2 = T2[1,0]
+			p2 = T2[2,0]
+		
+			newT = matrix([[x1 + x2*cos(p1) - y2*sin(p1)],
+				[y1 + x2*sin(p1) + y2*cos(p1)],
+				[p1+p2]])
+		
+			J1 = matrix([[1,0,-x2*sin(p1) - y2*cos(p1)],[0,1,x2*cos(p1) - y2*sin(p1)],[0,0,1]])
+			J2 = matrix([[cos(p1), -sin(p1), 0], [sin(p1), cos(p1), 0], [0, 0, 1]])
+								
+			newE = J1 * E1 * J1.T + J2 * E2 * J2.T
 			
+			return newT, newE
+
+		#print "paths[0]", paths[0]
+		#print "paths[1]", paths[1]
+		#print "paths[2]", paths[2]
+		
+		results = []
+		
+		for i in range(len(hypotheses)):
+			for j in range(i+1, len(hypotheses)):
+				
+				#print "index:", i, j
+				hyp1 = hypotheses[i]
+				hyp2 = hypotheses[j]
+				
+				#print "hyp:", hyp1, hyp2
+				
+				m1 = hyp1[0]
+				m2 = hyp1[1]
+				
+				n1 = hyp2[0]
+				n2 = hyp2[1]
+				
+				"FIXME:  check the case where optimal path is identity "
+				
+				Tp1 = paths[m2][n1][0]
+				Ep1 = paths[m2][n1][1]
+				
+				Tp2 = paths[n2][m1][0]
+				Ep2 = paths[n2][m1][1]
+				
+				Th1 = hyp1[2]
+				Th2 = hyp2[2]
+				
+				" m1->m2, m2->n1, n1->n2, n2->m1 "
+				" Th1, Tp1, Th2, Tp2 "
+				
+				covE = matrix([[ 0.1, 0.0, 0.0 ], [ 0.0, 0.1, 0.0], [ 0.0, 0.0, pi/4.0 ]]) 
+				result1 = Th1
+				result2, cov2 = doTransform(result1, Tp1, covE, Ep1)
+				result3, cov3 = doTransform(result2, Th2, cov2, covE)
+				result4, cov4 = doTransform(result3, Tp2, cov3, Ep2)
+				
+				invMat = scipy.linalg.inv(cov4)
+				
+				
+				#paths[incid] = [T_c_a, E_a_c]
+				#print i, j, result4[0,0], result4[1,0], result4[2,0]
+				
+				#err = sqrt(result4[0,0]**2 + result4[1,0]**2)
+				err = sqrt(numpy.transpose(result4) * invMat * result4)
+				
+				precision = [invMat[0,0], invMat[0,1], invMat[1,1], invMat[2,2], invMat[0,2], invMat[1,2]]
+				
+				#results.append([err, i, j, [result4[0,0], result4[1,0], result4[2,0]], precision])
+				results.append([err, i, j])
+		
+		results.sort()
+		
+		" create the consistency matrix "
+		
+		A = matrix(len(hypotheses)*len(hypotheses)*[0.0], float32)
+		A.resize(len(hypotheses), len(hypotheses))
+		
+		maxError = 0.0
+		for result in results:
+			if result[0] > maxError:
+				maxError = result[0]
+		
+		print "maxError:", maxError
+		
+		for result in results:
+			print result[0], maxError-result[0]
+			A[i,j] = maxError - result[0]
+			A[j,i] = maxError - result[0]
 		
 		
+		print A
 		
+		w, v = numpy.linalg.eig(A)
+		
+		print w
+		print v
+		
+		
+		#print len(results), "results"
+		#for i in range(20):
+		#	print results[i]
+		
+		self.doToro(hypotheses, results)
 		#p = pair_unique[-1]
 		#print self.makeSensorConstraint(p[0],p[1],p[2], a_hulls[p[1]], a_hulls[p[2]])
 		#print p[3]
+		
+	def doToro(self, hypotheses, results):
+		
+		" vertices "
+		v_list = []
+
+		for i in range(self.numNodes):
+			node1 = self.poseGraph.get_node_attributes(i)
+			estPose1 = node1.getEstPose()
+			v_list.append([i, [estPose1[0], estPose1[1], estPose1[2]]])
+
+		
+		e_list = []
+		
+		" convert the original graph to TORO file"
+		for initNode in range(self.numNodes):
+			neighbors = self.poseGraph.neighbors(initNode)
+			incidents = self.poseGraph.incidents(initNode)
+			
+			for neigh in neighbors:
+				transform, covE = self.poseGraph.get_edge_attributes(initNode,neigh)
+				node1 = initNode
+				node2 = neigh
+				offset = [transform[0,0],transform[1,0],transform[2,0]]
+
+				invMat = scipy.linalg.inv(covE)				
+				prec = [invMat[0,0], invMat[0,1], invMat[1,1], invMat[2,2], invMat[0,2], invMat[1,2]]
+				
+				# inf_ff inf_fs inf_ss inf_rr inf_fr inf_sr 
+				e_list.append([node1,node2,offset,prec])
+				
+			for incid in incidents:
+				transform, covE = self.poseGraph.get_edge_attributes(incid, initNode)
+				node1 = incid
+				node2 = initNode
+				offset = [transform[0,0],transform[1,0],transform[2,0]]
+
+				invMat = scipy.linalg.inv(covE)				
+				prec = [invMat[0,0], invMat[0,1], invMat[1,1], invMat[2,2], invMat[0,2], invMat[1,2]]
+				
+				# inf_ff inf_fs inf_ss inf_rr inf_fr inf_sr 
+				e_list.append([node1,node2,offset,prec])							
+		
+		#print len(results), "results"
+		" add hypotheses to the TORO file "
+
+		constraints = {}
+
+		#print len(results), "results"
+		#for i in range(20):
+		#	print results[i]		
+		
+		for result in results:
+			
+			" maximum error requirement "
+			if result[0] <= 1.0: 
+				
+				constraint1 = result[1]
+				constraint2 = result[2]
+				#print result[0], result[1],result[2]
+			
+				constraints[constraint1] = True
+				constraints[constraint2] = True
+		
+		#print "constraints:", constraints
+		
+		hypotheses
+		
+		for k in constraints:
+			hyp = hypotheses[k]
+			
+			n1 = hyp[0]
+			n2 = hyp[1]
+			
+			transform = hyp[2]
+			covar = hyp[3]
+			
+			offset = [transform[0,0], transform[1,0], transform[2,0]]
+			
+			invMat = scipy.linalg.inv(covE)				
+			precision = [invMat[0,0], invMat[0,1], invMat[1,1], invMat[2,2], invMat[0,2], invMat[1,2]]
+			
+			e_list.append([n1,n2,offset,precision])			
+		
+		#for i in range(len(hypotheses)):
+			
+		#	hyp = hypotheses[i]
+			
+		#	n1 = hyp[0]
+		#	n2 = hyp[1]
+			
+		#	transform = hyp[2]
+		#	covar = hyp[3]
+			
+		#	offset = [transform[0,0], transform[1,0], transform[2,0]]
+			
+		#	invMat = scipy.linalg.inv(covE)				
+		#	precision = [invMat[0,0], invMat[0,1], invMat[1,1], invMat[2,2], invMat[0,2], invMat[1,2]]
+		
+		#	e_list.append([n1,n2,offset,precision])
+				
+			
+			
+			
+		
+		toro.writeToroGraph(".", "test.graph", v_list, e_list, [])
+		toro.plotToro(v_list, e_list, drawedge=True)
+		pylab.savefig("test.png")
+		pylab.clf()
+		" render uncorrect graph "
+		
+		" run correction "
+		
+		" render corrected graph "
+		
+		" return corrected graph "
+		pass
 
 	def makeGuess(self, n1, n2, stepDist):
 		
@@ -1137,7 +1368,9 @@ class MapGraph:
 		
 		offset = gen_icp.gen_ICP2(estPose1, firstGuess, hull1, hull2, [circle1], costThresh, minMatchDist, plotIteration, n1, n2)
 		
-		return offset
+		covar = matrix([[0.1,0.0,0.0],[0.0,0.1,0.0],[0.0,0.0,0.3]])
+		
+		return offset, covar
 		
 		"""
 		pylab.clf()

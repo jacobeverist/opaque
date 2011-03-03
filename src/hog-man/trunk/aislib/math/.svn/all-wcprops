@@ -1,0 +1,83 @@
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/data/svn/hog-man/!svn/ver/3/trunk/aislib/math
+END
+axis_angle.h
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/data/svn/hog-man/!svn/ver/3/trunk/aislib/math/axis_angle.h
+END
+axis_angle.hpp
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/data/svn/hog-man/!svn/ver/3/trunk/aislib/math/axis_angle.hpp
+END
+vector_n.h
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/data/svn/hog-man/!svn/ver/3/trunk/aislib/math/vector_n.h
+END
+vector_n.hpp
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/data/svn/hog-man/!svn/ver/3/trunk/aislib/math/vector_n.hpp
+END
+matrix_n.h
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/data/svn/hog-man/!svn/ver/3/trunk/aislib/math/matrix_n.h
+END
+matrix_n.hpp
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/data/svn/hog-man/!svn/ver/3/trunk/aislib/math/matrix_n.hpp
+END
+rotation_matrix.h
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/data/svn/hog-man/!svn/ver/3/trunk/aislib/math/rotation_matrix.h
+END
+rotation_matrix.hpp
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/data/svn/hog-man/!svn/ver/3/trunk/aislib/math/rotation_matrix.hpp
+END
+quaternion.h
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/data/svn/hog-man/!svn/ver/3/trunk/aislib/math/quaternion.h
+END
+quaternion.hpp
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/data/svn/hog-man/!svn/ver/3/trunk/aislib/math/quaternion.hpp
+END
+angle.h
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/data/svn/hog-man/!svn/ver/3/trunk/aislib/math/angle.h
+END
+transformation.h
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/data/svn/hog-man/!svn/ver/3/trunk/aislib/math/transformation.h
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/data/svn/hog-man/!svn/ver/3/trunk/aislib/math/Makefile
+END

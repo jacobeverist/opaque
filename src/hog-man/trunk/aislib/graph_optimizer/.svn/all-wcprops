@@ -1,0 +1,47 @@
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/data/svn/hog-man/!svn/ver/8/trunk/aislib/graph_optimizer
+END
+graph_optimizer2d.h
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/data/svn/hog-man/!svn/ver/3/trunk/aislib/graph_optimizer/graph_optimizer2d.h
+END
+graph_optimizer3d.h
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/data/svn/hog-man/!svn/ver/3/trunk/aislib/graph_optimizer/graph_optimizer3d.h
+END
+graph_optimizer2d_aux.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/data/svn/hog-man/!svn/ver/3/trunk/aislib/graph_optimizer/graph_optimizer2d_aux.cpp
+END
+graph_optimizer.h
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/data/svn/hog-man/!svn/ver/3/trunk/aislib/graph_optimizer/graph_optimizer.h
+END
+graph_optimizer.hpp
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/data/svn/hog-man/!svn/ver/3/trunk/aislib/graph_optimizer/graph_optimizer.hpp
+END
+graph_optimizer2d_aux.h
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/data/svn/hog-man/!svn/ver/3/trunk/aislib/graph_optimizer/graph_optimizer2d_aux.h
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/data/svn/hog-man/!svn/ver/3/trunk/aislib/graph_optimizer/Makefile
+END

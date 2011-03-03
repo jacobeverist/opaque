@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 42
+/data/svn/hog-man/!svn/ver/3/trunk/data/3D
+END
+README-fileformat.txt
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/data/svn/hog-man/!svn/ver/3/trunk/data/3D/README-fileformat.txt
+END
+sphere_bignoise.graph
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/data/svn/hog-man/!svn/ver/3/trunk/data/3D/sphere_bignoise.graph
+END
+sphere_mednoise.graph
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/data/svn/hog-man/!svn/ver/3/trunk/data/3D/sphere_mednoise.graph
+END
+sphere_smallnoise.graph
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/data/svn/hog-man/!svn/ver/3/trunk/data/3D/sphere_smallnoise.graph
+END
