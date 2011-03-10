@@ -24,6 +24,7 @@ import gen_icp
 from functions import *
 import toro
 import scsgp
+import bayes
 
 import pylab
 from matplotlib.patches import Circle
@@ -713,221 +714,6 @@ class MapGraph:
 		" update the current estimated pose in AverageContacts "
 		self.contacts.resetPose(estPose = estPoses[-1])
 
-	def dijkstra_proj(self, initNode = 0):
-		
-		identTransform = matrix([[0.], [0.], [0.]],dtype=float)
-		zeroCov = matrix([[0.,0.,0.],[0.,0.,0.],[0.,0.,0.]],dtype=float)
-		
-		paths = {initNode : [identTransform, zeroCov] }
-		
-		
-		visited = [False for i in range(self.numNodes)]
-		distances = [Inf for i in range(self.numNodes)]
-		optimals = {}
-		
-		" initial node 0 "
-		distances[initNode] = 0.0
-		visited[initNode] = True
-		
-		" for each edge out of 0, add to path "
-		neighbors = self.poseGraph.neighbors(initNode)
-		incidents = self.poseGraph.incidents(initNode)
-		
-		#[[ 0.1         0.          0.        ]
-		# [ 0.          0.1         0.        ]
-		# [ 0.         -0.          0.78539819]]		
-		
-		
-		for neigh in neighbors:
-			if not visited[neigh]:
-				transform, covE = self.poseGraph.get_edge_attributes(initNode,neigh)
-				
-				dist = linalg.det(covE)
-				if dist < distances[neigh]:
-					paths[neigh] = [transform, covE]
-					distances[neigh] = dist
-
-
-		for incid in incidents:
-			if not visited[incid]:
-				transform, covE = self.poseGraph.get_edge_attributes(incid, initNode)
-				
-				" TODO: invert the transform "
-				#paths[incid].append([transform, covE])
-				#dist = linalg.det(covE)
-				#if dist < distances[incid]:
-				#	distances[incid] = linalg.det(covE)
-				
-				#print "incid:", incid
-				#print transform
-				
-				#x2 = transform[0,0]
-				#y2 = transform[1,0]
-				#p2 = transform[2,0]
-				
-				#x3 = -x2*cos(-p2) + y2*sin(-p2)
-				#y3 = -x2*sin(-p2) - y2*cos(-p2)
-				#p3 = -p2
-										
-				#newTransform = matrix([[x3], [y3], [p3]])
-
-				xA = transform[0,0]
-				yA = transform[1,0]
-				pA = transform[2,0]
-				
-				x1 = -cos(pA)*xA - sin(pA)*yA
-				y1 = sin(pA)*xA - cos(pA)*yA
-				p1 = normalizeAngle(-pA)
-
-				newTransform = matrix([[x1], [y1], [p1]],dtype=float)
-
-				paths[incid] = [newTransform, covE]
-				dist = linalg.det(covE)
-				if dist < distances[incid]:
-					paths[incid] = [newTransform, covE]
-					distances[incid] = dist
-
-
-		" while some nodes unvisited "
-		while visited.count(False) > 0:
-
-			" find the minimum uncertainty path p "
-
-			minDist = Inf
-			minDest = -1
-			#print visited
-			#print distances
-			for i in range(self.numNodes):
-				if not visited[i]:
-					if distances[i] < minDist:
-						minDist = distances[i]
-						minDest = i
-
-			
-			" an unvisited node is unreachable "
-			if minDest == -1:
-				break
-			else:
-				dest = minDest
-				minUnc = Inf
-				minTrans = 0
-				minCov = 0
-				
-				p = paths[dest]
-				uncertainty = linalg.det(p[1]) 
-				if uncertainty < minUnc:
-					minUnc = uncertainty
-					minTrans = p[0]
-					minCov = p[1]
-						
-				" mark this as visited and record the optimal path "
-				visited[dest] = True
-				optimals[dest] = [minTrans, minCov]
-			
-				" for all edges leaving dest, add the composed path "
-	
-				" for each edge out of dest, add to path "
-				neighbors = self.poseGraph.neighbors(dest)
-				incidents = self.poseGraph.incidents(dest)
-				
-				#print "neighbors of", dest, "=", neighbors
-				
-				for neigh in neighbors:
-					if not visited[neigh]:
-						#print dest, neigh
-						transform, covE = self.poseGraph.get_edge_attributes(dest,neigh)
-	
-						T_b_a = optimals[dest][0]
-						T_c_b = transform
-
-						
-						E_a_b = optimals[dest][1]
-						E_b_c = covE
-						
-						x1 = T_b_a[0,0]
-						y1 = T_b_a[1,0]
-						p1 = T_b_a[2,0]
-						
-						x2 = T_c_b[0,0]
-						y2 = T_c_b[1,0]
-						p2 = T_c_b[2,0]
-						
-						T_c_a = matrix([[x1 + x2*cos(p1) - y2*sin(p1)],
-										[y1 + x2*sin(p1) + y2*cos(p1)],
-										[p1+p2]],dtype=float)
-						
-						J1 = matrix([[1,0,-x2*sin(p1) - y2*cos(p1)],[0,1,x2*cos(p1) - y2*sin(p1)],[0,0,1]],dtype=float)
-						J2 = matrix([[cos(p1), -sin(p1), 0], [sin(p1), cos(p1), 0], [0, 0, 1]],dtype=float)
-						
-						E_a_c = J1 * E_a_b * J1.T + J2 * E_b_c * J2.T
-	
-						dist = linalg.det(E_a_c)
-						if dist < distances[neigh]:
-							paths[neigh] = [T_c_a, E_a_c]
-							distances[neigh] = dist
-		
-				for incid in incidents:
-					if not visited[incid]:
-						transform, covE = self.poseGraph.get_edge_attributes(incid, dest)
-
-						T_b_a = optimals[dest][0]
-						T_c_b = transform
-
-						E_a_b = optimals[dest][1]
-						E_b_c = covE
-						
-						x1 = T_b_a[0,0]
-						y1 = T_b_a[1,0]
-						p1 = T_b_a[2,0]
-
-						xA = T_c_b[0,0]
-						yA = T_c_b[1,0]
-						pA = T_c_b[2,0]
-						
-						x2 = -cos(pA)*xA - sin(pA)*yA
-						y2 = sin(pA)*xA - cos(pA)*yA
-						p2 = -pA
-					
-						#J1 = matrix([[1,0, x2*sin(p1-p2) + y2*cos(p1-p2)],
-						#			[0,1,-x2*cos(p1-p2) + y2*sin(p1-p2)],
-						#			[0,0,1]])
-						#J2 = matrix([[-cos(p1-p2), sin(p1-p2), -x2*sin(p1-p2) - y2*cos(p1-p2)],
-						#			[-sin(p1-p2), -cos(p1-p2), x2*cos(p1-p2) - y2*sin(p1-p2)],
-						#			[0, 0, -1]])
-
-						T_c_a = matrix([[x1 + x2*cos(p1) - y2*sin(p1)],
-										[y1 + x2*sin(p1) + y2*cos(p1)],
-										[p1+p2]],dtype=float)
-				
-						J1 = matrix([[1,0,-x2*sin(p1) - y2*cos(p1)],[0,1,x2*cos(p1) - y2*sin(p1)],[0,0,1]],dtype=float)
-						J2 = matrix([[cos(p1), -sin(p1), 0], [sin(p1), cos(p1), 0], [0, 0, 1]],dtype=float)
-
-						#J1 = matrix([[1,0,-x2*sin(p1) - y2*cos(p1)],[0,1,x2*cos(p1) - y2*sin(p1)],[0,0,1]])
-						#J2 = matrix([[cos(p1), -sin(p1), 0], [sin(p1), cos(p1), 0], [0, 0, 1]])
-						
-						E_a_c = J1 * E_a_b * J1.T + J2 * E_b_c * J2.T
-	
-						dist = linalg.det(E_a_c)
-						if dist < distances[incid]:
-							paths[incid] = [T_c_a, E_a_c]
-							distances[incid] = dist
-								
-						" TODO: invert the transform and covariance "
-						#paths[incid].append([transform, covE])
-						#dist = linalg.det(E_a_c)
-						#if dist < distances[incid]:
-						#	distances[incid] = dist
-						
-			
-				" compute the set of pairwise poses to consider using djikstra projection "
-		
-		for key, value in paths.iteritems():
-			#print key, value
-			offset = value[0]
-			covE = value[1]
-			#print key, ":", offset[0,0], offset[1,0], offset[2,0], linalg.det(covE)
-			
-		return paths
 
 	def correctPoses3(self):
 
@@ -938,16 +724,7 @@ class MapGraph:
 		DIST_THRESHOLD = 3.0
 		#DIST_THRESHOLD = 1.0
 
-		def mahab_dist(c1, c2, r1, r2, E):
 
-			" distance between centroids "
-			d = c2 - c1
-			
-			
-			s = max(0, sqrt(d[0,0]**2 + d[1,0]**2) - r1 - r2) * d / sqrt(d[0,0]**2 + d[1,0]**2)
-			E_inv = linalg.inv(E)
-			dist = s.T * E_inv * s
-			return dist[0,0]
 
 		if self.numNodes < 2:
 			return
@@ -957,11 +734,26 @@ class MapGraph:
 			self.currNode.synch()
 			#self.synch()
 
+		
+	
+		nodes = self.poseGraph.nodes()
+		edges = self.poseGraph.edges()
+		
+		edge_attrs = []
+		for i in range(len(edges)):
+			edge_attrs.append( self.poseGraph.get_edge_attributes(edges[i][0],edges[i][1]) )
+	
+		" save the graph to file minus the local map content "
+		fp = open("graph_out.txt", 'w')
+		fp.write(repr((nodes, edges, edge_attrs)))
+		fp.close()
+
 		" perform dijkstra projection over all nodes"
 		paths = []
 		for i in range(self.numNodes):
-			paths.append(self.dijkstra_proj(i))
-		
+			paths.append(bayes.dijkstra_proj(i, self.numNodes, self.poseGraph))
+
+
 		" select pairs to attempt a sensor constraint "
 		pair_candidates = []
 		#print "CANDIDATES:"
@@ -979,7 +771,7 @@ class MapGraph:
 				E_param = path_set[j][1]
 				E = matrix([[E_param[0,0], E_param[0,1]],[E_param[1,0], E_param[1,1]]],dtype=float)
 				
-				dist = mahab_dist(c1, c2, SENSOR_RADIUS, SENSOR_RADIUS, E)
+				dist = bayes.mahab_dist(c1, c2, SENSOR_RADIUS, SENSOR_RADIUS, E)
 				
 				print "distance:", i, j, dist
 				if dist <= DIST_THRESHOLD:
@@ -997,7 +789,7 @@ class MapGraph:
 				E_param = path_set[j][1]
 				E = matrix([[E_param[0,0], E_param[0,1]],[E_param[1,0], E_param[1,1]]],dtype=float)
 				
-				dist = mahab_dist(c1, c2, SENSOR_RADIUS, SENSOR_RADIUS, E)
+				dist = bayes.mahab_dist(c1, c2, SENSOR_RADIUS, SENSOR_RADIUS, E)
 				
 				print "distance:", i, j, dist
 				if dist <= DIST_THRESHOLD:
@@ -1097,7 +889,7 @@ class MapGraph:
 		#		
 		#		trans_hulls[i] = hull_trans
 					
-		
+		 
 		#hull_trans1 = []
 		#for p in hull1:
 		#	hull_trans1.append(gen_icp.dispPoint(p, estPose1))

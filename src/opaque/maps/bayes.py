@@ -11,6 +11,7 @@ def mahab_dist(c1, c2, r1, r2, E):
 	
 	s = max(0, sqrt(d[0,0]**2 + d[1,0]**2) - r1 - r2) * d / sqrt(d[0,0]**2 + d[1,0]**2)
 	E_inv = linalg.inv(E)
+	
 	dist = s.T * E_inv * s
 	return dist[0,0]
 
@@ -207,7 +208,21 @@ if __name__ == '__main__':
 	for i in range(numNodes):
 		paths.append(dijkstra_proj(i, numNodes, newGraph))	
 	
+	" compare the inverse dijkstra projections "
 	print paths[2][10]
+	#print paths[10][2]
+	
+	loc2 = paths[2][10][0]	
+	E_param = paths[2][10][1]
+	
+	E = matrix([[E_param[0,0], E_param[0,1]],[E_param[1,0], E_param[1,1]]],dtype=float)
+
+	print loc2
+	print E
+	
+	c1 = matrix([[0.0],[0.0]],dtype=float)
+	c2 = matrix([[loc2[0,0]],[loc2[1,0]]],dtype=float)
+	print mahab_dist(c1, c2, 0, 0, E)
 	
 	#nodes = eval(fp.read())
 	#edges = eval(fp.read())
