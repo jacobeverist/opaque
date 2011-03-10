@@ -324,7 +324,7 @@ class LocalNode:
 		gndPose = eval(f.read().rstrip())
 		f.close()
 
-		self.setEstPose(gndPose)
+		self.setEstPose(estPose)
 		self.setGndPose(gndPose)
 
 		f = open(dirName + "/posture%04u.txt" % self.nodeID, 'r')

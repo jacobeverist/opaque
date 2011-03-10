@@ -5,6 +5,7 @@ import scipy
 import scipy.linalg
 import numpy
 import numpy.linalg
+import random
 
 
 import graph
@@ -22,7 +23,7 @@ from Pose import Pose
 import gen_icp
 from functions import *
 import toro
-
+import scsgp
 
 import pylab
 from matplotlib.patches import Circle
@@ -36,6 +37,10 @@ import ImageDraw
 # Map Space Parameters
 PIXELSIZE = 0.05
 MAPSIZE = 20.0
+
+naives = []
+gnds = []
+ests = []
 
 class MapGraph:
 
@@ -86,7 +91,11 @@ class MapGraph:
 		self.childEntities = []
 		
 		self.boundParentNode = 0
-
+		
+		self.naives = []
+		self.gnds = []
+		self.ests = []
+		
 		if False:
 			for k in range(1):
 				pylab.clf()
@@ -316,6 +325,7 @@ class MapGraph:
 			#transform = matrix([[pose2[0]], [pose2[1]], [pose2[2]]])
 			
 			transform = matrix([[xT], [yT], [pT]])
+			print "transform:", xT, yT, pT
 			covE = matrix([[ 0.1, 0.0, 0.0 ],
 							[ 0.0, 0.1, 0.0],
 							[ 0.0, -0.0, pi/4.0 ]])
@@ -338,11 +348,16 @@ class MapGraph:
 			else:
 				firstGuess = self.makeGuess(i, j, -stepDist)
 
+			firstDist = sqrt(firstGuess[0]*firstGuess[0] + firstGuess[1]*firstGuess[1])
+
+
 			print
 			print "adding naive motion constraint", i, j
-			print firstGuess
-			print "dist =", sqrt(firstGuess[0]*firstGuess[0] + firstGuess[1]*firstGuess[1])
+			#print "offset:", firstGuess
+			#print "offset dist:", firstDist
 
+			self.naives.append([firstDist, firstGuess])
+			
 			pose1 = copy(self.poseGraph.get_node_attributes(i).getGndPose())
 			pose2 = copy(self.poseGraph.get_node_attributes(j).getGndPose())
 
@@ -359,18 +374,48 @@ class MapGraph:
 
 			xT = cos(pA)*(xB-xA) + sin(pA)*(yB-yA)
 			yT = -sin(pA)*(xB-xA) + cos(pA)*(yB-yA)
-			pT = pB - pA
+			pT = normalizeAngle(pB - pA)
 			
 			gndOffset = [xT, yT, pT]
+			gndDist = sqrt(xT*xT + yT*yT)			
+			#print "gnd offset:", gndOffset
+			#print "gnd dist:", gndDist
 			
-			print gndOffset
-			print "dist =", sqrt(xT*xT + yT*yT)
+			self.gnds.append([gndDist, gndOffset])
+				
+			estpose1 = copy(self.poseGraph.get_node_attributes(i).getEstPose())
+			estpose2 = copy(self.poseGraph.get_node_attributes(j).getEstPose())
+
+			xA = estpose1[0]
+			yA = estpose1[1]
+			pA = estpose1[2]
+			
+			xB = estpose2[0]
+			yB = estpose2[1]
+			pB = estpose2[2]
+
+			xT = cos(pA)*(xB-xA) + sin(pA)*(yB-yA)
+			yT = -sin(pA)*(xB-xA) + cos(pA)*(yB-yA)
+			pT = normalizeAngle(pB - pA)
+			
+			estOffset = [xT, yT, pT]
+			estDist = sqrt(xT*xT + yT*yT)
+			#print "est offset:", estOffset
+			#print "est dist:", estDist
+	
+			self.ests.append([estDist, estOffset])	
 			
 			" FIXME:  add covariance from vector in guess direction "
-			transform = matrix([[firstGuess[0]], [firstGuess[1]], [firstGuess[2]]])
-			covE = matrix([[ 0.1, 0.0, 0.0 ],
-							[ 0.0, 0.1, 0.0],
-							[ 0.0, -0.0, pi/4.0 ]])
+			#transform = matrix([[firstGuess[0]], [firstGuess[1]], [firstGuess[2]]])
+			#transform = matrix([[gndOffset[0]], [gndOffset[1]], [gndOffset[2]]])
+			#covE = matrix([[ 0.1, 0.0, 0.0 ],
+			#				[ 0.0, 0.1, 0.0],
+			#				[ 0.0, -0.0, pi/4.0 ]])
+			
+			transform = matrix([[estOffset[0]], [estOffset[1]], [estOffset[2]]])
+			covE = matrix([[ 7.18789524,  0.26802804, -0.01118845],
+			        [ 0.26802804,  7.14705511, -2.22905205],
+			        [-0.01118845, -2.22905205,  3.55224096]])
 			
 			self.poseGraph.add_edge(i, j, attrs = [transform, covE])
 
@@ -413,7 +458,7 @@ class MapGraph:
 			estPose2 = poseProfile1.convertLocalOffsetToGlobal(gndOffset) 
 			poseProfile2 = Pose(estPose2)
 			poseProfile2 = Pose(pose2)
-			print pose2, estPose2
+			#print pose2, estPose2
 
 
 			xP = []
@@ -670,8 +715,8 @@ class MapGraph:
 
 	def dijkstra_proj(self, initNode = 0):
 		
-		identTransform = matrix([[0.], [0.], [0.]])
-		zeroCov = matrix([[0.,0.,0.],[0.,0.,0.],[0.,0.,0.]])
+		identTransform = matrix([[0.], [0.], [0.]],dtype=float)
+		zeroCov = matrix([[0.,0.,0.],[0.,0.,0.],[0.,0.,0.]],dtype=float)
 		
 		paths = {initNode : [identTransform, zeroCov] }
 		
@@ -734,7 +779,7 @@ class MapGraph:
 				y1 = sin(pA)*xA - cos(pA)*yA
 				p1 = normalizeAngle(-pA)
 
-				newTransform = matrix([[x1], [y1], [p1]])
+				newTransform = matrix([[x1], [y1], [p1]],dtype=float)
 
 				paths[incid] = [newTransform, covE]
 				dist = linalg.det(covE)
@@ -809,10 +854,10 @@ class MapGraph:
 						
 						T_c_a = matrix([[x1 + x2*cos(p1) - y2*sin(p1)],
 										[y1 + x2*sin(p1) + y2*cos(p1)],
-										[p1+p2]])
+										[p1+p2]],dtype=float)
 						
-						J1 = matrix([[1,0,-x2*sin(p1) - y2*cos(p1)],[0,1,x2*cos(p1) - y2*sin(p1)],[0,0,1]])
-						J2 = matrix([[cos(p1), -sin(p1), 0], [sin(p1), cos(p1), 0], [0, 0, 1]])
+						J1 = matrix([[1,0,-x2*sin(p1) - y2*cos(p1)],[0,1,x2*cos(p1) - y2*sin(p1)],[0,0,1]],dtype=float)
+						J2 = matrix([[cos(p1), -sin(p1), 0], [sin(p1), cos(p1), 0], [0, 0, 1]],dtype=float)
 						
 						E_a_c = J1 * E_a_b * J1.T + J2 * E_b_c * J2.T
 	
@@ -852,10 +897,10 @@ class MapGraph:
 
 						T_c_a = matrix([[x1 + x2*cos(p1) - y2*sin(p1)],
 										[y1 + x2*sin(p1) + y2*cos(p1)],
-										[p1+p2]])
+										[p1+p2]],dtype=float)
 				
-						J1 = matrix([[1,0,-x2*sin(p1) - y2*cos(p1)],[0,1,x2*cos(p1) - y2*sin(p1)],[0,0,1]])
-						J2 = matrix([[cos(p1), -sin(p1), 0], [sin(p1), cos(p1), 0], [0, 0, 1]])
+						J1 = matrix([[1,0,-x2*sin(p1) - y2*cos(p1)],[0,1,x2*cos(p1) - y2*sin(p1)],[0,0,1]],dtype=float)
+						J2 = matrix([[cos(p1), -sin(p1), 0], [sin(p1), cos(p1), 0], [0, 0, 1]],dtype=float)
 
 						#J1 = matrix([[1,0,-x2*sin(p1) - y2*cos(p1)],[0,1,x2*cos(p1) - y2*sin(p1)],[0,0,1]])
 						#J2 = matrix([[cos(p1), -sin(p1), 0], [sin(p1), cos(p1), 0], [0, 0, 1]])
@@ -887,7 +932,11 @@ class MapGraph:
 	def correctPoses3(self):
 
 
+		#SENSOR_RADIUS = 0.25
+		#SENSOR_RADIUS = 2.0
+		SENSOR_RADIUS = 0.0
 		DIST_THRESHOLD = 3.0
+		#DIST_THRESHOLD = 1.0
 
 		def mahab_dist(c1, c2, r1, r2, E):
 
@@ -915,7 +964,7 @@ class MapGraph:
 		
 		" select pairs to attempt a sensor constraint "
 		pair_candidates = []
-		print "CANDIDATES:"
+		#print "CANDIDATES:"
 		for i in range(self.numNodes):
 			path_set = paths[i]
 			
@@ -925,14 +974,14 @@ class MapGraph:
 			for j in ind:				
 				loc2 = path_set[j][0]
 				
-				c1 = matrix([[0.0],[0.0]])
-				c2 = matrix([[loc2[0,0]],[loc2[1,0]]])
+				c1 = matrix([[0.0],[0.0]],dtype=float)
+				c2 = matrix([[loc2[0,0]],[loc2[1,0]]],dtype=float)
 				E_param = path_set[j][1]
-				E = matrix([[E_param[0,0], E_param[0,1]],[E_param[1,0], E_param[1,1]]])
+				E = matrix([[E_param[0,0], E_param[0,1]],[E_param[1,0], E_param[1,1]]],dtype=float)
 				
-				dist = mahab_dist(c1, c2, 0.25, 0.25, E)
+				dist = mahab_dist(c1, c2, SENSOR_RADIUS, SENSOR_RADIUS, E)
 				
-				#print i, j, dist
+				print "distance:", i, j, dist
 				if dist <= DIST_THRESHOLD:
 					pair_candidates.append([dist,i,j,loc2])
 				
@@ -943,16 +992,18 @@ class MapGraph:
 				
 				loc2 = path_set[j][0]
 				
-				c1 = matrix([[0.0],[0.0]])
-				c2 = matrix([[loc2[0,0]],[loc2[1,0]]])
+				c1 = matrix([[0.0],[0.0]],dtype=float)
+				c2 = matrix([[loc2[0,0]],[loc2[1,0]]],dtype=float)
 				E_param = path_set[j][1]
-				E = matrix([[E_param[0,0], E_param[0,1]],[E_param[1,0], E_param[1,1]]])
+				E = matrix([[E_param[0,0], E_param[0,1]],[E_param[1,0], E_param[1,1]]],dtype=float)
 				
-				dist = mahab_dist(c1, c2, 0.25, 0.25, E)
+				dist = mahab_dist(c1, c2, SENSOR_RADIUS, SENSOR_RADIUS, E)
 				
-				#print i, j, dist
+				print "distance:", i, j, dist
 				if dist <= DIST_THRESHOLD:
 					pair_candidates.append([dist,i,j,loc2])
+
+		#exit()
 
 		" remove duplicates "
 		pair_unique = []
@@ -985,10 +1036,12 @@ class MapGraph:
 					pair_unique.append(pair_candidates[i])
 					is_free[i] = False
 
-		print "UNIQUE PAIRS"
+		#print "UNIQUE PAIRS"
 		#for p in pair_unique:
 		#	print p[0], p[1], p[2]
-
+		
+		#exit()
+		
 		def decimatePoints(points):
 			result = []
 		
@@ -1020,16 +1073,16 @@ class MapGraph:
 		
 		for p in pair_unique:
 			if not hull_computed[p[1]]:
-				print "compute hull", p[1]
+				#print "compute hull", p[1]
 				a_hulls[p[1]] = computeHull(p[1])
 				hull_computed[p[1]] = True
 
 			if not hull_computed[p[2]]:
-				print "compute hull", p[2]
+				#print "compute hull", p[2]
 				a_hulls[p[2]] = computeHull(p[2])
 				hull_computed[p[2]] = True
 			
-			print p[1], p[2], p[0]
+			#print p[1], p[2], p[0]
 
 		
 		#trans_hulls = [0 for i in range(self.numNodes)]
@@ -1056,7 +1109,7 @@ class MapGraph:
 			n1 = p[1]
 			n2 = p[2]
 			offset, covar = self.makeSensorConstraint(transform, n1, n2, a_hulls[n1], a_hulls[n2])
-			transform = matrix([ [offset[0]], [offset[1]], [offset[2]] ])
+			transform = matrix([ [offset[0]], [offset[1]], [offset[2]] ],dtype=float)
 			hypotheses.append([p[1],p[2],transform,covar])
 
 		" need more hypotheses "
@@ -1077,10 +1130,10 @@ class MapGraph:
 		
 			newT = matrix([[x1 + x2*cos(p1) - y2*sin(p1)],
 				[y1 + x2*sin(p1) + y2*cos(p1)],
-				[p1+p2]])
+				[p1+p2]],dtype=float)
 		
-			J1 = matrix([[1,0,-x2*sin(p1) - y2*cos(p1)],[0,1,x2*cos(p1) - y2*sin(p1)],[0,0,1]])
-			J2 = matrix([[cos(p1), -sin(p1), 0], [sin(p1), cos(p1), 0], [0, 0, 1]])
+			J1 = matrix([[1,0,-x2*sin(p1) - y2*cos(p1)],[0,1,x2*cos(p1) - y2*sin(p1)],[0,0,1]],dtype=float)
+			J2 = matrix([[cos(p1), -sin(p1), 0], [sin(p1), cos(p1), 0], [0, 0, 1]],dtype=float)
 								
 			newE = J1 * E1 * J1.T + J2 * E2 * J2.T
 			
@@ -1107,8 +1160,6 @@ class MapGraph:
 				n1 = hyp2[0]
 				n2 = hyp2[1]
 				
-				"FIXME:  check the case where optimal path is identity "
-				
 				Tp1 = paths[m2][n1][0]
 				Ep1 = paths[m2][n1][1]
 				
@@ -1121,7 +1172,7 @@ class MapGraph:
 				" m1->m2, m2->n1, n1->n2, n2->m1 "
 				" Th1, Tp1, Th2, Tp2 "
 				
-				covE = matrix([[ 0.1, 0.0, 0.0 ], [ 0.0, 0.1, 0.0], [ 0.0, 0.0, pi/4.0 ]]) 
+				covE = matrix([[ 0.1, 0.0, 0.0 ], [ 0.0, 0.1, 0.0], [ 0.0, 0.0, pi/4.0 ]],dtype=float) 
 				result1 = Th1
 				result2, cov2 = doTransform(result1, Tp1, covE, Ep1)
 				result3, cov3 = doTransform(result2, Th2, cov2, covE)
@@ -1144,29 +1195,170 @@ class MapGraph:
 		results.sort()
 		
 		" create the consistency matrix "
-		
-		A = matrix(len(hypotheses)*len(hypotheses)*[0.0], float32)
+		A = matrix(len(hypotheses)*len(hypotheses)*[0.0], dtype=float)
 		A.resize(len(hypotheses), len(hypotheses))
+
+		#print repr(A)
+		#print A[0]
+		#print A[1]
+		#print A[2]
+		
+		#print A[0,0]
+		#print A[0,1]
+		#print A[0,2]
+		#print A[2,2]
 		
 		maxError = 0.0
 		for result in results:
 			if result[0] > maxError:
 				maxError = result[0]
-		
+				
+		#print "A:", A
 		print "maxError:", maxError
 		
 		for result in results:
-			print result[0], maxError-result[0]
+			#print result[0], maxError-result[0]
+			i = result[1]
+			j = result[2]
+			#print "i,j:", i, j
 			A[i,j] = maxError - result[0]
 			A[j,i] = maxError - result[0]
+			
+		#print "A:"
+		#print repr(A)
+		" disable the truncation "
+		set_printoptions(threshold=nan)
+
+		fn = open("A.txt",'w')
+		fn.write(repr(A))
+		fn.close()
 		
 		
-		print A
-		
-		w, v = numpy.linalg.eig(A)
+		" do graph clustering of consistency matrix "
+	
+		e = scsgp.dominantEigenvectors(A)
+		w = scsgp.getIndicatorVector(e[0])
 		
 		print w
-		print v
+		
+		exit()
+		
+		" compute eigenvectors from power method "
+		
+		def rand_vector(n):
+			vec_n = matrix([[0.0] for i in range(n)],dtype=float)
+			sum = 0.0
+
+			for i in range(n):
+				vec_n[i][0] = random.uniform(0,1)
+				sum += vec_n[i][0]* vec_n[i][0]
+			
+			mag = sqrt(sum)
+			
+			for i in range(n):
+				vec_n[i][0] /= mag
+			
+			return vec_n
+			
+		K = 5
+		e = [numpy.matrix([],dtype=float) for i in range(len(hypotheses))]
+		
+		lmbda = [0.0 for i in range(len(hypotheses))]
+		
+		for i in range(len(hypotheses)):
+			e[i] = rand_vector(len(hypotheses))
+			#print e
+			for iters in range(K):
+				for j in range(i):
+					#print "i,j:", i,j
+					#print "e[i]:", e[i]
+					#print "e[j]:", e[j]
+
+					#alpha = numpy.multiply(e[j], e[i])
+					alpha = numpy.dot(e[j].transpose(), e[i])
+					alpha = alpha[0,0]
+					
+					#print "alpha:", alpha
+					
+					if i == 1:
+						print "e[1] before:", e[i]
+					e[i] = e[i] - alpha * e[j]
+					if i == 1:
+						print "e[1] after:", e[i]
+				
+				sum = 0.0
+				for k in range(len(e[i])):
+					sum += e[i][k]* e[i][k]				
+				mag = sqrt(sum)
+				
+				e[i] = e[i] / mag
+				#print "step 1:", e[i]
+				e[i] = A * e[i]
+				#print "step 2:", e[i]
+				
+				sum = 0.0
+				for k in range(len(e[i])):
+					sum += e[i][k]* e[i][k]				
+				lmbda[i] = sqrt(sum)
+				
+			sum = 0.0
+			for k in range(len(e[i])):
+				sum += e[i][k]* e[i][k]				
+			mag = sqrt(sum)		
+			
+			e[i] = e[i] / mag
+			#print "step 3:", e[i]
+		
+		print "eigenvectors:", e[0]
+		
+		e_w, e_v = numpy.linalg.eig(A)
+		print "eigenvectors2:", e_w
+		
+		
+		"FIXME: add in threshold test l1 / l2"
+		
+		print "Power Method:"
+		print "lambda:", lmbda
+		#for i in range(len(hypotheses)):
+		#	print e[i]
+		
+		" create tuples of eigenvector elements and associated hypotheses "
+		tups = []
+		domVector = e[0]
+		for i in range(len(hypotheses)):
+			tups.append((domVector[i,0], hypotheses[i], i))
+			
+		tups.sort()
+		tups.reverse()
+		
+		
+		" maximize the dot product of v and w "
+		v = numpy.matrix([[tups[i][0]] for i in range(len(tups))], dtype=float)
+		w = numpy.matrix([[0.0] for i in range(len(tups))], dtype=float)
+		wp = numpy.matrix([[0.0] for i in range(len(tups))], dtype=float)
+		
+		for i in range(len(tups)):
+			print tups[i][0]
+			w[i,0] = 1
+			val = numpy.dot(w.transpose(), v)
+			val = val[0,0] / sqrt(1+i)
+			#print "w:", w
+			print "dot:", val
+		
+			wp[tups[i][2],0] = 1
+			
+			#print "wp:", wp
+			
+			val2 = (wp.transpose() * A * wp) / (numpy.dot(wp.transpose(),wp)[0,0])
+			#print "eqn :", val2[0,0]
+			#print
+		
+		#print A
+		
+		#w, v = numpy.linalg.eig(A)
+		
+		#print w
+		#print v
 		
 		
 		#print len(results), "results"
@@ -1243,7 +1435,6 @@ class MapGraph:
 		
 		#print "constraints:", constraints
 		
-		hypotheses
 		
 		for k in constraints:
 			hyp = hypotheses[k]

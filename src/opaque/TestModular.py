@@ -14,6 +14,7 @@ from behaviors.AdaptiveStep import AdaptiveStep
 from pose.AverageContacts import AverageContacts
 from maps.MapGraph import MapGraph
 
+import numpy
 
 class TestModular(SnakeControl):
 
@@ -129,8 +130,89 @@ class TestModular(SnakeControl):
 
 				self.global_output.write(repr(poses))
 				self.global_output.write('\n')
+	
+	def computeCovar(self):
+		N = len(self.mapGraph.naives)
 		
+		for i in range(N):
+			x = self.mapGraph.ests[i][1][0]
+			y = self.mapGraph.ests[i][1][1]
+			p = self.mapGraph.ests[i][1][2]
 
+			xGnd = self.mapGraph.gnds[i][1][0]
+			yGnd = self.mapGraph.gnds[i][1][1]
+			pGnd = self.mapGraph.gnds[i][1][2]
+
+		avgDist= 0.0
+		for i in range(N):
+			#print self.mapGraph.gnds[i][0], self.mapGraph.ests[i][0], self.mapGraph.naives[i][0]
+			
+			avgDist += self.mapGraph.gnds[i][0]
+			
+		avgDist /= N
+
+		#print "compute mean of gnd offset"
+		avgX = 0.0
+		avgY = 0.0
+		avgPx = 0.0
+		avgPy = 0.0
+		for i in range(N):
+			avgX += self.mapGraph.gnds[i][1][0]
+			avgY += self.mapGraph.gnds[i][1][1]
+			
+			P = self.mapGraph.gnds[i][1][2]
+			avgPx += cos(P)
+			avgPy += sin(P)
+			
+		avgX /= N
+		avgY /= N
+		avgPx /= N
+		avgPy /= N
+		avgP = atan2(avgPy, avgPx)
+		
+		#print "average x,y:", avgX, avgY
+		#print "average dist:", avgDist
+		#print "average angle:", avgP
+
+		stdX = 0.0
+		stdY = 0.0
+		stdP = 0.0
+
+		Exx = 0.0
+		Exy = 0.0
+		Exp = 0.0
+		Eyp = 0.0
+		Eyy = 0.0
+		Epp = 0.0
+		
+		for i in range(N):
+			
+			x = self.mapGraph.ests[i][1][0]
+			y = self.mapGraph.ests[i][1][1]
+			p = self.mapGraph.ests[i][1][2]
+			
+			Exx += (x - avgX) * (x - avgX)
+			Exy += (x - avgX) * (y - avgY)
+			Exp += (x - avgX) * (p - avgP)
+			Eyp += (y - avgY) * (p - avgP)
+			Eyy += (y - avgY) * (y - avgY)
+			Epp += (p - avgP) * (p - avgP)
+			
+		#print "pre:", Exx, Eyy, Epp, Exy, Exp, Eyp
+		Exx /= N
+		Exy /= N
+		Exp /= N
+		Eyp /= N
+		Eyy /= N
+		Epp /= N
+		
+		E = numpy.matrix([[Exx, Exy, Exp],
+					[Exy, Eyy, Eyp],
+					[Exp, Eyp, Epp]])
+		#print "covar:", Exx, Eyy, Epp, Exy, Exp, Eyp	
+
+		return E
+	
 	def frameStarted(self):
 		
 		#self.grabImage()
@@ -195,9 +277,15 @@ class TestModular(SnakeControl):
 			#self.mapGraph.loadFile("uncorrectedNX", 6)
 			#self.mapGraph.loadFile("testData/mapBuild_21June2010", 66)
 			#self.mapGraph.loadFile("testData/poseTest", 3)
-			self.mapGraph.loadFile("testData/poseTest", 5)
+			#self.mapGraph.loadFile("testData/poseTest", 5)
 			#self.mapGraph.loadFile("testData/poseTest", 8)
+			self.mapGraph.loadFile("testData/poseTest", 16)
 
+			E = self.computeCovar()
+			print repr(E)
+
+
+			
 			#self.mapGraph.newNode(0.0, self.direction)
 			#self.mapGraph.forceUpdate(False)
 			#self.mapGraph.synch()
