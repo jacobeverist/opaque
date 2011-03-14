@@ -1351,6 +1351,308 @@ def gen_ICP2(estPose1, offset, pastHull, targetHull, pastCircles, costThresh = 0
 	return offset
 
 
+
+def findMotionConstraint(estPose1, offset, pastHull, targetHull, pastCircles, costThresh = 0.004, minMatchDist = 2.0, plotIter = False, n1 = 0, n2 = 0):
+
+	global numIterations
+	
+	lastCost = 1e100
+	
+	startIteration = numIterations
+
+	" set the initial guess "
+	poseOrigin = Pose(estPose1)
+	
+	#offset = poseOrigin.convertGlobalPoseToLocal(estPose2)
+	#print "offset =", offset
+
+	#exit()
+	" transform the past poses "
+	a_data_raw = targetHull
+	a_data = []
+	for p in a_data_raw:
+		result = dispPoint(p, offset)
+		#print offset, p, result
+		#print
+		
+		a_data.append(result)
+	
+	#print "targetHull =", targetHull
+	#print "a_trans =", a_trans
+	
+
+	
+	polyB = []		
+	for p in pastHull:
+		polyB.append([p[0],p[1]])	
+
+	while True:
+		" find the matching pairs "
+		match_pairs = []
+
+		a_data_raw = targetHull
+		b_data = pastHull			
+
+		" transform the target Hull with the latest offset "
+		a_data = []
+		for p in a_data_raw:
+			result = dispPoint(p, offset)
+			a_data.append(result)
+
+		" transformed points without associated covariance "
+		polyA = []
+		for p in a_data:
+			polyA.append([p[0],p[1]])	
+		
+		" get the circles and radii "
+		radiusA, centerA = computeEnclosingCircle(a_data)
+		#radiusB, centerB = computeEnclosingCircle(pastHull)
+		
+		if True:
+			for i in range(len(a_data)):
+				a_p = polyA[i]
+	
+				#if isValid(a_p, radiusB, centerB, polyB):
+				if isValidPast(a_p, pastCircles, polyB):
+	
+					" for every transformed point of A, find it's closest neighbor in B "
+					b_p, minDist = findClosestPointInB(b_data, a_p, [0.0,0.0,0.0])
+		
+					if minDist <= minMatchDist:
+			
+						" add to the list of match pairs less than 1.0 distance apart "
+						" keep A points and covariances untransformed "
+						Ca = a_data_raw[i][2]
+						Cb = b_p[2]
+		
+						" we store the untransformed point, but the transformed covariance of the A point "
+						match_pairs.append([a_data_raw[i],b_p,Ca,Cb])
+
+		if True:
+			for i in range(len(b_data)):
+				b_p = polyB[i]
+		
+				if isValid(b_p, radiusA, centerA, polyA):
+			
+					#print "selected", b_p, "in circle", radiusA, centerA, "with distance"
+					" for every point of B, find it's closest neighbor in transformed A "
+					a_p, a_i, minDist = findClosestPointInA(a_data, b_p)
+		
+					if minDist <= minMatchDist:
+			
+						" add to the list of match pairs less than 1.0 distance apart "
+						" keep A points and covariances untransformed "
+						Ca = a_data_raw[a_i][2]
+						
+						Cb = b_data[i][2]
+		
+						" we store the untransformed point, but the transformed covariance of the A point "
+						match_pairs.append([a_data_raw[a_i],b_p,Ca,Cb])
+
+
+		" plot the initial configuration "
+		if plotIter and startIteration == numIterations:
+
+			numIterations += 1
+
+			pylab.clf()
+			pylab.axes()
+			match_global = []
+			
+			for pair in match_pairs:
+				p1 = pair[0]
+				p2 = pair[1]
+				
+				p1_o = dispOffset(p1, offset)
+				#p2_o = dispOffset(p2, offset)
+
+				
+				p1_g = poseOrigin.convertLocalToGlobal(p1_o)
+				p2_g = poseOrigin.convertLocalToGlobal(p2)
+				match_global.append([p1_g,p2_g])
+			
+			draw_matches(match_global, [0.0,0.0,0.0])
+			
+			xP = []
+			yP = []
+			for b in polyB:
+				p1 = poseOrigin.convertLocalToGlobal(b)
+
+				xP.append(p1[0])	
+				yP.append(p1[1])
+			
+			p1 = poseOrigin.convertLocalToGlobal(polyB[0])
+			xP.append(p1[0])	
+			yP.append(p1[1])
+			
+			pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+
+			xP = []
+			yP = []
+			for b in a_data_raw:
+				p = [b[0],b[1]]
+				p = dispOffset(p,offset)
+				
+				p1 = poseOrigin.convertLocalToGlobal(p)
+				xP.append(p1[0])	
+				yP.append(p1[1])
+			
+			p = [a_data_raw[0][0],a_data_raw[0][1]]
+			p = dispOffset(p,offset)
+
+			p1 = poseOrigin.convertLocalToGlobal(p)
+			xP.append(p1[0])	
+			yP.append(p1[1])
+
+			pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+
+			plotEnv()		
+			
+			pylab.xlim(-4,9)
+			pylab.ylim(-3,9)
+			pylab.title("%u %u" % (n1, n2))
+			#pylab.ylim(-7,5)
+			pylab.savefig("ICP_plot_%04u.png" % numIterations)
+			pylab.clf()					
+			
+		if False:
+			for pair in match_pairs:
+				a = pair[0]
+				b = pair[1]
+			
+				pylab.plot([a[0],b[0]], [a[1],b[1]],color=(1.0,0.0,0.0))
+			
+			pylab.show()
+			
+		#allCircles = deepcopy(pastCircles)
+		#allCircles.append([radiusA,centerA])
+
+		allCircles = [[radiusA,centerA]]
+
+		# optimize the match error for the current list of match pairs
+		newOffset = scipy.optimize.fmin(cost_func, offset, [match_pairs, a_data_raw, polyB, allCircles])
+	
+		# get the current cost
+		newCost = cost_func(newOffset, match_pairs)
+	
+		# check for convergence condition, different between last and current cost is below threshold
+		if abs(lastCost - newCost) < costThresh or (numIterations - startIteration) > 10:
+			offset = newOffset
+			lastCost = newCost
+			break
+	
+		numIterations += 1
+
+		offset = newOffset
+
+		" reduce the minMatch distance for each step down to a floor value "
+		minMatchDist /= 2
+		if minMatchDist < 0.25:
+			minMatchDist = 0.25
+	
+		# optionally draw the position of the points in current transform
+		if plotIter:
+			pylab.clf()
+			pylab.axes()
+			match_global = []
+			
+			#match_pairs.append([a_data_raw[a_i],b_p,Ca,Cb])
+			
+			for pair in match_pairs:
+				p1 = pair[0]
+				p2 = pair[1]
+				
+				p1_o = dispOffset(p1, offset)
+				#p2_o = dispOffset(p2, offset)
+
+				
+				p1_g = poseOrigin.convertLocalToGlobal(p1_o)
+				p2_g = poseOrigin.convertLocalToGlobal(p2)
+				match_global.append([p1_g,p2_g])
+			
+			#draw_matches(match_pairs, offset)
+			draw_matches(match_global, [0.0,0.0,0.0])
+			
+			xP = []
+			yP = []
+			for b in polyB:
+				p1 = poseOrigin.convertLocalToGlobal(b)
+
+				xP.append(p1[0])	
+				yP.append(p1[1])
+				#xP.append(b[0])	
+				#yP.append(b[1])
+			
+			p1 = poseOrigin.convertLocalToGlobal(polyB[0])
+			xP.append(p1[0])	
+			yP.append(p1[1])
+			#xP.append(polyB[0][0])	
+			#yP.append(polyB[0][1])
+			
+			pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+
+			xP = []
+			yP = []
+			for b in a_data_raw:
+				p = [b[0],b[1]]
+				p = dispOffset(p,offset)
+				
+				p1 = poseOrigin.convertLocalToGlobal(p)
+				xP.append(p1[0])	
+				yP.append(p1[1])
+				
+				#xP.append(p[0])	
+				#yP.append(p[1])
+			
+			p = [a_data_raw[0][0],a_data_raw[0][1]]
+			p = dispOffset(p,offset)
+
+			p1 = poseOrigin.convertLocalToGlobal(p)
+			xP.append(p1[0])	
+			yP.append(p1[1])
+
+			#xP.append(p[0])	
+			#yP.append(p[1])
+			
+			pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+
+			#cir = Circle( (0,0), radius=0.5)
+			#a.add_patch(cir)
+
+			plotEnv()		
+			
+			#for circle in pastCircles:
+			#	radius, center = circle
+			#	cir = pylab.Circle((center[0],center[1]), radius=radius,  fc='r')
+			#	pylab.gca().add_patch(cir)
+				
+			#cir = pylab.Circle((centerA[0],centerA[1]), radius=radiusA,  fc='r')
+			#pylab.gca().add_patch(cir)
+			#cir = pylab.Circle((.5,.5), radius=0.25, alpha =.2, fc='b')
+			#pylab.gca().add_patch(cir)
+
+			#pylab.xlim(-4.5,4.5)
+			#pylab.ylim(-4,4)
+			#pylab.xlim(-3,6)
+			#pylab.ylim(-4,4)
+			#pylab.xlim(-4,7)
+			#pylab.ylim(-7,3)
+			#pylab.xlim(-4,9)
+			#pylab.ylim(-7,5)
+			pylab.title("%u %u" % (n1, n2))
+			pylab.xlim(-4,9)
+			pylab.ylim(-3,9)
+			#pylab.axis('equal')
+			pylab.savefig("ICP_plot_%04u.png" % numIterations)
+			pylab.clf()			
+						
+		# save the current offset and cost
+		offset = newOffset
+		lastCost = newCost
+
+	offset[2] =  functions.normalizeAngle(offset[2])
+	return offset
+
 def plotEnv():
 
 	"""

@@ -1323,8 +1323,8 @@ class MapGraph:
 		minMatchDist = 2.0
 	
 		" plot the best fit at each iteration of the algorithm? "
-		plotIteration = True
-		#plotIteration = False
+		#plotIteration = True
+		plotIteration = False
 	
 		#offset = [0.0,0.0,0.0]
 	

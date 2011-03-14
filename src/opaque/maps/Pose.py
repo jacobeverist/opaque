@@ -26,6 +26,27 @@ class Pose:
 
 	   self.R = array([[cos(self.estPose[2]), sin(self.estPose[2])],[-sin(self.estPose[2]),cos(self.estPose[2])]])
 
+	def doInverse(self, offset):
+		
+		invOffset = [0.0,0.0,0.0]
+
+		offsetR = array([[cos(offset[2]), sin(offset[2])],[-sin(offset[2]),cos(offset[2])]])
+		finalVec = array([[offset[0]], [offset[1]]])
+		transVec = dot(offsetR, finalVec)
+		
+		transVec = -transVec
+		#print transVec
+		#print -transVec
+		
+		invOffset[0] = transVec[0, 0]
+		invOffset[1] = transVec[1, 0]
+		invOffset[2] = -offset[2]
+	   	
+		#print invOffset
+		
+		return invOffset
+	
+
 	def convertLocalOffsetToGlobal(self, offset):
 
 	   globalEst = [0.0,0.0,0.0]
