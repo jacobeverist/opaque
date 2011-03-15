@@ -1267,17 +1267,18 @@ def motionICP(points1, points2, offset, costThresh = 0.004, minMatchDist = 2.0, 
 	
 	lastCost = 1e100
 	startIteration = numIterations
+	
+	lastNumPairs = 1e100
 
-	" set the origin of pose 1 "
-	poseOrigin = Pose([0.0,0.0,0.0])
+
 	
 	" sample a series of points from the AIRL curves "
 	
 	" augment points with point-to-line covariances "
 	
 	" treat the points with the point-to-line constraint "
-	points1 = addAIRLVectorCovariance(points1)
-	points2 = addAIRLVectorCovariance(points2)
+	points1 = addAIRLVectorCovariance(points1,high_var=0.1)
+	points2 = addAIRLVectorCovariance(points2,high_var=0.1)
 	
 	" transform pose 2 by initial offset guess "
 	
@@ -1290,6 +1291,8 @@ def motionICP(points1, points2, offset, costThresh = 0.004, minMatchDist = 2.0, 
 	poly1 = []		
 	for p in points1:
 		poly1.append([p[0],p[1]])	
+
+
 
 	while True:
 		
@@ -1350,6 +1353,67 @@ def motionICP(points1, points2, offset, costThresh = 0.004, minMatchDist = 2.0, 
 		
 						" we store the untransformed point, but the transformed covariance of the A point "
 						match_pairs.append([points2[i_2],p_1,C2,C1])
+
+		if plotIter and startIteration == numIterations:
+			
+			" set the origin of pose 1 "
+			poseOrigin = Pose([0.0,0.0,0.0])
+	
+			pylab.clf()
+			pylab.axes()
+			match_global = []
+			
+			for pair in match_pairs:
+				p1 = pair[0]
+				p2 = pair[1]
+				
+				p1_o = dispOffset(p1, offset)
+				
+				p1_g = poseOrigin.convertLocalToGlobal(p1_o)
+				p2_g = poseOrigin.convertLocalToGlobal(p2)
+				match_global.append([p1_g,p2_g])
+			
+			draw_matches(match_global, [0.0,0.0,0.0])
+			
+			xP = []
+			yP = []
+			for b in poly1:
+				p1 = poseOrigin.convertLocalToGlobal(b)
+	
+				xP.append(p1[0])	
+				yP.append(p1[1])
+	
+			pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+	
+			xP = []
+			yP = []
+			for b in points2:
+				p = [b[0],b[1]]
+				p = dispOffset(p,offset)
+				
+				p1 = poseOrigin.convertLocalToGlobal(p)
+				xP.append(p1[0])	
+				yP.append(p1[1])
+			
+			pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+	
+			#plotEnv()		
+			
+			pylab.title("%u %u" % (n1, n2))
+			pylab.xlim(-3,3)
+			pylab.ylim(-3,3)
+			#pylab.axis('equal')
+			pylab.savefig("ICP_plot_%04u.png" % numIterations)
+			pylab.clf()			
+		
+		print "pairs =", len(match_pairs)
+						
+		#if len(match_pairs) < lastNumPairs:
+		#	lastNumPairs = len(match_pairs)
+		#else:
+		#	print "breaking"
+		#	break				
+						
 						
 		# optimize the match error for the current list of match pairs
 		newOffset = scipy.optimize.fmin(cost_func, offset, [match_pairs, [], [], []])
@@ -1358,6 +1422,7 @@ def motionICP(points1, points2, offset, costThresh = 0.004, minMatchDist = 2.0, 
 		newCost = cost_func(newOffset, match_pairs)
 	
 		# check for convergence condition, different between last and current cost is below threshold
+		#if abs(lastCost - newCost) < costThresh or (numIterations - startIteration) > 10:
 		if abs(lastCost - newCost) < costThresh or (numIterations - startIteration) > 10:
 			offset = newOffset
 			lastCost = newCost
@@ -1368,14 +1433,68 @@ def motionICP(points1, points2, offset, costThresh = 0.004, minMatchDist = 2.0, 
 		offset = newOffset
 
 		" reduce the minMatch distance for each step down to a floor value "
-		minMatchDist /= 2
+		#minMatchDist /= 2
 		if minMatchDist < 0.25:
 			minMatchDist = 0.25
 	
-					
+		
 		# save the current offset and cost
 		offset = newOffset
 		lastCost = newCost
+		
+		
+		# optionally draw the position of the points in current transform
+		if plotIter:
+			
+			" set the origin of pose 1 "
+			poseOrigin = Pose([0.0,0.0,0.0])
+	
+			pylab.clf()
+			pylab.axes()
+			match_global = []
+			
+			for pair in match_pairs:
+				p1 = pair[0]
+				p2 = pair[1]
+				
+				p1_o = dispOffset(p1, offset)
+				
+				p1_g = poseOrigin.convertLocalToGlobal(p1_o)
+				p2_g = poseOrigin.convertLocalToGlobal(p2)
+				match_global.append([p1_g,p2_g])
+			
+			draw_matches(match_global, [0.0,0.0,0.0])
+			
+			xP = []
+			yP = []
+			for b in poly1:
+				p1 = poseOrigin.convertLocalToGlobal(b)
+
+				xP.append(p1[0])	
+				yP.append(p1[1])
+
+			pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+
+			xP = []
+			yP = []
+			for b in points2:
+				p = [b[0],b[1]]
+				p = dispOffset(p,offset)
+				
+				p1 = poseOrigin.convertLocalToGlobal(p)
+				xP.append(p1[0])	
+				yP.append(p1[1])
+			
+			pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+
+			#plotEnv()		
+			
+			pylab.title("%u %u" % (n1, n2))
+			pylab.xlim(-3,3)
+			pylab.ylim(-3,3)
+			#pylab.axis('equal')
+			pylab.savefig("ICP_plot_%04u.png" % numIterations)
+			pylab.clf()			
 
 	offset[2] =  functions.normalizeAngle(offset[2])
 	

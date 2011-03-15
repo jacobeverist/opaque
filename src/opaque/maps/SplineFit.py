@@ -35,9 +35,9 @@ class SplineFit:
 		
 		samples = scipy.arange(0.0,1.0,0.01)
 		sample_points = self.getUVecSet(samples)
-		print len(sample_points)
+		#print len(sample_points)
 		sample_points = self.makePointsUniform(sample_points)
-		print len(sample_points)
+		#print len(sample_points)
 
 		#for p in sample_points:
 		#	print p

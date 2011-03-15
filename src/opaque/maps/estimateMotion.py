@@ -45,15 +45,15 @@ def makeGuess2(centerCurve1, centerCurve2, stepDist, posture1, posture2, originP
     
     originProfile = Pose(originPose)
     
-    oP = originProfile.convertLocalToGlobal([curve1Pose[0],curve1Pose[1]])
-    xP = [oP[0]]
-    yP = [oP[1]]
-    pylab.scatter(xP,yP, color='k')
+    #oP = originProfile.convertLocalToGlobal([curve1Pose[0],curve1Pose[1]])
+    #xP = [oP[0]]
+    #yP = [oP[1]]
+    #pylab.scatter(xP,yP, color='k')
 
-    nP = originProfile.convertLocalToGlobal([xCurveLocalDes2,yCurveLocalDes2])
-    xP = [nP[0]]
-    yP = [nP[1]]
-    pylab.scatter(xP,yP, color='b')
+    #nP = originProfile.convertLocalToGlobal([xCurveLocalDes2,yCurveLocalDes2])
+    #xP = [nP[0]]
+    #yP = [nP[1]]
+    #pylab.scatter(xP,yP, color='b')
 
     " convert the desired intersection point on curve 1 into global coordinates "
     poseProfile1 = Pose([0.0,0.0,0.0])
@@ -85,7 +85,7 @@ def makeGuess2(centerCurve1, centerCurve2, stepDist, posture1, posture2, originP
     #print "localOffset:", localOffset
 
     
-    plotOffset(originPose, localOffset, posture1, posture2)
+    #plotOffset(originPose, localOffset, posture1, posture2)
        
     return [localOffset[0], localOffset[1], localOffset[2]]
 
@@ -363,13 +363,17 @@ if __name__ == '__main__':
         
     pylab.show()
     """
+
+    #fixed_offset = gen_icp.motionICP(samples[7], samples[8], naives[7], plotIter = True, n1 = 7, n2 = 8)
+    #plotOffset(gndPoses[7], fixed_offset, localPostures[7], localPostures[8])
     
     results = []
     for i in range(len(samples)-1):
-        results.append(gen_icp.motionICP(samples[i], samples[i+1], naives[i]))
+        results.append(gen_icp.motionICP(samples[i], samples[i+1], naives[i], plotIter = True, n1 = i, n2 = i+1))
         
     for i in range(len(results)):
         plotOffset(gndPoses[i], results[i], localPostures[i], localPostures[i+1])
+        plotOffset(gndPoses[i], gnds[i], localPostures[i], localPostures[i+1])
 
                
     
