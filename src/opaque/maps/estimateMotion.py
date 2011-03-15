@@ -2,9 +2,11 @@ from SplineFit import SplineFit
 from Pose import Pose
 import computeCovar
 from math import *
+#from copy import copy
 from functions import normalizeAngle
 import pylab
 import numpy
+import gen_icp
 
 estPlotCount = 0
 
@@ -77,7 +79,7 @@ def makeGuess2(centerCurve1, centerCurve2, stepDist, posture1, posture2, originP
     #print "rev:", resProfile.convertLocalOffsetToGlobal(curve2Pose)
     desGlobalPose2Rev = Pose(resProfile.convertLocalOffsetToGlobal(curve2Pose))
     negCurveDesOffset2 = desGlobalPose2Rev.doInverse(curveDesOffset2)
-    print desGlobalPose2Rev.convertLocalOffsetToGlobal(negCurveDesOffset2)
+    #print desGlobalPose2Rev.convertLocalOffsetToGlobal(negCurveDesOffset2)
 
     localOffset = poseProfile1.convertGlobalPoseToLocal(resPose2)
     #print "localOffset:", localOffset
@@ -100,37 +102,6 @@ def makeGuess2(centerCurve1, centerCurve2, stepDist, posture1, posture2, originP
     
     #return globalCurve2
 
-
-def makeGuess(centerCurve1, centerCurve2, stepDist):
-
-    " align the root vectors "
-    vec1 = centerCurve1.getUVector(0.5)
-    vec2 = centerCurve2.getUVector(0.5)
-    
-    
-    angle1 = acos(vec1[0])
-    if asin(vec1[1])  < 0:
-        angle1 = -angle1
-
-    angle2 = acos(vec2[0])
-    if asin(vec2[1]) < 0:
-        angle2 = -angle2
-        
-    angle = normalizeAngle(angle2 - angle1)
-    
-    " root nodes, start at [0,0,0] "
-    
-    " we want to project stepDist in the direction of angle 2 "
-    xStep = stepDist * cos(angle2)
-    yStep = stepDist * sin(angle2)
-
-    " now compute the offset terms "    
-    xT = cos(0)*(xStep) + sin(0)*(yStep)
-    yT = -sin(0)*(xStep) + cos(0)*(yStep)
-    pT = normalizeAngle(angle2-angle1)
-
-    return [-xT, -yT, -pT]
-    #return [xT, yT, pT]
 
 def plotPoses(pose1, pose2, posture1, posture2):
     global estPlotCount
@@ -329,26 +300,21 @@ if __name__ == '__main__':
         gnds.append(gndOffset)
         ests.append(estOffset)
         
-        #naiveOffset = makeGuess(centerCurves[i], centerCurves[i+1], 0.14)
         naiveOffset = makeGuess2(centerCurves[i], centerCurves[i+1], 0.2, localPostures[i], localPostures[i+1], originPose=gndPoses[i])
-        #naiveOffset = makeGuess2(centerCurves[i], centerCurves[i+1], 0.64, localPostures[i], localPostures[i+1], originPose=gndPoses[i])
-        #naiveOffset = makeGuess2(centerCurves[i], centerCurves[i+1], 0.64, localPostures[i], localPostures[i+1])
-
-        plotPoses(gndPoses[i], gndPoses[i+1], localPostures[i], localPostures[i+1])
         naives.append(naiveOffset)
         
     #print gnds[0], naives[0]
 
     #print computeCovar.computeCovar(gnds, ests)
-    #print computeCovar.computeCovar(gnds, gnds)
-    #print computeCovar.computeCovar(gnds, naives)
+    print computeCovar.computeCovar(gnds, gnds)
+    print computeCovar.computeCovar(gnds, naives)
 
     for i in range(numPoses-1):
         pass
         #print "x:", gnds[i][0], naives[i][0]    
         #print "y:", gnds[i][1], naives[i][1]    
         #print "p:", gnds[i][2], naives[i][2]
-        #print abs(gnds[i][0] - naives[i][0]), abs(gnds[i][1] - naives[i][1]), abs(gnds[i][2] - naives[i][2])
+        print abs(gnds[i][0] - naives[i][0]), abs(gnds[i][1] - naives[i][1]), abs(gnds[i][2] - naives[i][2])
     
     " plot estimated positions "
     #plotOffset(gndPoses[0], gnds[0], localPostures[0], localPostures[1])
@@ -376,7 +342,36 @@ if __name__ == '__main__':
     globalPose2 = testPose2.convertLocalOffsetToGlobal(offset)
     
     " compare that the two are equal "
-    print initPose, globalPose2
+    #print initPose, globalPose2
+    
+    samples = []
+    for i in range(len(centerCurves)):
+        samples.append(centerCurves[i].getUniformSamples())
+    
+    """   
+    pylab.clf()
+    for i in range(len(samples)):
+        
+        xP = []
+        yP = []
+        for p in samples[i]:
+            xP.append(p[0])
+            yP.append(p[1])
+            
+        pylab.plot(xP,yP)
+        pylab.scatter(xP,yP)
+        
+    pylab.show()
+    """
+    
+    results = []
+    for i in range(len(samples)-1):
+        results.append(gen_icp.motionICP(samples[i], samples[i+1], naives[i]))
+        
+    for i in range(len(results)):
+        plotOffset(gndPoses[i], results[i], localPostures[i], localPostures[i+1])
+
+               
     
     
     

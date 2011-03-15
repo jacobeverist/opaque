@@ -63,9 +63,6 @@ fig = pylab.figure()
 " displace the point by the offset plus modify it's covariance "
 def dispPoint(p, offset):
 	
-
-
-
 	xd = offset[0]
 	yd = offset[1]
 	theta = offset[2]
@@ -419,28 +416,6 @@ def computeVectorCovariance(vec,x_var,y_var):
 	
 	return Ca
 
-	#Cv = numpy.matrix([	[x_var, 0.0],
-	#		[0.0, y_var]
-	#		])
-
-	#mag = math.sqrt(vec[0]**2 + vec[1]**2)
-	#normVec = [vec[0]/mag, vec[1]/mag]
-
-	#if normVec[1] == 0:
-	#	R = numpy.matrix([	[1.0, 0.0],
-	#			[0.0, 1.0]
-	#			])
-
-	#else:
-	#	B = -1 / (normVec[1] + normVec[0]**2/normVec[1])
-	#	A = -normVec[0]*B/normVec[1]
-	#	R = numpy.matrix([	[A, -B],
-	#			[B, A]
-	#			])
-
-	#Ca = numpy.transpose(R) * Cv * R
-
-	#return Ca
 
 def findClosestPointInA(a_trans, b):
 
@@ -512,99 +487,14 @@ def findClosestPointInB(b_data, a, offset):
 def cost_func(offset, match_pairs, a_data_raw = [], polyB = [], circles = []):
 	global numIterations
 	global fig
-
-	
-	if False and len(a_data_raw) > 0 and len(polyB) > 0:
-		fig.clf()
-		ax = fig.add_subplot(111)
-
-		numIterations += 1
-		
-		#pylab.clf()
-		#pylab.axes()
-		draw_matches(match_pairs, offset)
-		
-		xP = []
-		yP = []
-		for b in polyB:
-			xP.append(b[0])	
-			yP.append(b[1])
-		
-		xP.append(polyB[0][0])	
-		yP.append(polyB[0][1])
-		
-		pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
-	
-		xP = []
-		yP = []
-		for b in a_data_raw:
-			p = [b[0],b[1]]
-			p = dispOffset(p,offset)
-			xP.append(p[0])	
-			yP.append(p[1])
-		
-		p = [a_data_raw[0][0],a_data_raw[0][1]]
-		p = dispOffset(p,offset)
-		xP.append(p[0])	
-		yP.append(p[1])
-		
-		pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
-	
-		#for circle in circles:
-		#	radius, center = circle
-		#	c1 = Circle([center[0], center[1]], radius)
-		#	ax.add_artist(c1)
-		#	c1.set_clip_box(ax.bbox)
-		#	c1.set_alpha(0.2)
-		#	c1.set_facecolor('r')
-		
-			#cir = pylab.Circle((center[0],center[1]), radius=radius,  fc='y')
-			#pylab.gca().add_patch(cir)
-	
-		pylab.xlim(-4.5,4.5)
-		pylab.ylim(-4,4)
-		#pylab.axis('equal')
-		pylab.savefig("ICP_plot_%04u.png" % numIterations)
-		pylab.clf()		
-	
 	
 	sum = 0.0
 	for pair in match_pairs:
 
-		#a = numpy.matrix([[pair[0][0]],[pair[0][1]]])
-		#b = numpy.matrix([[pair[1][0]],[pair[1][1]]])
-		
 		a = pair[0]
 		b = pair[1]
 		
 		sum += computeMatchError(offset, a, b, pair[2], pair[3])
-
-		#polyA_trans = dispOffsetMany(polyA, offset)
-		#originA = dispOffset([0.0,0.0], [offset[0], offset[1], 0.0])
-		#originB = dispOffset([0.0,0.0], [-offset[0], -offset[1], 0.0])
-
-		#print polyA_trans
-
-		"""
-		if functions.point_inside_polygon(originB[0],originB[1],polyA):
-			dist = math.sqrt(originA[0]**2 + originA[1]**2)
-			cost = 10000.0 * dist
-			sum += cost
-
-		if functions.point_inside_polygon(originA[0],originA[1],polyB):
-			dist = math.sqrt(originA[0]**2 + originA[1]**2)
-			cost = 10000.0 * dist
-			sum += cost
-		"""
-
-		# NOTE:  standard point-to-point ICP
-		#a = numpy.matrix([[pair[0][0]],[pair[0][1]],[1.0]])
-		#b = numpy.matrix([[pair[1][0]],[pair[1][1]],[1.0]])
-
-		#distVec = disp(a, b, T)
-		#mag = distVec[0,0]**2 + distVec[1,0]**2
-		#sum += mag
-
 		
 	return sum
 
@@ -638,6 +528,25 @@ def addDistanceFromOriginCovariance(points, tan_var=0.1, perp_var=0.01):
 			p[2][1][1] += C[1][1]
 			
 			#p[2] += C
+
+def addAIRLVectorCovariance(points, high_var=1.0, low_var=0.001):
+
+	newPoints = []
+
+	for p in points:
+		C = numpy.matrix([	[high_var, 0.0],
+				[0.0, high_var]
+				])
+
+		# the covariance matrix that enforces the point-to-plane constraint
+		normVec = [math.cos(p[2]+math.pi/2.0), math.sin(p[2]+math.pi/2.0)]		
+		C = computeVectorCovariance(normVec,low_var,high_var)
+
+
+		newPoints.append([p[0], p[1], C])
+
+	return newPoints
+
 
 def addPointToLineCovariance(points, high_var=1.0, low_var=0.001):
 
@@ -1352,185 +1261,98 @@ def gen_ICP2(estPose1, offset, pastHull, targetHull, pastCircles, costThresh = 0
 
 
 
-def findMotionConstraint(estPose1, offset, pastHull, targetHull, pastCircles, costThresh = 0.004, minMatchDist = 2.0, plotIter = False, n1 = 0, n2 = 0):
+def motionICP(points1, points2, offset, costThresh = 0.004, minMatchDist = 2.0, plotIter = False, n1 = 0, n2 = 0):
 
 	global numIterations
 	
 	lastCost = 1e100
-	
 	startIteration = numIterations
 
-	" set the initial guess "
-	poseOrigin = Pose(estPose1)
+	" set the origin of pose 1 "
+	poseOrigin = Pose([0.0,0.0,0.0])
 	
-	#offset = poseOrigin.convertGlobalPoseToLocal(estPose2)
-	#print "offset =", offset
-
-	#exit()
-	" transform the past poses "
-	a_data_raw = targetHull
-	a_data = []
-	for p in a_data_raw:
-		result = dispPoint(p, offset)
-		#print offset, p, result
-		#print
-		
-		a_data.append(result)
+	" sample a series of points from the AIRL curves "
 	
-	#print "targetHull =", targetHull
-	#print "a_trans =", a_trans
+	" augment points with point-to-line covariances "
 	
-
+	" treat the points with the point-to-line constraint "
+	points1 = addAIRLVectorCovariance(points1)
+	points2 = addAIRLVectorCovariance(points2)
 	
-	polyB = []		
-	for p in pastHull:
-		polyB.append([p[0],p[1]])	
+	" transform pose 2 by initial offset guess "
+	
+	" transform the new pose "
+	points2_offset = []
+	for p in points2:
+		result = dispPoint(p, offset)		
+		points2_offset.append(result)
+	
+	poly1 = []		
+	for p in points1:
+		poly1.append([p[0],p[1]])	
 
 	while True:
+		
 		" find the matching pairs "
 		match_pairs = []
 
-		a_data_raw = targetHull
-		b_data = pastHull			
-
 		" transform the target Hull with the latest offset "
-		a_data = []
-		for p in a_data_raw:
-			result = dispPoint(p, offset)
-			a_data.append(result)
-
+		points2_offset = []
+		for p in points2:
+			result = dispPoint(p, offset)		
+			points2_offset.append(result)
+		
 		" transformed points without associated covariance "
-		polyA = []
-		for p in a_data:
-			polyA.append([p[0],p[1]])	
+		poly2 = []
+		for p in points2_offset:
+			poly2.append([p[0],p[1]])	
 		
 		" get the circles and radii "
-		radiusA, centerA = computeEnclosingCircle(a_data)
-		#radiusB, centerB = computeEnclosingCircle(pastHull)
+		radius2, center2 = computeEnclosingCircle(points2_offset)
+		radius1, center1 = computeEnclosingCircle(points1)
 		
 		if True:
-			for i in range(len(a_data)):
-				a_p = polyA[i]
+			for i in range(len(points2_offset)):
+				p_2 = poly2[i]
 	
-				#if isValid(a_p, radiusB, centerB, polyB):
-				if isValidPast(a_p, pastCircles, polyB):
+				if isValid(p_2, radius1, center1, poly1):
 	
 					" for every transformed point of A, find it's closest neighbor in B "
-					b_p, minDist = findClosestPointInB(b_data, a_p, [0.0,0.0,0.0])
+					p_1, minDist = findClosestPointInB(points1, p_2, [0.0,0.0,0.0])
 		
 					if minDist <= minMatchDist:
 			
 						" add to the list of match pairs less than 1.0 distance apart "
 						" keep A points and covariances untransformed "
-						Ca = a_data_raw[i][2]
-						Cb = b_p[2]
+						C2 = points2[i][2]
+						C1 = p_1[2]
 		
 						" we store the untransformed point, but the transformed covariance of the A point "
-						match_pairs.append([a_data_raw[i],b_p,Ca,Cb])
+						match_pairs.append([points2[i],p_1,C2,C1])
 
 		if True:
-			for i in range(len(b_data)):
-				b_p = polyB[i]
+			for i in range(len(points1)):
+				p_1 = poly1[i]
 		
-				if isValid(b_p, radiusA, centerA, polyA):
+				if isValid(p_1, radius2, center2, poly2):
 			
 					#print "selected", b_p, "in circle", radiusA, centerA, "with distance"
 					" for every point of B, find it's closest neighbor in transformed A "
-					a_p, a_i, minDist = findClosestPointInA(a_data, b_p)
+					p_2, i_2, minDist = findClosestPointInA(points2_offset, p_1)
 		
 					if minDist <= minMatchDist:
 			
 						" add to the list of match pairs less than 1.0 distance apart "
 						" keep A points and covariances untransformed "
-						Ca = a_data_raw[a_i][2]
+						C2 = points2[i_2][2]
 						
-						Cb = b_data[i][2]
+						C1 = points1[i][2]
 		
 						" we store the untransformed point, but the transformed covariance of the A point "
-						match_pairs.append([a_data_raw[a_i],b_p,Ca,Cb])
-
-
-		" plot the initial configuration "
-		if plotIter and startIteration == numIterations:
-
-			numIterations += 1
-
-			pylab.clf()
-			pylab.axes()
-			match_global = []
-			
-			for pair in match_pairs:
-				p1 = pair[0]
-				p2 = pair[1]
-				
-				p1_o = dispOffset(p1, offset)
-				#p2_o = dispOffset(p2, offset)
-
-				
-				p1_g = poseOrigin.convertLocalToGlobal(p1_o)
-				p2_g = poseOrigin.convertLocalToGlobal(p2)
-				match_global.append([p1_g,p2_g])
-			
-			draw_matches(match_global, [0.0,0.0,0.0])
-			
-			xP = []
-			yP = []
-			for b in polyB:
-				p1 = poseOrigin.convertLocalToGlobal(b)
-
-				xP.append(p1[0])	
-				yP.append(p1[1])
-			
-			p1 = poseOrigin.convertLocalToGlobal(polyB[0])
-			xP.append(p1[0])	
-			yP.append(p1[1])
-			
-			pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
-
-			xP = []
-			yP = []
-			for b in a_data_raw:
-				p = [b[0],b[1]]
-				p = dispOffset(p,offset)
-				
-				p1 = poseOrigin.convertLocalToGlobal(p)
-				xP.append(p1[0])	
-				yP.append(p1[1])
-			
-			p = [a_data_raw[0][0],a_data_raw[0][1]]
-			p = dispOffset(p,offset)
-
-			p1 = poseOrigin.convertLocalToGlobal(p)
-			xP.append(p1[0])	
-			yP.append(p1[1])
-
-			pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
-
-			plotEnv()		
-			
-			pylab.xlim(-4,9)
-			pylab.ylim(-3,9)
-			pylab.title("%u %u" % (n1, n2))
-			#pylab.ylim(-7,5)
-			pylab.savefig("ICP_plot_%04u.png" % numIterations)
-			pylab.clf()					
-			
-		if False:
-			for pair in match_pairs:
-				a = pair[0]
-				b = pair[1]
-			
-				pylab.plot([a[0],b[0]], [a[1],b[1]],color=(1.0,0.0,0.0))
-			
-			pylab.show()
-			
-		#allCircles = deepcopy(pastCircles)
-		#allCircles.append([radiusA,centerA])
-
-		allCircles = [[radiusA,centerA]]
-
+						match_pairs.append([points2[i_2],p_1,C2,C1])
+						
 		# optimize the match error for the current list of match pairs
-		newOffset = scipy.optimize.fmin(cost_func, offset, [match_pairs, a_data_raw, polyB, allCircles])
+		newOffset = scipy.optimize.fmin(cost_func, offset, [match_pairs, [], [], []])
 	
 		# get the current cost
 		newCost = cost_func(newOffset, match_pairs)
@@ -1540,7 +1362,7 @@ def findMotionConstraint(estPose1, offset, pastHull, targetHull, pastCircles, co
 			offset = newOffset
 			lastCost = newCost
 			break
-	
+
 		numIterations += 1
 
 		offset = newOffset
@@ -1550,107 +1372,13 @@ def findMotionConstraint(estPose1, offset, pastHull, targetHull, pastCircles, co
 		if minMatchDist < 0.25:
 			minMatchDist = 0.25
 	
-		# optionally draw the position of the points in current transform
-		if plotIter:
-			pylab.clf()
-			pylab.axes()
-			match_global = []
-			
-			#match_pairs.append([a_data_raw[a_i],b_p,Ca,Cb])
-			
-			for pair in match_pairs:
-				p1 = pair[0]
-				p2 = pair[1]
-				
-				p1_o = dispOffset(p1, offset)
-				#p2_o = dispOffset(p2, offset)
-
-				
-				p1_g = poseOrigin.convertLocalToGlobal(p1_o)
-				p2_g = poseOrigin.convertLocalToGlobal(p2)
-				match_global.append([p1_g,p2_g])
-			
-			#draw_matches(match_pairs, offset)
-			draw_matches(match_global, [0.0,0.0,0.0])
-			
-			xP = []
-			yP = []
-			for b in polyB:
-				p1 = poseOrigin.convertLocalToGlobal(b)
-
-				xP.append(p1[0])	
-				yP.append(p1[1])
-				#xP.append(b[0])	
-				#yP.append(b[1])
-			
-			p1 = poseOrigin.convertLocalToGlobal(polyB[0])
-			xP.append(p1[0])	
-			yP.append(p1[1])
-			#xP.append(polyB[0][0])	
-			#yP.append(polyB[0][1])
-			
-			pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
-
-			xP = []
-			yP = []
-			for b in a_data_raw:
-				p = [b[0],b[1]]
-				p = dispOffset(p,offset)
-				
-				p1 = poseOrigin.convertLocalToGlobal(p)
-				xP.append(p1[0])	
-				yP.append(p1[1])
-				
-				#xP.append(p[0])	
-				#yP.append(p[1])
-			
-			p = [a_data_raw[0][0],a_data_raw[0][1]]
-			p = dispOffset(p,offset)
-
-			p1 = poseOrigin.convertLocalToGlobal(p)
-			xP.append(p1[0])	
-			yP.append(p1[1])
-
-			#xP.append(p[0])	
-			#yP.append(p[1])
-			
-			pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
-
-			#cir = Circle( (0,0), radius=0.5)
-			#a.add_patch(cir)
-
-			plotEnv()		
-			
-			#for circle in pastCircles:
-			#	radius, center = circle
-			#	cir = pylab.Circle((center[0],center[1]), radius=radius,  fc='r')
-			#	pylab.gca().add_patch(cir)
-				
-			#cir = pylab.Circle((centerA[0],centerA[1]), radius=radiusA,  fc='r')
-			#pylab.gca().add_patch(cir)
-			#cir = pylab.Circle((.5,.5), radius=0.25, alpha =.2, fc='b')
-			#pylab.gca().add_patch(cir)
-
-			#pylab.xlim(-4.5,4.5)
-			#pylab.ylim(-4,4)
-			#pylab.xlim(-3,6)
-			#pylab.ylim(-4,4)
-			#pylab.xlim(-4,7)
-			#pylab.ylim(-7,3)
-			#pylab.xlim(-4,9)
-			#pylab.ylim(-7,5)
-			pylab.title("%u %u" % (n1, n2))
-			pylab.xlim(-4,9)
-			pylab.ylim(-3,9)
-			#pylab.axis('equal')
-			pylab.savefig("ICP_plot_%04u.png" % numIterations)
-			pylab.clf()			
-						
+					
 		# save the current offset and cost
 		offset = newOffset
 		lastCost = newCost
 
 	offset[2] =  functions.normalizeAngle(offset[2])
+	
 	return offset
 
 def plotEnv():

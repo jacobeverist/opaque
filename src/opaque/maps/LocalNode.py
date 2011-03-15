@@ -402,7 +402,7 @@ class LocalNode:
 			" cut out the repeat vertex "
 			self.a_vert = self.a_vert[:-1]
 			
-			self.convertAlphaUniform()
+			self.a_vert = self.convertAlphaUniform(self.a_vert)
 		
 		else:
 			self.a_vert = []
@@ -437,23 +437,23 @@ class LocalNode:
 			" cut out the repeat vertex "
 			self.a_vert = self.a_vert[:-1]
 			
-			self.convertAlphaUniform()
+			self.a_vert = self.convertAlphaUniform(self.a_vert)
 		
 		else:
 			self.a_vert = []
 				
-	def convertAlphaUniform(self):
+	def convertAlphaUniform(self, a_vert, max_spacing = 0.04):
 		
 		" make the vertices uniformly distributed "
 		
 		new_vert = []
 		
-		max_spacing = 0.04
+		#max_spacing = 0.04
 		#max_spacing = 0.1
 		
-		for i in range(len(self.a_vert)):
-			p0 = self.a_vert[i]
-			p1 = self.a_vert[(i+1) % len(self.a_vert)]
+		for i in range(len(a_vert)):
+			p0 = a_vert[i]
+			p1 = a_vert[(i+1) % len(a_vert)]
 			dist = sqrt((p0[0]-p1[0])**2 + (p0[1]-p1[1])**2)
 
 			vec = [p1[0]-p0[0], p1[1]-p0[1]]
@@ -469,8 +469,9 @@ class LocalNode:
 				for j in range(1, numCount+1):
 					newP = [j*max_spacing*vec[0] + p0[0], j*max_spacing*vec[1] + p0[1]]
 					new_vert.append(newP)
-					
-		self.a_vert = new_vert
+		
+		return new_vert			
+		#self.a_vert = new_vert
 	
 	def computeAlpha2(self, points):
 		

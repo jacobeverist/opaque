@@ -1,9 +1,9 @@
 
 from math import sqrt
-import scipy
 import scipy.interpolate
-#import pylab
 from random import gauss
+from copy import copy
+from math import floor, asin, acos
 
 class SplineFit:
 
@@ -20,26 +20,57 @@ class SplineFit:
 		# unzip the points
 		intArray = [[],[]]
 #		for p in points:
+
+		" perturb the points to prevent degeneracies "
 		for p in newP:
 			intArray[0].append(p[0] + gauss(0.0,0.0001))
 			intArray[1].append(p[1] + gauss(0.0,0.0001))
 
-		#print "smooth = ", self.smoothNess, "input = ", intArray
-
-		dataOutput = open("dataFile.txt", 'w')
-		dataOutput.write(repr(newP))
-		dataOutput.close()
-
-		#print len(intArray[0]), len(intArray[1])
-
-		#print "performing spline fit"
+		" performing spline fit "
 		self.tck, self.u = scipy.interpolate.splprep(intArray, s = self.smoothNess, k=self.kp)
-		#print "fit complete"
+	
+	
 
-		#print "result =", self.u
-		#print self.tck
-		#unew = scipy.arange(0, 1.01, 0.01)
-		#out = scipy.interpolate.splev(unew,tck)
+	def getUniformSamples(self):
+		
+		samples = scipy.arange(0.0,1.0,0.01)
+		sample_points = self.getUVecSet(samples)
+		print len(sample_points)
+		sample_points = self.makePointsUniform(sample_points)
+		print len(sample_points)
+
+		#for p in sample_points:
+		#	print p
+		
+		return sample_points
+	
+	def makePointsUniform(self, points, max_spacing = 0.04):
+		
+		" make the points uniformly distributed "
+		
+		new_points = []
+		
+		for i in range(len(points)-1):
+			p0 = points[i]
+			p1 = points[i+1]
+			dist = sqrt((p0[0]-p1[0])**2 + (p0[1]-p1[1])**2)
+	
+			vec = [p1[0]-p0[0], p1[1]-p0[1]]
+			vec[0] /= dist
+			vec[1] /= dist
+			
+			new_points.append(copy(p0))
+			
+			if dist > max_spacing:
+				" cut into pieces max_spacing length or less "
+				numCount = int(floor(dist / max_spacing))
+				
+				for j in range(1, numCount+1):
+					newP = [j*max_spacing*vec[0] + p0[0], j*max_spacing*vec[1] + p0[1], p0[2]]
+					new_points.append(newP)
+		
+		return new_points		
+
 
 	def findClosestFromPointSet(self):
 		pass
@@ -316,6 +347,48 @@ class SplineFit:
 		zipPoints = []
 		for i in range(0,len(newPoints[0])):
 			zipPoints.append([newPoints[0][i],newPoints[1][i]])
+
+		return zipPoints
+	
+	def getUVecSet(self, u_set):
+		for u in u_set:
+			if u < 0.0 or u > 1.0:
+				print "ERROR: u =", u
+				raise
+
+		newPoints = scipy.interpolate.splev(u_set,self.tck)
+		
+		# zip the points together
+		zipPoints = []
+				
+		iter = 0.01
+		
+		for i in range(len(u_set)):
+			u = u_set[i]
+			if u > 1.0 - iter:
+				u = u-iter
+	
+			unew1 = [u]
+			newPoint1 = scipy.interpolate.splev(unew1,self.tck)
+			unew2 = [u + iter]
+			newPoint2 = scipy.interpolate.splev(unew2,self.tck)
+	
+			# tangent vector
+			vec = [newPoint2[0] - newPoint1[0], newPoint2[1] - newPoint1[1]]
+	
+			# normalize
+			mag = sqrt(vec[0]**2 + vec[1]**2)
+			vec = [vec[0]/mag, vec[1]/mag]
+			
+			angle = acos(vec[0])
+			if asin(vec[1]) < 0:
+				angle = -angle
+					
+			zipPoints.append([newPoints[0][i],newPoints[1][i], angle])
+		
+
+		#for i in range(0,len(newPoints[0])):
+		#	zipPoints.append([newPoints[0][i],newPoints[1][i]])
 
 		return zipPoints
 
