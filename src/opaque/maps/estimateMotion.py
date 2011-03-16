@@ -301,6 +301,7 @@ if __name__ == '__main__':
         ests.append(estOffset)
         
         naiveOffset = makeGuess2(centerCurves[i], centerCurves[i+1], 0.2, localPostures[i], localPostures[i+1], originPose=gndPoses[i])
+
         naives.append(naiveOffset)
         
     #print gnds[0], naives[0]
@@ -367,14 +368,25 @@ if __name__ == '__main__':
     #fixed_offset = gen_icp.motionICP(samples[7], samples[8], naives[7], plotIter = True, n1 = 7, n2 = 8)
     #plotOffset(gndPoses[7], fixed_offset, localPostures[7], localPostures[8])
     
-    results = []
-    for i in range(len(samples)-1):
-        results.append(gen_icp.motionICP(samples[i], samples[i+1], naives[i], plotIter = True, n1 = i, n2 = i+1))
+    #results = []
+    #for i in range(len(samples)-1):
+    #    results.append(gen_icp.motionICP(samples[i], samples[i+1], naives[i], plotIter = True, n1 = i, n2 = i+1))
         
-    for i in range(len(results)):
-        plotOffset(gndPoses[i], results[i], localPostures[i], localPostures[i+1])
-        plotOffset(gndPoses[i], gnds[i], localPostures[i], localPostures[i+1])
+    #for i in range(len(results)):
+    #    plotOffset(gndPoses[i], results[i], localPostures[i], localPostures[i+1])
+    #    plotOffset(gndPoses[i], gnds[i], localPostures[i], localPostures[i+1])
 
+    poseIndex = 11
+    naives = []
+    for i in range(10):
+        naiveOffset = makeGuess2(centerCurves[poseIndex], centerCurves[poseIndex+1], -1.0 + i*0.2, localPostures[poseIndex], localPostures[poseIndex+1], originPose=gndPoses[poseIndex])
+
+        naives.append(naiveOffset)
+
+    for i in range(len(naives)):
+        result = gen_icp.motionICP(samples[poseIndex], samples[poseIndex+1], naives[i], plotIter = True, n1 = poseIndex, n2 = i*0.2)
+        plotOffset(gndPoses[poseIndex], result, localPostures[poseIndex], localPostures[poseIndex+1])
+        plotOffset(gndPoses[poseIndex], gnds[poseIndex], localPostures[poseIndex], localPostures[poseIndex+1])
                
     
     
