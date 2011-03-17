@@ -1136,7 +1136,7 @@ def gen_ICP2(estPose1, offset, pastHull, targetHull, pastCircles, costThresh = 0
 		allCircles = [[radiusA,centerA]]
 
 		# optimize the match error for the current list of match pairs
-		newOffset = scipy.optimize.fmin(cost_func, offset, [match_pairs, a_data_raw, polyB, allCircles])
+		newOffset = scipy.optimize.fmin(cost_func, offset, [match_pairs, a_data_raw, polyB, allCircles], disp = 0)
 	
 		# get the current cost
 		newCost = cost_func(newOffset, match_pairs)

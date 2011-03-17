@@ -25,6 +25,7 @@ from functions import *
 import toro
 import scsgp
 import bayes
+import estimateMotion
 
 import pylab
 from matplotlib.patches import Circle
@@ -42,6 +43,7 @@ MAPSIZE = 20.0
 naives = []
 gnds = []
 ests = []
+airs = []
 
 class MapGraph:
 
@@ -96,6 +98,7 @@ class MapGraph:
 		self.naives = []
 		self.gnds = []
 		self.ests = []
+		self.airs =  []
 		
 		if False:
 			for k in range(1):
@@ -255,39 +258,62 @@ class MapGraph:
 			print "adding node", i
 			self.poseGraph.add_node(i, self.currNode)
 			if self.numNodes > 0:
-				#self.addMotionConstraint(i-1, i)
-				self.addNaiveMotionConstraint(i-1, i, 0.14, True)
+				node1 = self.poseGraph.get_node_attributes(i-1)
+				node2 = self.poseGraph.get_node_attributes(i)
+			
+				curve1 = node1.getAIRCurve()
+				curve2 = node2.getAIRCurve()
+				posture1 = node1.getAIRPosture()
+				posture2 = node2.getAIRPosture()
+
+				offset = estimateMotion.makeGuess2(curve1, curve2, 0.2, posture1, posture2)
+
+				self.airs.append([0.2, offset])	
+				
+				" FIXME:  add covariance from vector in guess direction "
+				
+				transform = matrix([[offset[0]], [offset[1]], [offset[2]]])
+				covE = matrix([[ 0.4,  0.0, 0.0],
+				        [ 0.0,  0.1, 0.0],
+				        [0.0, 0.0,  0.1]])
+				
+				self.poseGraph.add_edge(i-1, i, attrs = [transform, covE])
+
+				#self.addNaiveMotionConstraint(i-1, i, 0.14, True)
 
 			self.numNodes += 1
 
-		#pylab.clf()			
-		#for i in range(num_poses):
+		"""
+		pylab.clf()			
+		for i in range(self.numNodes):
 			
-			#currNode = self.poseGraph.get_node_attributes(i)
+			currNode = self.poseGraph.get_node_attributes(i)
+			curve1 = currNode.getAIRCurve()
+			posture1 = currNode.getAIRPosture()
 			
-			#localPosture = currNode.localPosture
-			#splPoints = currNode.splPoints
+			upoints = arange(0,1.0,0.01)
+			splPoints = curve1.getUSet(upoints)	
+					
+			xP = []
+			yP = []
+			for p in splPoints:
+				xP.append(p[0])
+				yP.append(p[1])
+			pylab.plot(xP,yP)
 
-			#print localPosture
-			#print splPoints
-		
-			#xP = []
-			#yP = []
-			#for p in localPosture:
-			#	xP.append(p[0])
-			#	yP.append(p[1])
+			xP = []
+			yP = []
+			for p in posture1:
+				xP.append(p[0])
+				yP.append(p[1])
 			
-			#pylab.plot(xP,yP)
-			
-			#xP = []
-			#yP = []
-			#for p in splPoints:
-			#	xP.append(p[0])
-			#	yP.append(p[1])
-			#pylab.plot(xP,yP)
+			pylab.plot(xP,yP)
 
-			#pylab.savefig("plotCenter%04u.png" % i)
-			#pylab.clf()		
+			pylab.xlim(-4,4)
+			pylab.ylim(-4,4)
+			pylab.savefig("plotCenter%04u.png" % i)
+			pylab.clf()
+		"""
 			
 	def addMotionConstraint(self, i, j):
 
@@ -717,6 +743,14 @@ class MapGraph:
 
 	def correctPoses3(self):
 
+		""" 
+		things to convert for map correction to the AIR coordinate system 
+		1. estPose to AIR estPose
+		2. convert hull points to AIR coordinates before adding covariances
+		3. convert edges from root end points to AIR centroid endpoints (motion constraints)
+		
+		
+		"""
 
 		#SENSOR_RADIUS = 0.25
 		#SENSOR_RADIUS = 2.0
@@ -852,13 +886,21 @@ class MapGraph:
 			a_data = node1.getAlphaBoundary()
 			a_data = decimatePoints(a_data)
 			
+			" convert hull points to AIR coordinates before adding covariances "
+			localAIRPose = node1.getLocalAIRPose()
+			localAIRProfile = Pose(localAIRPose)
+			
+			a_data_AIR = []
+			for pnt in a_data:
+				a_data_AIR.append(localAIRProfile.convertGlobalToLocal(pnt))
+			
 			" treat the points with the point-to-line constraint "
-			gen_icp.addPointToLineCovariance(a_data, high_var=1.0, low_var=0.001)
+			gen_icp.addPointToLineCovariance(a_data_AIR, high_var=1.0, low_var=0.001)
 	
 			" treat the points with the distance-from-origin increasing error constraint "
-			gen_icp.addDistanceFromOriginCovariance(a_data, tan_var=0.1, perp_var=0.01)
+			gen_icp.addDistanceFromOriginCovariance(a_data_AIR, tan_var=0.1, perp_var=0.01)
 			
-			return a_data
+			return a_data_AIR
 		
 		hull_computed = [False for i in range(self.numNodes)]
 		a_hulls = [0 for i in range(self.numNodes)]
@@ -876,23 +918,31 @@ class MapGraph:
 			
 			#print p[1], p[2], p[0]
 
-		
-		#trans_hulls = [0 for i in range(self.numNodes)]
-		#for i in range(self.numNodes):
-		#	if hull_computed[i]:
-		#		node1 = self.poseGraph.get_node_attributes(i)
-		#		estPose1 = node1.getEstPose()
-		#		hull1 = a_hulls[i]
-		#		hull_trans = []
-		#		for p in hull1:
-		#			hull_trans.append(gen_icp.dispPoint(p, estPose1))
-		#		
-		#		trans_hulls[i] = hull_trans
-					
-		 
-		#hull_trans1 = []
-		#for p in hull1:
-		#	hull_trans1.append(gen_icp.dispPoint(p, estPose1))
+		"""
+		pylab.clf()
+		for i in range(self.numNodes):
+			if hull_computed[i]:
+				node1 = self.poseGraph.get_node_attributes(i)
+				airPose1 = node1.getGlobalAIRPose()
+				hull1 = a_hulls[i]
+				
+				hull_trans = []
+				for p in hull1:
+					hull_trans.append(gen_icp.dispPoint(p, airPose1))	
+								
+				xP = []
+				yP = []
+				for p in hull_trans:
+					xP.append(p[0])
+					yP.append(p[1])
+				xP.append(hull_trans[0][0])
+				yP.append(hull_trans[0][1])
+				pylab.plot(xP,yP)		
+				pylab.xlim(-8,12)
+				pylab.ylim(-10,10)
+				pylab.savefig("hull_%04u.png" % i)
+				pylab.clf()		
+		"""
 
 		hypotheses = []
 		
@@ -907,8 +957,8 @@ class MapGraph:
 		" need more hypotheses "
 		" add a more naive motion model constraint "
 
-		for hyp in hypotheses:
-			print hyp[0], hyp[1], hyp[2]
+		#for hyp in hypotheses:
+		#	print hyp[0], hyp[1], hyp[2]
 		
 		def doTransform(T1, T2, E1, E2):
 		
@@ -1031,7 +1081,8 @@ class MapGraph:
 		e = scsgp.dominantEigenvectors(A)
 		w = scsgp.getIndicatorVector(e[0])
 		
-		print w
+		for i in range(len(hypotheses)):
+			print hypotheses[i][0], hypotheses[i][1], w[i,0]
 		
 		exit()
 		
@@ -1313,8 +1364,9 @@ class MapGraph:
 		STEP_DIST = 0.145
 
 		" initial guess for x, y, theta parameters "
-		firstGuess = self.makeGuess(n1, n2, STEP_DIST)
-		print "guess =", firstGuess
+		#firstGuess = self.makeGuess(n1, n2, STEP_DIST)
+		#print "guess =", firstGuess
+		firstGuess = [0.0,0.0,0.0]
 
 		" TUNE ME:  threshold cost difference between iterations to determine if converged "
 		costThresh = 0.1
@@ -1323,8 +1375,8 @@ class MapGraph:
 		minMatchDist = 2.0
 	
 		" plot the best fit at each iteration of the algorithm? "
-		#plotIteration = True
-		plotIteration = False
+		plotIteration = True
+		#plotIteration = False
 	
 		#offset = [0.0,0.0,0.0]
 	
@@ -1333,9 +1385,12 @@ class MapGraph:
 		node1 = self.poseGraph.get_node_attributes(n1)
 		node2 = self.poseGraph.get_node_attributes(n2)
 		
-		estPose1 = node1.getEstPose()
-		estPose2 = node2.getEstPose()
-		
+		" FIXME:  deal with relative poses from the motion constraints "
+		estPose1 = node1.getGlobalAIRPose()
+		estPose2 = node2.getGlobalAIRPose()
+		#estPose1 = node1.getEstPose()
+		#estPose2 = node2.getEstPose()
+
 		hull_trans1 = []
 		for p in hull1:
 			hull_trans1.append(gen_icp.dispPoint(p, estPose1))
@@ -1345,7 +1400,7 @@ class MapGraph:
 			hull_trans2.append(gen_icp.dispPoint(p, estPose2))
 
 		#offset2 = [transform[0,0],transform[1,0],transform[2,0]]
-				
+		
 		radius, center = gen_icp.computeEnclosingCircle(hull1)
 		circle1 = [radius, center]
 		

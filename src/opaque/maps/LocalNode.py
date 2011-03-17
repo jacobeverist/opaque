@@ -3,6 +3,7 @@ from LocalOccMap import *
 from LocalBoundaryMap import *
 from LocalObstacleMap import *
 from SplineFit import *
+from Pose import Pose
 
 #import Image
 from numpy import array, dot, transpose
@@ -56,9 +57,9 @@ class LocalNode:
 			
 			for j in range(self.numSegs-1):
 				self.localPosture.append(self.probe.getJointPose([0.0,0.0,0.0], 19, j))
-				
+			
 			" compute a fitted curve of a center point "
-			self.centerCurve = SplineFit(self.localPosture, smooth = 0.1, kp = 5)
+			self.centerCurve = SplineFit(self.localPosture, smooth = 0.5, kp = 2)
 			upoints = arange(0,1.0,0.01)
 			self.splPoints = self.centerCurve.getUSet(upoints)
 			
@@ -67,7 +68,60 @@ class LocalNode:
 			#for p in self.splPoints:
 			#	xP.append(p[0])
 			#	yP.append(p[1])
-				
+	
+	def getAIRPosture(self):
+
+		" convert hull points to AIR coordinates before adding covariances "
+		localAIRPose = self.getLocalAIRPose()
+		localAIRProfile = Pose(localAIRPose)
+		
+		posture_AIR = []
+		for pose in self.localPosture:
+			posture_AIR.append(localAIRProfile.convertGlobalPoseToLocal(pose))
+		
+		return posture_AIR
+	
+	def getAIRCurve(self):
+		posture_AIR = self.getAIRPosture()
+		
+		AIR_curve = SplineFit(posture_AIR, smooth = 0.5, kp = 2)
+
+		return AIR_curve
+
+	def getLocalAIRPose(self):
+
+		vec = self.centerCurve.getUVector(0.5)
+		vecPoint = self.centerCurve.getU(0.5)
+		
+		angle = acos(vec[0])
+		if asin(vec[1]) < 0:
+			angle = -angle
+		
+		localAIRPose = [vecPoint[0], vecPoint[1], angle]	
+		
+		return localAIRPose	
+	
+	def getGlobalAIRPose(self):
+
+		localAIRPose = self.getLocalAIRPose()	
+		#globalAIRPose = self.convertLocalOffsetToGlobal(localAIRPose)
+		
+		globalEst = [0.0,0.0,0.0]
+		finalVec = array([[localAIRPose[0]], [localAIRPose[1]]])
+		transVec = dot(transpose(self.gndR), finalVec)
+		resVec = dot(self.gndBackR, transVec)
+		resVec[0, 0] += self.gndDist
+		tempVec = dot(self.gndForeR, resVec)
+		globalEst[0] = tempVec[0, 0]
+		globalEst[1] = tempVec[1, 0]
+		globalEst[2] = self.normalizeAngle(self.gndPose[2] + localAIRPose[2])
+
+		globalAIRPose = globalEst
+
+		return globalAIRPose
+		
+	def setAIRPose(self, newPose):
+		pass
 	
 	def setEstPose(self, newPose):
 

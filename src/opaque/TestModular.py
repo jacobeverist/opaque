@@ -281,8 +281,9 @@ class TestModular(SnakeControl):
 			#self.mapGraph.loadFile("testData/poseTest", 8)
 			self.mapGraph.loadFile("testData/poseTest", 16)
 
-			E = self.computeCovar()
-			print repr(E)
+			#exit()
+			#E = self.computeCovar()
+			#print repr(E)
 
 
 			
