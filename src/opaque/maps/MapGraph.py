@@ -807,7 +807,8 @@ class MapGraph:
 				
 				dist = bayes.mahab_dist(c1, c2, SENSOR_RADIUS, SENSOR_RADIUS, E)
 				
-				print "distance:", i, j, dist
+				#print "distance:", i, j, dist, loc2[0,0], loc2[1,0], loc2[2,0], E_param[0,0], E_param[0,1], E_param[1,0], E_param[1,1]
+
 				if dist <= DIST_THRESHOLD:
 					pair_candidates.append([dist,i,j,loc2])
 				
@@ -825,7 +826,7 @@ class MapGraph:
 				
 				dist = bayes.mahab_dist(c1, c2, SENSOR_RADIUS, SENSOR_RADIUS, E)
 				
-				print "distance:", i, j, dist
+				#print "distance:", i, j, dist
 				if dist <= DIST_THRESHOLD:
 					pair_candidates.append([dist,i,j,loc2])
 
@@ -862,11 +863,27 @@ class MapGraph:
 					pair_unique.append(pair_candidates[i])
 					is_free[i] = False
 
-		#print "UNIQUE PAIRS"
-		#for p in pair_unique:
-		#	print p[0], p[1], p[2]
+		pair_unique.sort()
 		
-		#exit()
+		#print "UNIQUE PAIRS"
+		for p in pair_unique:
+			i = p[1]
+			j = p[2]
+			
+			
+			loc2 = paths[i][j][0]
+			c1 = matrix([[0.0],[0.0]],dtype=float)
+			c2 = matrix([[loc2[0,0]],[loc2[1,0]]],dtype=float)
+			E_param = paths[i][j][1]
+			E = matrix([[E_param[0,0], E_param[0,1]],[E_param[1,0], E_param[1,1]]],dtype=float)
+			
+			dist = bayes.mahab_dist(c1, c2, SENSOR_RADIUS, SENSOR_RADIUS, E)
+			
+			print "distance:", i, j, dist
+			print loc2
+			print E_param
+			print
+	
 		
 		def decimatePoints(points):
 			result = []
@@ -944,15 +961,19 @@ class MapGraph:
 				pylab.clf()		
 		"""
 
+
+
 		hypotheses = []
 		
-		for p in pair_unique:
+		for i in range(len(pair_unique)):
+			p = pair_unique[i]
 			transform = p[3]
 			n1 = p[1]
 			n2 = p[2]
 			offset, covar = self.makeSensorConstraint(transform, n1, n2, a_hulls[n1], a_hulls[n2])
 			transform = matrix([ [offset[0]], [offset[1]], [offset[2]] ],dtype=float)
 			hypotheses.append([p[1],p[2],transform,covar])
+			print "hypothesize", i, ":",  "sensor constraint between", n1, "and", n2
 
 		" need more hypotheses "
 		" add a more naive motion model constraint "
@@ -1049,15 +1070,17 @@ class MapGraph:
 		#print A[0,1]
 		#print A[0,2]
 		#print A[2,2]
-		
+		#print "results:"
 		maxError = 0.0
 		for result in results:
+			#print result[1], result[2], result[0]
 			if result[0] > maxError:
 				maxError = result[0]
 				
 		#print "A:", A
 		print "maxError:", maxError
 		
+		#exit()
 		for result in results:
 			#print result[0], maxError-result[0]
 			i = result[1]
@@ -1066,10 +1089,11 @@ class MapGraph:
 			A[i,j] = maxError - result[0]
 			A[j,i] = maxError - result[0]
 			
-		#print "A:"
-		#print repr(A)
+		print "A:"
 		" disable the truncation "
 		set_printoptions(threshold=nan)
+		print repr(A)
+		
 
 		fn = open("A.txt",'w')
 		fn.write(repr(A))
@@ -1082,7 +1106,7 @@ class MapGraph:
 		w = scsgp.getIndicatorVector(e[0])
 		
 		for i in range(len(hypotheses)):
-			print hypotheses[i][0], hypotheses[i][1], w[i,0]
+			print hypotheses[i][0], hypotheses[i][1], w[i,0], e[0][i,0], A[hypotheses[i][0], hypotheses[i][1]]
 		
 		exit()
 		
@@ -1357,8 +1381,6 @@ class MapGraph:
 	
 
 	def makeSensorConstraint(self, transform, n1, n2, hull1, hull2):
-
-		print "hypothesizing sensor constraint between", n1, "and", n2
 
 		" TUNE: estimated step distance from empirical results "
 		STEP_DIST = 0.145
