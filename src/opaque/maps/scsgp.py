@@ -66,7 +66,7 @@ def dominantEigenvectors(A):
 		
 		e[i] = e[i] / mag
 		
-	return e
+	return e, lmbda
 
 def getIndicatorVector(e):
 

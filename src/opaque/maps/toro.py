@@ -4,6 +4,7 @@ from pylab import *
 #from Numeric import *
 from math import *
 from copy import *
+import gen_icp
 
 def writeToroGraph(testDir, filename, v_list, e_list, edgeConstraints):
 
@@ -98,7 +99,7 @@ def readToroGraph(fileName):
 
 	return vertexList, edgeList
 
-def plotToro(vertexList, edgeList = [], drawedge=False, clr='0.8'):
+def plotToro(vertexList, edgeList = [], hulls = [], drawedge=False, clr='0.8'):
 
 	vx = []
 	vy = []
@@ -115,6 +116,8 @@ def plotToro(vertexList, edgeList = [], drawedge=False, clr='0.8'):
 		for item in edgeList:
 			n1 = item[0]
 			n2 = item[1]
+			
+			#print "%d -> %d" % (n1, n2)
 			pose1 = vertexList[n1][1]
 			pose2 = vertexList[n2][1]
 			ex1.append(pose1[0])
@@ -125,12 +128,41 @@ def plotToro(vertexList, edgeList = [], drawedge=False, clr='0.8'):
 		for index in range(len(ex1)):
 			xSeg = [ ex1[index], ex2[index] ]
 			ySeg = [ ey1[index], ey2[index] ]
-			#plot(xSeg,ySeg, linewidth=0.2, color='0.5')
+			plot(xSeg,ySeg, linewidth=0.2, color='0.5')
 
-			plot(ySeg,xSeg, linewidth=0.2, color='0.5')
+			#plot(ySeg,xSeg, linewidth=0.2, color='0.5')
 
-	#scatter(vx,vy,color=clr,faceted=False)
-	scatter(vy,vx,color=clr,faceted=False)
+	scatter(vx,vy,color=clr,faceted=False)
+	#scatter(vy,vx,color=clr,faceted=False)
+
+	
+	if len(hulls) > 0:
+		for i in range(len(vertexList)):
+			pose1 = vertexList[i][1]
+	
+	
+			hull1 = hulls[i]
+			
+			hull_trans = []
+			for p in hull1:
+				hull_trans.append(gen_icp.dispPoint(p, pose1))	
+							
+			xP = []
+			yP = []
+			for p in hull_trans:
+				xP.append(p[0])
+				yP.append(p[1])
+			xP.append(hull_trans[0][0])
+			yP.append(hull_trans[0][1])
+			plot(xP,yP)		
+
+	#xlim(-16,16)
+	#ylim(-16,16)
+	#xlim(-5,5)
+	#ylim(-2,7)
+	xlim(-8,8)
+	ylim(-5,10)
+	
 
 def executeToro(fileName):
 	
@@ -146,7 +178,7 @@ def executeToro(fileName):
 	os.system("cp " + fileName + " toro_tmp")
 	os.system("cp toro.exe toro_tmp")
 	os.chdir("toro_tmp")
-	os.system("toro " + fileName)
+	os.system("toro -nde " + fileName)
 	os.chdir("..")
 	os.system("mv toro_tmp/" + fileRoot + "-treeopt-final.graph .")
 	os.system("rm toro_tmp/*")
@@ -163,19 +195,22 @@ def executeToro(fileName):
 
 if __name__ == '__main__':
 
-	testDir = "test_0001"
-	#fileName = "test.graph"
-	fileName = "w10000-odom.graph"
+	#testDir = "test_0001"
+	fileName = "test.graph"
+	#fileName = "w10000-odom.graph"
 	vlist, elist = readToroGraph("./" + fileName)
 	print len(vlist), len(elist)
-	plotToro(vlist, elist)
+	plotToro(vlist, elist, drawedge=True)
 	savefig("w10000_uncorrect.png")
 	clf()
 
-	finalFileName = "w10000-odom-treeopt-final.graph"
+	executeToro("./" + fileName)
+
+	finalFileName = "test-treeopt-final.graph"
+	#finalFileName = "w10000-odom-treeopt-final.graph"
 	vlist, elist = readToroGraph("./" + finalFileName)
-	print len(vlist), len(elist)
-	plotToro(vlist, elist)
+	#print len(vlist), len(elist)
+	plotToro(vlist, elist, drawedge=True)
 	savefig("w10000_correct.png")
 
 	#executeToro(fileName)

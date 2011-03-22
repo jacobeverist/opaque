@@ -7,6 +7,7 @@ from functions import normalizeAngle
 import pylab
 import numpy
 import gen_icp
+from time import time
 
 estPlotCount = 0
 
@@ -376,15 +377,18 @@ if __name__ == '__main__':
     #    plotOffset(gndPoses[i], results[i], localPostures[i], localPostures[i+1])
     #    plotOffset(gndPoses[i], gnds[i], localPostures[i], localPostures[i+1])
 
-    poseIndex = 11
-    naives = []
-    for i in range(10):
-        naiveOffset = makeGuess2(centerCurves[poseIndex], centerCurves[poseIndex+1], -1.0 + i*0.2, localPostures[poseIndex], localPostures[poseIndex+1], originPose=gndPoses[poseIndex])
+    #poseIndex = 11
+    #naives = []
+    #for i in range(10):
+    #    naiveOffset = makeGuess2(centerCurves[poseIndex], centerCurves[poseIndex+1], -1.0 + i*0.2, localPostures[poseIndex], localPostures[poseIndex+1], originPose=gndPoses[poseIndex])
+    #
+    #    naives.append(naiveOffset)
 
-        naives.append(naiveOffset)
-
-    for i in range(len(naives)):
-        result = gen_icp.motionICP(samples[poseIndex], samples[poseIndex+1], naives[i], plotIter = True, n1 = poseIndex, n2 = i*0.2)
+    for poseIndex in range(len(naives)):
+        t1 = time()
+        result = gen_icp.motionICP(samples[poseIndex], samples[poseIndex+1], naives[poseIndex], plotIter = True, n1 = poseIndex, n2 = poseIndex+1)
+        t2 = time()        
+        print "time:", t2-t1
         plotOffset(gndPoses[poseIndex], result, localPostures[poseIndex], localPostures[poseIndex+1])
         plotOffset(gndPoses[poseIndex], gnds[poseIndex], localPostures[poseIndex], localPostures[poseIndex+1])
                

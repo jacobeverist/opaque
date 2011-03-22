@@ -1,8 +1,8 @@
 
 
 import ogre.renderer.OGRE as ogre
-import ogre.physics.OgreOde as OgreOde
-from Servo import Servo
+#import ogre.physics.OgreOde as OgreOde
+#from Servo import Servo
 from math import *
 from copy import *
 from transform import Transform
@@ -87,8 +87,8 @@ class PhysXProbe:
 		self.wallEnv = 0
 	
 		size = ogre.Vector3(self.segLength, 0.01, self.segWidth)
-		self.anchorMass = OgreOde.BoxMass(STD_WEIGHT*10000.0,size)
-		self.normalMass = OgreOde.BoxMass(STD_WEIGHT,size)
+		#self.anchorMass = OgreOde.BoxMass(STD_WEIGHT*10000.0,size)
+		#self.normalMass = OgreOde.BoxMass(STD_WEIGHT,size)
 
 		self.setAnchor(False)
 

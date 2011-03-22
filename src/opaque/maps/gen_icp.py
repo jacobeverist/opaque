@@ -202,6 +202,7 @@ def disp(ai, bi, T):
 def computeMatchError(offset, a, b, Ca, Cb):
 
 
+	#print "received:", offset
 	#xd = offset[0]
 	#yd = offset[1]
 	#theta = offset[2]
@@ -250,6 +251,7 @@ def computeMatchError(offset, a, b, Ca, Cb):
 	bx = b[0]
 	by = b[1]
 
+	#print ax, ay, xd, yd, theta
 	tx = ax*math.cos(theta) - ay*math.sin(theta) + xd
 	ty = ax*math.sin(theta) + ay*math.cos(theta) + yd
 	dx = bx - tx
@@ -483,6 +485,23 @@ def findClosestPointInB(b_data, a, offset):
 	else:
 		raise
 
+def cost_func2(offset, match_pairs, a_data_raw = [], polyB = [], circles = []):
+	global numIterations
+	global fig
+	
+	errors = []
+	#	print "offset =", offset
+	for pair in match_pairs:
+
+		#print "pair:", pair
+		a = pair[0]
+		b = pair[1]
+		
+		errors.append(computeMatchError(offset, a, b, pair[2], pair[3]))
+		
+	#return 0,0,0
+	#print "returning", errors
+	return errors
 
 def cost_func(offset, match_pairs, a_data_raw = [], polyB = [], circles = []):
 	global numIterations
@@ -491,6 +510,7 @@ def cost_func(offset, match_pairs, a_data_raw = [], polyB = [], circles = []):
 	sum = 0.0
 	for pair in match_pairs:
 
+		#print "pair:", pair
 		a = pair[0]
 		b = pair[1]
 		
@@ -1257,7 +1277,7 @@ def gen_ICP2(estPose1, offset, pastHull, targetHull, pastCircles, costThresh = 0
 		lastCost = newCost
 
 	offset[2] =  functions.normalizeAngle(offset[2])
-	return offset
+	return offset, lastCost
 
 
 
@@ -1406,7 +1426,7 @@ def motionICP(points1, points2, offset, costThresh = 0.004, minMatchDist = 2.0, 
 			pylab.savefig("ICP_plot_%04u.png" % numIterations)
 			pylab.clf()			
 		
-		print "pairs =", len(match_pairs)
+		#print "pairs =", len(match_pairs)
 						
 		#if len(match_pairs) < lastNumPairs:
 		#	lastNumPairs = len(match_pairs)
@@ -1416,21 +1436,28 @@ def motionICP(points1, points2, offset, costThresh = 0.004, minMatchDist = 2.0, 
 						
 						
 		# optimize the match error for the current list of match pairs
-		newOffset = scipy.optimize.fmin(cost_func, offset, [match_pairs, [], [], []])
-	
+		newOffset = scipy.optimize.fmin(cost_func, offset, [match_pairs, [], [], []], disp = 0)
+		#newOffset = scipy.optimize.leastsq(cost_func2, offset, match_pairs)
+		#print "newOffset:", newOffset
 		# get the current cost
+		#newCost = cost_func2(newOffset[0], match_pairs)
 		newCost = cost_func(newOffset, match_pairs)
 	
+		#print "newCost:", newCost
+		
+		#totalCost = 0.0
+		#for i in range(len(newCost)):
+		#	totalCost += newCost[i]
+		#newCost = totalCost
+		
 		# check for convergence condition, different between last and current cost is below threshold
-		#if abs(lastCost - newCost) < costThresh or (numIterations - startIteration) > 10:
 		if abs(lastCost - newCost) < costThresh or (numIterations - startIteration) > 10:
+			#offset = newOffset[0]
 			offset = newOffset
 			lastCost = newCost
 			break
 
 		numIterations += 1
-
-		offset = newOffset
 
 		" reduce the minMatch distance for each step down to a floor value "
 		#minMatchDist /= 2
@@ -1439,6 +1466,7 @@ def motionICP(points1, points2, offset, costThresh = 0.004, minMatchDist = 2.0, 
 	
 		
 		# save the current offset and cost
+		#offset = newOffset[0]
 		offset = newOffset
 		lastCost = newCost
 		
@@ -1496,6 +1524,7 @@ def motionICP(points1, points2, offset, costThresh = 0.004, minMatchDist = 2.0, 
 			pylab.savefig("ICP_plot_%04u.png" % numIterations)
 			pylab.clf()			
 
+	#print "offset:", offset
 	offset[2] =  functions.normalizeAngle(offset[2])
 	
 	return offset

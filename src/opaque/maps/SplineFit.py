@@ -4,6 +4,7 @@ import scipy.interpolate
 from random import gauss
 from copy import copy
 from math import floor, asin, acos
+from time import time
 
 class SplineFit:
 
@@ -34,6 +35,8 @@ class SplineFit:
 	def getUniformSamples(self):
 		
 		samples = scipy.arange(0.0,1.0,0.01)
+		#samples = scipy.arange(0.0,1.0,0.05)
+		#samples = scipy.arange(0.0,1.0,0.1)
 		sample_points = self.getUVecSet(samples)
 		#print len(sample_points)
 		sample_points = self.makePointsUniform(sample_points)
@@ -45,6 +48,7 @@ class SplineFit:
 		return sample_points
 	
 	def makePointsUniform(self, points, max_spacing = 0.04):
+	#def makePointsUniform(self, points, max_spacing = 0.05):
 		
 		" make the points uniformly distributed "
 		
@@ -449,6 +453,31 @@ class SplineFit:
 
 		return min, min_i
 
+if __name__ == '__main__':
+	
+	dirName = "../../testData/poseTest"
+	numPoses = 16
+	
+	localPostures = []
+	centerCurves = []
+	
+	estPoses = []
+	gndPoses = []
 
+	for i in range(numPoses):
+
+		f = open(dirName + "/posture%04u.txt" % i, 'r')
+		localPostures.append(eval(f.read().rstrip()))
+		f.close()
+	print len(localPostures), numPoses
+	print time()
+	for i in range(numPoses):    
+		" compute a fitted curve of a center point "
+		centerCurves.append(SplineFit(localPostures[i], smooth = 0.5, kp = 2))
+		vec = centerCurves[i].getUVector(0.5)
+		pnt = centerCurves[i].getU(0.5)
+
+	print time()
+        
 
 

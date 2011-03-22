@@ -245,6 +245,24 @@ class MapGraph:
 		self.poseGraph = graph.digraph()
 		self.numNodes = 0
 		self.currNode = 0
+
+		constraints = [array([-0.77869538,  0.03316924,  0.00986151]),
+					array([-0.90407686, -0.01763103,  0.02754356]),
+					array([-0.87506632,  0.02077848,  0.01951086]),
+					array([-0.96609289, -0.04388461,  0.04037301]),
+					array([-0.93305768, -0.0073877 ,  0.00931119]),
+					array([-1.121602  ,  0.01085055, -0.03746392]),
+					array([-0.77457111, -0.08738916,  0.09298544]),
+					array([ 0.08691232,  0.00682565,  0.14365521]),
+					array([-0.51276648, -0.09305045,  0.38136686]),
+					array([-0.02968783,  0.04448365,  0.09877997]),
+					array([-0.10125818, -0.09922331, -0.00254633]),
+					array([ 0.03094914,  0.05522976,  0.19041035]),
+					array([-0.20858867,  0.00134731,  0.06944558]),
+					array([-0.36523917, -0.02151505,  0.18751671]),
+					array([-0.01925312,  0.01381785, -0.08632351])]
+		constraints = []
+
 		
 		for i in range(0,num_poses):
 			
@@ -266,23 +284,33 @@ class MapGraph:
 				posture1 = node1.getAIRPosture()
 				posture2 = node2.getAIRPosture()
 
-				offset = estimateMotion.makeGuess2(curve1, curve2, 0.2, posture1, posture2)
-
-				self.airs.append([0.2, offset])	
+				#(points1, points2, offset, costThresh = 0.004, minMatchDist = 2.0, plotIter = False, n1 = 0, n2 = 0):
+				offset = estimateMotion.makeGuess2(curve1, curve2, 0.0, posture1, posture2)
+				result = gen_icp.motionICP(curve1.getUniformSamples(), curve2.getUniformSamples(), offset, plotIter = False, n1 = (i-1), n2 = i)
+ 
+ 				#result = constraints[i-1]
+ 
+				self.airs.append([0.2, result])	
+				#self.airs.append([0.2, offset])	
+				constraints.append(result)
 				
 				" FIXME:  add covariance from vector in guess direction "
 				
-				transform = matrix([[offset[0]], [offset[1]], [offset[2]]])
+				transform = matrix([[result[0]], [result[1]], [result[2]]])
+				#transform = matrix([[offset[0]], [offset[1]], [offset[2]]])
 				covE = matrix([[ 0.4,  0.0, 0.0],
 				        [ 0.0,  0.1, 0.0],
 				        [0.0, 0.0,  0.1]])
-				
+				print "adding motion constraint:", result[0], result[1], result[2]
+				#print "adding motion constraint:", offset[0], offset[1], offset[2]
 				self.poseGraph.add_edge(i-1, i, attrs = [transform, covE])
 
 				#self.addNaiveMotionConstraint(i-1, i, 0.14, True)
-
+		
 			self.numNodes += 1
-
+		
+		#print repr(constraints)
+		#exit()
 		"""
 		pylab.clf()			
 		for i in range(self.numNodes):
@@ -809,7 +837,7 @@ class MapGraph:
 				
 				#print "distance:", i, j, dist, loc2[0,0], loc2[1,0], loc2[2,0], E_param[0,0], E_param[0,1], E_param[1,0], E_param[1,1]
 
-				if dist <= DIST_THRESHOLD:
+				if dist <= DIST_THRESHOLD and abs(i-j) < 5:
 					pair_candidates.append([dist,i,j,loc2])
 				
 			ind = range(0,i)
@@ -827,7 +855,7 @@ class MapGraph:
 				dist = bayes.mahab_dist(c1, c2, SENSOR_RADIUS, SENSOR_RADIUS, E)
 				
 				#print "distance:", i, j, dist
-				if dist <= DIST_THRESHOLD:
+				if dist <= DIST_THRESHOLD and abs(i-j) < 5:
 					pair_candidates.append([dist,i,j,loc2])
 
 		#exit()
@@ -935,7 +963,7 @@ class MapGraph:
 			
 			#print p[1], p[2], p[0]
 
-		"""
+		
 		pylab.clf()
 		for i in range(self.numNodes):
 			if hull_computed[i]:
@@ -955,11 +983,13 @@ class MapGraph:
 				xP.append(hull_trans[0][0])
 				yP.append(hull_trans[0][1])
 				pylab.plot(xP,yP)		
+				
+				pylab.scatter([airPose1[0]], [airPose1[1]], color='k')
 				pylab.xlim(-8,12)
 				pylab.ylim(-10,10)
 				pylab.savefig("hull_%04u.png" % i)
 				pylab.clf()		
-		"""
+		
 
 
 
@@ -970,10 +1000,13 @@ class MapGraph:
 			transform = p[3]
 			n1 = p[1]
 			n2 = p[2]
-			offset, covar = self.makeSensorConstraint(transform, n1, n2, a_hulls[n1], a_hulls[n2])
+			offset, covar, cost = self.makeSensorConstraint(transform, n1, n2, a_hulls[n1], a_hulls[n2])
 			transform = matrix([ [offset[0]], [offset[1]], [offset[2]] ],dtype=float)
-			hypotheses.append([p[1],p[2],transform,covar])
-			print "hypothesize", i, ":",  "sensor constraint between", n1, "and", n2
+			
+			if cost < 1.5:
+				#if False:
+				hypotheses.append([p[1],p[2],transform,covar])
+				print "hypothesis", i, ":",  "sensor constraint between", n1, "and", n2
 
 		" need more hypotheses "
 		" add a more naive motion model constraint "
@@ -1007,7 +1040,7 @@ class MapGraph:
 		#print "paths[2]", paths[2]
 		
 		results = []
-		
+				
 		for i in range(len(hypotheses)):
 			for j in range(i+1, len(hypotheses)):
 				
@@ -1032,13 +1065,17 @@ class MapGraph:
 				Th1 = hyp1[2]
 				Th2 = hyp2[2]
 				
+				Ch1 = hyp1[3]
+				Ch2 = hyp2[3]
+				
 				" m1->m2, m2->n1, n1->n2, n2->m1 "
 				" Th1, Tp1, Th2, Tp2 "
 				
-				covE = matrix([[ 0.1, 0.0, 0.0 ], [ 0.0, 0.1, 0.0], [ 0.0, 0.0, pi/4.0 ]],dtype=float) 
+				#covE = matrix([[ 0.1, 0.0, 0.0 ], [ 0.0, 0.1, 0.0], [ 0.0, 0.0, pi/4.0 ]],dtype=float) 
+				covE = Ch1
 				result1 = Th1
 				result2, cov2 = doTransform(result1, Tp1, covE, Ep1)
-				result3, cov3 = doTransform(result2, Th2, cov2, covE)
+				result3, cov3 = doTransform(result2, Th2, cov2, Ch2)
 				result4, cov4 = doTransform(result3, Tp2, cov3, Ep2)
 				
 				invMat = scipy.linalg.inv(cov4)
@@ -1052,8 +1089,11 @@ class MapGraph:
 				
 				precision = [invMat[0,0], invMat[0,1], invMat[1,1], invMat[2,2], invMat[0,2], invMat[1,2]]
 				
-				#results.append([err, i, j, [result4[0,0], result4[1,0], result4[2,0]], precision])
-				results.append([err, i, j])
+				if abs(m2-n1) < 5 and abs(n2-m1) < 5:
+					#results.append([err, i, j, [result4[0,0], result4[1,0], result4[2,0]], precision])
+					results.append([err, i, j])
+				else:
+					results.append([None,i,j])
 		
 		results.sort()
 		
@@ -1074,9 +1114,17 @@ class MapGraph:
 		maxError = 0.0
 		for result in results:
 			#print result[1], result[2], result[0]
-			if result[0] > maxError:
+			if result[0] != None and result[0] > maxError:
 				maxError = result[0]
 				
+		" set all proscribed hypothesis sets to maximum error "
+		maxError = maxError*2
+
+		for result in results:
+			if result[0] == None:
+				result[0] = maxError
+				
+			
 		#print "A:", A
 		print "maxError:", maxError
 		
@@ -1088,11 +1136,11 @@ class MapGraph:
 			#print "i,j:", i, j
 			A[i,j] = maxError - result[0]
 			A[j,i] = maxError - result[0]
-			
-		print "A:"
+		
+		#print "A:"
 		" disable the truncation "
 		set_printoptions(threshold=nan)
-		print repr(A)
+		#print repr(A)
 		
 
 		fn = open("A.txt",'w')
@@ -1102,149 +1150,64 @@ class MapGraph:
 		
 		" do graph clustering of consistency matrix "
 	
-		e = scsgp.dominantEigenvectors(A)
-		w = scsgp.getIndicatorVector(e[0])
-		
-		for i in range(len(hypotheses)):
-			print hypotheses[i][0], hypotheses[i][1], w[i,0], e[0][i,0], A[hypotheses[i][0], hypotheses[i][1]]
-		
-		exit()
-		
-		" compute eigenvectors from power method "
-		
-		def rand_vector(n):
-			vec_n = matrix([[0.0] for i in range(n)],dtype=float)
-			sum = 0.0
+		w = []
+		e = []
+		for i in range(100):
+			e, lmbda = scsgp.dominantEigenvectors(A)
+			w = scsgp.getIndicatorVector(e[0])
 
-			for i in range(n):
-				vec_n[i][0] = random.uniform(0,1)
-				sum += vec_n[i][0]* vec_n[i][0]
-			
-			mag = sqrt(sum)
-			
-			for i in range(n):
-				vec_n[i][0] /= mag
-			
-			return vec_n
-			
-		K = 5
-		e = [numpy.matrix([],dtype=float) for i in range(len(hypotheses))]
-		
-		lmbda = [0.0 for i in range(len(hypotheses))]
-		
-		for i in range(len(hypotheses)):
-			e[i] = rand_vector(len(hypotheses))
-			#print e
-			for iters in range(K):
-				for j in range(i):
-					#print "i,j:", i,j
-					#print "e[i]:", e[i]
-					#print "e[j]:", e[j]
+			#print lmbda[0], "/", lmbda[1], "=", lmbda[0]/lmbda[1]
 
-					#alpha = numpy.multiply(e[j], e[i])
-					alpha = numpy.dot(e[j].transpose(), e[i])
-					alpha = alpha[0,0]
-					
-					#print "alpha:", alpha
-					
-					if i == 1:
-						print "e[1] before:", e[i]
-					e[i] = e[i] - alpha * e[j]
-					if i == 1:
-						print "e[1] after:", e[i]
+			" threshold test l1 / l2"
+			ratio = lmbda[0][0,0] / lmbda[1][0,0]
+			if ratio >= 2.0:
+				print e[0]
+				print w
+				break
+			else:
+				print
+		
+		selected = []	
+		for i in range(len(hypotheses)):
+			if w[i,0] >= 1.0:
+				selected.append(hypotheses[i])
 				
-				sum = 0.0
-				for k in range(len(e[i])):
-					sum += e[i][k]* e[i][k]				
-				mag = sqrt(sum)
-				
-				e[i] = e[i] / mag
-				#print "step 1:", e[i]
-				e[i] = A * e[i]
-				#print "step 2:", e[i]
-				
-				sum = 0.0
-				for k in range(len(e[i])):
-					sum += e[i][k]* e[i][k]				
-				lmbda[i] = sqrt(sum)
-				
-			sum = 0.0
-			for k in range(len(e[i])):
-				sum += e[i][k]* e[i][k]				
-			mag = sqrt(sum)		
-			
-			e[i] = e[i] / mag
-			#print "step 3:", e[i]
+		for i in range(len(results)):
+			result = results[i]
+			h1 = result[1]
+			h2 = result[2]
+			val = result[0]
+			hyp1 = hypotheses[h1]
+			hyp2 = hypotheses[h2]
+
+			print "(%d -> %d)" % (hyp1[0], hyp1[1]), "(%d -> %d)" % (hyp2[0], hyp2[1]) , val, w[h1,0], w[h2,0], e[0][h1,0], e[0][h2,0], A[h1, h2]
 		
-		print "eigenvectors:", e[0]
+		#exit()
 		
-		e_w, e_v = numpy.linalg.eig(A)
-		print "eigenvectors2:", e_w
-		
-		
-		"FIXME: add in threshold test l1 / l2"
-		
-		print "Power Method:"
-		print "lambda:", lmbda
+		" add the accepted constraints to the graph "
 		#for i in range(len(hypotheses)):
-		#	print e[i]
-		
-		" create tuples of eigenvector elements and associated hypotheses "
-		tups = []
-		domVector = e[0]
-		for i in range(len(hypotheses)):
-			tups.append((domVector[i,0], hypotheses[i], i))
+		#	hyp = hypotheses[i]
+		#	n1 = hyp[0]
+		#	n2 = hyp[1]	
+		#	Th1 = hyp[2]
+		#	Ch1 = hyp[3]
+		#	self.poseGraph.add_edge(n1, n2, attrs = [Th1, Ch1])
+
 			
-		tups.sort()
-		tups.reverse()
 		
+		self.doToro([], results, a_hulls)
+		#self.doToro(hypotheses, results, a_hulls)
+		#self.doToro(selected, results, a_hulls)
+
 		
-		" maximize the dot product of v and w "
-		v = numpy.matrix([[tups[i][0]] for i in range(len(tups))], dtype=float)
-		w = numpy.matrix([[0.0] for i in range(len(tups))], dtype=float)
-		wp = numpy.matrix([[0.0] for i in range(len(tups))], dtype=float)
-		
-		for i in range(len(tups)):
-			print tups[i][0]
-			w[i,0] = 1
-			val = numpy.dot(w.transpose(), v)
-			val = val[0,0] / sqrt(1+i)
-			#print "w:", w
-			print "dot:", val
-		
-			wp[tups[i][2],0] = 1
-			
-			#print "wp:", wp
-			
-			val2 = (wp.transpose() * A * wp) / (numpy.dot(wp.transpose(),wp)[0,0])
-			#print "eqn :", val2[0,0]
-			#print
-		
-		#print A
-		
-		#w, v = numpy.linalg.eig(A)
-		
-		#print w
-		#print v
-		
-		
-		#print len(results), "results"
-		#for i in range(20):
-		#	print results[i]
-		
-		self.doToro(hypotheses, results)
-		#p = pair_unique[-1]
-		#print self.makeSensorConstraint(p[0],p[1],p[2], a_hulls[p[1]], a_hulls[p[2]])
-		#print p[3]
-		
-	def doToro(self, hypotheses, results):
+	def doToro(self, hypotheses, results, hulls):
 		
 		" vertices "
 		v_list = []
 
 		for i in range(self.numNodes):
 			node1 = self.poseGraph.get_node_attributes(i)
-			estPose1 = node1.getEstPose()
+			estPose1 = node1.getGlobalAIRPose()
 			v_list.append([i, [estPose1[0], estPose1[1], estPose1[2]]])
 
 		
@@ -1282,28 +1245,8 @@ class MapGraph:
 		#print len(results), "results"
 		" add hypotheses to the TORO file "
 
-		constraints = {}
-
-		#print len(results), "results"
-		#for i in range(20):
-		#	print results[i]		
 		
-		for result in results:
-			
-			" maximum error requirement "
-			if result[0] <= 1.0: 
-				
-				constraint1 = result[1]
-				constraint2 = result[2]
-				#print result[0], result[1],result[2]
-			
-				constraints[constraint1] = True
-				constraints[constraint2] = True
-		
-		#print "constraints:", constraints
-		
-		
-		for k in constraints:
+		for k in range(len(hypotheses)):
 			hyp = hypotheses[k]
 			
 			n1 = hyp[0]
@@ -1317,33 +1260,23 @@ class MapGraph:
 			invMat = scipy.linalg.inv(covE)				
 			precision = [invMat[0,0], invMat[0,1], invMat[1,1], invMat[2,2], invMat[0,2], invMat[1,2]]
 			
-			e_list.append([n1,n2,offset,precision])			
+			e_list.append([n1,n2,offset,precision])
 		
-		#for i in range(len(hypotheses)):
-			
-		#	hyp = hypotheses[i]
-			
-		#	n1 = hyp[0]
-		#	n2 = hyp[1]
-			
-		#	transform = hyp[2]
-		#	covar = hyp[3]
-			
-		#	offset = [transform[0,0], transform[1,0], transform[2,0]]
-			
-		#	invMat = scipy.linalg.inv(covE)				
-		#	precision = [invMat[0,0], invMat[0,1], invMat[1,1], invMat[2,2], invMat[0,2], invMat[1,2]]
-		
-		#	e_list.append([n1,n2,offset,precision])
-				
-			
-			
-			
-		
-		toro.writeToroGraph(".", "test.graph", v_list, e_list, [])
-		toro.plotToro(v_list, e_list, drawedge=True)
-		pylab.savefig("test.png")
+		toro.writeToroGraph(".", "probe.graph", v_list, e_list, [])
+		toro.plotToro(v_list, e_list, hulls, drawedge=True)
+		pylab.savefig("uncorrected.png")
 		pylab.clf()
+
+
+		toro.executeToro("./" + "probe.graph")
+	
+		finalFileName = "probe-treeopt-final.graph"
+		v_list2, e_list2 = toro.readToroGraph("./" + finalFileName)		
+		
+		toro.plotToro(v_list2, e_list2, hulls, drawedge=True)
+		pylab.savefig("corrected.png")
+		pylab.clf()
+		
 		" render uncorrect graph "
 		
 		" run correction "
@@ -1397,8 +1330,8 @@ class MapGraph:
 		minMatchDist = 2.0
 	
 		" plot the best fit at each iteration of the algorithm? "
-		plotIteration = True
-		#plotIteration = False
+		#plotIteration = True
+		plotIteration = False
 	
 		#offset = [0.0,0.0,0.0]
 	
@@ -1426,11 +1359,11 @@ class MapGraph:
 		radius, center = gen_icp.computeEnclosingCircle(hull1)
 		circle1 = [radius, center]
 		
-		offset = gen_icp.gen_ICP2(estPose1, firstGuess, hull1, hull2, [circle1], costThresh, minMatchDist, plotIteration, n1, n2)
-		
+		offset, cost = gen_icp.gen_ICP2(estPose1, firstGuess, hull1, hull2, [circle1], costThresh, minMatchDist, plotIteration, n1, n2)
+		print "%d -> %d" %(n1,n2), "cost =", cost
 		covar = matrix([[0.1,0.0,0.0],[0.0,0.1,0.0],[0.0,0.0,0.3]])
 		
-		return offset, covar
+		return offset, covar, cost
 		
 		"""
 		pylab.clf()

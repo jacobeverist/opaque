@@ -108,13 +108,23 @@ class LocalNode:
 		
 		globalEst = [0.0,0.0,0.0]
 		finalVec = array([[localAIRPose[0]], [localAIRPose[1]]])
-		transVec = dot(transpose(self.gndR), finalVec)
-		resVec = dot(self.gndBackR, transVec)
-		resVec[0, 0] += self.gndDist
-		tempVec = dot(self.gndForeR, resVec)
+		
+		transVec = dot(transpose(self.R), finalVec)
+		resVec = dot(self.backR, transVec)
+		resVec[0, 0] += self.dist
+		tempVec = dot(self.foreR, resVec)
+
+		#transVec = dot(transpose(self.gndR), finalVec)
+		#resVec = dot(self.gndBackR, transVec)
+		#resVec[0, 0] += self.gndDist
+		#tempVec = dot(self.gndForeR, resVec)
+		
 		globalEst[0] = tempVec[0, 0]
 		globalEst[1] = tempVec[1, 0]
-		globalEst[2] = self.normalizeAngle(self.gndPose[2] + localAIRPose[2])
+		
+		
+		globalEst[2] = self.normalizeAngle(self.estPose[2] + localAIRPose[2])
+		#globalEst[2] = self.normalizeAngle(self.gndPose[2] + localAIRPose[2])
 
 		globalAIRPose = globalEst
 

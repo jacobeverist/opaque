@@ -25,7 +25,7 @@ from opaque.TestHoldSlideTransition import TestHoldSlideTransition
 from opaque.TestAnchorTransition import TestAnchorTransition
 from opaque.TestFrontExtend import TestFrontExtend
 from opaque.TestPokeWalls import TestPokeWalls
-from opaque.environment.WallSections import WallSections
+#from opaque.environment.WallSections import WallSections
 from DrawThings import DrawThings
 
 
