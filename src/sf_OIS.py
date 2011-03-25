@@ -147,8 +147,8 @@ class Application(object):
 
 	def _configure(self):
 		"""This shows the config dialog and creates the renderWindow."""
-		#carryOn = self.root.showConfigDialog()
-		carryOn = self.root.restoreConfig()
+		carryOn = self.root.showConfigDialog()
+		#carryOn = self.root.restoreConfig()
 
 		if carryOn:
 			self.renderWindow = self.root.initialise(True, "OGRE Render Window")

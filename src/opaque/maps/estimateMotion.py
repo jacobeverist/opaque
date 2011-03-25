@@ -9,6 +9,8 @@ import numpy
 import gen_icp
 from time import time
 
+import os
+
 estPlotCount = 0
 
 
@@ -103,6 +105,53 @@ def makeGuess2(centerCurve1, centerCurve2, stepDist, posture1, posture2, originP
     
     #return globalCurve2
 
+def correctOrientation(posture1, posture2):
+
+    #poseProfile1 = Pose(originPose)
+
+    #posture1_offset = []
+    #for p in posture1:
+    #    nP = poseProfile1.convertLocalToGlobal(p)
+    #    posture1_offset.append(nP)
+        
+    #pose2 = poseProfile1.convertLocalOffsetToGlobal(offset)
+    
+    #poseProfile2 = Pose(pose2)
+    
+    #posture2_offset = []
+    #for p in posture2:
+    #    nP = poseProfile2.convertLocalToGlobal(p)
+    #    posture2_offset.append(nP)
+    
+    curve1 = SplineFit(posture1, smooth = 0.5, kp = 2)
+    curve2 = SplineFit(posture2, smooth = 0.5, kp = 2)
+
+    originPoint = [0.0,0.0]
+
+    handleLocs = [0.3, 0.7]
+    handlePoints1 = curve1.getUSet(handleLocs)
+    handlePoints2 = curve2.getUSet(handleLocs)
+    
+    vec1 = [handlePoints1[0][0], handlePoints1[0][1]]
+    mag = sqrt(vec1[0]*vec1[0] + vec1[1]*vec1[1])
+    vec1[0] /= mag
+    vec1[1] /= mag
+    
+    angle1 = acos(vec1[0])
+    if asin(vec1[1])  < 0:
+        angle1 = -angle1
+    
+    vec2 = [handlePoints2[0][0], handlePoints2[0][1]]
+    mag = sqrt(vec2[0]*vec2[0] + vec2[1]*vec2[1])
+    vec2[0] /= mag
+    vec2[1] /= mag
+
+    angle2 = acos(vec2[0])
+    if asin(vec2[1])  < 0:
+        angle2 = -angle2
+        
+    return normalizeAngle(angle1 - angle2)
+    
 
 def plotPoses(pose1, pose2, posture1, posture2):
     global estPlotCount
@@ -160,7 +209,7 @@ def plotPoses(pose1, pose2, posture1, posture2):
     pylab.savefig("plotCenter%04u.png" % estPlotCount)
     pylab.clf()      
     
-    estPlotCount += 1
+    #estPlotCount += 1
 
 def plotOffset(originPose, offset, posture1, posture2):
     
@@ -168,12 +217,17 @@ def plotOffset(originPose, offset, posture1, posture2):
   
     poseProfile1 = Pose(originPose)
 
-    xP = []
-    yP = []
+    posture1_offset = []
     for p in posture1:
         nP = poseProfile1.convertLocalToGlobal(p)
-        xP.append(nP[0])
-        yP.append(nP[1])
+        posture1_offset.append(nP)
+        
+    xP = []
+    yP = []
+    for p in posture1_offset:
+        #nP = poseProfile1.convertLocalToGlobal(p)
+        xP.append(p[0])
+        yP.append(p[1])
         
     pylab.plot(xP,yP, color='b')
     
@@ -181,41 +235,64 @@ def plotOffset(originPose, offset, posture1, posture2):
     
     poseProfile2 = Pose(pose2)
     
-    xP = []
-    yP = []
+    posture2_offset = []
     for p in posture2:
         nP = poseProfile2.convertLocalToGlobal(p)
-        xP.append(nP[0])
-        yP.append(nP[1])
+        posture2_offset.append(nP)
+    
+    xP = []
+    yP = []
+    for p in posture2_offset:
+        #nP = poseProfile2.convertLocalToGlobal(p)
+        xP.append(p[0])
+        yP.append(p[1])
         
     pylab.plot(xP,yP, color='r')    
 
 
 
-    curve1 = SplineFit(posture1, smooth = 0.5, kp = 2)
-    curve2 = SplineFit(posture2, smooth = 0.5, kp = 2)
+    curve1 = SplineFit(posture1_offset, smooth = 0.5, kp = 2)
+    curve2 = SplineFit(posture2_offset, smooth = 0.5, kp = 2)
 
     upoints = numpy.arange(0,1.0,0.01)
     splPoints1 = curve1.getUSet(upoints)
     splPoints2 = curve2.getUSet(upoints)
-       
+
+    handleLocs = [0.3,0.7]
+    handlePoints1 = curve1.getUSet(handleLocs)
+    handlePoints2 = curve2.getUSet(handleLocs)
+
     xP = []
     yP = []
     for p in splPoints1:
-        nP = poseProfile1.convertLocalToGlobal(p)
-        xP.append(nP[0])
-        yP.append(nP[1])
+        #nP = poseProfile1.convertLocalToGlobal(p)
+        xP.append(p[0])
+        yP.append(p[1])
         
-    pylab.plot(xP,yP, color='b')    
+    pylab.plot(xP,yP, color='k')    
 
     xP = []
     yP = []
     for p in splPoints2:
-        nP = poseProfile2.convertLocalToGlobal(p)
-        xP.append(nP[0])
-        yP.append(nP[1])
+        #nP = poseProfile2.convertLocalToGlobal(p)
+        xP.append(p[0])
+        yP.append(p[1])
         
-    pylab.plot(xP,yP, color='r')    
+    pylab.plot(xP,yP, color='k')    
+    
+    pylab.scatter([0.0],[0.0], color = 'k')
+
+    xP = []
+    yP = []
+    for i in range(1):
+        xP.append(handlePoints1[i][0])
+        yP.append(handlePoints1[i][1])
+
+        xP.append(handlePoints2[i][0])
+        yP.append(handlePoints2[i][1])
+
+    pylab.scatter(xP,yP, color = 'k')
+
         
     """
     xP = []
@@ -253,144 +330,149 @@ def plotOffset(originPose, offset, posture1, posture2):
     pylab.xlim(-4,4)
     pylab.ylim(-4,4)
 
-    pylab.savefig("plotCenter%04u.png" % estPlotCount)
+    pylab.savefig("plotPosture%04u.png" % estPlotCount)
     pylab.clf()        
 
     estPlotCount += 1
 
 if __name__ == '__main__':
 
-    dirName = "../../testData/poseTest"
-    numPoses = 16
+    dirName = "../../testData/fixedPoseTest2/"
+    numPoses = 8
     
-    localPostures = []
-    centerCurves = []
-
-    estPoses = []
-    gndPoses = []
-    
+    poseData = []
+ 
     for i in range(numPoses):
+        
+        files = os.listdir(dirName)
+        estNames = []
+        gndNames = []
+        postureNames = []
+        
+        name1 = "estpose_%02u" % i
+        name2 = "gndpose_%02u" % i
+        name3 = "posture_snap_%02u" % i
+        
+        for nameF in files:
+            if  name1 == nameF[0:10]:
+                estNames.append(nameF)
+
+            if  name2 == nameF[0:10]:
+                gndNames.append(nameF)
+
+            if  name3 == nameF[0:15]:
+                postureNames.append(nameF)
+
+        estNames.sort()
+        gndNames.sort()
+        postureNames.sort()
+        
+        print len(estNames), len(gndNames), len(postureNames)
+
+        localPostures= []
+        localCurves = []        
+
+        for j in range(len(postureNames)):
+                
+            f = open(dirName + postureNames[j], 'r')
+            localPostures.append(eval(f.read().rstrip()))
+            f.close()
             
-        f = open(dirName + "/posture%04u.txt" % i, 'r')
-        localPostures.append(eval(f.read().rstrip()))
-        f.close()
-        
-        " compute a fitted curve of a center point "
-        centerCurves.append(SplineFit(localPostures[i], smooth = 0.5, kp = 2))
-        
-        
-        f = open(dirName + "/estpose%04u.txt" % i, 'r')
-        estPose = eval(f.read().rstrip())
-        f.close()
-        
-        estPoses.append(estPose)
-    
-        f = open(dirName + "/gndpose%04u.txt" % i, 'r')
-        gndPose = eval(f.read().rstrip())
-        f.close()
-    
-        gndPoses.append(gndPose)
+            " compute a fitted curve of a center point "
+            localCurves.append(SplineFit(localPostures[j], smooth = 0.5, kp = 2))
 
+        f = open(dirName + estNames[0], 'r')
+        estpose = eval(f.read().rstrip())
+        f.close()
 
-    gnds = []
-    ests = []
+        f = open(dirName + gndNames[0], 'r')
+        gndpose = eval(f.read().rstrip())
+        f.close()
+
+        poseData.append([estpose, gndpose, localPostures, localCurves])
+
+    #print poseData[0]
+    #exit()
+
     naives = []
-
     for i in range(numPoses-1):
-        gndOffset, estOffset = computeCovar.getMotionConstraint(gndPoses[i], gndPoses[i+1], estPoses[i], estPoses[i+1])
-        gnds.append(gndOffset)
-        ests.append(estOffset)
-        
-        naiveOffset = makeGuess2(centerCurves[i], centerCurves[i+1], 0.2, localPostures[i], localPostures[i+1], originPose=gndPoses[i])
+        naives.append([0.0,0.0,0.0])
 
-        naives.append(naiveOffset)
-        
-    #print gnds[0], naives[0]
-
-    #print computeCovar.computeCovar(gnds, ests)
-    print computeCovar.computeCovar(gnds, gnds)
-    print computeCovar.computeCovar(gnds, naives)
-
-    for i in range(numPoses-1):
-        pass
-        #print "x:", gnds[i][0], naives[i][0]    
-        #print "y:", gnds[i][1], naives[i][1]    
-        #print "p:", gnds[i][2], naives[i][2]
-        print abs(gnds[i][0] - naives[i][0]), abs(gnds[i][1] - naives[i][1]), abs(gnds[i][2] - naives[i][2])
-    
     " plot estimated positions "
-    #plotOffset(gndPoses[0], gnds[0], localPostures[0], localPostures[1])
-    #plotPoses(gndPoses[0], gndPoses[1], localPostures[0], localPostures[1])
     for i in range(numPoses-1):
         pass
         #plotOffset(gndPoses[i], naives[i], localPostures[i], localPostures[i+1])
         #plotPoses(gndPoses[i], gndPoses[i+1], localPostures[i], localPostures[i+1])
 
-    #offset = [sqrt(0.5),sqrt(0.5),0.0]
-
-    " starting position "
-    initPose = [sqrt(0.5),sqrt(0.5),1.0]
-    testPose = Pose(initPose)
-
-    " offset and its inverse "
-    offset = [sqrt(0.5),sqrt(0.2),pi/2+pi/4.5]
-    invOffset = testPose.doInverse(offset)
-
-    " new pose from inverse offset "
-    globalPose = testPose.convertLocalOffsetToGlobal(invOffset)
+    #samples = []
+    #for i in range(len(centerCurves)):
+    #    samples.append(centerCurves[i].getUniformSamples())
     
-    " return to original pose using forward offset "
-    testPose2 = Pose(globalPose)
-    globalPose2 = testPose2.convertLocalOffsetToGlobal(offset)
-    
-    " compare that the two are equal "
-    #print initPose, globalPose2
-    
-    samples = []
-    for i in range(len(centerCurves)):
-        samples.append(centerCurves[i].getUniformSamples())
-    
-    """   
-    pylab.clf()
-    for i in range(len(samples)):
-        
-        xP = []
-        yP = []
-        for p in samples[i]:
-            xP.append(p[0])
-            yP.append(p[1])
-            
-        pylab.plot(xP,yP)
-        pylab.scatter(xP,yP)
-        
-    pylab.show()
-    """
-
-    #fixed_offset = gen_icp.motionICP(samples[7], samples[8], naives[7], plotIter = True, n1 = 7, n2 = 8)
-    #plotOffset(gndPoses[7], fixed_offset, localPostures[7], localPostures[8])
-    
-    #results = []
-    #for i in range(len(samples)-1):
-    #    results.append(gen_icp.motionICP(samples[i], samples[i+1], naives[i], plotIter = True, n1 = i, n2 = i+1))
-        
-    #for i in range(len(results)):
-    #    plotOffset(gndPoses[i], results[i], localPostures[i], localPostures[i+1])
-    #    plotOffset(gndPoses[i], gnds[i], localPostures[i], localPostures[i+1])
-
-    #poseIndex = 11
-    #naives = []
-    #for i in range(10):
-    #    naiveOffset = makeGuess2(centerCurves[poseIndex], centerCurves[poseIndex+1], -1.0 + i*0.2, localPostures[poseIndex], localPostures[poseIndex+1], originPose=gndPoses[poseIndex])
-    #
-    #    naives.append(naiveOffset)
-
     for poseIndex in range(len(naives)):
         t1 = time()
-        result = gen_icp.motionICP(samples[poseIndex], samples[poseIndex+1], naives[poseIndex], plotIter = True, n1 = poseIndex, n2 = poseIndex+1)
+        #result = gen_icp.motionICP(samples[poseIndex], samples[poseIndex+1], naives[poseIndex], plotIter = True, n1 = poseIndex, n2 = poseIndex+1)
         t2 = time()        
-        print "time:", t2-t1
-        plotOffset(gndPoses[poseIndex], result, localPostures[poseIndex], localPostures[poseIndex+1])
-        plotOffset(gndPoses[poseIndex], gnds[poseIndex], localPostures[poseIndex], localPostures[poseIndex+1])
+        #print "time:", t2-t1
+        
+        originCurve = poseData[poseIndex][3][0]
+        vec = originCurve.getUVector(0.5)
+        vecPoint = originCurve.getU(0.5)
+        
+        angle = acos(vec[0])
+        if asin(vec[1]) < 0:
+            angle = -angle
+        
+        originAIRPose = [vecPoint[0], vecPoint[1], angle]   
+        originAIRProfile = Pose(originAIRPose)
+ 
+        originPosture = poseData[poseIndex][2][0]
+        
+        originAIRPosture = []
+        for i in range(len(originPosture)):
+            originAIRPosture.append(originAIRProfile.convertGlobalPoseToLocal(originPosture[i]))
+
+        
+        #plotOffset([0.0,0.0,0.0], result, localPostures[poseIndex], localPostures[poseIndex+1])
+        for j in range(len(poseData[poseIndex][2])-1):
+
+            curve1 = poseData[poseIndex][3][j]
+            curve2 = poseData[poseIndex][3][j+1]
+
+            vec = curve1.getUVector(0.5)
+            vecPoint = curve1.getU(0.5)
+            
+            angle = acos(vec[0])
+            if asin(vec[1]) < 0:
+                angle = -angle
+            
+            localAIRPose1 = [vecPoint[0], vecPoint[1], angle]    
+        
+            vec = curve2.getUVector(0.5)
+            vecPoint = curve2.getU(0.5)
+            
+            angle = acos(vec[0])
+            if asin(vec[1]) < 0:
+                angle = -angle
+        
+            localAIRPose2 = [vecPoint[0], vecPoint[1], angle]    
+    
+            localAIRProfile1 = Pose(localAIRPose1)
+            localAIRProfile2 = Pose(localAIRPose2)
+            
+            posture1 = poseData[poseIndex][2][j]
+            posture2 = poseData[poseIndex][2][j+1]
+            
+            airPosture1 = []
+            airPosture2 = []
+            for i in range(len(posture1)):
+                airPosture1.append(localAIRProfile1.convertGlobalPoseToLocal(posture1[i]))
+                airPosture2.append(localAIRProfile2.convertGlobalPoseToLocal(posture2[i]))
+            
+            #plotOffset([0.0,0.0,0.0], [0.0,0.0,0.0], airPosture1, airPosture2)
+            angle = correctOrientation(originAIRPosture, airPosture2)
+            plotOffset([0.0,0.0,0.0], [0.0,0.0,0.0], originAIRPosture, airPosture2)
+            plotOffset([0.0,0.0,0.0], [0.0,0.0,angle], originAIRPosture, airPosture2)
+            #plotOffset([0.0,0.0,0.0], [0.0,0.0,-angle], originAIRPosture, airPosture2)
                
     
     
