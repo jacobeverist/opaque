@@ -123,34 +123,94 @@ def correctOrientation(posture1, posture2):
     #    nP = poseProfile2.convertLocalToGlobal(p)
     #    posture2_offset.append(nP)
     
-    curve1 = SplineFit(posture1, smooth = 0.5, kp = 2)
-    curve2 = SplineFit(posture2, smooth = 0.5, kp = 2)
+    #curve1 = SplineFit(posture1, smooth = 0.5, kp = 2)
+    #curve2 = SplineFit(posture2, smooth = 0.5, kp = 2)
+    curve1 = SplineFit(posture1, smooth = 0.5, kp = 5)
+    curve2 = SplineFit(posture2, smooth = 0.5, kp = 5)
 
     originPoint = [0.0,0.0]
 
-    handleLocs = [0.3, 0.7]
+    #handleLocs = [0.3, 0.7]
+    handleLocs = [0.1, 0.2, 0.3, 0.4, 0.6, 0.7, 0.8, 0.9]
     handlePoints1 = curve1.getUSet(handleLocs)
     handlePoints2 = curve2.getUSet(handleLocs)
-    
-    vec1 = [handlePoints1[0][0], handlePoints1[0][1]]
-    mag = sqrt(vec1[0]*vec1[0] + vec1[1]*vec1[1])
-    vec1[0] /= mag
-    vec1[1] /= mag
-    
-    angle1 = acos(vec1[0])
-    if asin(vec1[1])  < 0:
-        angle1 = -angle1
-    
-    vec2 = [handlePoints2[0][0], handlePoints2[0][1]]
-    mag = sqrt(vec2[0]*vec2[0] + vec2[1]*vec2[1])
-    vec2[0] /= mag
-    vec2[1] /= mag
 
-    angle2 = acos(vec2[0])
-    if asin(vec2[1])  < 0:
-        angle2 = -angle2
+    hypotheses = []
+    
+    for i in range(len(handleLocs)):
+        vec1 = [handlePoints1[i][0], handlePoints1[i][1]]
+        mag = sqrt(vec1[0]*vec1[0] + vec1[1]*vec1[1])
+        vec1[0] /= mag
+        vec1[1] /= mag
         
-    return normalizeAngle(angle1 - angle2)
+        angle1 = acos(vec1[0])
+        if asin(vec1[1])  < 0:
+            angle1 = -angle1
+        
+        vec2 = [handlePoints2[i][0], handlePoints2[i][1]]
+        mag = sqrt(vec2[0]*vec2[0] + vec2[1]*vec2[1])
+        vec2[0] /= mag
+        vec2[1] /= mag
+
+        angle2 = acos(vec2[0])
+        if asin(vec2[1])  < 0:
+            angle2 = -angle2
+
+        hypotheses.append(normalizeAngle(angle1 - angle2))
+
+    poseProfile1 = Pose([0.0,0.0,0.0])
+
+    posture1_offset = []
+    for p in posture1:
+        nP = poseProfile1.convertLocalToGlobal(p)
+        posture1_offset.append(nP)
+
+    indices = []
+    for i in range(len(handleLocs)):
+        if handleLocs[i] < 0.5:
+            indices.append(range(0,20))
+        else:
+            indices.append(range(20,39))
+
+    costs = []
+    for i in range(len(handleLocs)):
+        pose2 = poseProfile1.convertLocalOffsetToGlobal([0.0,0.0,hypotheses[i]])
+        
+        poseProfile2 = Pose(pose2)
+        
+        posture2_offset = []
+        for p in posture2:
+            nP = poseProfile2.convertLocalToGlobal(p)
+            posture2_offset.append(nP)
+
+        " measure the cost of side 1 and side 2 "
+        
+        cost = 0.0
+        for j in indices[i]:
+            p1 = posture1_offset[j]
+            p2 = posture2_offset[j]
+            
+            cost += sqrt((p2[0]-p1[0])**2 + (p2[1]-p1[1])**2)
+
+        costs.append(cost)
+
+    minCost = 1e100
+    minIndex = 0
+
+    for i in range(len(costs)):
+        if costs[i] < minCost:
+            minCost = costs[i]
+            minIndex = i
+
+    return hypotheses[minIndex], minCost
+
+    if costs[0] > costs[1]:
+        return hypotheses[1], costs[1]
+    else:
+        return hypotheses[0], costs[0]
+
+        
+    #return hypotheses[0]
     
 
 def plotPoses(pose1, pose2, posture1, posture2):
@@ -211,7 +271,7 @@ def plotPoses(pose1, pose2, posture1, posture2):
     
     #estPlotCount += 1
 
-def plotOffset(originPose, offset, posture1, posture2):
+def plotOffset(originPose, offset, posture1, posture2, cost = None):
     
     global estPlotCount
   
@@ -250,9 +310,13 @@ def plotOffset(originPose, offset, posture1, posture2):
     pylab.plot(xP,yP, color='r')    
 
 
+    #FIXME:  not the same curve from spline fit at different configurations
 
-    curve1 = SplineFit(posture1_offset, smooth = 0.5, kp = 2)
-    curve2 = SplineFit(posture2_offset, smooth = 0.5, kp = 2)
+
+    #curve1 = SplineFit(posture1_offset, smooth = 0.5, kp = 2)
+    #curve2 = SplineFit(posture2_offset, smooth = 0.5, kp = 2)
+    curve1 = SplineFit(posture1_offset, smooth = 0.5, kp = 5)
+    curve2 = SplineFit(posture2_offset, smooth = 0.5, kp = 5)
 
     upoints = numpy.arange(0,1.0,0.01)
     splPoints1 = curve1.getUSet(upoints)
@@ -284,7 +348,7 @@ def plotOffset(originPose, offset, posture1, posture2):
 
     xP = []
     yP = []
-    for i in range(1):
+    for i in range(2):
         xP.append(handlePoints1[i][0])
         yP.append(handlePoints1[i][1])
 
@@ -292,6 +356,16 @@ def plotOffset(originPose, offset, posture1, posture2):
         yP.append(handlePoints2[i][1])
 
     pylab.scatter(xP,yP, color = 'k')
+
+    #for i in range(0,20):
+
+    #    p1 = posture1_offset[i]
+    #    p2 = posture2_offset[i]
+
+    #    xP = [p1[0],p2[0]]
+    #    yP = [p1[1],p2[1]]
+
+    #    pylab.plot(xP,yP,color='k')
 
         
     """
@@ -327,6 +401,9 @@ def plotOffset(originPose, offset, posture1, posture2):
     pylab.plot(xP,yP, color='r')
 
     """
+    if cost:
+        pylab.title("Cost = %3.2f" % cost)
+
     pylab.xlim(-4,4)
     pylab.ylim(-4,4)
 
@@ -409,10 +486,7 @@ if __name__ == '__main__':
     #    samples.append(centerCurves[i].getUniformSamples())
     
     for poseIndex in range(len(naives)):
-        t1 = time()
         #result = gen_icp.motionICP(samples[poseIndex], samples[poseIndex+1], naives[poseIndex], plotIter = True, n1 = poseIndex, n2 = poseIndex+1)
-        t2 = time()        
-        #print "time:", t2-t1
         
         originCurve = poseData[poseIndex][3][0]
         vec = originCurve.getUVector(0.5)
@@ -431,7 +505,7 @@ if __name__ == '__main__':
         for i in range(len(originPosture)):
             originAIRPosture.append(originAIRProfile.convertGlobalPoseToLocal(originPosture[i]))
 
-        
+
         #plotOffset([0.0,0.0,0.0], result, localPostures[poseIndex], localPostures[poseIndex+1])
         for j in range(len(poseData[poseIndex][2])-1):
 
@@ -469,10 +543,14 @@ if __name__ == '__main__':
                 airPosture2.append(localAIRProfile2.convertGlobalPoseToLocal(posture2[i]))
             
             #plotOffset([0.0,0.0,0.0], [0.0,0.0,0.0], airPosture1, airPosture2)
-            angle = correctOrientation(originAIRPosture, airPosture2)
-            plotOffset([0.0,0.0,0.0], [0.0,0.0,0.0], originAIRPosture, airPosture2)
-            plotOffset([0.0,0.0,0.0], [0.0,0.0,angle], originAIRPosture, airPosture2)
-            #plotOffset([0.0,0.0,0.0], [0.0,0.0,-angle], originAIRPosture, airPosture2)
+            t1 = time()
+            angle, cost = correctOrientation(originAIRPosture, airPosture2)
+            t2 = time()        
+            print "cost:", cost
+            #plotOffset([0.0,0.0,0.0], [0.0,0.0,0.0], originAIRPosture, airPosture2)
+            #if cost > 1.0:
+            #    plotOffset([0.0,0.0,0.0], [0.0,0.0,angle], originAIRPosture, airPosture2, cost)
+            plotOffset([0.0,0.0,0.0], [0.0,0.0,angle], originAIRPosture, airPosture2, cost)
                
     
     
