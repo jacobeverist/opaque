@@ -81,6 +81,8 @@ class TestModular(SnakeControl):
 		
 		self.isAnchored = False
 
+		self.postureCounter = 0
+
 		self.isCapture = False
 		self.renderTransition = False
 		
@@ -110,6 +112,36 @@ class TestModular(SnakeControl):
 			#f.write(repr(poses))
 			#f.close()
 
+	def grabPosture(self):
+		
+		if self.isCapture:
+			inc = 50
+			
+			if self.globalTimer % inc == 0:
+				
+				localPosture = []
+				
+				for j in range(self.probe.numSegs-1):
+					localPosture.append(self.probe.getJointPose([0.0,0.0,0.0], 19, j))
+				
+				posture_file = open("posture_snap_%02u_%04u.txt" % (self.mapGraph.numNodes-1, self.postureCounter), 'w')		
+				posture_file.write(repr(localPosture))
+				posture_file.write('\n')
+
+				f = open("estpose_%02u_%04u.txt" % (self.mapGraph.numNodes-1, self.postureCounter), 'w')
+				f.write(repr(self.mapGraph.currNode.estPose))
+				f.write("\n")
+				f.close()
+		
+				f = open("gndpose_%02u_%04u.txt" % (self.mapGraph.numNodes-1, self.postureCounter), 'w')
+				f.write(repr(self.mapGraph.currNode.gndPose))
+				f.write("\n")
+				f.close()
+
+				self.postureCounter += 1
+
+		else:
+			self.postureCounter = 0
 	def grabAngles(self):
 
 		if self.isCapture:
@@ -215,6 +247,8 @@ class TestModular(SnakeControl):
 	
 	def frameStarted(self):
 		
+		self.grabPosture()
+		
 		#self.grabImage()
 		#self.grabAngles()
 
@@ -279,7 +313,7 @@ class TestModular(SnakeControl):
 			#self.mapGraph.loadFile("testData/poseTest", 3)
 			#self.mapGraph.loadFile("testData/poseTest", 5)
 			#self.mapGraph.loadFile("testData/poseTest", 8)
-			self.mapGraph.loadFile("testData/poseTest", 16)
+			#self.mapGraph.loadFile("testData/poseTest", 16)
 
 			#exit()
 			#E = self.computeCovar()
@@ -293,8 +327,8 @@ class TestModular(SnakeControl):
 			#self.mapGraph.saveMap()
 			#self.mapGraph.saveLocalMap()
 	
-			self.mapGraph.correctPoses3()
-			exit()
+			#self.mapGraph.correctPoses3()
+			#exit()
 			
 			
 			self.restState = deepcopy(probeState)
@@ -303,7 +337,7 @@ class TestModular(SnakeControl):
 			self.globalState = 4
 			#self.globalState = 9
 
-			#print "Start Time:", time.clock()
+			print "Start Time:", time.clock()
 			
 		elif self.globalState == 4:
 			
@@ -329,6 +363,7 @@ class TestModular(SnakeControl):
 				#self.globalState = 9
 
 				#self.probe.restorePose()
+				self.isCapture = True
 				
 		elif self.globalState == 6:
 
@@ -360,7 +395,10 @@ class TestModular(SnakeControl):
 			isDone = self.doReturnToRest()
 			
 			if isDone:
-				#print "Stop Time:", time.clock()
+				print "Stop Time:", time.clock()
+
+				self.isCapture = False
+
 				#exit()
 
 				#self.mapGraph.correctPoses2()
@@ -372,6 +410,7 @@ class TestModular(SnakeControl):
 				self.currPose = self.contacts.getAverageSegPose(0)
 				deltaDist = sqrt((self.currPose[0]-self.lastPose[0])**2 + (self.currPose[1]-self.lastPose[1])**2)
 
+				" FORCE to the probe to continue walking forward "
 				deltaDist = 1.0
 				print "deltaDist =", deltaDist
 	
