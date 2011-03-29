@@ -1280,6 +1280,54 @@ def gen_ICP2(estPose1, offset, pastHull, targetHull, pastCircles, costThresh = 0
 	return offset, lastCost
 
 
+def quickICP(curve1, curve2, offset, costThresh = 0.004, minMatchDist = 2.0, plotIter = False, n1 = 0, n2 = 0):
+
+	global numIterations
+	startIteration = numIterations	
+
+	vec = curve1.getUVector(0.5)
+	vecPoint = curve1.getU(0.5)
+	
+	angle = acos(vec[0])
+	if asin(vec[1]) < 0:
+		angle = -angle
+	
+	localAIRPose1 = [vecPoint[0], vecPoint[1], angle]	
+
+	vec = curve2.getUVector(0.5)
+	vecPoint = curve2.getU(0.5)
+	
+	angle = acos(vec[0])
+	if asin(vec[1]) < 0:
+		angle = -angle
+
+	localAIRPose2 = [vecPoint[0], vecPoint[1], angle]	
+
+
+	localAIRProfile1 = Pose(localAIRPose1)
+	
+	relPose2 = localAIRProfile1.convertGlobalPoseToLocal(localAIRPose2)
+
+
+	#midPoint1 = points1[len(points1)/2]
+	#midPoint2 = points2[len(points2)/2]
+
+	#handlePoint1 = points1[len(points1)/2+5]
+	handlePoint2 = points2[len(points2)/2+5]
+	
+	#points1 = [midPoint1, handlePoint1]
+	#points2 = [midPoint2, handlePoint2]
+	#points1 = addAIRLVectorCovariance(points1,high_var=0.1)
+	#points2 = addAIRLVectorCovariance(points2,high_var=0.1)
+
+	#points2_offset = []
+	#for p in points2:
+	#	result = dispPoint(p, offset)		
+	#	points2_offset.append(result)
+
+	" correct only the orientation "
+
+	pass
 
 def motionICP(points1, points2, offset, costThresh = 0.004, minMatchDist = 2.0, plotIter = False, n1 = 0, n2 = 0):
 
@@ -1291,7 +1339,6 @@ def motionICP(points1, points2, offset, costThresh = 0.004, minMatchDist = 2.0, 
 	lastNumPairs = 1e100
 
 
-	
 	" sample a series of points from the AIRL curves "
 	
 	" augment points with point-to-line covariances "
