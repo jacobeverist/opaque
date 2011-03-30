@@ -194,6 +194,9 @@ class SnakeApp(sf.Application):
 		
 		#self.probe = PhysXProbe(self.sceneManager,yRot,pos,40,0.15,0.2,0.15,100.0,0.9)
 		self.probe = PhysXProbe(self.sceneManager,yRot,pos,40,0.15,0.1,0.15,1000.0,0.9)
+		
+		#exit()
+		
 
 		#self.probe = SuperbotSnake(self._world,yRot,pos,40,0.15,0.15,30.0*2.5,0.9)
 		#self.probe = SuperbotSnake(self._world,zRot,pos,40,0.15,0.15,30.0*2.5,0.9)
@@ -232,6 +235,8 @@ class SnakeApp(sf.Application):
 		wall5 = [[0.4*cos(pi/6) - 4.0 + WLEN*cos(pi/3), WLEN*sin(pi/3)], [-4.0 + WLEN*cos(pi/3), 0.2 + WLEN*sin(pi/3)]]
 		walls = envs.WallSections(self._world, [wall1, wall2, wall3, wall4, wall5])
 		"""
+		
+		walls = []
 		
 		if targetMapFile != "":
 			" junction test "

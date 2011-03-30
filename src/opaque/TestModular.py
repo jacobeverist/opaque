@@ -112,29 +112,31 @@ class TestModular(SnakeControl):
 			#f.write(repr(poses))
 			#f.close()
 
-	def grabPosture(self):
+	def grabPosture(self, isForce = False):
 		
 		if self.isCapture:
 			inc = 50
 			
-			if self.globalTimer % inc == 0:
+			if self.globalTimer % inc == 0 or isForce:
 				
 				localPosture = []
 				
 				for j in range(self.probe.numSegs-1):
-					localPosture.append(self.probe.getJointPose([0.0,0.0,0.0], 19, j))
+					localPosture.append(self.probe.getJointPose([0.0,0.0,0.0], self.mapGraph.currNode.rootNode, j))
 				
-				posture_file = open("posture_snap_%02u_%04u.txt" % (self.mapGraph.numNodes-1, self.postureCounter), 'w')		
+				posture_file = open("posture_snap_%03u_%06u.txt" % (self.mapGraph.numNodes-1, self.postureCounter), 'w')		
 				posture_file.write(repr(localPosture))
 				posture_file.write('\n')
 
-				f = open("estpose_%02u_%04u.txt" % (self.mapGraph.numNodes-1, self.postureCounter), 'w')
+				f = open("estpose_%03u_%06u.txt" % (self.mapGraph.numNodes-1, self.postureCounter), 'w')
 				f.write(repr(self.mapGraph.currNode.estPose))
 				f.write("\n")
 				f.close()
 		
-				f = open("gndpose_%02u_%04u.txt" % (self.mapGraph.numNodes-1, self.postureCounter), 'w')
-				f.write(repr(self.mapGraph.currNode.gndPose))
+				f = open("gndpose_%03u_%06u.txt" % (self.mapGraph.numNodes-1, self.postureCounter), 'w')
+				gndPose = self.probe.getActualJointPose(self.mapGraph.currNode.rootNode)
+				f.write(repr(gndPose))
+				#f.write(repr(self.mapGraph.currNode.gndPose))
 				f.write("\n")
 				f.close()
 
@@ -142,6 +144,7 @@ class TestModular(SnakeControl):
 
 		else:
 			self.postureCounter = 0
+			
 	def grabAngles(self):
 
 		if self.isCapture:
@@ -364,6 +367,7 @@ class TestModular(SnakeControl):
 
 				#self.probe.restorePose()
 				self.isCapture = True
+				self.grabPosture(True)
 				
 		elif self.globalState == 6:
 

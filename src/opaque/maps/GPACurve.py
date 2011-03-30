@@ -6,21 +6,37 @@ from copy import copy
 from math import floor, asin, acos
 from time import time
 
-class SplineFit:
+from Pose import Pose
+import pca_module
+import scipy
 
-	def __init__ (self, points, smooth = 0.1, kp = 5):
+"Gross Posture Approximation Curve"
+
+class GPACurve:
+
+	def __init__ (self, points, rotated = False, smooth = 0.5, kp = 2):
 		self.pointSet = points
 		self.smoothNess = smooth
 		self.kp = kp
 		
+		self.rotated = rotated
+		self.rotAngle = 0.0
+		self.rotatedPoints = []
+		self.rotateProfile = Pose([0.0,0.0,0.0])
+		
 		newP = []
-		for p in points:
-			if p not in newP:
+		
+		if self.rotated:
+			self.rotatedPoints, self.rotAngle = self.horizontalizePosture(points)
+			#print "rotAngle =", self.rotAngle
+			for p in self.rotatedPoints:
 				newP.append(p)
-				
+		else:
+			for p in points:
+				newP.append(p)
+		
 		# unzip the points
 		intArray = [[],[]]
-#		for p in points:
 
 		" perturb the points to prevent degeneracies "
 		for p in newP:
@@ -31,6 +47,74 @@ class SplineFit:
 		self.tck, self.u = scipy.interpolate.splprep(intArray, s = self.smoothNess, k=self.kp)
 
 
+	def horizontalizePosture(self, posture):
+	
+	    x_list = []
+	    y_list = []
+	
+	    for p in posture:
+	        x_list.append(p[0])
+	        y_list.append(p[1])
+	
+	    cov_a = scipy.cov(x_list,y_list)
+	
+	    loadings = []
+	
+	    " NOTE:  seems to create opposing colinear vectors if data is colinear, not orthogonal vectors "
+	
+	    try:
+	        scores, loadings, E = pca_module.nipals_mat(cov_a, 2, 0.000001, False)
+	
+	    except:
+	        raise
+	
+	    if len(loadings) < 2:
+	        raise
+	
+	    highVarVec = loadings[0]
+	    lowVarVec = loadings[1]
+	    
+	    
+	    angle = acos(highVarVec[0])
+	    if asin(highVarVec[1]) < 0:
+	        angle = -angle
+	    
+	    self.rotateProfile = Pose([0.0,0.0,angle])
+	    
+	    rotatedPosture = []
+	    for i in range(len(posture)):
+	        rotatedPosture.append(self.rotateProfile.convertGlobalPoseToLocal(posture[i]))
+	
+	    "return the first vector returned from PCA because this has the highest variance"
+	    
+	    return rotatedPosture, angle
+	  
+	  
+	def getPose(self):
+		
+		vecPoint = self.getU(0.5)
+		
+		
+		u_set = scipy.arange(0.45, 0.56, 0.01)
+		vecs = self.getUVecSet(u_set)
+		
+		totalNum = len(vecs)
+		totalVec = [0.0,0.0]
+		
+		newAngle = 0.0
+		
+		for vec1 in vecs:
+			newAngle += vec1[2]
+		
+		newAngle /= totalNum
+		
+		return [vecPoint[0], vecPoint[1], newAngle]
+		
+		#angle = acos(vec[0])
+		#if asin(vec[1]) < 0:
+		#	angle = -angle
+		
+		#return [vecPoint[0], vecPoint[1], angle]	
 
 
 	def getUniformSamples(self):
@@ -173,6 +257,10 @@ class SplineFit:
 		newPoint1 = scipy.interpolate.splev(unew1,self.tck)
 		unew2 = [u1 + iter]
 		newPoint2 = scipy.interpolate.splev(unew2,self.tck)
+		
+		if self.rotated:
+		    newPoint1 = self.rotateProfile.convertLocalToGlobal(newPoint1)
+		    newPoint2 = self.rotateProfile.convertLocalToGlobal(newPoint2)
 
 		# tangent vector
 		vec = [newPoint2[0] - newPoint1[0], newPoint2[1] - newPoint1[1]]
@@ -330,6 +418,16 @@ class SplineFit:
 	def drawSpline(self, clr = '0.5'):
 		unew = scipy.arange(0, 1.01, 0.01)
 		out = scipy.interpolate.splev(unew,self.tck)
+		
+		points = []
+		for i in range(len(out[0])):
+			points.append([out[0][i],out[1][i]])
+		
+		if self.rotated:
+			newPoints = []
+			for p in points:
+				newPoints.append(self.rotateProfile.convertLocalToGlobal(p))
+			#out = newPoints
 		#pylab.plot(out[0],out[1], color = clr)	
 
 	def getU(self, u):
@@ -339,6 +437,10 @@ class SplineFit:
 
 		unew = [u]
 		newPoint = scipy.interpolate.splev(unew,self.tck)
+		
+		if self.rotated:
+		    newPoint = self.rotateProfile.convertLocalToGlobal(newPoint)
+		
 		return newPoint
 
 	def getUSet(self, u_set):
@@ -352,6 +454,12 @@ class SplineFit:
 		zipPoints = []
 		for i in range(0,len(newPoints[0])):
 			zipPoints.append([newPoints[0][i],newPoints[1][i]])
+			
+		if self.rotated:
+			rotPoints = []
+			for p in zipPoints:
+				rotPoints.append(self.rotateProfile.convertLocalToGlobal(p))	
+			zipPoints = rotPoints
 
 		return zipPoints
 	
@@ -362,6 +470,23 @@ class SplineFit:
 				raise
 
 		newPoints = scipy.interpolate.splev(u_set,self.tck)
+		
+		
+		if self.rotated:
+			
+			points = []
+			for i in range(len(newPoints[0])):
+				points.append([newPoints[0][i],newPoints[1][i]])
+			
+			rotPoints = []
+			for p in points:
+				rotPoints.append(self.rotateProfile.convertLocalToGlobal(p))
+		
+			" unzip points "
+			newPoints = [[],[]]
+			for p in rotPoints:
+				newPoints[0].append(p[0])
+				newPoints[1].append(p[1])
 		
 		# zip the points together
 		zipPoints = []
@@ -377,6 +502,10 @@ class SplineFit:
 			newPoint1 = scipy.interpolate.splev(unew1,self.tck)
 			unew2 = [u + iter]
 			newPoint2 = scipy.interpolate.splev(unew2,self.tck)
+
+			if self.rotated:
+			    newPoint1 = self.rotateProfile.convertLocalToGlobal(newPoint1)
+			    newPoint2 = self.rotateProfile.convertLocalToGlobal(newPoint2)
 	
 			# tangent vector
 			vec = [newPoint2[0] - newPoint1[0], newPoint2[1] - newPoint1[1]]
