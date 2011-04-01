@@ -11,8 +11,11 @@ import gen_icp
 import scipy.optimize
 from time import time
 
+from scipy.interpolate import *
+
 import scipy
 import pca_module
+import random
 
 import os
 
@@ -552,6 +555,57 @@ def plotOffset(originPose, offset, posture1, posture2, cost = None):
 
     estPlotCount += 1
 
+
+def splineTest(posture):
+
+    global estPlotCount
+
+    " perturb the points to prevent degeneracies "
+    xP = []
+    yP = []
+    for p in posture:
+        xP.append(p[0] + random.gauss(0.0,0.0001))
+        yP.append(p[1] + random.gauss(0.0,0.0001))
+    
+    spline1 = UnivariateSpline(xP, yP, s = 2.0)
+    knots = spline1.get_knots()
+    
+    print knots
+    
+    #spline2 = InterpolatedUnivariateSpline(xP, yP)
+    #spline3 = LSQUnivariateSpline(xP, yP, [0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
+    #spline3 = LSQUnivariateSpline(xP, yP, knots)
+
+
+    #print spline1.get_knots()
+
+    xP = []
+    yP = []
+    for p in posture:
+        xP.append(p[0])
+        yP.append(p[1])
+    pylab.plot(xP,yP, color='b')
+
+    
+    x = numpy.linspace(-3,3,100)
+    y = spline1(x)    
+    pylab.plot(x,y, color='r')
+
+    #x = numpy.linspace(-3,3,100)
+    #y = spline2(x)    
+    #pylab.plot(x,y, color='g')
+    
+    pylab.xlim(-4,4)
+    pylab.ylim(-4,4)
+    
+    pylab.savefig("plotPosture%04u.png" % estPlotCount)
+    pylab.clf()
+    
+    estPlotCount += 1
+    
+    
+    #print spline1.get_knots()
+
 if __name__ == '__main__':
 
     dirName = "../../testData/fixedPoseTest3/"
@@ -601,8 +655,9 @@ if __name__ == '__main__':
             f.close()
             
             " compute a fitted curve of a center point "
-            #localCurves.append(SplineFit(localPostures[j], smooth = 0.5, kp = 2))
-            localCurves.append(GPACurve(localPostures[j], rotated=True))
+            #localCurves.append(GPACurve(localPostures[j], rotated=True))
+
+            splineTest(localPostures[j])
     
             f = open(dirName + estNames[j], 'r')
             estPoses.append(eval(f.read().rstrip()))
@@ -614,6 +669,13 @@ if __name__ == '__main__':
 
         poseData.append([estPoses, gndPoses, localPostures, localCurves])
 
+    for poseIndex in range(numPoses):
+        for j in range(len(poseData[poseIndex][2])-1):
+            posture = poseData[poseIndex][2][j]
+            
+            splineTest(posture)
+
+    exit()
     
     #for j in range(numPoses):
     #    posture_example = poseData[j][2][0]
