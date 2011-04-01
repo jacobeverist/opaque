@@ -8,6 +8,7 @@ from functions import normalizeAngle
 import pylab
 import numpy
 import gen_icp
+import scipy.optimize
 from time import time
 
 import scipy
@@ -151,8 +152,57 @@ def horizontalizePosture(posture):
     #return highVarVec
     
     return rotatedPosture, angle
+
+def cost_func(angle, posture1, posture2):
+
+
+    poseProfile1 = Pose([0.0,0.0,0.0])
+
+    posture1_offset = []
+    for p in posture1:
+        posture1_offset.append(p)
+
+    pose2 = poseProfile1.convertLocalOffsetToGlobal([0.0,0.0,angle])
+    
+    poseProfile2 = Pose(pose2)
+    
+    posture2_offset = []
+    for p in posture2:
+        nP = poseProfile2.convertLocalOffsetToGlobal(p)
+        posture2_offset.append(nP)   
+
+    indices1 = range(0,20)
+    indices2 = range(20,39) 
+
+    cost1 = 0.0
+    cost2 = 0.0
+
+    for j in indices1:
+        p1 = posture1_offset[j]
+        p2 = posture2_offset[j]
+        
+        cost1 += sqrt((p2[0]-p1[0])**2 + (p2[1]-p1[1])**2)
+
+    for j in indices2:
+        p1 = posture1_offset[j]
+        p2 = posture2_offset[j]
+        
+        cost2 += sqrt((p2[0]-p1[0])**2 + (p2[1]-p1[1])**2)
+
+    if cost1 > cost2:
+        return cost2
+    else:
+        return cost1
+
+
     
     
+def correctOrientation2(posture1, posture2):
+
+    angle = scipy.optimize.fmin(cost_func, 0.0, [posture1, posture2], disp = 0)
+
+    return angle, 0.0
+
 
 def correctOrientation(posture1, posture2):
 

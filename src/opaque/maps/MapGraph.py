@@ -47,9 +47,10 @@ airs = []
 
 class MapGraph:
 
-	def __init__(self, probe, contacts):
+	def __init__(self, probe, contacts, stabilizePose = False):
 		
-		# 
+		#
+		self.stabilizePose = stabilizePose
 		self.probe = probe
 		self.contacts = contacts
 		self.stablePose = StablePose(self.probe)
@@ -565,7 +566,7 @@ class MapGraph:
 
 		#self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19)
 		#self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, self.pixelSize, inSim = False)
-		self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, self.pixelSize)
+		self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, self.pixelSize, stabilizePose = self.stabilizePose)
 
 		print "checkP"
 		

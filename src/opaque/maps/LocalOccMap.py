@@ -44,9 +44,16 @@ class LocalOccMap:
 		#da = self.gndInitRoot[2]	
 		#self.gndT = array([[cos(da), -sin(da), 0.0],[sin(da), cos(da), 0.0],[0.0,0.0,1.0]])
 
+		self.stable_rectangles = []
+		self.stableMapImage = Image.new('L', (self.numPixel,self.numPixel),127)
+		self.stableImage = self.stableMapImage.load()
+
+
 		self.rectangles = []
+
 		self.gndFileName = "gndLocalOccMap%03u" % self.nodeID + "_%04u.png"
 		self.fileName = "localOccMap%03u" % self.nodeID + "_%04u.png"
+		self.stableFileName = "stableLocalOccMap%03u" % self.nodeID + "_%04u.png"
 		self.saveCount = 0
 		self.mapImage = 0
 
@@ -159,6 +166,11 @@ class LocalOccMap:
 		gndRects.sort()
 		self.gnd_rectangles.append(gndRects)
 		
+		stableRects = self.computeStabilizedFreeSpace()
+		stableRects.sort()
+		self.stable_rectangles.append(stableRects)
+		
+		
 		# compute free space rectangles
 		freeRects = self.computeFreeSpace(isForward)
 		freeRects.sort()
@@ -189,6 +201,7 @@ class LocalOccMap:
 
 	def gndComputeFreeSpace(self):
 							
+		" Old motion shadow-based obstacle detection, not used "
 		# 1. for every joint reference, compute the distal desired joint configuration and the actual joint configuration
 		# 2. for desired joint configuration, set occupancy to obstacle if not already free space
 		# 3. for actual joint configuration, set to free space, even if previously set as obstacle
@@ -269,9 +282,9 @@ class LocalOccMap:
 		segLength = self.probe.segLength
 		segWidth = self.probe.segWidth
 
-		#xTotal = self.rootPose[0]
-		#zTotal = self.rootPose[1]
-		#totalAngle = self.rootPose[2]
+		#xTotal = self.localNode.rootPose[0]
+		#zTotal = self.localNode.rootPose[1]
+		#totalAngle = self.localNode.rootPose[2]
 
 		xTotal = 0.0
 		zTotal = 0.0
@@ -297,13 +310,78 @@ class LocalOccMap:
 
 		joints = range(self.rootNode, self.probe.numSegs-1)
 
-		#xTotal = self.rootPose[0]
-		#zTotal = self.rootPose[1]
-		#totalAngle = self.rootPose[2]
-
+		#xTotal = self.localNode.rootPose[0]
+		#zTotal = self.localNode.rootPose[1]
+		#totalAngle = self.localNode.rootPose[2]
+		
 		xTotal = 0.0
 		zTotal = 0.0
 		totalAngle = 0.0
+
+		for i in joints:
+			xTotal = xTotal + segLength*cos(totalAngle)
+			zTotal = zTotal + segLength*sin(totalAngle)
+		
+			p1 = [xTotal - 0.5*segWidth*sin(totalAngle), zTotal + 0.5*segWidth*cos(totalAngle)]
+			p2 = [xTotal + 0.5*segWidth*sin(totalAngle), zTotal - 0.5*segWidth*cos(totalAngle)]
+			p3 = [xTotal - segLength*cos(totalAngle) + 0.5*segWidth*sin(totalAngle), zTotal - segLength*sin(totalAngle) - 0.5*segWidth*cos(totalAngle)]
+			p4 = [xTotal - segLength*cos(totalAngle) - 0.5*segWidth*sin(totalAngle), zTotal - segLength*sin(totalAngle) + 0.5*segWidth*cos(totalAngle)]
+
+			actualConfig.append([i, [p4,p3,p2,p1], self.contacts.initMask[i]])
+			
+			if i < self.probe.numSegs-2:
+				totalAngle = totalAngle - self.probe.getServo(i+1)
+				totalAngle = normalizeAngle(totalAngle)
+
+		actualConfig.sort()
+		return actualConfig		
+
+	def computeStabilizedFreeSpace(self, isForward = True):
+							
+		# 1. for every joint reference, compute the distal desired joint configuration and the actual joint configuration
+		# 2. for desired joint configuration, set occupancy to obstacle if not already free space
+		# 3. for actual joint configuration, set to free space, even if previously set as obstacle
+
+		actualConfig = []
+		
+		segLength = self.probe.segLength
+		segWidth = self.probe.segWidth
+
+		xTotal = self.localNode.rootPose[0]
+		zTotal = self.localNode.rootPose[1]
+		totalAngle = self.localNode.rootPose[2]
+
+		#xTotal = 0.0
+		#zTotal = 0.0
+		#totalAngle = 0.0
+
+		joints = range(-1,self.rootNode)
+		joints.reverse()
+
+		for i in joints:
+
+			totalAngle = totalAngle + self.probe.getServo(i+1)
+			totalAngle = normalizeAngle(totalAngle)
+
+			p1 = [xTotal - 0.5*segWidth*sin(totalAngle), zTotal + 0.5*segWidth*cos(totalAngle)]
+			p2 = [xTotal + 0.5*segWidth*sin(totalAngle), zTotal - 0.5*segWidth*cos(totalAngle)]
+			p3 = [xTotal - segLength*cos(totalAngle) + 0.5*segWidth*sin(totalAngle), zTotal - segLength*sin(totalAngle) - 0.5*segWidth*cos(totalAngle)]
+			p4 = [xTotal - segLength*cos(totalAngle) - 0.5*segWidth*sin(totalAngle), zTotal - segLength*sin(totalAngle) + 0.5*segWidth*cos(totalAngle)]
+
+			xTotal = xTotal - segLength*cos(totalAngle)
+			zTotal = zTotal - segLength*sin(totalAngle)
+
+			actualConfig.append([i, [p4,p3,p2,p1], self.contacts.initMask[i]])
+
+		joints = range(self.rootNode, self.probe.numSegs-1)
+
+		xTotal = self.localNode.rootPose[0]
+		zTotal = self.localNode.rootPose[1]
+		totalAngle = self.localNode.rootPose[2]
+		
+		#xTotal = 0.0
+		#zTotal = 0.0
+		#totalAngle = 0.0
 
 		for i in joints:
 			xTotal = xTotal + segLength*cos(totalAngle)
@@ -382,6 +460,10 @@ class LocalOccMap:
 		for snapshot in self.gnd_rectangles:
 			for rect in snapshot:
 				self.fillOpen(rect[1], self.gndMapImage.load())
+
+		for snapshot in self.stable_rectangles:
+			for rect in snapshot:
+				self.fillOpen(rect[1], self.stableMapImage.load())
 	
 		" so outside maps can trigger changes "
 		self.changed = True
@@ -389,6 +471,7 @@ class LocalOccMap:
 		" save the rectangles, and clear the list for new ones "
 		self.rectangles = []
 		self.gnd_rectangles = []
+		self.stable_rectangles = []
 	
 	def saveMap(self, fileName = ""):
 		
@@ -400,6 +483,7 @@ class LocalOccMap:
 			print "saving as", self.fileName % self.saveCount
 			self.mapImage.save(self.fileName % self.saveCount)	
 			self.gndMapImage.save(self.gndFileName % self.saveCount)
+			self.stableMapImage.save(self.stableFileName % self.saveCount)
 			self.saveCount += 1
 		
 	def getMap(self):

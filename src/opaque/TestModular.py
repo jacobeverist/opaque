@@ -250,7 +250,7 @@ class TestModular(SnakeControl):
 	
 	def frameStarted(self):
 		
-		self.grabPosture()
+		#self.grabPosture()
 		
 		#self.grabImage()
 		#self.grabAngles()
@@ -307,7 +307,7 @@ class TestModular(SnakeControl):
 		elif self.globalState == 3:
 			
 			" create the mapping object "
-			self.mapGraph = MapGraph(self.probe, self.contacts)
+			self.mapGraph = MapGraph(self.probe, self.contacts, stabilizePose = True)
 			
 			#exit()
 			#self.mapGraph.loadFile("testData/correctionTest", 43)
@@ -340,7 +340,14 @@ class TestModular(SnakeControl):
 			self.globalState = 4
 			#self.globalState = 9
 
+			self.restState = deepcopy(probeState)
+			self.mapGraph.newNode(self.stepDist, self.direction)
+			self.mapGraph.forceUpdate(False)
+			self.globalState = 6
+
 			print "Start Time:", time.clock()
+
+
 			
 		elif self.globalState == 4:
 			
