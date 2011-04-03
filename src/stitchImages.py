@@ -15,7 +15,7 @@ font2 = ImageFont.truetype("arial.ttf", 16)
 
 
 #for i in range(1,31):
-for i in range(0,33):
+for i in range(0,10):
 
 	im1 = Image.open("localOccMap%03u_0000.png" % i)
 	im2 = Image.open("stableLocalOccMap%03u_0000.png" % i)

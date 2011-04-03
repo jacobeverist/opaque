@@ -5,6 +5,7 @@ from random import gauss
 from copy import copy
 from math import floor, asin, acos
 from time import time
+from numpy import linspace, concatenate
 
 from Pose import Pose
 import pca_module
@@ -46,6 +47,109 @@ class GPACurve:
 		" performing spline fit "
 		self.tck, self.u = scipy.interpolate.splprep(intArray, s = self.smoothNess, k=self.kp)
 
+		" perturb the points to prevent degeneracies "	
+		self.spline = scipy.interpolate.UnivariateSpline(intArray[0], intArray[1], s = 2.0)
+
+		knots = self.spline.get_knots()
+		xMid = (knots[0] + knots[1])/2.0
+		
+		xMid = intArray[0][20]
+
+		foreArray = [[],[]]
+		backArray = [[],[]]
+		for i in range(20):
+			foreArray[0].append(intArray[0][i])
+			foreArray[1].append(intArray[1][i])
+		for i in range(20,39):
+			backArray[0].append(intArray[0][i])
+			backArray[1].append(intArray[1][i])
+
+		self.foreSpline = scipy.interpolate.UnivariateSpline(foreArray[0], foreArray[1], s = 2.0)	
+		self.backSpline = scipy.interpolate.UnivariateSpline(backArray[0], backArray[1], s = 2.0)
+		
+		cutArray = [[],[]]
+		
+		#for i in range(len(intArray[0])):
+		#	if intArray[0][i] > (xMid - 1.0) and intArray[0][i] < (xMid + 1.0):
+		#		cutArray[0].append(intArray[0][i])
+		#		cutArray[1].append(intArray[1][i])
+
+		for i in range(20):
+			cutArray[0].append(intArray[0][i])
+			cutArray[1].append(intArray[1][i])
+		
+
+		#new_knots = [(xMid + j) for j in linspace(-1.0, 1.0, 2)]
+		#new_knots = [xMid - 1.0, xMid-0.8, xMid+0.8, xMid + 1.0]
+		new_knots = []
+		#print new_knots
+		#new_knots = [xMid - 0.5, xMid - 0.4, xMid - 0.3, xMid - 0.2, xMid - 0.1, xMid, xMid ]
+		
+		self.spline = scipy.interpolate.UnivariateSpline(cutArray[0], cutArray[1], s = 2.0)
+
+		#self.spline = scipy.interpolate.LSQUnivariateSpline(intArray[0], intArray[1], new_knots, bbox = [xMid-0.8, xMid+0.8])
+
+
+	def getKnots(self):
+
+		x1 = self.foreSpline.get_knots()
+		y1 = self.foreSpline(x1)
+		x2 = self.backSpline.get_knots()
+		y2 = self.backSpline(x2)
+		
+		x = concatenate((x1, x2))
+		y = concatenate((y1,y2))
+
+		#print x1, x2
+		#print x
+		#x = self.spline.get_knots()
+		#y = self.spline(x)
+
+		xP = []
+		yP = []
+		if self.rotated:
+			for i in range(len(x)):
+				newPoint = self.rotateProfile.convertLocalToGlobal([x[i],y[i]])
+				xP.append(newPoint[0])
+				yP.append(newPoint[1])
+
+			return xP, yP
+
+
+		return x, y
+	
+	def getPlot(self):
+		
+		#knots = self.spline.get_knots()	
+		#x = linspace(knots[0],knots[-1],100)
+		#y = self.spline(x)
+
+
+		knots1 = self.foreSpline.get_knots()
+		knots2 = self.backSpline.get_knots()
+
+		x1 = linspace(knots1[0],knots1[-1],100)
+		y1 = self.foreSpline(x1)
+
+		x2 = linspace(knots2[0],knots2[-1],100)
+		y2 = self.backSpline(x2)
+
+
+		#x = x1 + x2
+		#y = y1 + y2
+		x = concatenate((x1, x2))
+		y = concatenate((y1,y2))
+		xP = []
+		yP = []
+		if self.rotated:
+			for i in range(len(x)):
+				newPoint = self.rotateProfile.convertLocalToGlobal([x[i],y[i]])
+				xP.append(newPoint[0])
+				yP.append(newPoint[1])
+
+			return xP, yP
+		
+		return x,y
 
 	def horizontalizePosture(self, posture):
 	
@@ -92,8 +196,38 @@ class GPACurve:
 	  
 	def getPose(self):
 		
-		vecPoint = self.getU(0.5)
+		knots = self.spline.get_knots()
 		
+		xMid = (knots[0] + knots[1])/2.0
+		yMid = self.spline(xMid)
+
+		x2 = xMid + 0.001
+		y2 = self.spline(x2)
+		
+		newPoint1 = [xMid, yMid]
+		newPoint2 = [x2, y2]
+
+		if self.rotated:
+			newPoint1 = self.rotateProfile.convertLocalToGlobal(newPoint1)
+			newPoint2 = self.rotateProfile.convertLocalToGlobal(newPoint2)
+
+		# tangent vector
+		vec = [newPoint2[0] - newPoint1[0], newPoint2[1] - newPoint1[1]]
+
+		# normalize
+		mag = sqrt(vec[0]**2 + vec[1]**2)
+		vec = [vec[0]/mag, vec[1]/mag]
+
+		angle = acos(vec[0])
+		if asin(vec[1]) < 0:
+			angle = -angle
+		
+		return [xMid, yMid, angle]
+		
+		
+		
+		
+		vecPoint = self.getU(0.5)
 		
 		u_set = scipy.arange(0.45, 0.56, 0.01)
 		vecs = self.getUVecSet(u_set)

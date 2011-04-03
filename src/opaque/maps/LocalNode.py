@@ -7,6 +7,7 @@ from Pose import Pose
 
 import estimateMotion
 from GPACurve import GPACurve
+from StableCurve import StableCurve
 
 #import Image
 from numpy import array, dot, transpose
@@ -92,6 +93,115 @@ class LocalNode:
 		" 1. compute the GPAC pose "
 		" 2. perform correction of GPAC pose "
 		" 3. compute location of rootPose from corrected GPAC pose "
+
+
+
+		originPosture = self.localPosture
+		originCurve = StableCurve(originPosture)
+		originForePose, originBackPose = originCurve.getPoses()
+		 
+		originForeProfile = Pose(originForePose)
+		originBackProfile = Pose(originBackPose)
+		
+		originForePosture = []
+		originBackPosture = []
+		for i in range(len(originPosture)):
+			originForePosture.append(originForeProfile.convertGlobalPoseToLocal(originPosture[i]))
+		for i in range(len(originPosture)):
+			originBackPosture.append(originBackProfile.convertGlobalPoseToLocal(originPosture[i]))
+
+		newPosture = []
+		for j in range(self.numSegs-1):
+			newPosture.append(self.probe.getJointPose([0.0,0.0,0.0], self.rootNode, j))
+
+
+		localPosture = newPosture
+		localCurve = StableCurve(localPosture)
+
+		localForePose, localBackPose = localCurve.getPoses()
+		 
+		localForeProfile = Pose(localForePose)
+		localBackProfile = Pose(localBackPose)
+		
+		localForePosture = []
+		localBackPosture = []
+		for i in range(len(localPosture)):
+			localForePosture.append(localForeProfile.convertGlobalPoseToLocal(localPosture[i]))
+		for i in range(len(localPosture)):
+			localBackPosture.append(localBackProfile.convertGlobalPoseToLocal(localPosture[i]))
+	
+		foreCost = 0.0
+		for j in range(0,20):
+			p1 = originForePosture[j]
+			p2 = localForePosture[j]
+			
+			foreCost += sqrt((p2[0]-p1[0])**2 + (p2[1]-p1[1])**2)		   
+		
+		backCost = 0.0
+		for j in range(20,39):
+			p1 = originBackPosture[j]
+			p2 = localBackPosture[j]
+			
+			backCost += sqrt((p2[0]-p1[0])**2 + (p2[1]-p1[1])**2)		   
+
+		angle = 0.0
+		
+		if foreCost > backCost:
+			#plotPosture(originBackPosture, localBackPosture)
+			correctedGPACPose = localBackProfile.convertLocalOffsetToGlobal([0.0,0.0,angle])
+		else:
+			#plotPosture(originForePosture, localForePosture)					
+			correctedGPACPose = localForeProfile.convertLocalOffsetToGlobal([0.0,0.0,angle])
+
+		correctedProfile = Pose(correctedGPACPose)
+	
+		" offset from 0,0 to newGPACPose "
+		" rootPose from neg. offset from correctedGPACPose "
+		localRootOffset3 = correctedProfile.convertGlobalPoseToLocal([0.0,0.0,0.0])
+		
+		if foreCost > backCost:
+			self.rootPose = originBackProfile.convertLocalOffsetToGlobal(localRootOffset3)
+		else:
+			self.rootPose = originForeProfile.convertLocalOffsetToGlobal(localRootOffset3)
+
+		correctedPosture = []
+		for j in range(self.numSegs-1):
+			correctedPosture.append(self.probe.getJointPose(self.rootPose, self.rootNode, j))
+		
+
+
+		xP = []
+		yP = []
+		for p in self.localPosture:
+			xP.append(p[0])
+			yP.append(p[1])
+		
+		pylab.plot(xP,yP, color='b')
+
+		xP = []
+		yP = []
+		for p in correctedPosture:
+			xP.append(p[0])
+			yP.append(p[1])
+		
+		pylab.plot(xP,yP, color='r')    
+
+		pylab.xlim(-2,2)
+		pylab.ylim(-2,2)
+		
+		pylab.savefig("plotPosture%04u.png" % estPlotCount)
+		pylab.clf()		
+		
+		estPlotCount += 1
+	
+		return
+		
+		
+
+
+
+
+
 
 		newPosture = []
 		for j in range(self.numSegs-1):

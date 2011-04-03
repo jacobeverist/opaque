@@ -1,5 +1,6 @@
 from SplineFit import SplineFit
 from GPACurve import GPACurve
+from StableCurve import StableCurve
 from Pose import Pose
 import computeCovar
 from math import *
@@ -198,6 +199,98 @@ def cost_func(angle, posture1, posture2):
         return cost1
 
 
+
+def correctOrientation3(posture1, posture2):
+
+    curve1 = StableCurve(posture1, rotated=True)
+    curve2 = StableCurve(posture2, rotated=True)
+
+    forePose1, backPose1 = curve1.getPoses()
+    forePose2, backPose2 = curve2.getPoses()
+
+    originPoint = [0.0,0.0]
+
+    #handleLocs = [0.3, 0.7]
+    handleLocs = [0.1, 0.2, 0.3, 0.4, 0.6, 0.7, 0.8, 0.9]
+    handlePoints1 = curve1.getUSet(handleLocs)
+    handlePoints2 = curve2.getUSet(handleLocs)
+
+    hypotheses = []
+    
+    for i in range(len(handleLocs)):
+        vec1 = [handlePoints1[i][0], handlePoints1[i][1]]
+        mag = sqrt(vec1[0]*vec1[0] + vec1[1]*vec1[1])
+        vec1[0] /= mag
+        vec1[1] /= mag
+        
+        angle1 = acos(vec1[0])
+        if asin(vec1[1])  < 0:
+            angle1 = -angle1
+        
+        vec2 = [handlePoints2[i][0], handlePoints2[i][1]]
+        mag = sqrt(vec2[0]*vec2[0] + vec2[1]*vec2[1])
+        vec2[0] /= mag
+        vec2[1] /= mag
+
+        angle2 = acos(vec2[0])
+        if asin(vec2[1])  < 0:
+            angle2 = -angle2
+
+        hypotheses.append(normalizeAngle(angle1 - angle2))
+
+    poseProfile1 = Pose([0.0,0.0,0.0])
+
+    posture1_offset = []
+    for p in posture1:
+        nP = poseProfile1.convertLocalOffsetToGlobal(p)
+        posture1_offset.append(nP)
+
+    indices = []
+    for i in range(len(handleLocs)):
+        if handleLocs[i] < 0.5:
+            indices.append(range(0,20))
+        else:
+            indices.append(range(20,39))
+
+    costs = []
+    for i in range(len(handleLocs)):
+        pose2 = poseProfile1.convertLocalOffsetToGlobal([0.0,0.0,hypotheses[i]])
+        
+        poseProfile2 = Pose(pose2)
+        
+        posture2_offset = []
+        for p in posture2:
+            nP = poseProfile2.convertLocalOffsetToGlobal(p)
+            posture2_offset.append(nP)
+
+        " measure the cost of side 1 and side 2 "
+        
+        cost = 0.0
+        for j in indices[i]:
+            p1 = posture1_offset[j]
+            p2 = posture2_offset[j]
+            
+            cost += sqrt((p2[0]-p1[0])**2 + (p2[1]-p1[1])**2)
+
+        costs.append(cost)
+
+    minCost = 1e100
+    minIndex = 0
+
+    for i in range(len(costs)):
+        if costs[i] < minCost:
+            minCost = costs[i]
+            minIndex = i
+
+    return hypotheses[minIndex], minCost
+
+    if costs[0] > costs[1]:
+        return hypotheses[1], costs[1]
+    else:
+        return hypotheses[0], costs[0]
+
+        
+    #return hypotheses[0]
     
     
 def correctOrientation2(posture1, posture2):
@@ -316,28 +409,44 @@ def correctOrientation(posture1, posture2):
     
 
 
-def plotPosture(posture, curve):
+def plotPosture(posture1, posture2):
     global estPlotCount
  
     xP = []
     yP = []
-    for p in posture:
+    for p in posture1:
         xP.append(p[0])
         yP.append(p[1])
         
     pylab.plot(xP,yP, color='b')
 
-    upoints = numpy.arange(0,1.0,0.01)
-    splPoints1 = curve.getUSet(upoints)
+    #splPoints1 = curve1.getPlot()
        
+    #xP = []
+    #yP = []
+    #for p in splPoints1:
+    #    xP.append(p[0])
+    #    yP.append(p[1])
+        
+    #pylab.plot(xP,yP, color='b')    
+
     xP = []
     yP = []
-    for p in splPoints1:
+    for p in posture2:
         xP.append(p[0])
         yP.append(p[1])
         
-    pylab.plot(xP,yP, color='b')    
+    pylab.plot(xP,yP, color='r')
 
+    #splPoints2 = curve2.getPlot()
+       
+    #xP = []
+    #yP = []
+    #for p in splPoints2:
+    #    xP.append(p[0])
+    #    yP.append(p[1])
+        
+    #pylab.plot(xP,yP, color='r') 
     pylab.xlim(-4,4)
     pylab.ylim(-4,4)
     pylab.savefig("plotPosture%04u.png" % estPlotCount)
@@ -561,20 +670,17 @@ def splineTest(posture):
     global estPlotCount
 
     " perturb the points to prevent degeneracies "
-    xP = []
-    yP = []
-    for p in posture:
-        xP.append(p[0] + random.gauss(0.0,0.0001))
-        yP.append(p[1] + random.gauss(0.0,0.0001))
+    #xP = []
+    #yP = []
+    #for p in posture:
+    #    xP.append(p[0] + random.gauss(0.0,0.0001))
+    #    yP.append(p[1] + random.gauss(0.0,0.0001))
     
-    spline1 = UnivariateSpline(xP, yP, s = 2.0)
-    knots = spline1.get_knots()
-    
-    print knots
-    
-    #spline2 = InterpolatedUnivariateSpline(xP, yP)
+    #spline1 = UnivariateSpline(xP, yP, s = 2.0)
+    #knots = spline1.get_knots()
+    #xMid = (knots[0] + knots[1])/2.0
     #spline3 = LSQUnivariateSpline(xP, yP, [0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
-    #spline3 = LSQUnivariateSpline(xP, yP, knots)
+    #spline3 = LSQUnivariateSpline(xP, yP, [xMid-0.05, xMid+0.05])
 
 
     #print spline1.get_knots()
@@ -586,10 +692,25 @@ def splineTest(posture):
         yP.append(p[1])
     pylab.plot(xP,yP, color='b')
 
-    
-    x = numpy.linspace(-3,3,100)
-    y = spline1(x)    
+    filledPosture = []
+    for i in range(len(posture)-1):
+        posture[i]
+        posture[i+1]
+
+    curve1 = GPACurve(posture, rotated = True)
+
+    x, y = curve1.getPlot()
+        
+    #x = numpy.linspace(-3,3,100)
+    #y = spline1(x)    
     pylab.plot(x,y, color='r')
+    
+    #xP = curve1.spline.get_knots()
+    #yP = curve1.spline(xP)
+    
+    xP, yP = curve1.getKnots()
+    
+    pylab.scatter(xP,yP, color='k')
 
     #x = numpy.linspace(-3,3,100)
     #y = spline2(x)    
@@ -615,7 +736,7 @@ if __name__ == '__main__':
     #numPoses = 1
     
     poseData = []
- 
+
     for i in range(numPoses):
         
         files = os.listdir(dirName)
@@ -657,7 +778,7 @@ if __name__ == '__main__':
             " compute a fitted curve of a center point "
             #localCurves.append(GPACurve(localPostures[j], rotated=True))
 
-            splineTest(localPostures[j])
+            #splineTest(localPostures[j])
     
             f = open(dirName + estNames[j], 'r')
             estPoses.append(eval(f.read().rstrip()))
@@ -669,13 +790,92 @@ if __name__ == '__main__':
 
         poseData.append([estPoses, gndPoses, localPostures, localCurves])
 
-    for poseIndex in range(numPoses):
-        for j in range(len(poseData[poseIndex][2])-1):
-            posture = poseData[poseIndex][2][j]
+    #for poseIndex in range(numPoses):
+    #    for j in range(len(poseData[poseIndex][2])-1):
+    #        posture = poseData[poseIndex][2][j]
             
-            splineTest(posture)
+    #        splineTest(posture)
 
-    exit()
+    #exit()
+
+    for poseIndex in range(numPoses):
+
+
+        originPosture = poseData[poseIndex][2][0]
+        originCurve = StableCurve(originPosture)
+        originForePose, originBackPose = originCurve.getPoses()
+         
+        originForeProfile = Pose(originForePose)
+        originBackProfile = Pose(originBackPose)
+        
+        originForePosture = []
+        originBackPosture = []
+        for i in range(len(originPosture)):
+            originForePosture.append(originForeProfile.convertGlobalPoseToLocal(originPosture[i]))
+        for i in range(len(originPosture)):
+            originBackPosture.append(originBackProfile.convertGlobalPoseToLocal(originPosture[i]))
+
+        for j in range(len(poseData[poseIndex][2])-1):
+
+
+            #plotOffset([0.0,0.0,0.0], result, localPostures[poseIndex], localPostures[poseIndex+1])
+ 
+            localPosture = poseData[poseIndex][2][j+1]
+            localCurve = StableCurve(localPosture)
+
+            localForePose, localBackPose = localCurve.getPoses()
+             
+            localForeProfile = Pose(localForePose)
+            localBackProfile = Pose(localBackPose)
+            
+            localForePosture = []
+            localBackPosture = []
+            for i in range(len(localPosture)):
+                localForePosture.append(localForeProfile.convertGlobalPoseToLocal(localPosture[i]))
+            for i in range(len(localPosture)):
+                localBackPosture.append(localBackProfile.convertGlobalPoseToLocal(localPosture[i]))
+        
+            foreCost = 0.0
+            for j in range(0,20):
+                p1 = originForePosture[j]
+                p2 = localForePosture[j]
+                
+                foreCost += sqrt((p2[0]-p1[0])**2 + (p2[1]-p1[1])**2)           
+            
+            backCost = 0.0
+            for j in range(20,39):
+                p1 = originBackPosture[j]
+                p2 = localBackPosture[j]
+                
+                backCost += sqrt((p2[0]-p1[0])**2 + (p2[1]-p1[1])**2)           
+
+            if foreCost > backCost:
+                plotPosture(originBackPosture, localBackPosture)
+                
+            else:
+                plotPosture(originForePosture, localForePosture)
+            
+            
+            #t1 = time()
+            #angle, cost = correctOrientation3(originAIRPosture, airPosture2)
+            #t2 = time()                    
+            
+            #gndPoseCurr = poseData[poseIndex][1][j+1]
+            #globalGndProfile = Pose(gndPoseCurr)
+            #globalGndAIRPose = globalGndProfile.convertLocalOffsetToGlobal(localAIRPose2)
+            
+            #tempProfile = Pose(globalOriginAIRPose)    
+            #correctedPose = tempProfile.convertLocalOffsetToGlobal([0.0,0.0,angle])
+            #uncorrectedPose = tempProfile.convertLocalOffsetToGlobal([0.0,0.0,0.0])
+               
+            #distError = sqrt((correctedPose[0]-globalGndAIRPose[0])**2 + (correctedPose[1]-globalGndAIRPose[1])**2)
+            #angleError = normalizeAngle(correctedPose[2]-globalGndAIRPose[2])
+            #distError2 = sqrt((uncorrectedPose[0]-globalGndAIRPose[0])**2 + (uncorrectedPose[1]-globalGndAIRPose[1])**2)
+            #angleError2 = normalizeAngle(uncorrectedPose[2]-globalGndAIRPose[2])
+            #print "%d, %d, %1.5f, %1.5f, %1.5f, %1.5f, %1.5f" % (poseIndex, j+1, angle, distError, angleError, distError2, angleError2)
+
+    exit()            
+ 
     
     #for j in range(numPoses):
     #    posture_example = poseData[j][2][0]
