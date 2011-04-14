@@ -50,6 +50,8 @@ class Pose:
 	def convertLocalOffsetToGlobal(self, offset):
 
 	   globalEst = [0.0,0.0,0.0]
+	   
+	   #print "converting offset:", offset
 
 	   finalVec = array([[offset[0]], [offset[1]]])
 	   transVec = dot(transpose(self.R), finalVec)

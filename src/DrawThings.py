@@ -1,5 +1,9 @@
+
+import ogre.renderer.OGRE as ogre
 import pylab
 from math import sin, cos
+
+globalID = 0
 
 class DrawThings():
 	
@@ -9,7 +13,11 @@ class DrawThings():
 		self.count = 0
 		self.isSim = False
 
-	def setSim(self):
+		self._allRefNodes = []
+		self._allRefEnt = []
+
+	def setSim(self, sceneManager):
+		self.sceneManager = sceneManager
 		self.isSim = True
 
 	def setRenderView(self, renderView):
@@ -51,12 +59,51 @@ class DrawThings():
 		pass
 	
 	def renderPoints(self, pnts, color = (0.0,0.0,0.0)):
-		pass
+		
+		global globalID
+				
+		" delete any existing points that may exist "
+		# deference the child nodes now
+		for child in self._allRefNodes:
+			self.sceneManager.destroySceneNode(child)
+	
+		for child in self._allRefEnt:
+			self.sceneManager.destroyEntity(child)
+	
+		self._allRefNodes = []
+		self._allRefEnt = []
+		
+		for i in range(len(pnts)):
+			## Create the visual reprsentation of active reference nodes
+			name = "act_node" + str(globalID)
+			entity = self.sceneManager.createEntity(name, "Cube.mesh")
+			node = self.sceneManager.getRootSceneNode().createChildSceneNode(name)
+			node.attachObject(entity)
+
+			size = ogre.Vector3(0.05,0.05,0.05)
+			node.setScale(size)
+
+			pos = pnts[i]
+			position = ogre.Vector3(pos[0],0.1,pos[1])
+			node.setPosition(position)
+			# negative the angle because the bodies are somehow flipped upside down
+			node.setOrientation(ogre.Quaternion(-pos[2],ogre.Vector3().UNIT_Y))
+
+			entity.setCastShadows(False)
+
+			entity.setMaterialName("Green")
+
+			#entity.setVisible(False)
+			self._allRefNodes.append(node)
+			self._allRefEnt.append(entity)
+			
+			globalID += 1
 
 	def renderLines(self, pnts, color = (0.0,0.0,0.0)):
 		pass
 
 	def saveView(self, filename):
 		if self.renderView != 0:
+			#self.renderView.update()
 			self.renderView.writeContentsToFile(filename)
 			

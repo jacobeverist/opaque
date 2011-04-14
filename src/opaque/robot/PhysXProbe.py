@@ -29,6 +29,7 @@ class PhysXProbe:
 		self.nx_snake = NxSnakeProbe([R.x,R.y,R.z,R.w], [pos.x, pos.y, pos.z], numSegs, segLength, segHeight, segWidth, friction)
 		#self.nx_snake.frameStarted()
 
+
 		#self.transform.setJoints(self.joints)
 
 		self.timer = 0.000
@@ -77,6 +78,11 @@ class PhysXProbe:
 		self.joints = [self.nx_snake.getServoCmd(i) for i in range(self.getNumJoints())]
 		self.torques = [self.maxTorque for i in range(self.getNumJoints())]
 		self.errors = [fabs(self.cmdJoints[i] - self.joints[i]) for i in range(self.getNumJoints())]
+
+		for i in range(numSegs-1):
+			self.setJointTorque(i, self.torques[i])
+		
+		#exit()
 		
 		# list of bodies
 		self._ent = []
@@ -436,7 +442,10 @@ class PhysXProbe:
 
 	def setJointTorque(self, i, torque):
 		#self.nx_snake.setJointTorque(i, 0.0005)
+		#print "setting joint torque", i, "to", torque
 		self.nx_snake.setJointTorque(i, torque)
+		
+		#print "received", self.nx_snake.getJointTorque(i)
 
 	def getJointTorque(self, i):
 		return self.nx_snake.getJointTorque(i)

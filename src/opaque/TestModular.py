@@ -15,6 +15,7 @@ from pose.AverageContacts import AverageContacts
 from maps.MapGraph import MapGraph
 
 import numpy
+import sys
 
 class TestModular(SnakeControl):
 
@@ -98,13 +99,13 @@ class TestModular(SnakeControl):
 
 	def grabImage(self):
 
-		#inc = 50
-		inc = 200
+		inc = 50
+		#inc = 200
 		#inc = 1000
 		#inc = 500
 
 		if self.globalTimer % inc == 0:
-			print "saving scene%06u.png" % (self.globalTimer/inc)
+			#print "saving scene%06u.png" % (self.globalTimer/inc)
 			self.drawThings.saveView("scene%06u.png" % (self.globalTimer/inc))
 			
 			#poses = self.probe.getPose()		
@@ -252,9 +253,26 @@ class TestModular(SnakeControl):
 		
 		#self.grabPosture()
 		
-		#self.grabImage()
+		self.grabImage()
 		#self.grabAngles()
 
+
+		if self.globalState > 1 and self.globalTimer % 10 == 0:
+			pnts = []
+			for i in range(self.numJoints):
+				#pnts.append(self.probe.getActualJointPose(i))
+				#pnts.append(self.contacts.getAveragePose(i))
+				pnts.append(self.contacts.getClosestPose(i))
+			self.drawThings.renderPoints(pnts)
+
+		#if (self.globalState == 6 or self.globalState == 8) and self.globalTimer % 50 == 0:
+		#	probeState = self.probe.getProbeState()
+		#	print "torques:", probeState['torques']
+
+		#if self.globalState == 5 and self.globalTimer % 100 == 0:
+		#	probeState = self.probe.getProbeState()
+		#	print "adaptiveStep torques:", probeState['torques']
+		
 		#if self.globalTimer % 4000 == 0:
 		#	if self.stateA <= 0 or self.stateA == 5 or self.renderTransition:
 		#		self.mapGraph.drawEstBoundary()
@@ -270,9 +288,10 @@ class TestModular(SnakeControl):
 		" get the probe state "
 		probeState = self.probe.getProbeState()
 
-
 		#print "state", self.globalState
 		#print probeState['joints']
+		#if self.globalTimer % 100 == 0:
+		#	print "state:", self.globalState
 
 		if self.globalState == 0 and self.globalTimer > 2:
 			
@@ -317,8 +336,16 @@ class TestModular(SnakeControl):
 			#self.mapGraph.loadFile("testData/poseTest", 5)
 			#self.mapGraph.loadFile("testData/poseTest", 8)
 			#self.mapGraph.loadFile("testData/poseTest", 16)
+			#self.mapGraph.loadFile("testData/fixedPoseTest5", 15)
+			#self.mapGraph.loadFile("testData/bulletTest2", 17)
+			self.mapGraph.loadFile("testData/constraints", 17)
 
-			#exit()
+			#self.mapGraph.newNode(0.0, self.direction)
+			#self.mapGraph.forceUpdate(False)
+			#self.mapGraph.synch()
+			#self.mapGraph.saveMap()
+			
+			exit()
 			#E = self.computeCovar()
 			#print repr(E)
 
@@ -330,6 +357,8 @@ class TestModular(SnakeControl):
 			#self.mapGraph.saveMap()
 			#self.mapGraph.saveLocalMap()
 	
+			#exit()
+	
 			#self.mapGraph.correctPoses3()
 			#exit()
 			
@@ -340,10 +369,10 @@ class TestModular(SnakeControl):
 			self.globalState = 4
 			#self.globalState = 9
 
-			self.restState = deepcopy(probeState)
-			self.mapGraph.newNode(self.stepDist, self.direction)
-			self.mapGraph.forceUpdate(False)
-			self.globalState = 6
+			#self.restState = deepcopy(probeState)
+			#self.mapGraph.newNode(self.stepDist, self.direction)
+			#self.mapGraph.forceUpdate(False)
+			#self.globalState = 6
 
 			print "Start Time:", time.clock()
 
@@ -369,12 +398,16 @@ class TestModular(SnakeControl):
 				self.mapGraph.newNode(self.stepDist, self.direction)
 				self.mapGraph.forceUpdate(False)
 				
-				self.globalState = 6
-				#self.globalState = 9
+				self.contacts.resetPose(self.mapGraph.currNode.getEstPose())
+				
+				self.lastPose = self.contacts.getAverageSegPose(0)
+				
+				#self.globalState = 6
+				self.globalState = 9
 
 				#self.probe.restorePose()
 				self.isCapture = True
-				self.grabPosture(True)
+				#self.grabPosture(True)
 				
 		elif self.globalState == 6:
 
@@ -390,7 +423,9 @@ class TestModular(SnakeControl):
 			isDone = self.doReturnToRest()
 			
 			if isDone:
-				self.globalState = 8			
+				self.globalState = 8
+				#if self.mapGraph.currNode.nodeID == 4:
+				self.mapGraph.currNode.resetPosture()		
 			
 		elif self.globalState == 8:
 	
@@ -422,11 +457,13 @@ class TestModular(SnakeControl):
 				deltaDist = sqrt((self.currPose[0]-self.lastPose[0])**2 + (self.currPose[1]-self.lastPose[1])**2)
 
 				" FORCE to the probe to continue walking forward "
-				deltaDist = 1.0
+				#deltaDist = 1.0
 				print "deltaDist =", deltaDist
 	
 				self.lastPose = self.currPose
 				
+				deltaDist = 1.0
+
 				#deltaDist = 0.0
 
 				#if deltaDist > 0.4:
@@ -476,6 +513,8 @@ class TestModular(SnakeControl):
 
 		for i in range(self.numJoints):
 			self.probe.setJointTorque(i, self.torques[i])
+
+		sys.stdout.flush()
 		
 		#if self.globalTimer % 200 == 0:
 		#	print self.globalTimer, "setting torques:", self.torques
@@ -625,6 +664,13 @@ class TestModular(SnakeControl):
 			
 			val = self.behavior.getMask()
 			self.contacts.setMask(val)
+
+			" set the new torques "
+			self.torques = [self.behavior.torques[i] for i in range(self.numJoints)]
+
+			for i in range(len(self.torques)):
+				if self.torques[i] == None:
+					self.torques[i] = self.probe.maxTorque
 			
 			self.contacts.step(probeState)			
 			

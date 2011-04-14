@@ -76,6 +76,7 @@ class LocalOccMap:
 
 	def readFromFile(self, dirName):
 		
+		#self.fileName = dirName + "/stableLocalOccMap%03u" % self.nodeID + "_%04u.png"
 		self.fileName = dirName + "/localOccMap%03u" % self.nodeID + "_%04u.png"
 		
 		self.mapImage = Image.open(self.fileName % 0)
@@ -166,38 +167,46 @@ class LocalOccMap:
 		gndRects.sort()
 		self.gnd_rectangles.append(gndRects)
 		
-		stableRects = self.computeStabilizedFreeSpace()
-		stableRects.sort()
-		self.stable_rectangles.append(stableRects)
+		#stableRects = self.computeStabilizedFreeSpace()
+		#stableRects.sort()
+		#self.stable_rectangles.append(stableRects)
 		
 		
 		# compute free space rectangles
-		freeRects = self.computeFreeSpace(isForward)
+		#freeRects = self.computeFreeSpace(isForward)
+		#freeRects.sort()
+
+		freeRects = self.computeStabilizedFreeSpace()
 		freeRects.sort()
+		self.stable_rectangles.append(freeRects)
+
 
 		jointErr = 0.0
 		currJoints = []
 		for j in self.rootNeighbors:
 			currJoints.append(self.probe.getServo(j))
 
-		for i in range(len(currJoints)):
-			jointErr += abs(currJoints[i]-self.prevJoints[i])
+		#for i in range(len(currJoints)):
+		#	jointErr += abs(currJoints[i]-self.prevJoints[i])
 		
-		newRects = []
-		for seg, rect, isActive in freeRects:	
-			newRect = []	
-			for p in rect:
-				pVec = array([[p[0]],[p[1]],[1.0]])
-				result = dot(self.T,pVec)
-				newP = [result[0,0],result[1,0]]
-				newRect.append(newP)
-			newRects.append([seg,newRect, isActive])
+		#newRects = []
+		#for seg, rect, isActive in freeRects:	
+		#	newRect = []	
+		#	for p in rect:
+		#		pVec = array([[p[0]],[p[1]],[1.0]])
+		#		result = dot(self.T,pVec)
+		#		newP = [result[0,0],result[1,0]]
+		#		newRect.append(newP)
+		#	newRects.append([seg,newRect, isActive])
 
-		self.prevRects = deepcopy(newRects)		
+		#self.prevRects = deepcopy(newRects)		
+		#self.prevJoints = currJoints
+		#self.rectangles.append(newRects)
+		
+		self.prevRects = deepcopy(freeRects)		
 		self.prevJoints = currJoints
 
-
-		self.rectangles.append(newRects)
+		self.rectangles.append(freeRects)
 
 	def gndComputeFreeSpace(self):
 							
@@ -483,7 +492,7 @@ class LocalOccMap:
 			print "saving as", self.fileName % self.saveCount
 			self.mapImage.save(self.fileName % self.saveCount)	
 			self.gndMapImage.save(self.gndFileName % self.saveCount)
-			self.stableMapImage.save(self.stableFileName % self.saveCount)
+			#self.stableMapImage.save(self.stableFileName % self.saveCount)
 			self.saveCount += 1
 		
 	def getMap(self):

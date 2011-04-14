@@ -9,6 +9,7 @@ import estimateMotion
 from GPACurve import GPACurve
 from StableCurve import StableCurve
 
+import random
 #import Image
 from numpy import array, dot, transpose
 
@@ -55,11 +56,9 @@ class LocalNode:
 		self.obstacleMap = LocalObstacleMap(self)
 		
 		self.saveCount = 0
-			
-		self.localPosture = []
 		
-		for j in range(self.numSegs-1):
-			self.localPosture.append(self.probe.getJointPose([0.0,0.0,0.0], self.rootNode, j))
+		self.localPosture = []
+		self.resetPosture()
 		
 		" compute a fitted curve of a center point "
 		self.centerCurve = GPACurve(self.localPosture, rotated=True)
@@ -69,23 +68,40 @@ class LocalNode:
 		self.rootPose = [0.0,0.0,0.0]
 		
 		if self.stabilizePose:
-			self.initialGPACPose = self.getLocalAIRPose()
+			self.initialGPACPose = self.getLocalGPACPose()
 	
 			print "rootPose:", self.rootPose
 
-		pylab.clf()
+		#pylab.clf()
 
-		xP = []
-		yP = []
-		for p in self.localPosture:
-			xP.append(p[0])
-			yP.append(p[1])
+		#xP = []
+		#yP = []
+		#for p in self.localPosture:
+		#	xP.append(p[0])
+		#	yP.append(p[1])
 		
-		pylab.plot(xP,yP, color='b')
+		#pylab.plot(xP,yP, color='b')
 		
+	def resetPosture(self):
 		
+		" FIXME:  while reseting the reference posture, if the root node is offset by angle, "
+		" the posture will be at an angle and the occ map will have error, two poses overlapped "
+		" new posture should angle correct from previous reference posture just like a stabilizeRootPose() call "
+		
+		#self.localPosture = []
+		
+		if len(self.localPosture) == 0:
+			for j in range(self.numSegs-1):
+				self.localPosture.append(self.probe.getJointPose([0.0,0.0,0.0], self.rootNode, j))
+		else:
+			self.stabilizeRootPose()
+			correctedPosture = []
+			for j in range(self.numSegs-1):
+				correctedPosture.append(self.probe.getJointPose(self.rootPose, self.rootNode, j))
+
+			self.localPosture = correctedPosture
 	
-	def stablizeRootPose(self):
+	def stabilizeRootPose(self):
 		
 		global estPlotCount 
 		
@@ -170,29 +186,29 @@ class LocalNode:
 		
 
 
-		xP = []
-		yP = []
-		for p in self.localPosture:
-			xP.append(p[0])
-			yP.append(p[1])
+		#xP = []
+		#yP = []
+		#for p in self.localPosture:
+		#	xP.append(p[0])
+		#	yP.append(p[1])
 		
-		pylab.plot(xP,yP, color='b')
+		#pylab.plot(xP,yP, color='b')
 
-		xP = []
-		yP = []
-		for p in correctedPosture:
-			xP.append(p[0])
-			yP.append(p[1])
+		#xP = []
+		#yP = []
+		#for p in correctedPosture:
+		#	xP.append(p[0])
+		#	yP.append(p[1])
 		
-		pylab.plot(xP,yP, color='r')    
+		#pylab.plot(xP,yP, color='r')    
 
-		pylab.xlim(-2,2)
-		pylab.ylim(-2,2)
+		#pylab.xlim(-2,2)
+		#pylab.ylim(-2,2)
 		
-		pylab.savefig("plotPosture%04u.png" % estPlotCount)
-		pylab.clf()		
+		#pylab.savefig("plotPosture%04u.png" % estPlotCount)
+		#pylab.clf()		
 		
-		estPlotCount += 1
+		#estPlotCount += 1
 	
 		return
 		
@@ -408,48 +424,38 @@ class LocalNode:
 	
 
 
-	def getAIRPosture(self):
+	def getGPACPosture(self):
 
-		" convert hull points to AIR coordinates before adding covariances "
-		localAIRPose = self.getLocalAIRPose()
-		localAIRProfile = Pose(localAIRPose)
+		" convert hull points to GPAC coordinates before adding covariances "
+		localGPACPose = self.getLocalGPACPose()
+		localGPACProfile = Pose(localGPACPose)
 		
-		posture_AIR = []
+		posture_GPAC = []
 		for pose in self.localPosture:
-			posture_AIR.append(localAIRProfile.convertGlobalPoseToLocal(pose))
+			posture_GPAC.append(localGPACProfile.convertGlobalPoseToLocal(pose))
 		
-		return posture_AIR
+		return posture_GPAC
 	
-	def getAIRCurve(self):
-		posture_AIR = self.getAIRPosture()
+	def getGPACurve(self):
+		posture_GPAC = self.getGPACPosture()
 		
-		AIR_curve = SplineFit(posture_AIR, smooth = 0.5, kp = 2)
+		GPA_curve = SplineFit(posture_GPAC, smooth = 0.5, kp = 2)
 
-		return AIR_curve
+		return GPA_curve
 
-	def getLocalAIRPose(self):
+	def getLocalGPACPose(self):
 		
 		return self.centerCurve.getPose()
-
-		vec = self.centerCurve.getUVector(0.5)
-		vecPoint = self.centerCurve.getU(0.5)
-		
-		angle = acos(vec[0])
-		if asin(vec[1]) < 0:
-			angle = -angle
-		
-		localAIRPose = [vecPoint[0], vecPoint[1], angle]	
-		
-		return localAIRPose	
 	
-	def getGlobalAIRPose(self):
+	def getGlobalGPACPose(self):
 
-		localAIRPose = self.getLocalAIRPose()	
-		#globalAIRPose = self.convertLocalOffsetToGlobal(localAIRPose)
+		localGPACPose = self.getLocalGPACPose()	
+		#globalGPACPose = self.convertLocalOffsetToGlobal(localGPACPose)
 		
 		globalEst = [0.0,0.0,0.0]
-		finalVec = array([[localAIRPose[0]], [localAIRPose[1]]])
 		
+		
+		finalVec = array([[localGPACPose[0]], [localGPACPose[1]]])
 		transVec = dot(transpose(self.R), finalVec)
 		resVec = dot(self.backR, transVec)
 		resVec[0, 0] += self.dist
@@ -464,15 +470,46 @@ class LocalNode:
 		globalEst[1] = tempVec[1, 0]
 		
 		
-		globalEst[2] = self.normalizeAngle(self.estPose[2] + localAIRPose[2])
-		#globalEst[2] = self.normalizeAngle(self.gndPose[2] + localAIRPose[2])
+		globalEst[2] = self.normalizeAngle(self.estPose[2] + localGPACPose[2])
+		#globalEst[2] = self.normalizeAngle(self.gndPose[2] + localGPACPose[2])
 
-		globalAIRPose = globalEst
+		globalGPACPose = globalEst
 
-		return globalAIRPose
+		return globalGPACPose
 		
-	def setAIRPose(self, newPose):
-		pass
+	def setGPACPose(self, newPose):
+		
+		gpacProfile = Pose(self.getGlobalGPACPose())
+		
+		localOffset = gpacProfile.convertGlobalPoseToLocal(self.estPose)
+		
+		" go back and convert this from GPAC pose to estPose "
+		newProfile = Pose(newPose)
+		newEstPose = newProfile.convertLocalOffsetToGlobal(localOffset)
+		
+		self.setEstPose(newEstPose)
+
+	def getGndGlobalGPACPose(self):
+
+		localGPACPose = self.getLocalGPACPose()	
+		#globalGPACPose = self.convertLocalOffsetToGlobal(localGPACPose)
+		
+		globalEst = [0.0,0.0,0.0]
+		
+		
+		finalVec = array([[localGPACPose[0]], [localGPACPose[1]]])
+		transVec = dot(transpose(self.gndR), finalVec)
+		resVec = dot(self.gndBackR, transVec)
+		resVec[0, 0] += self.gndDist
+		tempVec = dot(self.gndForeR, resVec)
+		
+		globalEst[0] = tempVec[0, 0]
+		globalEst[1] = tempVec[1, 0]		
+		globalEst[2] = self.normalizeAngle(self.gndPose[2] + localGPACPose[2])
+
+		globalGndGPACPose = globalEst
+
+		return globalGndGPACPose
 	
 	def setEstPose(self, newPose):
 
@@ -749,8 +786,10 @@ class LocalNode:
 		
 	def update(self, isForward = True):
 		
+		
+		
 		if self.stabilizePose:
-			self.stablizeRootPose()
+			self.stabilizeRootPose()
 			
 		self.occMap.update(isForward)
 		
@@ -893,8 +932,8 @@ class LocalNode:
 		
 		for p in points:
 			p2 = copy(p)
-			p2[0] += gauss(0.0,0.0001)
-			p2[1] += gauss(0.0,0.0001)
+			p2[0] += random.gauss(0.0,0.0001)
+			p2[1] += random.gauss(0.0,0.0001)
 
 			inputStr += str(p2[0]) + " " + str(p2[1]) + " "
 		

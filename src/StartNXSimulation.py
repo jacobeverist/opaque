@@ -17,6 +17,7 @@ import sf_OIS as sf
 
 #from opaque.robot.SuperbotSnake import SuperbotSnake
 from opaque.robot.PhysXProbe import PhysXProbe
+from opaque.robot.BulletProbe import BulletProbe
 from opaque.TestModular import TestModular
 from opaque.TestHoldPosition import TestHoldPosition
 from opaque.TestHoldTransition import TestHoldTransition
@@ -70,13 +71,17 @@ class SimpleScenesFrameListener ( sf.FrameListener ):
 		self.probe.perturbProbe(self.Keyboard.isKeyDown(OIS.KC_O))
 		self.probe.frameStarted(evt)
 		
+		
 		self.adjustCamera()
+
+		self.rWindow.update()
 		
 		return result
 
 	def adjustCamera(self):
 
-		pose = self.probe.getActualJointPose(19)
+		pose = self.probe.getActualJointPose(9)
+		#pose = self.probe.getActualJointPose(19)
 		xAvg = pose[0]
 		yAvg = pose[1]
 		
@@ -193,7 +198,9 @@ class SnakeApp(sf.Application):
 
 		
 		#self.probe = PhysXProbe(self.sceneManager,yRot,pos,40,0.15,0.2,0.15,100.0,0.9)
-		self.probe = PhysXProbe(self.sceneManager,yRot,pos,40,0.15,0.1,0.15,1000.0,0.9)
+		#self.probe = PhysXProbe(self.sceneManager,yRot,pos,40,0.15,0.1,0.15,1000.0,0.9)
+		#self.probe = BulletProbe(self.sceneManager,yRot,pos,40,0.15,0.1,0.15,1000.0,1.0)
+		self.probe = BulletProbe(self.sceneManager,yRot,pos,40,0.15,0.1,0.15,1000.0,1.0)
 		
 		#exit()
 		
@@ -209,8 +216,10 @@ class SnakeApp(sf.Application):
 		#print poses
 		#self.probe.restorePose(poses)
 		
+		self.renderWindow.setAutoUpdated(False)
+		
 		self.drawThings = DrawThings(self.probe.robotParam)
-		self.drawThings.setSim()
+		self.drawThings.setSim(self.sceneManager)
 		self.drawThings.setRenderView(self.renderWindow)
 
 		currControl = TestModular(self.probe, self.drawThings)	

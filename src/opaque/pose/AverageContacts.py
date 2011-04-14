@@ -94,33 +94,8 @@ class AverageContacts:
 		self._allRefNodes = []
 		self._allRefEnt = []
 		
-		
-		"""
-		for i in range(0,self.numJoints):
-			## Create the visual reprsentation of active reference nodes
-			name = "act_node" + str(i)
-			entity = self.probe._mgr.createEntity(name, "Cube.mesh")
-			node = self.probe._mgr.getRootSceneNode().createChildSceneNode(name)
-			node.attachObject(entity)
+		#self.createNewNode(19)		
 
-			size = ogre.Vector3(0.05,0.05,0.05)
-			node.setScale(size)
-
-			pos = self.probe.getActualJointPose(i)
-			position = ogre.Vector3(pos[0],0.1,pos[1])
-			node.setPosition(position)
-			# negative the angle because the bodies are somehow flipped upside down
-			node.setOrientation(ogre.Quaternion(-pos[2],ogre.Vector3().UNIT_Y))
-
-			entity.setCastShadows(False)
-
-			entity.setMaterialName("Green")
-
-			entity.setVisible(False)
-			self._allRefNodes.append(node)
-			self._allRefEnt.append(entity)
-		"""
-		
 	def isStable(self):
 		stable = True
 		
@@ -533,22 +508,6 @@ class AverageContacts:
 
 				#print "self.activeRef =", self.activeRef
 
-		"""
-		for i in range(self.numJoints):
-			pos = self.probe.getActualJointPose(i)
-			position = ogre.Vector3(pos[0],0.1,pos[1])
-			self._allRefNodes[i].setPosition(position)
-
-			# negative the angle because the bodies are somehow flipped upside down
-			self._allRefNodes[i].setOrientation(ogre.Quaternion(-pos[2],ogre.Vector3().UNIT_Y))
-
-			self._allRefEnt[i].setVisible(self.activeRef[i])
-
-			mPtr = self._allRefNodes[i].getMaterial()
-			mPtr.setAmbient(0.0,1.0,0.0)
-			mPtr.setDiffuse(0.0,1.0,0.0, 1.0)
-		"""
-
 	def setMask(self, mask):
 		self.initMask = copy(mask)
 		#print "setting mask:", self.initMask
@@ -558,22 +517,6 @@ class AverageContacts:
 		if not self.isStep():
 			return 
 	
-		"""
-		for i in range(self.numJoints):
-			pos = self.probe.getActualJointPose(i)
-			position = ogre.Vector3(pos[0],0.1,pos[1])
-			self._allRefNodes[i].setPosition(position)
-
-			# negative the angle because the bodies are somehow flipped upside down
-			self._allRefNodes[i].setOrientation(ogre.Quaternion(-pos[2],ogre.Vector3().UNIT_Y))
-
-			self._allRefEnt[i].setVisible(self.activeRef[i])
-
-			mPtr = self._allRefNodes[i].getMaterial()
-			mPtr.setAmbient(0.0,1.0,0.0)
-			mPtr.setDiffuse(0.0,1.0,0.0, 1.0)
-		"""
-
 		
 		if True:
 
@@ -797,7 +740,7 @@ class AverageContacts:
 				
 				# initialize the first reference node with its position in global coordinates
 				origin = self.probe.getActualJointPose(newJointID)
-				#print "initial pose at joint", newJointID
+				print "initial pose at joint", newJointID
 
 			# initialize the first reference node with its position in global coordinates
 			#origin = self.probe.getActualJointPose(newJointID)
@@ -811,7 +754,7 @@ class AverageContacts:
 			
 			#originNode = RefNode(-1,newJointID,origin[0],origin[1],origin[2], self.probe)
 			originNode = RefNode(-1,newJointID,origin[0],origin[1],origin[2], len(joints), joints)
-
+ 
 			#refX, refZ, refP = originNode.getRefPose()
 
 			refX = originNode.getRefPoseX()
@@ -828,6 +771,7 @@ class AverageContacts:
 			pose = self.probe.getJointWRTJointPose(initPose, jointID, newJointID) 
 			
 			print "finalPose =", pose
+			print "actual =", self.probe.getActualJointPose(newJointID)
 			#print initPose,pose
 
 		else:
@@ -849,32 +793,6 @@ class AverageContacts:
 		newNode.setGroundTruthPose(gndPose[0],gndPose[1],gndPose[2])
 
 		self.activeRefPtr[newJointID] = newNode	
-
-		" draw the estimated reference nodes "
-		"""
-		if False:
-			i = self.numRef
-			## Create the visual reprsentation of active reference nodes
-			name = "est_node" + str(i)
-			entity = self.probe._mgr.createEntity(name, "Cube.mesh")
-			node = self.probe._mgr.getRootSceneNode().createChildSceneNode(name)
-			node.attachObject(entity)
-
-			size = ogre.Vector3(0.05,0.05,0.05)
-			node.setScale(size)
-
-			position = ogre.Vector3(pose[0],0.1,pose[1])
-			node.setPosition(position)
-			# negative the angle because the bodies are somehow flipped upside down
-			node.setOrientation(ogre.Quaternion(-pose[2],ogre.Vector3().UNIT_Y))
-
-			entity.setCastShadows(False)
-			entity.setMaterialName("Green")
-
-			#entity.setVisible(False)
-			self._allRefNodes.append(node)
-			self._allRefEnt.append(entity)
-		"""
 
 		# record it to the array so we can access it later
 		self.refPoints.append(newNode)	
@@ -924,17 +842,6 @@ class AverageContacts:
 			#refNumber = maxConsec
 		
 		#print maxSize, maxConsec
-		
-		# FIXME: find the *closest* recent node, not the *first*
-		"""
-		nodes = range(0,self.numJoints-1)
-		for j in nodes:
-
-			if self.activeRef[j]:
-				refExists = True
-				refNumber = j
-				refCount += 1
-		"""
 
 		# set the current node as active
 		self.activeRef[newJointID] = True
@@ -1042,32 +949,6 @@ class AverageContacts:
 
 		self.activeRefPtr[newJointID] = newNode	
 
-		"""
-		" draw the estimated reference nodes "
-		if False:
-			i = self.numRef
-			## Create the visual reprsentation of active reference nodes
-			name = "est_node" + str(i)
-			entity = self.probe._mgr.createEntity(name, "Cube.mesh")
-			node = self.probe._mgr.getRootSceneNode().createChildSceneNode(name)
-			node.attachObject(entity)
-
-			size = ogre.Vector3(0.05,0.05,0.05)
-			node.setScale(size)
-
-			position = ogre.Vector3(pose[0],0.1,pose[1])
-			node.setPosition(position)
-			# negative the angle because the bodies are somehow flipped upside down
-			node.setOrientation(ogre.Quaternion(-pose[2],ogre.Vector3().UNIT_Y))
-
-			entity.setCastShadows(False)
-			entity.setMaterialName("Green")
-
-			#entity.setVisible(False)
-			self._allRefNodes.append(node)
-			self._allRefEnt.append(entity)
-		"""
-		
 		# record it to the array so we can access it later
 		self.refPoints.append(newNode)	
 		self.numRef += 1
