@@ -17,6 +17,8 @@ class Curl(Behavior):
 
 		self.poseWindow = []
 		
+		self.highestErrors = []
+		
 		self.contacts = contacts
 
 		#self.stabilityX = ValueStability(1e-7, 10)
@@ -57,6 +59,7 @@ class Curl(Behavior):
 		self.lastPose = [0.0,0.0,0.0]
 		
 		self.poseIndex = 2
+		self.highestErrors = []
 		
 		self.returnedSuccess = False
 		self.slipError = 0.0
@@ -188,6 +191,22 @@ class Curl(Behavior):
 				#else:
 					#self.stabilityX.setThresh(1e-4)
 					#self.stabilityY.setThresh(1e-4)
+
+				maxError = 0.0
+				errors = probeState['errors']
+
+				if self.direction:
+					for i in range(0, self.topJoint):
+						if fabs(errors[i]) > maxError:
+							maxError = fabs(errors[i])
+				else:
+					for i in range(self.topJoint, self.numJoints):
+						if fabs(errors[i]) > maxError:
+							maxError = fabs(errors[i])
+
+				print "highest error:", maxError
+				self.highestErrors.append(maxError)
+						
 				
 			else:
 				return False

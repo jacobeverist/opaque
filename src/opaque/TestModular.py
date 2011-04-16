@@ -99,8 +99,8 @@ class TestModular(SnakeControl):
 
 	def grabImage(self):
 
-		inc = 50
-		#inc = 200
+		#inc = 50
+		inc = 200
 		#inc = 1000
 		#inc = 500
 
@@ -265,9 +265,9 @@ class TestModular(SnakeControl):
 				pnts.append(self.contacts.getClosestPose(i))
 			self.drawThings.renderPoints(pnts)
 
-		#if (self.globalState == 6 or self.globalState == 8) and self.globalTimer % 50 == 0:
-		#	probeState = self.probe.getProbeState()
-		#	print "torques:", probeState['torques']
+		if (self.globalState == 6 or self.globalState == 8) and self.globalTimer % 50 == 0:
+			probeState = self.probe.getProbeState()
+			print "pokeWalls torques:", probeState['torques']
 
 		#if self.globalState == 5 and self.globalTimer % 100 == 0:
 		#	probeState = self.probe.getProbeState()
@@ -338,14 +338,14 @@ class TestModular(SnakeControl):
 			#self.mapGraph.loadFile("testData/poseTest", 16)
 			#self.mapGraph.loadFile("testData/fixedPoseTest5", 15)
 			#self.mapGraph.loadFile("testData/bulletTest2", 17)
-			self.mapGraph.loadFile("testData/constraints", 17)
+			#self.mapGraph.loadFile("testData/constraints", 17)
 
 			#self.mapGraph.newNode(0.0, self.direction)
 			#self.mapGraph.forceUpdate(False)
 			#self.mapGraph.synch()
 			#self.mapGraph.saveMap()
 			
-			exit()
+			#exit()
 			#E = self.computeCovar()
 			#print repr(E)
 
@@ -395,15 +395,21 @@ class TestModular(SnakeControl):
 			if isDone:
 				self.restState = deepcopy(probeState)
 
+				self.currPose = self.contacts.getAverageSegPose(0)
+				deltaDist = sqrt((self.currPose[0]-self.lastPose[0])**2 + (self.currPose[1]-self.lastPose[1])**2)
+				print "deltaDist =", deltaDist
+	
+
+
+
 				self.mapGraph.newNode(self.stepDist, self.direction)
 				self.mapGraph.forceUpdate(False)
 				
 				self.contacts.resetPose(self.mapGraph.currNode.getEstPose())
-				
 				self.lastPose = self.contacts.getAverageSegPose(0)
 				
-				#self.globalState = 6
-				self.globalState = 9
+				self.globalState = 6
+				#self.globalState = 9
 
 				#self.probe.restorePose()
 				self.isCapture = True
@@ -449,28 +455,46 @@ class TestModular(SnakeControl):
 
 				#self.mapGraph.correctPoses2()
 				self.mapGraph.synch()
-				#self.mapGraph.saveMap()
+				self.mapGraph.saveMap()
 				self.mapGraph.saveLocalMap()
 				
 		
-				self.currPose = self.contacts.getAverageSegPose(0)
+				#self.currPose = self.contacts.getAverageSegPose(0)
 				deltaDist = sqrt((self.currPose[0]-self.lastPose[0])**2 + (self.currPose[1]-self.lastPose[1])**2)
 
 				" FORCE to the probe to continue walking forward "
 				#deltaDist = 1.0
 				print "deltaDist =", deltaDist
 	
-				self.lastPose = self.currPose
+				#self.lastPose = self.currPose
 				
-				deltaDist = 1.0
+				
+				frontSum = 0.0
+				for n in self.mapGraph.currNode.frontProbeError:
+					frontSum += n
+				foreAvg = frontSum / len(self.mapGraph.currNode.frontProbeError)
+				
+				
+				print "foreAvg =", foreAvg
+				if foreAvg >= 1.4:
+					self.globalState = 10
+				else:
+					self.globalState = 4
+				
+				#deltaDist = 1.0
 
 				#deltaDist = 0.0
 
 				#if deltaDist > 0.4:
-				if deltaDist > 0.2:
-					self.globalState = 4
-				else:
-					self.globalState = 10
+				
+				if self.mapGraph.numNodes > 30:
+					self.mapGraph.currNode.saveToFile()
+					exit()
+				
+				#if deltaDist > 0.2:
+				#	self.globalState = 4
+				#else:
+				#	self.globalState = 10
 					
 				#self.globalState = 10
 		
@@ -479,9 +503,9 @@ class TestModular(SnakeControl):
 			" select the destination and generate path "
 			
 			" select the point to go to "
-			#frontierPoint = self.mapGraph.selectNextFrontier()
-			
-			frontierPoint = [1.07-0.4, 0.0]
+			frontierPoint = self.mapGraph.selectNextFrontier()
+		
+			#frontierPoint = [1.07-0.4, 0.0]
 			#649, 358
 			#frontierPoint = [6.0, -1.5]
 			
@@ -713,7 +737,7 @@ class TestModular(SnakeControl):
 			#val = self.behavior.getMask()
 			#self.contacts.setMask(val)
 			
- 			self.contacts.step(probeState)
+ 			#self.contacts.step(probeState)
  			
 			if self.behavior.hasInitialized():
 				self.mapGraph.keepStablePose()
@@ -722,6 +746,13 @@ class TestModular(SnakeControl):
 					self.mapGraph.update(direction)
 	
 			if isDone:
+
+				if direction:
+					self.mapGraph.currNode.frontProbeError = self.behavior.curlErrors				
+				else:
+					self.mapGraph.currNode.backProbeError = self.behavior.curlErrors
+
+				
 				self.behavior = 0
 				self.localState = 0
 			
@@ -865,6 +896,7 @@ class TestModular(SnakeControl):
 			" do a path step on this path "
 			isDone = self.doPathStep(self.localWayPaths[0], self.localDirection)
 
+			self.drawThings.drawPath(self.localWayPaths[0])
 			" compute distance to the target destination point "
 			if self.globalTimer % 10 == 0:
 				self.currPose = self.contacts.getAverageSegPose(0)
@@ -884,11 +916,21 @@ class TestModular(SnakeControl):
 
 				self.restState = deepcopy(probeState)
 
+
+				self.currPose = self.contacts.getAverageSegPose(0)
+				deltaDist = sqrt((self.currPose[0]-self.lastPose[0])**2 + (self.currPose[1]-self.lastPose[1])**2)
+				print "deltaDist =", deltaDist
+
+
 				self.localPathState = 2
 
 				self.mapGraph.newNode(self.stepDist, self.localDirection)
 				self.mapGraph.forceUpdate(False)
-					
+	
+				self.contacts.resetPose(self.mapGraph.currNode.getEstPose())
+				self.lastPose = self.contacts.getAverageSegPose(0)
+	
+						
 				if len(self.localWayPoints) > 0:
 					
 
@@ -954,6 +996,8 @@ class TestModular(SnakeControl):
 							self.localPathState = 0
 							
 							print "FINISH:  doPathFollow()"
+							self.drawThings.drawPath([])
+
 							return True
 							
 						#elif self.distCount >= 2:
@@ -978,6 +1022,7 @@ class TestModular(SnakeControl):
 			isDone = self.doReturnToRest()
 			
 			if isDone:
+				self.mapGraph.currNode.resetPosture()		
 				self.localPathState = 4			
 			
 		elif self.localPathState == 4:
@@ -995,13 +1040,20 @@ class TestModular(SnakeControl):
 
 			if isDone:
 
-				self.mapGraph.correctPoses2()
 				self.mapGraph.synch()
+				self.mapGraph.saveMap()
 				self.mapGraph.saveLocalMap()
-				#self.mapGraph.saveMap()
 
 				self.localPathState = 1
-											
+				
+				
+				frontSum = 0.0
+				for n in self.mapGraph.currNode.frontProbeError:
+					frontSum += n
+				foreAvg = frontSum / len(self.mapGraph.currNode.frontProbeError)
+							
+				print "PathFollow: foreAvg =", foreAvg
+															
 		return False				
 
 		

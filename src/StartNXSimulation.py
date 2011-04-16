@@ -295,6 +295,8 @@ class SnakeApp(sf.Application):
 			"""
 			walls = [wall1, wall2, wall3, wall6]
 			
+			wall1 = [[-14.0, -0.2], [-4.0, -0.2], [-4.0, 0.2] ,[-14.0, 0.2]]
+			walls = [wall1]
 	
 			
 			#walls = [wall1, wall2]

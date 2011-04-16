@@ -9,6 +9,8 @@ class PokeWalls(Behavior):
 
 		self.direction = direction
 		self.obstContact = obstContact
+		
+		self.compliantTorque = 0.005
 
 
 		self.contacts = contacts
@@ -46,11 +48,13 @@ class PokeWalls(Behavior):
 		if not self.direction:
 			for i in range(-self.topJoint + self.numJoints-1, self.numJoints):
 				if i <= self.numJoints-1:
-					self.torques[i] = 3.0
+					self.torques[i] = self.compliantTorque
 		else:
 			for i in range(0, self.topJoint):					
 				if i <= self.numJoints-1:
-					self.torques[i] = 3.0
+					self.torques[i] = self.compliantTorque
+					
+		self.curlErrors = []
 
 	def hasInitialized(self):
 		return self.isInit
@@ -116,11 +120,11 @@ class PokeWalls(Behavior):
 			if not self.direction:
 				for i in range(-self.topJoint + self.numJoints-1, self.numJoints):
 					if i <= self.numJoints-1:
-						self.torques[i] = 3.0
+						self.torques[i] = self.compliantTorque
 			else:
 				for i in range(0, self.topJoint):					
 					if i <= self.numJoints-1:
-						self.torques[i] = 3.0	
+						self.torques[i] = self.compliantTorque
 	
 			self.state = 0
 	
@@ -146,6 +150,8 @@ class PokeWalls(Behavior):
 
 		if finalDone:
 			self.hasTransitioned = False
+			self.curlErrors = self.curl.highestErrors
+			print "curl errors:", self.curl.highestErrors
 			self.curl.reset()
 			self.isInit = False
 

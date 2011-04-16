@@ -178,7 +178,7 @@ class LocalOccMap:
 
 		freeRects = self.computeStabilizedFreeSpace()
 		freeRects.sort()
-		self.stable_rectangles.append(freeRects)
+		#self.stable_rectangles.append(freeRects)
 
 
 		jointErr = 0.0
@@ -470,9 +470,9 @@ class LocalOccMap:
 			for rect in snapshot:
 				self.fillOpen(rect[1], self.gndMapImage.load())
 
-		for snapshot in self.stable_rectangles:
-			for rect in snapshot:
-				self.fillOpen(rect[1], self.stableMapImage.load())
+		#for snapshot in self.stable_rectangles:
+		#	for rect in snapshot:
+		#		self.fillOpen(rect[1], self.stableMapImage.load())
 	
 		" so outside maps can trigger changes "
 		self.changed = True

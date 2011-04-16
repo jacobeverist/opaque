@@ -643,16 +643,16 @@ class PathStep(Behavior):
 		joints = self.globalCurveSlide.getJoints()
 
 		self.holdT.reset(self.probeState, joints)
-							
+						
 	def doFrontAnchor(self):
-				
+		
+		stateJoints = self.probeState['joints']
+		cmdJoints = self.probeState['cmdJoints']
+		errors = self.probeState['errors']
+
 		" compute the maximum error of the joints in the current peak "
 		anchorJoints = self.frontAnchorFit.getPeakJoints()
 		anchorJoints.sort()
-
-		joints = self.probeState['joints']
-		cmdJoints = self.probeState['cmdJoints']
-		errors = self.probeState['errors']
 
 		maxError = 0.0	
 		for j in anchorJoints:
@@ -662,23 +662,19 @@ class PathStep(Behavior):
 		
 		" check for terminating criteria "
 		currAmp = self.frontCurve.getPeakAmp()	
-		
+		nextVal = currAmp	
+
 		" draw the state of the curve fitting "
 		#self.drawFit()
-
-		currAmp = self.frontCurve.getPeakAmp()
-		nextVal = currAmp	
 		
 		if not self.isJerking:
-
-			print "errors:", maxError, errors
-
 			" perform amplitude operation here "
 
-			print "amps before:", self.minAmp, self.maxAmp, self.ampInc, currAmp, nextVal
+			#print "amps before:", self.minAmp, self.maxAmp, self.ampInc, currAmp, nextVal
 			
 			" error threshold that determines we have made an anchor contact "
 			if maxError > 0.3 and self.maxAmp != 0.0:
+				
 				
 				#print "errors =", errors
 			
@@ -697,9 +693,7 @@ class PathStep(Behavior):
 						self.ampInc = 0.04
 	
 					else:
-						
-						self.isJerking = True
-						
+						self.isJerking = True						
 
 				else:
 				
@@ -826,7 +820,7 @@ class PathStep(Behavior):
 				if self.jerkState == -1:
 					
 					for k in range(len(self.jerkJoints2)):
-						self.nomJerks2[k] = joints[self.jerkJoints2[k]] * 180.0 / pi
+						self.nomJerks2[k] = stateJoints[self.jerkJoints2[k]] * 180.0 / pi
 				
 					for k in range(len(self.jerkJoints2)):
 						if k % 2 == 0:
@@ -837,13 +831,13 @@ class PathStep(Behavior):
 					self.jerkState = 0
 				
 				elif self.jerkState == 0:
-					self.nomJerk = joints[self.jerkJoint] * 180.0 / pi
+					self.nomJerk = stateJoints[self.jerkJoint] * 180.0 / pi
 				
 					for k in range(len(self.jerkJoints)):
-						self.nomJerks[k] = joints[self.jerkJoints[k]] * 180.0 / pi
+						self.nomJerks[k] = stateJoints[self.jerkJoints[k]] * 180.0 / pi
 
 				
-					#print "nominal = " , self.nomJerk, joints[self.jerkJoint)
+					#print "nominal = " , self.nomJerk, stateJoints[self.jerkJoint)
 					self.prevJerkAngle = self.jerkAngle
 					self.jerkAngle = 60	
 				
@@ -866,14 +860,14 @@ class PathStep(Behavior):
 				elif self.jerkState == 1:
 					
 					#print "setting jerk joint to ", self.jerkAngle + self.nomJerk
-					#print "jerk angle error = " , joints[self.jerkJoint]-cmdJoints[self.jerkJoint]
+					#print "jerk angle error = " , stateJoints[self.jerkJoint]-cmdJoints[self.jerkJoint]
 
 					errs = []
 					for k in range(len(self.jerkJoints)):
-						errs.append(joints[self.jerkJoints[k]]-cmdJoints[self.jerkJoints[k]])
+						errs.append(stateJoints[self.jerkJoints[k]]-cmdJoints[self.jerkJoints[k]])
 						self.prevJerkAngles[k] = self.jerkAngles[k]
 					
-					self.jerkErrors.append(joints[self.jerkJoint]-cmdJoints[self.jerkJoint])
+					self.jerkErrors.append(stateJoints[self.jerkJoint]-cmdJoints[self.jerkJoint])
 					self.prevJerkAngle = self.jerkAngle
 					self.jerkAngle = -60
 
@@ -899,8 +893,8 @@ class PathStep(Behavior):
 					self.jerkState = 2
 					
 				elif self.jerkState == 2:
-					#print "jerk angle error = " , joints[self.jerkJoint]-cmdJoints[self.jerkJoint]
-					self.jerkErrors.append(joints[self.jerkJoint]-cmdJoints[self.jerkJoint])
+					#print "jerk angle error = " , stateJoints[self.jerkJoint]-cmdJoints[self.jerkJoint]
+					self.jerkErrors.append(stateJoints[self.jerkJoint]-cmdJoints[self.jerkJoint])
 
 					" error = (-0.09, 0.005) is good "
 					" error = (-2.73, -1.99) is bad "

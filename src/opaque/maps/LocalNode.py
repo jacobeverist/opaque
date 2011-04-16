@@ -34,6 +34,9 @@ class LocalNode:
 		self.contacts = contacts
 		self.rootNode = rootNode
 		
+		
+		self.frontProbeError = []
+		self.backProbeError = []
 
 		self._refnodes = []
 		self._refent = []
@@ -741,6 +744,16 @@ class LocalNode:
 
 		f = open("posture%04u.txt" % self.nodeID, 'w')
 		f.write(repr(self.localPosture))
+		f.write("\n")
+		f.close()
+
+		f = open("frontProbeError%04u.txt" % self.nodeID, 'w')
+		f.write(repr(self.frontProbeError))
+		f.write("\n")
+		f.close()
+
+		f = open("backProbeError%04u.txt" % self.nodeID, 'w')
+		f.write(repr(self.backProbeError))
 		f.write("\n")
 		f.close()
 

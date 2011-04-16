@@ -33,6 +33,9 @@ class AdaptiveStep(Behavior):
 		self.frontAnchorFit = 0
 		self.concertinaFit = 0
 		
+		self.compliantTorque = 0.005
+		#self.compliantTorque = 3.0
+		
 		self.segLength = self.robotParam['segLength']
 		self.numJoints = self.robotParam['numJoints'] 
 		self.maxTorque = self.robotParam['maxTorque']
@@ -696,13 +699,11 @@ class AdaptiveStep(Behavior):
 
 		stateJoints = self.probeState['joints']
 		cmdJoints = self.probeState['cmdJoints']
-
+		errors = self.probeState['errors']
 				
 		" compute the maximum error of the joints in the current peak "
 		anchorJoints = self.frontAnchorFit.getPeakJoints()
 		anchorJoints.sort()
-
-		errors = self.probeState['errors']
 
 		maxError = 0.0	
 		for j in anchorJoints:
@@ -710,13 +711,12 @@ class AdaptiveStep(Behavior):
 			if fabs(err) > maxError:
 				maxError = fabs(err)
 		
-		
-		" draw the state of the curve fitting "
-		#self.drawFit()
-
 		" check for terminating criteria "
 		currAmp = self.frontCurve.getPeakAmp()
 		nextVal = currAmp	
+
+		" draw the state of the curve fitting "
+		#self.drawFit()
 		
 		if not self.isJerking:
 			" perform amplitude operation here "
@@ -1098,13 +1098,13 @@ class AdaptiveStep(Behavior):
 				#print "weakening joints", range(maxJoint+1,self.numJoints)
 				for i in range(maxJoint+1, self.numJoints):
 					if i <= self.numJoints-1:
-						self.torques[i] = 3.0
+						self.torques[i] = self.compliantTorque
 			else:
 				minJoint = min(anchorJoints)
 				#print "weakening joints", range(0,minJoint-1)
 				for i in range(0, minJoint-1):					
 					if i <= self.numJoints-1:
-						self.torques[i] = 3.0
+						self.torques[i] = self.compliantTorque
 
 		" execute the local curve fitting "
 		self.frontAnchorFit.step(self.probeState)
@@ -1234,14 +1234,14 @@ class AdaptiveStep(Behavior):
 				maxJoint = max(peakJoints)
 				for i in range(maxJoint+2, self.numJoints):
 					if i <= self.numJoints-1:
-						self.torques[i] = 3.0
+						self.torques[i] = self.compliantTorque
 			else:
 				minJoint = min(peakJoints)
 				#print "weakening", 0, "to", minJoint-1
 				#for i in range(0, minJoint):					
 				for i in range(0, minJoint-1):					
 					if i <= self.numJoints-1:
-						self.torques[i] = 3.0
+						self.torques[i] = self.compliantTorque
 							
 
 		resultJoints = self.spliceFitJoints()

@@ -16,6 +16,9 @@ class DrawThings():
 		self._allRefNodes = []
 		self._allRefEnt = []
 
+		self._allPathNodes = []
+		self._allPathEnt = []
+
 	def setSim(self, sceneManager):
 		self.sceneManager = sceneManager
 		self.isSim = True
@@ -64,6 +67,7 @@ class DrawThings():
 				
 		" delete any existing points that may exist "
 		# deference the child nodes now
+
 		for child in self._allRefNodes:
 			self.sceneManager.destroySceneNode(child)
 	
@@ -98,6 +102,46 @@ class DrawThings():
 			self._allRefEnt.append(entity)
 			
 			globalID += 1
+			
+	def drawPath(self, pnts, color = (0.0,0.0,0.0)):
+		
+		global globalID
+				
+		" delete any existing points that may exist "
+		# deference the child nodes now
+		for child in self._allPathNodes:
+			self.sceneManager.destroySceneNode(child)
+	
+		for child in self._allPathEnt:
+			self.sceneManager.destroyEntity(child)
+	
+		self._allPathNodes = []
+		self._allPathEnt = []
+		
+		for i in range(len(pnts)):
+			## Create the visual reprsentation of active reference nodes
+			name = "act_node" + str(globalID)
+			entity = self.sceneManager.createEntity(name, "Cube.mesh")
+			node = self.sceneManager.getRootSceneNode().createChildSceneNode(name)
+			node.attachObject(entity)
+
+			size = ogre.Vector3(0.05,0.05,0.05)
+			node.setScale(size)
+
+			pos = pnts[i]
+			position = ogre.Vector3(pos[0],0.1,pos[1])
+			node.setPosition(position)
+
+			entity.setCastShadows(False)
+
+			entity.setMaterialName("Blue")
+
+			#entity.setVisible(False)
+			self._allPathNodes.append(node)
+			self._allPathEnt.append(entity)
+			
+			globalID += 1
+				
 
 	def renderLines(self, pnts, color = (0.0,0.0,0.0)):
 		pass
