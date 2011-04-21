@@ -46,7 +46,7 @@ class OccupancyMap(Map):
 		self.resetMap()
 		
 		for i in range(self.mapGraph.numNodes):
-			localNode = self.mapGraph.poseGraph.get_node_attributes(i)
+			localNode = self.mapGraph.nodeHash[i]
 			localOccMap = localNode.getOccMap()
 			localMap = localOccMap.getMap()
 			localImage = localMap.load()

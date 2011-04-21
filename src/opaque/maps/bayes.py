@@ -15,7 +15,7 @@ def mahab_dist(c1, c2, r1, r2, E):
 	dist = s.T * E_inv * s
 	return dist[0,0]
 
-def dijkstra_proj(initNode, numNodes, poseGraph):
+def dijkstra_proj(initNode, numNodes, edgeHash):
 	
 	identTransform = matrix([[0.], [0.], [0.]],dtype=float)
 	zeroCov = matrix([[0.,0.,0.],[0.,0.,0.],[0.,0.,0.]],dtype=float)
@@ -32,12 +32,26 @@ def dijkstra_proj(initNode, numNodes, poseGraph):
 	visited[initNode] = True
 	
 	" for each edge out of 0, add to path "
-	neighbors = poseGraph.neighbors(initNode)
-	incidents = poseGraph.incidents(initNode)
+
+	neighbors = []
+	incidents = []
+	for i in range(numNodes):
+		try:
+			edgeHash[(initNode, i)]
+			neighbors.append(i)
+		except:
+			pass
+		
+		try:
+			edgeHash[(i, initNode)]
+			incidents.append(i)
+		except:
+			pass
+
 
 	for neigh in neighbors:
 		if not visited[neigh]:
-			transform, covE = poseGraph.get_edge_attributes(initNode,neigh)
+			transform, covE = edgeHash[(initNode,neigh)]
 			
 			print initNode, neigh, ":", repr(transform), repr(covE)
 			
@@ -49,7 +63,7 @@ def dijkstra_proj(initNode, numNodes, poseGraph):
 
 	for incid in incidents:
 		if not visited[incid]:
-			transform, covE = poseGraph.get_edge_attributes(incid, initNode)
+			transform, covE = edgeHash[(incid, initNode)]
 
 			print incid, initNode, ":", repr(transform), repr(covE)
 			
@@ -108,13 +122,26 @@ def dijkstra_proj(initNode, numNodes, poseGraph):
 			" for all edges leaving dest, add the composed path "
 
 			" for each edge out of dest, add to path "
-			neighbors = poseGraph.neighbors(dest)
-			incidents = poseGraph.incidents(dest)
+
+			neighbors = []
+			incidents = []
+			for i in range(numNodes):
+				try:
+					edgeHash[(dest, i)]
+					neighbors.append(i)
+				except:
+					pass
+				
+				try:
+					edgeHash[(i, dest)]
+					incidents.append(i)
+				except:
+					pass
 
 			for neigh in neighbors:
 				if not visited[neigh]:
 					#print dest, neigh
-					transform, covE = poseGraph.get_edge_attributes(dest,neigh)
+					transform, covE = edgeHash[(dest,neigh)]
 
 					T_b_a = optimals[dest][0]
 					T_c_b = transform
@@ -147,7 +174,7 @@ def dijkstra_proj(initNode, numNodes, poseGraph):
 	
 			for incid in incidents:
 				if not visited[incid]:
-					transform, covE = poseGraph.get_edge_attributes(incid, dest)
+					transform, covE = edgeHash[(incid, dest)]
 
 					T_b_a = optimals[dest][0]
 					T_c_b = transform
@@ -234,11 +261,5 @@ if __name__ == '__main__':
 	#edges = eval(fp.read())
 	#edge_attrs = eval(fp.read())
 	
-	#nodes = self.poseGraph.nodes()
-	#edges = self.poseGraph.edges()
-		
-	#edge_attrs = []
-	#for i in range(len(edges)):
-	#	edge_attrs.append( self.poseGraph.get_edge_attributes(edges[i][0],edges[i][1]) )
-	
+
 	
