@@ -23,20 +23,28 @@ import os
 estPlotCount = 0
 
 
-def makeGuess2(centerCurve1, centerCurve2, stepDist, posture1, posture2, originPose =[0.0,0.0,0.0]):
+def makeGuess2(centerCurve1, centerCurve2, stepDist, posture1, posture2, forward=True, originPose =[0.0,0.0,0.0]):
 
     " get the curve root vectors "
-    vec1 = centerCurve1.getUVector(0.3)
-    vec2 = centerCurve2.getUVector(0.5)
     
+    if forward:
+        vec1 = centerCurve1.getUVector(0.35)
+        vec2 = centerCurve2.getUVector(0.5)
+    else:
+        vec1 = centerCurve1.getUVector(0.65)
+        vec2 = centerCurve2.getUVector(0.5)
+
     " negate vectors since they're pointing backwards instead of forwards "
     vec1 = [-vec1[0],-vec1[1]]
     vec2 = [-vec2[0],-vec2[1]]
     
-    
-    vecPoint1 = centerCurve1.getU(0.3)
-    vecPoint2 = centerCurve2.getU(0.5)
-    
+    if forward:
+        vecPoint1 = centerCurve1.getU(0.35)
+        vecPoint2 = centerCurve2.getU(0.5)
+    else:
+        vecPoint1 = centerCurve1.getU(0.65)
+        vecPoint2 = centerCurve2.getU(0.5)
+        
     angle1 = acos(vec1[0])
     if asin(vec1[1])  < 0:
         angle1 = -angle1
@@ -52,9 +60,13 @@ def makeGuess2(centerCurve1, centerCurve2, stepDist, posture1, posture2, originP
     " root nodes, start at [0,0,0] "
     
     " we want to project stepDist in the direction of angle 1 "
-    xCurveLocalDes2 = curve1Pose[0] + stepDist * cos(curve1Pose[2])
-    yCurveLocalDes2 = curve1Pose[1] + stepDist * sin(curve1Pose[2])
-    
+    if forward:
+        xCurveLocalDes2 = curve1Pose[0] + stepDist * cos(curve1Pose[2])
+        yCurveLocalDes2 = curve1Pose[1] + stepDist * sin(curve1Pose[2])
+    else:
+        xCurveLocalDes2 = curve1Pose[0] - stepDist * cos(curve1Pose[2])
+        yCurveLocalDes2 = curve1Pose[1] - stepDist * sin(curve1Pose[2])
+        
     originProfile = Pose(originPose)
     
     #oP = originProfile.convertLocalToGlobal([curve1Pose[0],curve1Pose[1]])

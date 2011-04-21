@@ -74,8 +74,8 @@ def getIndicatorVector(e):
 	tups = []
 	domVector = e
 	N = domVector.shape[0]
-	#print "shape =", domVector.shape
-	#print "N =", N
+	print "shape =", domVector.shape
+	print "N =", N
 	for i in range(N):
 		tups.append((domVector[i,0], i))
 		
@@ -92,6 +92,7 @@ def getIndicatorVector(e):
 	for i in range(len(tups)):
 		w[i,0] = 1
 		val = numpy.dot(w.transpose(), v)
+		print "val:", val
 		val = val[0,0] / sqrt(1+i)
 
 		print "val:", tups[i][0], "dot:", val

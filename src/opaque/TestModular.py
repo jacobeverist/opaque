@@ -265,9 +265,9 @@ class TestModular(SnakeControl):
 				pnts.append(self.contacts.getClosestPose(i))
 			self.drawThings.renderPoints(pnts)
 
-		if (self.globalState == 6 or self.globalState == 8) and self.globalTimer % 50 == 0:
-			probeState = self.probe.getProbeState()
-			print "pokeWalls torques:", probeState['torques']
+		#if (self.globalState == 6 or self.globalState == 8) and self.globalTimer % 50 == 0:
+		#	probeState = self.probe.getProbeState()
+		# 	print "pokeWalls torques:", probeState['torques']
 
 		#if self.globalState == 5 and self.globalTimer % 100 == 0:
 		#	probeState = self.probe.getProbeState()
@@ -339,11 +339,16 @@ class TestModular(SnakeControl):
 			#self.mapGraph.loadFile("testData/fixedPoseTest5", 15)
 			#self.mapGraph.loadFile("testData/bulletTest2", 17)
 			#self.mapGraph.loadFile("testData/constraints", 17)
+			#self.mapGraph.loadFile("testData/backtrack1", 7)
 
 			#self.mapGraph.newNode(0.0, self.direction)
 			#self.mapGraph.forceUpdate(False)
 			#self.mapGraph.synch()
 			#self.mapGraph.saveMap()
+
+			#self.mapGraph.loadFile("testData/backtrack1", 7)
+			#self.mapGraph.loadFile("testData/backtrack2", 47)
+			self.mapGraph.loadFile("testData/backtrack2", 47)
 			
 			#exit()
 			#E = self.computeCovar()
@@ -359,8 +364,10 @@ class TestModular(SnakeControl):
 	
 			#exit()
 	
-			#self.mapGraph.correctPoses3()
-			#exit()
+			self.mapGraph.correctPoses3()
+			self.mapGraph.synch()
+			self.mapGraph.saveMap()
+			exit()
 			
 			
 			self.restState = deepcopy(probeState)
@@ -476,6 +483,7 @@ class TestModular(SnakeControl):
 				
 				
 				print "foreAvg =", foreAvg
+				#foreAvg = 2.0
 				if foreAvg >= 1.4:
 					self.globalState = 10
 				else:
@@ -870,8 +878,13 @@ class TestModular(SnakeControl):
 			
 			self.localDirection = True
 			
+			
 			self.localWayPoints = deepcopy(wayPoints)
 			self.localWayPaths = deepcopy(wayPaths)
+
+			print len(self.localWayPoints), "wayPoints"
+			for i in range(len(self.localWayPoints)):
+				print self.localWayPoints[i]
 			
 			self.currPose = self.contacts.getAverageSegPose(0)
 
@@ -887,6 +900,7 @@ class TestModular(SnakeControl):
 				" determine distance to the next way point "
 				dest = self.localWayPoints[0]			
 				self.lastDist = sqrt((dest[0]-self.currPose[0])**2 + (dest[1]-self.currPose[1])**2)
+				print "lastDist: ", self.lastDist
 				
 			self.distCount = 0
 			self.localPathState = 1
@@ -907,7 +921,7 @@ class TestModular(SnakeControl):
 			" check if we've crossed the destination "
 			if dist < 0.1:
 				if not self.targetReached:
-					print "target reached!"
+					print "target reached at wayPoint:", dest
 				self.targetReached = True
 			
 			if isDone:

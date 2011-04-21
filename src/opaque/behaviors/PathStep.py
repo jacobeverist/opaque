@@ -39,6 +39,8 @@ class PathStep(Behavior):
 		self.frontAnchorFit = 0
 		self.concertinaFit = 0
 
+		self.compliantTorque = 0.005
+		#self.compliantTorque = 3.0
 		
 		self.direction = direction
 		self.isInit = False
@@ -122,7 +124,7 @@ class PathStep(Behavior):
 		print "creating 1st GlobalCurveFit"
 		#self.globalCurveFit = GlobalCurveFit(self.robotParam, self.contacts, self.pathCurve1, localNode = self.mapGraph.currNode)
 		self.globalCurveFit = GlobalCurveFit(self.robotParam, self.contacts, self.pathCurve1)
-		self.globalCurveFit.setTimerAliasing(10)
+		#self.globalCurveFit.setTimerAliasing(10)
 		
 		print "creating 2nd GlobalCurveFit"
 		#self.globalCurveSlide = GlobalCurveSlide(self.robotParam, self.contacts, self.pathCurve2, localNode = self.mapGraph.currNode)
@@ -266,9 +268,9 @@ class PathStep(Behavior):
 		tempJoints = copy(joints1)
 		tempJoints[self.spliceJoint] = newJointVal
 		
-		print "splicing:"
-		print tempJoints
-		print joints2
+		#print "splicing:"
+		#print tempJoints
+		#print joints2
 		
 		jointList = [tempJoints,joints2]
 		
@@ -708,33 +710,17 @@ class PathStep(Behavior):
 						
 						" C:  Overshoot.  Minimum is too high." 
 						" Reduce amplitude minimum, set current to maximum"
-
-						" if the currAmp is already 0.0, we're going to mark this anchored and move on"
-						if currAmp == 0.0:
-								
-							" set our new peak to solid so we don't recompute its values "
-							if self.currPeak != 0:
-								self.currPeak += 2
-								self.minAmp = 0.0
-								self.maxAmp = 0.0
-								
-								nextVal = 0.0
-								self.ampInc = 0.04
-			
-							else:
-								self.isJerking = True	
-						else:
-
-							" FIXME:  sometimes the amplitude goes below zero. "
-							self.minAmp -= self.ampInc
-
-							" do not allow the amplitude to go negative "
-							if self.minAmp < 0.0:
-								self.minAmp = 0.0
-
-							self.maxAmp = currAmp
-							nextVal = self.minAmp
-							
+						
+						" FIXME:  sometimes the amplitude goes below zero. "
+						self.minAmp -= self.ampInc
+						
+						" do not allow the amplitude to go negative "
+						if self.minAmp < 0.0:
+							self.minAmp = 0.0
+												
+						self.maxAmp = currAmp
+						nextVal = self.minAmp
+						
 					else:
 						
 						"D: Bring amplitude down to minimum, and lower the step size"
@@ -758,7 +744,7 @@ class PathStep(Behavior):
 				" maximum is the value we just set "
 				self.maxAmp = nextVal
 			
-			print "amps after:", self.minAmp, self.maxAmp, self.ampInc, currAmp, nextVal
+			#print "amps after:", self.minAmp, self.maxAmp, self.ampInc, currAmp, nextVal
 				
 		" change the amplitude "
 		#print "setting amp = " , nextVal		
@@ -976,7 +962,8 @@ class PathStep(Behavior):
 			print "errorPoses3:", self.errorPoses3
 			print "anchor errors =", err1, err2, err3
 			
-			if err1 > 0.1 or err2 > 0.1:
+			#if err1 > 0.1 or err2 > 0.1:
+			if False:
 
 				" TODO " 
 				" if the anchor failed, increment the splice joint higher "
@@ -1036,7 +1023,7 @@ class PathStep(Behavior):
 
 		" reset all torques of the joints to maximum "
 		for i in range(self.numJoints):
-			self.torques[i] = self.maxTorque
+			self.torques[i] =  self.maxTorque
 
 		" weaken head joints "
 		" 30*2.5 is maximum "
@@ -1050,13 +1037,13 @@ class PathStep(Behavior):
 				#print "weakening joints", range(maxJoint+1, self.numJoints)
 				for i in range(maxJoint+1, self.numJoints):
 					if i <= self.numJoints-1:
-						self.torques[i] = 3.0
+						self.torques[i] = self.compliantTorque
 			else:
 				minJoint = min(anchorJoints)
 				#print "weakening joints", range(0,minJoint-1)
 				for i in range(0, minJoint-1):					
 					if i <= self.numJoints-1:
-						self.torques[i] = 3.0
+						self.torques[i] = self.compliantTorque
 	
 		" execute the local curve fitting "
 		self.frontAnchorFit.step(self.probeState)
@@ -1195,13 +1182,13 @@ class PathStep(Behavior):
 
 				for i in range(maxJoint+2, self.numJoints):
 					if i <= self.numJoints-1:
-						self.torques[i] = 3.0
+						self.torques[i] = self.compliantTorque
 			else:
 				minJoint = min(peakJoints)
 
 				for i in range(0, minJoint-1):					
 					if i <= self.numJoints-1:
-						self.torques[i] = 3.0
+						self.torques[i] = self.compliantTorque
 
 		resultJoints = self.spliceFitJoints()
 		self.holdT.reset(self.probeState, resultJoints)

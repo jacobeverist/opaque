@@ -6,6 +6,141 @@ from math import *
 from copy import *
 import gen_icp
 
+
+def writeConstrainedToroGraph(testDir, filename, v_list, e_list):
+
+	filename = testDir + "/" + filename
+	sf = open(filename, 'w')
+
+
+	nodeCount = 0
+	poses = {}
+
+
+	for vertex in v_list:
+
+		nodeID = vertex[0]
+		pose = vertex[1]
+		
+		poses[nodeID] = pose
+		
+		if nodeID > nodeCount:
+			nodeCount = nodeID
+
+		sf.write("VERTEX " + str(nodeID) + " " + str(pose[0]) + " " + str(pose[1]) + " " + str(pose[2]))
+		sf.write("\n")
+		
+	edgeHash = {}
+	regularEdge = []
+	extraEdge = []
+
+	for edge in e_list:
+		node1 = edge[0]
+		node2 = edge[1]
+		
+		try:
+			if edgeHash[node1] == node2:
+				extraEdge.append(edge)
+			else:
+				regularEdge.append(edge)
+		except:
+			regularEdge.append(edge)
+			
+		edgeHash[node1] = node2
+	
+	#print "regular edges:"
+	#print regularEdge
+	##print
+	#print "extra edges:"
+	#print extraEdge
+
+
+	" for each extra edge, change the node ID and add an EQUIV statement "
+	equivs = []
+	finalExtra = []
+	extraNodes = []
+	for edge in extraEdge:
+		node1 = edge[0]
+		node2 = edge[1]
+		
+		nodeCount += 1
+		newNodeID = nodeCount
+		
+		equivs.append([node2, newNodeID])		
+		equiv_edge = [node2, newNodeID, [0.0,0.0,0.0], [10,0,10,10,0,0] ]
+
+		newEdge = deepcopy(edge)		
+		newEdge[1] = newNodeID
+		
+		finalExtra.append(newEdge)
+		finalExtra.append(equiv_edge)
+		
+		extraNodes.append([newNodeID, poses[node2]])
+
+	for vertex in extraNodes:
+
+		nodeID = vertex[0]
+		pose = vertex[1]
+
+		sf.write("VERTEX " + str(nodeID) + " " + str(pose[0]) + " " + str(pose[1]) + " " + str(pose[2]))
+		sf.write("\n")
+		
+
+
+	for edge in regularEdge:
+		sf.write("EDGE ")
+
+		node1 = edge[0]
+		node2 = edge[1]
+		offset = edge[2]
+		covar = edge[3]
+
+		sf.write(str(node1) + " ")
+		sf.write(str(node2) + " ")
+		sf.write(str(offset[0]) + " ")
+		sf.write(str(offset[1]) + " ")
+		sf.write(str(offset[2]) + " ")
+		sf.write(str(covar[0]) + " ")
+		sf.write(str(covar[1]) + " ")
+		sf.write(str(covar[2]) + " ")
+		sf.write(str(covar[3]) + " ")
+		sf.write(str(covar[4]) + " ")
+		sf.write(str(covar[5]))
+		sf.write("\n")
+
+	for edge in finalExtra:
+		sf.write("EDGE ")
+
+		node1 = edge[0]
+		node2 = edge[1]
+		offset = edge[2]
+		covar = edge[3]
+
+		sf.write(str(node1) + " ")
+		sf.write(str(node2) + " ")
+		sf.write(str(offset[0]) + " ")
+		sf.write(str(offset[1]) + " ")
+		sf.write(str(offset[2]) + " ")
+		sf.write(str(covar[0]) + " ")
+		sf.write(str(covar[1]) + " ")
+		sf.write(str(covar[2]) + " ")
+		sf.write(str(covar[3]) + " ")
+		sf.write(str(covar[4]) + " ")
+		sf.write(str(covar[5]))
+		sf.write("\n")
+
+	for equiv in equivs:
+		sf.write("EQUIV ")
+		
+		node1 = equiv[0]
+		node2 = equiv[1]
+		
+		sf.write(str(node1) + " ")
+		sf.write(str(node2) + "\n")
+
+
+	sf.close()
+
 def writeToroGraph(testDir, filename, v_list, e_list, edgeConstraints):
 
 	filename = testDir + "/" + filename

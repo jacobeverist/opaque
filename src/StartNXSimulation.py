@@ -90,7 +90,7 @@ class SimpleScenesFrameListener ( sf.FrameListener ):
 		yPrev = prevPose[2]
 		zPrev = prevPose[1]
 		
-		newPose = [xPrev*0.99 + 0.01*xAvg, yPrev*0.99 + 0.01*yAvg, 8]
+		newPose = [xPrev*0.99 + 0.01*xAvg, yPrev*0.99 + 0.01*yAvg, 12]
 
 		#self.camera.setPosition(newPose[0]+1,newPose[2],newPose[1])
 		#newPose[0] = -6.0
@@ -295,8 +295,8 @@ class SnakeApp(sf.Application):
 			"""
 			walls = [wall1, wall2, wall3, wall6]
 			
-			wall1 = [[-14.0, -0.2], [-4.0, -0.2], [-4.0, 0.2] ,[-14.0, 0.2]]
-			walls = [wall1]
+			#wall1 = [[-14.0, -0.2], [-4.0, -0.2], [-4.0, 0.2] ,[-14.0, 0.2]]
+			#walls = [wall1]
 	
 			
 			#walls = [wall1, wall2]

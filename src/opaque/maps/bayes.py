@@ -39,6 +39,8 @@ def dijkstra_proj(initNode, numNodes, poseGraph):
 		if not visited[neigh]:
 			transform, covE = poseGraph.get_edge_attributes(initNode,neigh)
 			
+			print initNode, neigh, ":", repr(transform), repr(covE)
+			
 			dist = linalg.det(covE)
 			if dist < distances[neigh]:
 				paths[neigh] = [transform, covE]
@@ -48,6 +50,8 @@ def dijkstra_proj(initNode, numNodes, poseGraph):
 	for incid in incidents:
 		if not visited[incid]:
 			transform, covE = poseGraph.get_edge_attributes(incid, initNode)
+
+			print incid, initNode, ":", repr(transform), repr(covE)
 			
 			xA = transform[0,0]
 			yA = transform[1,0]
@@ -183,6 +187,8 @@ def dijkstra_proj(initNode, numNodes, poseGraph):
 		
 		offset = value[0]
 		covE = value[1]
+		
+		#print key, repr(offset), repr(covE)
 		
 	return paths
 
