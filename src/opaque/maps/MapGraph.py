@@ -243,8 +243,6 @@ class MapGraph:
 		self.sensor_constraints = []	
 		self.gnd_constraints = []
 		self.merged_constraints = []
-		
-		self.constraints = []
 
 		" error from average "
 		E_motion = [[ 0.37854806, -0.0049439,  -0.01498673],
@@ -270,153 +268,42 @@ class MapGraph:
 			[0.0, 0.1, 0.0],
 			[0.0, 0.0, 0.02]]	
 
-		"""
+
 		for i in range(0,num_poses):
-			
-			print "loading file", i
-			
-			# def __init__(self, probe, contacts, nodeID, rootNode, pixelSize, inSim = True):
-			#self.currNode = LocalNode(self.probe, self.contacts, i, 19, self.pixelSize, inSim = False)
+			print "loading node", i			
 			self.currNode = LocalNode(self.probe, self.contacts, i, 19, self.pixelSize)
 			self.currNode.readFromFile(dirName, i)
-			
-			print "adding node", i
-			self.poseGraph.add_node(i, self.currNode)
-
-			if self.numNodes > 0:
-				node1 = self.poseGraph.get_node_attributes(i-1)
-				node2 = self.poseGraph.get_node_attributes(i)
-
-				gndGPAC1Pose = node1.getGndGlobalGPACPose()
-				currProfile = Pose(gndGPAC1Pose)
-				gndGPAC2Pose = node2.getGndGlobalGPACPose()
-				offset = currProfile.convertGlobalPoseToLocal(gndGPAC2Pose)
-				self.gnd_constraints.append([matrix([[offset[0]], [offset[1]], [offset[2]]]), matrix([[0.,0.,0.],[0.,0.,0.],[0.,0.,0.]])    ])	
-	
-		f = open(dirName + "/sensor_hypotheses.txt" % i, 'r')
-		self.constraints = eval(f.read().rstrip())
-		f.close()
-		for const in self.constraints:
-			pass
-		"""
-		
-			
-		for i in range(0,num_poses):
-			
-			print "loading file", i
-			
-			# def __init__(self, probe, contacts, nodeID, rootNode, pixelSize, inSim = True):
-			#self.currNode = LocalNode(self.probe, self.contacts, i, 19, self.pixelSize, inSim = False)
-			self.currNode = LocalNode(self.probe, self.contacts, i, 19, self.pixelSize)
-			self.currNode.readFromFile(dirName, i)
-			
-			print "adding node", i
 			self.nodeHash[i] = self.currNode
+
 			if self.numNodes > 0:
-
-				f = open(dirName + "/motion_constraints_%04u.txt" % i, 'r')
-				self.motion_constraints = eval(f.read().rstrip())
-				f.close()
-				f = open(dirName + "/overlap_constraints_%04u.txt" % i, 'r')
-				self.overlap_constraints = eval(f.read().rstrip())
-				f.close()
-				#f = open(dirName + "/sensor_constraints_%04u.txt" % i, 'r')
-				#self.sensor_constraints = eval(f.read().rstrip())
-				#f.close()
-
-				transform = self.motion_constraints[-1][0]
-				covE = E_motion
-				#print "add motion constraint:", [transform[0,0], transform[1,0], transform[2,0]]
-				self.edgeHash[(i-1,i)] = [transform, covE]
-				self.constraints.append([i-1,i,transform,covE])
-			
-				result = self.overlap_constraints[-1][0]
-				transform = self.overlap_constraints[-1][0]
-				covE = E_overlap
-				print "add overlap constraint:", [result[0,0], result[1,0], result[2,0]]
 				
-				self.constraints.append([i-1,i,transform,covE])
-								
 				node1 = self.nodeHash[i-1]
 				node2 = self.nodeHash[i]
-				offset = [result[0,0], result[1,0], result[2,0]]
-				currProfile = Pose(node1.getGlobalGPACPose())
-				currPose = currProfile.convertLocalOffsetToGlobal(offset)	
-				node2.setGPACPose(currPose)
+		
 				
+				" create the ground constraints "
 				gndGPAC1Pose = node1.getGndGlobalGPACPose()
 				currProfile = Pose(gndGPAC1Pose)
 				gndGPAC2Pose = node2.getGndGlobalGPACPose()
 				offset = currProfile.convertGlobalPoseToLocal(gndGPAC2Pose)
 				self.gnd_constraints.append([matrix([[offset[0]], [offset[1]], [offset[2]]]), matrix([[0.,0.,0.],[0.,0.,0.],[0.,0.,0.]])    ])
 
-			#self.synch()
-			#self.saveMap()
-			
 			self.numNodes += 1
-		
-		self.synch()
-		self.saveMap()
-		
-		"""
-		for i in range(0,num_poses):
-			
-			print "loading file", i
-			
-			# def __init__(self, probe, contacts, nodeID, rootNode, pixelSize, inSim = True):
-			#self.currNode = LocalNode(self.probe, self.contacts, i, 19, self.pixelSize, inSim = False)
-			self.currNode = LocalNode(self.probe, self.contacts, i, 19, self.pixelSize)
-			self.currNode.readFromFile(dirName, i)
-			
-			print "adding node", i
-			self.poseGraph.add_node(i, self.currNode)
-			if self.numNodes > 0:
-				node1 = self.poseGraph.get_node_attributes(i-1)
-				node2 = self.poseGraph.get_node_attributes(i)
-			
-				curve1 = node1.getGPACurve()
-				curve2 = node2.getGPACurve()
-				posture1 = node1.getGPACPosture()
-				posture2 = node2.getGPACPosture()
 
+		" load the constraints from file "
+		index = num_poses - 1
+		f = open(dirName + "/motion_constraints_%04u.txt" % index, 'r')
+		self.motion_constraints = eval(f.read().rstrip())
+		f.close()
+		f = open(dirName + "/overlap_constraints_%04u.txt" % index, 'r')
+		self.overlap_constraints = eval(f.read().rstrip())
+		f.close()
+		f = open(dirName + "/sensor_constraints_%04u.txt" % index, 'r')
+		self.sensor_constraints = eval(f.read().rstrip())
+		f.close()
 
-				print "matching", i-1, i
-				#(points1, points2, offset, costThresh = 0.004, minMatchDist = 2.0, plotIter = False, n1 = 0, n2 = 0):
-				offset = estimateMotion.makeGuess2(curve1, curve2, 0.0, posture1, posture2, forward = False)
-				print "initial offset:", offset
-				result = gen_icp.motionICP(curve1.getUniformSamples(), curve2.getUniformSamples(), offset, plotIter = False, n1 = (i-1), n2 = i)
- 				print "final result:", result
- 
- 				" update the pose with the motion estimation "
-				offset = [result[0], result[1], result[2]]
-				currProfile = Pose(node1.getGlobalGPACPose())
-				currPose = currProfile.convertLocalOffsetToGlobal(offset)	
-				node2.setGPACPose(currPose)
-
- 				#result = constraints[i-1]
- 
-				self.gpacs.append([0.2, result])	
-				#self.gpacs.append([0.2, offset])	
-				
-				" FIXME:  add covariance from vector in guess direction "
-				
-				transform = matrix([[result[0]], [result[1]], [result[2]]])
-				#transform = matrix([[offset[0]], [offset[1]], [offset[2]]])
-				covE = matrix([[ 0.4,  0.0, 0.0],
-				        [ 0.0,  0.1, 0.0],
-				        [0.0, 0.0,  0.1]])
-				print "adding motion constraint:", result[0], result[1], result[2]
-				#print "adding motion constraint:", offset[0], offset[1], offset[2]
-				self.poseGraph.add_edge(i-1, i, attrs = [transform, covE])
-
-				#self.addNaiveMotionConstraint(i-1, i, 0.14, True)
 		
-			self.synch()
-			self.saveMap()
-			
-			self.numNodes += 1
-		"""
-		
+
 		#print "covariance 1:"
 		#E_motion, E_overlap = self.computeCovar()		
 		#print E_motion
@@ -427,14 +314,40 @@ class MapGraph:
 		#print E_motion
 		#print E_overlap
 
+		totalConstraints = []
+		for i in range(len(self.motion_constraints)):
+			transform = self.motion_constraints[i][0]
+			covE = E_motion
+			totalConstraints.append([i,i+1,transform,covE])
 		
-		self.merged_constraints = self.toroMerge(self.constraints)
+		for i in range(len(self.overlap_constraints)):
+			transform = self.overlap_constraints[i][0]
+			covE = E_overlap			
+			totalConstraints.append([i,i+1,transform,covE])
+		
+		" merge the constraints with TORO"
+		self.merged_constraints = self.toroMerge(totalConstraints)
 		for i in range(len(self.merged_constraints)):
 			node1 = self.merged_constraints[i][0]
 			node2 = self.merged_constraints[i][1]
 			self.edgeHash[(node1, node2)] = [self.merged_constraints[i][2], self.merged_constraints[i][3]]
+			
+		
+		for i in range(self.numNodes-1):
+			node1 = self.nodeHash[i]
+			node2 = self.nodeHash[i+1]
+			transform, covE = self.edgeHash[(i, i+1)]
+			offset = [transform[0,0], transform[1,0], transform[2,0]]
+			currProfile = Pose(node1.getGlobalGPACPose())
+			currPose = currProfile.convertLocalOffsetToGlobal(offset)
+			node2.setGPACPose(currPose)		
 
 		self.drawConstraints()
+
+		" save the maps "		
+		self.synch()
+		self.saveMap()
+
 		
 		#self.doToro([], [], [])
 
