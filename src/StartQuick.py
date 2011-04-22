@@ -1,19 +1,7 @@
 from opaque.robot.QuickProbe import QuickProbe
-#from opaque.TestModular import TestModular
-from opaque.TestHoldPosition import TestHoldPosition
-from opaque.TestHoldTransition import TestHoldTransition
-from opaque.TestHoldTransition import TestHoldTransition
-from opaque.TestHoldSlideTransition import TestHoldSlideTransition
-from opaque.TestAnchorTransition import TestAnchorTransition
-from opaque.TestFrontExtend import TestFrontExtend
-from opaque.TestPokeWalls import TestPokeWalls
-from opaque.TestAdaptiveStep import TestAdaptiveStep
-from opaque.TestPathStep import TestPathStep
-from opaque.TestMapGraph import TestMapGraph
-from opaque.TestModular import TestModular
-from opaque.TestTransform import TestTransform
+from opaque.TestProcess import TestProcess
 from opaque.ControlError import *
-from DrawThings import DrawThings
+from CmdDrawThings import CmdDrawThings
 
 import traceback 
 import cProfile
@@ -22,20 +10,8 @@ import sys
 def createTest():
 	probe = QuickProbe(40,0.15,0.05,30.0*2.5)
 	
-	drawThings = DrawThings(probe.robotParam)
-	#currControl = TestHoldPosition(probe, drawThings)
-	#currControl = TestHoldTransition(probe, drawThings)
-	#currControl = TestHoldSlideTransition(probe, drawThings)
-	#currControl = TestAnchorTransition(probe, drawThings)
-	#currControl = TestFrontExtend(probe, drawThings)
-	#currControl = TestPokeWalls(probe, drawThings)
-	#currControl = TestAdaptiveStep(probe, drawThings)
-	#currControl = TestPathStep(probe, drawThings)
-	#currControl = TestMapGraph(probe, drawThings)
-	#currControl = TestModular(probe, drawThings)
-	#currControl = TestTransform(probe, drawThings)
-	currControl = TestModular(probe, drawThings)
-	#currControl = TestCurveFit(probe, drawThings)
+	drawThings = CmdDrawThings(probe.robotParam)
+	currControl = TestProcess(probe, drawThings)
 	
 	probe.addControl(currControl)
 
