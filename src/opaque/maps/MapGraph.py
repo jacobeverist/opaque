@@ -17,6 +17,7 @@ from OccupancyMap import OccupancyMap
 from FreeSpaceBoundaryMap import FreeSpaceBoundaryMap
 from NavRoadMap import NavRoadMap
 from StablePose import StablePose
+from StableCurve import StableCurve
 from Pose import Pose
 import gen_icp
 from functions import *
@@ -104,6 +105,7 @@ class MapGraph:
 		self.overlap_constraints = []
 		self.motion_constraints = []
 		self.sensor_constraints = []
+		self.inplace_constraints = []
 		self.gnd_constraints = []		
 		self.merged_constraints = []
 		
@@ -238,6 +240,7 @@ class MapGraph:
 		self.numNodes = 0
 		self.currNode = 0
 		
+		self.inplace_constraints = []
 		self.overlap_constraints = []
 		self.motion_constraints = []
 		self.sensor_constraints = []	
@@ -301,7 +304,9 @@ class MapGraph:
 		f = open(dirName + "/sensor_constraints_%04u.txt" % index, 'r')
 		self.sensor_constraints = eval(f.read().rstrip())
 		f.close()
-
+		f = open(dirName + "/inplace_constraints_%04u.txt" % index, 'r')
+		self.inplace_constraints = eval(f.read().rstrip())
+		f.close()
 		
 
 		#print "covariance 1:"
@@ -316,14 +321,26 @@ class MapGraph:
 
 		totalConstraints = []
 		for i in range(len(self.motion_constraints)):
-			transform = self.motion_constraints[i][0]
+			nodeID1 = self.motion_constraints[i][0]
+			nodeID2 = self.motion_constraints[i][1]
+			transform = self.motion_constraints[i][2]
 			covE = E_motion
-			totalConstraints.append([i,i+1,transform,covE])
+			totalConstraints.append([nodeID1,nodeID2,transform,covE])
 		
 		for i in range(len(self.overlap_constraints)):
-			transform = self.overlap_constraints[i][0]
+			nodeID1 = self.overlap_constraints[i][0]
+			nodeID2 = self.overlap_constraints[i][1]
+			transform = self.overlap_constraints[i][2]
 			covE = E_overlap			
-			totalConstraints.append([i,i+1,transform,covE])
+			totalConstraints.append([nodeID1,nodeID2,transform,covE])
+
+		for i in range(len(self.inplace_constraints)):
+			nodeID1 = self.inplace_constraints[i][0]
+			nodeID2 = self.inplace_constraints[i][1]
+			transform = self.inplace_constraints[i][2]
+			covE = self.inplace_constraints[i][3]
+			totalConstraints.append([nodeID1,nodeID2,transform,covE])
+
 		
 		" merge the constraints with TORO"
 		self.merged_constraints = self.toroMerge(totalConstraints)
@@ -357,17 +374,17 @@ class MapGraph:
 		for i in range(len(self.gnd_constraints)):
 			gndConst = self.gnd_constraints[i][0]
 			gndConst = [gndConst[0,0],gndConst[1,0],gndConst[2,0]]
-			motionConst = self.motion_constraints[i][0]
-			motionConst = [motionConst[0,0],motionConst[1,0],motionConst[2,0]]
-			overlapConst = self.overlap_constraints[i][0]
-			overlapConst = [overlapConst[0,0],overlapConst[1,0],overlapConst[2,0]]
-			mergeConst = self.merged_constraints[i][2]
-			mergeConst = [mergeConst[0,0],mergeConst[1,0],mergeConst[2,0]]
+			#motionConst = self.motion_constraints[i][2]
+			#motionConst = [motionConst[0,0],motionConst[1,0],motionConst[2,0]]
+			#overlapConst = self.overlap_constraints[i][2]
+			#overlapConst = [overlapConst[0,0],overlapConst[1,0],overlapConst[2,0]]
+			#mergeConst = self.merged_constraints[i][2]
+			#mergeConst = [mergeConst[0,0],mergeConst[1,0],mergeConst[2,0]]
 			
 			print gndConst
-			print mergeConst
-			print motionConst
-			print overlapConst
+			#print mergeConst
+			#print motionConst
+			#print overlapConst
 			print
 
 
@@ -380,9 +397,9 @@ class MapGraph:
 		for i in range(N):
 			gndConst = self.gnd_constraints[i][0]
 			gndConst = [gndConst[0,0],gndConst[1,0],gndConst[2,0]]
-			motionConst = self.motion_constraints[i][0]
+			motionConst = self.motion_constraints[i][2]
 			motionConst = [motionConst[0,0],motionConst[1,0],motionConst[2,0]]
-			overlapConst = self.overlap_constraints[i][0]
+			overlapConst = self.overlap_constraints[i][2]
 			overlapConst = [overlapConst[0,0],overlapConst[1,0],overlapConst[2,0]]
 
 		avgX = 0.0
@@ -423,7 +440,7 @@ class MapGraph:
 		
 		for i in range(N):
 			
-			motionConst = self.motion_constraints[i][0]
+			motionConst = self.motion_constraints[i][2]
 			motionConst = [motionConst[0,0],motionConst[1,0],motionConst[2,0]]
 			
 			x = motionConst[0]
@@ -463,7 +480,7 @@ class MapGraph:
 		
 		for i in range(N):
 			
-			overlapConst = self.overlap_constraints[i][0]
+			overlapConst = self.overlap_constraints[i][2]
 			overlapConst = [overlapConst[0,0],overlapConst[1,0],overlapConst[2,0]]
 						
 			x = overlapConst[0]
@@ -500,9 +517,9 @@ class MapGraph:
 		for i in range(N):
 			gndConst = self.gnd_constraints[i][0]
 			gndConst = [gndConst[0,0],gndConst[1,0],gndConst[2,0]]
-			motionConst = self.motion_constraints[i][0]
+			motionConst = self.motion_constraints[i][2]
 			motionConst = [motionConst[0,0],motionConst[1,0],motionConst[2,0]]
-			overlapConst = self.overlap_constraints[i][0]
+			overlapConst = self.overlap_constraints[i][2]
 			overlapConst = [overlapConst[0,0],overlapConst[1,0],overlapConst[2,0]]
 
 		avgX = 0.0
@@ -512,7 +529,7 @@ class MapGraph:
 		for i in range(N):
 			gndConst = self.gnd_constraints[i][0]
 			gndConst = [gndConst[0,0],gndConst[1,0],gndConst[2,0]]
-			motionConst = self.motion_constraints[i][0]
+			motionConst = self.motion_constraints[i][2]
 			motionConst = [motionConst[0,0],motionConst[1,0],motionConst[2,0]]
 
 			avgX += motionConst[0] - gndConst[0]
@@ -542,7 +559,7 @@ class MapGraph:
 		for i in range(N):
 			gndConst = self.gnd_constraints[i][0]
 			gndConst = [gndConst[0,0],gndConst[1,0],gndConst[2,0]]			
-			motionConst = self.motion_constraints[i][0]
+			motionConst = self.motion_constraints[i][2]
 			motionConst = [motionConst[0,0],motionConst[1,0],motionConst[2,0]]
 			
 			x = motionConst[0] - gndConst[0]
@@ -577,7 +594,7 @@ class MapGraph:
 		for i in range(N):
 			gndConst = self.gnd_constraints[i][0]
 			gndConst = [gndConst[0,0],gndConst[1,0],gndConst[2,0]]
-			overlapConst = self.overlap_constraints[i][0]
+			overlapConst = self.overlap_constraints[i][2]
 			overlapConst = [overlapConst[0,0],overlapConst[1,0],overlapConst[2,0]]
 
 			avgX += overlapConst[0] - gndConst[0]
@@ -612,7 +629,7 @@ class MapGraph:
 			
 			gndConst = self.gnd_constraints[i][0]
 			gndConst = [gndConst[0,0],gndConst[1,0],gndConst[2,0]]			
-			overlapConst = self.overlap_constraints[i][0]
+			overlapConst = self.overlap_constraints[i][2]
 			overlapConst = [overlapConst[0,0],overlapConst[1,0],overlapConst[2,0]]
 						
 			x = motionConst[0] - gndConst[0]
@@ -660,7 +677,7 @@ class MapGraph:
 		else:
 			offset = estimateMotion.makeGuess2(curve1, curve2, 0.0, posture1, posture2, forward = False)
 			
-		result = gen_icp.motionICP(curve1.getUniformSamples(), curve2.getUniformSamples(), offset, plotIter = True, n1 = i, n2 = j)
+		result = gen_icp.motionICP(curve1.getUniformSamples(), curve2.getUniformSamples(), offset, plotIter = False, n1 = i, n2 = j)
 
 		" update the pose with the motion estimation "
 		offset = [result[0], result[1], result[2]]
@@ -708,46 +725,6 @@ class MapGraph:
 
 			return transform, covE
 					
-			xA = pose1[0]
-			yA = pose1[1]
-			pA = pose1[2]
-			
-			xB = pose2[0]
-			yB = pose2[1]
-			pB = pose2[2]
-
-			xT = cos(pA)*(xB-xA) + sin(pA)*(yB-yA)
-			yT = -sin(pA)*(xB-xA) + cos(pA)*(yB-yA)
-			pT = pB - pA
-			
-			#pose2[0] -= pose1[0]
-			#pose2[1] -= pose1[1]
-			#pose2[2] -= pose1[2]
-			#pose2[2] = normalizeAngle(pose2[2])
-		
-			#ang = pose1[2]
-		
-			#xRot = pose2[0] * cos(ang) + pose2[1] * sin(ang)
-			#yRot = -pose2[0] * sin(ang) + pose2[1] * cos(ang)
-		
-			#pose2[0] = xRot
-			#pose2[1] = yRot
-			
-			#transform = matrix([[pose2[0]], [pose2[1]], [pose2[2]]])
-			
-			transform = matrix([[xT], [yT], [pT]])
-			print "transform:", xT, yT, pT
-			covE = matrix([[ 0.1, 0.0, 0.0 ],
-							[ 0.0, 0.1, 0.0],
-							[ 0.0, -0.0, pi/4.0 ]])
-
-			#covE = matrix([[ 0.01866183, 0.00099555, 0.0004255 ],
-			#	[ 0.00099555, 0.00145845, -0.00017733],
-			#	[ 0.0004255,  -0.00017733,  0.0003789 ]])
-
-
-			return transform, covE
-
 		
 	def makeSensorConstraint(self, transform, n1, n2, hull1, hull2):
 
@@ -763,7 +740,8 @@ class MapGraph:
 		costThresh = 0.1
 	
 		" TUNE ME:   minimum match distance before point is discarded from consideration "
-		minMatchDist = 2.0
+		#minMatchDist = 2.0
+		minMatchDist = 0.5
 	
 		" plot the best fit at each iteration of the algorithm? "
 		plotIteration = True
@@ -802,8 +780,137 @@ class MapGraph:
 		return offset, covar, cost
 
 
+	def makeInPlaceConstraint(self, i, j):
+
+		" compute the new posture "
+		" 1. compute the GPAC pose "
+		" 2. perform correction of GPAC pose "
+		" 3. compute location of rootPose from corrected GPAC pose "
+		
+		" node1 is the front poke node "
+		" nodes is the back poke node "
+
+		node1 = self.nodeHash[i]
+		node2 = self.nodeHash[j]
+
+
+
+		originPosture = node1.localPosture
+		originCurve = StableCurve(originPosture)
+		originForePose, originBackPose = originCurve.getPoses()
+		 
+		originForeProfile = Pose(originForePose)
+		originBackProfile = Pose(originBackPose)
+		
+		originForePosture = []
+		originBackPosture = []
+		for i in range(len(originPosture)):
+			originForePosture.append(originForeProfile.convertGlobalPoseToLocal(originPosture[i]))
+		for i in range(len(originPosture)):
+			originBackPosture.append(originBackProfile.convertGlobalPoseToLocal(originPosture[i]))
+
+		newPosture = []
+		for j in range(self.probe.numSegs-1):
+			newPosture.append(self.probe.getJointPose([0.0,0.0,0.0], node1.rootNode, j))
+
+
+		localPosture = newPosture
+		localCurve = StableCurve(localPosture)
+
+		localForePose, localBackPose = localCurve.getPoses()
+		 
+		localForeProfile = Pose(localForePose)
+		localBackProfile = Pose(localBackPose)
+		
+		localForePosture = []
+		localBackPosture = []
+		for i in range(len(localPosture)):
+			localForePosture.append(localForeProfile.convertGlobalPoseToLocal(localPosture[i]))
+		for i in range(len(localPosture)):
+			localBackPosture.append(localBackProfile.convertGlobalPoseToLocal(localPosture[i]))
+	
+		foreCost = 0.0
+		for j in range(0,20):
+			p1 = originForePosture[j]
+			p2 = localForePosture[j]
+			
+			foreCost += sqrt((p2[0]-p1[0])**2 + (p2[1]-p1[1])**2)		   
+		
+		backCost = 0.0
+		for j in range(20,39):
+			p1 = originBackPosture[j]
+			p2 = localBackPosture[j]
+			
+			backCost += sqrt((p2[0]-p1[0])**2 + (p2[1]-p1[1])**2)		   
+
+		angle = 0.0
+		
+		if foreCost > backCost:
+			#plotPosture(originBackPosture, localBackPosture)
+			correctedGPACPose = localBackProfile.convertLocalOffsetToGlobal([0.0,0.0,angle])
+		else:
+			#plotPosture(originForePosture, localForePosture)					
+			correctedGPACPose = localForeProfile.convertLocalOffsetToGlobal([0.0,0.0,angle])
+
+		correctedProfile = Pose(correctedGPACPose)
+	
+		" offset from 0,0 to newGPACPose "
+		" rootPose from neg. offset from correctedGPACPose "
+		localRootOffset3 = correctedProfile.convertGlobalPoseToLocal([0.0,0.0,0.0])
+		
+		if foreCost > backCost:
+			offset = originBackProfile.convertLocalOffsetToGlobal(localRootOffset3)
+		else:
+			offset = originForeProfile.convertLocalOffsetToGlobal(localRootOffset3)
+		
+		transform = matrix([[offset[0]], [offset[1]], [offset[2]]])
+		covE = matrix([[ 0.05, 0.0, 0.0 ],
+						[ 0.0, 0.05, 0.0],
+						[ 0.0, 0.0, pi/16.0 ]])
+		
+		return transform, covE
+
 	def getCurrentNode(self):
 		return self.currNode
+
+
+	
+	def newInPlaceNode(self, direction):
+		
+		if self.numNodes > 0:
+			
+			if self.currNode.isDirty():
+				self.currNode.synch()
+
+			self.currNode.saveToFile()
+
+		self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, self.pixelSize, stabilizePose = self.stabilizePose, direction = direction)
+		
+		self.nodeHash[self.numNodes] = self.currNode
+		if self.numNodes > 0:
+	
+			node1 = self.nodeHash[self.numNodes-1]
+			node2 = self.nodeHash[self.numNodes]
+				
+			transform, covE = self.makeInPlaceConstraint(self.numNodes-1, self.numNodes)
+			
+			self.inplace_constraints.append([self.numNodes-1, self.numNodes, transform, covE])	
+
+
+			offset = [transform[0,0], transform[1,0], transform[2,0]]
+			currProfile = Pose(self.nodeHash[self.numNodes-1].getGlobalGPACPose())
+			currPose = currProfile.convertLocalOffsetToGlobal(offset)	
+			self.nodeHash[self.numNodes].setGPACPose(currPose)
+						
+		self.saveConstraints()
+		
+		self.numNodes += 1
+		
+		self.stablePose.reset()
+		self.stablePose.setNode(self.currNode)
+
+		print "checkR"
+	
 	
 	def newNode(self, stepDist, direction):
 		
@@ -820,7 +927,7 @@ class MapGraph:
 
 		#self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19)
 		#self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, self.pixelSize, inSim = False)
-		self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, self.pixelSize, stabilizePose = self.stabilizePose)
+		self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, self.pixelSize, stabilizePose = self.stabilizePose, direction = True)
 
 		print "checkP"
 		
@@ -829,10 +936,10 @@ class MapGraph:
 			
 			
 			transform, covE = self.makeMotionConstraint(self.numNodes-1, self.numNodes)
-			self.motion_constraints.append([transform, covE])
+			self.motion_constraints.append([self.numNodes-1, self.numNodes, transform, covE])
 			
 			transform, covE = self.makeOverlapConstraint(self.numNodes-1, self.numNodes)
-			self.overlap_constraints.append([transform, covE])
+			self.overlap_constraints.append([self.numNodes-1, self.numNodes, transform, covE])
 
 			offset = [transform[0,0], transform[1,0], transform[2,0]]
 			currProfile = Pose(self.nodeHash[self.numNodes-1].getGlobalGPACPose())
@@ -1073,66 +1180,14 @@ class MapGraph:
 		" update the current estimated pose in AverageContacts "
 		self.contacts.resetPose(estPose = estPoses[-1])
 
+	def findOverlapCandidates(self, paths):
 
-	def correctPoses3(self):
-
-		""" 
-		things to convert for map correction to the GPAC coordinate system 
-		1. estPose to GPAC estPose
-		2. convert hull points to GPAC coordinates before adding covariances
-		3. convert edges from root end points to GPAC centroid endpoints (motion constraints)
-		
-		
-		"""
-		" FIXME:  check case where there are less than one hypotheses and don't perform hypothesis weeding "  
-
-		
-		#SENSOR_RADIUS = 0.25
-		#SENSOR_RADIUS = 2.0
 		SENSOR_RADIUS = 0.0
-		#DIST_THRESHOLD = 3.0
 		DIST_THRESHOLD = 6.0
-		#DIST_THRESHOLD = 1.0
-
-
-
-		if self.numNodes < 2:
-			return
-
-		print "check_A"
-		if self.currNode.isDirty():
-			self.currNode.synch()
-			#self.synch()
-
 		
-		nodes = []
-		for k, v in self.nodeHash.items():
-			nodes.append(k)
-		nodes.sort()
-		
-		edges = []
-		for k, v in self.edgeHash.items():
-			edges.append(k)
-	
-		
-		edge_attrs = []
-		for i in range(len(edges)):
-			edge_attrs.append( self.edgeHash[edges[i]] )
-	
-		" save the graph to file minus the local map content "
-		fp = open("graph_out.txt", 'w')
-		fp.write(repr((nodes, edges, edge_attrs)))
-		fp.close()
-
-		" perform dijkstra projection over all nodes"
-		paths = []
-		for i in range(self.numNodes):
-			paths.append(bayes.dijkstra_proj(i, self.numNodes, self.edgeHash))
-
-
 		" select pairs to attempt a sensor constraint "
 		pair_candidates = []
-		#print "CANDIDATES:"
+		
 		for i in range(self.numNodes):
 			path_set = paths[i]
 			
@@ -1149,7 +1204,6 @@ class MapGraph:
 				
 				dist = bayes.mahab_dist(c1, c2, SENSOR_RADIUS, SENSOR_RADIUS, E)
 				
-				#print "distance:", i, j, dist, loc2[0,0], loc2[1,0], loc2[2,0], E_param[0,0], E_param[0,1], E_param[1,0], E_param[1,1]
 				print "distance:", i, j, dist
 
 				if dist <= DIST_THRESHOLD and abs(i-j) < 5:
@@ -1172,8 +1226,6 @@ class MapGraph:
 				print "distance:", i, j, dist
 				if dist <= DIST_THRESHOLD and abs(i-j) < 5:
 					pair_candidates.append([dist,i,j,loc2])
-
-		#exit()
 
 		" remove duplicates "
 		pair_unique = []
@@ -1217,16 +1269,197 @@ class MapGraph:
 			loc2 = paths[i][j][0]
 			c1 = matrix([[0.0],[0.0]],dtype=float)
 			c2 = matrix([[loc2[0,0]],[loc2[1,0]]],dtype=float)
+		
 			E_param = paths[i][j][1]
 			E = matrix([[E_param[0,0], E_param[0,1]],[E_param[1,0], E_param[1,1]]],dtype=float)
 			
 			dist = bayes.mahab_dist(c1, c2, SENSOR_RADIUS, SENSOR_RADIUS, E)
 			
 			print "distance:", i, j, dist
-			print loc2
-			print E_param
-			print
+
+		return pair_unique
+
+
+	def findSweepCandidates(self, paths):
+
+		SENSOR_RADIUS = 0.0
+		DIST_THRESHOLD = 1.0
+		
+		" select pairs to attempt a sensor constraint "
+		pair_candidates = []
+		
+		for i in range(self.numNodes):
+			path_set = paths[i]
+			
+			ind = range(i+1,self.numNodes)
+
+			for j in ind:	
+				loc2 = path_set[j][0]
+				
+				" c1 and c2 are centroids of sweep regions "
+				node1 = self.nodeHash[i]
+				sweepOffset1 = node1.getSweepCentroid()
+				
+				node2 = self.nodeHash[j]
+				sweepOffset2 = node2.getSweepCentroid()				
+				node2Profile = Pose([loc2[0,0], loc2[1,0], loc2[2,0]])
+				sweep2Centroid = node2Profile.convertLocalToGlobal(sweepOffset2)
+				
+				c1 = matrix([[sweepOffset1[0]],[sweepOffset1[1]]],dtype=float)
+				c2 = matrix([[sweep2Centroid[0]],[sweep2Centroid[1]]],dtype=float)
+				E_param = path_set[j][1]
+				E = matrix([[E_param[0,0], E_param[0,1]],[E_param[1,0], E_param[1,1]]],dtype=float)
+				
+				dist = bayes.mahab_dist(c1, c2, SENSOR_RADIUS, SENSOR_RADIUS, E)
+				
+				print "distance:", i, j, dist
+
+				if dist <= DIST_THRESHOLD and abs(i-j) < 5:
+					pair_candidates.append([dist,i,j,loc2])
+				
+			ind = range(0,i)
+			ind.reverse()
+			
+			for j in ind:
+				
+				loc2 = path_set[j][0]
+				
+				" c1 and c2 are centroids of sweep regions "
+				node1 = self.nodeHash[i]
+				sweepOffset1 = node1.getSweepCentroid()
+				
+				node2 = self.nodeHash[j]
+				sweepOffset2 = node2.getSweepCentroid()				
+				node2Profile = Pose([loc2[0,0], loc2[1,0], loc2[2,0]])
+				sweep2Centroid = node2Profile.convertLocalToGlobal(sweepOffset2)
+				
+				c1 = matrix([[sweepOffset1[0]],[sweepOffset1[1]]],dtype=float)
+				c2 = matrix([[sweep2Centroid[0]],[sweep2Centroid[1]]],dtype=float)
+				
+				E_param = path_set[j][1]
+				E = matrix([[E_param[0,0], E_param[0,1]],[E_param[1,0], E_param[1,1]]],dtype=float)
+				
+				dist = bayes.mahab_dist(c1, c2, SENSOR_RADIUS, SENSOR_RADIUS, E)
+				
+				print "distance:", i, j, dist
+				if dist <= DIST_THRESHOLD and abs(i-j) < 5:
+					pair_candidates.append([dist,i,j,loc2])
+
+		" remove duplicates "
+		pair_unique = []
+		is_free = [True for i in range(len(pair_candidates))]
+		for i in range(len(pair_candidates)):
+			
+			if is_free[i]:
+				dest1 = pair_candidates[i][0]
+				x1 = pair_candidates[i][1]
+				x2 = pair_candidates[i][2]
+				
+				" find the opposing pair if it exists "
+				for j in range(i+1, len(pair_candidates)):
+					
+					if pair_candidates[j][1] == x2 and pair_candidates[j][2] == x1:
+						
+						dest2 = pair_candidates[j][0]
+						
+						if dest1 < dest2:
+							pair_unique.append(pair_candidates[i])
+						else:
+							pair_unique.append(pair_candidates[j])
+						
+						is_free[i] = False
+						is_free[j] = False
+						
+						break
+
+				if is_free[i]:
+					pair_unique.append(pair_candidates[i])
+					is_free[i] = False
+
+		pair_unique.sort()
+		
+		print "UNIQUE PAIRS"
+		for p in pair_unique:
+			i = p[1]
+			j = p[2]
+			
+			
+			loc2 = paths[i][j][0]
+
+			" c1 and c2 are centroids of sweep regions "
+			node1 = self.nodeHash[i]
+			sweepOffset1 = node1.getSweepCentroid()
+			
+			node2 = self.nodeHash[j]
+			sweepOffset2 = node2.getSweepCentroid()				
+			node2Profile = Pose([loc2[0,0], loc2[1,0], loc2[2,0]])
+			sweep2Centroid = node2Profile.convertLocalToGlobal(sweepOffset2)
+			
+			c1 = matrix([[sweepOffset1[0]],[sweepOffset1[1]]],dtype=float)
+			c2 = matrix([[sweep2Centroid[0]],[sweep2Centroid[1]]],dtype=float)
+			
+			
+			E_param = paths[i][j][1]
+			E = matrix([[E_param[0,0], E_param[0,1]],[E_param[1,0], E_param[1,1]]],dtype=float)
+			
+			dist = bayes.mahab_dist(c1, c2, SENSOR_RADIUS, SENSOR_RADIUS, E)
+			
+			print "distance:", i, j, dist
 	
+		return pair_unique
+
+	def correctPoses3(self):
+
+		""" 
+		things to convert for map correction to the GPAC coordinate system 
+		1. estPose to GPAC estPose
+		2. convert hull points to GPAC coordinates before adding covariances
+		3. convert edges from root end points to GPAC centroid endpoints (motion constraints)
+		
+		
+		"""
+		" FIXME:  check case where there are less than one hypotheses and don't perform hypothesis weeding "  
+
+
+
+
+		if self.numNodes < 2:
+			return
+
+		print "check_A"
+		if self.currNode.isDirty():
+			self.currNode.synch()
+			#self.synch()
+
+		
+		nodes = []
+		for k, v in self.nodeHash.items():
+			nodes.append(k)
+		nodes.sort()
+		
+		edges = []
+		for k, v in self.edgeHash.items():
+			edges.append(k)
+	
+		
+		edge_attrs = []
+		for i in range(len(edges)):
+			edge_attrs.append( self.edgeHash[edges[i]] )
+	
+		" save the graph to file minus the local map content "
+		fp = open("graph_out.txt", 'w')
+		fp.write(repr((nodes, edges, edge_attrs)))
+		fp.close()
+
+		" perform dijkstra projection over all nodes"
+		paths = []
+		for i in range(self.numNodes):
+			paths.append(bayes.dijkstra_proj(i, self.numNodes, self.edgeHash))
+
+
+		" find candidates to perform sensor constraints "
+		pair_unique = self.findSweepCandidates(paths)
+		#overlap_pair_unique = self.findSweepCandidates(paths)
 		
 		def decimatePoints(points):
 			result = []
@@ -1271,18 +1504,14 @@ class MapGraph:
 		
 		for p in pair_unique:
 			if not hull_computed[p[1]]:
-				#print "compute hull", p[1]
 				a_hulls[p[1]] = computeHull(p[1])
 				hull_computed[p[1]] = True
 
 			if not hull_computed[p[2]]:
-				#print "compute hull", p[2]
 				a_hulls[p[2]] = computeHull(p[2])
 				hull_computed[p[2]] = True
-			
-			#print p[1], p[2], p[0]
-
 		
+		"""
 		pylab.clf()
 		for i in range(self.numNodes):
 			if hull_computed[i]:
@@ -1307,10 +1536,10 @@ class MapGraph:
 				pylab.xlim(-8,12)
 				pylab.ylim(-10,10)
 				pylab.savefig("hull_%04u.png" % i)
-				pylab.clf()		
+				#pylab.clf()		
 		
-
-
+		pylab.clf()
+		"""
 
 		hypotheses = []
 		
@@ -1720,8 +1949,8 @@ class MapGraph:
 		
 		motion_poses = [self.nodeHash[0].getGlobalGPACPose()]
 
-		for i in range(0,self.numNodes-1):
-			transform = self.motion_constraints[i][0]
+		for i in range(len(self.motion_constraints)):
+			transform = self.motion_constraints[i][2]
 			offset = [transform[0,0], transform[1,0], transform[2,0]]
 			currProfile = Pose(motion_poses[-1])
 			currPose = currProfile.convertLocalOffsetToGlobal(offset)	
@@ -1729,8 +1958,8 @@ class MapGraph:
 		
 		overlap_poses = [self.nodeHash[0].getGlobalGPACPose()]
 
-		for i in range(0,self.numNodes-1):
-			transform = self.overlap_constraints[i][0]
+		for i in range(len(self.overlap_constraints)):
+			transform = self.overlap_constraints[i][2]
 			offset = [transform[0,0], transform[1,0], transform[2,0]]
 			currProfile = Pose(overlap_poses[-1])
 			currPose = currProfile.convertLocalOffsetToGlobal(offset)	
@@ -1738,7 +1967,7 @@ class MapGraph:
 
 		merged_poses = [self.nodeHash[0].getGlobalGPACPose()]
 
-		for i in range(0,self.numNodes-1):
+		for i in range(len(self.merged_constraints)):
 			transform = self.merged_constraints[i][2]
 			offset = [transform[0,0], transform[1,0], transform[2,0]]
 			currProfile = Pose(merged_poses[-1])
@@ -1763,6 +1992,8 @@ class MapGraph:
 				yP.append(p[1])
 			pylab.plot(xP,yP, color=(0.5,0.5,0.5))	
 			
+			
+			"""
 			node1 = self.nodeHash[i]
 			currPose = motion_poses[i]
 			currProfile = Pose(currPose)
@@ -1806,8 +2037,10 @@ class MapGraph:
 			for p in posture_trans:
 				xP.append(p[0])
 				yP.append(p[1])
-			pylab.plot(xP,yP, color='k')
-
+			pylab.plot(xP,yP, color='k')	
+			
+			"""
+			
 			node1 = self.nodeHash[i]
 			currPose = currPose = node1.getGlobalGPACPose()
 			currProfile = Pose(currPose)
@@ -1952,6 +2185,11 @@ class MapGraph:
 
 		f = open("sensor_constraints_%04u.txt" % self.numNodes, 'w')
 		f.write(repr(self.sensor_constraints))
+		f.write("\n")
+		f.close()		
+
+		f = open("inplace_constraints_%04u.txt" % self.numNodes, 'w')
+		f.write(repr(self.inplace_constraints))
 		f.write("\n")
 		f.close()		
 

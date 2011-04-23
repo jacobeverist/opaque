@@ -19,7 +19,7 @@ estPlotCount = 0
 
 class LocalNode:
 
-	def __init__(self, probe, contacts, nodeID, rootNode, pixelSize, stabilizePose = False):
+	def __init__(self, probe, contacts, nodeID, rootNode, pixelSize, stabilizePose = False, direction = True):
 
 		self.pixelSize = pixelSize
 
@@ -28,6 +28,8 @@ class LocalNode:
 		self.numSegs = self.robotParam['numSegs']
 		self.segLength = self.robotParam['segLength']
 		self.mapSize = self.segLength*self.numSegs + 2.0 + 2.0
+		
+		self.direction = direction
 
 		self.nodeID = nodeID
 		self.probe = probe
@@ -54,6 +56,7 @@ class LocalNode:
 		self.setGndPose(self.probe.getActualJointPose(self.rootNode))
 
 		# MAPS
+		self.sweepMap = LocalOccMap(self, direction = self.direction)
 		self.occMap = LocalOccMap(self)
 		self.boundaryMap = LocalBoundaryMap(self)
 		self.obstacleMap = LocalObstacleMap(self)
@@ -514,6 +517,37 @@ class LocalNode:
 
 		return globalGndGPACPose
 	
+	def getSweepCentroid(self):
+		" first get the centroid of the sweepMap "
+		
+		" 1. pick out the points "
+		numPixel = self.sweepMap.numPixel
+		mapImage = self.sweepMap.getMap()
+		image = mapImage.load()
+		
+		points = []
+		for j in range(numPixel):
+			for k in range(numPixel):
+				if image[j,k] == 255:
+					pnt = self.sweepMap.gridToReal([j,k])
+					points.append(pnt)
+		
+		" average the points "
+		numPoints = len(points)
+		xAvg = 0.0
+		yAvg = 0.0
+		for p in points:
+			xAvg += p[0]
+			yAvg += p[1]
+			
+		xAvg /= numPoints
+		yAvg /= numPoints
+		
+
+		localGPACPose = self.getLocalGPACPose()
+		localGPACProfile = Pose(localGPACPose)
+		return localGPACProfile.convertGlobalToLocal([xAvg,yAvg])	
+	
 	def setEstPose(self, newPose):
 
 		self.estPose = copy(newPose)
@@ -768,6 +802,10 @@ class LocalNode:
 	
 		" obstacle map "
 		self.obstacleMap.readFromFile(dirName)
+
+		" occupancy map "
+		self.sweepMap.readFromFile(dirName)
+
 		
 		f = open(dirName + "/estpose%04u.txt" % self.nodeID, 'r')
 		estPose = eval(f.read().rstrip())
@@ -804,7 +842,8 @@ class LocalNode:
 		if self.stabilizePose:
 			self.stabilizeRootPose()
 			
-		self.occMap.update(isForward)
+		self.occMap.update()
+		self.sweepMap.update()
 		
 		self.dirty = True
 	
@@ -814,6 +853,7 @@ class LocalNode:
 	def synch(self):
 		
 		self.occMap.buildMap()
+		self.sweepMap.buildMap()
 		
 		self.computeAlphaBoundary()
 
@@ -832,14 +872,17 @@ class LocalNode:
 
 		# save a copy of each version of the map
 		self.occMap.saveMap()
+		self.sweepMap.saveMap()
 		self.obstacleMap.saveMap()
 		
 
 	def computeAlphaBoundary(self):
 
 		" 1. pick out the points "
-		numPixel = self.occMap.numPixel
-		mapImage = self.occMap.getMap()
+		numPixel = self.sweepMap.numPixel
+		mapImage = self.sweepMap.getMap()
+		#numPixel = self.occMap.numPixel
+		#mapImage = self.occMap.getMap()
 		image = mapImage.load()
 		
 		#print numPixel
@@ -848,7 +891,8 @@ class LocalNode:
 		for j in range(numPixel):
 			for k in range(numPixel):
 				if image[j,k] == 255:
-					pnt = self.occMap.gridToReal([j,k])
+					pnt = self.sweepMap.gridToReal([j,k])
+					#pnt = self.occMap.gridToReal([j,k])
 					points.append(pnt)
 		
 		self.estOccPoints = points
@@ -870,38 +914,6 @@ class LocalNode:
 	def getAlphaBoundary(self):
 		return self.a_vert
 
-	def computeGndAlphaBoundary(self):
-
-		" 1. pick out the points "
-		numPixel = self.occMap.numPixel
-		mapImage = self.occMap.getGndMap()
-		image = mapImage.load()
-		
-		#print numPixel
-		
-		points = []
-		for j in range(numPixel):
-			for k in range(numPixel):
-				if image[j,k] == 255:
-					pnt = self.occMap.gridToReal([j,k])
-					points.append(pnt)
-		
-		self.gndOccPoints = points
-		print len(points)
-		
-		if len(points) > 0:
-			#print points
-		
-			self.a_vert = self.computeAlpha2(points)
-	
-			" cut out the repeat vertex "
-			self.a_vert = self.a_vert[:-1]
-			
-			self.a_vert = self.convertAlphaUniform(self.a_vert)
-		
-		else:
-			self.a_vert = []
-				
 	def convertAlphaUniform(self, a_vert, max_spacing = 0.04):
 		
 		" make the vertices uniformly distributed "
@@ -941,10 +953,12 @@ class LocalNode:
 		" radius 0.2 "
 		#inputStr += str(1.0) + " "
 		#inputStr += str(0.8) + " "
-		inputStr += str(0.2) + " "
+		#inputStr += str(0.2) + " "
+		inputStr += str(0.02) + " "
 		
 		for p in points:
 			p2 = copy(p)
+			" add a little bit of noise to avoid degenerate conditions in CGAL "
 			p2[0] += random.gauss(0.0,0.0001)
 			p2[1] += random.gauss(0.0,0.0001)
 

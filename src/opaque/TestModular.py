@@ -348,7 +348,7 @@ class TestModular(SnakeControl):
 
 			#self.mapGraph.loadFile("testData/backtrack1", 7)
 			#self.mapGraph.loadFile("testData/backtrack2", 47)
-			self.mapGraph.loadFile("testData/backtrack2", 47)
+			#self.mapGraph.loadFile("testData/backtrack2", 47)
 			
 			#exit()
 			#E = self.computeCovar()
@@ -364,10 +364,10 @@ class TestModular(SnakeControl):
 	
 			#exit()
 	
-			self.mapGraph.correctPoses3()
-			self.mapGraph.synch()
-			self.mapGraph.saveMap()
-			exit()
+			#self.mapGraph.correctPoses3()
+			#self.mapGraph.synch()
+			#self.mapGraph.saveMap()
+			#exit()
 			
 			
 			self.restState = deepcopy(probeState)
@@ -438,7 +438,12 @@ class TestModular(SnakeControl):
 			if isDone:
 				self.globalState = 8
 				#if self.mapGraph.currNode.nodeID == 4:
-				self.mapGraph.currNode.resetPosture()		
+				self.mapGraph.synch()
+				self.mapGraph.saveMap()
+				self.mapGraph.saveLocalMap()
+				
+				self.mapGraph.newInPlaceNode(False)
+				#self.mapGraph.currNode.resetPosture()		
 			
 		elif self.globalState == 8:
 	
@@ -477,9 +482,10 @@ class TestModular(SnakeControl):
 				
 				
 				frontSum = 0.0
-				for n in self.mapGraph.currNode.frontProbeError:
+				frontProbeError = self.mapGraph.nodeHash[self.mapGraph.numNodes-2].frontProbeError
+				for n in frontProbeError:
 					frontSum += n
-				foreAvg = frontSum / len(self.mapGraph.currNode.frontProbeError)
+				foreAvg = frontSum / len(frontProbeError)
 				
 				
 				print "foreAvg =", foreAvg
@@ -1036,7 +1042,12 @@ class TestModular(SnakeControl):
 			isDone = self.doReturnToRest()
 			
 			if isDone:
-				self.mapGraph.currNode.resetPosture()		
+				self.mapGraph.synch()
+				self.mapGraph.saveMap()
+				self.mapGraph.saveLocalMap()
+				
+				self.mapGraph.newInPlaceNode(False)
+				#self.mapGraph.currNode.resetPosture()		
 				self.localPathState = 4			
 			
 		elif self.localPathState == 4:
@@ -1062,9 +1073,10 @@ class TestModular(SnakeControl):
 				
 				
 				frontSum = 0.0
-				for n in self.mapGraph.currNode.frontProbeError:
+				frontProbeError = self.mapGraph.nodeHash[self.mapGraph.numNodes-2].frontProbeError
+				for n in frontProbeError:
 					frontSum += n
-				foreAvg = frontSum / len(self.mapGraph.currNode.frontProbeError)
+				foreAvg = frontSum / len(frontProbeError)
 							
 				print "PathFollow: foreAvg =", foreAvg
 															

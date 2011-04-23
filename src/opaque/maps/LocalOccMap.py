@@ -13,11 +13,13 @@ from functions import *
 class LocalOccMap:
 
 	#def __init__(self, probe, contacts, nodeID):
-	def __init__(self, localNode):
+	def __init__(self, localNode, direction = None):
 
 		self.localNode = localNode
 
 		self.prevRects = []
+		
+		self.sweepSegs = 13
 		
 		self.pixelSize = self.localNode.pixelSize
 		self.mapSize = self.localNode.mapSize
@@ -27,6 +29,8 @@ class LocalOccMap:
 		
 		self.prevJoints = [0.0,0.0,0.0,0.0]
 		self.rootNeighbors = [18,19,20,21]
+
+		self.direction = direction
 
 		self.nodeID = self.localNode.getNodeID()
 		
@@ -51,15 +55,16 @@ class LocalOccMap:
 
 		self.rectangles = []
 
-		self.gndFileName = "gndLocalOccMap%03u" % self.nodeID + "_%04u.png"
-		self.fileName = "localOccMap%03u" % self.nodeID + "_%04u.png"
-		self.stableFileName = "stableLocalOccMap%03u" % self.nodeID + "_%04u.png"
+		if self.direction != None:
+			self.fileName = "localSweepMap%03u" % self.nodeID + "_%04u.png"			
+			self.gndFileName = "gndLocalSweepMap%03u" % self.nodeID + "_%04u.png"
+		else:
+			self.gndFileName = "gndLocalOccMap%03u" % self.nodeID + "_%04u.png"
+			self.fileName = "localOccMap%03u" % self.nodeID + "_%04u.png"
+
 		self.saveCount = 0
 		self.mapImage = 0
 
-		#self.costFile = open("costFile%03u.txt" % self.nodeID, 'w')
-		self.hullFile = "convexHull%03u_%04u.png"
-		self.hullCount = 0
 		
 		self.T = array([[1,0,0],
 			[0,1,0],
@@ -77,7 +82,10 @@ class LocalOccMap:
 	def readFromFile(self, dirName):
 		
 		#self.fileName = dirName + "/stableLocalOccMap%03u" % self.nodeID + "_%04u.png"
-		self.fileName = dirName + "/localOccMap%03u" % self.nodeID + "_%04u.png"
+		if self.direction != None:
+			self.fileName = dirName + "/localSweepMap%03u" % self.nodeID + "_%04u.png"			
+		else:	
+			self.fileName = dirName + "/localOccMap%03u" % self.nodeID + "_%04u.png"
 		
 		self.mapImage = Image.open(self.fileName % 0)
 		self.image = self.mapImage.load()
@@ -152,7 +160,7 @@ class LocalOccMap:
 				
 		return minDist, copy(closePoints[minIndex])
 	
-	def update(self, isForward = True):
+	def update(self):
 		
 		"""
 		1. add a ground truth map to the LocalOccMap class
@@ -278,9 +286,15 @@ class LocalOccMap:
 				totalAngle = normalizeAngle(totalAngle)
 
 		actualConfig.sort()
+		
+		if self.direction == True:
+			actualConfig = actualConfig[:self.sweepSegs]
+		if self.direction == False:
+			actualConfig = actualConfig[-self.sweepSegs:]
+		
 		return actualConfig	
 	
-	def computeFreeSpace(self, isForward = True):
+	def computeFreeSpace(self):
 							
 		# 1. for every joint reference, compute the distal desired joint configuration and the actual joint configuration
 		# 2. for desired joint configuration, set occupancy to obstacle if not already free space
@@ -343,9 +357,15 @@ class LocalOccMap:
 				totalAngle = normalizeAngle(totalAngle)
 
 		actualConfig.sort()
+
+		if self.direction == True:
+			actualConfig = actualConfig[:self.sweepSegs]
+		if self.direction == False:
+			actualConfig = actualConfig[-self.sweepSegs:]
+			
 		return actualConfig		
 
-	def computeStabilizedFreeSpace(self, isForward = True):
+	def computeStabilizedFreeSpace(self):
 							
 		# 1. for every joint reference, compute the distal desired joint configuration and the actual joint configuration
 		# 2. for desired joint configuration, set occupancy to obstacle if not already free space
@@ -408,6 +428,12 @@ class LocalOccMap:
 				totalAngle = normalizeAngle(totalAngle)
 
 		actualConfig.sort()
+
+		if self.direction == True:
+			actualConfig = actualConfig[:self.sweepSegs]
+		if self.direction == False:
+			actualConfig = actualConfig[-self.sweepSegs:]
+			
 		return actualConfig		
 	
 	def fillOpen(self, polygon, image):

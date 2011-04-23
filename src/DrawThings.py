@@ -134,7 +134,7 @@ class DrawThings():
 
 			entity.setCastShadows(False)
 
-			entity.setMaterialName("Blue")
+			entity.setMaterialName("Red")
 
 			#entity.setVisible(False)
 			self._allPathNodes.append(node)
