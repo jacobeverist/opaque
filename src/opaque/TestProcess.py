@@ -133,8 +133,8 @@ class TestProcess(SnakeControl):
 			#self.mapGraph.loadFile("testData/backtrack1", 7)
 			#self.mapGraph.loadFile("testData/backtrack2", 47)
 			#self.mapGraph.loadFile("testData/backtrack2", 47)
-			self.mapGraph.loadFile("testData/sweep2", 10)
-			#self.mapGraph.loadFile("testData/sweep2", 70)
+			#self.mapGraph.loadFile("testData/sweep2", 8)
+			self.mapGraph.loadFile("testData/sweep2", 70)
 			
 			#exit()
 			#E = self.computeCovar()

@@ -876,13 +876,15 @@ class LocalNode:
 		self.obstacleMap.saveMap()
 		
 
-	def computeAlphaBoundary(self):
+	def computeAlphaBoundary(self, sweep = False):
 
 		" 1. pick out the points "
-		numPixel = self.sweepMap.numPixel
-		mapImage = self.sweepMap.getMap()
-		#numPixel = self.occMap.numPixel
-		#mapImage = self.occMap.getMap()
+		if sweep:
+			numPixel = self.sweepMap.numPixel
+			mapImage = self.sweepMap.getMap()
+		else:
+			numPixel = self.occMap.numPixel
+			mapImage = self.occMap.getMap()
 		image = mapImage.load()
 		
 		#print numPixel
@@ -891,8 +893,10 @@ class LocalNode:
 		for j in range(numPixel):
 			for k in range(numPixel):
 				if image[j,k] == 255:
-					pnt = self.sweepMap.gridToReal([j,k])
-					#pnt = self.occMap.gridToReal([j,k])
+					if sweep:
+						pnt = self.sweepMap.gridToReal([j,k])
+					else:
+						pnt = self.occMap.gridToReal([j,k])
 					points.append(pnt)
 		
 		self.estOccPoints = points
@@ -901,8 +905,10 @@ class LocalNode:
 		if len(points) > 0:
 			#print points
 		
-			self.a_vert = self.computeAlpha2(points)
-	
+			if sweep:	
+				self.a_vert = self.computeAlpha2(points, radius = 0.02)
+			else:
+				self.a_vert = self.computeAlpha2(points, radius = 0.2)
 			" cut out the repeat vertex "
 			self.a_vert = self.a_vert[:-1]
 			
@@ -945,16 +951,13 @@ class LocalNode:
 		return new_vert			
 		#self.a_vert = new_vert
 	
-	def computeAlpha2(self, points):
+	def computeAlpha2(self, points, radius = 0.2):
 		
 		numPoints = len(points)
 		inputStr = str(numPoints) + " "
 
-		" radius 0.2 "
-		#inputStr += str(1.0) + " "
-		#inputStr += str(0.8) + " "
-		#inputStr += str(0.2) + " "
-		inputStr += str(0.02) + " "
+		" alpha shape circle radius "
+		inputStr += str(radius) + " "
 		
 		for p in points:
 			p2 = copy(p)

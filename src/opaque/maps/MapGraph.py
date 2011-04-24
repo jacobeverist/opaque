@@ -39,10 +39,62 @@ import ImageDraw
 PIXELSIZE = 0.05
 MAPSIZE = 20.0
 
-naives = []
-gnds = []
-ests = []
-gpacs = []
+
+def decimatePoints(points):
+	result = []
+
+	for i in range(len(points)):
+		#if i%2 == 0:
+		if i%4 == 0:
+			result.append(points[i])
+
+	return result
+
+def computeHull(node1, sweep = False):
+	
+	" Read in data of Alpha-Shapes and add their associated covariances "
+	node1.computeAlphaBoundary(sweep = sweep)
+	a_data = node1.getAlphaBoundary()
+	a_data = decimatePoints(a_data)
+	
+	" convert hull points to GPAC coordinates before adding covariances "
+	localGPACPose = node1.getLocalGPACPose()
+	localGPACProfile = Pose(localGPACPose)
+	
+	a_data_GPAC = []
+	for pnt in a_data:
+		a_data_GPAC.append(localGPACProfile.convertGlobalToLocal(pnt))
+	
+	" treat the points with the point-to-line constraint "
+	gen_icp.addPointToLineCovariance(a_data_GPAC, high_var=1.0, low_var=0.001)
+
+	" treat the points with the distance-from-origin increasing error constraint "
+	gen_icp.addDistanceFromOriginCovariance(a_data_GPAC, tan_var=0.1, perp_var=0.01)
+	
+	return a_data_GPAC
+
+
+def doTransform(T1, T2, E1, E2):
+
+	x1 = T1[0,0]	
+	y1 = T1[1,0]
+	p1 = T1[2,0]
+
+	x2 = T2[0,0]	
+	y2 = T2[1,0]
+	p2 = T2[2,0]
+
+	newT = matrix([[x1 + x2*cos(p1) - y2*sin(p1)],
+		[y1 + x2*sin(p1) + y2*cos(p1)],
+		[p1+p2]],dtype=float)
+
+	J1 = matrix([[1,0,-x2*sin(p1) - y2*cos(p1)],[0,1,x2*cos(p1) - y2*sin(p1)],[0,0,1]],dtype=float)
+	J2 = matrix([[cos(p1), -sin(p1), 0], [sin(p1), cos(p1), 0], [0, 0, 1]],dtype=float)
+						
+	newE = J1 * E1 * J1.T + J2 * E2 * J2.T
+	
+	return newT, newE
+
 
 class MapGraph:
 
@@ -344,6 +396,7 @@ class MapGraph:
 		
 		" merge the constraints with TORO"
 		self.merged_constraints = self.toroMerge(totalConstraints)
+		self.edgeHash = {}
 		for i in range(len(self.merged_constraints)):
 			node1 = self.merged_constraints[i][0]
 			node2 = self.merged_constraints[i][1]
@@ -656,7 +709,33 @@ class MapGraph:
 					[Exp, Eyp, Epp]])
 
 		return E_motion, E_overlap
+
+	def makeOverlapHypothesis(self, transform, i, j ):	
+		#def makeSensorConstraint(self, transform, n1, n2, hull1, hull2):
+		
+		node1 = self.nodeHash[i]
+		node2 = self.nodeHash[j]
 			
+		curve1 = node1.getGPACurve()
+		curve2 = node2.getGPACurve()
+
+		offset = [transform[0,0],transform[1,0],transform[2,0]]
+
+
+		result = gen_icp.motionICP(curve1.getUniformSamples(), curve2.getUniformSamples(), offset, plotIter = False, n1 = i, n2 = j)
+
+		" update the pose with the motion estimation "
+		offset = [result[0], result[1], result[2]]
+		
+		" add covariance from vector in guess direction "
+		transform = matrix([[result[0]], [result[1]], [result[2]]])
+		covE = matrix([[ 0.4,  0.0, 0.0],
+		        [ 0.0,  0.1, 0.0],
+		        [0.0, 0.0,  0.1]])
+
+		
+		return transform, covE
+				
 	def makeOverlapConstraint(self, i, j ):	
 		
 		
@@ -680,9 +759,9 @@ class MapGraph:
 		result = gen_icp.motionICP(curve1.getUniformSamples(), curve2.getUniformSamples(), offset, plotIter = False, n1 = i, n2 = j)
 
 		" update the pose with the motion estimation "
-		offset = [result[0], result[1], result[2]]
-		currProfile = Pose(node1.getGlobalGPACPose())
-		currPose = currProfile.convertLocalOffsetToGlobal(offset)	
+		#offset = [result[0], result[1], result[2]]
+		#currProfile = Pose(node1.getGlobalGPACPose())
+		#currPose = currProfile.convertLocalOffsetToGlobal(offset)	
 		#node2.setGPACPose(currPose)
 		
 		" FIXME:  add covariance from vector in guess direction "
@@ -691,7 +770,7 @@ class MapGraph:
 		covE = matrix([[ 0.4,  0.0, 0.0],
 		        [ 0.0,  0.1, 0.0],
 		        [0.0, 0.0,  0.1]])
-		print "adding motion constraint:", result[0], result[1], result[2]
+		print "adding overlap constraint:", result[0], result[1], result[2]
 		
 		return transform, covE
 	
@@ -873,8 +952,6 @@ class MapGraph:
 	def getCurrentNode(self):
 		return self.currNode
 
-
-	
 	def newInPlaceNode(self, direction):
 		
 		if self.numNodes > 0:
@@ -1191,7 +1268,8 @@ class MapGraph:
 		for i in range(self.numNodes):
 			path_set = paths[i]
 			
-			ind = range(i+1,self.numNodes)
+			ind = range(i+2,self.numNodes)
+			#ind = range(i+1,self.numNodes)
 			#print i, self.numNodes, ind
 
 			for j in ind:	
@@ -1209,7 +1287,8 @@ class MapGraph:
 				if dist <= DIST_THRESHOLD and abs(i-j) < 5:
 					pair_candidates.append([dist,i,j,loc2])
 				
-			ind = range(0,i)
+			ind = range(0,i-1)
+			#ind = range(0,i)
 			ind.reverse()
 			
 			for j in ind:
@@ -1291,7 +1370,7 @@ class MapGraph:
 		for i in range(self.numNodes):
 			path_set = paths[i]
 			
-			ind = range(i+1,self.numNodes)
+			ind = range(i+2,self.numNodes)
 
 			for j in ind:	
 				loc2 = path_set[j][0]
@@ -1317,7 +1396,7 @@ class MapGraph:
 				if dist <= DIST_THRESHOLD and abs(i-j) < 5:
 					pair_candidates.append([dist,i,j,loc2])
 				
-			ind = range(0,i)
+			ind = range(0,i-1)
 			ind.reverse()
 			
 			for j in ind:
@@ -1420,8 +1499,8 @@ class MapGraph:
 		"""
 		" FIXME:  check case where there are less than one hypotheses and don't perform hypothesis weeding "  
 
-
-
+		" max difference between node numbers "
+		NODE_SEP = 5
 
 		if self.numNodes < 2:
 			return
@@ -1452,152 +1531,139 @@ class MapGraph:
 		fp.close()
 
 		" perform dijkstra projection over all nodes"
-		paths = []
+		paths1 = []
 		for i in range(self.numNodes):
-			paths.append(bayes.dijkstra_proj(i, self.numNodes, self.edgeHash))
+			paths1.append(bayes.dijkstra_proj(i, self.numNodes, self.edgeHash))
+
+		edgeHash1 = self.edgeHash
+		
+		" create new consistent overlap hypotheses"
+		added_hypotheses = self.addOverlaps(paths1)
+
+		" merge and add them to the graph "
+		new_constraints = self.doToro(added_hypotheses, self.merged_constraints, [])
+		
+		self.edgeHash = {}
+		for i in range(len(new_constraints)):
+			node1 = new_constraints[i][0]
+			node2 = new_constraints[i][1]
+			self.edgeHash[(node1,node2)] = [new_constraints[i][2], new_constraints[i][3]]
+		
+		self.drawConstraints()
 
 
-		" find candidates to perform sensor constraints "
-		pair_unique = self.findSweepCandidates(paths)
-		#overlap_pair_unique = self.findSweepCandidates(paths)
+		" save the maps "		
+		self.synch()
+		self.saveMap()
+
+		" perform dijkstra projection over all nodes"
+		paths2 = []
+		for i in range(self.numNodes):
+			paths2.append(bayes.dijkstra_proj(i, self.numNodes, self.edgeHash))
 		
-		def decimatePoints(points):
-			result = []
+		edgeHash2 = self.edgeHash
+		added_hypotheses = self.addSensorConstraints(paths2)
+
+		new_constraints = self.doToro(added_hypotheses, self.merged_constraints, [])
+
+		self.edgeHash = {}		
+		for i in range(len(new_constraints)):
+			node1 = new_constraints[i][0]
+			node2 = new_constraints[i][1]
+			self.edgeHash[(node1,node2)] = [new_constraints[i][2], new_constraints[i][3]]
 		
-			for i in range(len(points)):
-				#if i%2 == 0:
-				if i%4 == 0:
-					result.append(points[i])
-		
-			return result
-		
-		def computeHull(i):
-			
-			" Read in data of Alpha-Shapes and add their associated covariances "
-			node1 = self.nodeHash[i]
-			node1.computeAlphaBoundary()			
-			a_data = node1.getAlphaBoundary()
-			a_data = decimatePoints(a_data)
-			
-			" convert hull points to GPAC coordinates before adding covariances "
-			localGPACPose = node1.getLocalGPACPose()
-			localGPACProfile = Pose(localGPACPose)
-			
-			a_data_GPAC = []
-			for pnt in a_data:
-				a_data_GPAC.append(localGPACProfile.convertGlobalToLocal(pnt))
-			
-			" treat the points with the point-to-line constraint "
-			gen_icp.addPointToLineCovariance(a_data_GPAC, high_var=1.0, low_var=0.001)
+		self.drawConstraints()
+
+
+		" save the maps "		
+		self.synch()
+		self.saveMap()
+
 	
-			" treat the points with the distance-from-origin increasing error constraint "
-			gen_icp.addDistanceFromOriginCovariance(a_data_GPAC, tan_var=0.1, perp_var=0.01)
-			
-			return a_data_GPAC
-		
-		hull_computed = [False for i in range(self.numNodes)]
-		a_hulls = [0 for i in range(self.numNodes)]
-		
+		" print out the edges and the dijkstra projection paths "
 		for i in range(self.numNodes):
-			a_hulls[i] = computeHull(i)
-			hull_computed[i] = True
-		
-		for p in pair_unique:
-			if not hull_computed[p[1]]:
-				a_hulls[p[1]] = computeHull(p[1])
-				hull_computed[p[1]] = True
-
-			if not hull_computed[p[2]]:
-				a_hulls[p[2]] = computeHull(p[2])
-				hull_computed[p[2]] = True
-		
-		"""
-		pylab.clf()
-		for i in range(self.numNodes):
-			if hull_computed[i]:
-				node1 = self.nodeHash[i]
-				airPose1 = node1.getGlobalGPACPose()
-				hull1 = a_hulls[i]
+			for j in range(self.numNodes):
 				
-				hull_trans = []
-				for p in hull1:
-					hull_trans.append(gen_icp.dispPoint(p, airPose1))	
-								
-				xP = []
-				yP = []
-				for p in hull_trans:
-					xP.append(p[0])
-					yP.append(p[1])
-				xP.append(hull_trans[0][0])
-				yP.append(hull_trans[0][1])
-				pylab.plot(xP,yP)		
+				if i != j:
+					offset1 = paths1[i][j][0]
+					offset2 = paths2[i][j][0]
+	
+					loc1 = paths1[i][j][0]
+					loc2 = paths2[i][j][0]
+					
+					" c1 and c2 are centroids of sweep regions "
+					#originNode = self.nodeHash[i]
+					#sweepOffset = originNode.getSweepCentroid()
+					
+					#node1 = self.nodeHash[j]
+					#sweepOffset1 = node1.getSweepCentroid()				
+					#node1Profile = Pose([loc1[0,0], loc1[1,0], loc1[2,0]])
+					#sweep1Centroid = node1Profile.convertLocalToGlobal(sweepOffset1)
+	
+					#node2 = self.nodeHash[j]
+					#sweepOffset2 = node2.getSweepCentroid()				
+					#node2Profile = Pose([loc2[0,0], loc2[1,0], loc2[2,0]])
+					#sweep2Centroid = node2Profile.convertLocalToGlobal(sweepOffset2)
+					
+					sweepOffset = [0,0]
+					sweep1Centroid = [loc1[0,0], loc1[1,0]]
+					sweep2Centroid = [loc2[0,0], loc2[1,0]]
+					
+					cO = matrix([[sweepOffset[0]],[sweepOffset[1]]],dtype=float)
+					c1 = matrix([[sweep1Centroid[0]],[sweep1Centroid[1]]],dtype=float)
+					c2 = matrix([[sweep2Centroid[0]],[sweep2Centroid[1]]],dtype=float)
+	
+					E_param1 = paths1[i][j][1]
+					E_param2 = paths2[i][j][1]
 				
-				pylab.scatter([airPose1[0]], [airPose1[1]], color='k')
-				pylab.xlim(-8,12)
-				pylab.ylim(-10,10)
-				pylab.savefig("hull_%04u.png" % i)
-				#pylab.clf()		
-		
-		pylab.clf()
-		"""
+					E1 = matrix([[E_param1[0,0], E_param1[0,1]],[E_param1[1,0], E_param1[1,1]]],dtype=float)
+					E2 = matrix([[E_param2[0,0], E_param2[0,1]],[E_param2[1,0], E_param2[1,1]]],dtype=float)
+					
+					dist1 = bayes.mahab_dist(cO, c1, 0, 0, E1)
+					dist2 = bayes.mahab_dist(cO, c2, 0, 0, E2)
+					
+					#print "distance:", i, j, dist
+	
+					print i, j, ":", dist1, offset1[0,0], offset1[1,0], offset1[2,0], E1[0,0], E1[1,1]
+					print i, j, ":", dist2, offset2[0,0], offset2[1,0], offset2[2,0], E2[0,0], E2[1,1]
+					print 
 
+		print "EDGES1:"
+		for k, v in edgeHash1.items():
+			offset = [v[0][0,0], v[0][1,0], v[0][2,0]]
+			covE = [v[1][0,0], v[1][1,1], v[1][2,2]]
+			print k, offset, covE
+		print "EDGES2:"
+		for k, v in edgeHash2.items():
+			offset = [v[0][0,0], v[0][1,0], v[0][2,0]]
+			covE = [v[1][0,0], v[1][1,1], v[1][2,2]]
+			print k, offset, covE
+	
+		
+	def addOverlaps(self, paths):
+
+		" find candidates to perform constraints "
+		overlap_pairs = self.findOverlapCandidates(paths)
+		
+		" make hypothesized constraints out of the pairs "
 		hypotheses = []
-		
-		for i in range(len(pair_unique)):
-			p = pair_unique[i]
+		for i in range(len(overlap_pairs)):
+			p = overlap_pairs[i]
 			transform = p[3]
 			n1 = p[1]
 			n2 = p[2]
-			offset, covar, cost = self.makeSensorConstraint(transform, n1, n2, a_hulls[n1], a_hulls[n2])
-			transform = matrix([ [offset[0]], [offset[1]], [offset[2]] ],dtype=float)
-			
-			if cost < 1.5:
-				#if False:
-				hypotheses.append([p[1],p[2],transform,covar])
-				print "hypothesis", i, ":",  "sensor constraint between", n1, "and", n2
+			transform, covar = self.makeOverlapHypothesis(transform, n1, n2 )
+			hypotheses.append([p[1],p[2],transform,covar])
 
-		" need more hypotheses "
-		" add a more naive motion model constraint "
 
-		#for hyp in hypotheses:
-		#	print hyp[0], hyp[1], hyp[2]
-		
-		def doTransform(T1, T2, E1, E2):
-		
-			x1 = T1[0,0]	
-			y1 = T1[1,0]
-			p1 = T1[2,0]
-		
-			x2 = T2[0,0]	
-			y2 = T2[1,0]
-			p2 = T2[2,0]
-		
-			newT = matrix([[x1 + x2*cos(p1) - y2*sin(p1)],
-				[y1 + x2*sin(p1) + y2*cos(p1)],
-				[p1+p2]],dtype=float)
-		
-			J1 = matrix([[1,0,-x2*sin(p1) - y2*cos(p1)],[0,1,x2*cos(p1) - y2*sin(p1)],[0,0,1]],dtype=float)
-			J2 = matrix([[cos(p1), -sin(p1), 0], [sin(p1), cos(p1), 0], [0, 0, 1]],dtype=float)
-								
-			newE = J1 * E1 * J1.T + J2 * E2 * J2.T
-			
-			return newT, newE
-
-		#print "paths[0]", paths[0]
-		#print "paths[1]", paths[1]
-		#print "paths[2]", paths[2]
-		
+		" compute the consistency between each pair of hypotheses "
 		results = []
-				
 		for i in range(len(hypotheses)):
 			for j in range(i+1, len(hypotheses)):
 				
-				#print "index:", i, j
 				hyp1 = hypotheses[i]
 				hyp2 = hypotheses[j]
-				
-				#print "hyp:", hyp1, hyp2
-				
+
 				m1 = hyp1[0]
 				m2 = hyp1[1]
 				
@@ -1627,95 +1693,68 @@ class MapGraph:
 				result4, cov4 = doTransform(result3, Tp2, cov3, Ep2)
 				
 				invMat = scipy.linalg.inv(cov4)
-				
-				
-				#paths[incid] = [T_c_a, E_a_c]
-				#print i, j, result4[0,0], result4[1,0], result4[2,0]
-				
-				#err = sqrt(result4[0,0]**2 + result4[1,0]**2)
 				err = sqrt(numpy.transpose(result4) * invMat * result4)
 				
-				precision = [invMat[0,0], invMat[0,1], invMat[1,1], invMat[2,2], invMat[0,2], invMat[1,2]]
+				#precision = [invMat[0,0], invMat[0,1], invMat[1,1], invMat[2,2], invMat[0,2], invMat[1,2]]
+
+				results.append([err, i, j])
 				
-				if abs(m2-n1) < 5 and abs(n2-m1) < 5:
-					#results.append([err, i, j, [result4[0,0], result4[1,0], result4[2,0]], precision])
-					results.append([err, i, j])
-				else:
-					results.append([None,i,j])
-		
+				" max difference between node numbers "
+				
+				"FIXME:  this should be hop count, not difference in node ID "
+				#if abs(m2-n1) < NODE_SEP and abs(n2-m1) < NODE_SEP:
+				#	#results.append([err, i, j, [result4[0,0], result4[1,0], result4[2,0]], precision])
+				#	results.append([err, i, j])
+				#else:
+				#	results.append([None,i,j])
+					
 		results.sort()
 		
 		print "len(hypotheses)", len(hypotheses)
 		
+
+		" set all proscribed hypothesis sets to maximum error "
+		maxError = 0.0
+		for result in results:
+			if result[0] != None and result[0] > maxError:
+				maxError = result[0]
+				
+		maxError = maxError*2
+		for result in results:
+			if result[0] == None:
+				result[0] = maxError
+
 		" create the consistency matrix "
 		A = matrix(len(hypotheses)*len(hypotheses)*[0.0], dtype=float)
 		A.resize(len(hypotheses), len(hypotheses))
 
-		#print repr(A)
-		#print A[0]
-		#print A[1]
-		#print A[2]
-		
-		#print A[0,0]
-		#print A[0,1]
-		#print A[0,2]
-		#print A[2,2]
-		#print "results:"
-		maxError = 0.0
+		" populate consistency matrix "							
 		for result in results:
-			#print result[1], result[2], result[0]
-			if result[0] != None and result[0] > maxError:
-				maxError = result[0]
-				
-		" set all proscribed hypothesis sets to maximum error "
-		maxError = maxError*2
-
-		for result in results:
-			if result[0] == None:
-				result[0] = maxError
-				
-			
-		#print "A:", A
-		print "maxError:", maxError
-		
-		#exit()
-		for result in results:
-			#print result[0], maxError-result[0]
 			i = result[1]
 			j = result[2]
-			#print "i,j:", i, j
 			A[i,j] = maxError - result[0]
 			A[j,i] = maxError - result[0]
 		
-		#print "A:"
-		" disable the truncation "
-		set_printoptions(threshold=nan)
-		#print repr(A)
-		
 
-		fn = open("A.txt",'w')
+		" disable the truncation "
+		set_printoptions(threshold=nan)		
+		fn = open("A_overlap.txt",'w')
 		fn.write(repr(A))
 		fn.close()
 		
 		
 		" do graph clustering of consistency matrix "
-	
 		w = []
 		e = []
 		for i in range(100):
 			e, lmbda = scsgp.dominantEigenvectors(A)
 			w = scsgp.getIndicatorVector(e[0])
 			if len(e) <= 1:
-				print e[0]
-				print w
 				break
-			#print lmbda[0], "/", lmbda[1], "=", lmbda[0]/lmbda[1]
 
 			" threshold test l1 / l2"
 			ratio = lmbda[0][0,0] / lmbda[1][0,0]
 			if ratio >= 2.0:
-				print e[0]
-				print w
 				break
 			else:
 				print
@@ -1750,30 +1789,190 @@ class MapGraph:
 				added[(hyp2[0],hyp2[1])] = True
 				added_hypotheses.append(hyp2)
 			
-		print added_hypotheses
-
 		print len(added_hypotheses), "added hypotheses"
 		print len(self.merged_constraints), "merged constraints"
-		print len(a_hulls), "HULLS:"		
-		for hull in a_hulls:
-			print len(hull)
+
+		f = open("overlap_constraints.txt", 'w')
+		f.write(repr(added_hypotheses))
+		f.close()
+		
+		return added_hypotheses
+
+	def addSensorConstraints(self, paths):
+
+		" find candidates to perform sensor constraints "
+		sensor_pairs = self.findSweepCandidates(paths)
+
+		" compute the alpha hulls of the selected candidates "
+		hull_computed = [False for i in range(self.numNodes)]
+		a_hulls = [0 for i in range(self.numNodes)]
+		
+		for i in range(self.numNodes):
+			a_hulls[i] = computeHull(self.nodeHash[i], sweep = True)
+			hull_computed[i] = True
+		
+		for p in sensor_pairs:
+			if not hull_computed[p[1]]:
+				a_hulls[p[1]] = computeHull(self.nodeHash[p[1]], sweep = True)
+				hull_computed[p[1]] = True
+
+			if not hull_computed[p[2]]:
+				a_hulls[p[2]] = computeHull(self.nodeHash[p[2]], sweep = True)
+				hull_computed[p[2]] = True
+		
+		" make hypothesized constraints out of the pairs "
+		hypotheses = []		
+		for i in range(len(sensor_pairs)):
+			p = sensor_pairs[i]
+			transform = p[3]
+			n1 = p[1]
+			n2 = p[2]
+			offset, covar, cost = self.makeSensorConstraint(transform, n1, n2, a_hulls[n1], a_hulls[n2])
+			transform = matrix([ [offset[0]], [offset[1]], [offset[2]] ],dtype=float)
+			
+			if cost < 1.5:
+				hypotheses.append([p[1],p[2],transform,covar])
+				print "hypothesis", i, ":",  "sensor constraint between", n1, "and", n2
+
+		" compute the consistency between each pair of hypotheses "
+		results = []
+				
+		for i in range(len(hypotheses)):
+			for j in range(i+1, len(hypotheses)):
+				
+				hyp1 = hypotheses[i]
+				hyp2 = hypotheses[j]
+				
+				m1 = hyp1[0]
+				m2 = hyp1[1]
+				
+				n1 = hyp2[0]
+				n2 = hyp2[1]
+				
+				Tp1 = paths[m2][n1][0]
+				Ep1 = paths[m2][n1][1]
+				
+				Tp2 = paths[n2][m1][0]
+				Ep2 = paths[n2][m1][1]
+				
+				Th1 = hyp1[2]
+				Th2 = hyp2[2]
+				
+				Ch1 = hyp1[3]
+				Ch2 = hyp2[3]
+				
+				" m1->m2, m2->n1, n1->n2, n2->m1 "
+				" Th1, Tp1, Th2, Tp2 "
+
+				covE = Ch1
+				result1 = Th1
+				result2, cov2 = doTransform(result1, Tp1, covE, Ep1)
+				result3, cov3 = doTransform(result2, Th2, cov2, Ch2)
+				result4, cov4 = doTransform(result3, Tp2, cov3, Ep2)
+				
+				invMat = scipy.linalg.inv(cov4)
+				err = sqrt(numpy.transpose(result4) * invMat * result4)
+				
+				#precision = [invMat[0,0], invMat[0,1], invMat[1,1], invMat[2,2], invMat[0,2], invMat[1,2]]
+
+				results.append([err, i, j])
+				
+				" max difference between node numbers "
+				
+				"FIXME:  this should be hop count, not difference in node ID "
+				#if abs(m2-n1) < NODE_SEP and abs(n2-m1) < NODE_SEP:
+				#	#results.append([err, i, j, [result4[0,0], result4[1,0], result4[2,0]], precision])
+				#	results.append([err, i, j])
+				#else:
+				#	results.append([None,i,j])
+					
+		results.sort()
+		
+		print "len(hypotheses)", len(hypotheses)
+		
+		" set all proscribed hypothesis sets to maximum error "	
+		maxError = 0.0
+		for result in results:
+			if result[0] != None and result[0] > maxError:
+				maxError = result[0]
+
+		maxError = maxError*2
+
+		for result in results:
+			if result[0] == None:
+				result[0] = maxError
+				
+
+		" create the consistency matrix "
+		A = matrix(len(hypotheses)*len(hypotheses)*[0.0], dtype=float)
+		A.resize(len(hypotheses), len(hypotheses))
+			
+		" populate consistency matrix "					
+		for result in results:
+			i = result[1]
+			j = result[2]
+			A[i,j] = maxError - result[0]
+			A[j,i] = maxError - result[0]
+
+		" disable the truncation "
+		set_printoptions(threshold=nan)		
+		fn = open("A_sensor.txt",'w')
+		fn.write(repr(A))
+		fn.close()
+		
+		
+		" do graph clustering of consistency matrix "
+		w = []
+		e = []
+		for i in range(100):
+			e, lmbda = scsgp.dominantEigenvectors(A)
+			w = scsgp.getIndicatorVector(e[0])
+			if len(e) <= 1:
+				break
+
+			" threshold test l1 / l2"
+			ratio = lmbda[0][0,0] / lmbda[1][0,0]
+			if ratio >= 2.0:
+				break
+		
+		selected = []	
+		for i in range(len(hypotheses)):
+			if w[i,0] >= 1.0:
+				selected.append(hypotheses[i])
+
+		added_hypotheses = []
+		added = {}
+		for i in range(len(results)):
+			result = results[i]
+			h1 = result[1]
+			h2 = result[2]
+			val = result[0]
+			hyp1 = hypotheses[h1]
+			hyp2 = hypotheses[h2]
+
+			print "(%d -> %d)" % (hyp1[0], hyp1[1]), "(%d -> %d)" % (hyp2[0], hyp2[1]) , val, w[h1,0], w[h2,0], e[0][h1,0], e[0][h2,0], A[h1, h2]
+	
+	
+			try:
+				added[(hyp1[0],hyp1[1])]
+			except:
+				added[(hyp1[0],hyp1[1])] = True
+				added_hypotheses.append(hyp1)
+				
+			try:
+				added[(hyp2[0],hyp2[1])]
+			except:
+				added[(hyp2[0],hyp2[1])] = True
+				added_hypotheses.append(hyp2)
+			
+		print len(added_hypotheses), "added hypotheses"
+		print len(self.merged_constraints), "merged constraints"
 
 		f = open("sensor_constraints.txt", 'w')
 		f.write(repr(added_hypotheses))
 		f.close()
-
-		new_constraints = self.doToro(added_hypotheses, self.merged_constraints, a_hulls)
-
-		f = open("merged_constraints.txt", 'w')
-		f.write(repr(new_constraints))
-		f.close()
 		
-		for i in range(len(new_constraints)):
-			node1 = new_constraints[i][0]
-			node2 = new_constraints[i][1]
-			self.edgeHash[(node1,node2)] = [new_constraints[i][2], new_constraints[i][3]]
-		self.drawConstraints()
-				
+		return added_hypotheses
 
 		
 	def toroMerge(self, constraints):
@@ -1804,9 +2003,9 @@ class MapGraph:
 		print len(e_list), "constraints"
 		" add hypotheses to the TORO file "
 
-		toro.writeConstrainedToroGraph(".", "probe.graph", v_list, e_list)
-		toro.executeToro("./" + "probe.graph")	
-		finalFileName = "probe-treeopt-final.graph"
+		toro.writeConstrainedToroGraph(".", "probe_init.graph", v_list, e_list)
+		toro.executeToro("./" + "probe_init.graph")	
+		finalFileName = "probe_init-treeopt-final.graph"
 		v_list2, e_list2 = toro.readToroGraph("./" + finalFileName)		
 
 		for item in v_list2:
@@ -1841,7 +2040,7 @@ class MapGraph:
 		return merged_constraints
 
 		
-	def doToro(self, hypotheses, constraints, hulls):
+	def doToro(self, hypotheses, constraints, hulls = []):
 		
 		" vertices "
 		v_list = []
@@ -1876,7 +2075,7 @@ class MapGraph:
 			n2 = hyp[1]
 			
 			transform = hyp[2]
-			covar = hyp[3]
+			covE = hyp[3]
 			
 			offset = [transform[0,0], transform[1,0], transform[2,0]]
 			
@@ -1919,11 +2118,14 @@ class MapGraph:
 			
 		final_constraints = []
 		
-		for edge in e_list2:			
+		print "TORO RESULTS:"
+		for edge in e_list2:
 			node1 = edge[0]
 			node2 = edge[1]
 			offset = edge[2]
 			prec = edge[3]
+			print node1, node2, offset, prec
+
 			invMat = matrix([[0.,0.,0.],
 							[0.,0.,0.],
 							[0.,0.,0.]])
