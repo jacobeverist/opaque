@@ -99,8 +99,8 @@ class TestModular(SnakeControl):
 
 	def grabImage(self):
 
-		#inc = 50
-		inc = 200
+		inc = 50
+		#inc = 200
 		#inc = 1000
 		#inc = 500
 
@@ -166,94 +166,12 @@ class TestModular(SnakeControl):
 
 				self.global_output.write(repr(poses))
 				self.global_output.write('\n')
-	
-	def computeCovar(self):
-		N = len(self.mapGraph.naives)
 		
-		for i in range(N):
-			x = self.mapGraph.ests[i][1][0]
-			y = self.mapGraph.ests[i][1][1]
-			p = self.mapGraph.ests[i][1][2]
-
-			xGnd = self.mapGraph.gnds[i][1][0]
-			yGnd = self.mapGraph.gnds[i][1][1]
-			pGnd = self.mapGraph.gnds[i][1][2]
-
-		avgDist= 0.0
-		for i in range(N):
-			#print self.mapGraph.gnds[i][0], self.mapGraph.ests[i][0], self.mapGraph.naives[i][0]
-			
-			avgDist += self.mapGraph.gnds[i][0]
-			
-		avgDist /= N
-
-		#print "compute mean of gnd offset"
-		avgX = 0.0
-		avgY = 0.0
-		avgPx = 0.0
-		avgPy = 0.0
-		for i in range(N):
-			avgX += self.mapGraph.gnds[i][1][0]
-			avgY += self.mapGraph.gnds[i][1][1]
-			
-			P = self.mapGraph.gnds[i][1][2]
-			avgPx += cos(P)
-			avgPy += sin(P)
-			
-		avgX /= N
-		avgY /= N
-		avgPx /= N
-		avgPy /= N
-		avgP = atan2(avgPy, avgPx)
-		
-		#print "average x,y:", avgX, avgY
-		#print "average dist:", avgDist
-		#print "average angle:", avgP
-
-		stdX = 0.0
-		stdY = 0.0
-		stdP = 0.0
-
-		Exx = 0.0
-		Exy = 0.0
-		Exp = 0.0
-		Eyp = 0.0
-		Eyy = 0.0
-		Epp = 0.0
-		
-		for i in range(N):
-			
-			x = self.mapGraph.ests[i][1][0]
-			y = self.mapGraph.ests[i][1][1]
-			p = self.mapGraph.ests[i][1][2]
-			
-			Exx += (x - avgX) * (x - avgX)
-			Exy += (x - avgX) * (y - avgY)
-			Exp += (x - avgX) * (p - avgP)
-			Eyp += (y - avgY) * (p - avgP)
-			Eyy += (y - avgY) * (y - avgY)
-			Epp += (p - avgP) * (p - avgP)
-			
-		#print "pre:", Exx, Eyy, Epp, Exy, Exp, Eyp
-		Exx /= N
-		Exy /= N
-		Exp /= N
-		Eyp /= N
-		Eyy /= N
-		Epp /= N
-		
-		E = numpy.matrix([[Exx, Exy, Exp],
-					[Exy, Eyy, Eyp],
-					[Exp, Eyp, Epp]])
-		#print "covar:", Exx, Eyy, Epp, Exy, Exp, Eyp	
-
-		return E
-	
 	def frameStarted(self):
 		
 		#self.grabPosture()
 		
-		self.grabImage()
+		#self.grabImage()
 		#self.grabAngles()
 
 
@@ -327,6 +245,26 @@ class TestModular(SnakeControl):
 			
 			" create the mapping object "
 			self.mapGraph = MapGraph(self.probe, self.contacts, stabilizePose = True)
+
+			#self.mapGraph.loadFile("testData/sweep5", 8)
+			#self.mapGraph.loadFile("testData/sweep5", 30)
+			#self.mapGraph.loadFile("testData/sweep5", 10)
+			#self.mapGraph.correctPoses3()
+			#self.mapGraph.synch()
+			#self.mapGraph.saveMap()
+			#exit()
+
+			initPose = [-0.83215373754501343, 0.046221695840358734, -2.1473097801208496]
+			#initpose = [-0.70651340484619141, 0.02392122894525528, -2.0914869430965584]
+
+			#self.mapGraph.initNode(initPose, self.direction)
+			#self.mapGraph.forceUpdate()
+			#self.mapGraph.relaxCorrect()
+			#self.mapGraph.synch()
+			#self.mapGraph.saveLocalMap()
+			#self.mapGraph.saveMap()
+
+			#exit()
 			
 			#exit()
 			#self.mapGraph.loadFile("testData/correctionTest", 43)
@@ -374,12 +312,13 @@ class TestModular(SnakeControl):
 			
 			#self.globalState = 6
 			self.globalState = 4
-			#self.globalState = 9
+			#self.globalState = 10
 
 			#self.restState = deepcopy(probeState)
 			#self.mapGraph.newNode(self.stepDist, self.direction)
 			#self.mapGraph.forceUpdate(False)
 			#self.globalState = 6
+			self.currPose = self.contacts.getAverageSegPose(0)
 
 			print "Start Time:", time.clock()
 
@@ -406,7 +345,9 @@ class TestModular(SnakeControl):
 				deltaDist = sqrt((self.currPose[0]-self.lastPose[0])**2 + (self.currPose[1]-self.lastPose[1])**2)
 				print "deltaDist =", deltaDist
 	
+				#print "Stop Time:", time.clock()
 
+				#exit()
 
 
 				self.mapGraph.newNode(self.stepDist, self.direction)
@@ -438,6 +379,9 @@ class TestModular(SnakeControl):
 			if isDone:
 				self.globalState = 8
 				#if self.mapGraph.currNode.nodeID == 4:
+				#self.mapGraph.update()
+				self.mapGraph.correctPosture()
+				self.mapGraph.localizeCurrentNode()
 				self.mapGraph.synch()
 				self.mapGraph.saveMap()
 				self.mapGraph.saveLocalMap()
@@ -466,6 +410,9 @@ class TestModular(SnakeControl):
 				#exit()
 
 				#self.mapGraph.correctPoses2()
+				self.mapGraph.correctPosture()
+				self.mapGraph.localizeCurrentNode()
+				#self.mapGraph.relaxCorrect()
 				self.mapGraph.synch()
 				self.mapGraph.saveMap()
 				self.mapGraph.saveLocalMap()
@@ -501,9 +448,9 @@ class TestModular(SnakeControl):
 
 				#if deltaDist > 0.4:
 				
-				if self.mapGraph.numNodes > 30:
-					self.mapGraph.currNode.saveToFile()
-					exit()
+				#if self.mapGraph.numNodes > 30:
+				#	self.mapGraph.currNode.saveToFile()
+				#	exit()
 				
 				#if deltaDist > 0.2:
 				#	self.globalState = 4
@@ -838,7 +785,6 @@ class TestModular(SnakeControl):
 			
 		elif self.localState == 1:
 			
-
 			" step the behavior forward "
 			isDone = self.behavior.step(probeState)
 			
@@ -902,6 +848,8 @@ class TestModular(SnakeControl):
 			if self.lastDist < 0.5:
 				self.localWayPoints = self.localWayPoints[1:]
 				self.localWayPaths = self.localWayPaths[1:]
+
+				self.drawThings.drawPath(self.localWayPaths[0])
 				
 				" determine distance to the next way point "
 				dest = self.localWayPoints[0]			
@@ -916,7 +864,6 @@ class TestModular(SnakeControl):
 			" do a path step on this path "
 			isDone = self.doPathStep(self.localWayPaths[0], self.localDirection)
 
-			self.drawThings.drawPath(self.localWayPaths[0])
 			" compute distance to the target destination point "
 			if self.globalTimer % 10 == 0:
 				self.currPose = self.contacts.getAverageSegPose(0)
@@ -934,6 +881,9 @@ class TestModular(SnakeControl):
 
 				#exit()
 
+				#print "Stop Time:", time.clock()
+				#exit()
+				
 				self.restState = deepcopy(probeState)
 
 
@@ -944,8 +894,11 @@ class TestModular(SnakeControl):
 
 				self.localPathState = 2
 
+
 				self.mapGraph.newNode(self.stepDist, self.localDirection)
 				self.mapGraph.forceUpdate(False)
+
+				#self.mapGraph.localizeCurrentNode()
 	
 				self.contacts.resetPose(self.mapGraph.currNode.getEstPose())
 				self.lastPose = self.contacts.getAverageSegPose(0)
@@ -962,6 +915,8 @@ class TestModular(SnakeControl):
 					indexB = 0
 					distB = 1e100
 					path = self.localWayPaths[0]
+
+					self.drawThings.drawPath(path)
 
 					for i in range(len(path)):
 						dist = sqrt((dest[0]-path[i][0])**2 + (dest[1]-path[i][1])**2)
@@ -1042,6 +997,10 @@ class TestModular(SnakeControl):
 			isDone = self.doReturnToRest()
 			
 			if isDone:
+				#self.mapGraph.update()
+				self.mapGraph.correctPosture()
+				self.mapGraph.localizeCurrentNode()
+
 				self.mapGraph.synch()
 				self.mapGraph.saveMap()
 				self.mapGraph.saveLocalMap()
@@ -1065,9 +1024,16 @@ class TestModular(SnakeControl):
 
 			if isDone:
 
+				#self.mapGraph.update()
+				self.mapGraph.correctPosture()
+
+				self.mapGraph.localizeCurrentNode()
+				#self.mapGraph.relaxCorrect()
+
 				self.mapGraph.synch()
 				self.mapGraph.saveMap()
 				self.mapGraph.saveLocalMap()
+
 
 				self.localPathState = 1
 				

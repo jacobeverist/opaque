@@ -204,7 +204,7 @@ class Curl(Behavior):
 						if fabs(errors[i]) > maxError:
 							maxError = fabs(errors[i])
 
-				print "highest error:", maxError
+				#print "highest error:", maxError
 				self.highestErrors.append(maxError)
 						
 				

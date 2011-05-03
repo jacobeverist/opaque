@@ -121,12 +121,12 @@ class PathStep(Behavior):
 		self.pathCurve1 = VoronoiFit(deepcopy(self.path))
 		self.pathCurve2 = VoronoiFit(deepcopy(self.path))
 		
-		print "creating 1st GlobalCurveFit"
+		print "creating GlobalCurveFit"
 		#self.globalCurveFit = GlobalCurveFit(self.robotParam, self.contacts, self.pathCurve1, localNode = self.mapGraph.currNode)
 		self.globalCurveFit = GlobalCurveFit(self.robotParam, self.contacts, self.pathCurve1)
 		#self.globalCurveFit.setTimerAliasing(10)
 		
-		print "creating 2nd GlobalCurveFit"
+		print "creating GlobalCurveSlide"
 		#self.globalCurveSlide = GlobalCurveSlide(self.robotParam, self.contacts, self.pathCurve2, localNode = self.mapGraph.currNode)
 		self.globalCurveSlide = GlobalCurveSlide(self.robotParam, self.contacts, self.pathCurve2)
 		
@@ -227,7 +227,7 @@ class PathStep(Behavior):
 		self.globalCurveFit.setBoundaries(startNode, endNode)
 			
 		for i in range(startNode, endNode+1):
-			print "changing joint", i, "from", resultJoints[i], "to 0.0"
+			#print "changing joint", i, "from", resultJoints[i], "to 0.0"
 			resultJoints[i] = 0.0
 			
 
@@ -957,9 +957,9 @@ class PathStep(Behavior):
 			" if the anchor is not secure, lets try it again "
 			err1, err2, err3 = self.computeAnchorErrors()
 			
-			print "errorPoses1:", self.errorPoses1
-			print "errorPoses2:", self.errorPoses2
-			print "errorPoses3:", self.errorPoses3
+			#print "errorPoses1:", self.errorPoses1
+			#print "errorPoses2:", self.errorPoses2
+			#print "errorPoses3:", self.errorPoses3
 			print "anchor errors =", err1, err2, err3
 			
 			#if err1 > 0.1 or err2 > 0.1:
@@ -1092,10 +1092,10 @@ class PathStep(Behavior):
 		nextVal = currAmp
 
 		" perform amplitude operation here "
-		print "errors:", maxError, errors
-		print self.probeState['joints']
-		print self.probeState['cmdJoints']
-		print "amps before:", self.minAmp, self.maxAmp, self.ampInc, currAmp, nextVal
+		#print "errors:", maxError, errors
+		#print self.probeState['joints']
+		#print self.probeState['cmdJoints']
+		#print "amps before:", self.minAmp, self.maxAmp, self.ampInc, currAmp, nextVal
 		
 		" error threshold that determines we have made an anchor contact "
 		if maxError > 0.3 and self.maxAmp != 0.0:
@@ -1158,7 +1158,7 @@ class PathStep(Behavior):
 			" maximum is the value we just set "
 			self.maxAmp = nextVal
 
-		print "amps after:", self.minAmp, self.maxAmp, self.ampInc, currAmp, nextVal
+		#print "amps after:", self.minAmp, self.maxAmp, self.ampInc, currAmp, nextVal
 
 		" reset all torques of the joints to maximum "
 		for i in range(self.numJoints):
@@ -1201,7 +1201,8 @@ class PathStep(Behavior):
 				
 		self.count += 1
 		isDone = False
-		
+
+		stateJoints = self.probeState['joints']		
 		torques = self.probeState['torques']
 
 		self.torques = []
@@ -1398,11 +1399,13 @@ class PathStep(Behavior):
 					self.mask[i] = 1.0
 				
 					" for activating the back anchor joints when front anchoring or extending "
-				elif self.frontAnchoringState and self.direction and i > (self.spliceJoint + 2.0/segLength):
+				#elif self.frontAnchoringState and self.direction and i > (self.spliceJoint + 2.0/segLength):
+				elif self.frontAnchoringState and self.direction and i > 19:
 					
 					self.mask[i] = 1.0
 							
-				elif self.frontAnchoringState and not self.direction and i < (self.spliceJoint - 2.0/segLength):
+				#elif self.frontAnchoringState and not self.direction and i < (self.spliceJoint - 2.0/segLength):
+				elif self.frontAnchoringState and not self.direction and i < 19:
 					self.mask[i] = 1.0
 				
 				else:
@@ -1423,7 +1426,8 @@ class PathStep(Behavior):
 				
 				" for activating the back anchor joints when front anchoring or extending "
 				if self.frontAnchoringState:
-					if self.direction and i > (self.spliceJoint + 2.0/segLength):
+					#if self.direction and i > (self.spliceJoint + 2.0/segLength):
+					if self.direction and i > 19:
 						self.mask[i] = 1.0
 
 						" check if all reference points have been created "
@@ -1431,7 +1435,8 @@ class PathStep(Behavior):
 							allActive = False
 							
 						" add the mask for the inactive portion of the back concertina gait while front anchoring "
-					elif not self.direction and i < (self.spliceJoint - 2.0/segLength):
+					#elif not self.direction and i < (self.spliceJoint - 2.0/segLength):
+					elif not self.direction and i < 19:
 						self.mask[i] = 1.0
 				
 						" check if all reference points have been created "

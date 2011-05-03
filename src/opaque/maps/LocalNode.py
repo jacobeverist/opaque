@@ -64,6 +64,7 @@ class LocalNode:
 		self.saveCount = 0
 		
 		self.localPosture = []
+		self.correctedPosture = []
 		self.resetPosture()
 		
 		" compute a fitted curve of a center point "
@@ -106,6 +107,8 @@ class LocalNode:
 				correctedPosture.append(self.probe.getJointPose(self.rootPose, self.rootNode, j))
 
 			self.localPosture = correctedPosture
+	
+		self.correctedPosture = deepcopy(self.localPosture)
 	
 	def stabilizeRootPose(self):
 		
@@ -186,9 +189,9 @@ class LocalNode:
 		else:
 			self.rootPose = originForeProfile.convertLocalOffsetToGlobal(localRootOffset3)
 
-		correctedPosture = []
+		self.correctedPosture = []
 		for j in range(self.numSegs-1):
-			correctedPosture.append(self.probe.getJointPose(self.rootPose, self.rootNode, j))
+			self.correctedPosture.append(self.probe.getJointPose(self.rootPose, self.rootNode, j))
 		
 
 
@@ -429,10 +432,27 @@ class LocalNode:
 		estPlotCount += 1
 	
 
+	def getStableGPACPosture(self):
+		
+		localGPACPose = self.getLocalGPACPose()
+		localGPACProfile = Pose(localGPACPose)
+		
+		posture_GPAC = []
+		for pose in self.correctedPosture:
+			posture_GPAC.append(localGPACProfile.convertGlobalPoseToLocal(pose))
+		
+		return posture_GPAC		
 
+	def getStableGPACurve(self):
+		
+		posture_GPAC = self.getStableGPACPosture()
+		
+		GPA_curve = SplineFit(posture_GPAC, smooth = 0.5, kp = 2)
+
+		return GPA_curve
+	
 	def getGPACPosture(self):
 
-		" convert hull points to GPAC coordinates before adding covariances "
 		localGPACPose = self.getLocalGPACPose()
 		localGPACProfile = Pose(localGPACPose)
 		
@@ -623,6 +643,18 @@ class LocalNode:
 
 		return localPose
 
+	def convertLocalToGndGlobal(self, pnt):
+
+		finalVec = array([[pnt[0]], [pnt[1]]])
+		transVec = dot(transpose(self.gndR), finalVec)
+		resVec = dot(self.gndBackR, transVec)
+		resVec[0, 0] += self.gndDist
+		tempVec = dot(self.gndForeR, resVec)
+
+		newPoint = [tempVec[0,0],tempVec[1,0]]
+
+		return newPoint
+
 	def convertLocalToGlobal(self, pnt):
 
 		finalVec = array([[pnt[0]], [pnt[1]]])
@@ -781,13 +813,23 @@ class LocalNode:
 		f.write("\n")
 		f.close()
 
-		f = open("frontProbeError%04u.txt" % self.nodeID, 'w')
-		f.write(repr(self.frontProbeError))
+		#f = open("frontProbeError%04u.txt" % self.nodeID, 'w')
+		#f.write(repr(self.frontProbeError))
+		#f.write("\n")
+		#f.close()
+
+		#f = open("backProbeError%04u.txt" % self.nodeID, 'w')
+		#f.write(repr(self.backProbeError))
+		#f.write("\n")
+		#f.close()
+
+		f = open("correctedPosture%04u.txt" % self.nodeID, 'w')
+		f.write(repr(self.correctedPosture))
 		f.write("\n")
 		f.close()
 
-		f = open("backProbeError%04u.txt" % self.nodeID, 'w')
-		f.write(repr(self.backProbeError))
+		f = open("rootPose%04u.txt" % self.nodeID, 'w')
+		f.write(repr(self.rootPose))
 		f.write("\n")
 		f.close()
 
@@ -824,6 +866,15 @@ class LocalNode:
 		self.localPosture = eval(f.read().rstrip())
 		f.close()
 
+
+		f = open(dirName + "/correctedPosture%04u.txt" % self.nodeID, 'r')
+		self.correctedPosture = eval(f.read().rstrip())
+		f.close()
+
+		f = open(dirName + "/rootPose%04u.txt" % self.nodeID, 'r')
+		self.rootPose = eval(f.read().rstrip())
+		f.close()
+		
 		" compute a fitted curve of a center point "
 		self.centerCurve = GPACurve(self.localPosture, rotated=True)
 		upoints = arange(0,1.0,0.01)
@@ -834,10 +885,13 @@ class LocalNode:
 	def obstCallBack(self, direction):
 		#self.currNode.obstCallBack(direction)		
 		self.obstacleMap.updateContact(direction)
+
+	def updateCorrectPosture(self):
+		self.correctedPosture = []
+		for j in range(self.numSegs-1):
+			self.correctedPosture.append(self.probe.getJointPose(self.rootPose, self.rootNode, j))
 		
 	def update(self, isForward = True):
-		
-		
 		
 		if self.stabilizePose:
 			self.stabilizeRootPose()

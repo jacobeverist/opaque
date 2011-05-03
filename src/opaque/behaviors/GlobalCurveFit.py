@@ -77,7 +77,8 @@ class GlobalCurveFit(Behavior):
 		self.childSegEntities = []
 		
 		# remove all children
-		self.parentNode.removeAllChildren()
+		if self.parentNode != 0:
+			self.parentNode.removeAllChildren()
 
 
 	def draw(self):
@@ -85,7 +86,6 @@ class GlobalCurveFit(Behavior):
 		if self.parentNode == 0:
 			self.parentNode = self.probe._mgr.getRootSceneNode().createChildSceneNode("globalCurveRoot" + str(self.nodeCount))
 
-	
 		self.clearDraw()
 
 		if self.currNode != 0:

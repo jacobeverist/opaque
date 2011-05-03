@@ -313,11 +313,16 @@ def executeToro(fileName):
 	os.system("cp " + fileName + " toro_tmp")
 	os.system("cp toro.exe toro_tmp")
 	os.chdir("toro_tmp")
-	os.system("toro -nde " + fileName)
+	result = os.system("toro -nde " + fileName)
+	
+	if result != 0 and result != 1:
+		print "returned", result
+		raise
 	os.chdir("..")
+	os.system("rm " + fileRoot + "-treeopt-final.graph")
 	os.system("mv toro_tmp/" + fileRoot + "-treeopt-final.graph .")
-	os.system("rm toro_tmp/*")
-	os.system("rmdir toro_tmp")
+	#os.system("rm toro_tmp/*")
+	#os.system("rmdir toro_tmp")
 
 	#os.system("./toro ../toro_tmp/" + fileName)
 	#os.chdir("toro_tmp")

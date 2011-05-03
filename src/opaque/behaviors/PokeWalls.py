@@ -151,7 +151,7 @@ class PokeWalls(Behavior):
 		if finalDone:
 			self.hasTransitioned = False
 			self.curlErrors = self.curl.highestErrors
-			print "curl errors:", self.curl.highestErrors
+			#print "curl errors:", self.curl.highestErrors
 			self.curl.reset()
 			self.isInit = False
 

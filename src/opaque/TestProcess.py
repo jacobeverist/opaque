@@ -134,8 +134,12 @@ class TestProcess(SnakeControl):
 			#self.mapGraph.loadFile("testData/backtrack2", 47)
 			#self.mapGraph.loadFile("testData/backtrack2", 47)
 			#self.mapGraph.loadFile("testData/sweep2", 8)
-			self.mapGraph.loadFile("testData/sweep2", 70)
-			
+			#self.mapGraph.loadFile("testData/sweep2", 70)
+			#self.mapGraph.loadFile("testData/sweep4", 50)
+			#self.mapGraph.loadFile("testData/sweep5", 76)
+			self.mapGraph.loadFile(".", 92)
+			#self.mapGraph.renderConstraints()
+			#exit()	
 			#exit()
 			#E = self.computeCovar()
 			#print repr(E)
@@ -150,9 +154,11 @@ class TestProcess(SnakeControl):
 	
 			#exit()
 	
-			self.mapGraph.correctPoses3()
+			#self.mapGraph.correctPoses3()
 			self.mapGraph.synch()
 			self.mapGraph.saveMap()
+			#self.mapGraph.renderConstraints()
+
 			exit()
 			
 			

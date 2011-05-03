@@ -74,8 +74,8 @@ def getIndicatorVector(e):
 	tups = []
 	domVector = e
 	N = domVector.shape[0]
-	print "shape =", domVector.shape
-	print "N =", N
+	#print "shape =", domVector.shape
+	#print "N =", N
 	for i in range(N):
 		tups.append((domVector[i,0], i))
 		
@@ -92,10 +92,10 @@ def getIndicatorVector(e):
 	for i in range(len(tups)):
 		w[i,0] = 1
 		val = numpy.dot(w.transpose(), v)
-		print "val:", val
+		#print "val:", val
 		val = val[0,0] / sqrt(1+i)
 
-		print "val:", tups[i][0], "dot:", val
+		#print "val:", tups[i][0], "dot:", val
 		
 		if val > lastVal:
 			lastVal = val
@@ -122,11 +122,39 @@ if __name__ == '__main__':
 	
 	fp3 = open("../../testData/clustering/A_120.txt", 'r')
 	A3 = eval(fp3.read())
+
+	fp4 = open("../../testData/clustering/A_overlap.txt", 'r')
+	A4 = eval(fp4.read())
+
+	fp5 = open("../../testData/clustering/A_sensor.txt", 'r')
+	A5 = eval(fp5.read())
 	
 	print A1.shape
 	print A2.shape
 	print A3.shape
+	print A4.shape
+	print A5.shape
+
+		
+	" do graph clustering of consistency matrix "
+	w = []
+	e = []
+	for i in range(100):
+		e, lmbda = dominantEigenvectors(A5)
+		w = getIndicatorVector(e[1])
+		if len(e) <= 1:
+			break
+
+		" threshold test l1 / l2"
+		ratio = lmbda[0][0,0] / lmbda[1][0,0]
+		print "ratio:", ratio
+		if ratio >= 2.0:
+			print e[0]
+			print e[1]
+			break
 	
+	print w
+	"""
 	e = dominantEigenvectors(A1)
 	w = getIndicatorVector(e[0])
 	print w
@@ -139,6 +167,15 @@ if __name__ == '__main__':
 	e = dominantEigenvectors(A3)
 	w = getIndicatorVector(e[0])
 	print w
+
+	e = dominantEigenvectors(A4)
+	w = getIndicatorVector(e[0])
+	print w
+	
+	e = dominantEigenvectors(A5)
+	w = getIndicatorVector(e[0])
+	print w
+	"""
 
 	#V = numpy.matrix([[0.0]*100]*1000)
 

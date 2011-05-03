@@ -1266,8 +1266,6 @@ class AdaptiveStep(Behavior):
 	def step(self, probeState):
 		Behavior.step(self, probeState)
 		
-		#print "refDone:", self.refDone, "transDone:", self.transDone
-		
 		self.count += 1
 		isDone = False
 
@@ -1278,8 +1276,6 @@ class AdaptiveStep(Behavior):
 		for i in range(0,self.numJoints):
 			self.torques.append(torques[i])
 			
-		#print self.count, self.transDone, self.refDone, self.frontAnchoringState, self.frontExtending, self.frontExtendDone
-		
 		if self.transDone:
 			self.transDone = False
 

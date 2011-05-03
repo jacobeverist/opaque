@@ -24,9 +24,16 @@ class SplineFit:
 
 		" perturb the points to prevent degeneracies "
 		for p in newP:
-			intArray[0].append(p[0] + gauss(0.0,0.0001))
-			intArray[1].append(p[1] + gauss(0.0,0.0001))
+			try:
+				intArray[0].append(p[0] + gauss(0.0,0.0001))
+			except:
+				intArray[0].append(p[0])
 
+			try:
+				intArray[1].append(p[1] + gauss(0.0,0.0001))
+			except:
+				intArray[1].append(p[1])
+				
 		" performing spline fit "
 		self.tck, self.u = scipy.interpolate.splprep(intArray, s = self.smoothNess, k=self.kp)
 

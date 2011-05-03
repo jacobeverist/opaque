@@ -49,11 +49,12 @@ def dijkstra_proj(initNode, numNodes, edgeHash):
 			pass
 
 
+	print "computing mahalanobis distances between nodes"
 	for neigh in neighbors:
 		if not visited[neigh]:
 			transform, covE = edgeHash[(initNode,neigh)]
 			
-			print initNode, neigh, ":", repr(transform), repr(covE)
+			print initNode, neigh, ":", transform[0,0], transform[1,0], transform[2,0], covE[0,0], covE[1,1], covE[2,2]
 			
 			dist = linalg.det(covE)
 			if dist < distances[neigh]:
@@ -65,7 +66,7 @@ def dijkstra_proj(initNode, numNodes, edgeHash):
 		if not visited[incid]:
 			transform, covE = edgeHash[(incid, initNode)]
 
-			print incid, initNode, ":", repr(transform), repr(covE)
+			print incid, initNode, ":", transform[0,0], transform[1,0], transform[2,0], covE[0,0], covE[1,1], covE[2,2]
 			
 			xA = transform[0,0]
 			yA = transform[1,0]
@@ -216,6 +217,8 @@ def dijkstra_proj(initNode, numNodes, edgeHash):
 		covE = value[1]
 		
 		#print key, repr(offset), repr(covE)
+	
+	print "finished computing dijkstra projection"
 		
 	return paths
 

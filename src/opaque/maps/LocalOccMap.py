@@ -84,11 +84,15 @@ class LocalOccMap:
 		#self.fileName = dirName + "/stableLocalOccMap%03u" % self.nodeID + "_%04u.png"
 		if self.direction != None:
 			self.fileName = dirName + "/localSweepMap%03u" % self.nodeID + "_%04u.png"			
+			self.gndFileName = dirName + "/gndLocalSweepMap%03u" % self.nodeID + "_%04u.png"
 		else:	
 			self.fileName = dirName + "/localOccMap%03u" % self.nodeID + "_%04u.png"
+			self.gndFileName = dirName + "/gndLocalOccMap%03u" % self.nodeID + "_%04u.png"
 		
 		self.mapImage = Image.open(self.fileName % 0)
 		self.image = self.mapImage.load()
+		
+		self.gndMapImage = Image.open(self.gndFileName % 0)
 		
 		self.changed = True
 		

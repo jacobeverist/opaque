@@ -106,6 +106,9 @@ class GlobalCurveSlide(Behavior):
 		self.resetJoints()
 		self.mergeJoints([targetState])
 
+
+
+
 		self.moveCount += 1
 		#print "moveCount =", self.moveCount
 		
@@ -114,6 +117,7 @@ class GlobalCurveSlide(Behavior):
 		if self.moveCount > 5 :
 
 			self.moveCount = 0
+			return True
 	
 			self.count += 1
 	
