@@ -244,7 +244,7 @@ class TestModular(SnakeControl):
 		elif self.globalState == 3:
 			
 			" create the mapping object "
-			self.mapGraph = MapGraph(self.probe, self.contacts, stabilizePose = True)
+			self.mapGraph = MapGraph(self.probe, self.contacts, isStable = True)
 
 			#self.mapGraph.loadFile("testData/sweep5", 8)
 			#self.mapGraph.loadFile("testData/sweep5", 30)
@@ -829,7 +829,6 @@ class TestModular(SnakeControl):
 			self.targetReached = False
 			
 			self.localDirection = True
-			
 			
 			self.localWayPoints = deepcopy(wayPoints)
 			self.localWayPaths = deepcopy(wayPaths)

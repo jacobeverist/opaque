@@ -110,7 +110,7 @@ class TestProcess(SnakeControl):
 		elif self.globalState == 3:
 			
 			" create the mapping object "
-			self.mapGraph = MapGraph(self.probe, self.contacts, stabilizePose = True)
+			self.mapGraph = MapGraph(self.probe, self.contacts, isStable = True)
 			
 			#exit()
 			#self.mapGraph.loadFile("testData/correctionTest", 43)
@@ -137,8 +137,9 @@ class TestProcess(SnakeControl):
 			#self.mapGraph.loadFile("testData/sweep2", 70)
 			#self.mapGraph.loadFile("testData/sweep4", 50)
 			#self.mapGraph.loadFile("testData/sweep5", 76)
-			self.mapGraph.loadFile(".", 92)
-			#self.mapGraph.renderConstraints()
+			#self.mapGraph.loadFile(".", 92)
+			self.mapGraph.loadFile(".", 10)
+			#self.mapGraph.poseGraph.renderConstraints()
 			#exit()	
 			#exit()
 			#E = self.computeCovar()
@@ -154,7 +155,9 @@ class TestProcess(SnakeControl):
 	
 			#exit()
 	
-			#self.mapGraph.correctPoses3()
+			self.mapGraph.numNodes
+	
+			self.mapGraph.poseGraph.correctPoses3()
 			self.mapGraph.synch()
 			self.mapGraph.saveMap()
 			#self.mapGraph.renderConstraints()
