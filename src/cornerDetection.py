@@ -94,8 +94,10 @@ def filterIntersections(lines, maxX, maxY):
 	return intersections
 
 def extractCornerCandidates(img):
+
 	global saveCount
 	global histCount
+
 
 	CORNER_THRESH = 400
 	ROI_SIZE = 15
@@ -301,33 +303,235 @@ def extractCornerCandidates(img):
 
 				globalRho1 = pnt[0] * cos(theta1) + pnt[1] * sin(theta1)
 				globalRho2 = pnt[0] * cos(theta2) + pnt[1] * sin(theta2)
-				cornerCandidates.append(((globalRho1,theta1),(globalRho2,theta2), pnt))
 
+				point = pnt
+
+				a = cos(theta1)
+				b = sin(theta1)
+				x0 = a * globalRho1 
+				y0 = b * globalRho1
+				pt1 = (cv.Round(x0 + 400*(-b)), cv.Round(y0 + 400*(a)))
+				pt2 = (cv.Round(x0 - 400*(-b)), cv.Round(y0 - 400*(a)))
+				vec1_1 = [pt1[0]-point[0], pt1[1]-point[1]]
+				vec1_2 = [pt2[0]-point[0], pt2[1]-point[1]]
+				mag1_1 = sqrt(vec1_1[0]**2 + vec1_1[1]**2)
+				mag1_2 = sqrt(vec1_2[0]**2 + vec1_2[1]**2)
+				vec1_1[0] /= mag1_1
+				vec1_1[1] /= mag1_1
+				vec1_2[0] /= mag1_2
+				vec1_2[1] /= mag1_2
+
+				a = cos(theta2)
+				b = sin(theta2)
+				x0 = a * globalRho2 
+				y0 = b * globalRho2
+				pt1 = (cv.Round(x0 + 400*(-b)), cv.Round(y0 + 400*(a)))
+				pt2 = (cv.Round(x0 - 400*(-b)), cv.Round(y0 - 400*(a)))
+				vec2_1 = [pt1[0]-point[0], pt1[1]-point[1]]
+				vec2_2 = [pt2[0]-point[0], pt2[1]-point[1]]
+				mag2_1 = sqrt(vec2_1[0]**2 + vec2_1[1]**2)
+				mag2_2 = sqrt(vec2_2[0]**2 + vec2_2[1]**2)
+				vec2_1[0] /= mag2_1
+				vec2_1[1] /= mag2_1
+				vec2_2[0] /= mag2_2
+				vec2_2[1] /= mag2_2
+
+				cornerAngle = fabs(theta1 - theta2)
+				#print point[0], point[1], cornerAngle, vec1_1, vec1_2, vec2_1, vec2_2
+				#print vec1_1, vec1_2, vec2_1, vec2_2
+
+				" vec2_1, vec1_1 "
+				dirA = [vec2_1[0]+vec1_1[0], vec2_1[1]+vec1_1[1]]
+				magA = sqrt(dirA[0]**2 + dirA[1]**2)
+				#print "dirA =", dirA
+				#print "magA =", magA
+				dirA[0] /= magA
+				dirA[1] /= magA
+				indX = cv.Floor(point[0] + 5*dirA[0])
+				indY = cv.Floor(point[1] + 5*dirA[1])
+				valA = img[indY,indX]
+				" vec1_1, vec2_2 "
+				dirB = [vec1_1[0]+vec2_2[0], vec1_1[1]+vec2_2[1]]
+				magB = sqrt(dirB[0]**2 + dirB[1]**2)
+				#print "dirB =", dirB
+				#print "magB =", magB
+				dirB[0] /= magB
+				dirB[1] /= magB
+				indX = cv.Floor(point[0] + 5*dirB[0])
+				indY = cv.Floor(point[1] + 5*dirB[1])
+				valB = img[indY,indX]
+				" vec2_2, vec1_2 "
+				dirC = [vec2_2[0]+vec1_2[0], vec2_2[1]+vec1_2[1]]
+				magC = sqrt(dirC[0]**2 + dirC[1]**2)
+				#print "dirC =", dirC
+				#print "magC =", magC
+				dirC[0] /= magC
+				dirC[1] /= magC
+				indX = cv.Floor(point[0] + 5*dirC[0])
+				indY = cv.Floor(point[1] + 5*dirC[1])
+				valC = img[indY,indX]
+				" vec1_2, vec2_1 "
+				dirD = [vec1_2[0]+vec2_1[0], vec1_2[1]+vec2_1[1]]
+				magD = sqrt(dirD[0]**2 + dirD[1]**2)
+				#print "dirD =", dirD
+				#print "magD =", magD
+				dirD[0] /= magD
+				dirD[1] /= magD
+				indX = cv.Floor(point[0] + 5*dirD[0])
+				indY = cv.Floor(point[1] + 5*dirD[1])
+				valD = img[indY,indX]
+				
+				statA = 0
+				statB = 0
+				statC = 0
+				statD = 0
+				if valA > 128:
+					statA = 1
+				if valB > 128:
+					statB = 1
+				if valC > 128:
+					statC = 1
+				if valD > 128:
+					statD = 1
+
+
+				#print valA, valB, valC, valD
+				#print statA, statB, statC, statD
+
+				if statA + statB + statC + statD == 3:
+
+					cornerAngle = 0.0
+					if statA == 0:
+						" vec2_1, vec1_1 "
+						inwardVec = dirC 
+						#dotProduct = vec2_1[0]*vec1_1[0] + vec2_1[1]*vec1_1[1]
+						dotProduct1 = inwardVec[0]*vec1_1[0] + inwardVec[1]*vec1_1[1]
+						dotProduct2 = vec2_1[0]*inwardVec[0] + vec2_1[1]*inwardVec[1]
+						#cornerAngle = acos(dotProduct)
+						cornerAngle = acos(dotProduct1) + acos(dotProduct2)
+					if statB == 0:
+						" vec1_1, vec2_2 "
+						inwardVec = dirD 
+						#dotProduct = vec1_1[0]*vec2_2[0] + vec1_1[1]*vec2_2[1]
+						dotProduct1 = inwardVec[0]*vec2_2[0] + inwardVec[1]*vec2_2[1]
+						dotProduct2 = vec1_1[0]*inwardVec[0] + vec1_1[1]*inwardVec[1]
+						#cornerAngle = acos(dotProduct)
+						cornerAngle = acos(dotProduct1) + acos(dotProduct2)
+					if statC == 0:
+						" vec2_2, vec1_2 "
+						inwardVec = dirA 
+						#dotProduct = vec2_2[0]*vec1_2[0] + vec2_2[1]*vec1_2[1]
+						dotProduct1 = inwardVec[0]*vec1_2[0] + inwardVec[1]*vec1_2[1]
+						dotProduct2 = vec2_2[0]*inwardVec[0] + vec2_2[1]*inwardVec[1]
+						#cornerAngle = acos(dotProduct)
+						cornerAngle = acos(dotProduct1) + acos(dotProduct2)
+					if statD == 0:
+						" vec1_2, vec2_1 "
+						inwardVec = dirB 
+						#dotProduct = vec1_2[0]*vec2_1[0] + vec1_2[1]*vec2_1[1]
+						dotProduct1 = inwardVec[0]*vec2_1[0] + inwardVec[1]*vec2_1[1]
+						dotProduct2 = vec1_2[0]*inwardVec[0] + vec1_2[1]*inwardVec[1]
+						#cornerAngle = acos(dotProduct)
+						cornerAngle = acos(dotProduct1) + acos(dotProduct2)
+
+					#print "cornerAngle =", cornerAngle
+					cornerCandidates.append(((globalRho1,theta1),(globalRho2,theta2), pnt, inwardVec, cornerAngle))
+
+	points = []
+	for ((rho1,theta1),(rho2,theta2), point, inwardVec, cornerAngle) in cornerCandidates:
+		points.append(point)
+
+	finalCandidates = []
+	features = array(points)
+	if len(points) > 1:
+		features = features.reshape(len(points),2)
+		#print features
+		resultVector = fclusterdata(features,t=4, criterion='maxclust')
+		#print resultVector
+
+		numCandidates = resultVector.max()
+		avgs = [[[0.0,0.0],0.0,[0.0, 0.0]] for i in range(numCandidates)]
+		nums = [0 for i in range(numCandidates)]
+
+		for k in range(len(points)):
+			valX = features[k,0]
+			valY = features[k,1]
+			cornerVal = cornerCandidates[k][4]
+			inwardVec = cornerCandidates[k][3]
+
+			clustID = resultVector[k]
+			" average point "
+			avgs[clustID-1][0][0] += valX
+			avgs[clustID-1][0][1] += valY
+
+			" average corner angle "
+			avgs[clustID-1][1] += cornerVal
+
+			" average inward vector "
+			avgs[clustID-1][2][0] += inwardVec[0]
+			avgs[clustID-1][2][1] += inwardVec[1]
+
+			nums[clustID-1] += 1
+
+		for k in range(numCandidates):
+			avgs[k][0][0] /= nums[k]
+			avgs[k][0][1] /= nums[k]
+			avgs[k][1] /= nums[k]
+
+			vec = avgs[k][2]
+			mag = sqrt(vec[0]**2 + vec[1]**2)
+			vec[0] /= mag
+			vec[1] /= mag
+			avgs[k][2] = vec
+
+			finalCandidates.append((avgs[k][0], avgs[k][1], avgs[k][2]))
+	else:
+
+		for ((rho1,theta1),(rho2,theta2), point, inwardVec, cornerAngle) in cornerCandidates:
+			finalCandidates.append((point, cornerAngle, inwardVec))
 
 	cv.ResetImageROI(edges)
 	color_dst = cv.CreateImage(cv.GetSize(edges), 8, 3)
 	cv.CvtColor(edges, color_dst, cv.CV_GRAY2BGR)
-	for ((rho1,theta1),(rho2,theta2), point) in cornerCandidates:
-		a = cos(theta1)
-		b = sin(theta1)
-		x0 = a * rho1 
-		y0 = b * rho1
-		pt1 = (cv.Round(x0 + 400*(-b)), cv.Round(y0 + 400*(a)))
-		pt2 = (cv.Round(x0 - 400*(-b)), cv.Round(y0 - 400*(a)))
-		seg = (pt1,pt2)
-		cv.Line(color_dst, seg[0], seg[1], cv.CV_RGB(255, 0, 0), 1, 8)
-		a = cos(theta2)
-		b = sin(theta2)
-		x0 = a * rho2 
-		y0 = b * rho2
-		pt1 = (cv.Round(x0 + 400*(-b)), cv.Round(y0 + 400*(a)))
-		pt2 = (cv.Round(x0 - 400*(-b)), cv.Round(y0 - 400*(a)))
-		seg = (pt1,pt2)
-		cv.Line(color_dst, seg[0], seg[1], cv.CV_RGB(255, 0, 0), 1, 8)
+	angles = []
+	#for ((rho1,theta1),(rho2,theta2), point, inwardVec, cornerAngle) in cornerCandidates:
+	for (point, cornerAngle, inwardVec) in finalCandidates:
 
+		angles.append(cornerAngle)
+
+		#a = cos(theta1)
+		#b = sin(theta1)
+		#x0 = a * rho1 
+		#y0 = b * rho1
+		#pt1 = (cv.Round(x0 + 400*(-b)), cv.Round(y0 + 400*(a)))
+		#pt2 = (cv.Round(x0 - 400*(-b)), cv.Round(y0 - 400*(a)))
+		#seg = (pt1,pt2)
+		#cv.Line(color_dst, seg[0], seg[1], cv.CV_RGB(255, 0, 0), 1, 8)
+
+		#a = cos(theta2)
+		#b = sin(theta2)
+		#x0 = a * rho2 
+		#y0 = b * rho2
+		#pt1 = (cv.Round(x0 + 400*(-b)), cv.Round(y0 + 400*(a)))
+		#pt2 = (cv.Round(x0 - 400*(-b)), cv.Round(y0 - 400*(a)))
+		#seg = (pt1,pt2)
+		#cv.Line(color_dst, seg[0], seg[1], cv.CV_RGB(255, 0, 0), 1, 8)
+
+		#print "point:", point
 		indX = cv.Floor(point[0])
 		indY = cv.Floor(point[1])
 		cv.Circle(color_dst, (indX,indY), 5, cv.CV_RGB(0,0,255), thickness=1, lineType=8, shift=0) 
+
+		pt2 = [point[0] + inwardVec[0]*5, point[1] + inwardVec[1]*5]
+		#print "pt2:", pt2
+		indX_2 = cv.Floor(pt2[0])
+		indY_2 = cv.Floor(pt2[1])
+		cv.Line(color_dst, (indX, indY), (indX_2, indY_2), cv.CV_RGB(255, 0, 0), 1, 8)
+
+
+	print "image", saveCount
+	print angles
+	print
 
 	#for point in maxPoints:
 	#	indX = cv.Floor(point[0])
@@ -339,8 +543,9 @@ def extractCornerCandidates(img):
 	cv.SaveImage("%04u_2.png" % saveCount, color_dst)
 	saveCount += 1
 
-	print len(cornerCandidates), "corner candidates"
+	" compute the direction of the corner.  vector goes inward towards open space "
 
+	#print len(finalCandidates), "corner candidates"
 
 def findCornerCandidates(lines, edgeImage, cornersImage):
 
@@ -506,8 +711,8 @@ fileName = dirName + "/localSweepMap%03u_0000.png"
 positiveExamples = [2,4,17,19,27,35,37,39,44,45,51,53,56,59]
 #positiveExamples = [37,45,51,53]
 
-#for i in range(total):
-for i in positiveExamples:
+#for i in positiveExamples:
+for i in range(total):
 	fileName % i
 	img0 = cv.LoadImage(fileName % i, cv.CV_LOAD_IMAGE_UNCHANGED)
 
