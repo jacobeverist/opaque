@@ -385,7 +385,7 @@ class TestModular(SnakeControl):
 				self.mapGraph.synch()
 				self.mapGraph.saveMap()
 				self.mapGraph.saveLocalMap()
-				
+				self.mapGraph.poseGraph.drawConstraints()				
 				self.mapGraph.newInPlaceNode(False)
 				#self.mapGraph.currNode.resetPosture()		
 			
@@ -416,6 +416,7 @@ class TestModular(SnakeControl):
 				self.mapGraph.synch()
 				self.mapGraph.saveMap()
 				self.mapGraph.saveLocalMap()
+				self.mapGraph.poseGraph.drawConstraints()				
 				
 		
 				#self.currPose = self.contacts.getAverageSegPose(0)
@@ -1003,6 +1004,7 @@ class TestModular(SnakeControl):
 				self.mapGraph.synch()
 				self.mapGraph.saveMap()
 				self.mapGraph.saveLocalMap()
+				self.mapGraph.poseGraph.drawConstraints()				
 				
 				self.mapGraph.newInPlaceNode(False)
 				#self.mapGraph.currNode.resetPosture()		
@@ -1032,6 +1034,7 @@ class TestModular(SnakeControl):
 				self.mapGraph.synch()
 				self.mapGraph.saveMap()
 				self.mapGraph.saveLocalMap()
+				self.mapGraph.poseGraph.drawConstraints()				
 
 
 				self.localPathState = 1

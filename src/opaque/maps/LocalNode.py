@@ -79,6 +79,12 @@ class LocalNode:
 	
 			print "rootPose:", self.rootPose
 
+
+		" alpha hull boundary "
+		self.a_vert = []
+		self.hullComputed = False
+		self.computedSweep = False
+		
 		#pylab.clf()
 
 		#xP = []
@@ -900,6 +906,7 @@ class LocalNode:
 		self.sweepMap.update()
 		
 		self.dirty = True
+		self.hullComputed = False
 	
 	def isDirty(self):
 		return self.dirty
@@ -931,6 +938,10 @@ class LocalNode:
 		
 
 	def computeAlphaBoundary(self, sweep = False):
+
+		if self.hullComputed and self.computedSweep == sweep:
+			" already computed "
+			return
 
 		" 1. pick out the points "
 		if sweep:
@@ -970,6 +981,10 @@ class LocalNode:
 		
 		else:
 			self.a_vert = []
+			
+		self.hullComputed = True
+		self.computedSweep = sweep
+			
 			
 	def getAlphaBoundary(self):
 		return self.a_vert

@@ -54,19 +54,20 @@ def dijkstra_proj(initNode, numNodes, edgeHash):
 		if not visited[neigh]:
 			transform, covE = edgeHash[(initNode,neigh)]
 			
-			print initNode, neigh, ":", transform[0,0], transform[1,0], transform[2,0], covE[0,0], covE[1,1], covE[2,2]
 			
 			dist = linalg.det(covE)
+
 			if dist < distances[neigh]:
 				paths[neigh] = [transform, covE]
 				distances[neigh] = dist
+
+			print initNode, neigh, ":", transform[0,0], transform[1,0], transform[2,0], covE[0,0], covE[1,1], covE[2,2], "=", distances[neigh]
 
 
 	for incid in incidents:
 		if not visited[incid]:
 			transform, covE = edgeHash[(incid, initNode)]
 
-			print incid, initNode, ":", transform[0,0], transform[1,0], transform[2,0], covE[0,0], covE[1,1], covE[2,2]
 			
 			xA = transform[0,0]
 			yA = transform[1,0]
@@ -80,9 +81,13 @@ def dijkstra_proj(initNode, numNodes, edgeHash):
 
 			paths[incid] = [newTransform, covE]
 			dist = linalg.det(covE)
+
+
 			if dist < distances[incid]:
 				paths[incid] = [newTransform, covE]
 				distances[incid] = dist
+
+			print incid, initNode, ":", transform[0,0], transform[1,0], transform[2,0], covE[0,0], covE[1,1], covE[2,2], "=", distances[incid]
 
 
 	" while some nodes unvisited "

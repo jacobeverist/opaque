@@ -491,8 +491,8 @@ def extractCornerCandidates(img):
 			finalCandidates.append((point, cornerAngle, inwardVec))
 
 	cv.ResetImageROI(edges)
-	color_dst = cv.CreateImage(cv.GetSize(edges), 8, 3)
-	cv.CvtColor(edges, color_dst, cv.CV_GRAY2BGR)
+	#color_dst = cv.CreateImage(cv.GetSize(edges), 8, 3)
+	#cv.CvtColor(edges, color_dst, cv.CV_GRAY2BGR)
 	angles = []
 	#for ((rho1,theta1),(rho2,theta2), point, inwardVec, cornerAngle) in cornerCandidates:
 	for (point, cornerAngle, inwardVec) in finalCandidates:
@@ -520,13 +520,13 @@ def extractCornerCandidates(img):
 		#print "point:", point
 		indX = cv.Floor(point[0])
 		indY = cv.Floor(point[1])
-		cv.Circle(color_dst, (indX,indY), 5, cv.CV_RGB(0,0,255), thickness=1, lineType=8, shift=0) 
+		#cv.Circle(color_dst, (indX,indY), 5, cv.CV_RGB(0,0,255), thickness=1, lineType=8, shift=0) 
 
 		pt2 = [point[0] + inwardVec[0]*5, point[1] + inwardVec[1]*5]
 		#print "pt2:", pt2
 		indX_2 = cv.Floor(pt2[0])
 		indY_2 = cv.Floor(pt2[1])
-		cv.Line(color_dst, (indX, indY), (indX_2, indY_2), cv.CV_RGB(255, 0, 0), 1, 8)
+		#cv.Line(color_dst, (indX, indY), (indX_2, indY_2), cv.CV_RGB(255, 0, 0), 1, 8)
 
 
 	print "image", saveCount
@@ -540,12 +540,13 @@ def extractCornerCandidates(img):
 
 
 	#cv.SaveImage("%04u_1.png" % saveCount, edges)
-	cv.SaveImage("%04u_2.png" % saveCount, color_dst)
+	#cv.SaveImage("%04u_2.png" % saveCount, color_dst)
 	saveCount += 1
 
 	" compute the direction of the corner.  vector goes inward towards open space "
 
 	#print len(finalCandidates), "corner candidates"
+	return finalCandidates
 
 def findCornerCandidates(lines, edgeImage, cornersImage):
 

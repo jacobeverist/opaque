@@ -7,6 +7,7 @@ from behaviors.AnchorTransition import AnchorTransition
 
 from pose.AverageContacts import AverageContacts
 from maps.MapGraph import MapGraph
+from maps.VisualGraph import VisualGraph
 
 import numpy
 import sys
@@ -110,56 +111,34 @@ class TestProcess(SnakeControl):
 		elif self.globalState == 3:
 			
 			" create the mapping object "
-			self.mapGraph = MapGraph(self.probe, self.contacts, isStable = True)
-			
-			#exit()
-			#self.mapGraph.loadFile("testData/correctionTest", 43)
-			#self.mapGraph.loadFile("uncorrectedNX", 6)
-			#self.mapGraph.loadFile("testData/mapBuild_21June2010", 66)
-			#self.mapGraph.loadFile("testData/poseTest", 3)
-			#self.mapGraph.loadFile("testData/poseTest", 5)
-			#self.mapGraph.loadFile("testData/poseTest", 8)
-			#self.mapGraph.loadFile("testData/poseTest", 16)
-			#self.mapGraph.loadFile("testData/fixedPoseTest5", 15)
-			#self.mapGraph.loadFile("testData/bulletTest2", 17)
-			#self.mapGraph.loadFile("testData/constraints", 17)
-			#self.mapGraph.loadFile("testData/backtrack1", 7)
-
-			#self.mapGraph.newNode(0.0, self.direction)
-			#self.mapGraph.forceUpdate(False)
-			#self.mapGraph.synch()
-			#self.mapGraph.saveMap()
-
-			#self.mapGraph.loadFile("testData/backtrack1", 7)
-			#self.mapGraph.loadFile("testData/backtrack2", 47)
-			#self.mapGraph.loadFile("testData/backtrack2", 47)
-			#self.mapGraph.loadFile("testData/sweep2", 8)
-			#self.mapGraph.loadFile("testData/sweep2", 70)
-			#self.mapGraph.loadFile("testData/sweep4", 50)
-			#self.mapGraph.loadFile("testData/sweep5", 76)
-			#self.mapGraph.loadFile(".", 92)
-			self.mapGraph.loadFile(".", 10)
-			#self.mapGraph.poseGraph.renderConstraints()
-			#exit()	
-			#exit()
-			#E = self.computeCovar()
-			#print repr(E)
-
-
+			#self.mapGraph = MapGraph(self.probe, self.contacts, isStable = True)
+			self.mapGraph = VisualGraph(self.probe, self.contacts)
 			
 			#self.mapGraph.newNode(0.0, self.direction)
 			#self.mapGraph.forceUpdate(False)
 			#self.mapGraph.synch()
 			#self.mapGraph.saveMap()
+
+			self.mapGraph.sensorTest("testData/sensorLocalize2", 50)
+			#self.mapGraph.sensorTest("testData/sensorLocalize2", 176)
+
+			exit()
+			
+			#self.mapGraph.newNode(0.0, self.direction)
+			#self.mapGraph.forceUpdate(False)
+			self.mapGraph.synch()
+			self.mapGraph.saveMap()
+			self.mapGraph.poseGraph.drawConstraints(0)
 			#self.mapGraph.saveLocalMap()
 	
 			#exit()
 	
-			self.mapGraph.numNodes
+			#self.mapGraph.numNodes
 	
 			self.mapGraph.poseGraph.correctPoses3()
 			self.mapGraph.synch()
 			self.mapGraph.saveMap()
+			self.mapGraph.poseGraph.drawConstraints(1)
 			#self.mapGraph.renderConstraints()
 
 			exit()

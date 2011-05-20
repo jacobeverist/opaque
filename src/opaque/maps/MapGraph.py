@@ -418,3 +418,4 @@ class MapGraph:
 		j = indices[1]
 		point = [(i - self.numPixel / 2 - 1) * (self.pixelSize / 2.0) + self.pixelSize / 2.0, (j - self.numPixel / 2 - 1) * (self.pixelSize / 2.0) + self.pixelSize / 2.0]
 		return point		
+	
