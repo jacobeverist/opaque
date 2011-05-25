@@ -67,18 +67,6 @@ def makeGuess2(centerCurve1, centerCurve2, stepDist, posture1, posture2, forward
         xCurveLocalDes2 = curve1Pose[0] - stepDist * cos(curve1Pose[2])
         yCurveLocalDes2 = curve1Pose[1] - stepDist * sin(curve1Pose[2])
         
-    originProfile = Pose(originPose)
-    
-    #oP = originProfile.convertLocalToGlobal([curve1Pose[0],curve1Pose[1]])
-    #xP = [oP[0]]
-    #yP = [oP[1]]
-    #pylab.scatter(xP,yP, color='k')
-
-    #nP = originProfile.convertLocalToGlobal([xCurveLocalDes2,yCurveLocalDes2])
-    #xP = [nP[0]]
-    #yP = [nP[1]]
-    #pylab.scatter(xP,yP, color='b')
-
     " convert the desired intersection point on curve 1 into global coordinates "
     poseProfile1 = Pose([0.0,0.0,0.0])
     curveDesOffset2 = [xCurveLocalDes2, yCurveLocalDes2, angle1]
@@ -87,30 +75,18 @@ def makeGuess2(centerCurve1, centerCurve2, stepDist, posture1, posture2, forward
     " now convert this point into a pose, and perform the inverse transform using curve2Pose "
     desGlobalPose2 = Pose(curveDesGlobal2)
     
-    #print "des:", curveDesGlobal2
-    
     " perform inverse offset from the destination pose "
     negCurve2Pose = desGlobalPose2.doInverse(curve2Pose)
-    #print "curve2Pose:", curve2Pose
-    #print "negCurve2Pose:", negCurve2Pose
     
     resPose2 = desGlobalPose2.convertLocalOffsetToGlobal(negCurve2Pose)
 
     resProfile = Pose(resPose2)
-    #print "resProfile:", resProfile.convertLocalOffsetToGlobal(curve2Pose)
 
-    #print "resPose2:", resPose2
-    #print "rev:", resProfile.convertLocalOffsetToGlobal(curve2Pose)
     desGlobalPose2Rev = Pose(resProfile.convertLocalOffsetToGlobal(curve2Pose))
     negCurveDesOffset2 = desGlobalPose2Rev.doInverse(curveDesOffset2)
-    #print desGlobalPose2Rev.convertLocalOffsetToGlobal(negCurveDesOffset2)
 
     localOffset = poseProfile1.convertGlobalPoseToLocal(resPose2)
-    #print "localOffset:", localOffset
-
-    
-    #plotOffset(originPose, localOffset, posture1, posture2)
-       
+ 
     return [localOffset[0], localOffset[1], localOffset[2]]
 
     " we want to put xStep, yStep on the point of vecPoint2 "

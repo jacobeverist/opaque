@@ -18,6 +18,18 @@ class VisualGraph:
 
 		self.sensorHypotheses = []
 
+	def instantSensorTest(self, dirName, num_poses):
+		
+		self.sensorHypotheses = self.poseGraph.sensorHypotheses
+		
+		self.poseGraph = PoseGraph.PoseGraph(self.probe, self.contacts)
+		self.loadFile(dirName, num_poses-1)
+		self.poseGraph.sensorHypotheses = self.sensorHypotheses
+		
+		self.poseGraph.makeHypotheses()
+		
+		#self.poseGraph.renderConstraints()
+			
 	def sensorTest(self, dirName, num_poses):
 		
 		for i in range(1, num_poses):

@@ -15,6 +15,16 @@ def mahab_dist(c1, c2, r1, r2, E):
 	dist = s.T * E_inv * s
 	return dist[0,0]
 
+
+
+def mahabAngDist(ang1, ang2, angVar):
+
+	" distance between centroids "
+	d = ang2 - ang1	
+	dist = d * (1/angVar) * d
+	
+	return dist
+
 def dijkstra_proj(initNode, numNodes, edgeHash):
 	
 	identTransform = matrix([[0.], [0.], [0.]],dtype=float)

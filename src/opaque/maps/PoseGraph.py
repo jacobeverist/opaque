@@ -81,6 +81,31 @@ def computeHull(node1, sweep = False):
 	
 	return a_data_GPAC
 
+def computeBoundary(node1, sweep = False):
+	
+	" Read in data of Alpha-Shapes and add their associated covariances "
+	node1.boundaryMap.getBoundaryPoints()
+	#computeAlphaBoundary(sweep = sweep)
+	a_data = node1.getAlphaBoundary()
+	a_data = decimatePoints(a_data)
+	
+	" convert hull points to GPAC coordinates before adding covariances "
+	localGPACPose = node1.getLocalGPACPose()
+	localGPACProfile = Pose(localGPACPose)
+	
+	a_data_GPAC = []
+	for pnt in a_data:
+		a_data_GPAC.append(localGPACProfile.convertGlobalToLocal(pnt))
+	
+	" treat the points with the point-to-line constraint "
+	gen_icp.addPointToLineCovariance(a_data_GPAC, high_var=1.0, low_var=0.001)
+
+	" treat the points with the distance-from-origin increasing error constraint "
+	gen_icp.addDistanceFromOriginCovariance(a_data_GPAC, tan_var=0.1, perp_var=0.01)
+	
+	return a_data_GPAC
+
+
 
 def doTransform(T1, T2, E1, E2):
 
@@ -127,6 +152,7 @@ class PoseGraph:
 		self.merged_constraints = []
 		self.sensorHypotheses = []
 		self.activeHypotheses = []
+		self.cornerHypotheses = []
 
 		self.E_inplace = matrix([[ 0.05, 0.0, 0.0 ],
 							[ 0.0, 0.05, 0.0],
@@ -303,6 +329,7 @@ class PoseGraph:
 
 
 		" find candidates to perform sensor constraints "
+		#sensor_pairs = self.findCornerCandidates(paths)
 		#sensor_pairs = self.findSweepCandidates(paths)
 		sensor_pairs = self.findAlphaHullCandidates(paths, targetNode = self.numNodes-1)
 		
@@ -492,7 +519,55 @@ class PoseGraph:
 		for v in v_list:
 			node = self.nodeHash[v[0]]
 			node.setGPACPose(v[1])		
+
+		paths = []
+		for i in range(self.numNodes):
+			paths.append(bayes.dijkstra_proj(i, self.numNodes, self.edgeHash))
+
+
+
+		cornerPairs = self.findCornerCandidates(paths)
+
+		#p = sensor_pairs[i]
+		#transform = p[3]
+		#n1 = p[1]
+		#n2 = p[2]
+		#offset, covar, cost = self.makeSensorConstraint(transform, n1, n2, a_hulls[n1], a_hulls[n2])
+		#transform = matrix([ [offset[0]], [offset[1]], [offset[2]] ],dtype=float)
 		
+		#self.cornerHypotheses = []
+		#self.cornerHypotheses
+		
+		hypotheses = []
+		for k in range(len(cornerPairs)):
+			
+			p = cornerPairs[k]
+			dist = p[0]
+			n1 = p[1]
+			n2 = p[2]
+			transform = p[3]
+			angDist = p[4]
+			point1 = p[5]
+			point2 = p[6]
+			ang1 = p[7]
+			ang2 = p[8]	
+
+			hull1 = computeHull(self.nodeHash[n1], sweep = False)
+			hull2 = computeHull(self.nodeHash[n2], sweep = False)
+
+			offset, covar, cost = self.makeCornerConstraint(n1, n2, point1, point2, ang1, ang2, hull1, hull2)
+ 
+ 			#offset = self.makeCornerConstraint(point1, point2, ang1, ang2)
+			#transform = pair[3]
+			transform = matrix([ [offset[0]], [offset[1]], [offset[2]] ],dtype=float)
+			covar = deepcopy(self.E_inplace)
+		
+			hypotheses.append([n1, n2, transform, covar])
+
+			self.renderCornerConstraint(n1, n2, transform, point1, point2, k)
+
+		self.cornerHypotheses += hypotheses
+					
 	def computeCovar(self):
 
 		" compute the average position, and the covariance of position "
@@ -840,6 +915,48 @@ class PoseGraph:
 		
 		return transform, covE
 				
+	
+	def makeCornerConstraint(self, n1, n2, point1, point2, ang1, ang2, hull1, hull2):
+		
+		" TUNE: estimated step distance from empirical results "
+		STEP_DIST = 0.145
+
+		" initial guess for x, y, theta parameters "
+		firstGuess = 0.0
+
+		" TUNE ME:  threshold cost difference between iterations to determine if converged "
+		costThresh = 0.1
+	
+		" TUNE ME:   minimum match distance before point is discarded from consideration "
+		minMatchDist = 0.5
+	
+		" plot the best fit at each iteration of the algorithm? "
+		plotIteration = True
+		#plotIteration = False
+		
+		" Extract the data from the files and put them into arrays "		
+		node1 = self.nodeHash[n1]
+		node2 = self.nodeHash[n2]		
+		
+		" FIXME:  deal with relative poses from the motion constraints "
+		estPose1 = node1.getGlobalGPACPose()
+		estPose2 = node2.getGlobalGPACPose()
+		
+		radius, center = gen_icp.computeEnclosingCircle(hull1)
+		circle1 = [radius, center]
+
+		#def cornerICP(estPose1, angle, point1, point2, ang1, ang2, hull1, hull2, pastCircles, costThresh = 0.004, minMatchDist = 2.0, plotIter = False, n1 = 0, n2 = 0):
+		
+		offset, cost = gen_icp.cornerICP(estPose1, firstGuess, point1, point2, ang1, ang2, hull1, hull2, [circle1], costThresh, minMatchDist, plotIteration, n1, n2)
+		print "sensor constraint: %d -> %d" %(n1,n2), "cost =", cost
+		covar = self.E_inplace
+		
+		return offset, covar, cost
+			
+		" 1) need to vary angle until we have wall fitting "
+		" 2) compute alpha hulls and then perform maximum edge fitting, not overlap constraint"
+		" 3) directionality is not important here because we could be walking the opposite direction through a junction "
+
 		
 	def makeSensorConstraint(self, transform, n1, n2, hull1, hull2):		
 
@@ -1440,6 +1557,168 @@ class PoseGraph:
 			print "distance:", i, j, dist
 
 		return pair_unique
+
+	def findCornerCandidates(self, paths):
+
+		SENSOR_RADIUS = 0.0
+		DIST_THRESHOLD = 5.0
+		#DIST_THRESHOLD = 2.0
+		#ANG_THRESHOLD = 1000.0
+		ANG_THRESHOLD = 2.0
+		#CORNER_DIFF = 1000.0
+		CORNER_DIFF = pi/4.
+		
+		" select pairs to attempt a sensor constraint "
+		pair_candidates = []
+		
+		for i in range(self.numNodes):
+			path_set = paths[i]
+			
+			ind = range(i+2,self.numNodes)
+
+			for j in ind:	
+				loc2 = path_set[j][0]
+				
+				" c1 and c2 are centroids of sweep regions "
+				node1 = self.nodeHash[i]
+				node2 = self.nodeHash[j]
+				corners1 = deepcopy(node1.cornerCandidates)
+				corners2 = deepcopy(node2.cornerCandidates)
+
+				for m in range(len(corners1)):
+					point1, cornerAngle1, ang1 = corners1[m]
+						
+					for n in range(len(corners2)):
+						point2, cornerAngle2, ang2 = corners2[n]
+
+						if fabs(cornerAngle2-cornerAngle1) < CORNER_DIFF:
+	
+							sweepOffset1 = point1
+							sweepOffset2 = point2				
+	
+							node2Profile = Pose([loc2[0,0], loc2[1,0], loc2[2,0]])
+							sweep2Centroid = node2Profile.convertLocalToGlobal(sweepOffset2)
+
+							oriPose = node2Profile.convertLocalOffsetToGlobal([0.0,0.0,ang2])
+							ang2 = oriPose[2]
+
+							
+							c1 = matrix([[sweepOffset1[0]],[sweepOffset1[1]]],dtype=float)
+							c2 = matrix([[sweep2Centroid[0]],[sweep2Centroid[1]]],dtype=float)
+							E_param = path_set[j][1]
+							E = matrix([[E_param[0,0], E_param[0,1]],[E_param[1,0], E_param[1,1]]],dtype=float)
+							
+							dist = bayes.mahab_dist(c1, c2, SENSOR_RADIUS, SENSOR_RADIUS, E)
+							angDist = bayes.mahabAngDist(0.0, ang2, E_param[2,2])
+
+							
+			
+							#if dist <= DIST_THRESHOLD and abs(i-j) < 5:
+							if dist <= DIST_THRESHOLD and angDist <= ANG_THRESHOLD and abs(i-j) < 5:
+								print "distance:", i, j, dist								
+								print "angDist:", i, j, angDist
+
+								pair_candidates.append([dist,i,j,loc2, angDist, point1, point2, ang1, ang2])
+				
+			ind = range(0,i-1)
+			ind.reverse()
+			
+			for j in ind:
+				
+				loc2 = path_set[j][0]
+
+				
+				" c1 and c2 are centroids of sweep regions "
+				node1 = self.nodeHash[i]
+				node2 = self.nodeHash[j]
+				corners1 = deepcopy(node1.cornerCandidates)
+				corners2 = deepcopy(node2.cornerCandidates)
+
+				for m in range(len(corners1)):
+					point1, cornerAngle1, ang1 = corners1[m]
+
+					if fabs(cornerAngle2-cornerAngle1) < CORNER_DIFF:
+	
+						for n in range(len(corners2)):
+							point2, cornerAngle2, ang2 = corners2[n]
+	
+							sweepOffset1 = point1						
+							sweepOffset2 = point2				
+	
+							node2Profile = Pose([loc2[0,0], loc2[1,0], loc2[2,0]])
+							sweep2Centroid = node2Profile.convertLocalToGlobal(sweepOffset2)
+							
+							oriPose = node2Profile.convertLocalOffsetToGlobal([0.0,0.0,ang2])
+							ang2 = oriPose[2]
+
+							
+							c1 = matrix([[sweepOffset1[0]],[sweepOffset1[1]]],dtype=float)
+							c2 = matrix([[sweep2Centroid[0]],[sweep2Centroid[1]]],dtype=float)
+							
+							E_param = path_set[j][1]
+							E = matrix([[E_param[0,0], E_param[0,1]],[E_param[1,0], E_param[1,1]]],dtype=float)
+							
+							dist = bayes.mahab_dist(c1, c2, SENSOR_RADIUS, SENSOR_RADIUS, E)
+							angDist = bayes.mahabAngDist(0.0, ang2, E_param[2,2])
+	
+							#if dist <= DIST_THRESHOLD and abs(i-j) < 5:
+							if dist <= DIST_THRESHOLD and angDist <= ANG_THRESHOLD and abs(i-j) < 5:
+								print "distance:", i, j, dist
+								print "angDist:", i, j, angDist						
+	
+								pair_candidates.append([dist,i,j,loc2, angDist, point1, point2, ang1, ang2])
+
+		" remove duplicates "
+		pair_unique = []
+		is_free = [True for i in range(len(pair_candidates))]
+		for i in range(len(pair_candidates)):
+			
+			if is_free[i]:
+				dest1 = pair_candidates[i][0]
+				x1 = pair_candidates[i][1]
+				x2 = pair_candidates[i][2]
+				
+				" find the opposing pair if it exists "
+				for j in range(i+1, len(pair_candidates)):
+					
+					if pair_candidates[j][1] == x2 and pair_candidates[j][2] == x1:
+						
+						dest2 = pair_candidates[j][0]
+						
+						if dest1 < dest2:
+							pair_unique.append(pair_candidates[i])
+						else:
+							pair_unique.append(pair_candidates[j])
+						
+						is_free[i] = False
+						is_free[j] = False
+						
+						break
+
+				if is_free[i]:
+					pair_unique.append(pair_candidates[i])
+					is_free[i] = False
+
+		pair_unique.sort()
+		
+		print "UNIQUE PAIRS"
+		for k in range(len(pair_unique)):
+			p = pair_unique[k]
+			dist = p[0]
+			i = p[1]
+			j = p[2]
+			transform = p[3]
+			angDist = p[4]
+			point1 = p[5]
+			point2 = p[6]
+
+			print "distance:", i, j, dist
+			print "angDist:", i, j, angDist
+			
+			#self.renderCornerConstraint(i, j, transform, point1, point2, k)
+	
+		return pair_unique
+
 
 
 	def findSweepCandidates(self, paths):
@@ -2547,6 +2826,152 @@ class PoseGraph:
 		yP.append(hull1[0][1])
 		pylab.plot(xP,yP, color = "black")
 
+	def renderCornerConstraint(self, id1, id2, transform, point1, point2, count):
+
+		
+		pylab.clf()
+			
+		stdev = 1
+
+		covE = self.E_inplace
+		
+		node1 = self.nodeHash[id1]
+		node2 = self.nodeHash[id2]
+		
+		offset = [transform[0,0], transform[1,0], transform[2,0]]
+
+		cholE = numpy.linalg.cholesky(covE[0:2,0:2])
+		M = matrix([[transform[0,0]],[transform[1,0]]])
+		circle = [matrix([[cos(phi)], [sin(phi)]]) for phi in arange(0.0, 2*pi, 0.1)]
+		ellipse = []
+		for p in circle:
+			X = p
+			Y = M + stdev * cholE * X
+			ellipse.append([Y[0,0], Y[1,0]])
+
+		" create the ground constraints "
+		gndGPAC1Pose = node1.getGndGlobalGPACPose()
+		currProfile = Pose(gndGPAC1Pose)
+		gndGPAC2Pose = node2.getGndGlobalGPACPose()
+		gnd_offset = currProfile.convertGlobalPoseToLocal(gndGPAC2Pose)		
+
+		posture1 = node1.getStableGPACPosture()
+		posture2 = node2.getStableGPACPosture()
+		
+		#getBoundaryPoints
+
+		hull1 = computeHull(node1, sweep = True)
+		hull2 = computeHull(node2, sweep = True)
+		hull2_trans = []
+		hull2_gnd = []
+
+		posture_trans = []
+		pose2Profile = Pose(offset)
+		for p in posture2:
+			posture_trans.append(pose2Profile.convertLocalOffsetToGlobal(p))
+
+		for p in hull2:
+			hull2_trans.append(pose2Profile.convertLocalToGlobal(p))
+			
+			
+		point2_trans = pose2Profile.convertLocalToGlobal(point2)
+
+		posture_gnd = []
+		gndProfile = Pose(gnd_offset)
+		for p in posture2:
+			posture_gnd.append(gndProfile.convertLocalOffsetToGlobal(p))
+
+		for p in hull2:
+			hull2_gnd.append(gndProfile.convertLocalToGlobal(p))
+
+		segWidth = self.probe.robotParam['segWidth']
+		segLength = self.probe.robotParam['segLength']
+				
+		for p in posture_gnd:
+			xP = []
+			yP = []
+			
+			p1 = [p[0] - 0.5*segWidth*sin(p[2]), p[1] + 0.5*segWidth*cos(p[2])]
+			p2 = [p[0] + 0.5*segWidth*sin(p[2]), p[1] - 0.5*segWidth*cos(p[2])]
+			p3 = [p[0] + segLength*cos(p[2]) + 0.5*segWidth*sin(p[2]), p[1] + segLength*sin(p[2]) - 0.5*segWidth*cos(p[2])]
+			p4 = [p[0] + segLength*cos(p[2]) - 0.5*segWidth*sin(p[2]), p[1] + segLength*sin(p[2]) + 0.5*segWidth*cos(p[2])]
+
+			xP = [p4[0],p3[0],p2[0],p1[0],p4[0]]
+			yP = [p4[1],p3[1],p2[1],p1[1],p4[1]]
+			
+			pylab.plot(xP,yP, linewidth=1, color = "black")
+
+		xP = []
+		yP = []
+		for p in hull2_gnd:
+			xP.append(p[0])
+			yP.append(p[1])
+		xP.append(hull2_gnd[0][0])
+		yP.append(hull2_gnd[0][1])
+		pylab.plot(xP,yP, color = "black")
+
+		for p in posture1:
+			xP = []
+			yP = []
+			
+			p1 = [p[0] - 0.5*segWidth*sin(p[2]), p[1] + 0.5*segWidth*cos(p[2])]
+			p2 = [p[0] + 0.5*segWidth*sin(p[2]), p[1] - 0.5*segWidth*cos(p[2])]
+			p3 = [p[0] + segLength*cos(p[2]) + 0.5*segWidth*sin(p[2]), p[1] + segLength*sin(p[2]) - 0.5*segWidth*cos(p[2])]
+			p4 = [p[0] + segLength*cos(p[2]) - 0.5*segWidth*sin(p[2]), p[1] + segLength*sin(p[2]) + 0.5*segWidth*cos(p[2])]
+
+			xP = [p4[0],p3[0],p2[0],p1[0],p4[0]]
+			yP = [p4[1],p3[1],p2[1],p1[1],p4[1]]
+			
+			pylab.plot(xP,yP, linewidth=1, color = "green")
+
+		xP = []
+		yP = []
+		for p in hull1:
+			xP.append(p[0])
+			yP.append(p[1])
+		xP.append(hull1[0][0])
+		yP.append(hull1[0][1])
+		pylab.plot(xP,yP, color = "green")
+
+		for p in posture_trans:
+			xP = []
+			yP = []
+			
+			p1 = [p[0] - 0.5*segWidth*sin(p[2]), p[1] + 0.5*segWidth*cos(p[2])]
+			p2 = [p[0] + 0.5*segWidth*sin(p[2]), p[1] - 0.5*segWidth*cos(p[2])]
+			p3 = [p[0] + segLength*cos(p[2]) + 0.5*segWidth*sin(p[2]), p[1] + segLength*sin(p[2]) - 0.5*segWidth*cos(p[2])]
+			p4 = [p[0] + segLength*cos(p[2]) - 0.5*segWidth*sin(p[2]), p[1] + segLength*sin(p[2]) + 0.5*segWidth*cos(p[2])]
+
+			xP = [p4[0],p3[0],p2[0],p1[0],p4[0]]
+			yP = [p4[1],p3[1],p2[1],p1[1],p4[1]]
+			
+			pylab.plot(xP,yP, linewidth=1, color = "red")
+
+		xP = []
+		yP = []
+		for p in hull2_trans:
+			xP.append(p[0])
+			yP.append(p[1])
+		xP.append(hull2_trans[0][0])
+		yP.append(hull2_trans[0][1])
+		pylab.plot(xP,yP, color = "red")
+
+
+		xP = []
+		yP = []
+		for p in ellipse:
+			xP.append(p[0])
+			yP.append(p[1])
+		pylab.plot(xP,yP, linewidth=3, color='blue')
+	
+		xP = [point1[0], point2_trans[0]]
+		yP = [point1[1], point2_trans[1]]
+		pylab.scatter(xP, yP, color='k')
+		
+		pylab.title("Corner Constraint %d ---> %d" % (id1, id2))
+		pylab.xlim(-4,4)
+		pylab.ylim(-4,4)
+		pylab.savefig("constraint_%04u.png" % count)
 
 	
 	def renderSingleConstraint(self, const, isSweep = False):
@@ -2744,33 +3169,44 @@ class PoseGraph:
 			count += 1
 						
 
-		f = open("sensor_constraints.txt", 'r')
-		sensor_hypotheses = eval(f.read().rstrip())
-		f.close()
+		#for const in self.cornerHypotheses:
 
-		f = open("overlap_constraints.txt", 'r')
-		overlap_hypotheses = eval(f.read().rstrip())
-		f.close()
-
-		for const in overlap_hypotheses:
-			pylab.clf()
-			self.renderSingleConstraint(const)
+		#	pylab.clf()
+		#	self.renderSingleConstraint(const)
 			
-			pylab.title("Overlap Hypotheses %d ---> %d" % (const[0], const[1]))
-			pylab.xlim(-4,4)
-			pylab.ylim(-4,4)
-			pylab.savefig("constraint_%04u.png" % count)
-			count += 1
+		#	pylab.title("Corner Constraint %d ---> %d" % (const[0], const[1]))
+		#	pylab.xlim(-4,4)
+		#	pylab.ylim(-4,4)
+		#	pylab.savefig("constraint_%04u.png" % count)
+		#	count += 1
+
+		#f = open("sensor_constraints.txt", 'r')
+		#sensor_hypotheses = eval(f.read().rstrip())
+		#f.close()
+
+		#f = open("overlap_constraints.txt", 'r')
+		#overlap_hypotheses = eval(f.read().rstrip())
+		#f.close()
+
+		#for const in overlap_hypotheses:
+		#	pylab.clf()
+		#	self.renderSingleConstraint(const)
+			
+		#	pylab.title("Overlap Hypotheses %d ---> %d" % (const[0], const[1]))
+		#	pylab.xlim(-4,4)
+		#	pylab.ylim(-4,4)
+		#	pylab.savefig("constraint_%04u.png" % count)
+		#	count += 1
 					
 
-		for const in sensor_hypotheses:
-			pylab.clf()
-			self.renderSingleConstraint(const, isSweep = True)
-			pylab.title("Sensor Hypotheses %d ---> %d" % (const[0], const[1]))
-			pylab.xlim(-4,4)
-			pylab.ylim(-4,4)
-			pylab.savefig("constraint_%04u.png" % count)
-			count += 1
+		#for const in sensor_hypotheses:
+		#	pylab.clf()
+		#	self.renderSingleConstraint(const, isSweep = True)
+		#	pylab.title("Sensor Hypotheses %d ---> %d" % (const[0], const[1]))
+		#	pylab.xlim(-4,4)
+		#	pylab.ylim(-4,4)
+		#	pylab.savefig("constraint_%04u.png" % count)
+		#	count += 1
 		
 		
 		#self.merged_constraints 

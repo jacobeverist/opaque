@@ -3,6 +3,8 @@ from math import pi, sqrt, acos, cos, sin, fabs
 from numpy import arange, array
 from copy import deepcopy
 
+import Image
+
 from scipy.cluster.vq import vq, kmeans, kmeans2, whiten
 from scipy.cluster.hierarchy import fclusterdata
 import pylab
@@ -93,10 +95,15 @@ def filterIntersections(lines, maxX, maxY):
 
 	return intersections
 
-def extractCornerCandidates(img):
+def extractCornerCandidates(pilImg):
 
 	global saveCount
 	global histCount
+
+	" convert from PIL to OpenCV "
+	#pilImg = Image.open('foo.png')       # PIL image
+	img = cv.CreateImageHeader(pilImg.size, cv.IPL_DEPTH_8U, 1)
+	cv.SetData(img, pilImg.tostring())
 
 
 	CORNER_THRESH = 400
@@ -702,348 +709,350 @@ def findCornerCandidates(lines, edgeImage, cornersImage):
 
 	return results
 
-count = 0
-total = 120
-
-dirName = "../testData/sensorLocalize2"
-fileName = dirName + "/localSweepMap%03u_0000.png"			
-
-#positiveExamples = [19]
-positiveExamples = [2,4,17,19,27,35,37,39,44,45,51,53,56,59]
-#positiveExamples = [37,45,51,53]
-
-#for i in positiveExamples:
-for i in range(total):
-	fileName % i
-	img0 = cv.LoadImage(fileName % i, cv.CV_LOAD_IMAGE_UNCHANGED)
-
-	extractCornerCandidates(img0)
-
-
-	"""
-
-	size = cv.GetSize(img0)
-	size = (6*size[0], size[1])
-	#eig_image = cv.CreateImage(size, cv.IPL_DEPTH_32F, 1)
-	harris_dst = cv.CreateImage(cv.GetSize(img0), cv.IPL_DEPTH_32F, 1)
-	corners = cv.CreateImage(cv.GetSize(img0), cv.IPL_DEPTH_32F, 1)
-	edges = cv.CreateImage(cv.GetSize(img0), cv.IPL_DEPTH_8U, 1)
-	#temp_image = cv.CreateImage(cv.GetSize(img0), cv.IPL_DEPTH_8U, 1)
-
-	#cv.CornerEigenValsAndVecs(img0, eig_image, 30, aperture_size=9)
-	#cv.CornerHarris(img0, harris_dst, 10, aperture_size=9, k=0.04)
-	cv.CornerHarris(img0, harris_dst, 30, aperture_size=9, k=0.1)
-	cv.Canny(img0, edges, 50, 200, aperture_size=3)
-
-	edgeCopy = cv.CloneImage(edges)
-
-	#lines = cv.HoughLines2(edges, cv.CreateMemStorage(), cv.CV_HOUGH_PROBABILISTIC, 5, pi/180., 50, 50, 10)
-	#lines = cv.HoughLines2(edges, cv.CreateMemStorage(), cv.CV_HOUGH_PROBABILISTIC, 1, pi / 180, 10, 10, 1)
-
-	DIST_RES = 1
-	ANG_RES = 1* pi /180.
-	MAXLINEGAP = 4
-	#MAXLINEGAP = 10
-	#MINLINELENGTH = 10
-	MINLINELENGTH = 5
-	#THRESH = 10
-	THRESH = 10
-	USE_STANDARD = True
+if __name__ == '__main__':
 	
-	color_dst = cv.CreateImage(cv.GetSize(img0), 8, 3)
-	#cv.SaveImage("%04u_4.png" % i, edges)
-	cv.CvtColor(edges, color_dst, cv.CV_GRAY2BGR)
-	newLines = []
-	polarLines = []
-	filteredLines = []
-
-	if USE_STANDARD:
-		storage = cv.CreateMemStorage()
-		polarLines = cv.HoughLines2(edges, storage, cv.CV_HOUGH_STANDARD, DIST_RES, ANG_RES, THRESH, 0, 0)
-
-
-		#print len(polarLines), "lines for image", i
-		for (rho, theta) in polarLines[:100]:
-			#print "theta:", theta
-			a = cos(theta)
-			b = sin(theta)
-			x0 = a * rho 
-			y0 = b * rho
-			pt1 = (cv.Round(x0 + 400*(-b)), cv.Round(y0 + 400*(a)))
-			pt2 = (cv.Round(x0 - 400*(-b)), cv.Round(y0 - 400*(a)))
-			newLines.append((pt1,pt2))
-			#cv.Line(color_dst, pt1, pt2, cv.RGB(255, 0, 0), 1, 8)
-	else:
-		newLines = cv.HoughLines2(edges, cv.CreateMemStorage(), cv.CV_HOUGH_PROBABILISTIC, DIST_RES, ANG_RES, THRESH, MINLINELENGTH, MAXLINEGAP)
-		#cv.Line(color_dst, line[0], line[1], cv.CV_RGB(255, 0, 0), 2, 8)
-
-	points = []
-	size = cv.GetSize(edgeCopy)
-	maxX = size[0]
-	maxY = size[1]
-
-	#print "size:", maxX, maxY
-	for j in range(len(newLines)):
-		line1 = newLines[j]
-		for k in range(j+1, len(newLines)):
-			line2 = newLines[k]
-			p1_1 = line1[0]
-			p1_2 = line1[1]
-			p2_1 = line2[0]
-			p2_2 = line2[1]
-			result, pnt = Intersect(line1, line2)
-
-
-			if result and pnt[0] >= 0 and pnt[0] < maxX and pnt[1] >= 0 and pnt[1] < maxY:
-
-
-				try:
-					indX = cv.Floor(pnt[0])
-					indY = cv.Floor(pnt[1])
-
-					isEdge = False
-					#for m in range(-1,2):
-					#	for n in range(-1,2):
-					#		if edgeCopy[(indY+n,indX+m)] > 0:
-					#			isEdge = True
-					#			#print "edge at:", indX+m, indY+n, edgeCopy[indY+n,indX+m]
-					if edgeCopy[(indY,indX)] > 0:
-						isEdge = True
-
-					if isEdge:
+	count = 0
+	total = 120
+	
+	dirName = "../testData/sensorLocalize2"
+	fileName = dirName + "/localSweepMap%03u_0000.png"			
+	
+	#positiveExamples = [19]
+	positiveExamples = [2,4,17,19,27,35,37,39,44,45,51,53,56,59]
+	#positiveExamples = [37,45,51,53]
+	
+	#for i in positiveExamples:
+	for i in range(total):
+		fileName % i
+		img0 = cv.LoadImage(fileName % i, cv.CV_LOAD_IMAGE_UNCHANGED)
+	
+		extractCornerCandidates(img0)
+	
+	
+		"""
+	
+		size = cv.GetSize(img0)
+		size = (6*size[0], size[1])
+		#eig_image = cv.CreateImage(size, cv.IPL_DEPTH_32F, 1)
+		harris_dst = cv.CreateImage(cv.GetSize(img0), cv.IPL_DEPTH_32F, 1)
+		corners = cv.CreateImage(cv.GetSize(img0), cv.IPL_DEPTH_32F, 1)
+		edges = cv.CreateImage(cv.GetSize(img0), cv.IPL_DEPTH_8U, 1)
+		#temp_image = cv.CreateImage(cv.GetSize(img0), cv.IPL_DEPTH_8U, 1)
+	
+		#cv.CornerEigenValsAndVecs(img0, eig_image, 30, aperture_size=9)
+		#cv.CornerHarris(img0, harris_dst, 10, aperture_size=9, k=0.04)
+		cv.CornerHarris(img0, harris_dst, 30, aperture_size=9, k=0.1)
+		cv.Canny(img0, edges, 50, 200, aperture_size=3)
+	
+		edgeCopy = cv.CloneImage(edges)
+	
+		#lines = cv.HoughLines2(edges, cv.CreateMemStorage(), cv.CV_HOUGH_PROBABILISTIC, 5, pi/180., 50, 50, 10)
+		#lines = cv.HoughLines2(edges, cv.CreateMemStorage(), cv.CV_HOUGH_PROBABILISTIC, 1, pi / 180, 10, 10, 1)
+	
+		DIST_RES = 1
+		ANG_RES = 1* pi /180.
+		MAXLINEGAP = 4
+		#MAXLINEGAP = 10
+		#MINLINELENGTH = 10
+		MINLINELENGTH = 5
+		#THRESH = 10
+		THRESH = 10
+		USE_STANDARD = True
+		
+		color_dst = cv.CreateImage(cv.GetSize(img0), 8, 3)
+		#cv.SaveImage("%04u_4.png" % i, edges)
+		cv.CvtColor(edges, color_dst, cv.CV_GRAY2BGR)
+		newLines = []
+		polarLines = []
+		filteredLines = []
+	
+		if USE_STANDARD:
+			storage = cv.CreateMemStorage()
+			polarLines = cv.HoughLines2(edges, storage, cv.CV_HOUGH_STANDARD, DIST_RES, ANG_RES, THRESH, 0, 0)
+	
+	
+			#print len(polarLines), "lines for image", i
+			for (rho, theta) in polarLines[:100]:
+				#print "theta:", theta
+				a = cos(theta)
+				b = sin(theta)
+				x0 = a * rho 
+				y0 = b * rho
+				pt1 = (cv.Round(x0 + 400*(-b)), cv.Round(y0 + 400*(a)))
+				pt2 = (cv.Round(x0 - 400*(-b)), cv.Round(y0 - 400*(a)))
+				newLines.append((pt1,pt2))
+				#cv.Line(color_dst, pt1, pt2, cv.RGB(255, 0, 0), 1, 8)
+		else:
+			newLines = cv.HoughLines2(edges, cv.CreateMemStorage(), cv.CV_HOUGH_PROBABILISTIC, DIST_RES, ANG_RES, THRESH, MINLINELENGTH, MAXLINEGAP)
+			#cv.Line(color_dst, line[0], line[1], cv.CV_RGB(255, 0, 0), 2, 8)
+	
+		points = []
+		size = cv.GetSize(edgeCopy)
+		maxX = size[0]
+		maxY = size[1]
+	
+		#print "size:", maxX, maxY
+		for j in range(len(newLines)):
+			line1 = newLines[j]
+			for k in range(j+1, len(newLines)):
+				line2 = newLines[k]
+				p1_1 = line1[0]
+				p1_2 = line1[1]
+				p2_1 = line2[0]
+				p2_2 = line2[1]
+				result, pnt = Intersect(line1, line2)
+	
+	
+				if result and pnt[0] >= 0 and pnt[0] < maxX and pnt[1] >= 0 and pnt[1] < maxY:
+	
+	
+					try:
+						indX = cv.Floor(pnt[0])
+						indY = cv.Floor(pnt[1])
+	
+						isEdge = False
+						#for m in range(-1,2):
+						#	for n in range(-1,2):
+						#		if edgeCopy[(indY+n,indX+m)] > 0:
+						#			isEdge = True
+						#			#print "edge at:", indX+m, indY+n, edgeCopy[indY+n,indX+m]
+						if edgeCopy[(indY,indX)] > 0:
+							isEdge = True
+	
+						if isEdge:
+							vec1 = [p1_1[0]-p1_2[0], p1_1[1]-p1_2[1]]
+							vec2 = [p2_1[0]-p2_2[0], p2_1[1]-p2_2[1]]
+							dotProduct = vec1[0]*vec2[0] + vec1[1]*vec2[1]
+							mag1 = sqrt(vec1[0]*vec1[0] + vec1[1]*vec1[1])
+							mag2 = sqrt(vec2[0]*vec2[0] + vec2[1]*vec2[1])
+							try:
+								cornerAngle = acos(dotProduct/(mag1*mag2))
+								#if cornerAngle > 0.25 and cornerAngle < 2.5:
+								if cornerAngle > pi/4.0 and cornerAngle < 3.*pi/4.:
+									points.append((indX,indY))
+									filteredLines.append(line1)
+									filteredLines.append(line2)
+									#print line1, line2, points[-1], edgeCopy[(indY,indX)]
+									#cv.Circle(color_dst, (indX,indY), 5, cv.CV_RGB(0,0,255), thickness=1, lineType=8, shift=0) 
+							except:
+								pass
+	
+	
+						#if edges[cv.Floor(pnt[0]), cv.Floor(pnt[1])] > 0:
+						#	print edges[cv.Floor(pnt[0]), cv.Floor(pnt[1])] 
+					except:
+						#print "FAILED:", pnt
+						pass
+	
+	
+	
+				#if result and pnt[0] < size[0] and pnt[0] >= 0 and pnt[1] < size[1] and pnt[1] >= 0:
+				#	print pnt
+				#	points.append(pnt)
+	
+		"""
+	
+		"""
+		EDGE_DIST = 10.0
+		numLines = len(lines)
+		toDraw = []
+		points = []
+		for j in range(len(lines)):
+			line1 = lines[j]
+			for k in range(j+1, len(lines)):
+				line2 = lines[k]
+				p1_1 = line1[0]
+				p1_2 = line1[1]
+				p2_1 = line2[0]
+				p2_2 = line2[1]
+	
+				dist1 = sqrt((p1_1[0]-p2_1[0])**2 + (p1_1[1]-p2_1[1])**2)
+				dist2 = sqrt((p1_2[0]-p2_1[0])**2 + (p1_2[1]-p2_1[1])**2)
+				dist3 = sqrt((p1_2[0]-p2_2[0])**2 + (p1_2[1]-p2_2[1])**2)
+	
+	
+				if dist1 <= EDGE_DIST or dist2 <= EDGE_DIST or dist3 <= EDGE_DIST:
+					if dist1 <= dist2 and dist1 <= dist3:
+						vec1 = [p1_2[0]-p1_1[0], p1_2[1]-p1_1[1]]
+						vec2 = [p2_2[0]-p2_1[0], p2_2[1]-p2_1[1]]
+						pnt = p1_1
+	
+					elif dist2 <= dist1 and dist2 <= dist3:
+						vec1 = [p1_1[0]-p1_2[0], p1_1[1]-p1_2[1]]
+						vec2 = [p2_2[0]-p2_1[0], p2_2[1]-p2_1[1]]
+						pnt = p1_2
+	
+					elif dist3 <= dist1 and dist3 <= dist2:
 						vec1 = [p1_1[0]-p1_2[0], p1_1[1]-p1_2[1]]
 						vec2 = [p2_1[0]-p2_2[0], p2_1[1]-p2_2[1]]
-						dotProduct = vec1[0]*vec2[0] + vec1[1]*vec2[1]
-						mag1 = sqrt(vec1[0]*vec1[0] + vec1[1]*vec1[1])
-						mag2 = sqrt(vec2[0]*vec2[0] + vec2[1]*vec2[1])
-						try:
-							cornerAngle = acos(dotProduct/(mag1*mag2))
-							#if cornerAngle > 0.25 and cornerAngle < 2.5:
-							if cornerAngle > pi/4.0 and cornerAngle < 3.*pi/4.:
-								points.append((indX,indY))
-								filteredLines.append(line1)
-								filteredLines.append(line2)
-								#print line1, line2, points[-1], edgeCopy[(indY,indX)]
-								#cv.Circle(color_dst, (indX,indY), 5, cv.CV_RGB(0,0,255), thickness=1, lineType=8, shift=0) 
-						except:
-							pass
-
-
-					#if edges[cv.Floor(pnt[0]), cv.Floor(pnt[1])] > 0:
-					#	print edges[cv.Floor(pnt[0]), cv.Floor(pnt[1])] 
-				except:
-					#print "FAILED:", pnt
-					pass
-
-
-
-			#if result and pnt[0] < size[0] and pnt[0] >= 0 and pnt[1] < size[1] and pnt[1] >= 0:
-			#	print pnt
-			#	points.append(pnt)
-
-	"""
-
-	"""
-	EDGE_DIST = 10.0
-	numLines = len(lines)
-	toDraw = []
-	points = []
-	for j in range(len(lines)):
-		line1 = lines[j]
-		for k in range(j+1, len(lines)):
-			line2 = lines[k]
-			p1_1 = line1[0]
-			p1_2 = line1[1]
-			p2_1 = line2[0]
-			p2_2 = line2[1]
-
-			dist1 = sqrt((p1_1[0]-p2_1[0])**2 + (p1_1[1]-p2_1[1])**2)
-			dist2 = sqrt((p1_2[0]-p2_1[0])**2 + (p1_2[1]-p2_1[1])**2)
-			dist3 = sqrt((p1_2[0]-p2_2[0])**2 + (p1_2[1]-p2_2[1])**2)
-
-
-			if dist1 <= EDGE_DIST or dist2 <= EDGE_DIST or dist3 <= EDGE_DIST:
-				if dist1 <= dist2 and dist1 <= dist3:
-					vec1 = [p1_2[0]-p1_1[0], p1_2[1]-p1_1[1]]
-					vec2 = [p2_2[0]-p2_1[0], p2_2[1]-p2_1[1]]
-					pnt = p1_1
-
-				elif dist2 <= dist1 and dist2 <= dist3:
-					vec1 = [p1_1[0]-p1_2[0], p1_1[1]-p1_2[1]]
-					vec2 = [p2_2[0]-p2_1[0], p2_2[1]-p2_1[1]]
-					pnt = p1_2
-
-				elif dist3 <= dist1 and dist3 <= dist2:
-					vec1 = [p1_1[0]-p1_2[0], p1_1[1]-p1_2[1]]
-					vec2 = [p2_1[0]-p2_2[0], p2_1[1]-p2_2[1]]
-					pnt = p1_2
-
-				dotProduct = vec1[0]*vec2[0] + vec1[1]*vec2[1]
-				mag1 = sqrt(vec1[0]*vec1[0] + vec1[1]*vec1[1])
-				mag2 = sqrt(vec2[0]*vec2[0] + vec2[1]*vec2[1])
-				#print dotProduct, mag1, mag2, mag1*mag2, dotProduct/(mag1*mag2)
-				#cornerAngle 
-				try:
-					cornerAngle = acos(dotProduct/(mag1*mag2))
-
-					len1 = sqrt((p1_1[0]-p1_2[0])**2 + (p1_1[1]-p1_2[1])**2)
-					len2 = sqrt((p2_1[0]-p2_2[0])**2 + (p2_1[1]-p2_2[1])**2)
-					#if len1 >= 20.0 and len2 >= 20.0:
-					#if cornerAngle > 0.25 and cornerAngle < 2.5:
-					if True:	
-						toDraw.append(line1)
-						toDraw.append(line2)
-						print i, len1, len2, dist1, dist2, dist3, cornerAngle
-						points.append(pnt)
-
-				except:
-					pass
-
-
-	#for line in lines:
-	"""
-	#for line in toDraw:
-	#for line in newLines:
-		#print "line:", dist, line[0], line[1]
-
-	#for pnt in points:
-		#print pnt
-		#cv.Circle(color_dst, pnt, 5, cv.CV_RGB(0,0,255), thickness=1, lineType=8, shift=0) 
-
-
-	"""
-
-	cv.PreCornerDetect(img0, corners, apertureSize=9)
-	#cv.SaveImage("%04u_5_2.png" % i, corners)
-
-	count = 0
-	maxVal = 400
-	for m in range(maxX):
-		for n in range(maxY):
-			if corners[n,m] > maxVal:
-				cv.Circle(color_dst, (m,n), 5, cv.CV_RGB(0,0,255), thickness=1, lineType=8, shift=0) 
-				count += 1
-	print count, "points over", maxVal
-
-	filteredPoints = findCornerCandidates(polarLines, edgeCopy, corners)
-	#filteredPoints = filterIntersections(polarLines, maxX, maxY)
-	#print len(polarLines), "lines produced", len(filteredPoints), "corner points"
-
-	for pnt, line1, line2 in filteredPoints:
-		indX = cv.Floor(pnt[0])
-		indY = cv.Floor(pnt[1])
-		#cv.Circle(color_dst, (indX,indY), 5, cv.CV_RGB(0,0,255), thickness=1, lineType=8, shift=0) 
-
-		rho1 = line1[0]
-		rho2 = line2[0]
-		theta1 = line1[1]
-		theta2 = line2[1]
-		if theta1 > theta2:
-			cornerAngle = theta1 - theta2
-		else:
-			cornerAngle = theta2 - theta1
-
-		a = cos(theta1)
-		b = sin(theta1)
-		x0 = a * rho1 
-		y0 = b * rho1
-		pt1 = (cv.Round(x0 + 400*(-b)), cv.Round(y0 + 400*(a)))
-		pt2 = (cv.Round(x0 - 400*(-b)), cv.Round(y0 - 400*(a)))
-		seg1 = (pt1,pt2)
-
-		a = cos(theta2)
-		b = sin(theta2)
-		x0 = a * rho2 
-		y0 = b * rho2
-		pt1 = (cv.Round(x0 + 400*(-b)), cv.Round(y0 + 400*(a)))
-		pt2 = (cv.Round(x0 - 400*(-b)), cv.Round(y0 - 400*(a)))
-		seg2 = (pt1,pt2)
-
-		#cv.Line(color_dst, seg1[0], seg1[1], cv.CV_RGB(255, 0, 0), 1, 8)
-		#cv.Line(color_dst, seg2[0], seg2[1], cv.CV_RGB(255, 0, 0), 1, 8)
-		#print "cornerAngle =", cornerAngle
-
-	cv.SaveImage("%04u_5.png" % i, color_dst) 
-
-	#for line in filteredLines:
-	#	cv.Line(color_dst, line[0], line[1], cv.CV_RGB(255, 0, 0), 1, 8)
-	#cv.SaveImage("%04u_5_1.png" % i, color_dst) 
-
-	#cv.Normalize(corners, corners, 255.0, 0.0)
-	#cv.SaveImage("%04u_5_2.png" % i, corners)
-
-	# assume that the image is floating-point 
-	#corners = cv.CloneMat(image)
-	#cv.PreCornerDetect(image, corners, 3)
-
-	#dilated_corners = cv.CloneMat(image)
-	dilated_corners = cv.CreateImage(cv.GetSize(img0), cv.IPL_DEPTH_32F, 1)
-	cv.Dilate(corners, dilated_corners, None, 1)
-	#cv.SaveImage("%04u_5_3.png" % i, dilated_corners)
-
-	#for m in range(maxX):
-	#	for n in range(maxY):
-	#		val1, val2 = corners[n,m], dilated_corners[n,m]
-	#		if val1 > 0 or val2 > 0:
-	#			print n,m,val1, val2
-
-	corner_mask = cv.CreateImage(cv.GetSize(img0), cv.IPL_DEPTH_8U, 1)
-	#cv.Sub(corners, dilated_corners, corners)
-	#cv.CmpS(corners, 0, corner_mask, cv.CV_CMP_GE)
-	#cv.SaveImage("%04u_5_4.png" % i, corner_mask)
-
-	#corner_mask = cv.CreateMat(size[0], size[1], cv.CV_8UC1)
-
-	maxVals = []
-	maxLocs = []
-	for j in range(1):
-		#temp_img = cv.CloneImage(dilated_corners)
-		minVal, maxVal, minLoc, maxLoc = cv.MinMaxLoc(dilated_corners)
-		#minVal, maxVal, minLoc, maxLoc = cv.MinMaxLoc(temp_img)
-		maxVals.append(maxVal)
-		maxLocs.append(maxLoc)
- 
-		" inhibit location "
-		for k in range(-4,4):
-			for l in range(-4,4):
-				#cv.Set2D(dilated_corners, maxLoc[0] + k, maxLoc[1] + l, 0) 
-				#print "setting", (maxLoc[0] + k, maxLoc[1]+l)
-				
-				#print dilated_corners[maxLoc[0] + k, maxLoc[1] + l] 
-				dilated_corners[maxLoc[0] + k, maxLoc[1] + l] = 0
-				#print dilated_corners[maxLoc[0] + k, maxLoc[1] + l] 
-
-
-	#cv.Circle(color_dst, maxLoc, 5, cv.CV_RGB(0,0,255), thickness=3, lineType=8, shift=0) 
-
-	#print maxVals
-	#print maxLocs
-	#cv.Sub(corners, dilated_corners, corners)
-	#cv.CmpS(corners, 0, corner_mask, cv.CV_CMP_GE)
-	#corners
-	#corner_mask
-
-
-	# Find up to 300 corners using Harris
-	#for (x,y) in cv.GoodFeaturesToTrack(img0, eig_image, temp_image, 10, 1.0, 1.0, useHarris = True):
-	#print cv.GoodFeaturesToTrack(img0, eig_image, temp_image, 10, 1.0, 0.01)
-	#for (x,y) in cv.GoodFeaturesToTrack(img0, eig_image, temp_image, 10, 1.0, 1.0):
-	#	print i, ":good feature at", x,y
+						pnt = p1_2
 	
-
-	#cv.SaveImage("%04u_1.png" % i, img0)
-	#cv.SaveImage("%04u_2.png" % i, corners)
-	#cv.SaveImage("%04u_2.png" % i, dilated_corners)
-	#cv.SaveImage("%04u_3.png" % i, harris_dst)
-	#cv.SaveImage("%04u_4.png" % i, edges)
-	#cv.SaveImage("%04u_5.png" % i, color_dst) 
-	"""
-
-
-#print "channels:", img0.channels
-#print "depth:", img0.depth
-#print "height:", img0.height
-#print "nChannels:", img0.nChannels
-#print "origin:", img0.origin
-#print "width:", img0.width
+					dotProduct = vec1[0]*vec2[0] + vec1[1]*vec2[1]
+					mag1 = sqrt(vec1[0]*vec1[0] + vec1[1]*vec1[1])
+					mag2 = sqrt(vec2[0]*vec2[0] + vec2[1]*vec2[1])
+					#print dotProduct, mag1, mag2, mag1*mag2, dotProduct/(mag1*mag2)
+					#cornerAngle 
+					try:
+						cornerAngle = acos(dotProduct/(mag1*mag2))
+	
+						len1 = sqrt((p1_1[0]-p1_2[0])**2 + (p1_1[1]-p1_2[1])**2)
+						len2 = sqrt((p2_1[0]-p2_2[0])**2 + (p2_1[1]-p2_2[1])**2)
+						#if len1 >= 20.0 and len2 >= 20.0:
+						#if cornerAngle > 0.25 and cornerAngle < 2.5:
+						if True:	
+							toDraw.append(line1)
+							toDraw.append(line2)
+							print i, len1, len2, dist1, dist2, dist3, cornerAngle
+							points.append(pnt)
+	
+					except:
+						pass
+	
+	
+		#for line in lines:
+		"""
+		#for line in toDraw:
+		#for line in newLines:
+			#print "line:", dist, line[0], line[1]
+	
+		#for pnt in points:
+			#print pnt
+			#cv.Circle(color_dst, pnt, 5, cv.CV_RGB(0,0,255), thickness=1, lineType=8, shift=0) 
+	
+	
+		"""
+	
+		cv.PreCornerDetect(img0, corners, apertureSize=9)
+		#cv.SaveImage("%04u_5_2.png" % i, corners)
+	
+		count = 0
+		maxVal = 400
+		for m in range(maxX):
+			for n in range(maxY):
+				if corners[n,m] > maxVal:
+					cv.Circle(color_dst, (m,n), 5, cv.CV_RGB(0,0,255), thickness=1, lineType=8, shift=0) 
+					count += 1
+		print count, "points over", maxVal
+	
+		filteredPoints = findCornerCandidates(polarLines, edgeCopy, corners)
+		#filteredPoints = filterIntersections(polarLines, maxX, maxY)
+		#print len(polarLines), "lines produced", len(filteredPoints), "corner points"
+	
+		for pnt, line1, line2 in filteredPoints:
+			indX = cv.Floor(pnt[0])
+			indY = cv.Floor(pnt[1])
+			#cv.Circle(color_dst, (indX,indY), 5, cv.CV_RGB(0,0,255), thickness=1, lineType=8, shift=0) 
+	
+			rho1 = line1[0]
+			rho2 = line2[0]
+			theta1 = line1[1]
+			theta2 = line2[1]
+			if theta1 > theta2:
+				cornerAngle = theta1 - theta2
+			else:
+				cornerAngle = theta2 - theta1
+	
+			a = cos(theta1)
+			b = sin(theta1)
+			x0 = a * rho1 
+			y0 = b * rho1
+			pt1 = (cv.Round(x0 + 400*(-b)), cv.Round(y0 + 400*(a)))
+			pt2 = (cv.Round(x0 - 400*(-b)), cv.Round(y0 - 400*(a)))
+			seg1 = (pt1,pt2)
+	
+			a = cos(theta2)
+			b = sin(theta2)
+			x0 = a * rho2 
+			y0 = b * rho2
+			pt1 = (cv.Round(x0 + 400*(-b)), cv.Round(y0 + 400*(a)))
+			pt2 = (cv.Round(x0 - 400*(-b)), cv.Round(y0 - 400*(a)))
+			seg2 = (pt1,pt2)
+	
+			#cv.Line(color_dst, seg1[0], seg1[1], cv.CV_RGB(255, 0, 0), 1, 8)
+			#cv.Line(color_dst, seg2[0], seg2[1], cv.CV_RGB(255, 0, 0), 1, 8)
+			#print "cornerAngle =", cornerAngle
+	
+		cv.SaveImage("%04u_5.png" % i, color_dst) 
+	
+		#for line in filteredLines:
+		#	cv.Line(color_dst, line[0], line[1], cv.CV_RGB(255, 0, 0), 1, 8)
+		#cv.SaveImage("%04u_5_1.png" % i, color_dst) 
+	
+		#cv.Normalize(corners, corners, 255.0, 0.0)
+		#cv.SaveImage("%04u_5_2.png" % i, corners)
+	
+		# assume that the image is floating-point 
+		#corners = cv.CloneMat(image)
+		#cv.PreCornerDetect(image, corners, 3)
+	
+		#dilated_corners = cv.CloneMat(image)
+		dilated_corners = cv.CreateImage(cv.GetSize(img0), cv.IPL_DEPTH_32F, 1)
+		cv.Dilate(corners, dilated_corners, None, 1)
+		#cv.SaveImage("%04u_5_3.png" % i, dilated_corners)
+	
+		#for m in range(maxX):
+		#	for n in range(maxY):
+		#		val1, val2 = corners[n,m], dilated_corners[n,m]
+		#		if val1 > 0 or val2 > 0:
+		#			print n,m,val1, val2
+	
+		corner_mask = cv.CreateImage(cv.GetSize(img0), cv.IPL_DEPTH_8U, 1)
+		#cv.Sub(corners, dilated_corners, corners)
+		#cv.CmpS(corners, 0, corner_mask, cv.CV_CMP_GE)
+		#cv.SaveImage("%04u_5_4.png" % i, corner_mask)
+	
+		#corner_mask = cv.CreateMat(size[0], size[1], cv.CV_8UC1)
+	
+		maxVals = []
+		maxLocs = []
+		for j in range(1):
+			#temp_img = cv.CloneImage(dilated_corners)
+			minVal, maxVal, minLoc, maxLoc = cv.MinMaxLoc(dilated_corners)
+			#minVal, maxVal, minLoc, maxLoc = cv.MinMaxLoc(temp_img)
+			maxVals.append(maxVal)
+			maxLocs.append(maxLoc)
+	 
+			" inhibit location "
+			for k in range(-4,4):
+				for l in range(-4,4):
+					#cv.Set2D(dilated_corners, maxLoc[0] + k, maxLoc[1] + l, 0) 
+					#print "setting", (maxLoc[0] + k, maxLoc[1]+l)
+					
+					#print dilated_corners[maxLoc[0] + k, maxLoc[1] + l] 
+					dilated_corners[maxLoc[0] + k, maxLoc[1] + l] = 0
+					#print dilated_corners[maxLoc[0] + k, maxLoc[1] + l] 
+	
+	
+		#cv.Circle(color_dst, maxLoc, 5, cv.CV_RGB(0,0,255), thickness=3, lineType=8, shift=0) 
+	
+		#print maxVals
+		#print maxLocs
+		#cv.Sub(corners, dilated_corners, corners)
+		#cv.CmpS(corners, 0, corner_mask, cv.CV_CMP_GE)
+		#corners
+		#corner_mask
+	
+	
+		# Find up to 300 corners using Harris
+		#for (x,y) in cv.GoodFeaturesToTrack(img0, eig_image, temp_image, 10, 1.0, 1.0, useHarris = True):
+		#print cv.GoodFeaturesToTrack(img0, eig_image, temp_image, 10, 1.0, 0.01)
+		#for (x,y) in cv.GoodFeaturesToTrack(img0, eig_image, temp_image, 10, 1.0, 1.0):
+		#	print i, ":good feature at", x,y
+		
+	
+		#cv.SaveImage("%04u_1.png" % i, img0)
+		#cv.SaveImage("%04u_2.png" % i, corners)
+		#cv.SaveImage("%04u_2.png" % i, dilated_corners)
+		#cv.SaveImage("%04u_3.png" % i, harris_dst)
+		#cv.SaveImage("%04u_4.png" % i, edges)
+		#cv.SaveImage("%04u_5.png" % i, color_dst) 
+		"""
+	
+	
+	#print "channels:", img0.channels
+	#print "depth:", img0.depth
+	#print "height:", img0.height
+	#print "nChannels:", img0.nChannels
+	#print "origin:", img0.origin
+	#print "width:", img0.width
 

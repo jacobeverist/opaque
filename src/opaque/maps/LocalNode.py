@@ -4,6 +4,7 @@ from LocalBoundaryMap import *
 from LocalObstacleMap import *
 from SplineFit import *
 from Pose import Pose
+from cornerDetection import extractCornerCandidates
 
 import estimateMotion
 from GPACurve import GPACurve
@@ -84,6 +85,9 @@ class LocalNode:
 		self.a_vert = []
 		self.hullComputed = False
 		self.computedSweep = False
+		
+		
+		self.cornerCandidates = []
 		
 		#pylab.clf()
 
@@ -920,6 +924,30 @@ class LocalNode:
 
 		self.boundaryMap.update()
 		self.obstacleMap.update()
+		
+		self.cornerCandidates = []
+		cornerCandidates = extractCornerCandidates(self.sweepMap.getMap())
+
+
+		" convert to real coordinates from pixel "
+		for cand in cornerCandidates:
+			pnt = self.sweepMap.gridToReal(cand[0])
+		
+			inwardVec = cand[2]
+			ang = acos(inwardVec[0])
+			if inwardVec[1] < 0.0:
+				ang = -ang
+		
+			localGPACPose = self.getLocalGPACPose()
+			localGPACProfile = Pose(localGPACPose)
+	
+			pnt2 = localGPACProfile.convertGlobalToLocal([pnt[0],pnt[1]])	
+			pose2 = localGPACProfile.convertGlobalPoseToLocal([0.0,0.0,ang])
+
+			#finalCandidates.append((point, cornerAngle, inwardVec))
+			
+			#self.cornerCandidates.append((pnt2, cand[1], cand[2]))
+			self.cornerCandidates.append((pnt2, cand[1], pose2[2]))
 
 		self.dirty = False
 		

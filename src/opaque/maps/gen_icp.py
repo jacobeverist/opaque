@@ -503,6 +503,44 @@ def cost_func2(offset, match_pairs, a_data_raw = [], polyB = [], circles = []):
 	#print "returning", errors
 	return errors
 
+def cornerCostFunc(currAng, match_pairs, point1, point2, ang1, ang2, a_data_raw = [], polyB = [], circles = []):
+	global numIterations
+
+
+	def computeOffset(point1, point2, ang1, ang2):
+	
+		" corner points and orientations "
+		corner1Pose = [point1[0], point1[1], ang1]
+		corner2Pose = [point2[0], point2[1], ang2]
+		
+		" convert the desired intersection point on curve 1 into global coordinates "
+		poseProfile1 = Pose([0.0,0.0,0.0])
+			
+		" now convert this point into a pose, and perform the inverse transform using corner2Pose "
+		desGlobalPose2 = Pose(corner1Pose)
+		
+		" perform inverse offset from the destination pose "
+		negCurve2Pose = desGlobalPose2.doInverse(corner2Pose)
+		
+		" relative pose between pose 1 and pose 2 to make corners coincide and same angle "
+		resPose2 = desGlobalPose2.convertLocalOffsetToGlobal(negCurve2Pose)
+		localOffset = poseProfile1.convertGlobalPoseToLocal(resPose2)
+		
+		return [localOffset[0], localOffset[1], localOffset[2]]
+
+	offset = computeOffset(point1, point2, ang1, ang2 + currAng)
+
+	sum = 0.0
+	for pair in match_pairs:
+
+		#print "pair:", pair
+		a = pair[0]
+		b = pair[1]
+		
+		sum += computeMatchError(offset, a, b, pair[2], pair[3])
+		
+	return sum
+
 def cost_func(offset, match_pairs, a_data_raw = [], polyB = [], circles = []):
 	global numIterations
 	global fig
@@ -1279,6 +1317,282 @@ def gen_ICP2(estPose1, offset, pastHull, targetHull, pastCircles, costThresh = 0
 	offset[2] =  functions.normalizeAngle(offset[2])
 	return offset, lastCost
 
+#def cornerICP(estPose1, angle, pastHull, targetHull, pastCircles, costThresh = 0.004, minMatchDist = 2.0, plotIter = False, n1 = 0, n2 = 0):
+def cornerICP(estPose1, angGuess, point1, point2, ang1, ang2, hull1, hull2, pastCircles, costThresh = 0.004, minMatchDist = 2.0, plotIter = False, n1 = 0, n2 = 0):
+
+	global numIterations
+
+	def computeOffset(point1, point2, ang1, ang2):
+	
+		" corner points and orientations "
+		corner1Pose = [point1[0], point1[1], ang1]
+		corner2Pose = [point2[0], point2[1], ang2]
+		
+		" convert the desired intersection point on curve 1 into global coordinates "
+		poseProfile1 = Pose([0.0,0.0,0.0])
+			
+		" now convert this point into a pose, and perform the inverse transform using corner2Pose "
+		desGlobalPose2 = Pose(corner1Pose)
+		
+		" perform inverse offset from the destination pose "
+		negCurve2Pose = desGlobalPose2.doInverse(corner2Pose)
+		
+		" relative pose between pose 1 and pose 2 to make corners coincide and same angle "
+		resPose2 = desGlobalPose2.convertLocalOffsetToGlobal(negCurve2Pose)
+		localOffset = poseProfile1.convertGlobalPoseToLocal(resPose2)
+		
+		return [localOffset[0], localOffset[1], localOffset[2]]
+
+
+	currAng = angGuess 
+	offset = computeOffset(point1, point2, ang1, ang2 + currAng)
+	
+	lastCost = 1e100
+	
+	startIteration = numIterations
+
+	" set the initial guess "
+	poseOrigin = Pose(estPose1)
+	
+	" transform the past poses "
+	a_data_raw = hull2
+	a_data = []
+	for p in a_data_raw:
+		result = dispPoint(p, offset)		
+		a_data.append(result)	
+
+	polyB = []		
+	for p in hull1:
+		polyB.append([p[0],p[1]])	
+
+	while True:
+		" find the matching pairs "
+		match_pairs = []
+
+		a_data_raw = hull2
+		b_data = hull1			
+
+		" transform the target Hull with the latest offset "
+		a_data = []
+		for p in a_data_raw:
+			result = dispPoint(p, offset)
+			a_data.append(result)
+
+		" transformed points without associated covariance "
+		polyA = []
+		for p in a_data:
+			polyA.append([p[0],p[1]])	
+		
+		" get the circles and radii "
+		radiusA, centerA = computeEnclosingCircle(a_data)
+		#radiusB, centerB = computeEnclosingCircle(pastHull)
+		
+		if True:
+			for i in range(len(a_data)):
+				a_p = polyA[i]
+	
+				#if isValid(a_p, radiusB, centerB, polyB):
+				if isValidPast(a_p, pastCircles, polyB):
+	
+					" for every transformed point of A, find it's closest neighbor in B "
+					b_p, minDist = findClosestPointInB(b_data, a_p, [0.0,0.0,0.0])
+		
+					if minDist <= minMatchDist:
+			
+						" add to the list of match pairs less than 1.0 distance apart "
+						" keep A points and covariances untransformed "
+						Ca = a_data_raw[i][2]
+						Cb = b_p[2]
+		
+						" we store the untransformed point, but the transformed covariance of the A point "
+						match_pairs.append([a_data_raw[i],b_p,Ca,Cb])
+
+		if True:
+			for i in range(len(b_data)):
+				b_p = polyB[i]
+		
+				if isValid(b_p, radiusA, centerA, polyA):
+			
+					#print "selected", b_p, "in circle", radiusA, centerA, "with distance"
+					" for every point of B, find it's closest neighbor in transformed A "
+					a_p, a_i, minDist = findClosestPointInA(a_data, b_p)
+		
+					if minDist <= minMatchDist:
+			
+						" add to the list of match pairs less than 1.0 distance apart "
+						" keep A points and covariances untransformed "
+						Ca = a_data_raw[a_i][2]
+						
+						Cb = b_data[i][2]
+		
+						" we store the untransformed point, but the transformed covariance of the A point "
+						match_pairs.append([a_data_raw[a_i],b_p,Ca,Cb])
+
+
+		" plot the initial configuration "
+		if plotIter and startIteration == numIterations:
+
+			numIterations += 1
+
+			pylab.clf()
+			pylab.axes()
+			match_global = []
+			
+			for pair in match_pairs:
+				p1 = pair[0]
+				p2 = pair[1]
+				
+				p1_o = dispOffset(p1, offset)
+				#p2_o = dispOffset(p2, offset)
+
+				
+				p1_g = poseOrigin.convertLocalToGlobal(p1_o)
+				p2_g = poseOrigin.convertLocalToGlobal(p2)
+				match_global.append([p1_g,p2_g])
+			
+			draw_matches(match_global, [0.0,0.0,0.0])
+			
+			xP = []
+			yP = []
+			for b in polyB:
+				p1 = poseOrigin.convertLocalToGlobal(b)
+
+				xP.append(p1[0])	
+				yP.append(p1[1])
+			
+			p1 = poseOrigin.convertLocalToGlobal(polyB[0])
+			xP.append(p1[0])	
+			yP.append(p1[1])
+			
+			pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+
+			xP = []
+			yP = []
+			for b in a_data_raw:
+				p = [b[0],b[1]]
+				p = dispOffset(p,offset)
+				
+				p1 = poseOrigin.convertLocalToGlobal(p)
+				xP.append(p1[0])	
+				yP.append(p1[1])
+			
+			p = [a_data_raw[0][0],a_data_raw[0][1]]
+			p = dispOffset(p,offset)
+
+			p1 = poseOrigin.convertLocalToGlobal(p)
+			xP.append(p1[0])	
+			yP.append(p1[1])
+
+			pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+
+			plotEnv()		
+			
+			pylab.xlim(-4,9)
+			pylab.ylim(-3,9)
+			pylab.title("%u %u" % (n1, n2))
+			#pylab.ylim(-7,5)
+			pylab.savefig("ICP_plot_%04u.png" % numIterations)
+			pylab.clf()					
+
+			
+		allCircles = [[radiusA,centerA]]
+
+		# optimize the match error for the current list of match pairs
+		#newOffset = scipy.optimize.fmin(cost_func, offset, [match_pairs, a_data_raw, polyB, allCircles], disp = 0)
+		#newAng = scipy.optimize.fmin(cornerCostFunc, currAng, [match_pairs, a_data_raw, polyB, allCircles], disp = 0)
+		newAng = scipy.optimize.fmin(cornerCostFunc, currAng, [match_pairs, point1, point2, ang1, ang2, a_data_raw, polyB, allCircles], disp = 0)
+	
+		# get the current cost
+		#newCost = cost_func(newOffset, match_pairs)	
+		newCost = cornerCostFunc(newAng, match_pairs, point1, point2, ang1, ang2)
+
+
+	
+		# check for convergence condition, different between last and current cost is below threshold
+		if abs(lastCost - newCost) < costThresh or (numIterations - startIteration) > 10:
+			currAng = newAng
+			lastCost = newCost
+			break
+	
+		numIterations += 1
+
+		currAng = newAng
+		offset = computeOffset(point1, point2, ang1, ang2 + currAng)
+
+		" reduce the minMatch distance for each step down to a floor value "
+		minMatchDist /= 2
+		if minMatchDist < 0.25:
+			minMatchDist = 0.25
+	
+		# optionally draw the position of the points in current transform
+		if plotIter:
+			pylab.clf()
+			pylab.axes()
+			match_global = []
+			
+			for pair in match_pairs:
+				p1 = pair[0]
+				p2 = pair[1]
+				
+				p1_o = dispOffset(p1, offset)
+				
+				p1_g = poseOrigin.convertLocalToGlobal(p1_o)
+				p2_g = poseOrigin.convertLocalToGlobal(p2)
+				match_global.append([p1_g,p2_g])
+			
+			draw_matches(match_global, [0.0,0.0,0.0])
+			
+			xP = []
+			yP = []
+			for b in polyB:
+				p1 = poseOrigin.convertLocalToGlobal(b)
+
+				xP.append(p1[0])	
+				yP.append(p1[1])
+			
+			p1 = poseOrigin.convertLocalToGlobal(polyB[0])
+			xP.append(p1[0])	
+			yP.append(p1[1])
+			
+			pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+
+			xP = []
+			yP = []
+			for b in a_data_raw:
+				p = [b[0],b[1]]
+				p = dispOffset(p,offset)
+				
+				p1 = poseOrigin.convertLocalToGlobal(p)
+				xP.append(p1[0])	
+				yP.append(p1[1])
+				
+			p = [a_data_raw[0][0],a_data_raw[0][1]]
+			p = dispOffset(p,offset)
+
+			p1 = poseOrigin.convertLocalToGlobal(p)
+			xP.append(p1[0])	
+			yP.append(p1[1])
+			
+			pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+
+			plotEnv()		
+			
+			pylab.title("%u %u" % (n1, n2))
+			pylab.xlim(-4,9)
+			pylab.ylim(-3,9)
+			pylab.savefig("ICP_plot_%04u.png" % numIterations)
+			pylab.clf()			
+						
+		# save the current offset and cost
+		currAng = newAng
+		offset = computeOffset(point1, point2, ang1, ang2 + currAng)
+
+		lastCost = newCost
+
+	currAng =  functions.normalizeAngle(currAng)
+	offset = computeOffset(point1, point2, ang1, ang2 + currAng)
+	return offset, lastCost
+
 
 def quickICP(curve1, curve2, offset, costThresh = 0.004, minMatchDist = 2.0, plotIter = False, n1 = 0, n2 = 0):
 
@@ -1288,8 +1602,8 @@ def quickICP(curve1, curve2, offset, costThresh = 0.004, minMatchDist = 2.0, plo
 	vec = curve1.getUVector(0.5)
 	vecPoint = curve1.getU(0.5)
 	
-	angle = acos(vec[0])
-	if asin(vec[1]) < 0:
+	angle = math.acos(vec[0])
+	if math.asin(vec[1]) < 0:
 		angle = -angle
 	
 	localAIRPose1 = [vecPoint[0], vecPoint[1], angle]	
@@ -1297,8 +1611,8 @@ def quickICP(curve1, curve2, offset, costThresh = 0.004, minMatchDist = 2.0, plo
 	vec = curve2.getUVector(0.5)
 	vecPoint = curve2.getU(0.5)
 	
-	angle = acos(vec[0])
-	if asin(vec[1]) < 0:
+	angle = math.acos(vec[0])
+	if math.asin(vec[1]) < 0:
 		angle = -angle
 
 	localAIRPose2 = [vecPoint[0], vecPoint[1], angle]	
