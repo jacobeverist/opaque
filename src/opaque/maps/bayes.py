@@ -20,7 +20,7 @@ def mahab_dist(c1, c2, r1, r2, E):
 def mahabAngDist(ang1, ang2, angVar):
 
 	" distance between centroids "
-	d = ang2 - ang1	
+	d = normalizeAngle(ang2 - ang1)
 	dist = d * (1/angVar) * d
 	
 	return dist

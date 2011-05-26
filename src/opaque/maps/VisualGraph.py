@@ -26,9 +26,9 @@ class VisualGraph:
 		self.loadFile(dirName, num_poses-1)
 		self.poseGraph.sensorHypotheses = self.sensorHypotheses
 		
+		self.drawConstraints(0)
 		self.poseGraph.makeHypotheses()
-		
-		#self.poseGraph.renderConstraints()
+		self.drawConstraints(1)
 			
 	def sensorTest(self, dirName, num_poses):
 		
