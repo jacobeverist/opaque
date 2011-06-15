@@ -119,9 +119,14 @@ class TestProcess(SnakeControl):
 			#self.mapGraph.synch()
 			#self.mapGraph.saveMap()
 
-			self.mapGraph.instantSensorTest("testData/sensorLocalize2", 50)
-
+			#self.mapGraph.testHypotheses("testData/sensorLocalize2", 175, "cornerHypotheses_2011_06_05.txt")
+			#self.mapGraph.loadSeries("testData/sensorLocalize2", 175)
+			self.mapGraph.loadSeries("testData/sensorLocalize2", 161)
+			
+			#self.mapGraph.instantSensorTest("testData/sensorLocalize2", 175)
 			#self.mapGraph.instantSensorTest("testData/sensorLocalize2", 50)
+			#self.mapGraph.instantSensorTest("testData/sensorLocalize2", 50)
+
 			#self.mapGraph.sensorTest("testData/sensorLocalize2", 50)
 			#self.mapGraph.sensorTest("testData/sensorLocalize2", 176)
 

@@ -594,7 +594,6 @@ class GPACurve:
 				angle = -angle
 					
 			zipPoints.append([newPoints[0][i],newPoints[1][i], angle])
-		
 
 		#for i in range(0,len(newPoints[0])):
 		#	zipPoints.append([newPoints[0][i],newPoints[1][i]])

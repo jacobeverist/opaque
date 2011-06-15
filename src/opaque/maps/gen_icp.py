@@ -419,6 +419,29 @@ def computeVectorCovariance(vec,x_var,y_var):
 	return Ca
 
 
+def findClosestPointInHull2(hull2_trans, p_1):
+
+	#a_p, a_i, minDist = findClosestPointInA(a_trans, b_p, [0.0,0.0,0.0])
+
+	minDist = 1e100
+	minPoint = None
+	min_i = 0
+
+	for i in range(len(hull2_trans)):
+		p = hull2_trans[i]
+
+		dist = math.sqrt((p[0]-p_1[0])**2 + (p[1]-p_1[1])**2)
+		if dist < minDist:
+			minPoint = copy(p)
+			minDist = dist
+			min_i = i
+
+	if minPoint != None:
+		return minPoint, min_i, minDist
+	else:
+		raise
+
+
 def findClosestPointInA(a_trans, b):
 
 	#a_p, a_i, minDist = findClosestPointInA(a_trans, b_p, [0.0,0.0,0.0])
@@ -485,6 +508,34 @@ def findClosestPointInB(b_data, a, offset):
 	else:
 		raise
 
+
+# for point T*a, find the closest point b in B
+def findClosestPointInHull1(hull1, p_2, offset):
+
+	xd = offset[0]
+	yd = offset[1]
+	theta = offset[2]
+
+	ax = p_2[0]
+	ay = p_2[1]	
+	a_off = [ax*math.cos(theta) - ay*math.sin(theta) + xd, ax*math.sin(theta) + ay*math.cos(theta) + yd]
+	
+	minDist = 1e100
+	minPoint = None
+
+	for p in hull1:
+
+		dist = math.sqrt((p[0]-a_off[0])**2 + (p[1]-a_off[1])**2)
+		if dist < minDist:
+			minPoint = copy(p)
+			minDist = dist
+
+
+	if minPoint != None:
+		return minPoint, minDist
+	else:
+		raise
+
 def cost_func2(offset, match_pairs, a_data_raw = [], polyB = [], circles = []):
 	global numIterations
 	global fig
@@ -503,7 +554,8 @@ def cost_func2(offset, match_pairs, a_data_raw = [], polyB = [], circles = []):
 	#print "returning", errors
 	return errors
 
-def cornerCostFunc(currAng, match_pairs, point1, point2, ang1, ang2, a_data_raw = [], polyB = [], circles = []):
+
+def cornerMatchQuality(currAng, match_pairs, point1, point2, ang1, ang2, thresh):
 	global numIterations
 
 
@@ -530,6 +582,7 @@ def cornerCostFunc(currAng, match_pairs, point1, point2, ang1, ang2, a_data_raw 
 
 	offset = computeOffset(point1, point2, ang1, ang2 + currAng)
 
+	vals = []
 	sum = 0.0
 	for pair in match_pairs:
 
@@ -537,7 +590,74 @@ def cornerCostFunc(currAng, match_pairs, point1, point2, ang1, ang2, a_data_raw 
 		a = pair[0]
 		b = pair[1]
 		
-		sum += computeMatchError(offset, a, b, pair[2], pair[3])
+		val = computeMatchError(offset, a, b, pair[2], pair[3])
+		vals.append(val)
+		sum += val
+
+	upCount = 0
+	downCount = 0
+	for val in vals:
+		if val >= thresh:
+			upCount += 1
+		else:
+			downCount += 1
+	
+	#print "match errors:", vals		
+	#print "match errors:", upCount, "> threshold,", downCount, "< threshold"
+		
+	return upCount, downCount, vals
+
+
+def cornerCostFunc(currAng, match_pairs, point1, point2, ang1, ang2, a_data_raw = [], polyB = [], circles = [], isPrint = False):
+	global numIterations
+
+
+	def computeOffset(point1, point2, ang1, ang2):
+	
+		" corner points and orientations "
+		corner1Pose = [point1[0], point1[1], ang1]
+		corner2Pose = [point2[0], point2[1], ang2]
+		
+		" convert the desired intersection point on curve 1 into global coordinates "
+		poseProfile1 = Pose([0.0,0.0,0.0])
+			
+		" now convert this point into a pose, and perform the inverse transform using corner2Pose "
+		desGlobalPose2 = Pose(corner1Pose)
+		
+		" perform inverse offset from the destination pose "
+		negCurve2Pose = desGlobalPose2.doInverse(corner2Pose)
+		
+		" relative pose between pose 1 and pose 2 to make corners coincide and same angle "
+		resPose2 = desGlobalPose2.convertLocalOffsetToGlobal(negCurve2Pose)
+		localOffset = poseProfile1.convertGlobalPoseToLocal(resPose2)
+		
+		return [localOffset[0], localOffset[1], localOffset[2]]
+
+	offset = computeOffset(point1, point2, ang1, ang2 + currAng)
+
+	vals = []
+	sum = 0.0
+	for pair in match_pairs:
+
+		#print "pair:", pair
+		a = pair[0]
+		b = pair[1]
+		
+		val = computeMatchError(offset, a, b, pair[2], pair[3])
+		vals.append(val)
+		sum += val
+
+	if isPrint:
+		thresh = 0.01
+		upCount = 0
+		downCount = 0
+		for val in vals:
+			if val >= thresh:
+				upCount += 1
+			else:
+				downCount += 1
+				
+		print "match errors:", upCount, "> threshold,", downCount, "< threshold"
 		
 	return sum
 
@@ -1196,6 +1316,8 @@ def gen_ICP2(estPose1, offset, pastHull, targetHull, pastCircles, costThresh = 0
 		# optimize the match error for the current list of match pairs
 		newOffset = scipy.optimize.fmin(cost_func, offset, [match_pairs, a_data_raw, polyB, allCircles], disp = 0)
 	
+	
+	
 		# get the current cost
 		newCost = cost_func(newOffset, match_pairs)
 	
@@ -1318,7 +1440,7 @@ def gen_ICP2(estPose1, offset, pastHull, targetHull, pastCircles, costThresh = 0
 	return offset, lastCost
 
 #def cornerICP(estPose1, angle, pastHull, targetHull, pastCircles, costThresh = 0.004, minMatchDist = 2.0, plotIter = False, n1 = 0, n2 = 0):
-def cornerICP(estPose1, angGuess, point1, point2, ang1, ang2, hull1, hull2, pastCircles, costThresh = 0.004, minMatchDist = 2.0, plotIter = False, n1 = 0, n2 = 0):
+def cornerICP(estPose1, angGuess, point1, point2, ang1, ang2, hull1, hull2, sweepHull1, sweepHull2, pastCircles, costThresh = 0.004, minMatchDist = 2.0, plotIter = False, n1 = 0, n2 = 0):
 
 	global numIterations
 
@@ -1342,7 +1464,6 @@ def cornerICP(estPose1, angGuess, point1, point2, ang1, ang2, hull1, hull2, past
 		localOffset = poseProfile1.convertGlobalPoseToLocal(resPose2)
 		
 		return [localOffset[0], localOffset[1], localOffset[2]]
-
 
 	currAng = angGuess 
 	offset = computeOffset(point1, point2, ang1, ang2 + currAng)
@@ -1430,7 +1551,8 @@ def cornerICP(estPose1, angGuess, point1, point2, ang1, ang2, hull1, hull2, past
 
 
 		" plot the initial configuration "
-		if plotIter and startIteration == numIterations:
+		#if plotIter and startIteration == numIterations:
+		if False and startIteration == numIterations:
 
 			numIterations += 1
 
@@ -1486,10 +1608,12 @@ def cornerICP(estPose1, angGuess, point1, point2, ang1, ang2, hull1, hull2, past
 			pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
 
 			plotEnv()		
+
+			newCost = cornerCostFunc(currAng, match_pairs, point1, point2, ang1, ang2)
 			
 			pylab.xlim(-4,9)
 			pylab.ylim(-3,9)
-			pylab.title("%u %u" % (n1, n2))
+			pylab.title("%u %u, cost = %f" % (n1, n2, newCost))
 			#pylab.ylim(-7,5)
 			pylab.savefig("ICP_plot_%04u.png" % numIterations)
 			pylab.clf()					
@@ -1501,7 +1625,9 @@ def cornerICP(estPose1, angGuess, point1, point2, ang1, ang2, hull1, hull2, past
 		#newOffset = scipy.optimize.fmin(cost_func, offset, [match_pairs, a_data_raw, polyB, allCircles], disp = 0)
 		#newAng = scipy.optimize.fmin(cornerCostFunc, currAng, [match_pairs, a_data_raw, polyB, allCircles], disp = 0)
 		newAng = scipy.optimize.fmin(cornerCostFunc, currAng, [match_pairs, point1, point2, ang1, ang2, a_data_raw, polyB, allCircles], disp = 0)
-	
+		newAng = newAng[0]
+		
+			
 		# get the current cost
 		#newCost = cost_func(newOffset, match_pairs)	
 		newCost = cornerCostFunc(newAng, match_pairs, point1, point2, ang1, ang2)
@@ -1525,7 +1651,8 @@ def cornerICP(estPose1, angGuess, point1, point2, ang1, ang2, hull1, hull2, past
 			minMatchDist = 0.25
 	
 		# optionally draw the position of the points in current transform
-		if plotIter:
+		#if plotIter:
+		if False:
 			pylab.clf()
 			pylab.axes()
 			match_global = []
@@ -1577,7 +1704,8 @@ def cornerICP(estPose1, angGuess, point1, point2, ang1, ang2, hull1, hull2, past
 
 			plotEnv()		
 			
-			pylab.title("%u %u" % (n1, n2))
+			#pylab.title("%u %u" % (n1, n2))
+			pylab.title("%u %u, cost = %f" % (n1, n2, newCost))
 			pylab.xlim(-4,9)
 			pylab.ylim(-3,9)
 			pylab.savefig("ICP_plot_%04u.png" % numIterations)
@@ -1588,10 +1716,175 @@ def cornerICP(estPose1, angGuess, point1, point2, ang1, ang2, hull1, hull2, past
 		offset = computeOffset(point1, point2, ang1, ang2 + currAng)
 
 		lastCost = newCost
+		
+
+
+
 
 	currAng =  functions.normalizeAngle(currAng)
 	offset = computeOffset(point1, point2, ang1, ang2 + currAng)
-	return offset, lastCost
+
+	" transform the new pose "
+	hull2_trans = []
+	for p in hull2:
+		result = dispPoint(p, offset)
+		hull2_trans.append(result)
+
+	" transformed pose 2 points without associated covariance "
+	poly2 = []
+	for p in hull2_trans:
+		poly2.append([p[0],p[1]])
+
+	poly1 = []		
+	for p in hull1:
+		poly1.append([p[0],p[1]])	
+
+
+	" transform the new pose "
+	sweepHull2_trans = []
+	for p in sweepHull2:
+		result = dispPoint(p, offset)		
+		sweepHull2_trans.append(result)	
+
+	" transformed pose 2 points without associated covariance "
+	polySweep2 = []
+	for p in sweepHull2_trans:
+		polySweep2.append([p[0],p[1]])	
+
+	" pose 1 without associated covariance"
+	polySweep1 = []		
+	for p in sweepHull1:
+		polySweep1.append([p[0],p[1]])	
+
+	" find the matching pairs "
+	match_pairs = []
+
+	" get the circles and radii "
+	#radius2, center2 = computeEnclosingCircle(sweepHull2_trans)
+	#radius1, center1 = computeEnclosingCircle(sweepHull1)
+	radius2, center2 = computeEnclosingCircle(hull2_trans)
+	radius1, center1 = computeEnclosingCircle(hull1)
+	
+	#for i_2 in range(len(sweepHull2_trans)):
+	for i_2 in range(len(hull2_trans)):
+		#p_2 = polySweep2[i_2]
+		p_2 = poly2[i_2]
+
+		#if isValidPast(p_2, [(radius1, center1)], polySweep1):
+		if isValidPast(p_2, [(radius1, center1)], poly1):
+
+			" for every transformed point of hull 2, find it's closest neighbor in hull 1 "
+			#p_1, minDist = findClosestPointInHull1(sweepHull1, p_2, [0.0,0.0,0.0])
+			p_1, minDist = findClosestPointInHull1(hull1, p_2, [0.0,0.0,0.0])
+
+			if minDist <= minMatchDist:
+	
+				" add to the list of match pairs less than 1.0 distance apart "
+				" keep A points and covariances untransformed "
+				#Ca = sweepHull2[i_2][2]
+				Ca = hull2[i_2][2]
+				Cb = p_1[2]
+
+				" we store the untransformed point, but the transformed covariance of the A point "
+				#match_pairs.append([sweepHull2[i_2],p_1,Ca,Cb])
+				match_pairs.append([hull2[i_2],p_1,Ca,Cb])
+
+	#for i_1 in range(len(sweepHull1)):
+	for i_1 in range(len(hull1)):
+		#p_1 = polySweep1[i_1]
+		p_1 = poly1[i_1]
+
+		#if isValid(p_1, radius2, center2, polySweep2):
+		if isValid(p_1, radius2, center2, poly2):
+	
+			" for every point of B, find it's closest neighbor in transformed A "
+			#p_2, i_2, minDist = findClosestPointInHull2(sweepHull2_trans, p_1)
+			p_2, i_2, minDist = findClosestPointInHull2(hull2_trans, p_1)
+
+			if minDist <= minMatchDist:
+	
+				" add to the list of match pairs less than 1.0 distance apart "
+				" keep A points and covariances untransformed "
+				#Ca = sweepHull2[i_2][2]
+				#Cb = sweepHull1[i_1][2]
+				Ca = hull2[i_2][2]
+				Cb = hull1[i_1][2]
+
+				" we store the untransformed point, but the transformed covariance of the A point "
+				#match_pairs.append([sweepHull2[i_2],p_1,Ca,Cb])
+				match_pairs.append([hull2[i_2],p_1,Ca,Cb])
+
+	#sweepCost = cornerCostFunc(currAng, match_pairs, point1, point2, ang1, ang2, isPrint = True)
+	threshVal = 0.01
+	upCount, downCount, matchVals = cornerMatchQuality(currAng, match_pairs, point1, point2, ang1, ang2, threshVal)
+	
+
+	# optionally draw the position of the points in current transform
+	if plotIter:
+		pylab.clf()
+		pylab.axes()
+		match_global = []
+		
+		for pair in match_pairs:
+			p1 = pair[0]
+			p2 = pair[1]
+			
+			p1_o = dispOffset(p1, offset)
+			
+			p1_g = poseOrigin.convertLocalToGlobal(p1_o)
+			p2_g = poseOrigin.convertLocalToGlobal(p2)
+			match_global.append([p1_g,p2_g])
+		
+		draw_matches(match_global, [0.0,0.0,0.0])
+		
+		xP = []
+		yP = []
+		for b in polyB:
+			p1 = poseOrigin.convertLocalToGlobal(b)
+
+			xP.append(p1[0])	
+			yP.append(p1[1])
+		
+		p1 = poseOrigin.convertLocalToGlobal(polyB[0])
+		xP.append(p1[0])	
+		yP.append(p1[1])
+		
+		pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+
+		xP = []
+		yP = []
+		for b in a_data_raw:
+			p = [b[0],b[1]]
+			p = dispOffset(p,offset)
+			
+			p1 = poseOrigin.convertLocalToGlobal(p)
+			xP.append(p1[0])	
+			yP.append(p1[1])
+			
+		p = [a_data_raw[0][0],a_data_raw[0][1]]
+		p = dispOffset(p,offset)
+
+		p1 = poseOrigin.convertLocalToGlobal(p)
+		xP.append(p1[0])	
+		yP.append(p1[1])
+		
+		pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))		
+		
+		#pylab.title("%u %u" % (n1, n2))
+		pylab.title("%u %u, ratio = %f, thresh = %f, over = %d, under = %d" % (n1, n2, float(upCount)/float(downCount), threshVal, upCount, downCount))
+		pylab.xlim(-4,9)
+		pylab.ylim(-3,9)
+		pylab.savefig("ICP_plot_%04u.png" % numIterations)
+		pylab.clf()			
+		
+	
+	#return offset, lastCost
+
+	if (downCount) > 0:
+		return offset, float(upCount)/float(downCount)
+
+	else:
+		return offset, float(upCount)
 
 
 def quickICP(curve1, curve2, offset, costThresh = 0.004, minMatchDist = 2.0, plotIter = False, n1 = 0, n2 = 0):

@@ -19,10 +19,12 @@ def mahab_dist(c1, c2, r1, r2, E):
 
 def mahabAngDist(ang1, ang2, angVar):
 
+	#print "ang1,ang2,angVar =", ang1, ang2, angVar
 	" distance between centroids "
 	d = normalizeAngle(ang2 - ang1)
+	#print "d =", d
 	dist = d * (1/angVar) * d
-	
+	#print "dist =", dist
 	return dist
 
 def dijkstra_proj(initNode, numNodes, edgeHash):
@@ -59,7 +61,7 @@ def dijkstra_proj(initNode, numNodes, edgeHash):
 			pass
 
 
-	print "computing mahalanobis distances between nodes"
+	#print "computing mahalanobis distances between nodes"
 	for neigh in neighbors:
 		if not visited[neigh]:
 			transform, covE = edgeHash[(initNode,neigh)]
@@ -71,7 +73,7 @@ def dijkstra_proj(initNode, numNodes, edgeHash):
 				paths[neigh] = [transform, covE]
 				distances[neigh] = dist
 
-			print initNode, neigh, ":", transform[0,0], transform[1,0], transform[2,0], covE[0,0], covE[1,1], covE[2,2], "=", distances[neigh]
+			#print initNode, neigh, ":", transform[0,0], transform[1,0], transform[2,0], covE[0,0], covE[1,1], covE[2,2], "=", distances[neigh]
 
 
 	for incid in incidents:
@@ -97,7 +99,7 @@ def dijkstra_proj(initNode, numNodes, edgeHash):
 				paths[incid] = [newTransform, covE]
 				distances[incid] = dist
 
-			print incid, initNode, ":", transform[0,0], transform[1,0], transform[2,0], covE[0,0], covE[1,1], covE[2,2], "=", distances[incid]
+			#print incid, initNode, ":", transform[0,0], transform[1,0], transform[2,0], covE[0,0], covE[1,1], covE[2,2], "=", distances[incid]
 
 
 	" while some nodes unvisited "
@@ -233,7 +235,7 @@ def dijkstra_proj(initNode, numNodes, edgeHash):
 		
 		#print key, repr(offset), repr(covE)
 	
-	print "finished computing dijkstra projection"
+	#print "finished computing dijkstra projection"
 		
 	return paths
 

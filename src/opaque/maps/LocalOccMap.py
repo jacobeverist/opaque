@@ -27,6 +27,9 @@ class LocalOccMap:
 		self.halfPix = self.pixelSize/2.0
 		self.divPix = floor((2.0*self.mapSize/self.pixelSize)/self.mapSize)
 		
+		#print "self.divPix =", self.divPix
+		#print "self.numPixel =", self.numPixel
+		
 		self.prevJoints = [0.0,0.0,0.0,0.0]
 		self.rootNeighbors = [18,19,20,21]
 

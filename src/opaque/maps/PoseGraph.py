@@ -30,6 +30,15 @@ from copy import copy
 import Image
 import ImageDraw
 
+renderCount = 0
+
+INPLACE_PRIORITY = 5
+CORNER_PRIORITY = 3
+SENSOR_PRIORITY = 2
+OVERLAP_PRIORITY = 0
+MOTION_PRIORITY = 0
+
+
 
 def decimatePoints(points):
 	result = []
@@ -43,12 +52,12 @@ def decimatePoints(points):
 
 def computeBareHull(node1, sweep = False):
 	
-	" Read in data of Alpha-Shapes and add their associated covariances "
+	" Read in data of Alpha-Shapes without their associated covariances "
 	node1.computeAlphaBoundary(sweep = sweep)
 	a_data = node1.getAlphaBoundary()
 	a_data = decimatePoints(a_data)
 	
-	" convert hull points to GPAC coordinates before adding covariances "
+	" convert hull points to GPAC coordinates "
 	localGPACPose = node1.getLocalGPACPose()
 	localGPACProfile = Pose(localGPACPose)
 	
@@ -154,6 +163,20 @@ class PoseGraph:
 		self.sensorHypotheses = []
 		self.activeHypotheses = []
 		self.cornerHypotheses = []
+		self.cornerHash = {}
+		self.badHypotheses = []
+		self.goodHypotheses = []
+		self.allCornerHypotheses = []
+		
+		
+		self.edgePriorityHash = {}
+		self.cornerBins = []
+		self.b_hulls = []
+		self.a_hulls = []
+
+		self.E_corner = matrix([[ 0.01, 0.0, 0.0 ],
+							[ 0.0, 0.01, 0.0],
+							[ 0.0, 0.0, pi/16.0 ]])
 
 		self.E_inplace = matrix([[ 0.05, 0.0, 0.0 ],
 							[ 0.0, 0.05, 0.0],
@@ -171,7 +194,667 @@ class PoseGraph:
 							[0.0,0.05,0.0],
 							[0.0,0.0,0.02]])
 
+	def addPriorityEdge(self, edge, priority):
 
+		try:
+			self.edgePriorityHash[(edge[0],edge[1])]
+		except:
+			self.edgePriorityHash[(edge[0],edge[1])] = []
+		
+		" corner constraints with priority of 3 "
+		self.edgePriorityHash[(edge[0],edge[1])].append([edge[2], edge[3], priority])
+
+	def getCornerEdges(self):
+		
+		cornerEdges = {}
+		
+		for k, v in self.edgePriorityHash.items():
+
+			hasCornerEdge = False			
+			for edge in v:
+				" if priority status is the corner status "
+				if edge[2] == CORNER_PRIORITY:
+					hasCornerEdge = True
+		
+			if hasCornerEdge:
+				cornerEdges[k] = []
+				
+				for edge in v:
+					" if priority status is the corner status "
+					if edge[2] == CORNER_PRIORITY:
+						cornerEdges[k].append(edge)
+				
+		return cornerEdges
+	
+	def getPriorityEdges(self):
+
+		priorityEdges = {}
+		
+		for k, v in self.edgePriorityHash.items():
+			
+			if len(v) > 0:
+		
+				id1 = k[0]
+				id2 = k[1]
+				
+				" take the highest priority constraints only "
+				maxPriority = -1
+				for const in v:
+					thisPriority = const[2]
+					if thisPriority > maxPriority:
+						maxPriority = thisPriority
+		
+				if maxPriority == -1:
+					raise
+				
+				priorityEdges[k] = []
+				for const in v:
+					if const[2] == maxPriority:
+						priorityEdges[k].append(const)
+
+		return priorityEdges
+
+	def makeCornerBinConsistent(self):
+
+		for k in range(len(self.cornerBins)):
+			bin = self.cornerBins[k]
+			attempts = []
+			for i in range(len(bin)):
+				tup1 = bin[i]
+				for j in range(i+1, len(bin)):
+					tup2 = bin[j]
+					if tup1[0] != tup2[0]:
+						attempts.append([tup1[0],tup2[0],tup1[1],tup2[1]])
+
+			print "BIN", k
+			internalHyps = []
+			for attempt in attempts:
+				tup1 = attempt[0]
+				tup2 = attempt[1]
+				n1 = attempt[0]
+				n2 = attempt[1]
+				point1_i = attempt[2]
+				point2_i = attempt[3]
+				corner1 = self.nodeHash[n1].cornerCandidates[point1_i]
+				corner2 = self.nodeHash[n2].cornerCandidates[point2_i]
+				point1 = corner1[0]
+				point2 = corner2[0]
+				ang1 = corner1[1]
+				ang2 = corner2[1]
+	
+				offset, covar, cost, angDiff, oriDiff = self.makeCornerConstraint(n1, n2, point1, point2, ang1, ang2, self.a_hulls[n1], self.a_hulls[n2], self.b_hulls[n1], self.b_hulls[n2])
+				print "CONSTRAINT:", tup1, tup2, cost, angDiff, oriDiff
+				transform = matrix([ [offset[0]], [offset[1]], [offset[2]] ],dtype=float)
+				if cost <= 0.6:
+					internalHyps.append([n1, n2, transform, covar, cost, point1, point2, angDiff, oriDiff, point1_i, point2_i])
+
+
+	def addCornerBin(self, tup1, tup2):
+		
+		" put this pair of corners into matched bins "			
+		matchBins = []
+		for i in range(len(self.cornerBins)):
+			
+			bin = self.cornerBins[i]
+			" first check if either point exists already in a bin"
+			if tup1 in bin:
+				matchBins.append(i)
+			elif tup2 in bin:
+				matchBins.append(i)
+
+		" if not shared, create new bin "
+		if len(matchBins) == 0:
+			self.cornerBins.append([tup1, tup2])
+		else:						
+			" we have to merge into the old bins "
+			if len(matchBins) == 1:
+				" only 1 bin, just add the tuples that don't already exist "
+				bin_i = matchBins[0]
+				
+				if not tup1 in self.cornerBins[bin_i]:
+					self.cornerBins[bin_i].append(tup1)
+				if not tup2 in self.cornerBins[bin_i]:
+					self.cornerBins[bin_i].append(tup2)
+					
+			else:
+				" we have more than one matching bin, so now we need to merge "
+				newSuperBin = []
+				for i in matchBins:
+					bin = self.cornerBins[i]
+					
+					for item in bin:
+						if not item in newSuperBin:
+							newSuperBin.append(item)
+
+				newCornerBins = [newSuperBin]
+				
+				for i in range(len(self.cornerBins)):
+					if not i in matchBins:
+						newCornerBins.append(self.cornerBins[i])
+
+				self.cornerBins = newCornerBins
+	
+		#print "cornerBins:"
+		#for i in range(len(self.cornerBins)):
+		#	print i, self.cornerBins[i]
+
+
+	def addCornerConstraints(self, nodeID):
+
+		" try to perform corner constraints "
+		" overwrite overlap/motion constraints"
+		" corner constraints with past nodes "
+
+		" compute djikstra projection "		
+		paths = []
+		for i in range(self.numNodes):
+			paths.append(bayes.dijkstra_proj(i, self.numNodes, self.edgeHash))
+	
+		" find paired candidates by mahalanobis distance "
+		cornerPairs = self.findCornerCandidates(paths, nodeID = nodeID)
+	
+		print "found", len(cornerPairs), "corner pairs"
+	
+		" compute hypotheses and reject unsuitable matches "
+		hypotheses = []
+		for k in range(len(cornerPairs)):
+			
+			p = cornerPairs[k]
+			dist = p[0]
+			n1 = p[1]
+			n2 = p[2]
+			transform = p[3]
+			angDist = p[4]
+			point1 = p[5]
+			point2 = p[6]
+			ang1 = p[7]
+			ang2 = p[8]
+			point1_i = p[9]
+			point2_i = p[10]	
+	
+			hull1 = self.a_hulls[n1]
+			hull2 = self.a_hulls[n2]
+	
+			offset, covar, cost, angDiff, oriDiff = self.makeCornerConstraint(n1, n2, point1, point2, ang1, ang2, hull1, hull2, self.b_hulls[n1], self.b_hulls[n2])
+			transform = matrix([ [offset[0]], [offset[1]], [offset[2]] ],dtype=float)
+	
+			" ratio of match error threshold"		
+			if cost <= 0.6:
+				hypotheses.append([n1, n2, transform, covar, cost, point1, point2, angDiff, oriDiff, point1_i, point2_i])
+	
+		print "kept", len(hypotheses), "corner hypotheses"
+		
+		" remove multiple constraints between two nodes.  Take best cost "
+		cornerHash = {}
+		for hyp in hypotheses:
+			n1 = hyp[0]
+			n2 = hyp[1]
+			newCost = hyp[4]
+			
+			try:
+				if n1 > n2:
+					otherHyp = cornerHash[(n1,n2)]
+				else:
+					otherHyp = cornerHash[(n2,n1)]
+			
+				oldCost = otherHyp[4]
+				if newCost < oldCost:
+					if n1 > n2:
+						cornerHash[(n1,n2)] = hyp
+					else:
+						cornerHash[(n2,n1)] = hyp
+			except:				
+				if n1 > n2:
+					cornerHash[(n1,n2)] = hyp
+				else:
+					cornerHash[(n2,n1)] = hyp			
+	
+		newCorners = []	
+		totalHypotheses = []
+		for k, v in cornerHash.items():
+			print "corner constraint:", v[0], "->", v[1]
+			totalHypotheses.append([v[0], v[1], v[2], v[3]])
+
+			" corner constraints with priority of 3 "
+			self.addPriorityEdge([v[0],v[1],v[2],v[3]], CORNER_PRIORITY)
+			
+			" put this pair of corners into matched bins "			
+			n1 = v[0]
+			n2 = v[1]
+			point1_i = v[9]
+			point2_i = v[10]
+			tup1 = (n1,point1_i)
+			tup2 = (n2,point2_i)
+
+			" add the corner pair to a merged bin "
+			self.addCornerBin(tup1, tup2)
+
+			newCorners.append(tup1)
+			newCorners.append(tup2)
+		
+		print "cornerBins:"
+		for i in range(len(self.cornerBins)):
+			print i, self.cornerBins[i]
+
+		" remove duplicates and non-new node corners"
+		d = {}
+		for x in newCorners:
+			if x[0] == nodeID:
+				d[x] = 1
+		newCorners = list(d.keys())
+
+		if len(newCorners) > 0:
+			
+			binIndices = [None for i in range(len(newCorners))]
+			for i in range(len(self.cornerBins)):
+				bin = self.cornerBins[i]
+				
+				for j in range(len(binIndices)):
+					tup1 = newCorners[j]
+					" first check if either point exists already in a bin"
+					if tup1 in bin:
+						binIndices[j] = i
+	
+		
+			" attempt a corner constraint between a newCorner and any corner in the same bin "
+			internalHyps = []
+			for i in range(len(binIndices)):
+				tup1 = newCorners[i]
+				tup2 = None
+				
+				" do not add repeat corner constraints between nodes "
+				for newTup in self.cornerBins[binIndices[i]]:
+					isReject = False
+					
+					if (tup1[0],newTup[0]) in self.edgePriorityHash:
+						edges = self.edgePriorityHash[(tup1[0],newTup[0])]
+						for edge in edges:
+							" if any constraints are corner constraints "
+							if edge[2] == CORNER_PRIORITY:
+								isReject = True
+						
+					
+					if (newTup[0],tup1[0]) in self.edgePriorityHash:							
+						edges = self.edgePriorityHash[(newTup[0],tup1[0])]
+						for edge in edges:
+							" if any constraints are corner constraints "
+							if edge[2] == CORNER_PRIORITY:
+								isReject = True
+					
+					if not isReject and tup1[0] != newTup[0]:
+						tup2 = newTup
+						break
+				
+				if tup2 != None:
+					n1 = tup1[0]
+					n2 = tup2[0]
+					point1_i = tup1[1]
+					point2_i = tup2[1]
+					corner1 = self.nodeHash[n1].cornerCandidates[point1_i]
+					corner2 = self.nodeHash[n2].cornerCandidates[point2_i]
+					point1 = corner1[0]
+					point2 = corner2[0]
+					ang1 = corner1[1]
+					ang2 = corner2[1]
+	
+					print "TRYING INTERNAL corner hypothesis:", tup1, tup2
+					offset, covar, cost, angDiff, oriDiff = self.makeCornerConstraint(n1, n2, point1, point2, ang1, ang2, self.a_hulls[n1], self.a_hulls[n2], self.b_hulls[n1], self.b_hulls[n2])
+					transform = matrix([ [offset[0]], [offset[1]], [offset[2]] ],dtype=float)
+					if cost <= 0.6:
+						internalHyps.append([n1, n2, transform, covar, cost, point1, point2, angDiff, oriDiff, point1_i, point2_i])
+
+			"""
+			externalHyps = []
+			for i in range(len(binIndices)):
+				tup1 = newCorners[i]
+				tup2 = None
+				
+				for j in range(len(self.cornerBins)):
+					if j != binIndices[i]:
+											
+						" do not add repeat corner constraints between nodes "
+						for newTup in self.cornerBins[j]:
+							isReject = False
+							
+							if (tup1[0],newTup[0]) in self.edgePriorityHash:
+								edges = self.edgePriorityHash[(tup1[0],newTup[0])]
+								for edge in edges:
+									" if any constraints are corner constraints "
+									if edge[2] == 3:
+										isReject = True
+								
+							
+							if (newTup[0],tup1[0]) in self.edgePriorityHash:							
+								edges = self.edgePriorityHash[(newTup[0],tup1[0])]
+								for edge in edges:
+									" if any constraints are corner constraints "
+									if edge[2] == 3:
+										isReject = True
+							
+							if not isReject and tup1[0] != newTup[0]:
+								tup2 = newTup
+								break
+						
+						if tup2 != None:
+							n1 = tup1[0]
+							n2 = tup2[0]
+							point1_i = tup1[1]
+							point2_i = tup2[1]
+							corner1 = self.nodeHash[n1].cornerCandidates[point1_i]
+							corner2 = self.nodeHash[n2].cornerCandidates[point2_i]
+							point1 = corner1[0]
+							point2 = corner2[0]
+							ang1 = corner1[1]
+							ang2 = corner2[1]
+			
+							print "TRYING EXTERNAL corner hypothesis:", tup1, tup2
+							offset, covar, cost, angDiff, oriDiff = self.makeCornerConstraint(n1, n2, point1, point2, ang1, ang2, self.a_hulls[n1], self.a_hulls[n2], self.b_hulls[n1], self.b_hulls[n2])
+							transform = matrix([ [offset[0]], [offset[1]], [offset[2]] ],dtype=float)
+							if cost <= 0.6:
+								externalHyps.append([n1, n2, transform, covar, cost, point1, point2, angDiff, oriDiff, point1_i, point2_i])
+			"""
+
+
+			newCorners = []	
+			totalHypotheses = []
+			for v in internalHyps:
+				print "internal corner constraint:", v[0], "->", v[1]
+				totalHypotheses.append([v[0], v[1], v[2], v[3]])
+				
+				" corner constraints with priority of 3 "
+				self.addPriorityEdge([v[0],v[1],v[2],v[3]], CORNER_PRIORITY)
+	
+				" put this pair of corners into matched bins "			
+				n1 = v[0]
+				n2 = v[1]
+				point1_i = v[9]
+				point2_i = v[10]
+				tup1 = (n1,point1_i)
+				tup2 = (n2,point2_i)
+				newCorners.append(tup1)
+				newCorners.append(tup2)
+				matchBins = []
+				for i in range(len(self.cornerBins)):
+					
+					bin = self.cornerBins[i]
+					" first check if either point exists already in a bin"
+					if tup1 in bin:
+						matchBins.append(i)
+					elif tup2 in bin:
+						matchBins.append(i)
+		
+				" if not shared, create new bin "
+				if len(matchBins) == 0:
+					self.cornerBins.append([tup1, tup2])
+				else:						
+					" we have to merge into the old bins "
+					if len(matchBins) == 1:
+						" only 1 bin, just add the tuples that don't already exist "
+						bin_i = matchBins[0]
+						
+						if not tup1 in self.cornerBins[bin_i]:
+							self.cornerBins[bin_i].append(tup1)
+						if not tup2 in self.cornerBins[bin_i]:
+							self.cornerBins[bin_i].append(tup2)
+							
+					else:
+						" we have more than one matching bin, so now we need to merge "
+						newSuperBin = []
+						for i in matchBins:
+							bin = self.cornerBins[i]
+							
+							for item in bin:
+								if not item in newSuperBin:
+									newSuperBin.append(item)
+		
+						newCornerBins = [newSuperBin]
+						
+						for i in range(len(self.cornerBins)):
+							if not i in matchBins:
+								newCornerBins.append(self.cornerBins[i])
+		
+						self.cornerBins = newCornerBins
+
+			
+			print "cornerBins2:"
+			for i in range(len(self.cornerBins)):
+				print i, self.cornerBins[i]
+
+				
+
+	def loadNewNode(self, newNode):
+
+		self.currNode = newNode
+		nodeID = self.numNodes
+		self.nodeHash[nodeID] = self.currNode
+		self.numNodes += 1
+		self.a_hulls.append(computeHull(self.nodeHash[nodeID], sweep = False))
+		self.b_hulls.append(computeHull(self.nodeHash[nodeID], sweep = True))
+
+		if nodeID > 0:
+			if nodeID % 2 == 0:
+				" 2nd node from a pose "
+				" 1) make overlap+motion constraint with i-1"
+				" 2) attempt overlap with past nodes ? "
+				" 3) attempt corner constraints with past nodes, replacing overlaps and sensors "
+				" 4) discard sensor constraints and reapply sensor constraints to non-corner edges"
+
+				#transform, covE = self.makeMotionConstraint(nodeID-1, nodeID)
+				#self.edgePriorityHash[(nodeID-1, nodeID)].append([transform, covE, MOTION_PRIORITY])
+				
+				transform, covE = self.makeOverlapConstraint(nodeID-2, nodeID)
+				self.addPriorityEdge([nodeID-2,nodeID,transform,covE], OVERLAP_PRIORITY)
+	
+				" merge constraints by priority and updated estimated poses "
+				self.mergePriorityConstraints()
+
+				" try to perform corner constraints "
+				" overwrite overlap/motion constraints"
+				" corner constraints with past nodes "
+				self.addCornerConstraints(nodeID)
+				
+				
+				" merge the constraints "
+				self.mergePriorityConstraints()
+
+
+				" check that each bin is well-connected, otherwise, try to add constraints "
+				for bin in self.cornerBins:
+					pass
+								
+				" try to perform sensor constraints on past nodes "
+				" overwrite overlap/motion constraints "
+				" do not overwrite corner constraints "
+
+				def deleteAll(priorityHash, priorityLevel):
+					
+					for k, v in priorityHash.items():
+						newV = []
+						
+						for const in v:
+							if const[2] != priorityLevel:
+								newV.append(const)
+						priorityHash[k] = newV
+						
+
+				paths = []
+				for i in range(self.numNodes):
+					paths.append(bayes.dijkstra_proj(i, self.numNodes, self.edgeHash))
+				
+				newConstraints = []
+				#if nodeID >= 2:
+				#	newConstraints = self.addSensorConstraints(paths, targetNode = nodeID, matchNode = (nodeID-2))
+
+				" remove all sensor constraints from hash "
+				#deleteAll(self.edgePriorityHash, 3)
+				
+				"""
+				if self.a_hulls[nodeID] == 0:
+					self.a_hulls[nodeID] = computeHull(self.nodeHash[nodeID], sweep = False)
+					self.b_hulls[nodeID] = computeHull(self.nodeHash[nodeID], sweep = True)
+				
+				if nodeID >= 2:
+					if self.a_hulls[nodeID-2] == 0:
+						self.a_hulls[nodeID-2] = computeHull(self.nodeHash[nodeID-2], sweep = False)
+						self.b_hulls[nodeID-2] = computeHull(self.nodeHash[nodeID-2], sweep = True)
+				if nodeID >= 4:
+					if self.a_hulls[nodeID-4] == 0:
+						self.a_hulls[nodeID-4] = computeHull(self.nodeHash[nodeID-4], sweep = False)
+						self.b_hulls[nodeID-4] = computeHull(self.nodeHash[nodeID-4], sweep = True)
+				if nodeID >= 6:
+					if self.a_hulls[nodeID-6] == 0:
+						self.a_hulls[nodeID-6] = computeHull(self.nodeHash[nodeID-6], sweep = False)
+						self.b_hulls[nodeID-6] = computeHull(self.nodeHash[nodeID-6], sweep = True)
+
+				newConstraints = []
+				if nodeID >= 2:
+					offset, covar, cost = self.makeSensorConstraint(paths[nodeID][nodeID-2][0], nodeID, nodeID-2, self.b_hulls[nodeID], self.a_hulls[nodeID-2])
+					transform = matrix([ [offset[0]], [offset[1]], [offset[2]] ],dtype=float)
+					if cost < 1.5:				
+						newConstraints.append([nodeID,nodeID-2,transform,covar])			
+
+				if nodeID >= 4:
+					offset, covar, cost = self.makeSensorConstraint(paths[nodeID][nodeID-4][0], nodeID, nodeID-2, self.b_hulls[nodeID], self.a_hulls[nodeID-4])
+					transform = matrix([ [offset[0]], [offset[1]], [offset[2]] ],dtype=float)
+					if cost < 1.5:				
+						newConstraints.append([nodeID,nodeID-4,transform,covar])			
+
+				if nodeID >= 6:
+					offset, covar, cost = self.makeSensorConstraint(paths[nodeID][nodeID-6][0], nodeID, nodeID-2, self.b_hulls[nodeID], self.a_hulls[nodeID-6])
+					transform = matrix([ [offset[0]], [offset[1]], [offset[2]] ],dtype=float)
+					if cost < 1.5:				
+						newConstraints.append([nodeID,nodeID-6,transform,covar])			
+					
+				for const in newConstraints:
+					n1 = const[0]
+					n2 = const[1]
+					transform = const[2]
+					covE = const[3]
+
+					self.addPriorityEdge([n1,n2,transform,covE], SENSOR_PRIORITY)
+
+				" merge the constraints "
+				self.mergePriorityConstraints()
+				"""
+	
+			else:
+						
+				transform, covE = self.makeInPlaceConstraint(nodeID-1, nodeID)
+				self.addPriorityEdge([nodeID-1,nodeID,transform,covE], INPLACE_PRIORITY)
+	
+				" merge constraints by priority and updated estimated poses "
+				self.mergePriorityConstraints()
+
+				" try to perform corner constraints "
+				" overwrite overlap/motion constraints"
+				" corner constraints with past nodes "
+				self.addCornerConstraints(nodeID)
+
+				self.mergePriorityConstraints()
+				
+				" 1) add inplace constraint "
+				" 2) attempt corner constraint with past nodes, replacing overlaps and sensors "
+				" 3) apply sensor constraints to non-corner edges "				
+
+				
+				paths = []
+				for i in range(self.numNodes):
+					paths.append(bayes.dijkstra_proj(i, self.numNodes, self.edgeHash))
+
+				"""
+				if self.a_hulls[nodeID] == 0:
+					self.a_hulls[nodeID] = computeHull(self.nodeHash[nodeID], sweep = False)
+					self.b_hulls[nodeID] = computeHull(self.nodeHash[nodeID], sweep = True)
+				
+				if nodeID >= 2:
+					if self.a_hulls[nodeID-2] == 0:
+						self.a_hulls[nodeID-2] = computeHull(self.nodeHash[nodeID-2], sweep = False)
+						self.b_hulls[nodeID-2] = computeHull(self.nodeHash[nodeID-2], sweep = True)
+				if nodeID >= 4:
+					if self.a_hulls[nodeID-4] == 0:
+						self.a_hulls[nodeID-4] = computeHull(self.nodeHash[nodeID-4], sweep = False)
+						self.b_hulls[nodeID-4] = computeHull(self.nodeHash[nodeID-4], sweep = True)
+				if nodeID >= 6:
+					if self.a_hulls[nodeID-6] == 0:
+						self.a_hulls[nodeID-6] = computeHull(self.nodeHash[nodeID-6], sweep = False)
+						self.b_hulls[nodeID-6] = computeHull(self.nodeHash[nodeID-6], sweep = True)
+
+				newConstraints = []
+				if nodeID >= 2:
+					offset, covar, cost = self.makeSensorConstraint(paths[nodeID][nodeID-2][0], nodeID, nodeID-2, self.b_hulls[nodeID], self.a_hulls[nodeID-2])
+					transform = matrix([ [offset[0]], [offset[1]], [offset[2]] ],dtype=float)
+					if cost < 1.5:				
+						newConstraints.append([nodeID,nodeID-2,transform,covar])			
+
+				if nodeID >= 4:
+					offset, covar, cost = self.makeSensorConstraint(paths[nodeID][nodeID-4][0], nodeID, nodeID-2, self.b_hulls[nodeID], self.a_hulls[nodeID-4])
+					transform = matrix([ [offset[0]], [offset[1]], [offset[2]] ],dtype=float)
+					if cost < 1.5:				
+						newConstraints.append([nodeID,nodeID-4,transform,covar])			
+
+				if nodeID >= 6:
+					offset, covar, cost = self.makeSensorConstraint(paths[nodeID][nodeID-6][0], nodeID, nodeID-2, self.b_hulls[nodeID], self.a_hulls[nodeID-6])
+					transform = matrix([ [offset[0]], [offset[1]], [offset[2]] ],dtype=float)
+					if cost < 1.5:				
+						newConstraints.append([nodeID,nodeID-6,transform,covar])		
+						
+				newConstraints = self.addSensorConstraints(paths, targetNode = nodeID)
+				for const in newConstraints:
+					n1 = const[0]
+					n2 = const[1]
+					transform = const[2]
+					covE = const[3]
+
+					self.addPriorityEdge([n1,n2,transform,covE], SENSOR_PRIORITY)
+
+				" merge the constraints "
+				self.mergePriorityConstraints()
+				"""
+
+	def mergePriorityConstraints(self):
+		
+		totalConstraints = []
+		
+		#print "merging:"
+		
+		" merge the constraint "
+		for k, v in self.edgePriorityHash.items():
+			
+			if len(v) > 0:
+		
+				id1 = k[0]
+				id2 = k[1]
+				
+				" take the highest priority constraints only "
+				maxPriority = -1
+				for const in v:
+					thisPriority = const[2]
+					if thisPriority > maxPriority:
+						maxPriority = thisPriority
+		
+				if maxPriority == -1:
+					raise
+				
+				for const in v:
+					if const[2] == maxPriority:
+						transform = const[0]
+						covE = const[1]
+						#print id1, id2, maxPriority
+						totalConstraints.append([id1,id2,transform,covE])	
+		
+		#print "merging totalConstraints:", totalConstraints
+		v_list, self.merged_constraints = self.doToro(totalConstraints, fileName = "probe_init")
+		
+		self.edgeHash = {}
+		for i in range(len(self.merged_constraints)):
+			node1 = self.merged_constraints[i][0]
+			node2 = self.merged_constraints[i][1]
+			self.edgeHash[(node1, node2)] = [self.merged_constraints[i][2], self.merged_constraints[i][3]]
+		
+		for v in v_list:
+			node = self.nodeHash[v[0]]
+			node.setGPACPose(v[1])
+					
 	def loadNodes(self, nodeHash):
 
 		self.nodeHash = nodeHash
@@ -274,6 +957,8 @@ class PoseGraph:
 			node.setGPACPose(v[1])		
 
 	def makeHypotheses(self):
+		
+		global renderCount
 
 		if self.numNodes < 2:
 			return
@@ -344,37 +1029,6 @@ class PoseGraph:
 			a_hulls[i] = computeHull(self.nodeHash[i], sweep = False)
 			#a_hulls[i] = computeHull(self.nodeHash[i], sweep = True)
 			hull_computed[i] = True
-
-		"""
-		hypotheses = []
-		for k in range(len(cornerPairs)):
-			
-			p = cornerPairs[k]
-			dist = p[0]
-			n1 = p[1]
-			n2 = p[2]
-			transform = p[3]
-			angDist = p[4]
-			point1 = p[5]
-			point2 = p[6]
-			ang1 = p[7]
-			ang2 = p[8]	
-
-			hull1 = a_hulls[n1]
-			hull2 = a_hulls[n2]
-
-			offset, covar, cost = self.makeCornerConstraint(n1, n2, point1, point2, ang1, ang2, hull1, hull2)
- 
-			transform = matrix([ [offset[0]], [offset[1]], [offset[2]] ],dtype=float)
-			covar = deepcopy(self.E_inplace)
-	
-			print "hypothesis", k, ":",  "sensor constraint between", n1, "and", n2
-		
-			hypotheses.append([n1, n2, transform, covar])
-
-			self.renderCornerConstraint(n1, n2, transform, point1, point2, k)
-		"""
-
 		
 		" make hypothesized constraints out of the pairs "
 		hypotheses = []		
@@ -487,15 +1141,354 @@ class PoseGraph:
 			ratio = lmbda[0][0,0] / lmbda[1][0,0]
 			if ratio >= 2.0:
 				break
-			
-		print "INDICATOR:", w
+		
+		#fp = open("w_sensor.txt", 'w')
+		#fp.write(repr(w))
+		#fp.close()
+
+		
+		matrix([[ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 1.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.],
+		        [ 0.]])
+
+
+		
+		#print "INDICATOR:", repr(w)
 		selected = []	
 		for i in range(len(totalHypotheses)):
 			if w[i,0] >= 1.0:
 				selected.append(totalHypotheses[i])
 		
-		print len(selected), "added hypotheses"
-		print len(self.merged_constraints), "merged constraints"
+		
+		
+		#print len(selected), "added hypotheses"
+		#print len(self.merged_constraints), "merged constraints"
 		
 		self.activeHypotheses = selected
 
@@ -561,6 +1554,13 @@ class PoseGraph:
 
 		cornerPairs = self.findCornerCandidates(paths)
 
+		b_hulls = [0 for i in range(self.numNodes)]		
+		for i in range(self.numNodes):
+			b_hulls[i] = computeHull(self.nodeHash[i], sweep = True)
+
+
+		self.goodHypotheses = []
+		self.badHypotheses = []
 		hypotheses = []
 		for k in range(len(cornerPairs)):
 			
@@ -573,26 +1573,95 @@ class PoseGraph:
 			point1 = p[5]
 			point2 = p[6]
 			ang1 = p[7]
-			ang2 = p[8]	
+			ang2 = p[8]
+			point1_i = p[9]
+			point2_i = p[10]	
 
 			hull1 = a_hulls[n1]
 			hull2 = a_hulls[n2]
 
-			offset, covar, cost = self.makeCornerConstraint(n1, n2, point1, point2, ang1, ang2, hull1, hull2)
+			offset, covar, cost, angDiff, oriDiff = self.makeCornerConstraint(n1, n2, point1, point2, ang1, ang2, hull1, hull2, b_hulls[n1], b_hulls[n2])
  
 			transform = matrix([ [offset[0]], [offset[1]], [offset[2]] ],dtype=float)
-			covar = deepcopy(self.E_inplace)
 	
-			print "hypothesis", k, ":",  "sensor constraint between", n1, "and", n2, " cost =", cost
-		
-			hypotheses.append([n1, n2, transform, covar])
+			#print "hypothesis", k, ":",  "sensor constraint between", n1, "and", n2, " cost =", cost
 
-			#self.renderCornerConstraint(n1, n2, transform, point1, point2, k)
+			self.allCornerHypotheses.append([n1, n2, transform, covar, cost, point1, point2, angDiff, point1_i, point2_i])
 
-		self.cornerHypotheses += hypotheses
+			" ratio of match error threshold"		
+			if cost <= 0.6:
+				hypotheses.append([n1, n2, transform, covar, cost, point1, point2])
+				self.goodHypotheses.append([n1, n2, transform, covar, cost, point1, point2, angDiff, point1_i, point2_i])
+
+			else:
+				self.badHypotheses.append([n1, n2, transform, covar, cost, point1, point2, angDiff, point1_i, point2_i])
+
+		set_printoptions(threshold=nan)		
+		fn = open("cornerHypotheses.txt",'w')
+		fn.write(repr(self.allCornerHypotheses))
+		fn.close()
+				
+
+		for hyp in hypotheses:
+			n1 = hyp[0]
+			n2 = hyp[1]
+			newCost = hyp[4]
+			
+			try:
+				if n1 > n2:
+					otherHyp = self.cornerHash[(n1,n2)]
+				else:
+					otherHyp = self.cornerHash[(n2,n1)]
+			
+				oldCost = otherHyp[4]
+				if newCost < oldCost:
+					if n1 > n2:
+						self.cornerHash[(n1,n2)] = hyp
+					else:
+						self.cornerHash[(n2,n1)] = hyp
+			except:				
+				if n1 > n2:
+					self.cornerHash[(n1,n2)] = hyp
+				else:
+					self.cornerHash[(n2,n1)] = hyp			
+
+		#self.cornerHypotheses += hypotheses
 
 		#totalHypotheses = self.motion_constraints + self.overlap_constraints + self.inplace_constraints + self.backtrack_constraints + self.sensor_constraints + self.corner_constraints + self.cornerHypotheses
-		totalHypotheses =  self.sensor_constraints + self.corner_constraints + self.cornerHypotheses
+		#totalHypotheses =  self.sensor_constraints + self.corner_constraints + self.cornerHypotheses
+		#totalHypotheses =  self.corner_constraints + self.cornerHypotheses
+		
+		totalHypotheses = []
+		for k, v in self.cornerHash.items():
+			print "corner constraint:", v[0], "->", v[1]
+			totalHypotheses.append([v[0], v[1], v[2], v[3]])
+			self.renderCornerConstraint(v[0], v[1], v[2], v[5], v[6], renderCount)
+			renderCount += 1
+
+		for i in range(len(self.goodHypotheses)):
+			v = self.goodHypotheses[i]
+			id1 = v[0]
+			id2 = v[1]
+			transform = v[2]
+			covar = v[3]
+			cost = v[4]
+			point1 = v[5]
+			point2 = v[6]
+			angDiff = v[7]
+			self.renderGoodAndBadConstraint(id1, id2, transform, covar, cost, point1, point2, angDiff, "goodConstraint", i)
+			
+		for i in range(len(self.badHypotheses)):
+			v = self.badHypotheses[i]
+			id1 = v[0]
+			id2 = v[1]
+			transform = v[2]
+			covar = v[3]
+			cost = v[4]
+			point1 = v[5]
+			point2 = v[6]
+			angDiff = v[7]
+			self.renderGoodAndBadConstraint(id1, id2, transform, covar, cost, point1, point2, angDiff, "badConstraint", i)
+
 		
 		results = []
 		for i in range(len(totalHypotheses)):
@@ -635,7 +1704,7 @@ class PoseGraph:
 					
 		results.sort()
 		
-		print "len(totalHypotheses) =", len(totalHypotheses)
+		#print "len(totalHypotheses) =", len(totalHypotheses)
 				
 		if len(totalHypotheses) < 2:
 			print "too little hypotheses, rejecting"
@@ -679,14 +1748,15 @@ class PoseGraph:
 			if ratio >= 2.0:
 				break
 			
-		print "INDICATOR:", w
+		#print "INDICATOR:", w
 		selected = []	
 		for i in range(len(totalHypotheses)):
-			if w[i,0] >= 1.0:
-				selected.append(totalHypotheses[i])
+			selected.append(totalHypotheses[i])
+			#if w[i,0] >= 1.0:
+			#	selected.append(totalHypotheses[i])
 		
 		print len(selected), "added hypotheses"
-		print len(self.merged_constraints), "merged constraints"
+		#print len(self.merged_constraints), "merged constraints"
 		
 		self.activeHypotheses = selected
 
@@ -749,6 +1819,253 @@ class PoseGraph:
 			node = self.nodeHash[v[0]]
 			node.setGPACPose(v[1])		
 
+
+
+	def processCornerHypotheses(self):
+		
+		hypotheses = []
+
+		for i in range(len(self.allCornerHypotheses)):
+			v = self.allCornerHypotheses[i]
+			n1 = v[0]
+			n2 = v[1]
+			transform = v[2]
+			covar = v[3]
+			cost = v[4]
+			point1 = v[5]
+			point2 = v[6]
+			angDiff = v[7]
+			corner1_i = v[8]
+			corner2_i = v[9]
+	
+			isOkay, angDiff2, oriDiff = self.checkOrientationError([transform[0,0], transform[1,0], transform[2,0]], n1, n2)
+			
+			" ratio of match error threshold"		
+			if cost <= 0.6 and isOkay:
+				hypotheses.append([n1, n2, transform, covar, cost, point1, point2])
+				self.goodHypotheses.append([n1, n2, transform, covar, cost, point1, point2, angDiff2, oriDiff])
+			else:
+				self.badHypotheses.append([n1, n2, transform, covar, cost, point1, point2, angDiff2, oriDiff])
+
+		
+		
+		for hyp in hypotheses:
+			n1 = hyp[0]
+			n2 = hyp[1]
+			newCost = hyp[4]
+			
+			try:
+				if n1 > n2:
+					otherHyp = self.cornerHash[(n1,n2)]
+				else:
+					otherHyp = self.cornerHash[(n2,n1)]
+			
+				oldCost = otherHyp[4]
+				if newCost < oldCost:
+					if n1 > n2:
+						self.cornerHash[(n1,n2)] = hyp
+					else:
+						self.cornerHash[(n2,n1)] = hyp
+			except:				
+				if n1 > n2:
+					self.cornerHash[(n1,n2)] = hyp
+				else:
+					self.cornerHash[(n2,n1)] = hyp			
+		
+		totalHypotheses = []
+		for k, v in self.cornerHash.items():
+			print "corner constraint:", v[0], "->", v[1]
+			totalHypotheses.append([v[0], v[1], v[2], v[3]])
+			#self.renderCornerConstraint(v[0], v[1], v[2], v[5], v[6], renderCount)
+			#renderCount += 1
+
+		for i in range(len(self.goodHypotheses)):
+			v = self.goodHypotheses[i]
+			id1 = v[0]
+			id2 = v[1]
+			transform = v[2]
+			covar = v[3]
+			cost = v[4]
+			point1 = v[5]
+			point2 = v[6]
+			angDiff = v[7]
+			oriDiff = v[8]
+			self.renderGoodAndBadConstraint(id1, id2, transform, covar, cost, point1, point2, angDiff, oriDiff, "goodConstraint", i)
+		
+		"""
+		for i in range(len(self.badHypotheses)):
+			v = self.badHypotheses[i]
+			id1 = v[0]
+			id2 = v[1]
+			transform = v[2]
+			covar = v[3]
+			cost = v[4]
+			point1 = v[5]
+			point2 = v[6]
+			angDiff = v[7]
+			self.renderGoodAndBadConstraint(id1, id2, transform, covar, cost, point1, point2, angDiff, "badConstraint", i)
+		"""
+		
+		paths = []
+		for i in range(self.numNodes):
+			paths.append(bayes.dijkstra_proj(i, self.numNodes, self.edgeHash))
+
+		
+		results = []
+		for i in range(len(totalHypotheses)):
+			for j in range(i+1, len(totalHypotheses)):
+				
+				hyp1 = totalHypotheses[i]
+				hyp2 = totalHypotheses[j]
+				
+				m1 = hyp1[0]
+				m2 = hyp1[1]
+				
+				n1 = hyp2[0]
+				n2 = hyp2[1]
+				
+				Tp1 = paths[m2][n1][0]
+				Ep1 = paths[m2][n1][1]
+				
+				Tp2 = paths[n2][m1][0]
+				Ep2 = paths[n2][m1][1]
+				
+				Th1 = hyp1[2]
+				Th2 = hyp2[2]
+				
+				Ch1 = hyp1[3]
+				Ch2 = hyp2[3]
+				
+				" m1->m2, m2->n1, n1->n2, n2->m1 "
+				" Th1, Tp1, Th2, Tp2 "
+
+				covE = Ch1
+				result1 = Th1
+				result2, cov2 = doTransform(result1, Tp1, covE, Ep1)
+				result3, cov3 = doTransform(result2, Th2, cov2, Ch2)
+				result4, cov4 = doTransform(result3, Tp2, cov3, Ep2)
+				
+				invMat = scipy.linalg.inv(cov4)
+				err = sqrt(numpy.transpose(result4) * invMat * result4)
+				results.append([err, i, j])
+
+					
+		results.sort()
+		
+		#print "len(totalHypotheses) =", len(totalHypotheses)
+				
+		if len(totalHypotheses) < 2:
+			print "too little hypotheses, rejecting"
+			return []
+		
+		" set all proscribed hypothesis sets to maximum error "	
+		maxError = 0.0
+		for result in results:
+			if result[0] != None and result[0] > maxError:
+				maxError = result[0]
+
+		maxError = maxError*2
+
+		for result in results:
+			if result[0] == None:
+				result[0] = maxError
+	
+		" create the consistency matrix "
+		A = matrix(len(totalHypotheses)*len(totalHypotheses)*[0.0], dtype=float)
+		A.resize(len(totalHypotheses), len(totalHypotheses))
+			
+		" populate consistency matrix "					
+		for result in results:
+			i = result[1]
+			j = result[2]
+			A[i,j] = maxError - result[0]
+			A[j,i] = maxError - result[0]
+		
+		" do graph clustering of consistency matrix "
+		w = []
+		e = []
+		for i in range(100):
+			e, lmbda = scsgp.dominantEigenvectors(A)
+			#w = scsgp.getIndicatorVector(e[0])
+			w = scsgp.getIndicatorVector(e[1])
+			if len(e) <= 1:
+				break
+
+			" threshold test l1 / l2"
+			ratio = lmbda[0][0,0] / lmbda[1][0,0]
+			if ratio >= 2.0:
+				break
+			
+		#print "INDICATOR:", w
+		selected = []	
+		for i in range(len(totalHypotheses)):
+			selected.append(totalHypotheses[i])
+			#if w[i,0] >= 1.0:
+			#	selected.append(totalHypotheses[i])
+		
+		print len(selected), "added hypotheses"
+		#print len(self.merged_constraints), "merged constraints"
+		
+		self.activeHypotheses = selected
+
+		" merge the constraints with TORO"
+		#v_list, self.merged_constraints = self.doToro(self.merged_constraints + self.activeHypotheses, fileName = "probe_init")
+		
+		totalConstraints = []
+		"""
+		for i in range(len(self.motion_constraints)):
+			nodeID1 = self.motion_constraints[i][0]
+			nodeID2 = self.motion_constraints[i][1]
+			transform = self.motion_constraints[i][2]
+			covE = self.motion_constraints[i][3]
+			totalConstraints.append([nodeID1,nodeID2,transform,covE])
+		"""
+		
+		for i in range(len(self.overlap_constraints)):
+			nodeID1 = self.overlap_constraints[i][0]
+			nodeID2 = self.overlap_constraints[i][1]
+			transform = self.overlap_constraints[i][2]
+			covE = self.overlap_constraints[i][3]			
+			totalConstraints.append([nodeID1,nodeID2,transform,covE])
+
+		for i in range(len(self.inplace_constraints)):
+			nodeID1 = self.inplace_constraints[i][0]
+			nodeID2 = self.inplace_constraints[i][1]
+			transform = self.inplace_constraints[i][2]
+			covE = self.inplace_constraints[i][3]
+			totalConstraints.append([nodeID1,nodeID2,transform,covE])
+
+		"""
+		for i in range(len(self.backtrack_constraints)):
+			nodeID1 = self.backtrack_constraints[i][0]
+			nodeID2 = self.backtrack_constraints[i][1]
+			transform = self.backtrack_constraints[i][2]
+			covE = self.backtrack_constraints[i][3]
+			totalConstraints.append([nodeID1,nodeID2,transform,covE])
+		"""
+
+		for i in range(len(self.activeHypotheses)):
+			nodeID1 = self.activeHypotheses[i][0]
+			nodeID2 = self.activeHypotheses[i][1]
+			transform = self.activeHypotheses[i][2]
+			covE = self.activeHypotheses[i][3]
+			totalConstraints.append([nodeID1,nodeID2,transform,covE])
+
+
+		" merge the constraints with TORO"
+		v_list, self.merged_constraints = self.doToro(totalConstraints, fileName = "probe_init")
+
+
+
+		self.edgeHash = {}		
+		for i in range(len(self.merged_constraints)):
+			node1 = self.merged_constraints[i][0]
+			node2 = self.merged_constraints[i][1]
+			self.edgeHash[(node1,node2)] = [self.merged_constraints[i][2], self.merged_constraints[i][3]]
+
+		for v in v_list:
+			node = self.nodeHash[v[0]]
+			node.setGPACPose(v[1])		
 
 
 					
@@ -1079,7 +2396,7 @@ class PoseGraph:
 	
 	def makeMotionConstraint(self, i, j):
 		
-		print "making motion constraint", i, j
+		#print "making motion constraint", i, j
 
 		node1 = self.nodeHash[i]
 		node2 = self.nodeHash[j]
@@ -1100,7 +2417,7 @@ class PoseGraph:
 		return transform, covE
 				
 	
-	def makeCornerConstraint(self, n1, n2, point1, point2, ang1, ang2, hull1, hull2):
+	def makeCornerConstraint(self, n1, n2, point1, point2, ang1, ang2, hull1, hull2, sweepHull1, sweepHull2):
 		
 		" TUNE: estimated step distance from empirical results "
 		STEP_DIST = 0.145
@@ -1131,16 +2448,163 @@ class PoseGraph:
 
 		#def cornerICP(estPose1, angle, point1, point2, ang1, ang2, hull1, hull2, pastCircles, costThresh = 0.004, minMatchDist = 2.0, plotIter = False, n1 = 0, n2 = 0):
 		
-		offset, cost = gen_icp.cornerICP(estPose1, firstGuess, point1, point2, ang1, ang2, hull1, hull2, [circle1], costThresh, minMatchDist, plotIteration, n1, n2)
-		print "sensor constraint: %d -> %d" %(n1,n2), "cost =", cost
-		covar = self.E_inplace
+		offset, cost = gen_icp.cornerICP(estPose1, firstGuess, point1, point2, ang1, ang2, hull1, hull2, sweepHull1, sweepHull2, [circle1], costThresh, minMatchDist, plotIteration, n1, n2)
+		#print "made corner constraint: %d -> %d" %(n1,n2), "cost =", cost
+		covar = deepcopy(self.E_corner)
 		
-		return offset, covar, cost
+		
+		
+		" 1) get closest points where GPA curves overlap "
+		" 2) check relative orientation at those curves "
+		" 3) if orientation is around 180 degrees, reject "
+		#print "checking orientation error"
+		
+		isOkay, angDiff2, oriDiff = self.checkOrientationError(offset, n1, n2)
+		
+		#isOkay, angDiff = self.checkOrientationError(offset, n1, n2)
+		if isOkay:
+			return offset, covar, cost, angDiff2, oriDiff
+		else:
+			return offset, covar, 1e100, angDiff2, oriDiff
 			
+			 
 		" 1) need to vary angle until we have wall fitting "
 		" 2) compute alpha hulls and then perform maximum edge fitting, not overlap constraint"
 		" 3) directionality is not important here because we could be walking the opposite direction through a junction "
 
+	def checkOrientationError(self, offset, n1, n2):
+
+		def dispOffset(p, offset):
+			xd = offset[0]
+			yd = offset[1]
+			theta = offset[2]
+		
+			px = p[0]
+			py = p[1]
+			pa = p[2]
+			
+			newAngle = normalizeAngle(pa + theta)
+			#print pa, repr(theta), repr(newAngle)
+			
+			p_off = [px*math.cos(theta) - py*math.sin(theta) + xd, px*math.sin(theta) + py*math.cos(theta) + yd, newAngle]
+			
+			return p_off
+
+		#normalizeAngle(pose[2] - self.estPose[2])
+		
+		#print "offset:", repr(offset)
+		
+		node1 = self.nodeHash[n1]
+		node2 = self.nodeHash[n2]
+			
+		estPose1 = node1.getGlobalGPACPose()
+		estPose2 = node2.getGlobalGPACPose()
+		
+		poseProfile = Pose(estPose1)
+		localOffset2 = poseProfile.convertGlobalPoseToLocal(estPose2)
+		
+		#globalAngDiff = normalizeAngle(estPose2[2] - estPose1[2])
+			
+		curve1 = node1.getStableGPACurve()
+		curve2 = node2.getStableGPACurve()
+		posture1 = node1.getStableGPACPosture()
+		posture2 = node2.getStableGPACPosture()
+
+		points1 = curve1.getUniformSamples()
+		points2 = curve2.getUniformSamples()
+
+		" transform the new pose "
+		points2_offset = []
+		for p in points2:
+			result = dispOffset(p, offset)		
+			points2_offset.append(result)
+
+		points2_offset_global = []
+		for p in points2:
+			result = dispOffset(p, localOffset2)		
+			points2_offset_global.append(result)
+		
+		poly1 = []
+		for p in points1:
+			poly1.append([p[0],p[1]])	
+
+		poly2 = []
+		for p in points2_offset:
+			poly2.append([p[0],p[1]])	
+		
+		" find the matching pairs "
+		match_pairs = []
+		match_pairs2 = []
+			
+		" get the circles and radii "
+		radius2, center2 = gen_icp.computeEnclosingCircle(points2_offset)
+		radius1, center1 = gen_icp.computeEnclosingCircle(points1)
+
+		minMatchDist = 0.05
+			
+		for i in range(len(points2_offset)):
+			p_2 = poly2[i]
+
+			if gen_icp.isValid(p_2, radius1, center1, poly1):
+
+				" for every transformed point of A, find it's closest neighbor in B "
+				p_1, minDist = gen_icp.findClosestPointInHull1(points1, p_2, [0.0,0.0,0.0])
+	
+				if minDist <= minMatchDist:
+
+					" we store the untransformed point, but the transformed covariance of the A point "
+					match_pairs.append([points2_offset[i],p_1])
+					match_pairs2.append([points2_offset_global[i],p_1])
+
+		for i in range(len(points1)):
+			p_1 = poly1[i]
+	
+			if gen_icp.isValid(p_1, radius2, center2, poly2):
+		
+				#print "selected", b_p, "in circle", radiusA, centerA, "with distance"
+				" for every point of B, find it's closest neighbor in transformed A "
+				p_2, i_2, minDist = gen_icp.findClosestPointInHull2(points2_offset, p_1)
+	
+				if minDist <= minMatchDist:
+	
+					" we store the untransformed point, but the transformed covariance of the A point "
+					match_pairs.append([points2_offset[i_2],points1[i]])
+					match_pairs2.append([points2_offset_global[i_2],points1[i]])
+					
+		if len(match_pairs) == 0:
+			return False, 0.0, 0.0
+
+		distances = []
+		angSum = 0
+		angSum2 = 0
+		for i in range(len(match_pairs)):
+			pair = match_pairs[i]
+			p1 = pair[0]
+			p2 = pair[1]
+			
+			dist = sqrt((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2)
+			#print p1, p2
+			angDist = normalizeAngle(p1[2]-p2[2])
+			distances.append(angDist)
+			angSum += angDist
+
+			angDist2 = normalizeAngle(match_pairs2[i][0][2]-match_pairs2[i][1][2])
+			angSum2 += angDist2
+		
+		angDiff = angSum / len(distances)
+		globalAngDiff = angSum2 / len(distances)
+
+		oriDiff = normalizeAngle(offset[2] - localOffset2[2])
+
+		#print "angDiff =", angDiff
+		#print "globalAngDiff =", globalAngDiff
+		#print "oriDiff =", oriDiff
+
+
+		if fabs(angDiff) >= 0.7 or fabs(oriDiff) >= 0.4:
+			return False, angDiff, oriDiff
+		else:
+			return True, angDiff, oriDiff
 		
 	def makeSensorConstraint(self, transform, n1, n2, hull1, hull2):		
 
@@ -1160,8 +2624,8 @@ class PoseGraph:
 		minMatchDist = 0.5
 	
 		" plot the best fit at each iteration of the algorithm? "
-		plotIteration = True
-		#plotIteration = False
+		#plotIteration = True
+		plotIteration = False
 	
 		#offset = [0.0,0.0,0.0]
 	
@@ -1208,11 +2672,17 @@ class PoseGraph:
 
 		node1 = self.nodeHash[i]
 		node2 = self.nodeHash[j]
+		
+		#print "rootPose1", node1.rootPose
+		#print "rootPose2", node2.rootPose
+		#print "estPose1", node1.estPose
+		#print "estPose2", node2.estPose
 
-		originPosture = node1.localPosture
+		#originPosture = node1.localPosture
+		originPosture = node1.correctedPosture
 		originCurve = StableCurve(originPosture)
 		originForePose, originBackPose = originCurve.getPoses()
-		 
+		
 		originForeProfile = Pose(originForePose)
 		originBackProfile = Pose(originBackPose)
 		
@@ -1223,9 +2693,11 @@ class PoseGraph:
 		for i in range(len(originPosture)):
 			originBackPosture.append(originBackProfile.convertGlobalPoseToLocal(originPosture[i]))
 
-		newPosture = []
-		for j in range(self.probe.numSegs-1):
-			newPosture.append(self.probe.getJointPose([0.0,0.0,0.0], node1.rootNode, j))
+		#newPosture = node2.localPosture
+		newPosture = node2.correctedPosture
+		#newPosture = []
+		#for j in range(self.probe.numSegs-1):
+		#	newPosture.append(self.probe.getJointPose([0.0,0.0,0.0], node1.rootNode, j))
 
 
 		localPosture = newPosture
@@ -1271,6 +2743,7 @@ class PoseGraph:
 		" offset from 0,0 to newGPACPose "
 		" rootPose from neg. offset from correctedGPACPose "
 		localRootOffset3 = correctedProfile.convertGlobalPoseToLocal([0.0,0.0,0.0])
+		
 		
 		if foreCost > backCost:
 			offset = originBackProfile.convertLocalOffsetToGlobal(localRootOffset3)
@@ -1723,7 +3196,7 @@ class PoseGraph:
 
 		pair_unique.sort()
 		
-		print "UNIQUE PAIRS"
+		#print "UNIQUE PAIRS"
 		for p in pair_unique:
 			i = p[1]
 			j = p[2]
@@ -1738,33 +3211,32 @@ class PoseGraph:
 			
 			dist = bayes.mahab_dist(c1, c2, SENSOR_RADIUS, SENSOR_RADIUS, E)
 			
-			print "distance:", i, j, dist
+			#print "distance:", i, j, dist
 
 		return pair_unique
 
-	def findCornerCandidates(self, paths):
+	def findCornerCandidates(self, paths, nodeID = None):
 
 		SENSOR_RADIUS = 0.0
-		DIST_THRESHOLD = 5.0
-		#DIST_THRESHOLD = 2.0
-		#ANG_THRESHOLD = 1000.0
+		DIST_THRESHOLD = 2.0
 		ANG_THRESHOLD = 2.0
-		#CORNER_DIFF = 1000.0
 		CORNER_DIFF = pi/4.
 		
 		" select pairs to attempt a sensor constraint "
 		pair_candidates = []
-		
-		for i in range(self.numNodes):
-			path_set = paths[i]
+
+		if nodeID != None:
+			print "searching for corner pairs from node", nodeID
+			print "node has", len(self.nodeHash[nodeID].cornerCandidates), "corners"
+			path_set = paths[nodeID]
 			
-			ind = range(i+2,self.numNodes)
+			ind = range(nodeID+2,self.numNodes)
 
 			for j in ind:	
 				loc2 = path_set[j][0]
 				
 				" c1 and c2 are centroids of sweep regions "
-				node1 = self.nodeHash[i]
+				node1 = self.nodeHash[nodeID]
 				node2 = self.nodeHash[j]
 				corners1 = deepcopy(node1.cornerCandidates)
 				corners2 = deepcopy(node2.cornerCandidates)
@@ -1795,16 +3267,19 @@ class PoseGraph:
 							dist = bayes.mahab_dist(c1, c2, SENSOR_RADIUS, SENSOR_RADIUS, E)
 							angDist = bayes.mahabAngDist(ang1, ang2, E_param[2,2])
 
-							
+							#print "ang1,ang2,E:", ang1, ang2, E_param[2,2]
+							#print "c1,c2, dist =", [c1[0,0],c1[1,0]], [c2[0,0],c2[1,0]]
+							#print "corner:", nodeID, j, dist, angDist
 			
 							#if dist <= DIST_THRESHOLD and abs(i-j) < 5:
-							if dist <= DIST_THRESHOLD and angDist <= ANG_THRESHOLD and abs(i-j) < 5:
-								print "distance:", i, j, dist								
-								print "angDist:", i, j, angDist
+							#if dist <= DIST_THRESHOLD and angDist <= ANG_THRESHOLD and abs(i-j) < 5:
+							if dist <= DIST_THRESHOLD and angDist <= ANG_THRESHOLD:
+								#print "distance:", i, j, dist								
+								#print "angDist:", i, j, angDist
 
-								pair_candidates.append([dist,i,j,loc2, angDist, point1, point2, ang1, ang2])
+								pair_candidates.append([dist,nodeID,j,loc2, angDist, point1, point2, ang1, ang2, m, n])
 				
-			ind = range(0,i-1)
+			ind = range(0,nodeID-1)
 			ind.reverse()
 			
 			for j in ind:
@@ -1813,18 +3288,20 @@ class PoseGraph:
 
 				
 				" c1 and c2 are centroids of sweep regions "
-				node1 = self.nodeHash[i]
+				node1 = self.nodeHash[nodeID]
 				node2 = self.nodeHash[j]
 				corners1 = deepcopy(node1.cornerCandidates)
 				corners2 = deepcopy(node2.cornerCandidates)
+				
+				#print nodeID, j, "corners:", len(corners1), len(corners2)
 
 				for m in range(len(corners1)):
 					point1, cornerAngle1, ang1 = corners1[m]
 
-					if fabs(cornerAngle2-cornerAngle1) < CORNER_DIFF:
-	
-						for n in range(len(corners2)):
-							point2, cornerAngle2, ang2 = corners2[n]
+					for n in range(len(corners2)):
+						point2, cornerAngle2, ang2 = corners2[n]
+
+						if fabs(cornerAngle2-cornerAngle1) < CORNER_DIFF:
 	
 							sweepOffset1 = point1						
 							sweepOffset2 = point2				
@@ -1843,15 +3320,119 @@ class PoseGraph:
 							E = matrix([[E_param[0,0], E_param[0,1]],[E_param[1,0], E_param[1,1]]],dtype=float)
 							
 							dist = bayes.mahab_dist(c1, c2, SENSOR_RADIUS, SENSOR_RADIUS, E)
-							angDist = bayes.mahabAngDist(0.0, ang2, E_param[2,2])
+							angDist = bayes.mahabAngDist(ang1, ang2, E_param[2,2])
+							#print "ang1,ang2,E:", ang1, ang2, E_param[2,2]
+							#print "c1,c2, dist =", [c1[0,0],c1[1,0]], [c2[0,0],c2[1,0]]
+							#print "corner:", nodeID, j, dist, angDist
 	
 							#if dist <= DIST_THRESHOLD and abs(i-j) < 5:
-							if dist <= DIST_THRESHOLD and angDist <= ANG_THRESHOLD and abs(i-j) < 5:
-								print "distance:", i, j, dist
-								print "angDist:", i, j, angDist						
+							#if dist <= DIST_THRESHOLD and angDist <= ANG_THRESHOLD and abs(i-j) < 5:
+							if dist <= DIST_THRESHOLD and angDist <= ANG_THRESHOLD:
+								#print "distance:", i, j, dist
+								#print "angDist:", i, j, angDist						
 	
-								pair_candidates.append([dist,i,j,loc2, angDist, point1, point2, ang1, ang2])
-
+								pair_candidates.append([dist,nodeID,j,loc2, angDist, point1, point2, ang1, ang2, m, n])
+		else:
+			
+			for i in range(self.numNodes):
+				path_set = paths[i]
+				
+				ind = range(i+2,self.numNodes)
+	
+				for j in ind:	
+					loc2 = path_set[j][0]
+					
+					" c1 and c2 are centroids of sweep regions "
+					node1 = self.nodeHash[i]
+					node2 = self.nodeHash[j]
+					corners1 = deepcopy(node1.cornerCandidates)
+					corners2 = deepcopy(node2.cornerCandidates)
+	
+					for m in range(len(corners1)):
+						point1, cornerAngle1, ang1 = corners1[m]
+							
+						for n in range(len(corners2)):
+							point2, cornerAngle2, ang2 = corners2[n]
+	
+							if fabs(cornerAngle2-cornerAngle1) < CORNER_DIFF:
+		
+								sweepOffset1 = point1
+								sweepOffset2 = point2				
+		
+								node2Profile = Pose([loc2[0,0], loc2[1,0], loc2[2,0]])
+								sweep2Centroid = node2Profile.convertLocalToGlobal(sweepOffset2)
+	
+								oriPose = node2Profile.convertLocalOffsetToGlobal([0.0,0.0,ang2])
+								ang2 = oriPose[2]
+	
+								
+								c1 = matrix([[sweepOffset1[0]],[sweepOffset1[1]]],dtype=float)
+								c2 = matrix([[sweep2Centroid[0]],[sweep2Centroid[1]]],dtype=float)
+								E_param = path_set[j][1]
+								E = matrix([[E_param[0,0], E_param[0,1]],[E_param[1,0], E_param[1,1]]],dtype=float)
+								
+								dist = bayes.mahab_dist(c1, c2, SENSOR_RADIUS, SENSOR_RADIUS, E)
+								angDist = bayes.mahabAngDist(ang1, ang2, E_param[2,2])
+	
+								
+				
+								#if dist <= DIST_THRESHOLD and abs(i-j) < 5:
+								#if dist <= DIST_THRESHOLD and angDist <= ANG_THRESHOLD and abs(i-j) < 5:
+								if dist <= DIST_THRESHOLD and angDist <= ANG_THRESHOLD:
+									#print "distance:", i, j, dist								
+									#print "angDist:", i, j, angDist
+	
+									pair_candidates.append([dist,i,j,loc2, angDist, point1, point2, ang1, ang2, m, n])
+					
+				ind = range(0,i-1)
+				ind.reverse()
+				
+				for j in ind:
+					
+					loc2 = path_set[j][0]
+	
+					
+					" c1 and c2 are centroids of sweep regions "
+					node1 = self.nodeHash[i]
+					node2 = self.nodeHash[j]
+					corners1 = deepcopy(node1.cornerCandidates)
+					corners2 = deepcopy(node2.cornerCandidates)
+	
+					for m in range(len(corners1)):
+						point1, cornerAngle1, ang1 = corners1[m]
+	
+						for n in range(len(corners2)):
+							point2, cornerAngle2, ang2 = corners2[n]
+	
+							if fabs(cornerAngle2-cornerAngle1) < CORNER_DIFF:
+		
+								sweepOffset1 = point1						
+								sweepOffset2 = point2				
+		
+								node2Profile = Pose([loc2[0,0], loc2[1,0], loc2[2,0]])
+								sweep2Centroid = node2Profile.convertLocalToGlobal(sweepOffset2)
+								
+								oriPose = node2Profile.convertLocalOffsetToGlobal([0.0,0.0,ang2])
+								ang2 = oriPose[2]
+	
+								
+								c1 = matrix([[sweepOffset1[0]],[sweepOffset1[1]]],dtype=float)
+								c2 = matrix([[sweep2Centroid[0]],[sweep2Centroid[1]]],dtype=float)
+								
+								E_param = path_set[j][1]
+								E = matrix([[E_param[0,0], E_param[0,1]],[E_param[1,0], E_param[1,1]]],dtype=float)
+								
+								dist = bayes.mahab_dist(c1, c2, SENSOR_RADIUS, SENSOR_RADIUS, E)
+								angDist = bayes.mahabAngDist(ang1, ang2, E_param[2,2])
+		
+								#if dist <= DIST_THRESHOLD and abs(i-j) < 5:
+								#if dist <= DIST_THRESHOLD and angDist <= ANG_THRESHOLD and abs(i-j) < 5:
+								if dist <= DIST_THRESHOLD and angDist <= ANG_THRESHOLD:
+									#print "distance:", i, j, dist
+									#print "angDist:", i, j, angDist						
+		
+									pair_candidates.append([dist,i,j,loc2, angDist, point1, point2, ang1, ang2, m, n])
+		
 		" remove duplicates "
 		pair_unique = []
 		is_free = [True for i in range(len(pair_candidates))]
@@ -1885,7 +3466,7 @@ class PoseGraph:
 
 		pair_unique.sort()
 		
-		print "UNIQUE PAIRS"
+		#print "UNIQUE PAIRS"
 		for k in range(len(pair_unique)):
 			p = pair_unique[k]
 			dist = p[0]
@@ -1896,8 +3477,8 @@ class PoseGraph:
 			point1 = p[5]
 			point2 = p[6]
 
-			print "distance:", i, j, dist
-			print "angDist:", i, j, angDist
+			#print "distance:", i, j, dist
+			#print "angDist:", i, j, angDist
 			
 			#self.renderCornerConstraint(i, j, transform, point1, point2, k)
 	
@@ -2035,7 +3616,7 @@ class PoseGraph:
 
 	def findAlphaHullCandidates(self, paths, targetNode = -1):
 
-		SENSOR_RADIUS = 0.0
+		SENSOR_RADIUS = 0.5
 		#DIST_THRESHOLD = 1.0
 		DIST_THRESHOLD = 3.0
 		
@@ -2059,6 +3640,7 @@ class PoseGraph:
 				
 				dist = bayes.mahab_dist(c1, c2, SENSOR_RADIUS, SENSOR_RADIUS, E)
 				
+				print targetNode, j, dist
 				if dist <= DIST_THRESHOLD:
 					pair_candidates.append([dist,targetNode,j,loc2])
 				
@@ -2076,6 +3658,7 @@ class PoseGraph:
 				
 				dist = bayes.mahab_dist(c1, c2, SENSOR_RADIUS, SENSOR_RADIUS, E)
 				
+				print targetNode, j, dist
 				if dist <= DIST_THRESHOLD:
 					pair_candidates.append([dist,targetNode,j,loc2])
 
@@ -2672,15 +4255,15 @@ class PoseGraph:
 				break
 			else:
 				print
-		print "INDICATOR:", w
+		#print "INDICATOR:", w
 		
 		selected = []	
 		for i in range(len(hypotheses)):
 			if w[i,0] >= 1.0:
 				selected.append(hypotheses[i])
 
-		print len(selected), "added hypotheses"
-		print len(self.merged_constraints), "merged constraints"
+		#print len(selected), "added hypotheses"
+		#print len(self.merged_constraints), "merged constraints"
 
 		f = open("overlap_constraints.txt", 'w')
 		#f.write(repr(added_hypotheses))
@@ -2690,7 +4273,137 @@ class PoseGraph:
 		#return added_hypotheses
 		return selected
 
-	def addSensorConstraints(self, paths):
+	def addSensorConstraints(self, paths, targetNode = None, matchNode = None):
+
+		if targetNode != None:
+			if matchNode != None:
+				sensor_pairs = [[0.0,targetNode,matchNode,paths[targetNode][matchNode][0]]]
+			else:
+				sensor_pairs = self.findAlphaHullCandidates(paths, targetNode = targetNode)
+		else:
+			sensor_pairs = self.findAlphaHullCandidates(paths)
+		
+		" compute the alpha hulls of the selected candidates "
+		hull_computed = [False for i in range(self.numNodes)]
+		a_hulls = [0 for i in range(self.numNodes)]
+		
+		for i in range(self.numNodes):
+			a_hulls[i] = computeHull(self.nodeHash[i], sweep = False)
+			hull_computed[i] = True
+		
+		" make hypothesized constraints out of the pairs "
+		hypotheses = []		
+		for i in range(len(sensor_pairs)):
+			p = sensor_pairs[i]
+			transform = p[3]
+			n1 = p[1]
+			n2 = p[2]
+			offset, covar, cost = self.makeSensorConstraint(transform, n1, n2, a_hulls[n1], a_hulls[n2])
+			transform = matrix([ [offset[0]], [offset[1]], [offset[2]] ],dtype=float)
+		
+			if cost < 1.5:
+				hypotheses.append([p[1],p[2],transform,covar])
+				print "hypothesis", i, ":",  "sensor constraint between", n1, "and", n2
+
+		" compute the consistency between each pair of hypotheses "
+
+		self.sensorHypotheses += hypotheses
+		
+		totalHypotheses = self.sensor_constraints + self.sensorHypotheses
+		
+		results = []
+		for i in range(len(totalHypotheses)):
+			for j in range(i+1, len(totalHypotheses)):
+				
+				hyp1 = totalHypotheses[i]
+				hyp2 = totalHypotheses[j]
+				
+				m1 = hyp1[0]
+				m2 = hyp1[1]
+				
+				n1 = hyp2[0]
+				n2 = hyp2[1]
+				
+				Tp1 = paths[m2][n1][0]
+				Ep1 = paths[m2][n1][1]
+				
+				Tp2 = paths[n2][m1][0]
+				Ep2 = paths[n2][m1][1]
+				
+				Th1 = hyp1[2]
+				Th2 = hyp2[2]
+				
+				Ch1 = hyp1[3]
+				Ch2 = hyp2[3]
+				
+				" m1->m2, m2->n1, n1->n2, n2->m1 "
+				" Th1, Tp1, Th2, Tp2 "
+
+				covE = Ch1
+				result1 = Th1
+				result2, cov2 = doTransform(result1, Tp1, covE, Ep1)
+				result3, cov3 = doTransform(result2, Th2, cov2, Ch2)
+				result4, cov4 = doTransform(result3, Tp2, cov3, Ep2)
+				
+				invMat = scipy.linalg.inv(cov4)
+				err = sqrt(numpy.transpose(result4) * invMat * result4)
+				results.append([err, i, j])
+
+					
+		results.sort()
+		
+		print "len(totalHypotheses) =", len(totalHypotheses)
+				
+		if len(totalHypotheses) < 2:
+			print "too little hypotheses, rejecting"
+			return [] 
+		
+		" set all proscribed hypothesis sets to maximum error "	
+		maxError = 0.0
+		for result in results:
+			if result[0] != None and result[0] > maxError:
+				maxError = result[0]
+
+		maxError = maxError*2
+
+		for result in results:
+			if result[0] == None:
+				result[0] = maxError
+	
+		" create the consistency matrix "
+		A = matrix(len(totalHypotheses)*len(totalHypotheses)*[0.0], dtype=float)
+		A.resize(len(totalHypotheses), len(totalHypotheses))
+			
+		" populate consistency matrix "					
+		for result in results:
+			i = result[1]
+			j = result[2]
+			A[i,j] = maxError - result[0]
+			A[j,i] = maxError - result[0]
+
+		" do graph clustering of consistency matrix "
+		w = []
+		e = []
+		for i in range(100):
+			e, lmbda = scsgp.dominantEigenvectors(A)
+			#w = scsgp.getIndicatorVector(e[0])
+			w = scsgp.getIndicatorVector(e[1])
+			if len(e) <= 1:
+				break
+
+			" threshold test l1 / l2"
+			ratio = lmbda[0][0,0] / lmbda[1][0,0]
+			if ratio >= 2.0:
+				break
+
+		selected = []	
+		for i in range(len(totalHypotheses)):
+			if w[i,0] >= 1.0:
+				selected.append(totalHypotheses[i])
+
+
+		"""
+
 
 		" find candidates to perform sensor constraints "
 		#sensor_pairs = self.findSweepCandidates(paths)
@@ -2835,11 +4548,12 @@ class PoseGraph:
 			ratio = lmbda[0][0,0] / lmbda[1][0,0]
 			if ratio >= 2.0:
 				break
-		print "INDICATOR:", w
+		#print "INDICATOR:", w
 		selected = []	
 		for i in range(len(hypotheses)):
 			if w[i,0] >= 1.0:
 				selected.append(hypotheses[i])
+		"""
 
 		"""
 		added_hypotheses = []
@@ -2870,13 +4584,13 @@ class PoseGraph:
 		print len(added_hypotheses), "added hypotheses"
 		"""
 		
-		print len(selected), "added hypotheses"
-		print len(self.merged_constraints), "merged constraints"
+		#print len(selected), "added hypotheses"
+		#print len(self.merged_constraints), "merged constraints"
 
-		f = open("sensor_constraints.txt", 'w')
+		#f = open("sensor_constraints.txt", 'w')
 		#f.write(repr(added_hypotheses))
-		f.write(repr(selected))
-		f.close()
+		#f.write(repr(selected))
+		#f.close()
 		
 		#return added_hypotheses
 		return selected
@@ -2888,10 +4602,10 @@ class PoseGraph:
 		" vertices "
 		v_list = []
 
-		for i in range(self.numNodes):
-			node1 = self.nodeHash[i]
+		for k, v in self.nodeHash.items():
+			node1 = v
 			estPose1 = node1.getGlobalGPACPose()
-			v_list.append([i, [estPose1[0], estPose1[1], estPose1[2]]])
+			v_list.append([k, [estPose1[0], estPose1[1], estPose1[2]]])
 
 		if len(constraints) == 0:
 			return v_list, []
@@ -2911,6 +4625,9 @@ class PoseGraph:
 		
 		#print "Running TORO with", len(e_list), "constraints"
 		" add hypotheses to the TORO file "
+		
+		#print "e_list:", e_list
+		#print "v_list:", v_list
 
 		toro.writeConstrainedToroGraph(".", fileName + ".graph", v_list, e_list)
 		toro.executeToro("./" + fileName + ".graph")
@@ -3010,6 +4727,153 @@ class PoseGraph:
 		yP.append(hull1[0][1])
 		pylab.plot(xP,yP, color = "black")
 
+	def renderGoodAndBadConstraint(self, id1, id2, transform, covar, cost, point1, point2, angDiff, oriDiff, fileName, renderCount):
+		
+		pylab.clf()
+			
+		stdev = 1
+
+		covE = covar
+		
+		node1 = self.nodeHash[id1]
+		node2 = self.nodeHash[id2]
+		
+		offset = [transform[0,0], transform[1,0], transform[2,0]]
+
+		cholE = numpy.linalg.cholesky(covE[0:2,0:2])
+		M = matrix([[transform[0,0]],[transform[1,0]]])
+		circle = [matrix([[cos(phi)], [sin(phi)]]) for phi in arange(0.0, 2*pi, 0.1)]
+		ellipse = []
+		for p in circle:
+			X = p
+			Y = M + stdev * cholE * X
+			ellipse.append([Y[0,0], Y[1,0]])
+
+		" create the ground constraints "
+		gndGPAC1Pose = node1.getGndGlobalGPACPose()
+		currProfile = Pose(gndGPAC1Pose)
+		gndGPAC2Pose = node2.getGndGlobalGPACPose()
+		gnd_offset = currProfile.convertGlobalPoseToLocal(gndGPAC2Pose)		
+
+		posture1 = node1.getStableGPACPosture()
+		posture2 = node2.getStableGPACPosture()
+		
+		#getBoundaryPoints
+
+		hull1 = computeHull(node1, sweep = True)
+		hull2 = computeHull(node2, sweep = True)
+		hull2_trans = []
+		hull2_gnd = []
+
+		posture_trans = []
+		pose2Profile = Pose(offset)
+		for p in posture2:
+			posture_trans.append(pose2Profile.convertLocalOffsetToGlobal(p))
+
+		for p in hull2:
+			hull2_trans.append(pose2Profile.convertLocalToGlobal(p))
+			
+			
+		point2_trans = pose2Profile.convertLocalToGlobal(point2)
+
+		posture_gnd = []
+		gndProfile = Pose(gnd_offset)
+		for p in posture2:
+			posture_gnd.append(gndProfile.convertLocalOffsetToGlobal(p))
+
+		for p in hull2:
+			hull2_gnd.append(gndProfile.convertLocalToGlobal(p))
+
+		segWidth = self.probe.robotParam['segWidth']
+		segLength = self.probe.robotParam['segLength']
+				
+		for p in posture_gnd:
+			xP = []
+			yP = []
+			
+			p1 = [p[0] - 0.5*segWidth*sin(p[2]), p[1] + 0.5*segWidth*cos(p[2])]
+			p2 = [p[0] + 0.5*segWidth*sin(p[2]), p[1] - 0.5*segWidth*cos(p[2])]
+			p3 = [p[0] + segLength*cos(p[2]) + 0.5*segWidth*sin(p[2]), p[1] + segLength*sin(p[2]) - 0.5*segWidth*cos(p[2])]
+			p4 = [p[0] + segLength*cos(p[2]) - 0.5*segWidth*sin(p[2]), p[1] + segLength*sin(p[2]) + 0.5*segWidth*cos(p[2])]
+
+			xP = [p4[0],p3[0],p2[0],p1[0],p4[0]]
+			yP = [p4[1],p3[1],p2[1],p1[1],p4[1]]
+			
+			pylab.plot(xP,yP, linewidth=1, color = "black")
+
+		xP = []
+		yP = []
+		for p in hull2_gnd:
+			xP.append(p[0])
+			yP.append(p[1])
+		xP.append(hull2_gnd[0][0])
+		yP.append(hull2_gnd[0][1])
+		pylab.plot(xP,yP, color = "black")
+
+		for p in posture1:
+			xP = []
+			yP = []
+			
+			p1 = [p[0] - 0.5*segWidth*sin(p[2]), p[1] + 0.5*segWidth*cos(p[2])]
+			p2 = [p[0] + 0.5*segWidth*sin(p[2]), p[1] - 0.5*segWidth*cos(p[2])]
+			p3 = [p[0] + segLength*cos(p[2]) + 0.5*segWidth*sin(p[2]), p[1] + segLength*sin(p[2]) - 0.5*segWidth*cos(p[2])]
+			p4 = [p[0] + segLength*cos(p[2]) - 0.5*segWidth*sin(p[2]), p[1] + segLength*sin(p[2]) + 0.5*segWidth*cos(p[2])]
+
+			xP = [p4[0],p3[0],p2[0],p1[0],p4[0]]
+			yP = [p4[1],p3[1],p2[1],p1[1],p4[1]]
+			
+			pylab.plot(xP,yP, linewidth=1, color = "green")
+
+		xP = []
+		yP = []
+		for p in hull1:
+			xP.append(p[0])
+			yP.append(p[1])
+		xP.append(hull1[0][0])
+		yP.append(hull1[0][1])
+		pylab.plot(xP,yP, color = "green")
+
+		for p in posture_trans:
+			xP = []
+			yP = []
+			
+			p1 = [p[0] - 0.5*segWidth*sin(p[2]), p[1] + 0.5*segWidth*cos(p[2])]
+			p2 = [p[0] + 0.5*segWidth*sin(p[2]), p[1] - 0.5*segWidth*cos(p[2])]
+			p3 = [p[0] + segLength*cos(p[2]) + 0.5*segWidth*sin(p[2]), p[1] + segLength*sin(p[2]) - 0.5*segWidth*cos(p[2])]
+			p4 = [p[0] + segLength*cos(p[2]) - 0.5*segWidth*sin(p[2]), p[1] + segLength*sin(p[2]) + 0.5*segWidth*cos(p[2])]
+
+			xP = [p4[0],p3[0],p2[0],p1[0],p4[0]]
+			yP = [p4[1],p3[1],p2[1],p1[1],p4[1]]
+			
+			pylab.plot(xP,yP, linewidth=1, color = "red")
+
+		xP = []
+		yP = []
+		for p in hull2_trans:
+			xP.append(p[0])
+			yP.append(p[1])
+		xP.append(hull2_trans[0][0])
+		yP.append(hull2_trans[0][1])
+		pylab.plot(xP,yP, color = "red")
+
+
+		xP = []
+		yP = []
+		for p in ellipse:
+			xP.append(p[0])
+			yP.append(p[1])
+		pylab.plot(xP,yP, linewidth=3, color='blue')
+	
+		xP = [point1[0], point2_trans[0]]
+		yP = [point1[1], point2_trans[1]]
+		pylab.scatter(xP, yP, color='k')
+		
+		pylab.title("%d ---> %d, cost = %f, angDiff = %f, oriDiff = %f" % (id1, id2, cost, angDiff, oriDiff))
+		pylab.xlim(-4,4)
+		pylab.ylim(-4,4)
+		pylab.savefig(fileName + "_%04u.png" % renderCount)
+
+
 	def renderCornerConstraint(self, id1, id2, transform, point1, point2, count):
 
 		
@@ -3017,7 +4881,7 @@ class PoseGraph:
 			
 		stdev = 1
 
-		covE = self.E_inplace
+		covE = self.E_corner
 		
 		node1 = self.nodeHash[id1]
 		node2 = self.nodeHash[id2]
@@ -3476,12 +5340,15 @@ class PoseGraph:
 			yP.append(pose[1])		
 		pylab.scatter(xP,yP, color='k', linewidth=1)
 
+		#pylab.title("Corner Constraint %d ---> %d" % (id1, id2))
+		#pylab.xlim(-4,4)
+		#pylab.ylim(-4,4)
+
+		pylab.title("%d Poses" % self.numNodes)
+		pylab.xlim(-5,10)
+		pylab.ylim(-8,8)
 
 			
-		pylab.xlim(-5,10)
-		#pylab.xlim(-8,12)
-		#pylab.ylim(-10,10)
-		pylab.ylim(-8,8)
 		if id == []:
 			pylab.savefig("plotEstimate%04u.png" % self.numNodes)
 		else:

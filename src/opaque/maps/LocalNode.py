@@ -134,7 +134,7 @@ class LocalNode:
 		originPosture = self.localPosture
 		originCurve = StableCurve(originPosture)
 		originForePose, originBackPose = originCurve.getPoses()
-		 
+		
 		originForeProfile = Pose(originForePose)
 		originBackProfile = Pose(originBackPose)
 		
@@ -154,7 +154,7 @@ class LocalNode:
 		localCurve = StableCurve(localPosture)
 
 		localForePose, localBackPose = localCurve.getPoses()
-		 
+		
 		localForeProfile = Pose(localForePose)
 		localBackProfile = Pose(localBackPose)
 		
@@ -844,7 +844,7 @@ class LocalNode:
 		f.close()
 
 	
-	def readFromFile(self, dirName, nodeID):
+	def readFromFile(self, dirName, nodeID, forcedPose = []):
 		
 		self.nodeID = nodeID
 		#self.poseProfile.readFromFile("prof%04u.txt" % self.nodeID)
@@ -858,10 +858,12 @@ class LocalNode:
 		" occupancy map "
 		self.sweepMap.readFromFile(dirName)
 
-		
-		f = open(dirName + "/estpose%04u.txt" % self.nodeID, 'r')
-		estPose = eval(f.read().rstrip())
-		f.close()
+		if len(forcedPose) == 0:
+			f = open(dirName + "/estpose%04u.txt" % self.nodeID, 'r')
+			estPose = eval(f.read().rstrip())
+			f.close()
+		else:
+			estPose = forcedPose
 
 		#self.setEstPose(estPose)
 
@@ -926,7 +928,7 @@ class LocalNode:
 		self.obstacleMap.update()
 		
 		self.cornerCandidates = []
-		cornerCandidates = extractCornerCandidates(self.sweepMap.getMap())
+		cornerCandidates = extractCornerCandidates(self.sweepMap.getMap(), estPose = self.getGndPose())
 
 
 		" convert to real coordinates from pixel "
@@ -944,10 +946,16 @@ class LocalNode:
 			pnt2 = localGPACProfile.convertGlobalToLocal([pnt[0],pnt[1]])	
 			pose2 = localGPACProfile.convertGlobalPoseToLocal([0.0,0.0,ang])
 
+
+			distFromCenter = sqrt(pnt2[0]**2 + pnt2[1]**2)
+			#print "distFromCenter =", distFromCenter, self.nodeID
+
+
 			#finalCandidates.append((point, cornerAngle, inwardVec))
 			
 			#self.cornerCandidates.append((pnt2, cand[1], cand[2]))
-			self.cornerCandidates.append((pnt2, cand[1], pose2[2]))
+			if distFromCenter >= 1.35:
+				self.cornerCandidates.append((pnt2, cand[1], pose2[2]))
 
 		self.dirty = False
 		

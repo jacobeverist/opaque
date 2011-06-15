@@ -1,7 +1,8 @@
 import cv
-from math import pi, sqrt, acos, cos, sin, fabs
+from math import pi, sqrt, acos, cos, sin, fabs, floor
 from numpy import arange, array
-from copy import deepcopy
+from copy import deepcopy, copy
+from Pose import Pose
 
 import Image
 
@@ -95,17 +96,82 @@ def filterIntersections(lines, maxX, maxY):
 
 	return intersections
 
-def extractCornerCandidates(pilImg):
+def extractCornerCandidates(pilImg, estPose = []):
 
 	global saveCount
 	global histCount
+
+	isRender = False
+	
+
+
 
 	" convert from PIL to OpenCV "
 	#pilImg = Image.open('foo.png')       # PIL image
 	img = cv.CreateImageHeader(pilImg.size, cv.IPL_DEPTH_8U, 1)
 	cv.SetData(img, pilImg.tostring())
 
+	if isRender:
+		cv.SaveImage("%04u_0.png" % saveCount, img)
+	
+	if isRender and len(estPose) > 0:
+		color_dst = cv.CreateImage(cv.GetSize(img), 8, 3)
+		cv.CvtColor(img, color_dst, cv.CV_GRAY2BGR)
 
+		WLEN = 3.0
+		WLEN2 = 5.0
+		wall1 = [[-14.0, -0.2], [-4.0, -0.2], [-4.0 + WLEN*cos(pi/3), -0.2 - WLEN*sin(pi/3)]]
+		wall2 = [[-4.0 + WLEN2*cos(pi/3), 0.2 + WLEN2*sin(pi/3)], [-4.0, 0.2] ,[-14.0, 0.2]]
+		w1 = wall1[2]
+		w2 = wall2[0]
+		
+		wall3 = [[w1[0] + 0.4*cos(pi/6), w1[1] + 0.4*sin(pi/6)], [0.4*cos(pi/6) - 4, 0.0], [w2[0] + 0.4*cos(pi/6), w2[1] - 0.4*sin(pi/6)], w2]
+		lp = wall3[0]
+		rp = wall3[2]
+		
+		wall6 = [lp, [lp[0] + WLEN*cos(pi/6), lp[1] + WLEN*sin(pi/6)]]
+		wall6.append([wall6[1][0] + 0.4*cos(pi/3), wall6[1][1] - 0.4*sin(pi/3)])
+		wall6.append([wall6[2][0] - WLEN*cos(pi/6), wall6[2][1] - WLEN*sin(pi/6)])
+		wall6.append([wall6[3][0] + WLEN*cos(pi/3), wall6[3][1] - WLEN*sin(pi/3)])
+		wall6.append([wall6[4][0] - 0.4*cos(pi/6), wall6[4][1] - 0.4*sin(pi/6)])
+		wall6.append(w1)
+		wall6.reverse()
+		
+		walls = [wall1, wall2, wall3, wall6]	
+		for wall in walls:
+			for i in range(len(wall)):
+				p = copy(wall[i])
+				p[0] += 6.0
+				wall[i] = p		
+
+		currProfile = Pose(estPose)
+		
+		divPix = 40.0
+		numPixel = 401
+
+		localWalls = []
+		for wall in walls:
+			newWall = []
+			for i in range(len(wall)):
+				p = copy(wall[i])
+				localP = currProfile.convertGlobalToLocal(p)
+				#indexX = localP[0]*divPix + numPixel/2 + 1
+				#indexY = localP[1]*divPix + numPixel/2 + 1
+				indexX = int(floor(localP[0]*divPix)) + numPixel/2 + 1
+				indexY = int(floor(localP[1]*divPix)) + numPixel/2 + 1
+				newWall.append([indexX, indexY])
+			localWalls.append(newWall)
+			
+		for wall in localWalls:
+			for i in range(len(wall)-1):
+				indX = wall[i][0]
+				indY = wall[i][1]
+				indX_2 = wall[i+1][0]
+				indY_2 = wall[i+1][1]
+				cv.Line(color_dst, (indX, indY), (indX_2, indY_2), cv.CV_RGB(0, 0, 0), 1, 8)
+		
+		cv.SaveImage("%04u_0.png" % saveCount, color_dst)
+	
 	CORNER_THRESH = 400
 	ROI_SIZE = 15
 
@@ -122,6 +188,10 @@ def extractCornerCandidates(pilImg):
 	edges = cv.CreateImage(cv.GetSize(img), cv.IPL_DEPTH_8U, 1)
 	cv.Canny(img, edges, 50, 200, aperture_size=3)
 
+	if isRender:
+		cv.SaveImage("%04u_1.png" % saveCount, corners)
+	#cv.SaveImage("%04u_2.png" % saveCount, edges)
+
 	" 3rd, pick the maximum points out of the Sobel corner detection "
 	count = 0
 	maxVal = CORNER_THRESH
@@ -131,6 +201,15 @@ def extractCornerCandidates(pilImg):
 			if corners[n,m] > maxVal:
 				maxPoints.append((m,n))
 				count += 1
+
+
+	if isRender:	
+		color_dst = cv.CreateImage(cv.GetSize(edges), 8, 3)
+		cv.CvtColor(edges, color_dst, cv.CV_GRAY2BGR)
+		for point in maxPoints:
+			cv.Circle(color_dst, point, 2, cv.CV_RGB(0,0,255), thickness=1, lineType=8, shift=0) 
+		cv.SaveImage("%04u_2.png" % saveCount, color_dst)
+		
 	#print count, "points over", maxVal
 
 
@@ -139,6 +218,10 @@ def extractCornerCandidates(pilImg):
 	THRESH = 10 
 	MAXLINEGAP = 3
 	MINLINELENGTH = 3
+
+
+	" print max points "
+	filteredPoints = []
 
 	cornerCandidates = []
 	" 4th, for each maximum point, compute a corner centered on the point "
@@ -180,6 +263,8 @@ def extractCornerCandidates(pilImg):
 			rho, theta = results[k][1]
 			for m in range(results[k][0]):
 				initVals.append(theta)
+
+
 
 		" 8th, perform k-means clustering to select the two most likely edges that would form a corner "
 		features  = array(initVals)
@@ -498,57 +583,29 @@ def extractCornerCandidates(pilImg):
 			finalCandidates.append((point, cornerAngle, inwardVec))
 
 	cv.ResetImageROI(edges)
-	#color_dst = cv.CreateImage(cv.GetSize(edges), 8, 3)
-	#cv.CvtColor(edges, color_dst, cv.CV_GRAY2BGR)
-	angles = []
-	#for ((rho1,theta1),(rho2,theta2), point, inwardVec, cornerAngle) in cornerCandidates:
-	for (point, cornerAngle, inwardVec) in finalCandidates:
 
-		angles.append(cornerAngle)
-
-		#a = cos(theta1)
-		#b = sin(theta1)
-		#x0 = a * rho1 
-		#y0 = b * rho1
-		#pt1 = (cv.Round(x0 + 400*(-b)), cv.Round(y0 + 400*(a)))
-		#pt2 = (cv.Round(x0 - 400*(-b)), cv.Round(y0 - 400*(a)))
-		#seg = (pt1,pt2)
-		#cv.Line(color_dst, seg[0], seg[1], cv.CV_RGB(255, 0, 0), 1, 8)
-
-		#a = cos(theta2)
-		#b = sin(theta2)
-		#x0 = a * rho2 
-		#y0 = b * rho2
-		#pt1 = (cv.Round(x0 + 400*(-b)), cv.Round(y0 + 400*(a)))
-		#pt2 = (cv.Round(x0 - 400*(-b)), cv.Round(y0 - 400*(a)))
-		#seg = (pt1,pt2)
-		#cv.Line(color_dst, seg[0], seg[1], cv.CV_RGB(255, 0, 0), 1, 8)
-
-		#print "point:", point
-		indX = cv.Floor(point[0])
-		indY = cv.Floor(point[1])
-		#cv.Circle(color_dst, (indX,indY), 5, cv.CV_RGB(0,0,255), thickness=1, lineType=8, shift=0) 
-
-		pt2 = [point[0] + inwardVec[0]*5, point[1] + inwardVec[1]*5]
-		#print "pt2:", pt2
-		indX_2 = cv.Floor(pt2[0])
-		indY_2 = cv.Floor(pt2[1])
-		#cv.Line(color_dst, (indX, indY), (indX_2, indY_2), cv.CV_RGB(255, 0, 0), 1, 8)
-
-
-	print "image", saveCount
-	print angles
-	print
-
-	#for point in maxPoints:
-	#	indX = cv.Floor(point[0])
-	#	indY = cv.Floor(point[1])
-	#	cv.Circle(color_dst, (indX,indY), 5, cv.CV_RGB(0,255,0), thickness=1, lineType=8, shift=0) 
-
-
-	#cv.SaveImage("%04u_1.png" % saveCount, edges)
-	#cv.SaveImage("%04u_2.png" % saveCount, color_dst)
-	saveCount += 1
+	if isRender:
+		color_dst = cv.CreateImage(cv.GetSize(edges), 8, 3)
+		cv.CvtColor(edges, color_dst, cv.CV_GRAY2BGR)
+		angles = []
+		for (point, cornerAngle, inwardVec) in finalCandidates:
+	
+			angles.append(cornerAngle)
+	
+			indX = cv.Floor(point[0])
+			indY = cv.Floor(point[1])
+	
+			pt2 = [point[0] + inwardVec[0]*8, point[1] + inwardVec[1]*8]
+			indX_2 = cv.Floor(pt2[0])
+			indY_2 = cv.Floor(pt2[1])
+			cv.Line(color_dst, (indX, indY), (indX_2, indY_2), cv.CV_RGB(255, 0, 0), 2, 8)
+	
+	
+		numCorners = len(finalCandidates)
+		font = cv.InitFont(cv.CV_FONT_HERSHEY_COMPLEX, 0.5, 0.5, 0.0, 1, cv.CV_AA)
+		cv.PutText(color_dst, "%d candidate corners" % numCorners, (10, 50), font, cv.RGB(255,255,255)) 
+		cv.SaveImage("%04u_3.png" % saveCount, color_dst)
+		saveCount += 1
 
 	" compute the direction of the corner.  vector goes inward towards open space "
 
