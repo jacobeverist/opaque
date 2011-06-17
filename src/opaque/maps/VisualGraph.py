@@ -54,8 +54,8 @@ class VisualGraph:
 			
 			self.poseGraph.loadNewNode(currNode)
 	
-			if i % 10 == 0:
-				self.poseGraph.makeCornerBinConsistent()
+			#if i % 10 == 0:
+			#	self.poseGraph.makeCornerBinConsistent()
 	
 			self.drawConstraints(i)
 

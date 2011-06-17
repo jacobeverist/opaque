@@ -254,6 +254,17 @@ class PoseGraph:
 
 		return priorityEdges
 
+	def deleteAllPriority(self, priorityLevel):
+		
+		for k, v in self.edgePriorityHash.items():
+			newV = []
+			
+			for const in v:
+				if const[2] != priorityLevel:
+					newV.append(const)
+			self.edgePriorityHash[k] = newV
+
+
 	def makeCornerBinConsistent(self):
 
 		for k in range(len(self.cornerBins)):
@@ -666,32 +677,32 @@ class PoseGraph:
 				" overwrite overlap/motion constraints "
 				" do not overwrite corner constraints "
 
-				def deleteAll(priorityHash, priorityLevel):
-					
-					for k, v in priorityHash.items():
-						newV = []
-						
-						for const in v:
-							if const[2] != priorityLevel:
-								newV.append(const)
-						priorityHash[k] = newV
-						
 
+				"""
 				paths = []
 				for i in range(self.numNodes):
 					paths.append(bayes.dijkstra_proj(i, self.numNodes, self.edgeHash))
 				
 				newConstraints = []
-				#if nodeID >= 2:
-				#	newConstraints = self.addSensorConstraints(paths, targetNode = nodeID, matchNode = (nodeID-2))
+				if nodeID >= 2 and nodeID <= 24:
+					newConstraints = self.addSensorConstraints(paths, targetNode = nodeID)
 
+				for const in newConstraints:
+					n1 = const[0]
+					n2 = const[1]
+					transform = const[2]
+					covE = const[3]
+
+					self.addPriorityEdge([n1,n2,transform,covE], SENSOR_PRIORITY)
+
+				" merge the constraints "
+				self.mergePriorityConstraints()
+				"""
+				
 				" remove all sensor constraints from hash "
 				#deleteAll(self.edgePriorityHash, 3)
 				
 				"""
-				if self.a_hulls[nodeID] == 0:
-					self.a_hulls[nodeID] = computeHull(self.nodeHash[nodeID], sweep = False)
-					self.b_hulls[nodeID] = computeHull(self.nodeHash[nodeID], sweep = True)
 				
 				if nodeID >= 2:
 					if self.a_hulls[nodeID-2] == 0:
@@ -724,18 +735,8 @@ class PoseGraph:
 					transform = matrix([ [offset[0]], [offset[1]], [offset[2]] ],dtype=float)
 					if cost < 1.5:				
 						newConstraints.append([nodeID,nodeID-6,transform,covar])			
-					
-				for const in newConstraints:
-					n1 = const[0]
-					n2 = const[1]
-					transform = const[2]
-					covE = const[3]
-
-					self.addPriorityEdge([n1,n2,transform,covE], SENSOR_PRIORITY)
-
-				" merge the constraints "
-				self.mergePriorityConstraints()
 				"""
+					
 	
 			else:
 						
@@ -756,15 +757,28 @@ class PoseGraph:
 				" 2) attempt corner constraint with past nodes, replacing overlaps and sensors "
 				" 3) apply sensor constraints to non-corner edges "				
 
-				
+				"""
 				paths = []
 				for i in range(self.numNodes):
 					paths.append(bayes.dijkstra_proj(i, self.numNodes, self.edgeHash))
 
+				newConstraints = []
+				if nodeID >= 2 and nodeID <= 24:
+					newConstraints = self.addSensorConstraints(paths, targetNode = nodeID)
+
+				for const in newConstraints:
+					n1 = const[0]
+					n2 = const[1]
+					transform = const[2]
+					covE = const[3]
+
+					self.addPriorityEdge([n1,n2,transform,covE], SENSOR_PRIORITY)
+
+				" merge the constraints "
+				self.mergePriorityConstraints()
 				"""
-				if self.a_hulls[nodeID] == 0:
-					self.a_hulls[nodeID] = computeHull(self.nodeHash[nodeID], sweep = False)
-					self.b_hulls[nodeID] = computeHull(self.nodeHash[nodeID], sweep = True)
+
+				"""
 				
 				if nodeID >= 2:
 					if self.a_hulls[nodeID-2] == 0:
@@ -799,17 +813,49 @@ class PoseGraph:
 						newConstraints.append([nodeID,nodeID-6,transform,covar])		
 						
 				newConstraints = self.addSensorConstraints(paths, targetNode = nodeID)
-				for const in newConstraints:
-					n1 = const[0]
-					n2 = const[1]
-					transform = const[2]
-					covE = const[3]
-
-					self.addPriorityEdge([n1,n2,transform,covE], SENSOR_PRIORITY)
-
-				" merge the constraints "
-				self.mergePriorityConstraints()
 				"""
+
+		if nodeID == 25:
+
+			paths = []
+			for i in range(self.numNodes):
+				paths.append(bayes.dijkstra_proj(i, self.numNodes, self.edgeHash))
+			
+			newConstraints = []
+			self.newConstraints2 = []
+			newConstraints, self.newConstraints2 = self.addSensorConstraints(paths)
+			#newConstraints = self.addSensorConstraints(paths, targetNode = nodeID)
+			
+			" remove previous shape constraints "
+			#deleteAll(self.edgePriorityHash, SENSOR_PRIORITY)
+			self.deleteAllPriority(SENSOR_PRIORITY)
+				
+			for const in newConstraints:
+				n1 = const[0]
+				n2 = const[1]
+				transform = const[2]
+				covE = const[3]
+	
+				self.addPriorityEdge([n1,n2,transform,covE], SENSOR_PRIORITY)
+	
+			" merge the constraints "
+			self.mergePriorityConstraints()
+
+		if nodeID == 26:
+
+			self.deleteAllPriority(SENSOR_PRIORITY)
+				
+			for const in self.newConstraints2:
+				n1 = const[0]
+				n2 = const[1]
+				transform = const[2]
+				covE = const[3]
+	
+				self.addPriorityEdge([n1,n2,transform,covE], SENSOR_PRIORITY)
+	
+			" merge the constraints "
+			self.mergePriorityConstraints()
+
 
 	def mergePriorityConstraints(self):
 		
@@ -2432,8 +2478,8 @@ class PoseGraph:
 		minMatchDist = 0.5
 	
 		" plot the best fit at each iteration of the algorithm? "
-		plotIteration = True
-		#plotIteration = False
+		#plotIteration = True
+		plotIteration = False
 		
 		" Extract the data from the files and put them into arrays "		
 		node1 = self.nodeHash[n1]
@@ -4309,7 +4355,10 @@ class PoseGraph:
 
 		self.sensorHypotheses += hypotheses
 		
-		totalHypotheses = self.sensor_constraints + self.sensorHypotheses
+		#totalHypotheses = self.sensor_constraints + self.sensorHypotheses
+		totalHypotheses = self.sensorHypotheses
+		
+		#totalHypotheses = hypotheses
 		
 		results = []
 		for i in range(len(totalHypotheses)):
@@ -4386,8 +4435,8 @@ class PoseGraph:
 		e = []
 		for i in range(100):
 			e, lmbda = scsgp.dominantEigenvectors(A)
-			#w = scsgp.getIndicatorVector(e[0])
-			w = scsgp.getIndicatorVector(e[1])
+			w = scsgp.getIndicatorVector(e[0])
+			w2 = scsgp.getIndicatorVector(e[1])
 			if len(e) <= 1:
 				break
 
@@ -4400,6 +4449,11 @@ class PoseGraph:
 		for i in range(len(totalHypotheses)):
 			if w[i,0] >= 1.0:
 				selected.append(totalHypotheses[i])
+
+		selected2 = []	
+		for i in range(len(totalHypotheses)):
+			if w2[i,0] >= 1.0:
+				selected2.append(totalHypotheses[i])
 
 
 		"""
@@ -4593,7 +4647,7 @@ class PoseGraph:
 		#f.close()
 		
 		#return added_hypotheses
-		return selected
+		return selected, selected2
 
 	def doToro(self, constraints, fileName = "probe"):
 		
