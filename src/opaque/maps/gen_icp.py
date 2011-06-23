@@ -55,10 +55,28 @@ from copy import deepcopy
 
 from Pose import Pose
 
+from icp import shapeCostC
+from icp import computeMatchErrorP
+
 numIterations = 0
 
 fig = pylab.figure()
 
+def dispP(p, offset):
+	
+	xd = offset[0]
+	yd = offset[1]
+	theta = offset[2]
+
+	px = p[0]
+	py = p[1]
+	
+	tx = px*math.cos(theta) - py*math.sin(theta) + xd
+	ty = px*math.sin(theta) + py*math.cos(theta) + yd
+	
+	p_off = [tx, ty]
+
+	return p_off
 
 " displace the point by the offset plus modify it's covariance "
 def dispPoint(p, offset):
@@ -198,6 +216,56 @@ def disp(ai, bi, T):
 
 	return result
 
+"""
+def computeMatchErrorC(offset, a, b, Ca, Cb):
+	#sum += computeMatchErrorC([xd, yd, theta], [ax,ay], [bx,by], [c11,c12,c21,c22], [b11,b12,b21,b22])
+
+	xd = offset[0]
+	yd = offset[1]
+	theta = offset[2]
+	
+	ax = a[0]
+	ay = a[1]
+	
+	bx = b[0]
+	by = b[1]
+
+	tx = ax*math.cos(theta) - ay*math.sin(theta) + xd
+	ty = ax*math.sin(theta) + ay*math.cos(theta) + yd
+	dx = bx - tx
+	dy = by - ty
+
+	r11 = math.cos(theta)
+	r12 = -math.sin(theta)
+	r21 = math.sin(theta)
+	r22 = r11
+
+	c11 = Ca[0]
+	c12 = Ca[1]
+	c21 = Ca[2]
+	c22 = Ca[3]
+	
+	b11 = Cb[0]
+	b12 = Cb[1]
+	b21 = Cb[2]
+	b22 = Cb[3]
+	
+	res11 = b11 + r11*(c11*r11 + c12*r12) + r12*(c21*r11 + c22*r12)
+	res12 = b12 + r11*(c11*r21 + c12*r22) + r12*(c21*r21 + c22*r22)
+	res21 = b21 + r21*(c11*r11 + c12*r12) + r22*(c21*r11 + c22*r12)
+	res22 = b22 + r21*(c11*r21 + c12*r22) + r22*(c21*r21 + c22*r22)
+	
+	resDet = res22*res11 - res12*res21
+	
+	q11 = res22/resDet
+	q12 = -res12/resDet
+	q21 = -res21/resDet
+	q22 = res11/resDet
+
+	errVal = dx*(dx*q11 + dy*q12) + dy*(dx*q21 + dy*q22)
+
+	return errVal
+"""
 
 def computeMatchError(offset, a, b, Ca, Cb):
 
@@ -586,6 +654,33 @@ def cornerMatchQuality(currAng, match_pairs, point1, point2, ang1, ang2, thresh)
 	sum = 0.0
 	for pair in match_pairs:
 
+		a = pair[0]
+		b = pair[1]
+		Ca = pair[2]
+		Cb = pair[3]
+
+		ax = a[0]
+		ay = a[1]		
+		bx = b[0]
+		by = b[1]
+
+		c11 = Ca[0][0]
+		c12 = Ca[0][1]
+		c21 = Ca[1][0]
+		c22 = Ca[1][1]
+				
+		b11 = Cb[0][0]
+		b12 = Cb[0][1]
+		b21 = Cb[1][0]
+		b22 = Cb[1][1]	
+	
+		val = computeMatchErrorP(offset, [ax,ay], [bx,by], [c11,c12,c21,c22], [b11,b12,b21,b22])
+		vals.append(val)
+		sum += val
+
+	"""
+	for pair in match_pairs:
+
 		#print "pair:", pair
 		a = pair[0]
 		b = pair[1]
@@ -593,6 +688,7 @@ def cornerMatchQuality(currAng, match_pairs, point1, point2, ang1, ang2, thresh)
 		val = computeMatchError(offset, a, b, pair[2], pair[3])
 		vals.append(val)
 		sum += val
+	"""
 
 	upCount = 0
 	downCount = 0
@@ -639,6 +735,33 @@ def cornerCostFunc(currAng, match_pairs, point1, point2, ang1, ang2, a_data_raw 
 	sum = 0.0
 	for pair in match_pairs:
 
+		a = pair[0]
+		b = pair[1]
+		Ca = pair[2]
+		Cb = pair[3]
+
+		ax = a[0]
+		ay = a[1]		
+		bx = b[0]
+		by = b[1]
+
+		c11 = Ca[0][0]
+		c12 = Ca[0][1]
+		c21 = Ca[1][0]
+		c22 = Ca[1][1]
+				
+		b11 = Cb[0][0]
+		b12 = Cb[0][1]
+		b21 = Cb[1][0]
+		b22 = Cb[1][1]	
+	
+		val = computeMatchErrorP(offset, [ax,ay], [bx,by], [c11,c12,c21,c22], [b11,b12,b21,b22])
+		vals.append(val)
+		sum += val
+
+	"""
+	for pair in match_pairs:
+
 		#print "pair:", pair
 		a = pair[0]
 		b = pair[1]
@@ -646,6 +769,12 @@ def cornerCostFunc(currAng, match_pairs, point1, point2, ang1, ang2, a_data_raw 
 		val = computeMatchError(offset, a, b, pair[2], pair[3])
 		vals.append(val)
 		sum += val
+	"""
+
+
+
+
+
 
 	if isPrint:
 		thresh = 0.01
@@ -661,11 +790,93 @@ def cornerCostFunc(currAng, match_pairs, point1, point2, ang1, ang2, a_data_raw 
 		
 	return sum
 
+
+def shapeCost(offset, match_pairs):
+	global numIterations
+	global fig
+	
+	sum = 0.0
+	for pair in match_pairs:
+
+		#print "pair:", repr(pair)
+		a = pair[0]
+		b = pair[1]
+		
+		sum += computeMatchError(offset, a, b, pair[2], pair[3])
+		
+	return sum
+
+"""
+def shapeCostC(offset, match_pairs):
+	global numIterations
+	global fig
+
+
+	sum = 0.0
+	for pair in match_pairs:
+
+		#print "pair:", pair
+		a = pair[0]
+		b = pair[1]
+		Ca = pair[2]
+		Cb = pair[3]
+
+		xd = offset[0]
+		yd = offset[1]
+		theta = offset[2]
+		
+		ax = a[0]
+		ay = a[1]		
+		bx = b[0]
+		by = b[1]
+
+		c11 = Ca[0][0]
+		c12 = Ca[0][1]
+		c21 = Ca[1][0]
+		c22 = Ca[1][1]
+				
+		b11 = Cb[0][0]
+		b12 = Cb[0][1]
+		b21 = Cb[1][0]
+		b22 = Cb[1][1]	
+
+		sum += computeMatchErrorC([xd, yd, theta], [ax,ay], [bx,by], [c11,c12,c21,c22], [b11,b12,b21,b22])
+		
+	return sum
+"""
+
 def cost_func(offset, match_pairs, a_data_raw = [], polyB = [], circles = []):
 	global numIterations
 	global fig
 	
 	sum = 0.0
+	
+	for pair in match_pairs:
+
+		a = pair[0]
+		b = pair[1]
+		Ca = pair[2]
+		Cb = pair[3]
+
+		ax = a[0]
+		ay = a[1]		
+		bx = b[0]
+		by = b[1]
+
+		c11 = Ca[0][0]
+		c12 = Ca[0][1]
+		c21 = Ca[1][0]
+		c22 = Ca[1][1]
+				
+		b11 = Cb[0][0]
+		b12 = Cb[0][1]
+		b21 = Cb[1][0]
+		b22 = Cb[1][1]	
+	
+		sum += computeMatchErrorP(offset, [ax,ay], [bx,by], [c11,c12,c21,c22], [b11,b12,b21,b22])
+	
+	
+	"""
 	for pair in match_pairs:
 
 		#print "pair:", pair
@@ -673,7 +884,8 @@ def cost_func(offset, match_pairs, a_data_raw = [], polyB = [], circles = []):
 		b = pair[1]
 		
 		sum += computeMatchError(offset, a, b, pair[2], pair[3])
-		
+	"""
+	
 	return sum
 
 
@@ -1436,8 +1648,401 @@ def gen_ICP2(estPose1, offset, pastHull, targetHull, pastCircles, costThresh = 0
 		offset = newOffset
 		lastCost = newCost
 
+
+	if True:
+		pylab.clf()
+		pylab.axes()
+		match_global = []
+		
+		for pair in match_pairs:
+			p1 = pair[0]
+			p2 = pair[1]
+			
+			p1_o = dispOffset(p1, offset)
+
+			p1_g = poseOrigin.convertLocalToGlobal(p1_o)
+			p2_g = poseOrigin.convertLocalToGlobal(p2)
+			match_global.append([p1_g,p2_g])
+		
+		draw_matches(match_global, [0.0,0.0,0.0])
+		
+		xP = []
+		yP = []
+		for b in polyB:
+			p1 = poseOrigin.convertLocalToGlobal(b)
+
+			xP.append(p1[0])	
+			yP.append(p1[1])
+		
+		p1 = poseOrigin.convertLocalToGlobal(polyB[0])
+		xP.append(p1[0])	
+		yP.append(p1[1])
+		
+		pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+
+		xP = []
+		yP = []
+		for b in a_data_raw:
+			p = [b[0],b[1]]
+			p = dispOffset(p,offset)
+			
+			p1 = poseOrigin.convertLocalToGlobal(p)
+			xP.append(p1[0])	
+			yP.append(p1[1])
+			
+		p = [a_data_raw[0][0],a_data_raw[0][1]]
+		p = dispOffset(p,offset)
+
+		p1 = poseOrigin.convertLocalToGlobal(p)
+		xP.append(p1[0])	
+		yP.append(p1[1])
+
+		pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
+
+		pylab.title("%u %u" % (n1, n2))
+		pylab.xlim(-4,9)
+		pylab.ylim(-3,9)
+		pylab.savefig("ICP_plot_%04u.png" % numIterations)
+		pylab.clf()			
+
+
+
 	offset[2] =  functions.normalizeAngle(offset[2])
 	return offset, lastCost
+
+
+
+def shapeICP(estPose1, offset, pastHull, targetHull, stablePoints1, stablePoints2, uniform1, uniform2, termPoints, pastCircles, costThresh = 0.004, minMatchDist = 2.0, plotIter = False, n1 = 0, n2 = 0):
+
+	global numIterations
+	
+	lastCost = 1e100
+	
+	startIteration = numIterations
+
+	" set the initial guess "
+	poseOrigin = Pose(estPose1)
+	
+	" transform the past poses "
+	a_data_raw = targetHull
+	a_data = []
+	for p in a_data_raw:
+		result = dispPoint(p, offset)
+		
+		a_data.append(result)
+		
+
+
+		
+	polyB = []		
+	for p in pastHull:
+		polyB.append([p[0],p[1]])	
+
+	while True:
+		" find the matching pairs "
+		match_pairs = []
+
+		a_data_raw = targetHull
+		b_data = pastHull			
+
+		" transform the target Hull with the latest offset "
+		a_data = []
+		for p in a_data_raw:
+			result = dispPoint(p, offset)
+			a_data.append(result)
+
+		" transformed points without associated covariance "
+		polyA = []
+		for p in a_data:
+			polyA.append([p[0],p[1]])	
+		
+		" get the circles and radii "
+		radiusA, centerA = computeEnclosingCircle(a_data)
+		#radiusB, centerB = computeEnclosingCircle(pastHull)
+		
+		if True:
+			for i in range(len(a_data)):
+				a_p = polyA[i]
+	
+				#if isValid(a_p, radiusB, centerB, polyB):
+				if isValidPast(a_p, pastCircles, polyB):
+	
+					" for every transformed point of A, find it's closest neighbor in B "
+					b_p, minDist = findClosestPointInB(b_data, a_p, [0.0,0.0,0.0])
+		
+					if minDist <= minMatchDist:
+			
+						" add to the list of match pairs less than 1.0 distance apart "
+						" keep A points and covariances untransformed "
+						Ca = a_data_raw[i][2]
+						Cb = b_p[2]
+		
+						" we store the untransformed point, but the transformed covariance of the A point "
+						match_pairs.append([a_data_raw[i],b_p,Ca,Cb])
+
+		if True:
+			for i in range(len(b_data)):
+				b_p = polyB[i]
+		
+				if isValid(b_p, radiusA, centerA, polyA):
+			
+					#print "selected", b_p, "in circle", radiusA, centerA, "with distance"
+					" for every point of B, find it's closest neighbor in transformed A "
+					a_p, a_i, minDist = findClosestPointInA(a_data, b_p)
+		
+					if minDist <= minMatchDist:
+			
+						" add to the list of match pairs less than 1.0 distance apart "
+						" keep A points and covariances untransformed "
+						Ca = a_data_raw[a_i][2]
+						
+						Cb = b_data[i][2]
+		
+						" we store the untransformed point, but the transformed covariance of the A point "
+						match_pairs.append([a_data_raw[a_i],b_p,Ca,Cb])
+
+		allCircles = [[radiusA,centerA]]
+
+		# optimize the match error for the current list of match pairs
+		#newOffset = scipy.optimize.fmin(cost_func, offset, [match_pairs, a_data_raw, polyB, allCircles], disp = 0)
+		newOffset = scipy.optimize.fmin(shapeCostC, offset, [match_pairs], disp = 0)
+	
+		
+		# get the current cost
+		#newCost = cost_func(newOffset, match_pairs)
+		newCost = shapeCostC(newOffset, match_pairs)
+	
+		# check for convergence condition, different between last and current cost is below threshold
+		if abs(lastCost - newCost) < costThresh or (numIterations - startIteration) > 10:
+			offset = newOffset
+			lastCost = newCost
+			break
+	
+		numIterations += 1
+
+		offset = newOffset
+
+		" reduce the minMatch distance for each step down to a floor value "
+		minMatchDist /= 2
+		if minMatchDist < 0.25:
+			minMatchDist = 0.25
+							
+		# save the current offset and cost
+		offset = newOffset
+		lastCost = newCost
+
+	headPoint1 = termPoints[0]
+	tailPoint1 = termPoints[1]
+	headPoint2 = termPoints[2]
+	tailPoint2 = termPoints[3]
+		
+	headPoint2_trans = dispOffset(headPoint2, offset)
+	tailPoint2_trans = dispOffset(tailPoint2, offset)
+
+	poly2 = []
+	for b in a_data_raw:
+		p = [b[0],b[1]]
+		p = dispOffset(p,offset)
+		poly2.append([p[0],p[1]])
+
+	uniform2_trans = []
+	for b in uniform2:
+		p = dispOffset(b, offset)
+		uniform2_trans.append(p)
+		
+	stablePoints2_trans = []
+	for b in stablePoints2:
+		p = dispOffset(b, offset)
+		stablePoints2_trans.append(p)
+	
+	inForeCount1 = 0
+	inBackCount1 = 0
+	inForeCount2 = 0
+	inBackCount2 = 0
+
+	fore1 = stablePoints1[0:20]
+	back1 = stablePoints1[20:]
+	fore2 = stablePoints2_trans[0:20]
+	back2 = stablePoints2_trans[20:]
+
+	for p in fore1:
+		if functions.point_inside_polygon(p[0],p[1],poly2):
+			inForeCount1 += 1
+
+	for p in back1:
+		if functions.point_inside_polygon(p[0],p[1],poly2):
+			inBackCount1 += 1
+
+	for p in fore2:
+		if functions.point_inside_polygon(p[0],p[1],polyB):
+			inForeCount2 += 1
+
+	for p in back2:
+		if functions.point_inside_polygon(p[0],p[1],polyB):
+			inBackCount2 += 1
+			
+
+	res1 = functions.point_inside_polygon(headPoint2_trans[0],headPoint2_trans[1],polyB)
+	res2 = functions.point_inside_polygon(tailPoint2_trans[0],tailPoint2_trans[1],polyB)
+	res3 = functions.point_inside_polygon(headPoint1[0],headPoint1[1],poly2)
+	res4 = functions.point_inside_polygon(tailPoint1[0],tailPoint1[1],poly2)
+
+	if ((inForeCount1 >= 18) or (inBackCount1 >= 18)) and ((inForeCount2 >= 18) or (inBackCount2 >= 18)):
+		pass
+	else:
+		lastCost = 1e100
+	
+	#if (res1 or res2) and (res3 or res4):
+	#	pass
+	#else:
+	#	lastCost = 1e100
+
+	if True:
+		pylab.clf()
+		pylab.axes()
+		match_global = []
+		
+		for pair in match_pairs:
+			p1 = pair[0]
+			p2 = pair[1]
+			
+			p1_o = dispOffset(p1, offset)
+
+			p1_g = poseOrigin.convertLocalToGlobal(p1_o)
+			p2_g = poseOrigin.convertLocalToGlobal(p2)
+			match_global.append([p1_g,p2_g])
+		
+		draw_matches(match_global, [0.0,0.0,0.0])
+		
+		xP = []
+		yP = []
+		for b in polyB:
+			p1 = poseOrigin.convertLocalToGlobal(b)
+
+			xP.append(p1[0])	
+			yP.append(p1[1])
+		
+		p1 = poseOrigin.convertLocalToGlobal(polyB[0])
+		xP.append(p1[0])	
+		yP.append(p1[1])
+		
+		pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+
+		#xP = []
+		#yP = []
+		#for p in uniform1:
+		#	p1 = poseOrigin.convertLocalToGlobal(p)
+		#	xP.append(p1[0])	
+		#	yP.append(p1[1])			
+		#pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+
+		xP = []
+		yP = []
+		for p in fore1:
+			p1 = poseOrigin.convertLocalToGlobal(p)
+			xP.append(p1[0])	
+			yP.append(p1[1])			
+		pylab.plot(xP,yP,linewidth=2, color=(0.0,0.0,1.0))
+		xP = []
+		yP = []
+		for p in back1:
+			p1 = poseOrigin.convertLocalToGlobal(p)
+			xP.append(p1[0])	
+			yP.append(p1[1])			
+		pylab.plot(xP,yP,linewidth=2, color=(0.0,0.0,1.0))
+			
+			
+
+
+		p1 = poseOrigin.convertLocalToGlobal(headPoint1)
+		p2 = poseOrigin.convertLocalToGlobal(tailPoint1)
+		xP = [p1[0],p2[0]]
+		yP = [p1[1],p2[1]]
+
+		#xP = [headPoint1[0],tailPoint1[0]]
+		#yP = [headPoint1[1],tailPoint1[1]]
+		pylab.scatter(xP,yP,linewidth=3, color=(0.0,0.0,1.0))
+
+		#for b in a_data_raw:
+		#	p = [b[0],b[1]]
+		#	p = dispOffset(p,offset)
+		#	poly2.append([p[0],p[1]])
+
+		xP = []
+		yP = []
+		for p in poly2:
+			
+			p1 = poseOrigin.convertLocalToGlobal(p)
+			xP.append(p1[0])	
+			yP.append(p1[1])
+			
+		#p = [a_data_raw[0][0],a_data_raw[0][1]]
+		#p = dispOffset(p,offset)
+		p = poly2[0]
+		
+		p1 = poseOrigin.convertLocalToGlobal(p)
+		xP.append(p1[0])	
+		yP.append(p1[1])
+
+		pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
+
+		xP = []
+		yP = []
+		for p in uniform2_trans:
+			p1 = poseOrigin.convertLocalToGlobal(p)
+			xP.append(p1[0])	
+			yP.append(p1[1])	
+		pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
+
+
+		xP = []
+		yP = []
+		for p in fore2:
+			p1 = poseOrigin.convertLocalToGlobal(p)
+			xP.append(p1[0])	
+			yP.append(p1[1])	
+		pylab.plot(xP,yP,linewidth=2, color=(1.0,0.0,0.0))
+		xP = []
+		yP = []
+		for p in back2:
+			p1 = poseOrigin.convertLocalToGlobal(p)
+			xP.append(p1[0])	
+			yP.append(p1[1])	
+		pylab.plot(xP,yP,linewidth=2, color=(1.0,0.0,0.0))
+
+
+		p1 = poseOrigin.convertLocalToGlobal(headPoint2_trans)
+		p2 = poseOrigin.convertLocalToGlobal(tailPoint2_trans)
+		
+		xP = [p1[0],p2[0]]
+		yP = [p1[1],p2[1]]
+		#xP = [headPoint2_trans[0],tailPoint2_trans[0]]
+		#yP = [headPoint2_trans[1],tailPoint2_trans[1]]
+		pylab.scatter(xP,yP,linewidth=3, color=(1.0,0.0,0.0))
+
+
+		pylab.title("%u %u, cost = %f, fore1,back1,fore2,back2 = %d,%d,%d,%d" % (n1, n2, lastCost, inForeCount1, inBackCount1, inForeCount2, inBackCount2))
+		pylab.xlim(-4,9)
+		pylab.ylim(-3,9)
+		
+		if lastCost > 1.6:
+			pylab.savefig("badICP_plot_%04u.png" % numIterations)
+		else:
+			pylab.savefig("goodICP_plot_%04u.png" % numIterations)
+			
+		pylab.clf()
+
+	offset[2] =  functions.normalizeAngle(offset[2])
+
+	#res1 = functions.point_inside_polygon(headPoint2_trans[0],headPoint2_trans[1],polyB)
+	#res2 = functions.point_inside_polygon(tailPoint2_trans[0],tailPoint2_trans[1],polyB)
+	#res3 = functions.point_inside_polygon(headPoint1[0],headPoint1[1],poly2)
+	#res4 = functions.point_inside_polygon(tailPoint1[0],tailPoint1[1],poly2)
+
+	#if (res1 or res2) and (res3 or res4):
+
+	return offset, lastCost
+	
 
 #def cornerICP(estPose1, angle, pastHull, targetHull, pastCircles, costThresh = 0.004, minMatchDist = 2.0, plotIter = False, n1 = 0, n2 = 0):
 def cornerICP(estPose1, angGuess, point1, point2, ang1, ang2, hull1, hull2, sweepHull1, sweepHull2, pastCircles, costThresh = 0.004, minMatchDist = 2.0, plotIter = False, n1 = 0, n2 = 0):

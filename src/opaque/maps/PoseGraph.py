@@ -642,6 +642,8 @@ class PoseGraph:
 		self.a_hulls.append(computeHull(self.nodeHash[nodeID], sweep = False))
 		self.b_hulls.append(computeHull(self.nodeHash[nodeID], sweep = True))
 
+		#return
+
 		if nodeID > 0:
 			if nodeID % 2 == 0:
 				" 2nd node from a pose "
@@ -815,7 +817,7 @@ class PoseGraph:
 				newConstraints = self.addSensorConstraints(paths, targetNode = nodeID)
 				"""
 
-		if nodeID == 25:
+		if nodeID % 25 == 0 and nodeID > 0:
 
 			paths = []
 			for i in range(self.numNodes):
@@ -841,7 +843,8 @@ class PoseGraph:
 			" merge the constraints "
 			self.mergePriorityConstraints()
 
-		if nodeID == 26:
+		#if nodeID == 26:
+		if nodeID % 25 == 1 and nodeID > 1:
 
 			self.deleteAllPriority(SENSOR_PRIORITY)
 				
@@ -2685,21 +2688,111 @@ class PoseGraph:
 		estPose2 = node2.getGlobalGPACPose()
 		#estPose1 = node1.getEstPose()
 		#estPose2 = node2.getEstPose()
+		#curve1 = node1.getStableGPACurve()
+		#curve2 = node2.getStableGPACurve()
+			
+		#posture1 = node1.getStableGPACPosture()
+		#posture_trans = []
+		#for p in posture1:
+		#	posture_trans.append(gen_icp.dispOffset(p, currPose))	
 
-		hull_trans1 = []
+		poly1 = []
 		for p in hull1:
-			hull_trans1.append(gen_icp.dispPoint(p, estPose1))
-
-		hull_trans2 = []
+			poly1.append([p[0],p[1]])
+		poly2 = []
 		for p in hull2:
-			hull_trans2.append(gen_icp.dispPoint(p, estPose2))
+			poly2.append([p[0],p[1]])
+
+
+		posture1_unstable = node1.getGPACPosture()
+		posture1_stable = node1.getStableGPACPosture()
+		posture2_unstable = node2.getGPACPosture()
+		posture2_stable = node2.getStableGPACPosture()
+
+		count1_unstable = 0
+		count1_stable = 0
+		for p in posture1_unstable:
+			if point_inside_polygon(p[0],p[1],poly1):
+				count1_unstable += 1
+		for p in posture1_stable:
+			if point_inside_polygon(p[0],p[1],poly1):
+				count1_stable += 1
+	
+		posture1 = node1.getStableGPACPosture()
+		if count1_stable < 38:
+			if count1_unstable > count1_stable:
+				posture1 = node1.getGPACPosture()
+
+		count2_unstable = 0
+		count2_stable = 0
+		for p in posture2_unstable:
+			if point_inside_polygon(p[0],p[1],poly2):
+				count2_unstable += 1
+		for p in posture2_stable:
+			if point_inside_polygon(p[0],p[1],poly2):
+				count2_stable += 1
+	
+		posture2 = node2.getStableGPACPosture()
+		if count2_stable < 38:
+			if count2_unstable > count2_stable:
+				posture2 = node2.getGPACPosture()
+
+
+		#uniform1 = posture1
+		#uniform2 = posture2
+		
+		" convert hull points to GPAC coordinates before adding covariances "
+		localGPACPose1 = node1.getLocalGPACPose()
+		localGPACProfile1 = Pose(localGPACPose1)
+		localGPACPose2 = node2.getLocalGPACPose()
+		localGPACProfile2 = Pose(localGPACPose2)
+		
+		
+		uniform1_samp = node1.centerCurve.getUniformSamples()
+		uniform2_samp = node2.centerCurve.getUniformSamples()
+
+		uniform1 = []
+		for pnt in uniform1_samp:
+			uniform1.append(localGPACProfile1.convertGlobalToLocal([pnt[0],pnt[1]]))
+
+		uniform2 = []
+		for pnt in uniform2_samp:
+			uniform2.append(localGPACProfile2.convertGlobalToLocal([pnt[0],pnt[1]]))
+	
+		curve1 = StableCurve(posture1)
+		curve2 = StableCurve(posture2)
+		
+		headPoint1, tailPoint1 = curve1.getTips()
+		headPoint2, tailPoint2 = curve2.getTips()
+		
+		stablePoints1 = curve1.getPoints()
+		stablePoints2 = curve2.getPoints()
+		
+		#headPoint1 = curve1.getU(0.0)
+		#tailPoint1 = curve1.getU(1.0)
+		#headPoint2 = curve2.getU(0.0)
+		#tailPoint2 = curve2.getU(1.0)
+
+		#uniform1 = curve1.getKnots()
+		#uniform2 = curve2.getKnots()
+		#uniform1 = curve1.getUniformSamples()
+		#uniform2 = curve2.getUniformSamples()
+		
+
+		#hull_trans1 = []
+		#for p in hull1:
+		#	hull_trans1.append(gen_icp.dispPoint(p, estPose1))
+
+		#hull_trans2 = []
+		#for p in hull2:
+			#hull_trans2.append(gen_icp.dispPoint(p, estPose2))
 
 		#offset2 = [transform[0,0],transform[1,0],transform[2,0]]
 		
 		radius, center = gen_icp.computeEnclosingCircle(hull1)
 		circle1 = [radius, center]
 		
-		offset, cost = gen_icp.gen_ICP2(estPose1, firstGuess, hull1, hull2, [circle1], costThresh, minMatchDist, plotIteration, n1, n2)
+		offset, cost = gen_icp.shapeICP(estPose1, firstGuess, hull1, hull2, stablePoints1, stablePoints2, uniform1, uniform2, (headPoint1,tailPoint1,headPoint2,tailPoint2), [circle1], costThresh, minMatchDist, plotIteration, n1, n2)
 		print "sensor constraint: %d -> %d" %(n1,n2), "cost =", cost
 		covar = self.E_sensor
 		

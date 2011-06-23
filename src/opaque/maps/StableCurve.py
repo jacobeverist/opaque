@@ -124,7 +124,7 @@ class StableCurve:
 
             return xP, yP
         
-        return x,y
+        return x, y
 
     def horizontalizePosture(self, posture):
     
@@ -192,6 +192,53 @@ class StableCurve:
         #print "rotatedPosture:", rotatedPosture
         "return the first vector returned from PCA because this has the highest variance"
         return rotatedPosture, angle
+    
+    def getPoints(self):
+        x1 = linspace(self.rotatedPoints[0][0],self.rotatedPoints[9][0],20)
+        y1 = self.foreSpline(x1)
+
+        x2 = linspace(self.rotatedPoints[30][0],self.rotatedPoints[38][0],20)
+        y2 = self.backSpline(x2)
+
+        print "x1:", x1
+        print "y1:", y1
+
+        newPoints1 = []
+        newPoints2 = []
+        if self.rotated:
+            for i in range(len(x1)):
+                newPoints1.append(self.rotateProfile.convertLocalToGlobal([x1[i],y1[i]]))
+            for i in range(len(x2)):
+                newPoints2.append(self.rotateProfile.convertLocalToGlobal([x2[i],y2[i]]))
+        else:
+            for i in range(len(x1)):
+                newPoints1.append([x1[i],y1[i]])
+            for i in range(len(x2)):
+                newPoints2.append([x2[i],y2[i]])
+
+        return newPoints1 + newPoints2
+      
+    def getTips(self):
+
+        
+        x1 = self.rotatedPoints[0][0]
+        y1 = self.foreSpline(x1)
+        
+        newPoint1 = [x1, y1]
+
+        if self.rotated:
+            newPoint1 = self.rotateProfile.convertLocalToGlobal(newPoint1)
+
+        x2 = self.rotatedPoints[-1][0]
+        y2 = self.backSpline(x2)
+        
+        newPoint2 = [x2, y2]
+
+        if self.rotated:
+            newPoint2 = self.rotateProfile.convertLocalToGlobal(newPoint2)
+            
+        return newPoint1,  newPoint2
+    
       
     def getPoses(self):
         

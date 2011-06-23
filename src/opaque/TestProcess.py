@@ -121,7 +121,10 @@ class TestProcess(SnakeControl):
 
 			#self.mapGraph.testHypotheses("testData/sensorLocalize2", 175, "cornerHypotheses_2011_06_05.txt")
 			#self.mapGraph.loadSeries("testData/sensorLocalize2", 175)
-			self.mapGraph.loadSeries("testData/sensorLocalize2", 161)
+			#self.mapGraph.loadSeries("testData/sensorLocalize2", 161)
+			self.mapGraph.loadSeries("testData/sensorLocalize2", 28)
+			#self.mapGraph.loadSeries("testData/sensorLocalize2", 8)
+			#self.mapGraph.loadSeries("testData/sensorLocalize2", 80)
 			
 			#self.mapGraph.instantSensorTest("testData/sensorLocalize2", 175)
 			#self.mapGraph.instantSensorTest("testData/sensorLocalize2", 50)

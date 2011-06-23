@@ -5,6 +5,7 @@ import pylab
 import gen_icp
 from numpy import matrix
 from random import random
+import functions
 
 class VisualGraph:
 
@@ -59,6 +60,8 @@ class VisualGraph:
 	
 			self.drawConstraints(i)
 
+		self.drawPoses()
+
 		" merge the constraint "
 		for k, v in self.poseGraph.edgePriorityHash.items():
 			
@@ -82,7 +85,7 @@ class VisualGraph:
 						transform = const[0]
 						covE = const[1]
 						#print id1, id2, maxPriority
- 
+
  	def testHypotheses(self, dirName, num_poses, hypFile):
 		self.sensorHypotheses = self.poseGraph.sensorHypotheses
 		
@@ -149,6 +152,78 @@ class VisualGraph:
 			
 			self.drawConstraints(i)
 
+
+	def drawPoses(self):
+		
+		poses = []
+		for i in range(self.numNodes):
+			poses.append(self.nodeHash[i].getGlobalGPACPose())
+	
+		for i in range(self.numNodes):
+
+			pylab.clf()
+
+			hull = PoseGraph.computeBareHull(self.nodeHash[i], sweep = False)
+			hull.append(hull[0])
+
+			node1 = self.nodeHash[i]
+			currPose = node1.getGlobalGPACPose()
+			currProfile = Pose(currPose)
+			posture1 = node1.getStableGPACPosture()
+			posture2 = node1.getGPACPosture()
+			
+			posture1_trans = []
+			for p in posture1:
+				posture1_trans.append(gen_icp.dispOffset(p, currPose))	
+			posture2_trans = []
+			for p in posture2:
+				posture2_trans.append(gen_icp.dispOffset(p, currPose))	
+
+			hull_trans = []
+			for p in hull:
+				hull_trans.append(gen_icp.dispOffset(p, currPose))	
+			
+			xP = []
+			yP = []
+			#for p in posture_trans:
+			for p in posture1:
+				xP.append(p[0])
+				yP.append(p[1])
+			pylab.plot(xP,yP, color=(255/256.,182/256.,193/256.))	
+
+			xP = []
+			yP = []
+			for p in posture2:
+				xP.append(p[0])
+				yP.append(p[1])
+			pylab.plot(xP,yP, color=(1.0,0.0,0.0))	
+
+			xP = []
+			yP = []
+			#for p in hull_trans:
+			for p in hull:
+				xP.append(p[0])
+				yP.append(p[1])
+			pylab.plot(xP,yP, color=(112/256.,147/256.,219/256.))	
+
+			count1 = 0
+			count2 = 0
+
+			for p in posture1:
+				if functions.point_inside_polygon(p[0],p[1],hull):
+					count1 += 1
+	
+			for p in posture2:
+				if functions.point_inside_polygon(p[0],p[1],hull):
+					count2 += 1
+					
+			#pylab.xlim(-5,10)
+			#pylab.ylim(-8,8)
+			pylab.title("count1 = %d, count2 = %d" % (count1,count2))
+			pylab.xlim(-3,3)
+			pylab.ylim(-2,2)
+			pylab.savefig("plotPose%04u.png" % i)
+
 	def drawConstraints(self, id = []):
 		
 		poses = []
@@ -186,12 +261,13 @@ class VisualGraph:
 				
 			
 			
-			#xP = []
-			#yP = []
-			#for p in posture_trans:
-			#	xP.append(p[0])
-			#	yP.append(p[1])
-			#pylab.plot(xP,yP, color=(255/256.,182/256.,193/256.))	
+			if i == (self.numNodes - 1):
+				xP = []
+				yP = []
+				for p in posture_trans:
+					xP.append(p[0])
+					yP.append(p[1])
+				pylab.plot(xP,yP, color=(255/256.,182/256.,193/256.))	
 
 			xP = []
 			yP = []
