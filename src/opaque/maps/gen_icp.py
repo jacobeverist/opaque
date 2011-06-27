@@ -62,6 +62,167 @@ numIterations = 0
 
 fig = pylab.figure()
 
+
+def computeSeparation(bbox2, uniform2_trans, hull):
+
+	interPoints = []
+	
+	" start from 0 and find first intersection with bbox "
+	firstFound = False
+	subSec1 = []
+	bbEdge1 = []
+	for j in range(len(uniform2_trans)-1):
+		p1 = uniform2_trans[j]
+		p2 = uniform2_trans[j+1]
+		
+		edge2 = [p1,p2]
+
+		for i in range(len(bbox2)):
+			p1 = bbox2[i]
+			p2 = bbox2[(i+1) % 4]
+			
+			edge1 = [p1,p2]
+		
+			result, point = functions.Intersect(edge1, edge2)
+			if result:
+				firstFound = True
+				interPoints.append(point)
+				subSec1 = uniform2_trans[j+1:]
+				subSec1.insert(0,point)
+				bbEdge1 = [i,i+1]
+				break
+			
+		if firstFound:
+			break
+		
+	
+	" start from -1 and find first intersection with bbox"
+	secondFound = False
+	subSec2 = []
+	bbEdge2 = []
+	for j in range(len(subSec1)-1):
+		p1 = subSec1[-1-j]
+		p2 = subSec1[-2-j]
+		
+		edge2 = [p1,p2]
+
+		for i in range(len(bbox2)):
+			p1 = bbox2[i]
+			p2 = bbox2[(i+1) % 4]
+			
+			edge1 = [p1,p2]
+		
+			result, point = functions.Intersect(edge1, edge2)
+			if result:
+				secondFound = True
+				interPoints.append(point)
+				
+				subSec2 = subSec1[0:-1-j]
+				subSec2.append(point)
+				
+				bbEdge2 = [i,i+1]
+				break
+			
+		if secondFound:
+			break
+
+	" split the bounding box in 2 "
+	halfBox1 = []
+	for i in range(len(bbox2)):
+		halfBox1.append(bbox2[(bbEdge1[1]+i) % 4])
+		
+		if (bbEdge1[1]+i) % 4 == bbEdge2[0]:
+			break
+	
+	subSec3 = deepcopy(subSec2)
+	subSec3.reverse()
+	halfBox1 += subSec3
+
+
+	" split the bounding box in 2 "
+	halfBox2 = []
+	for i in range(len(bbox2)):
+		halfBox2.append(bbox2[(bbEdge2[1]+i) % 4])
+		
+		if (bbEdge2[1]+i) % 4 == bbEdge1[0]:
+			break
+	
+	halfBox2 += subSec2
+
+
+	" separated hull points now have a break in the sequence "
+	halfHullA = []
+	halfHullB = []
+	for p in hull:
+		
+		inA = False
+		inB = False
+		
+		if functions.point_inside_polygon(p[0], p[1], halfBox1):
+			halfHullA.append(p)
+			inA = True
+
+		if functions.point_inside_polygon(p[0], p[1], halfBox2):
+			halfHullB.append(p)
+			inB = True
+		
+		#print "hulls:", inA, inB
+		if inA and inB:
+			print "BOTH hulls"
+
+		if not inA and not inB:
+			print "NEITHER hulls"
+			print "box:", bbox2
+			raise Exception('spam','eggs')
+
+
+	#print "points found:", len(interPoints)	
+	if len(interPoints) != 2:
+		print "interPoints:", interPoints
+		print "box:", bbox2
+		raise Exception('spam','eggs')
+	
+	return halfHullA, halfHullB
+	#return halfBox1, halfBox2
+
+	#return a_data_A, a_data_B
+
+
+def computeBBox(points):
+	
+	xMax = -1e100
+	xMin = 1e100
+	yMax = -1e100
+	yMin = 1e100
+	
+	
+	for p in points:
+		
+		if p[0] > xMax:
+			xMax = p[0]
+		
+		if p[0] < xMin:
+			xMin = p[0]
+			
+		if p[1] > yMax:
+			yMax = p[1]
+		
+		if p[1] < yMin:
+			yMin = p[1]
+
+
+	" pad the edges so not points on are on the boundary "
+	xMax = xMax + 0.1
+	xMin = xMin - 0.1
+	yMax = yMax + 0.1
+	yMin = yMin - 0.1
+	
+	bbox = [[xMin,yMin], [xMin,yMax], [xMax,yMax], [xMax,yMin]]
+			
+	return bbox
+
+
+
 def dispP(p, offset):
 	
 	xd = offset[0]
@@ -1712,7 +1873,7 @@ def gen_ICP2(estPose1, offset, pastHull, targetHull, pastCircles, costThresh = 0
 
 
 
-def shapeICP(estPose1, offset, pastHull, targetHull, stablePoints1, stablePoints2, uniform1, uniform2, termPoints, pastCircles, costThresh = 0.004, minMatchDist = 2.0, plotIter = False, n1 = 0, n2 = 0):
+def shapeICP(estPose1, offset, hull1, hull2, stablePoints1, stablePoints2, uniform1, uniform2, isForward, termPoints, pastCircles, costThresh = 0.004, minMatchDist = 2.0, plotIter = False, n1 = 0, n2 = 0):
 
 	global numIterations
 	
@@ -1724,87 +1885,294 @@ def shapeICP(estPose1, offset, pastHull, targetHull, stablePoints1, stablePoints
 	poseOrigin = Pose(estPose1)
 	
 	" transform the past poses "
-	a_data_raw = targetHull
-	a_data = []
-	for p in a_data_raw:
+	hull2_trans = []
+	for p in hull2:
 		result = dispPoint(p, offset)
+		hull2_trans.append(result)
 		
-		a_data.append(result)
-		
+	poly1 = []		
+	for p in hull1:
+		poly1.append([p[0],p[1]])	
+	bbox1 = computeBBox(poly1)
 
+	poly2 = []		
+	for p in hull2:
+		poly2.append([p[0],p[1]])		
+	bbox2 = computeBBox(poly2)
 
-		
-	polyB = []		
-	for p in pastHull:
-		polyB.append([p[0],p[1]])	
+	
+
+	breakOut = False
+
+	try:	
+		halfHull1A, halfHull1B = computeSeparation(bbox1, uniform1, hull1)
+		poly1A = []		
+		for p in halfHull1A:
+			poly1A.append([p[0],p[1]])	
+		poly1B = []		
+		for p in halfHull1B:
+			poly1B.append([p[0],p[1]])	
+
+		halfHull2A, halfHull2B = computeSeparation(bbox2, uniform2, hull2)
+		poly2A = []		
+		for p in halfHull2A:
+			poly2A.append([p[0],p[1]])	
+		poly2B = []		
+		for p in halfHull2B:
+			poly2B.append([p[0],p[1]])	
+
+	except:
+		breakOut = True
+
 
 	while True:
 		" find the matching pairs "
 		match_pairs = []
 
-		a_data_raw = targetHull
-		b_data = pastHull			
+		#b_data = hull1			
 
 		" transform the target Hull with the latest offset "
-		a_data = []
-		for p in a_data_raw:
+		hull2_trans = []
+		for p in hull2:
 			result = dispPoint(p, offset)
-			a_data.append(result)
+			hull2_trans.append(result)
 
 		" transformed points without associated covariance "
-		polyA = []
-		for p in a_data:
-			polyA.append([p[0],p[1]])	
+		poly2_trans = []
+		for p in hull2_trans:
+			poly2_trans.append([p[0],p[1]])	
+
+		bbox2_trans = computeBBox(poly2_trans)
+
+		uniform2_trans = []
+		for b in uniform2:
+			p = dispOffset(b, offset)
+			uniform2_trans.append(p)
+
+		try:	
+
+			halfHull2A_trans, halfHull2B_trans = computeSeparation(bbox2_trans, uniform2_trans, hull2_trans)
+
+			poly2A_trans = []		
+			for p in halfHull2A_trans:
+				poly2A_trans.append([p[0],p[1]])	
+			poly2B_trans = []		
+			for p in halfHull2B_trans:
+				poly2B_trans.append([p[0],p[1]])	
+
+		except:
+			breakOut = True
 		
 		" get the circles and radii "
-		radiusA, centerA = computeEnclosingCircle(a_data)
+		radius2, center2 = computeEnclosingCircle(hull2_trans)
 		#radiusB, centerB = computeEnclosingCircle(pastHull)
-		
-		if True:
-			for i in range(len(a_data)):
-				a_p = polyA[i]
+
+
+		if isForward:
+			for i in range(len(halfHull2A_trans)):
+				a_p = poly2A_trans[i]
 	
-				#if isValid(a_p, radiusB, centerB, polyB):
-				if isValidPast(a_p, pastCircles, polyB):
+				if isValidPast(a_p, pastCircles, poly1A):
 	
 					" for every transformed point of A, find it's closest neighbor in B "
-					b_p, minDist = findClosestPointInB(b_data, a_p, [0.0,0.0,0.0])
+					#b_p, minDist = findClosestPointInB(hull1, a_p, [0.0,0.0,0.0])
+					b_p, minDist = findClosestPointInHull1(halfHull1A, a_p, [0.0,0.0,0.0])
 		
 					if minDist <= minMatchDist:
 			
 						" add to the list of match pairs less than 1.0 distance apart "
 						" keep A points and covariances untransformed "
-						Ca = a_data_raw[i][2]
+						Ca = halfHull2A[i][2]
 						Cb = b_p[2]
 		
 						" we store the untransformed point, but the transformed covariance of the A point "
-						match_pairs.append([a_data_raw[i],b_p,Ca,Cb])
-
-		if True:
-			for i in range(len(b_data)):
-				b_p = polyB[i]
+						match_pairs.append([halfHull2A[i],b_p,Ca,Cb])
+	
+			for i in range(len(halfHull1A)):
+				b_p = poly1A[i]
 		
-				if isValid(b_p, radiusA, centerA, polyA):
+				if isValid(b_p, radius2, center2, poly2A_trans):
 			
 					#print "selected", b_p, "in circle", radiusA, centerA, "with distance"
 					" for every point of B, find it's closest neighbor in transformed A "
-					a_p, a_i, minDist = findClosestPointInA(a_data, b_p)
+					#a_p, a_i, minDist = findClosestPointInA(hull2_trans, b_p)
+					a_p, a_i, minDist = findClosestPointInHull2(halfHull2A_trans, b_p)
 		
 					if minDist <= minMatchDist:
 			
 						" add to the list of match pairs less than 1.0 distance apart "
 						" keep A points and covariances untransformed "
-						Ca = a_data_raw[a_i][2]
-						
-						Cb = b_data[i][2]
+						Ca = halfHull2A[a_i][2]
+						Cb = halfHull1A[i][2]
 		
 						" we store the untransformed point, but the transformed covariance of the A point "
-						match_pairs.append([a_data_raw[a_i],b_p,Ca,Cb])
+						match_pairs.append([halfHull2A[a_i],b_p,Ca,Cb])
+	
+			for i in range(len(halfHull2B_trans)):
+				a_p = poly2B_trans[i]
+	
+				if isValidPast(a_p, pastCircles, poly1B):
+	
+					" for every transformed point of A, find it's closest neighbor in B "
+					#b_p, minDist = findClosestPointInB(hull1, a_p, [0.0,0.0,0.0])
+					b_p, minDist = findClosestPointInHull1(halfHull1B, a_p, [0.0,0.0,0.0])
+		
+					if minDist <= minMatchDist:
+			
+						" add to the list of match pairs less than 1.0 distance apart "
+						" keep A points and covariances untransformed "
+						Ca = halfHull2B[i][2]
+						Cb = b_p[2]
+		
+						" we store the untransformed point, but the transformed covariance of the A point "
+						match_pairs.append([halfHull2B[i],b_p,Ca,Cb])
+	
+			for i in range(len(halfHull1B)):
+				b_p = poly1B[i]
+		
+				if isValid(b_p, radius2, center2, poly2B_trans):
+			
+					#print "selected", b_p, "in circle", radiusA, centerA, "with distance"
+					" for every point of B, find it's closest neighbor in transformed A "
+					#a_p, a_i, minDist = findClosestPointInA(hull2_trans, b_p)
+					a_p, a_i, minDist = findClosestPointInHull2(halfHull2B_trans, b_p)
+		
+					if minDist <= minMatchDist:
+			
+						" add to the list of match pairs less than 1.0 distance apart "
+						" keep A points and covariances untransformed "
+						Ca = halfHull2B[a_i][2]
+						Cb = halfHull1B[i][2]
+		
+						" we store the untransformed point, but the transformed covariance of the A point "
+						match_pairs.append([halfHull2B[a_i],b_p,Ca,Cb])
+		else:
 
-		allCircles = [[radiusA,centerA]]
+			for i in range(len(halfHull2A_trans)):
+				a_p = poly2A_trans[i]
+	
+				if isValidPast(a_p, pastCircles, poly1B):
+	
+					" for every transformed point of A, find it's closest neighbor in B "
+					#b_p, minDist = findClosestPointInB(hull1, a_p, [0.0,0.0,0.0])
+					b_p, minDist = findClosestPointInHull1(halfHull1B, a_p, [0.0,0.0,0.0])
+		
+					if minDist <= minMatchDist:
+			
+						" add to the list of match pairs less than 1.0 distance apart "
+						" keep A points and covariances untransformed "
+						Ca = halfHull2A[i][2]
+						Cb = b_p[2]
+		
+						" we store the untransformed point, but the transformed covariance of the A point "
+						match_pairs.append([halfHull2A[i],b_p,Ca,Cb])
+	
+			for i in range(len(halfHull1B)):
+				b_p = poly1B[i]
+		
+				if isValid(b_p, radius2, center2, poly2A_trans):
+			
+					#print "selected", b_p, "in circle", radiusA, centerA, "with distance"
+					" for every point of B, find it's closest neighbor in transformed A "
+					#a_p, a_i, minDist = findClosestPointInA(hull2_trans, b_p)
+					a_p, a_i, minDist = findClosestPointInHull2(halfHull2A_trans, b_p)
+		
+					if minDist <= minMatchDist:
+			
+						" add to the list of match pairs less than 1.0 distance apart "
+						" keep A points and covariances untransformed "
+						Ca = halfHull2A[a_i][2]
+						Cb = halfHull1B[i][2]
+		
+						" we store the untransformed point, but the transformed covariance of the A point "
+						match_pairs.append([halfHull2A[a_i],b_p,Ca,Cb])
+	
+			for i in range(len(halfHull2B_trans)):
+				a_p = poly2B_trans[i]
+	
+				if isValidPast(a_p, pastCircles, poly1A):
+	
+					" for every transformed point of A, find it's closest neighbor in B "
+					#b_p, minDist = findClosestPointInB(hull1, a_p, [0.0,0.0,0.0])
+					b_p, minDist = findClosestPointInHull1(halfHull1A, a_p, [0.0,0.0,0.0])
+		
+					if minDist <= minMatchDist:
+			
+						" add to the list of match pairs less than 1.0 distance apart "
+						" keep A points and covariances untransformed "
+						Ca = halfHull2B[i][2]
+						Cb = b_p[2]
+		
+						" we store the untransformed point, but the transformed covariance of the A point "
+						match_pairs.append([halfHull2B[i],b_p,Ca,Cb])
+	
+			for i in range(len(halfHull1A)):
+				b_p = poly1A[i]
+		
+				if isValid(b_p, radius2, center2, poly2B_trans):
+			
+					#print "selected", b_p, "in circle", radiusA, centerA, "with distance"
+					" for every point of B, find it's closest neighbor in transformed A "
+					#a_p, a_i, minDist = findClosestPointInA(hull2_trans, b_p)
+					a_p, a_i, minDist = findClosestPointInHull2(halfHull2B_trans, b_p)
+		
+					if minDist <= minMatchDist:
+			
+						" add to the list of match pairs less than 1.0 distance apart "
+						" keep A points and covariances untransformed "
+						Ca = halfHull2B[a_i][2]
+						Cb = halfHull1A[i][2]
+		
+						" we store the untransformed point, but the transformed covariance of the A point "
+						match_pairs.append([halfHull2B[a_i],b_p,Ca,Cb])
+			
+
+		"""		
+		for i in range(len(hull2_trans)):
+			a_p = poly2_trans[i]
+
+			#if isValid(a_p, radiusB, centerB, poly1):
+			if isValidPast(a_p, pastCircles, poly1):
+
+				" for every transformed point of A, find it's closest neighbor in B "
+				#b_p, minDist = findClosestPointInB(hull1, a_p, [0.0,0.0,0.0])
+				b_p, minDist = findClosestPointInHull1(hull1, a_p, [0.0,0.0,0.0])
+	
+				if minDist <= minMatchDist:
+		
+					" add to the list of match pairs less than 1.0 distance apart "
+					" keep A points and covariances untransformed "
+					Ca = hull2[i][2]
+					Cb = b_p[2]
+	
+					" we store the untransformed point, but the transformed covariance of the A point "
+					match_pairs.append([hull2[i],b_p,Ca,Cb])
+
+		for i in range(len(hull1)):
+			b_p = poly1[i]
+	
+			if isValid(b_p, radius2, center2, poly2_trans):
+		
+				#print "selected", b_p, "in circle", radiusA, centerA, "with distance"
+				" for every point of B, find it's closest neighbor in transformed A "
+				#a_p, a_i, minDist = findClosestPointInA(hull2_trans, b_p)
+				a_p, a_i, minDist = findClosestPointInHull2(hull2_trans, b_p)
+	
+				if minDist <= minMatchDist:
+		
+					" add to the list of match pairs less than 1.0 distance apart "
+					" keep A points and covariances untransformed "
+					Ca = hull2[a_i][2]
+					Cb = hull1[i][2]
+	
+					" we store the untransformed point, but the transformed covariance of the A point "
+					match_pairs.append([hull2[a_i],b_p,Ca,Cb])
+		"""
+		
+		allCircles = [[radius2,center2]]
 
 		# optimize the match error for the current list of match pairs
-		#newOffset = scipy.optimize.fmin(cost_func, offset, [match_pairs, a_data_raw, polyB, allCircles], disp = 0)
+		#newOffset = scipy.optimize.fmin(cost_func, offset, [match_pairs, hull2, poly1, allCircles], disp = 0)
 		newOffset = scipy.optimize.fmin(shapeCostC, offset, [match_pairs], disp = 0)
 	
 		
@@ -1839,11 +2207,11 @@ def shapeICP(estPose1, offset, pastHull, targetHull, stablePoints1, stablePoints
 	headPoint2_trans = dispOffset(headPoint2, offset)
 	tailPoint2_trans = dispOffset(tailPoint2, offset)
 
-	poly2 = []
-	for b in a_data_raw:
+	poly2_trans = []
+	for b in hull2:
 		p = [b[0],b[1]]
 		p = dispOffset(p,offset)
-		poly2.append([p[0],p[1]])
+		poly2_trans.append([p[0],p[1]])
 
 	uniform2_trans = []
 	for b in uniform2:
@@ -1866,26 +2234,26 @@ def shapeICP(estPose1, offset, pastHull, targetHull, stablePoints1, stablePoints
 	back2 = stablePoints2_trans[20:]
 
 	for p in fore1:
-		if functions.point_inside_polygon(p[0],p[1],poly2):
+		if functions.point_inside_polygon(p[0],p[1],poly2_trans):
 			inForeCount1 += 1
 
 	for p in back1:
-		if functions.point_inside_polygon(p[0],p[1],poly2):
+		if functions.point_inside_polygon(p[0],p[1],poly2_trans):
 			inBackCount1 += 1
 
 	for p in fore2:
-		if functions.point_inside_polygon(p[0],p[1],polyB):
+		if functions.point_inside_polygon(p[0],p[1],poly1):
 			inForeCount2 += 1
 
 	for p in back2:
-		if functions.point_inside_polygon(p[0],p[1],polyB):
+		if functions.point_inside_polygon(p[0],p[1],poly1):
 			inBackCount2 += 1
 			
 
-	res1 = functions.point_inside_polygon(headPoint2_trans[0],headPoint2_trans[1],polyB)
-	res2 = functions.point_inside_polygon(tailPoint2_trans[0],tailPoint2_trans[1],polyB)
-	res3 = functions.point_inside_polygon(headPoint1[0],headPoint1[1],poly2)
-	res4 = functions.point_inside_polygon(tailPoint1[0],tailPoint1[1],poly2)
+	res1 = functions.point_inside_polygon(headPoint2_trans[0],headPoint2_trans[1],poly1)
+	res2 = functions.point_inside_polygon(tailPoint2_trans[0],tailPoint2_trans[1],poly1)
+	res3 = functions.point_inside_polygon(headPoint1[0],headPoint1[1],poly2_trans)
+	res4 = functions.point_inside_polygon(tailPoint1[0],tailPoint1[1],poly2_trans)
 
 	if ((inForeCount1 >= 18) or (inBackCount1 >= 18)) and ((inForeCount2 >= 18) or (inBackCount2 >= 18)):
 		pass
@@ -1897,7 +2265,7 @@ def shapeICP(estPose1, offset, pastHull, targetHull, stablePoints1, stablePoints
 	#else:
 	#	lastCost = 1e100
 
-	if True:
+	if False:
 		pylab.clf()
 		pylab.axes()
 		match_global = []
@@ -1914,28 +2282,46 @@ def shapeICP(estPose1, offset, pastHull, targetHull, stablePoints1, stablePoints
 		
 		draw_matches(match_global, [0.0,0.0,0.0])
 		
+		"""
 		xP = []
 		yP = []
-		for b in polyB:
+		for b in poly1:
 			p1 = poseOrigin.convertLocalToGlobal(b)
 
 			xP.append(p1[0])	
 			yP.append(p1[1])
 		
-		p1 = poseOrigin.convertLocalToGlobal(polyB[0])
+		p1 = poseOrigin.convertLocalToGlobal(poly1[0])
 		xP.append(p1[0])	
 		yP.append(p1[1])
 		
 		pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+		"""
 
-		#xP = []
-		#yP = []
-		#for p in uniform1:
-		#	p1 = poseOrigin.convertLocalToGlobal(p)
-		#	xP.append(p1[0])	
-		#	yP.append(p1[1])			
-		#pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+		"""
+		xP = []
+		yP = []
+		for p in uniform1:
+			p1 = poseOrigin.convertLocalToGlobal(p)
+			xP.append(p1[0])	
+			yP.append(p1[1])			
+		pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
 
+		xP = []
+		yP = []
+		for b in bbox1:
+			p1 = poseOrigin.convertLocalToGlobal(b)
+
+			xP.append(p1[0])	
+			yP.append(p1[1])
+		
+		p1 = poseOrigin.convertLocalToGlobal(bbox1[0])
+		xP.append(p1[0])	
+		yP.append(p1[1])
+		pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+		"""
+		
+		"""
 		xP = []
 		yP = []
 		for p in fore1:
@@ -1950,42 +2336,62 @@ def shapeICP(estPose1, offset, pastHull, targetHull, stablePoints1, stablePoints
 			xP.append(p1[0])	
 			yP.append(p1[1])			
 		pylab.plot(xP,yP,linewidth=2, color=(0.0,0.0,1.0))
-			
-			
-
+		"""
 
 		p1 = poseOrigin.convertLocalToGlobal(headPoint1)
 		p2 = poseOrigin.convertLocalToGlobal(tailPoint1)
 		xP = [p1[0],p2[0]]
 		yP = [p1[1],p2[1]]
 
-		#xP = [headPoint1[0],tailPoint1[0]]
-		#yP = [headPoint1[1],tailPoint1[1]]
-		pylab.scatter(xP,yP,linewidth=3, color=(0.0,0.0,1.0))
+		#pylab.scatter(xP,yP,linewidth=3, color=(0.0,0.0,1.0))
 
-		#for b in a_data_raw:
+		try:	
+			bPoints1, bPoints2 = computeSeparation(bbox1, uniform1, hull1)
+
+			xP = []
+			yP = []
+			for p in bPoints1:
+				p1 = poseOrigin.convertLocalToGlobal(p)
+				xP.append(p1[0])	
+				yP.append(p1[1])	
+
+			pylab.scatter(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+ 
+			xP = []
+			yP = []
+ 			for p in bPoints2:
+				p1 = poseOrigin.convertLocalToGlobal(p)
+				xP.append(p1[0])	
+				yP.append(p1[1])	
+
+			pylab.scatter(xP,yP,linewidth=1, color=(0.0,0.5,1.0))
+		except:
+			pass
+
+
+		#for b in hull2:
 		#	p = [b[0],b[1]]
 		#	p = dispOffset(p,offset)
-		#	poly2.append([p[0],p[1]])
+		#	poly2_trans.append([p[0],p[1]])
 
+		"""
 		xP = []
 		yP = []
-		for p in poly2:
+		for p in poly2_trans:
 			
 			p1 = poseOrigin.convertLocalToGlobal(p)
 			xP.append(p1[0])	
 			yP.append(p1[1])
 			
-		#p = [a_data_raw[0][0],a_data_raw[0][1]]
-		#p = dispOffset(p,offset)
-		p = poly2[0]
-		
+		p = poly2_trans[0]		
 		p1 = poseOrigin.convertLocalToGlobal(p)
 		xP.append(p1[0])	
 		yP.append(p1[1])
 
 		pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
+		"""
 
+		"""
 		xP = []
 		yP = []
 		for p in uniform2_trans:
@@ -1994,7 +2400,21 @@ def shapeICP(estPose1, offset, pastHull, targetHull, stablePoints1, stablePoints
 			yP.append(p1[1])	
 		pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
 
+		xP = []
+		yP = []
+		for b in bbox2:
+			p1 = poseOrigin.convertLocalToGlobal(b)
 
+			xP.append(p1[0])	
+			yP.append(p1[1])
+		
+		p1 = poseOrigin.convertLocalToGlobal(bbox2[0])
+		xP.append(p1[0])	
+		yP.append(p1[1])
+		pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
+		"""
+
+		"""
 		xP = []
 		yP = []
 		for p in fore2:
@@ -2009,16 +2429,37 @@ def shapeICP(estPose1, offset, pastHull, targetHull, stablePoints1, stablePoints
 			xP.append(p1[0])	
 			yP.append(p1[1])	
 		pylab.plot(xP,yP,linewidth=2, color=(1.0,0.0,0.0))
-
+		"""
 
 		p1 = poseOrigin.convertLocalToGlobal(headPoint2_trans)
 		p2 = poseOrigin.convertLocalToGlobal(tailPoint2_trans)
 		
 		xP = [p1[0],p2[0]]
 		yP = [p1[1],p2[1]]
-		#xP = [headPoint2_trans[0],tailPoint2_trans[0]]
-		#yP = [headPoint2_trans[1],tailPoint2_trans[1]]
-		pylab.scatter(xP,yP,linewidth=3, color=(1.0,0.0,0.0))
+		#pylab.scatter(xP,yP,linewidth=3, color=(1.0,0.0,0.0))
+
+		try:	
+			bPoints1, bPoints2 = computeSeparation(bbox2_trans, uniform2_trans, hull2_trans)
+
+			xP = []
+			yP = []
+			for p in bPoints1:
+				p1 = poseOrigin.convertLocalToGlobal(p)
+				xP.append(p1[0])	
+				yP.append(p1[1])	
+
+			pylab.scatter(xP,yP,linewidth=1, color=(1.0,0.5,0.0))
+
+			xP = []
+			yP = []
+			for p in bPoints2:
+				p1 = poseOrigin.convertLocalToGlobal(p)
+				xP.append(p1[0])	
+				yP.append(p1[1])	
+
+			pylab.scatter(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
+		except:
+			pass
 
 
 		pylab.title("%u %u, cost = %f, fore1,back1,fore2,back2 = %d,%d,%d,%d" % (n1, n2, lastCost, inForeCount1, inBackCount1, inForeCount2, inBackCount2))
@@ -2034,12 +2475,15 @@ def shapeICP(estPose1, offset, pastHull, targetHull, stablePoints1, stablePoints
 
 	offset[2] =  functions.normalizeAngle(offset[2])
 
-	#res1 = functions.point_inside_polygon(headPoint2_trans[0],headPoint2_trans[1],polyB)
-	#res2 = functions.point_inside_polygon(tailPoint2_trans[0],tailPoint2_trans[1],polyB)
-	#res3 = functions.point_inside_polygon(headPoint1[0],headPoint1[1],poly2)
-	#res4 = functions.point_inside_polygon(tailPoint1[0],tailPoint1[1],poly2)
+	#res1 = functions.point_inside_polygon(headPoint2_trans[0],headPoint2_trans[1],poly1)
+	#res2 = functions.point_inside_polygon(tailPoint2_trans[0],tailPoint2_trans[1],poly1)
+	#res3 = functions.point_inside_polygon(headPoint1[0],headPoint1[1],poly2_trans)
+	#res4 = functions.point_inside_polygon(tailPoint1[0],tailPoint1[1],poly2_trans)
 
 	#if (res1 or res2) and (res3 or res4):
+
+	if breakOut:
+		raise
 
 	return offset, lastCost
 	

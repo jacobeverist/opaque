@@ -93,39 +93,7 @@ class StableCurve:
 
         return x, y
     
-    def getPlot(self):
-        
-        #knots = self.spline.get_knots()    
-        #x = linspace(knots[0],knots[-1],100)
-        #y = self.spline(x)
-
-
-        knots1 = self.foreSpline.get_knots()
-        knots2 = self.backSpline.get_knots()
-
-        x1 = linspace(knots1[0],knots1[-1],100)
-        y1 = self.foreSpline(x1)
-
-        x2 = linspace(knots2[0],knots2[-1],100)
-        y2 = self.backSpline(x2)
-
-
-        #x = x1 + x2
-        #y = y1 + y2
-        x = concatenate((x1, x2))
-        y = concatenate((y1,y2))
-        xP = []
-        yP = []
-        if self.rotated:
-            for i in range(len(x)):
-                newPoint = self.rotateProfile.convertLocalToGlobal([x[i],y[i]])
-                xP.append(newPoint[0])
-                yP.append(newPoint[1])
-
-            return xP, yP
-        
-        return x, y
-
+ 
     def horizontalizePosture(self, posture):
     
         x_list = []
@@ -193,6 +161,98 @@ class StableCurve:
         "return the first vector returned from PCA because this has the highest variance"
         return rotatedPosture, angle
     
+    
+    def getUniformSamples(self):
+        pass
+    
+    def getPlot(self):
+        
+        #knots = self.spline.get_knots()    
+        #x = linspace(knots[0],knots[-1],100)
+        #y = self.spline(x)
+
+
+        knots1 = self.foreSpline.get_knots()
+        knots2 = self.backSpline.get_knots()
+
+        x1 = linspace(knots1[0],knots1[-1],100)
+        y1 = self.foreSpline(x1)
+
+        x2 = linspace(knots2[0],knots2[-1],100)
+        y2 = self.backSpline(x2)
+
+
+        newPoints1 = []
+        newPoints2 = []
+        if self.rotated:
+            for i in range(len(x1)):
+                newPoints1.append(self.rotateProfile.convertLocalToGlobal([x1[i],y1[i]]))
+            for i in range(len(x2)):
+                newPoints2.append(self.rotateProfile.convertLocalToGlobal([x2[i],y2[i]]))
+        else:
+            for i in range(len(x1)):
+                newPoints1.append([x1[i],y1[i]])
+            for i in range(len(x2)):
+                newPoints2.append([x2[i],y2[i]])
+
+        # tangent vector
+        vec1 = [newPoints1[1][0] - newPoints1[2][0], newPoints1[1][1] - newPoints1[2][1]]
+        vec2 = [newPoints2[-2][0] - newPoints2[-3][0], newPoints2[-2][1] - newPoints2[-3][1]]
+
+        #print "vec1:", vec1
+        #print "vec2:", vec2
+
+        # normalize
+        mag1 = sqrt(vec1[0]**2 + vec1[1]**2)
+        vec1 = [vec1[0]/mag1, vec1[1]/mag1]
+        mag2 = sqrt(vec2[0]**2 + vec2[1]**2)
+        vec2 = [vec2[0]/mag2, vec2[1]/mag2]
+
+        #print "mag1:", mag1
+        #print "mag2:", mag2
+        #print "vec1:", vec1
+        #print "vec2:", vec2
+
+        P1 = [newPoints1[0][0], newPoints1[0][1]]
+        P2 = [newPoints2[-1][0], newPoints2[-1][1]]
+        #print "P1:", P1
+        #print "P2:", P2
+
+        newP1 = [P1[0] + 3*vec1[0], P1[1] + 3*vec1[1]]
+        newP2 = [P2[0] + 3*vec2[0], P2[1] + 3*vec2[1]]
+
+        #print "newP1:", newP1
+        #print "newP2:", newP2
+
+        #xExtr1_1 = knots1[0] + 10.0
+        #xExtr1_2 = knots1[-1] - 10.0
+
+        #xExtr2_1 = knots2[0] + 10.0
+        #xExtr2_2 = knots2[-1] - 10.0
+        
+        #print xExtr1_1, self.foreSpline(xExtr1_1)
+        #print xExtr2_2, self.backSpline(xExtr2_2)
+ 
+        newPoints1.insert(0,newP1)
+        newPoints2.append(newP2)
+        
+        return newPoints1 + newPoints2
+
+        #x = concatenate((x1, x2))
+        #y = concatenate((y1,y2))
+        #xP = []
+        #yP = []
+        #if self.rotated:
+        #    for i in range(len(x)):
+        #        newPoint = self.rotateProfile.convertLocalToGlobal([x[i],y[i]])
+        #        xP.append(newPoint[0])
+        #        yP.append(newPoint[1])
+
+        #    return xP, yP
+        
+        #return x, y
+
+    
     def getPoints(self):
         x1 = linspace(self.rotatedPoints[0][0],self.rotatedPoints[9][0],20)
         y1 = self.foreSpline(x1)
@@ -200,8 +260,8 @@ class StableCurve:
         x2 = linspace(self.rotatedPoints[30][0],self.rotatedPoints[38][0],20)
         y2 = self.backSpline(x2)
 
-        print "x1:", x1
-        print "y1:", y1
+        #print "x1:", x1
+        #print "y1:", y1
 
         newPoints1 = []
         newPoints2 = []

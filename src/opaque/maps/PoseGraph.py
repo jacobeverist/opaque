@@ -13,6 +13,7 @@ from Map import Map
 from LocalNode import LocalNode
 from StablePose import StablePose
 from StableCurve import StableCurve
+from GPACurve import GPACurve
 from Pose import Pose
 import gen_icp
 from functions import *
@@ -168,6 +169,8 @@ class PoseGraph:
 		self.goodHypotheses = []
 		self.allCornerHypotheses = []
 		
+		self.sweepHulls = []
+		self.nonSweepHulls = []
 		
 		self.edgePriorityHash = {}
 		self.cornerBins = []
@@ -817,7 +820,34 @@ class PoseGraph:
 				newConstraints = self.addSensorConstraints(paths, targetNode = nodeID)
 				"""
 
+		if nodeID > 1:
+
+			paths = []
+			for i in range(self.numNodes):
+				paths.append(bayes.dijkstra_proj(i, self.numNodes, self.edgeHash))
+			
+			newConstraints = []
+			newConstraints, newConstraints2 = self.addSensorConstraints(paths, targetNode = nodeID)
+			
+			" remove previous shape constraints "
+			self.deleteAllPriority(SENSOR_PRIORITY)
+				
+			for const in newConstraints2:
+				n1 = const[0]
+				n2 = const[1]
+				transform = const[2]
+				covE = const[3]
+	
+				self.addPriorityEdge([n1,n2,transform,covE], SENSOR_PRIORITY)
+	
+			" merge the constraints "
+			self.mergePriorityConstraints()
+
+		"""
+		#if nodeID == 8:
 		if nodeID % 25 == 0 and nodeID > 0:
+
+
 
 			paths = []
 			for i in range(self.numNodes):
@@ -858,7 +888,7 @@ class PoseGraph:
 	
 			" merge the constraints "
 			self.mergePriorityConstraints()
-
+		"""
 
 	def mergePriorityConstraints(self):
 		
@@ -1073,6 +1103,8 @@ class PoseGraph:
 		" compute the alpha hulls of the selected candidates "
 		hull_computed = [False for i in range(self.numNodes)]
 		a_hulls = [0 for i in range(self.numNodes)]
+		
+		
 		
 		for i in range(self.numNodes):
 			a_hulls[i] = computeHull(self.nodeHash[i], sweep = False)
@@ -2521,6 +2553,108 @@ class PoseGraph:
 		" 2) compute alpha hulls and then perform maximum edge fitting, not overlap constraint"
 		" 3) directionality is not important here because we could be walking the opposite direction through a junction "
 
+	def computeConstraintOrientation(self, offset, n1, n2):
+
+		def dispOffset(p, offset):
+			xd = offset[0]
+			yd = offset[1]
+			theta = offset[2]
+		
+			px = p[0]
+			py = p[1]
+			pa = p[2]
+			
+			newAngle = normalizeAngle(pa + theta)
+			
+			p_off = [px*math.cos(theta) - py*math.sin(theta) + xd, px*math.sin(theta) + py*math.cos(theta) + yd, newAngle]
+			
+			return p_off
+		
+		node1 = self.nodeHash[n1]
+		node2 = self.nodeHash[n2]
+								
+		curve1 = node1.getStableGPACurve()
+		curve2 = node2.getStableGPACurve()
+
+		points1 = curve1.getUniformSamples()
+		points2 = curve2.getUniformSamples()
+
+		" transform the new pose "
+		points2_offset = []
+		for p in points2:
+			result = dispOffset(p, offset)		
+			points2_offset.append(result)
+		
+		poly1 = []
+		for p in points1:
+			poly1.append([p[0],p[1]])	
+
+		poly2 = []
+		for p in points2_offset:
+			poly2.append([p[0],p[1]])	
+		
+		" find the matching pairs "
+		match_pairs = []
+			
+		" get the circles and radii "
+		radius2, center2 = gen_icp.computeEnclosingCircle(points2_offset)
+		radius1, center1 = gen_icp.computeEnclosingCircle(points1)
+
+		minMatchDist = 0.05
+			
+		for i in range(len(points2_offset)):
+			p_2 = poly2[i]
+
+			if gen_icp.isValid(p_2, radius1, center1, poly1):
+
+				" for every transformed point of A, find it's closest neighbor in B "
+				p_1, minDist = gen_icp.findClosestPointInHull1(points1, p_2, [0.0,0.0,0.0])
+	
+				if minDist <= minMatchDist:
+
+					" we store the untransformed point, but the transformed covariance of the A point "
+					match_pairs.append([points2_offset[i],p_1])
+
+		for i in range(len(points1)):
+			p_1 = poly1[i]
+	
+			if gen_icp.isValid(p_1, radius2, center2, poly2):
+		
+				#print "selected", b_p, "in circle", radiusA, centerA, "with distance"
+				" for every point of B, find it's closest neighbor in transformed A "
+				p_2, i_2, minDist = gen_icp.findClosestPointInHull2(points2_offset, p_1)
+	
+				if minDist <= minMatchDist:
+	
+					" we store the untransformed point, but the transformed covariance of the A point "
+					match_pairs.append([points2_offset[i_2],points1[i]])
+					
+		" if we made no matches, default to regular orientation "
+		if len(match_pairs) == 0:
+			return True, 0.0
+
+		distances = []
+		angSum = 0
+		for i in range(len(match_pairs)):
+			pair = match_pairs[i]
+			p1 = pair[0]
+			p2 = pair[1]
+			
+			angDist = normalizeAngle(p1[2]-p2[2])
+			distances.append(angDist)
+			angSum += angDist
+
+		
+		angDiff = angSum / len(distances)
+
+
+		if fabs(angDiff) >= 0.7:
+			return False, angDiff
+		else:
+			return True, angDiff
+		
+
+
 	def checkOrientationError(self, offset, n1, n2):
 
 		def dispOffset(p, offset):
@@ -2625,7 +2759,6 @@ class PoseGraph:
 
 		distances = []
 		angSum = 0
-		angSum2 = 0
 		for i in range(len(match_pairs)):
 			pair = match_pairs[i]
 			p1 = pair[0]
@@ -2637,18 +2770,9 @@ class PoseGraph:
 			distances.append(angDist)
 			angSum += angDist
 
-			angDist2 = normalizeAngle(match_pairs2[i][0][2]-match_pairs2[i][1][2])
-			angSum2 += angDist2
 		
 		angDiff = angSum / len(distances)
-		globalAngDiff = angSum2 / len(distances)
-
 		oriDiff = normalizeAngle(offset[2] - localOffset2[2])
-
-		#print "angDiff =", angDiff
-		#print "globalAngDiff =", globalAngDiff
-		#print "oriDiff =", oriDiff
-
 
 		if fabs(angDiff) >= 0.7 or fabs(oriDiff) >= 0.4:
 			return False, angDiff, oriDiff
@@ -2669,8 +2793,8 @@ class PoseGraph:
 		costThresh = 0.1
 	
 		" TUNE ME:   minimum match distance before point is discarded from consideration "
-		#minMatchDist = 2.0
-		minMatchDist = 0.5
+		minMatchDist = 2.0
+		#minMatchDist = 0.5
 	
 		" plot the best fit at each iteration of the algorithm? "
 		#plotIteration = True
@@ -2742,22 +2866,22 @@ class PoseGraph:
 		#uniform2 = posture2
 		
 		" convert hull points to GPAC coordinates before adding covariances "
-		localGPACPose1 = node1.getLocalGPACPose()
-		localGPACProfile1 = Pose(localGPACPose1)
-		localGPACPose2 = node2.getLocalGPACPose()
-		localGPACProfile2 = Pose(localGPACPose2)
+		#localGPACPose1 = node1.getLocalGPACPose()
+		#localGPACProfile1 = Pose(localGPACPose1)
+		#localGPACPose2 = node2.getLocalGPACPose()
+		#localGPACProfile2 = Pose(localGPACPose2)
 		
 		
-		uniform1_samp = node1.centerCurve.getUniformSamples()
-		uniform2_samp = node2.centerCurve.getUniformSamples()
+		#curve1 = GPACurve(posture1)
+		#curve2 = GPACurve(posture2)
+		#uniform1 = curve1.getUniformSamples()
+		#uniform2 = curve2.getUniformSamples()
 
-		uniform1 = []
-		for pnt in uniform1_samp:
-			uniform1.append(localGPACProfile1.convertGlobalToLocal([pnt[0],pnt[1]]))
+		curve1 = StableCurve(posture1)
+		curve2 = StableCurve(posture2)
+		uniform1 = curve1.getPlot()
+		uniform2 = curve2.getPlot()
 
-		uniform2 = []
-		for pnt in uniform2_samp:
-			uniform2.append(localGPACProfile2.convertGlobalToLocal([pnt[0],pnt[1]]))
 	
 		curve1 = StableCurve(posture1)
 		curve2 = StableCurve(posture2)
@@ -2792,7 +2916,10 @@ class PoseGraph:
 		radius, center = gen_icp.computeEnclosingCircle(hull1)
 		circle1 = [radius, center]
 		
-		offset, cost = gen_icp.shapeICP(estPose1, firstGuess, hull1, hull2, stablePoints1, stablePoints2, uniform1, uniform2, (headPoint1,tailPoint1,headPoint2,tailPoint2), [circle1], costThresh, minMatchDist, plotIteration, n1, n2)
+		isForward, angDiff = self.computeConstraintOrientation(firstGuess, n1, n2)
+
+		
+		offset, cost = gen_icp.shapeICP(estPose1, firstGuess, hull1, hull2, stablePoints1, stablePoints2, uniform1, uniform2, isForward, (headPoint1,tailPoint1,headPoint2,tailPoint2), [circle1], costThresh, minMatchDist, plotIteration, n1, n2)
 		print "sensor constraint: %d -> %d" %(n1,n2), "cost =", cost
 		covar = self.E_sensor
 		
@@ -4423,12 +4550,14 @@ class PoseGraph:
 			sensor_pairs = self.findAlphaHullCandidates(paths)
 		
 		" compute the alpha hulls of the selected candidates "
-		hull_computed = [False for i in range(self.numNodes)]
-		a_hulls = [0 for i in range(self.numNodes)]
+		#hull_computed = [False for i in range(self.numNodes)]
+		#a_hulls = [0 for i in range(self.numNodes)]
 		
-		for i in range(self.numNodes):
-			a_hulls[i] = computeHull(self.nodeHash[i], sweep = False)
-			hull_computed[i] = True
+		a_hulls = self.a_hulls
+		
+		#for i in range(self.numNodes):
+		#	a_hulls[i] = computeHull(self.nodeHash[i], sweep = False)
+		#	hull_computed[i] = True
 		
 		" make hypothesized constraints out of the pairs "
 		hypotheses = []		
@@ -4498,7 +4627,7 @@ class PoseGraph:
 				
 		if len(totalHypotheses) < 2:
 			print "too little hypotheses, rejecting"
-			return [] 
+			return [], []
 		
 		" set all proscribed hypothesis sets to maximum error "	
 		maxError = 0.0
