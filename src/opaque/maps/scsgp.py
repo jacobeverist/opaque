@@ -32,11 +32,13 @@ def dominantEigenvectors(A):
 	N = A.shape[0]
 	#print "N =", N
 	K = 5
-	e = [numpy.matrix([],dtype=float) for i in range(N)]
+	#e = [numpy.matrix([],dtype=float) for i in range(N)]
+	e = [numpy.matrix([],dtype=float) for i in range(3)]
 	
 	lmbda = [0.0 for i in range(N)]
 	
-	for i in range(N):
+	#for i in range(N):
+	for i in range(3):
 		e[i] = rand_vector(N)
 
 		for iters in range(K):

@@ -25,6 +25,8 @@ import estimateMotion
 import pylab
 from matplotlib.patches import Circle
 
+import socket
+
 from math import *
 from copy import copy
 
@@ -267,6 +269,38 @@ class PoseGraph:
 					newV.append(const)
 			self.edgePriorityHash[k] = newV
 
+	def matchExternalCorners(self):
+		
+		externalHyps = []
+		
+		" for every bin, attempt to match a random corner with every other bin "
+		for i in range(len(self.cornerBins)):
+			bin1 = self.cornerBins[i]
+
+			tup1 = bin1[random.randint(0,len(bin1))]
+			
+			for j in range(i+1):
+				bin2 = self.cornerBins[j]
+				tup2 = bin2[random.randint(0,len(bin2))]
+							
+				n1 = tup1[0]
+				n2 = tup2[0]
+				point1_i = tup1[1]
+				point2_i = tup2[1]
+				corner1 = self.nodeHash[n1].cornerCandidates[point1_i]
+				corner2 = self.nodeHash[n2].cornerCandidates[point2_i]
+				point1 = corner1[0]
+				point2 = corner2[0]
+				ang1 = corner1[1]
+				ang2 = corner2[1]
+
+				print "TRYING EXTERNAL corner hypothesis:", tup1, tup2
+				offset, covar, cost, angDiff, oriDiff = self.makeCornerConstraint(n1, n2, point1, point2, ang1, ang2, self.a_hulls[n1], self.a_hulls[n2], self.b_hulls[n1], self.b_hulls[n2])
+				transform = matrix([ [offset[0]], [offset[1]], [offset[2]] ],dtype=float)
+				if cost <= 0.6:
+					externalHyps.append([n1, n2, transform, covar, cost, point1, point2, angDiff, oriDiff, point1_i, point2_i])
+
+		return externalHyps
 
 	def makeCornerBinConsistent(self):
 
@@ -302,7 +336,51 @@ class PoseGraph:
 				if cost <= 0.6:
 					internalHyps.append([n1, n2, transform, covar, cost, point1, point2, angDiff, oriDiff, point1_i, point2_i])
 
+	def computeCornerClusterError(self):
+		
 
+		totalError = 0.0
+				
+		for i in range(len(self.cornerBins)):
+			bin = self.cornerBins[i]
+			
+			" check the internal error of this corner cluster "
+			#tup1 = (n1,point1_i)
+			#tup2 = (n2,point2_i)
+			
+			binError = 0.0
+			for j in range(len(bin)):
+				tup1 = bin[j]
+				node1 = self.nodeHash[tup1[0]]
+				point1_i = tup1[1]
+				corner1 = node1.cornerCandidates[point1_i]
+				point1 = corner1[0]
+				estPose1 = node1.getGlobalGPACPose()
+				poseProf1 = Pose(estPose1)
+				
+				globalPoint1 = poseProf1.convertLocalToGlobal(point1)
+				
+				for k in range(j+1, len(bin)):
+					tup2 = bin[k]
+					node2 = self.nodeHash[tup2[0]]
+					point2_i = tup2[1]
+					corner2 = node2.cornerCandidates[point2_i]
+					point2 = corner2[0]
+					estPose2 = node2.getGlobalGPACPose()
+					poseProf2 = Pose(estPose2)
+
+					globalPoint2 = poseProf2.convertLocalToGlobal(point2)
+
+
+					dist = sqrt((globalPoint1[0]-globalPoint2[0])**2 + (globalPoint1[1]-globalPoint2[1])**2)
+					
+					binError += dist
+
+			print i, binError
+			totalError += binError
+	
+		return totalError
+		
 	def addCornerBin(self, tup1, tup2):
 		
 		" put this pair of corners into matched bins "			
@@ -534,7 +612,7 @@ class PoseGraph:
 								edges = self.edgePriorityHash[(tup1[0],newTup[0])]
 								for edge in edges:
 									" if any constraints are corner constraints "
-									if edge[2] == 3:
+									if edge[2] == CORNER_PRIORITY:
 										isReject = True
 								
 							
@@ -542,7 +620,7 @@ class PoseGraph:
 								edges = self.edgePriorityHash[(newTup[0],tup1[0])]
 								for edge in edges:
 									" if any constraints are corner constraints "
-									if edge[2] == 3:
+									if edge[2] == CORNER_PRIORITY:
 										isReject = True
 							
 							if not isReject and tup1[0] != newTup[0]:
@@ -634,7 +712,6 @@ class PoseGraph:
 			for i in range(len(self.cornerBins)):
 				print i, self.cornerBins[i]
 
-				
 
 	def loadNewNode(self, newNode):
 
@@ -820,6 +897,7 @@ class PoseGraph:
 				newConstraints = self.addSensorConstraints(paths, targetNode = nodeID)
 				"""
 
+		"""
 		if nodeID > 1:
 
 			paths = []
@@ -832,6 +910,22 @@ class PoseGraph:
 			" remove previous shape constraints "
 			self.deleteAllPriority(SENSOR_PRIORITY)
 				
+			for const in newConstraints:
+				n1 = const[0]
+				n2 = const[1]
+				transform = const[2]
+				covE = const[3]
+	
+				self.addPriorityEdge([n1,n2,transform,covE], SENSOR_PRIORITY)
+	
+			" merge the constraints "
+			self.mergePriorityConstraints()
+
+			totalError1 = self.computeCornerClusterError()
+			print "totalError1:", totalError1
+
+
+			self.deleteAllPriority(SENSOR_PRIORITY)
 			for const in newConstraints2:
 				n1 = const[0]
 				n2 = const[1]
@@ -843,10 +937,27 @@ class PoseGraph:
 			" merge the constraints "
 			self.mergePriorityConstraints()
 
-		"""
-		#if nodeID == 8:
-		if nodeID % 25 == 0 and nodeID > 0:
+			totalError2 = self.computeCornerClusterError()
+			print "totalError2:", totalError2
 
+			" revert to first hypothesis set if other is better "
+			if totalError2 > totalError1:
+				self.deleteAllPriority(SENSOR_PRIORITY)
+					
+				for const in newConstraints:
+					n1 = const[0]
+					n2 = const[1]
+					transform = const[2]
+					covE = const[3]
+		
+					self.addPriorityEdge([n1,n2,transform,covE], SENSOR_PRIORITY)
+		
+				" merge the constraints "
+				self.mergePriorityConstraints()
+		"""
+
+		#if nodeID == 8:
+		if nodeID % 160 == 0 and nodeID > 0:
 
 
 			paths = []
@@ -873,11 +984,9 @@ class PoseGraph:
 			" merge the constraints "
 			self.mergePriorityConstraints()
 
-		#if nodeID == 26:
-		if nodeID % 25 == 1 and nodeID > 1:
+			totalError1 = self.computeCornerClusterError()
 
 			self.deleteAllPriority(SENSOR_PRIORITY)
-				
 			for const in self.newConstraints2:
 				n1 = const[0]
 				n2 = const[1]
@@ -888,8 +997,60 @@ class PoseGraph:
 	
 			" merge the constraints "
 			self.mergePriorityConstraints()
-		"""
 
+			totalError2 = self.computeCornerClusterError()
+
+			" revert to first hypothesis set if other is better "
+			if totalError2 > totalError1:
+				self.deleteAllPriority(SENSOR_PRIORITY)
+					
+				for const in newConstraints:
+					n1 = const[0]
+					n2 = const[1]
+					transform = const[2]
+					covE = const[3]
+		
+					self.addPriorityEdge([n1,n2,transform,covE], SENSOR_PRIORITY)
+		
+				" merge the constraints "
+				self.mergePriorityConstraints()
+				
+
+		
+		"""
+		#if nodeID == 26:
+		if nodeID % 25 == 1 and nodeID > 1:
+
+			self.deleteAllPriority(SENSOR_PRIORITY)
+			for const in self.newConstraints2:
+				n1 = const[0]
+				n2 = const[1]
+				transform = const[2]
+				covE = const[3]
+	
+				self.addPriorityEdge([n1,n2,transform,covE], SENSOR_PRIORITY)
+	
+			" merge the constraints "
+			self.mergePriorityConstraints()
+
+		if nodeID % 50 == 2 and nodeID > 2:
+
+			self.deleteAllPriority(SENSOR_PRIORITY)
+			for const in self.newConstraints3:
+				n1 = const[0]
+				n2 = const[1]
+				transform = const[2]
+				covE = const[3]
+	
+				self.addPriorityEdge([n1,n2,transform,covE], SENSOR_PRIORITY)
+	
+			" merge the constraints "
+			self.mergePriorityConstraints()
+
+		print "Cluster Error:"
+		totalError = self.computeCornerClusterError()
+		"""
+		
 	def mergePriorityConstraints(self):
 		
 		totalConstraints = []
@@ -2925,6 +3086,121 @@ class PoseGraph:
 		
 		return offset, covar, cost
 
+	def makeShapeConstraintData2(self, transform, n1, n2, hull1, hull2):		
+
+		" TUNE ME:  threshold cost difference between iterations to determine if converged "
+		costThresh = 0.1
+	
+		" TUNE ME:   minimum match distance before point is discarded from consideration "
+		minMatchDist = 2.0
+	
+		" plot the best fit at each iteration of the algorithm? "
+		#plotIteration = True
+		plotIteration = False
+		
+		node1 = self.nodeHash[n1]
+		node2 = self.nodeHash[n2]		
+		
+		estPose1 = node1.getGlobalGPACPose()
+		estPose2 = node2.getGlobalGPACPose()
+
+		posture1_unstable = node1.getGPACPosture()
+		posture1_stable = node1.getStableGPACPosture()
+		posture2_unstable = node2.getGPACPosture()
+		posture2_stable = node2.getStableGPACPosture()
+
+		return (estPose1, estPose2, hull1, hull2, posture1_unstable, posture1_stable, posture2_unstable, posture1_stable, costThresh, minMatchDist, plotIteration, n1, n2)
+
+	def makeShapeConstraintData(self, transform, n1, n2, hull1, hull2):		
+
+		" TUNE: estimated step distance from empirical results "
+		STEP_DIST = 0.145
+
+		" initial guess for x, y, theta parameters "
+		firstGuess = [0.0,0.0,0.0]
+
+		" TUNE ME:  threshold cost difference between iterations to determine if converged "
+		costThresh = 0.1
+	
+		" TUNE ME:   minimum match distance before point is discarded from consideration "
+		minMatchDist = 2.0
+	
+		" plot the best fit at each iteration of the algorithm? "
+		#plotIteration = True
+		plotIteration = False
+	
+		" Extract the data from the files and put them into arrays "
+		
+		node1 = self.nodeHash[n1]
+		node2 = self.nodeHash[n2]		
+		
+		" FIXME:  deal with relative poses from the motion constraints "
+		estPose1 = node1.getGlobalGPACPose()
+		estPose2 = node2.getGlobalGPACPose()
+
+		#estPose1, estPose2
+		#posture1_unstable, posture1_stable, posture2_unstable, posture2_stable
+
+
+		poly1 = []
+		for p in hull1:
+			poly1.append([p[0],p[1]])
+		poly2 = []
+		for p in hull2:
+			poly2.append([p[0],p[1]])
+
+
+		posture1_unstable = node1.getGPACPosture()
+		posture1_stable = node1.getStableGPACPosture()
+		posture2_unstable = node2.getGPACPosture()
+		posture2_stable = node2.getStableGPACPosture()
+
+		count1_unstable = 0
+		count1_stable = 0
+		for p in posture1_unstable:
+			if point_inside_polygon(p[0],p[1],poly1):
+				count1_unstable += 1
+		for p in posture1_stable:
+			if point_inside_polygon(p[0],p[1],poly1):
+				count1_stable += 1
+	
+		posture1 = posture1_stable
+		if count1_stable < 38:
+			if count1_unstable > count1_stable:
+				posture1 = posture2_unstable
+
+		count2_unstable = 0
+		count2_stable = 0
+		for p in posture2_unstable:
+			if point_inside_polygon(p[0],p[1],poly2):
+				count2_unstable += 1
+		for p in posture2_stable:
+			if point_inside_polygon(p[0],p[1],poly2):
+				count2_stable += 1
+	
+		posture2 = posture2_stable
+		if count2_stable < 38:
+			if count2_unstable > count2_stable:
+				posture2 = posture2_unstable
+
+
+		curve1 = StableCurve(posture1)
+		curve2 = StableCurve(posture2)
+		uniform1 = curve1.getPlot()
+		uniform2 = curve2.getPlot()
+
+		headPoint1, tailPoint1 = curve1.getTips()
+		headPoint2, tailPoint2 = curve2.getTips()
+		
+		stablePoints1 = curve1.getPoints()
+		stablePoints2 = curve2.getPoints()
+		
+		radius, center = gen_icp.computeEnclosingCircle(hull1)
+		circle1 = [radius, center]
+		
+		isForward, angDiff = self.computeConstraintOrientation(firstGuess, n1, n2)
+
+		return (estPose1, firstGuess, hull1, hull2, stablePoints1, stablePoints2, uniform1, uniform2, isForward, (headPoint1,tailPoint1,headPoint2,tailPoint2), [circle1], costThresh, minMatchDist, plotIteration, n1, n2)
 
 	def makeInPlaceConstraint(self, i, j):
 
@@ -4558,20 +4834,67 @@ class PoseGraph:
 		#for i in range(self.numNodes):
 		#	a_hulls[i] = computeHull(self.nodeHash[i], sweep = False)
 		#	hull_computed[i] = True
+
+		constraintData = []
+		constraintData2 = []
 		
 		" make hypothesized constraints out of the pairs "
+
+		constraintResults = []
 		hypotheses = []		
 		for i in range(len(sensor_pairs)):
 			p = sensor_pairs[i]
 			transform = p[3]
 			n1 = p[1]
 			n2 = p[2]
-			offset, covar, cost = self.makeSensorConstraint(transform, n1, n2, a_hulls[n1], a_hulls[n2])
+			#constraintData.append(self.makeShapeConstraintData(transform, n1, n2, a_hulls[n1], a_hulls[n2]))
+			constraintData2.append(self.makeShapeConstraintData2(transform, n1, n2, a_hulls[n1], a_hulls[n2]))
+			#return (estPose1, estPose2, hull1, hull2, posture1_unstable, posture1_stable, posture2_unstable, posture1_stable, costThresh, minMatchDist, plotIteration, n1, n2)
+			
+			if len(constraintData2) >= 16:
+				constraintResults += self.computeAllShapeConstraints(constraintData2)
+				constraintData2 = []
+
+		if len(constraintData2) > 0:
+			constraintResults += self.computeAllShapeConstraints(constraintData2)
+			constraintData2 = []
+			
+		#constraintResults = self.computeAllShapeConstraints(constraintData)
+
+		#print constraintData2[0]	
+		print "received", len(constraintResults), "constraint results"
+		print constraintResults[0]	
+		
+		for i in range(len(constraintResults)):
+			p = sensor_pairs[i]
+			result = constraintResults[i]
+			offset = result[1][0]
+			cost = result[1][1]
+			covar = self.E_sensor		
 			transform = matrix([ [offset[0]], [offset[1]], [offset[2]] ],dtype=float)
 		
 			if cost < 1.5:
 				hypotheses.append([p[1],p[2],transform,covar])
-				print "hypothesis", i, ":",  "sensor constraint between", n1, "and", n2
+				print "hypothesis", i, ":",  "sensor constraint between", p[1], "and", p[2]
+
+		#hypotheses = []		
+		#for i in range(len(sensor_pairs)):
+		#	p = sensor_pairs[i]
+		#	transform = p[3]
+		#	n1 = p[1]
+		#	n2 = p[2]
+		#	constraintData.append(self.makeShapeConstraintData(transform, n1, n2, a_hulls[n1], a_hulls[n2]))
+		#	offset, covar, cost = self.makeSensorConstraint(transform, n1, n2, a_hulls[n1], a_hulls[n2])
+		#	transform = matrix([ [offset[0]], [offset[1]], [offset[2]] ],dtype=float)
+		
+		#	if cost < 1.5:
+		#		hypotheses.append([p[1],p[2],transform,covar])
+		#		print "hypothesis", i, ":",  "sensor constraint between", n1, "and", n2
+
+		#set_printoptions(threshold=nan)
+		#f = open("shapeInitData.txt", 'w')
+		#f.write(repr(constraintData))
+		#f.close()
 
 		" compute the consistency between each pair of hypotheses "
 
@@ -4659,6 +4982,7 @@ class PoseGraph:
 			e, lmbda = scsgp.dominantEigenvectors(A)
 			w = scsgp.getIndicatorVector(e[0])
 			w2 = scsgp.getIndicatorVector(e[1])
+			w3 = scsgp.getIndicatorVector(e[2])
 			if len(e) <= 1:
 				break
 
@@ -4676,7 +5000,6 @@ class PoseGraph:
 		for i in range(len(totalHypotheses)):
 			if w2[i,0] >= 1.0:
 				selected2.append(totalHypotheses[i])
-
 
 		"""
 
@@ -4871,6 +5194,41 @@ class PoseGraph:
 		#return added_hypotheses
 		return selected, selected2
 
+	def computeAllShapeConstraints(self, constraintData):
+
+		#constraintResults = self.computeAllShapeConstraints(constraintData)
+
+
+		def send_problem(address, data):
+			"""Download a piece of poetry from the given address."""
+		
+			sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+			sock.connect(address)
+		
+			sock.sendall(data + '\n')
+		
+			results = ''
+		
+			while True:
+		
+				# This is the 'blocking' call in this synchronous program.
+				# The recv() method will block for an indeterminate period
+				# of time waiting for bytes to be received from the server.
+		
+				bytes = sock.recv(1024)
+		
+				if not bytes:
+					sock.close()
+					break
+		
+				results += bytes
+		
+			return results
+		
+		results = eval(send_problem(('127.0.0.1', 10000), repr(constraintData)))
+		
+		return results
+	
 	def doToro(self, constraints, fileName = "probe"):
 		
 		
