@@ -42,16 +42,35 @@ class OccupancyMap(Map):
 		indexX, indexY = self.realToGrid([estPose[0],estPose[1]])
 			
 		draw = ImageDraw.Draw(self.mapImage)
-		draw.ellipse((indexX-5, indexY-5, indexX+5, indexY+5), outline=0)	
+		#draw.ellipse((indexX-5, indexY-5, indexX+5, indexY+5), outline=0)	
+
+		walls = self.mapGraph.getWalls()
+		for wall in walls:
+			wallPoints = []
+			for p in wall:
+				pGrid = self.realToGrid(p)
+				wallPoints.append((pGrid[0],pGrid[1]))
+			
+			draw.line(wallPoints, fill=255)
+
 
 		self.mapImage.save(self.fileName % self.saveCount)	
 
 		gndPose = localNode.getGndGlobalGPACPose()
 		indexX, indexY = self.realToGrid([gndPose[0],gndPose[1]])
-			
-		draw = ImageDraw.Draw(self.gndMapImage)
-		draw.ellipse((indexX-5, indexY-5, indexX+5, indexY+5), outline=0)	
 		
+		draw = ImageDraw.Draw(self.gndMapImage)
+		#draw.ellipse((indexX-5, indexY-5, indexX+5, indexY+5), outline=0)	
+
+		walls = self.mapGraph.getWalls()
+		for wall in walls:
+			wallPoints = []
+			for p in wall:
+				pGrid = self.realToGrid(p)
+				wallPoints.append((pGrid[0],pGrid[1]))
+			
+			draw.line(wallPoints, fill=255)
+
 		
 		self.gndMapImage.save(self.gndFileName % self.saveCount)	
 		self.saveCount += 1

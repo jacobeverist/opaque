@@ -38,7 +38,7 @@ def dominantEigenvectors(A):
 	lmbda = [0.0 for i in range(N)]
 	
 	#for i in range(N):
-	for i in range(3):
+	for i in range(2):
 		e[i] = rand_vector(N)
 
 		for iters in range(K):

@@ -34,14 +34,14 @@ class Solver(pb.Root):
 	n1 = args[11]
 	n2 = args[12]
 
-	offset, cost = gen_icp.shapeICP2(estPose1, estPose2, hull1, hull2, posture1_unstable, posture1_stable, posture2_unstable, posture2_stable, costThresh, minMatchDist, plotIteration, n1, n2)
+	offset, cost, status = gen_icp.shapeICP2(estPose1, estPose2, hull1, hull2, posture1_unstable, posture1_stable, posture2_unstable, posture2_stable, costThresh, minMatchDist, plotIteration, n1, n2)
 
         print "sensor constraint: %d -> %d" %(n1,n2), "cost =", cost
 
 	" cast the values to float so they pass the type security of jelly "
 	offset = [float(offset[0]), float(offset[1]), float(offset[2])]
 
-	return offset, cost
+	return offset, cost, status
 
     def remote_shapeICP(self, args):
         estPose1 = args[0]

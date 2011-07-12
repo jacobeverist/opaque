@@ -200,7 +200,7 @@ class PoetryProtocol(Protocol):
 	    if result[0]:
                 finalResults.append(result)
             else:
-                finalResults.append((False, ([0.0,0.0,0.0], 1e100)))
+                finalResults.append((False, ([0.0,0.0,0.0], 1e100, -1)))
 
 	self.transport.write(repr(finalResults))
 	self.transport.loseConnection()

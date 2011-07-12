@@ -35,9 +35,10 @@ import ImageDraw
 
 renderCount = 0
 
+GND_PRIORITY = 10
 INPLACE_PRIORITY = 5
 CORNER_PRIORITY = 3
-SENSOR_PRIORITY = 2
+SHAPE_PRIORITY = 2
 OVERLAP_PRIORITY = 0
 MOTION_PRIORITY = 0
 
@@ -168,6 +169,9 @@ class PoseGraph:
 		self.cornerHypotheses = []
 		self.cornerHash = {}
 		self.badHypotheses = []
+		self.badHypotheses1 = []
+		self.badHypotheses2 = []
+
 		self.goodHypotheses = []
 		self.allCornerHypotheses = []
 		
@@ -178,6 +182,10 @@ class PoseGraph:
 		self.cornerBins = []
 		self.b_hulls = []
 		self.a_hulls = []
+
+		self.E_gnd = matrix([[ 0.00001, 0.0, 0.0 ],
+							[ 0.0, 0.00001, 0.0],
+							[ 0.0, 0.0, 0.0001 ]])
 
 		self.E_corner = matrix([[ 0.01, 0.0, 0.0 ],
 							[ 0.0, 0.01, 0.0],
@@ -231,31 +239,49 @@ class PoseGraph:
 				
 		return cornerEdges
 	
-	def getPriorityEdges(self):
+	def getPriorityEdges(self, priorityLevel = -1):
 
 		priorityEdges = {}
 		
-		for k, v in self.edgePriorityHash.items():
+		if priorityLevel == -1:
+			for k, v in self.edgePriorityHash.items():
+				
+				if len(v) > 0:
 			
-			if len(v) > 0:
-		
-				id1 = k[0]
-				id2 = k[1]
+					id1 = k[0]
+					id2 = k[1]
+					
+					" take the highest priority constraints only "
+					maxPriority = -1
+					for const in v:
+						thisPriority = const[2]
+						if thisPriority > maxPriority:
+							maxPriority = thisPriority
+			
+					if maxPriority == -1:
+						raise
+					
+					priorityEdges[k] = []
+					for const in v:
+						if const[2] == maxPriority:
+							priorityEdges[k].append(const)
+
+		else:
+			
+			for k, v in self.edgePriorityHash.items():
 				
-				" take the highest priority constraints only "
-				maxPriority = -1
-				for const in v:
-					thisPriority = const[2]
-					if thisPriority > maxPriority:
-						maxPriority = thisPriority
-		
-				if maxPriority == -1:
-					raise
-				
-				priorityEdges[k] = []
-				for const in v:
-					if const[2] == maxPriority:
-						priorityEdges[k].append(const)
+				if len(v) > 0:
+			
+					id1 = k[0]
+					id2 = k[1]
+					
+					" take the highest priority constraints only "
+					priorityEdges[k] = []
+					for const in v:
+						if priorityLevel == const[2]:
+							
+							priorityEdges[k].append(const)
+
 
 		return priorityEdges
 
@@ -269,6 +295,11 @@ class PoseGraph:
 					newV.append(const)
 			self.edgePriorityHash[k] = newV
 
+
+	def deleteAllEdges(self):
+
+		self.edgePriorityHash = {}
+		
 	def matchExternalCorners(self):
 		
 		externalHyps = []
@@ -744,11 +775,11 @@ class PoseGraph:
 				" try to perform corner constraints "
 				" overwrite overlap/motion constraints"
 				" corner constraints with past nodes "
-				self.addCornerConstraints(nodeID)
+				#self.addCornerConstraints(nodeID)
 				
 				
 				" merge the constraints "
-				self.mergePriorityConstraints()
+				#self.mergePriorityConstraints()
 
 
 				" check that each bin is well-connected, otherwise, try to add constraints "
@@ -767,7 +798,7 @@ class PoseGraph:
 				
 				newConstraints = []
 				if nodeID >= 2 and nodeID <= 24:
-					newConstraints = self.addSensorConstraints(paths, targetNode = nodeID)
+					newConstraints = self.addShapeConstraints(paths, targetNode = nodeID)
 
 				for const in newConstraints:
 					n1 = const[0]
@@ -775,7 +806,7 @@ class PoseGraph:
 					transform = const[2]
 					covE = const[3]
 
-					self.addPriorityEdge([n1,n2,transform,covE], SENSOR_PRIORITY)
+					self.addPriorityEdge([n1,n2,transform,covE], SHAPE_PRIORITY)
 
 				" merge the constraints "
 				self.mergePriorityConstraints()
@@ -831,9 +862,9 @@ class PoseGraph:
 				" try to perform corner constraints "
 				" overwrite overlap/motion constraints"
 				" corner constraints with past nodes "
-				self.addCornerConstraints(nodeID)
+				#self.addCornerConstraints(nodeID)
 
-				self.mergePriorityConstraints()
+				#self.mergePriorityConstraints()
 				
 				" 1) add inplace constraint "
 				" 2) attempt corner constraint with past nodes, replacing overlaps and sensors "
@@ -846,7 +877,7 @@ class PoseGraph:
 
 				newConstraints = []
 				if nodeID >= 2 and nodeID <= 24:
-					newConstraints = self.addSensorConstraints(paths, targetNode = nodeID)
+					newConstraints = self.addShapeConstraints(paths, targetNode = nodeID)
 
 				for const in newConstraints:
 					n1 = const[0]
@@ -854,7 +885,7 @@ class PoseGraph:
 					transform = const[2]
 					covE = const[3]
 
-					self.addPriorityEdge([n1,n2,transform,covE], SENSOR_PRIORITY)
+					self.addPriorityEdge([n1,n2,transform,covE], SHAPE_PRIORITY)
 
 				" merge the constraints "
 				self.mergePriorityConstraints()
@@ -894,7 +925,7 @@ class PoseGraph:
 					if cost < 1.5:				
 						newConstraints.append([nodeID,nodeID-6,transform,covar])		
 						
-				newConstraints = self.addSensorConstraints(paths, targetNode = nodeID)
+				newConstraints = self.addShapeConstraints(paths, targetNode = nodeID)
 				"""
 
 		"""
@@ -905,10 +936,10 @@ class PoseGraph:
 				paths.append(bayes.dijkstra_proj(i, self.numNodes, self.edgeHash))
 			
 			newConstraints = []
-			newConstraints, newConstraints2 = self.addSensorConstraints(paths, targetNode = nodeID)
+			newConstraints, newConstraints2 = self.addShapeConstraints(paths, targetNode = nodeID)
 			
 			" remove previous shape constraints "
-			self.deleteAllPriority(SENSOR_PRIORITY)
+			self.deleteAllPriority(SHAPE_PRIORITY)
 				
 			for const in newConstraints:
 				n1 = const[0]
@@ -916,7 +947,7 @@ class PoseGraph:
 				transform = const[2]
 				covE = const[3]
 	
-				self.addPriorityEdge([n1,n2,transform,covE], SENSOR_PRIORITY)
+				self.addPriorityEdge([n1,n2,transform,covE], SHAPE_PRIORITY)
 	
 			" merge the constraints "
 			self.mergePriorityConstraints()
@@ -925,14 +956,14 @@ class PoseGraph:
 			print "totalError1:", totalError1
 
 
-			self.deleteAllPriority(SENSOR_PRIORITY)
+			self.deleteAllPriority(SHAPE_PRIORITY)
 			for const in newConstraints2:
 				n1 = const[0]
 				n2 = const[1]
 				transform = const[2]
 				covE = const[3]
 	
-				self.addPriorityEdge([n1,n2,transform,covE], SENSOR_PRIORITY)
+				self.addPriorityEdge([n1,n2,transform,covE], SHAPE_PRIORITY)
 	
 			" merge the constraints "
 			self.mergePriorityConstraints()
@@ -942,7 +973,7 @@ class PoseGraph:
 
 			" revert to first hypothesis set if other is better "
 			if totalError2 > totalError1:
-				self.deleteAllPriority(SENSOR_PRIORITY)
+				self.deleteAllPriority(SHAPE_PRIORITY)
 					
 				for const in newConstraints:
 					n1 = const[0]
@@ -950,15 +981,15 @@ class PoseGraph:
 					transform = const[2]
 					covE = const[3]
 		
-					self.addPriorityEdge([n1,n2,transform,covE], SENSOR_PRIORITY)
+					self.addPriorityEdge([n1,n2,transform,covE], SHAPE_PRIORITY)
 		
 				" merge the constraints "
 				self.mergePriorityConstraints()
 		"""
 
 		#if nodeID == 8:
-		if nodeID % 160 == 0 and nodeID > 0:
-
+		#if nodeID % 15 == 0 and nodeID > 0:
+		if False:
 
 			paths = []
 			for i in range(self.numNodes):
@@ -966,12 +997,12 @@ class PoseGraph:
 			
 			newConstraints = []
 			self.newConstraints2 = []
-			newConstraints, self.newConstraints2 = self.addSensorConstraints(paths)
-			#newConstraints = self.addSensorConstraints(paths, targetNode = nodeID)
+			newConstraints, self.newConstraints2 = self.addShapeConstraints(paths)
+			#newConstraints = self.addShapeConstraints(paths, targetNode = nodeID)
 			
 			" remove previous shape constraints "
-			#deleteAll(self.edgePriorityHash, SENSOR_PRIORITY)
-			self.deleteAllPriority(SENSOR_PRIORITY)
+			#deleteAll(self.edgePriorityHash, SHAPE_PRIORITY)
+			self.deleteAllPriority(SHAPE_PRIORITY)
 				
 			for const in newConstraints:
 				n1 = const[0]
@@ -979,21 +1010,21 @@ class PoseGraph:
 				transform = const[2]
 				covE = const[3]
 	
-				self.addPriorityEdge([n1,n2,transform,covE], SENSOR_PRIORITY)
+				self.addPriorityEdge([n1,n2,transform,covE], SHAPE_PRIORITY)
 	
 			" merge the constraints "
 			self.mergePriorityConstraints()
 
 			totalError1 = self.computeCornerClusterError()
 
-			self.deleteAllPriority(SENSOR_PRIORITY)
+			self.deleteAllPriority(SHAPE_PRIORITY)
 			for const in self.newConstraints2:
 				n1 = const[0]
 				n2 = const[1]
 				transform = const[2]
 				covE = const[3]
 	
-				self.addPriorityEdge([n1,n2,transform,covE], SENSOR_PRIORITY)
+				self.addPriorityEdge([n1,n2,transform,covE], SHAPE_PRIORITY)
 	
 			" merge the constraints "
 			self.mergePriorityConstraints()
@@ -1002,7 +1033,7 @@ class PoseGraph:
 
 			" revert to first hypothesis set if other is better "
 			if totalError2 > totalError1:
-				self.deleteAllPriority(SENSOR_PRIORITY)
+				self.deleteAllPriority(SHAPE_PRIORITY)
 					
 				for const in newConstraints:
 					n1 = const[0]
@@ -1010,39 +1041,41 @@ class PoseGraph:
 					transform = const[2]
 					covE = const[3]
 		
-					self.addPriorityEdge([n1,n2,transform,covE], SENSOR_PRIORITY)
+					self.addPriorityEdge([n1,n2,transform,covE], SHAPE_PRIORITY)
 		
 				" merge the constraints "
 				self.mergePriorityConstraints()
 				
+
+	
 
 		
 		"""
 		#if nodeID == 26:
 		if nodeID % 25 == 1 and nodeID > 1:
 
-			self.deleteAllPriority(SENSOR_PRIORITY)
+			self.deleteAllPriority(SHAPE_PRIORITY)
 			for const in self.newConstraints2:
 				n1 = const[0]
 				n2 = const[1]
 				transform = const[2]
 				covE = const[3]
 	
-				self.addPriorityEdge([n1,n2,transform,covE], SENSOR_PRIORITY)
+				self.addPriorityEdge([n1,n2,transform,covE], SHAPE_PRIORITY)
 	
 			" merge the constraints "
 			self.mergePriorityConstraints()
 
 		if nodeID % 50 == 2 and nodeID > 2:
 
-			self.deleteAllPriority(SENSOR_PRIORITY)
+			self.deleteAllPriority(SHAPE_PRIORITY)
 			for const in self.newConstraints3:
 				n1 = const[0]
 				n2 = const[1]
 				transform = const[2]
 				covE = const[3]
 	
-				self.addPriorityEdge([n1,n2,transform,covE], SENSOR_PRIORITY)
+				self.addPriorityEdge([n1,n2,transform,covE], SHAPE_PRIORITY)
 	
 			" merge the constraints "
 			self.mergePriorityConstraints()
@@ -1050,6 +1083,284 @@ class PoseGraph:
 		print "Cluster Error:"
 		totalError = self.computeCornerClusterError()
 		"""
+
+	def resetGraphToGround(self):
+		
+		self.deleteAllEdges()
+
+		for i in range(self.numNodes):
+			" reset the estimated pose to ground pose "
+			pastNode = self.nodeHash[i]
+			pastNode.setEstPose(pastNode.getGndPose())
+
+		" now create ground constraints "
+		" ground constraints are generated from ground truth data "
+		self.gnd_constraints = []
+
+		for i in range(1,self.numNodes):
+
+			if self.numNodes > 0:
+				
+				node1 = self.nodeHash[i-1]
+				node2 = self.nodeHash[i]
+				
+				" create the ground constraints "
+				gndGPAC1Pose = node1.getGndGlobalGPACPose()
+				currProfile = Pose(gndGPAC1Pose)
+				gndGPAC2Pose = node2.getGndGlobalGPACPose()
+				offset = currProfile.convertGlobalPoseToLocal(gndGPAC2Pose)
+				self.gnd_constraints.append([i-1, i, matrix([[offset[0]], [offset[1]], [offset[2]]]), self.E_gnd])
+
+		for const in self.gnd_constraints:
+			#self.addPriorityEdge([nodeID-2,nodeID,transform,covE], OVERLAP_PRIORITY)
+
+			node1 = const[0]
+			node2 = const[1]
+			transform = const[2]
+			covE = const[3]
+
+			self.addPriorityEdge([node1,node2,transform,covE], GND_PRIORITY)
+
+	def loadNodeGroundPast(self, newNode):
+
+		if self.numNodes > 0:
+			self.resetGraphToGround()						
+
+		self.currNode = newNode
+		nodeID = self.numNodes
+		self.nodeHash[nodeID] = self.currNode
+		self.numNodes += 1
+		self.a_hulls.append(computeHull(self.nodeHash[nodeID], sweep = False))
+		self.b_hulls.append(computeHull(self.nodeHash[nodeID], sweep = True))
+
+		if nodeID > 0:
+
+			if nodeID % 2 == 0:
+				" 2nd node from a pose "
+				" 1) make overlap+motion constraint with i-1"
+				" 2) attempt overlap with past nodes ? "
+				" 3) attempt corner constraints with past nodes, replacing overlaps and sensors "
+				" 4) discard sensor constraints and reapply sensor constraints to non-corner edges"
+
+				#transform, covE = self.makeMotionConstraint(nodeID-1, nodeID)
+				#self.edgePriorityHash[(nodeID-1, nodeID)].append([transform, covE, MOTION_PRIORITY])
+				
+				transform, covE = self.makeOverlapConstraint(nodeID-2, nodeID)
+				self.addPriorityEdge([nodeID-2,nodeID,transform,covE], OVERLAP_PRIORITY)
+	
+				" merge constraints by priority and updated estimated poses "
+				self.mergePriorityConstraints()
+
+				" try to perform corner constraints "
+				" overwrite overlap/motion constraints"
+				" corner constraints with past nodes "
+				#self.addCornerConstraints(nodeID)
+				
+				
+				" merge the constraints "
+				#self.mergePriorityConstraints()
+
+
+				" check that each bin is well-connected, otherwise, try to add constraints "
+				for bin in self.cornerBins:
+					pass
+									
+			else:
+						
+				transform, covE = self.makeInPlaceConstraint(nodeID-1, nodeID)
+				self.addPriorityEdge([nodeID-1,nodeID,transform,covE], INPLACE_PRIORITY)
+	
+				" merge constraints by priority and updated estimated poses "
+				self.mergePriorityConstraints()
+
+				" try to perform corner constraints "
+				" overwrite overlap/motion constraints"
+				" corner constraints with past nodes "
+				#self.addCornerConstraints(nodeID)
+
+				#self.mergePriorityConstraints()
+				
+
+
+		if nodeID > 1:
+
+			paths = []
+			for i in range(self.numNodes):
+				paths.append(bayes.dijkstra_proj(i, self.numNodes, self.edgeHash))
+			
+			newConstraints = []
+			newConstraints, newConstraints2 = self.addShapeConstraints(paths, targetNode = nodeID)
+			
+			" remove previous shape constraints "
+			self.deleteAllPriority(SHAPE_PRIORITY)
+				
+			for const in newConstraints:
+				n1 = const[0]
+				n2 = const[1]
+				transform = const[2]
+				covE = const[3]
+	
+				self.addPriorityEdge([n1,n2,transform,covE], SHAPE_PRIORITY)
+	
+			" merge the constraints "
+			self.mergePriorityConstraints()
+
+			totalError1 = self.computeCornerClusterError()
+			print "totalError1:", totalError1
+
+
+			self.deleteAllPriority(SHAPE_PRIORITY)
+			for const in newConstraints2:
+				n1 = const[0]
+				n2 = const[1]
+				transform = const[2]
+				covE = const[3]
+	
+				self.addPriorityEdge([n1,n2,transform,covE], SHAPE_PRIORITY)
+	
+			" merge the constraints "
+			self.mergePriorityConstraints()
+
+			totalError2 = self.computeCornerClusterError()
+			print "totalError2:", totalError2
+
+			" revert to first hypothesis set if other is better "
+			if totalError2 > totalError1:
+				self.deleteAllPriority(SHAPE_PRIORITY)
+					
+				for const in newConstraints:
+					n1 = const[0]
+					n2 = const[1]
+					transform = const[2]
+					covE = const[3]
+		
+					self.addPriorityEdge([n1,n2,transform,covE], SHAPE_PRIORITY)
+		
+				" merge the constraints "
+				self.mergePriorityConstraints()
+
+		if False:
+
+			paths = []
+			for i in range(self.numNodes):
+				paths.append(bayes.dijkstra_proj(i, self.numNodes, self.edgeHash))
+			
+			newConstraints = []
+			self.newConstraints2 = []
+			newConstraints, self.newConstraints2 = self.addShapeConstraints(paths)
+			#newConstraints = self.addShapeConstraints(paths, targetNode = nodeID)
+			
+			" remove previous shape constraints "
+			#deleteAll(self.edgePriorityHash, SHAPE_PRIORITY)
+			self.deleteAllPriority(SHAPE_PRIORITY)
+				
+			for const in newConstraints:
+				n1 = const[0]
+				n2 = const[1]
+				transform = const[2]
+				covE = const[3]
+	
+				self.addPriorityEdge([n1,n2,transform,covE], SHAPE_PRIORITY)
+	
+			" merge the constraints "
+			self.mergePriorityConstraints()
+
+			totalError1 = self.computeCornerClusterError()
+
+			self.deleteAllPriority(SHAPE_PRIORITY)
+			for const in self.newConstraints2:
+				n1 = const[0]
+				n2 = const[1]
+				transform = const[2]
+				covE = const[3]
+	
+				self.addPriorityEdge([n1,n2,transform,covE], SHAPE_PRIORITY)
+	
+			" merge the constraints "
+			self.mergePriorityConstraints()
+
+			totalError2 = self.computeCornerClusterError()
+
+			" revert to first hypothesis set if other is better "
+			if totalError2 > totalError1:
+				self.deleteAllPriority(SHAPE_PRIORITY)
+					
+				for const in newConstraints:
+					n1 = const[0]
+					n2 = const[1]
+					transform = const[2]
+					covE = const[3]
+		
+					self.addPriorityEdge([n1,n2,transform,covE], SHAPE_PRIORITY)
+		
+				" merge the constraints "
+				self.mergePriorityConstraints()
+				
+
+	
+
+				
+		
+
+	def performShapeConstraints(self):
+		
+		paths = []
+		for i in range(self.numNodes):
+			paths.append(bayes.dijkstra_proj(i, self.numNodes, self.edgeHash))
+
+		totalInitError = self.computeCornerClusterError()
+		
+		newConstraints = []
+		self.newConstraints2 = []
+		newConstraints, self.newConstraints2 = self.addShapeConstraints(paths)
+		#newConstraints = self.addShapeConstraints(paths, targetNode = nodeID)
+		
+		" remove previous shape constraints "
+		#deleteAll(self.edgePriorityHash, SHAPE_PRIORITY)
+		self.deleteAllPriority(SHAPE_PRIORITY)
+			
+		for const in newConstraints:
+			n1 = const[0]
+			n2 = const[1]
+			transform = const[2]
+			covE = const[3]
+
+			self.addPriorityEdge([n1,n2,transform,covE], SHAPE_PRIORITY)
+
+		" merge the constraints "
+		self.mergePriorityConstraints()
+
+		totalError1 = self.computeCornerClusterError()
+
+		self.deleteAllPriority(SHAPE_PRIORITY)
+		for const in self.newConstraints2:
+			n1 = const[0]
+			n2 = const[1]
+			transform = const[2]
+			covE = const[3]
+
+			self.addPriorityEdge([n1,n2,transform,covE], SHAPE_PRIORITY)
+
+		" merge the constraints "
+		self.mergePriorityConstraints()
+
+		totalError2 = self.computeCornerClusterError()
+
+		" revert to first hypothesis set if other is better "
+		if totalError2 > totalError1:
+			self.deleteAllPriority(SHAPE_PRIORITY)
+				
+			for const in newConstraints:
+				n1 = const[0]
+				n2 = const[1]
+				transform = const[2]
+				covE = const[3]
+	
+				self.addPriorityEdge([n1,n2,transform,covE], SHAPE_PRIORITY)
+	
+			" merge the constraints "
+			self.mergePriorityConstraints()
+
 		
 	def mergePriorityConstraints(self):
 		
@@ -4367,7 +4678,7 @@ class PoseGraph:
 			paths2.append(bayes.dijkstra_proj(i, self.numNodes, self.edgeHash))
 		
 		edgeHash2 = self.edgeHash
-		added_hypotheses = self.addSensorConstraints(paths2)
+		added_hypotheses = self.addShapeConstraints(paths2)
 
 		v_list, new_constraints = self.doToro(self.merged_constraints + added_hypotheses, fileName = "probe")
 
@@ -4535,7 +4846,7 @@ class PoseGraph:
 			paths2.append(bayes.dijkstra_proj(i, self.numNodes, self.edgeHash))
 		
 		edgeHash2 = self.edgeHash
-		added_hypotheses = self.addSensorConstraints(paths2)
+		added_hypotheses = self.addShapeConstraints(paths2)
 
 		v_list, new_constraints = self.doToro(self.merged_constraints + added_hypotheses, fileName = "probe")
 
@@ -4815,7 +5126,7 @@ class PoseGraph:
 		#return added_hypotheses
 		return selected
 
-	def addSensorConstraints(self, paths, targetNode = None, matchNode = None):
+	def addShapeConstraints(self, paths, targetNode = None, matchNode = None):
 
 		if targetNode != None:
 			if matchNode != None:
@@ -4864,18 +5175,33 @@ class PoseGraph:
 		#print constraintData2[0]	
 		print "received", len(constraintResults), "constraint results"
 		print constraintResults[0]	
+
+		self.goodHypotheses = []
+		self.badHypotheses1 = []
+		self.badHypotheses2 = []
 		
 		for i in range(len(constraintResults)):
 			p = sensor_pairs[i]
 			result = constraintResults[i]
 			offset = result[1][0]
 			cost = result[1][1]
+			status = result[1][2]
 			covar = self.E_sensor		
 			transform = matrix([ [offset[0]], [offset[1]], [offset[2]] ],dtype=float)
-		
+
 			if cost < 1.5:
 				hypotheses.append([p[1],p[2],transform,covar])
-				print "hypothesis", i, ":",  "sensor constraint between", p[1], "and", p[2]
+				#self.goodHypotheses.append([p[1],p[2],transform,covar])
+				print "accepted", i, ":", "shape constraint between", p[1], "and", p[2], "cost =", cost
+			else:
+				if status == 0:
+					badStatus = 2
+				else:
+					badStatus = status
+				self.badHypotheses1.append([p[1],p[2],transform,covar, badStatus])
+				self.badHypotheses2.append([p[1],p[2],transform,covar, badStatus])
+				print "rejected", i, ":", "shape constraint between", p[1], "and", p[2], "cost =", cost
+
 
 		#hypotheses = []		
 		#for i in range(len(sensor_pairs)):
@@ -4901,9 +5227,9 @@ class PoseGraph:
 		self.sensorHypotheses += hypotheses
 		
 		#totalHypotheses = self.sensor_constraints + self.sensorHypotheses
-		totalHypotheses = self.sensorHypotheses
+		#totalHypotheses = self.sensorHypotheses
 		
-		#totalHypotheses = hypotheses
+		totalHypotheses = hypotheses
 		
 		results = []
 		for i in range(len(totalHypotheses)):
@@ -4982,7 +5308,7 @@ class PoseGraph:
 			e, lmbda = scsgp.dominantEigenvectors(A)
 			w = scsgp.getIndicatorVector(e[0])
 			w2 = scsgp.getIndicatorVector(e[1])
-			w3 = scsgp.getIndicatorVector(e[2])
+			#w3 = scsgp.getIndicatorVector(e[2])
 			if len(e) <= 1:
 				break
 
@@ -4995,11 +5321,16 @@ class PoseGraph:
 		for i in range(len(totalHypotheses)):
 			if w[i,0] >= 1.0:
 				selected.append(totalHypotheses[i])
+			else:
+				self.badHypotheses1.append(totalHypotheses[i] + [3])
 
 		selected2 = []	
 		for i in range(len(totalHypotheses)):
 			if w2[i,0] >= 1.0:
 				selected2.append(totalHypotheses[i])
+			else:
+				self.badHypotheses2.append(totalHypotheses[i]+ [3])
+
 
 		"""
 

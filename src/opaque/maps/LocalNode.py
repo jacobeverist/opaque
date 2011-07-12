@@ -971,7 +971,36 @@ class LocalNode:
 		self.occMap.saveMap()
 		self.sweepMap.saveMap()
 		self.obstacleMap.saveMap()
+
+	def getOccPoints(self, sweep = False):
+
+		" 1. pick out the points "
+		if sweep:
+			numPixel = self.sweepMap.numPixel
+			mapImage = self.sweepMap.getMap()
+		else:
+			numPixel = self.occMap.numPixel
+			mapImage = self.occMap.getMap()
+		image = mapImage.load()
 		
+		#print numPixel
+
+		localGPACPose = self.getLocalGPACPose()
+		localGPACProfile = Pose(localGPACPose)
+				
+		points = []
+		for j in range(numPixel):
+			for k in range(numPixel):
+				if image[j,k] == 255:
+					if sweep:
+						pnt = self.sweepMap.gridToReal([j,k])
+					else:
+						pnt = self.occMap.gridToReal([j,k])
+						
+					points.append(localGPACProfile.convertGlobalToLocal(pnt))
+	
+
+		return points
 
 	def computeAlphaBoundary(self, sweep = False):
 
@@ -1077,25 +1106,33 @@ class LocalNode:
 		#print inputStr
 		
 		if True:
-			
-			" start the subprocess "
-			subProc = Popen(["./alpha2.exe"], stdin=PIPE, stdout=PIPE)
-			
-			" send input and receive output "
-			sout, serr = subProc.communicate(inputStr)
-	
-			#print numPoints
-			#print sout
-			
-			" convert string output to typed data "
-			sArr = sout.split(" ")
-			
-			#print sArr[0]
-			numVert = int(sArr[0])
-			
-			vertices = []
-			for i in range(numVert+1):
-				vertices.append([float(sArr[2*i + 1]), float(sArr[2*i + 2])])
+
+			try:			
+				" start the subprocess "
+				subProc = Popen(["./alpha2.exe"], stdin=PIPE, stdout=PIPE)
+				
+				" send input and receive output "
+				sout, serr = subProc.communicate(inputStr)
+		
+				#print numPoints
+				#print sout
+				
+				" convert string output to typed data "
+				sArr = sout.split(" ")
+				
+		
+				#print sArr[0]
+				numVert = int(sArr[0])
+				
+				sArr = sArr[1:]
+				
+				
+				vertices = []
+				for i in range(len(sArr)/2):
+					vertices.append([float(sArr[2*i]), float(sArr[2*i + 1])])
+			except:
+				print "hull has holes!"
+				#print sArr
 		else:
 			maxX = 0
 			minX = 1e10

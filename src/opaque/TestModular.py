@@ -438,6 +438,7 @@ class TestModular(SnakeControl):
 				
 				print "foreAvg =", foreAvg
 				#foreAvg = 2.0
+				foreAvg = 0.0
 				if foreAvg >= 1.4:
 					self.globalState = 10
 				else:

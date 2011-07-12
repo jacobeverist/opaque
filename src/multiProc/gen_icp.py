@@ -1877,6 +1877,11 @@ def gen_ICP2(estPose1, offset, pastHull, targetHull, pastCircles, costThresh = 0
 			
 def shapeICP2(estPose1, estPose2, hull1, hull2, posture1_unstable, posture1_stable, posture2_unstable, posture2_stable, costThresh = 0.004, minMatchDist = 2.0, plotIter = False, n1 = 0, n2 = 0):
 	
+	ACCEPTED = 0
+	REJECTED_CONTAIN = 1
+	
+	status = ACCEPTED
+	
 	poly1 = []
 	for p in hull1:
 		poly1.append([p[0],p[1]])
@@ -2035,11 +2040,10 @@ def shapeICP2(estPose1, estPose2, hull1, hull2, posture1_unstable, posture1_stab
 
 	isForward, angDiff = computeConstraintOrientation(firstGuess, posture1_stable, posture2_stable)
 	
+	termPoints = (headPoint1,tailPoint1,headPoint2,tailPoint2)
+	pastCircles = [circle1]
+	offset = firstGuess
 
-	return shapeICP(estPose1, firstGuess, hull1, hull2, stablePoints1, stablePoints2, uniform1, uniform2, isForward, (headPoint1,tailPoint1,headPoint2,tailPoint2), [circle1], costThresh, minMatchDist, plotIter, n1, n2)
-
-
-def shapeICP(estPose1, offset, hull1, hull2, stablePoints1, stablePoints2, uniform1, uniform2, isForward, termPoints, pastCircles, costThresh = 0.004, minMatchDist = 2.0, plotIter = False, n1 = 0, n2 = 0):
 
 	global numIterations
 	
@@ -2424,10 +2428,12 @@ def shapeICP(estPose1, offset, hull1, hull2, stablePoints1, stablePoints2, unifo
 	res3 = functions.point_inside_polygon(headPoint1[0],headPoint1[1],poly2_trans)
 	res4 = functions.point_inside_polygon(tailPoint1[0],tailPoint1[1],poly2_trans)
 
+	" we want to capture the situation where one half of pose 1 is contained in pose 2 and vice versa simultaneously "
 	if ((inForeCount1 >= 18) or (inBackCount1 >= 18)) and ((inForeCount2 >= 18) or (inBackCount2 >= 18)):
 		pass
 	else:
 		lastCost = 1e100
+		status = REJECTED_CONTAIN
 	
 	#if (res1 or res2) and (res3 or res4):
 	#	pass
@@ -2654,7 +2660,7 @@ def shapeICP(estPose1, offset, hull1, hull2, stablePoints1, stablePoints2, unifo
 	#if breakOut:
 	#	raise
 
-	return offset, lastCost
+	return offset, lastCost, status
 	
 
 #def cornerICP(estPose1, angle, pastHull, targetHull, pastCircles, costThresh = 0.004, minMatchDist = 2.0, plotIter = False, n1 = 0, n2 = 0):
