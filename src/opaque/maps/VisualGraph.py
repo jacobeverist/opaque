@@ -59,8 +59,8 @@ class VisualGraph:
 
 			self.localNodes.append(currNode)
 			
-			self.poseGraph.loadNewNode(currNode)
-			#self.poseGraph.loadNodeGroundPast(currNode)
+			#self.poseGraph.loadNewNode(currNode)
+			self.poseGraph.loadNodeGroundPast(currNode)
 	
 			#if i % 10 == 0:
 			#	self.poseGraph.makeCornerBinConsistent()
@@ -69,6 +69,7 @@ class VisualGraph:
 			
 			#self.drawShapeConstraints(i)
 
+		"""
 		self.drawMap()
 		self.drawConstraints(num_poses)
 
@@ -87,7 +88,8 @@ class VisualGraph:
 		self.poseGraph.resetGraphToGround()
 		self.drawMap()
 		self.drawConstraints(num_poses+3)
-
+		"""
+		
 		#self.drawPoses()
 
 	def testHypotheses(self, dirName, num_poses, hypFile):

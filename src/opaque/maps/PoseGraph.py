@@ -1123,8 +1123,8 @@ class PoseGraph:
 
 	def loadNodeGroundPast(self, newNode):
 
-		if self.numNodes > 0:
-			self.resetGraphToGround()						
+		#if self.numNodes > 0:
+		#	self.resetGraphToGround()						
 
 		self.currNode = newNode
 		nodeID = self.numNodes

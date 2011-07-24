@@ -47,6 +47,7 @@ import pylab
 import pca_module
 import functions
 from subprocess import *
+import traceback
 
 from matplotlib.patches import Circle
 
@@ -57,12 +58,256 @@ from Pose import Pose
 from StableCurve import StableCurve
 from SplineFit import SplineFit
 
+import Image
+from medialaxis import computeMedialAxis
+import graph
+
 from icp import shapeCostC
 from icp import computeMatchErrorP
 
 numIterations = 0
 
 fig = pylab.figure()
+
+
+def getLongestPath(node, currSum, currPath, tree, isVisited, nodePath, nodeSum):
+
+	if isVisited[node]:
+		return
+
+	isVisited[node] = 1
+	nodePath[node] = copy(currPath) + [node]
+
+	if nodeSum[node] < currSum:
+		nodeSum[node] = currSum
+
+	for childNode in tree[node]:
+		getLongestPath(childNode, currSum + 1, nodePath[node], tree, isVisited, nodePath, nodeSum)
+
+	isVisited[node] = 0
+
+def getMedialAxis(hull):
+
+	minX = 1e100
+	maxX = -1e100
+	minY = 1e100
+	maxY = -1e100
+	for p in hull:
+		if p[0] > maxX:
+			maxX = p[0]
+		if p[0] < minX:
+			minX = p[0]
+		if p[1] > maxY:
+			maxY = p[1]
+		if p[1] < minY:
+			minY = p[1]
+
+
+	PIXELSIZE = 0.05
+	#mapSize = 0.15*40 + 2.0 + 2.0
+	#mapSize = 5.0
+	#mapSize = max(maxX-minX,maxY-minY) + 10*PIXELSIZE
+	mapSize = 2*max(max(maxX,math.fabs(minX)),max(maxY,math.fabs(minY))) + 1
+	pixelSize = PIXELSIZE
+	print mapSize, mapSize/pixelSize
+	numPixel = int(2.0*mapSize / pixelSize + 1.0)
+	divPix = math.floor((2.0*mapSize/pixelSize)/mapSize)
+
+	print "numPixel = ", numPixel
+
+	def realToGrid(point):
+		indexX = int(math.floor(point[0]*divPix)) + numPixel/2 + 1
+		indexY = int(math.floor(point[1]*divPix)) + numPixel/2 + 1
+		return indexX, indexY
+
+	def gridToReal(indices):
+		i = indices[0]
+		j = indices[1]
+		point = [(i - numPixel/2 - 1)*(pixelSize/2.0) + pixelSize/2.0, (j - numPixel/2 - 1)*(pixelSize/2.0) + pixelSize/2.0]
+		return point
+
+
+	#print "hull:", hull
+
+	gridHull = []
+	#for p in hull:
+	for i in range(len(hull)):
+		p = hull[i]
+		#if abs(p[0]) >= mapSize or abs(p[1]) >= mapSize:
+		#	print "point:", p
+		gridHull.append(realToGrid(p))
+
+	#print "gridHull:", gridHull
+	
+	minX = 1e100
+	maxX = -1e100
+	minY = 1e100
+	maxY = -1e100
+	for p in gridHull:
+		if p[0] > maxX:
+			maxX = p[0]
+		if p[0] < minX:
+			minX = p[0]
+		if p[1] > maxY:
+			maxY = p[1]
+		if p[1] < minY:
+			minY = p[1]
+
+
+
+	#print "minMax:", minX, maxX, minY, maxY
+			
+	xRange = range(minX, maxX + 1)
+	yRange = range(minY, maxY + 1)
+
+	#print "xRange:", xRange
+	#print "yRange:", yRange
+	interior = []
+
+	for i in xRange:
+		for j in yRange:
+			if functions.point_inside_polygon(i, j, gridHull):
+				interior.append((i,j))
+
+
+	inputImg = Image.new('L', (numPixel,numPixel), 255)
+	imga = inputImg.load()
+	
+	#for p in gridHull:
+	for i in range(len(gridHull)):
+		p = gridHull[i]
+		#print p, hull[i]
+		imga[p[0],p[1]] = 0
+	
+	for p in interior:
+		imga[p[0],p[1]] = 0
+		#i, j = realToGrid(p)
+		#imga[i,j] = 0
+
+	resultImg = Image.new('L', inputImg.size)
+	resultImg = computeMedialAxis(inputImg, resultImg)
+	imgA = resultImg.load()
+
+	points = []
+	for i in range(1, inputImg.size[0]-1):
+		for j in range(1, inputImg.size[1]-1):
+			if imgA[i,j] == 0:
+				points.append((i,j))
+
+	medialGraph = graph.graph()
+	for p in points:
+		medialGraph.add_node(p, [])
+
+
+
+
+	builtGraph = {}
+	for i in range(2, inputImg.size[0]-2):
+		for j in range(2, inputImg.size[1]-2):
+			if imgA[i,j] == 0:
+				builtGraph[(i,j)] = []
+				for k in range(i-1, i+2):
+					for l in range(j-1, j+2):
+						if imgA[k,l] == 0:
+							builtGraph[(i,j)].append((k,l))
+							medialGraph.add_edge((i,j), (k,l))
+							
+
+
+	mst = medialGraph.minimal_spanning_tree()
+
+	uni_mst = {}
+	isVisited = {}
+	nodeSum = {}
+	for k, v in mst.items():
+		uni_mst[k] = []
+		isVisited[k] = 0
+		nodeSum[k] = 0
+
+	for k, v in mst.items():
+		if v != None:
+			uni_mst[k].append(v)
+			uni_mst[v].append(k)
+
+	leaves = []
+	for k, v in uni_mst.items():
+		if len(v) == 1:
+			leaves.append(k)
+
+
+	" find the longest path from each leaf"
+	maxPairDist = 0
+	maxPair = None
+	maxPath = []
+	for leaf in leaves:
+
+		isVisited = {}
+		nodeSum = {}
+		nodePath = {}
+		for k, v in uni_mst.items():
+			isVisited[k] = 0
+			nodeSum[k] = 0
+			nodePath[k] = []
+
+		getLongestPath(leaf, 0, [], uni_mst, isVisited, nodePath, nodeSum)
+
+		maxDist = 0
+		maxNode = None
+		for k, v in nodeSum.items():
+			#print k, v
+			if v > maxDist:
+				maxNode = k
+				maxDist = v
+
+		#print leaf, "-", maxNode, maxDist
+
+		if maxDist > maxPairDist:
+			maxPairDist = maxDist
+			maxPair = [leaf, maxNode]
+			maxPath = nodePath[maxNode]
+
+
+	frontVec = [0.,0.]
+	backVec = [0.,0.]
+	indic = range(6)
+	indic.reverse()
+
+	for i in indic:
+		p1 = maxPath[i+2]
+		p2 = maxPath[i]
+		vec = [p2[0]-p1[0], p2[1]-p1[1]]
+		frontVec[0] += vec[0]
+		frontVec[1] += vec[1]
+
+		p1 = maxPath[-i-3]
+		p2 = maxPath[-i-1]
+		vec = [p2[0]-p1[0], p2[1]-p1[1]]
+		backVec[0] += vec[0]
+		backVec[1] += vec[1]
+
+	frontMag = math.sqrt(frontVec[0]*frontVec[0] + frontVec[1]*frontVec[1])
+	backMag = math.sqrt(backVec[0]*backVec[0] + backVec[1]*backVec[1])
+
+	frontVec[0] /= frontMag
+	frontVec[1] /= frontMag
+	backVec[0] /= backMag
+	backVec[1] /= backMag
+
+	newP1 = (maxPath[0][0] + frontVec[0]*500, maxPath[0][1] + frontVec[1]*500)
+	newP2 = (maxPath[-1][0] + backVec[0]*500, maxPath[-1][1] + backVec[1]*500)
+
+	maxPath.insert(0,newP1)
+	maxPath.append(newP2)
+
+
+	" convert path points to real "
+	realPath = []
+	for p in maxPath:
+		realPath.append(gridToReal(p))
+
+
+	return realPath
+
 
 
 def computeSeparation(bbox2, uniform2_trans, hull):
@@ -155,28 +400,44 @@ def computeSeparation(bbox2, uniform2_trans, hull):
 	" separated hull points now have a break in the sequence "
 	halfHullA = []
 	halfHullB = []
+	lastA = True
+	lastB = False
 	for p in hull:
 		
 		inA = False
 		inB = False
 		
 		if functions.point_inside_polygon(p[0], p[1], halfBox1):
-			halfHullA.append(p)
+			#halfHullA.append(p)
 			inA = True
 
 		if functions.point_inside_polygon(p[0], p[1], halfBox2):
-			halfHullB.append(p)
+			#halfHullB.append(p)
 			inB = True
 		
 		#print "hulls:", inA, inB
-		if inA and inB:
-			print "BOTH hulls"
+		if inA and inB or not inA and not inB:
+			#print "BOTH hulls"
+			
+			#inA = lastA
+			#inB = lastB
+			inA = False
+			inB = False
 
-		if not inA and not inB:
-			print "NEITHER hulls"
-			print "box:", bbox2
+		if inA:
+			halfHullA.append(p)
+			
+		if inB:
+			halfHullB.append(p)
+			
+		lastA = inA
+		lastB = inB
 
-			raise ValueError
+		#if not inA and not inB:
+			#print "NEITHER hulls"
+			#print "box:", bbox2
+
+			#raise ValueError
 
 	#print "points found:", len(interPoints)	
 	if len(interPoints) != 2:
@@ -188,6 +449,90 @@ def computeSeparation(bbox2, uniform2_trans, hull):
 	#return halfBox1, halfBox2
 
 	#return a_data_A, a_data_B
+
+def computeSeparation2(bbox, medialAxis, hull):
+
+	interPoints = []
+
+	foreIntersection = []
+	backIntersection = []
+	bbEdge1 = []
+	bbEdge2 = []
+	
+	for i in range(len(bbox)):
+		p1 = bbox[i]
+		p2 = bbox[(i+1) % 4]
+		
+		edge1 = [p1,p2]
+		edge2 = [medialAxis[0],medialAxis[1]]
+	
+		result, point = functions.Intersect(edge1, edge2)
+		if result:
+			foreIntersection = point
+			bbEdge1 = [i,(i+1) % 4]
+
+		edge1 = [p1,p2]
+		edge2 = [medialAxis[-1],medialAxis[-2]]
+	
+		result, point = functions.Intersect(edge1, edge2)
+		if result:
+			backIntersection = point
+			bbEdge2 = [i,(i+1) % 4]
+			
+	if len(foreIntersection) == 0 or len(backIntersection) == 0:
+		raise
+
+	medialSubSec = medialAxis[1:-2]
+
+	halfBox1 = [foreIntersection] + medialSubSec + [backIntersection]
+	halfBox2 = [foreIntersection] + medialSubSec + [backIntersection]
+	
+	indStart = bbEdge2[1]
+	indTerm = bbEdge1[0]
+	for i in range(4):
+		halfBox1.append(bbox[(indStart + i) % 4])
+	
+		if (indStart + i) % 4 == indTerm:
+			break
+	
+	indStart = bbEdge2[0]
+	indTerm = bbEdge1[1]
+	for i in range(4):
+		halfBox2.append(bbox[(indStart - i) % 4])
+	
+		if (indStart - i) % 4 == indTerm:
+			break
+
+	
+	#halfBox2.reverse()
+
+	" separated hull points now have a break in the sequence "
+	halfHullA = []
+	halfHullB = []
+	for p in hull:
+		
+		inA = False
+		inB = False
+		
+		if functions.point_inside_polygon(p[0], p[1], halfBox1):
+			inA = True
+
+		if functions.point_inside_polygon(p[0], p[1], halfBox2):
+			inB = True
+		
+		if inA and inB or not inA and not inB:
+			print "BOTH or NEITHER hulls"
+			
+			inA = False
+			inB = False
+
+		if inA:
+			halfHullA.append(p)
+			
+		if inB:
+			halfHullB.append(p)
+
+	return halfHullA, halfHullB
 
 
 def computeBBox(points):
@@ -214,10 +559,10 @@ def computeBBox(points):
 
 
 	" pad the edges so not points on are on the boundary "
-	xMax = xMax + 0.1
-	xMin = xMin - 0.1
-	yMax = yMax + 0.1
-	yMin = yMin - 0.1
+	xMax = xMax + 0.4
+	xMin = xMin - 0.4
+	yMax = yMax + 0.4
+	yMin = yMin - 0.4
 	
 	bbox = [[xMin,yMin], [xMin,yMax], [xMax,yMax], [xMax,yMin]]
 			
@@ -2074,25 +2419,41 @@ def shapeICP2(estPose1, estPose2, hull1, hull2, posture1_unstable, posture1_stab
 
 	breakOut = False
 
-	try:	
-		halfHull1A, halfHull1B = computeSeparation(bbox1, uniform1, hull1)
-		poly1A = []		
-		for p in halfHull1A:
-			poly1A.append([p[0],p[1]])	
-		poly1B = []		
-		for p in halfHull1B:
-			poly1B.append([p[0],p[1]])	
+	medial1 = getMedialAxis(hull1)
+	medial2 = getMedialAxis(hull2)
 
-		halfHull2A, halfHull2B = computeSeparation(bbox2, uniform2, hull2)
-		poly2A = []		
-		for p in halfHull2A:
-			poly2A.append([p[0],p[1]])	
-		poly2B = []		
-		for p in halfHull2B:
-			poly2B.append([p[0],p[1]])	
+	
 
-	except Exception:
-		breakOut = True
+	" check if the medial axis is ordered correctly "
+	distFore1 = (medial1[1][0]-uniform1[1][0])**2 + (medial1[1][1]-uniform1[1][1])**2
+	distBack1 = (medial1[-2][0]-uniform1[-2][0])**2 + (medial1[-2][1]-uniform1[-2][1])**2
+
+	if distFore1 > 1 and distBack1 > 1:
+		medial1.reverse()
+
+	distFore2 = (medial2[1][0]-uniform2[1][0])**2 + (medial2[1][1]-uniform2[1][1])**2
+	distBack2 = (medial2[-2][0]-uniform2[-2][0])**2 + (medial2[-2][1]-uniform2[-2][1])**2
+
+	if distFore2 > 1 and distBack2 > 1:
+		medial2.reverse()
+
+
+
+	halfHull1A, halfHull1B = computeSeparation2(bbox1, medial1, hull1)
+	poly1A = []		
+	for p in halfHull1A:
+		poly1A.append([p[0],p[1]])	
+	poly1B = []		
+	for p in halfHull1B:
+		poly1B.append([p[0],p[1]])	
+
+	halfHull2A, halfHull2B = computeSeparation2(bbox2, medial2, hull2)
+	poly2A = []		
+	for p in halfHull2A:
+		poly2A.append([p[0],p[1]])	
+	poly2B = []		
+	for p in halfHull2B:
+		poly2B.append([p[0],p[1]])	
 
 
 	while True:
@@ -2119,9 +2480,34 @@ def shapeICP2(estPose1, estPose2, hull1, hull2, posture1_unstable, posture1_stab
 			p = dispOffset(b, offset)
 			uniform2_trans.append(p)
 
+		medial2_trans = []
+		for b in medial2:
+			p = dispOffset(b, offset)
+			medial2_trans.append(p)
+
+		halfHull2A_trans = []
+		for b in halfHull2A:
+			p = dispOffset(b, offset)
+			halfHull2A_trans.append(p)
+
+		halfHull2B_trans = []
+		for b in halfHull2B:
+			p = dispOffset(b, offset)
+			halfHull2B_trans.append(p)
+
+		poly2A_trans = []		
+		for p in halfHull2A_trans:
+			poly2A_trans.append([p[0],p[1]])	
+		poly2B_trans = []		
+		for p in halfHull2B_trans:
+			poly2B_trans.append([p[0],p[1]])	
+
+
+		"""
 		try:	
 
-			halfHull2A_trans, halfHull2B_trans = computeSeparation(bbox2_trans, uniform2_trans, hull2_trans)
+			#halfHull2A_trans, halfHull2B_trans = computeSeparation(bbox2_trans, uniform2_trans, hull2_trans)
+			halfHull2A_trans, halfHull2B_trans = computeSeparation(bbox2_trans, medial2_trans, medial2_trans)
 
 			poly2A_trans = []		
 			for p in halfHull2A_trans:
@@ -2133,6 +2519,7 @@ def shapeICP2(estPose1, estPose2, hull1, hull2, posture1_unstable, posture1_stab
 		except ValueError:
 			print "Exception caught"
 			breakOut = True
+		"""
 
 		#print "processing continued"
 		
@@ -2390,6 +2777,28 @@ def shapeICP2(estPose1, estPose2, hull1, hull2, posture1_unstable, posture1_stab
 	for b in uniform2:
 		p = dispOffset(b, offset)
 		uniform2_trans.append(p)
+
+	medial2_trans = []
+	for b in medial2:
+		p = dispOffset(b, offset)
+		medial2_trans.append(p)
+
+	halfHull2A_trans = []
+	for b in halfHull2A:
+		p = dispOffset(b, offset)
+		halfHull2A_trans.append(p)
+
+	halfHull2B_trans = []
+	for b in halfHull2B:
+		p = dispOffset(b, offset)
+		halfHull2B_trans.append(p)
+
+	poly2A_trans = []		
+	for p in halfHull2A_trans:
+		poly2A_trans.append([p[0],p[1]])	
+	poly2B_trans = []		
+	for p in halfHull2B_trans:
+		poly2B_trans.append([p[0],p[1]])	
 		
 	stablePoints2_trans = []
 	for b in stablePoints2:
@@ -2401,10 +2810,19 @@ def shapeICP2(estPose1, estPose2, hull1, hull2, posture1_unstable, posture1_stab
 	inForeCount2 = 0
 	inBackCount2 = 0
 
-	fore1 = stablePoints1[0:20]
-	back1 = stablePoints1[20:]
-	fore2 = stablePoints2_trans[0:20]
-	back2 = stablePoints2_trans[20:]
+	#fore1 = stablePoints1[0:20]
+	#back1 = stablePoints1[20:]
+	#fore2 = stablePoints2_trans[0:20]
+	#back2 = stablePoints2_trans[20:]
+
+	print "len(medial1) =", len(medial1)
+
+	fore1 = medial1[15:35]
+	back1 = medial1[-36:-16]
+	fore2 = medial2_trans[15:35]
+	back2 = medial2_trans[-36:-16]
+
+
 
 	for p in fore1:
 		if functions.point_inside_polygon(p[0],p[1],poly2_trans):
@@ -2440,7 +2858,7 @@ def shapeICP2(estPose1, estPose2, hull1, hull2, posture1_unstable, posture1_stab
 	#else:
 	#	lastCost = 1e100
 
-	if False:
+	if True:
 		pylab.clf()
 		pylab.axes()
 		match_global = []
@@ -2473,6 +2891,7 @@ def shapeICP2(estPose1, estPose2, hull1, hull2, posture1_unstable, posture1_stab
 		pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
 		"""
 
+
 		"""
 		xP = []
 		yP = []
@@ -2481,7 +2900,18 @@ def shapeICP2(estPose1, estPose2, hull1, hull2, posture1_unstable, posture1_stab
 			xP.append(p1[0])	
 			yP.append(p1[1])			
 		pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+		"""
 
+
+		xP = []
+		yP = []
+		for p in medial1:
+			p1 = poseOrigin.convertLocalToGlobal(p)
+			xP.append(p1[0])	
+			yP.append(p1[1])			
+		pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,0.5))
+
+		
 		xP = []
 		yP = []
 		for b in bbox1:
@@ -2494,7 +2924,6 @@ def shapeICP2(estPose1, estPose2, hull1, hull2, posture1_unstable, posture1_stab
 		xP.append(p1[0])	
 		yP.append(p1[1])
 		pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
-		"""
 		
 		"""
 		xP = []
@@ -2518,10 +2947,15 @@ def shapeICP2(estPose1, estPose2, hull1, hull2, posture1_unstable, posture1_stab
 		xP = [p1[0],p2[0]]
 		yP = [p1[1],p2[1]]
 
-		#pylab.scatter(xP,yP,linewidth=3, color=(0.0,0.0,1.0))
-
+		#pylab.scatter(xP,yP,linewidth=3, color=(0.0,0.0,1.0))		
+		
 		try:	
-			bPoints1, bPoints2 = computeSeparation(bbox1, uniform1, hull1)
+			#bPoints1, bPoints2 = computeSeparation(bbox1, uniform1, hull1)
+			#bPoints1, bPoints2 = computeSeparation(bbox1, medial1, hull1)
+
+
+			bPoints1 = halfHull1A
+			bPoints2 = halfHull1B
 
 			xP = []
 			yP = []
@@ -2541,6 +2975,7 @@ def shapeICP2(estPose1, estPose2, hull1, hull2, posture1_unstable, posture1_stab
 
 			pylab.scatter(xP,yP,linewidth=1, color=(0.0,0.5,1.0))
 		except Exception:
+			traceback.print_exc()
 			pass
 
 
@@ -2574,20 +3009,28 @@ def shapeICP2(estPose1, estPose2, hull1, hull2, posture1_unstable, posture1_stab
 			xP.append(p1[0])	
 			yP.append(p1[1])	
 		pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
+		"""
 
 		xP = []
 		yP = []
-		for b in bbox2:
+		for p in medial2_trans:
+			p1 = poseOrigin.convertLocalToGlobal(p)
+			xP.append(p1[0])	
+			yP.append(p1[1])	
+		pylab.plot(xP,yP,linewidth=1, color=(0.5,0.0,0.0))
+
+		xP = []
+		yP = []
+		for b in bbox2_trans:
 			p1 = poseOrigin.convertLocalToGlobal(b)
 
 			xP.append(p1[0])	
 			yP.append(p1[1])
 		
-		p1 = poseOrigin.convertLocalToGlobal(bbox2[0])
+		p1 = poseOrigin.convertLocalToGlobal(bbox2_trans[0])
 		xP.append(p1[0])	
 		yP.append(p1[1])
 		pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
-		"""
 
 		"""
 		xP = []
@@ -2614,7 +3057,10 @@ def shapeICP2(estPose1, estPose2, hull1, hull2, posture1_unstable, posture1_stab
 		#pylab.scatter(xP,yP,linewidth=3, color=(1.0,0.0,0.0))
 
 		try:	
-			bPoints1, bPoints2 = computeSeparation(bbox2_trans, uniform2_trans, hull2_trans)
+			#bPoints1, bPoints2 = computeSeparation(bbox2_trans, uniform2_trans, hull2_trans)
+			#bPoints1, bPoints2 = computeSeparation(bbox2_trans, medial2_trans, hull2_trans)
+			bPoints1 = halfHull2A_trans
+			bPoints2 = halfHull2B_trans 
 
 			xP = []
 			yP = []
@@ -2634,17 +3080,27 @@ def shapeICP2(estPose1, estPose2, hull1, hull2, posture1_unstable, posture1_stab
 
 			pylab.scatter(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
 		except Exception:
+			traceback.print_exc()
 			pass
 
 
 		pylab.title("%u %u, cost = %f, fore1,back1,fore2,back2 = %d,%d,%d,%d" % (n1, n2, lastCost, inForeCount1, inBackCount1, inForeCount2, inBackCount2))
-		pylab.xlim(-4,9)
-		pylab.ylim(-3,9)
-		
+		#pylab.xlim(-4,9)
+		#pylab.ylim(-3,9)
+		pylab.xlim(estPose1[0]-4, estPose1[0]+4)					
+		pylab.ylim(estPose1[1]-3, estPose1[1]+3)
+
+
+
 		if lastCost > 1.6:
-			pylab.savefig("badICP_plot_%04u.png" % numIterations)
+			pylab.savefig("badICP_plot_%04u_%04u.png" % (n1,n2))
 		else:
-			pylab.savefig("goodICP_plot_%04u.png" % numIterations)
+			pylab.savefig("goodICP_plot_%04u_%04u.png" % (n1,n2))
+		
+		#if lastCost > 1.6:
+		#	pylab.savefig("badICP_plot_%04u.png" % numIterations)
+		#else:
+		#	pylab.savefig("goodICP_plot_%04u.png" % numIterations)
 			
 		pylab.clf()
 
