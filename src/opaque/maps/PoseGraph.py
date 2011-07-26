@@ -14,6 +14,7 @@ from LocalNode import LocalNode
 from StablePose import StablePose
 from StableCurve import StableCurve
 from GPACurve import GPACurve
+from SplineFit import SplineFit
 from Pose import Pose
 import gen_icp
 from functions import *
@@ -766,7 +767,8 @@ class PoseGraph:
 				#transform, covE = self.makeMotionConstraint(nodeID-1, nodeID)
 				#self.edgePriorityHash[(nodeID-1, nodeID)].append([transform, covE, MOTION_PRIORITY])
 				
-				transform, covE = self.makeOverlapConstraint(nodeID-2, nodeID)
+				#transform, covE = self.makeOverlapConstraint(nodeID-2, nodeID)
+				transform, covE = self.makeOverlapConstraint2(nodeID-2, nodeID)
 				self.addPriorityEdge([nodeID-2,nodeID,transform,covE], OVERLAP_PRIORITY)
 	
 				" merge constraints by priority and updated estimated poses "
@@ -785,7 +787,7 @@ class PoseGraph:
 				" check that each bin is well-connected, otherwise, try to add constraints "
 				for bin in self.cornerBins:
 					pass
-								
+				
 				" try to perform sensor constraints on past nodes "
 				" overwrite overlap/motion constraints "
 				" do not overwrite corner constraints "
@@ -852,9 +854,15 @@ class PoseGraph:
 					
 	
 			else:
+
 						
 				transform, covE = self.makeInPlaceConstraint(nodeID-1, nodeID)
 				self.addPriorityEdge([nodeID-1,nodeID,transform,covE], INPLACE_PRIORITY)
+
+				if nodeID > 2:
+					transform, covE = self.makeOverlapConstraint2(nodeID-2, nodeID)
+					self.addPriorityEdge([nodeID-2,nodeID,transform,covE], OVERLAP_PRIORITY)
+
 	
 				" merge constraints by priority and updated estimated poses "
 				self.mergePriorityConstraints()
@@ -1145,7 +1153,8 @@ class PoseGraph:
 				#transform, covE = self.makeMotionConstraint(nodeID-1, nodeID)
 				#self.edgePriorityHash[(nodeID-1, nodeID)].append([transform, covE, MOTION_PRIORITY])
 				
-				transform, covE = self.makeOverlapConstraint(nodeID-2, nodeID)
+				transform, covE = self.makeOverlapConstraint2(nodeID-2, nodeID)
+				#transform, covE = self.makeOverlapConstraint(nodeID-2, nodeID)
 				self.addPriorityEdge([nodeID-2,nodeID,transform,covE], OVERLAP_PRIORITY)
 	
 				" merge constraints by priority and updated estimated poses "
@@ -1295,11 +1304,6 @@ class PoseGraph:
 		
 				" merge the constraints "
 				self.mergePriorityConstraints()
-				
-
-	
-
-				
 		
 
 	def performShapeConstraints(self):
@@ -2912,7 +2916,166 @@ class PoseGraph:
 		covE = self.E_overlap
 		
 		return transform, covE
-				
+
+	def makeOverlapConstraint2(self, i, j ):
+
+		hull1 = computeBareHull(self.nodeHash[i], sweep = False)
+		hull1.append(hull1[0])
+		medial1 = gen_icp.getMedialAxis(hull1)
+		#medial1 = medial1[1:-2]
+
+		hull2 = computeBareHull(self.nodeHash[j], sweep = False)
+		hull2.append(hull2[0])
+		medial2 = gen_icp.getMedialAxis(hull2)
+		#medial2 = medial2[1:-2]
+		
+
+		node1 = self.nodeHash[i]
+		node2 = self.nodeHash[j]
+		posture1 = node1.getStableGPACPosture()
+		posture2 = node2.getStableGPACPosture()		
+		curve1 = StableCurve(posture1)
+		curve2 = StableCurve(posture2)
+		uniform1 = curve1.getPlot()
+		uniform2 = curve2.getPlot()
+	
+		" check if the medial axis is ordered correctly "
+		distFore1 = (medial1[1][0]-uniform1[1][0])**2 + (medial1[1][1]-uniform1[1][1])**2
+		distBack1 = (medial1[-2][0]-uniform1[-2][0])**2 + (medial1[-2][1]-uniform1[-2][1])**2
+	
+		if distFore1 > 1 and distBack1 > 1:
+			medial1.reverse()
+	
+		distFore2 = (medial2[1][0]-uniform2[1][0])**2 + (medial2[1][1]-uniform2[1][1])**2
+		distBack2 = (medial2[-2][0]-uniform2[-2][0])**2 + (medial2[-2][1]-uniform2[-2][1])**2
+	
+		if distFore2 > 1 and distBack2 > 1:
+			medial2.reverse()
+
+		
+		
+		
+		
+		edge1 = medial1[0:2]
+		edge2 = medial1[-2:]
+		
+		frontVec = [edge1[0][0]-edge1[1][0], edge1[0][1]-edge1[1][1]]
+		backVec = [edge2[1][0]-edge2[0][0], edge2[1][1]-edge2[0][1]]
+		frontMag = math.sqrt(frontVec[0]*frontVec[0] + frontVec[1]*frontVec[1])
+		backMag = math.sqrt(backVec[0]*backVec[0] + backVec[1]*backVec[1])
+		
+		frontVec[0] /= frontMag
+		frontVec[1] /= frontMag
+		backVec[0] /= backMag
+		backVec[1] /= backMag
+		
+		newP1 = (edge1[1][0] + frontVec[0]*2, edge1[1][1] + frontVec[1]*2)
+		newP2 = (edge2[0][0] + backVec[0]*2, edge2[0][1] + backVec[1]*2)
+
+		edge1 = [newP1, edge1[1]]
+		edge2 = [edge2[0], newP2]
+
+		
+		interPoints = []
+		for k in range(len(hull1)-1):
+			hullEdge = [hull1[k],hull1[k+1]]
+			isIntersect1, point1 = Intersect(edge1, hullEdge)
+			if isIntersect1:
+				interPoints.append(point1)
+				break
+
+		for k in range(len(hull1)-1):
+			hullEdge = [hull1[k],hull1[k+1]]
+			isIntersect2, point2 = Intersect(edge2, hullEdge)
+			if isIntersect2:
+				interPoints.append(point2)
+				break
+			
+		medial1 = medial1[1:-2]
+		if isIntersect1:
+			medial1.insert(0, point1)
+		if isIntersect2:
+			medial1.append(point2)
+
+
+		edge1 = medial2[0:2]
+		edge2 = medial2[-2:]
+		
+		frontVec = [edge1[0][0]-edge1[1][0], edge1[0][1]-edge1[1][1]]
+		backVec = [edge2[1][0]-edge2[0][0], edge2[1][1]-edge2[0][1]]
+		frontMag = math.sqrt(frontVec[0]*frontVec[0] + frontVec[1]*frontVec[1])
+		backMag = math.sqrt(backVec[0]*backVec[0] + backVec[1]*backVec[1])
+		
+		frontVec[0] /= frontMag
+		frontVec[1] /= frontMag
+		backVec[0] /= backMag
+		backVec[1] /= backMag
+		
+		newP1 = (edge1[1][0] + frontVec[0]*2, edge1[1][1] + frontVec[1]*2)
+		newP2 = (edge2[0][0] + backVec[0]*2, edge2[0][1] + backVec[1]*2)
+
+		edge1 = [newP1, edge1[1]]
+		edge2 = [edge2[0], newP2]
+
+		
+		interPoints = []
+		for k in range(len(hull2)-1):
+			hullEdge = [hull2[k],hull2[k+1]]
+			isIntersect1, point1 = Intersect(edge1, hullEdge)
+			if isIntersect1:
+				interPoints.append(point1)
+				break
+
+		for k in range(len(hull2)-1):
+			hullEdge = [hull2[k],hull2[k+1]]
+			isIntersect2, point2 = Intersect(edge2, hullEdge)
+			if isIntersect2:
+				interPoints.append(point2)
+				break
+			
+		medial2 = medial2[1:-2]
+		if isIntersect1:
+			medial2.insert(0, point1)
+		if isIntersect2:
+			medial2.append(point2)
+		
+
+		curve1 = SplineFit(medial1, smooth=0.1)
+		curve2 = SplineFit(medial2, smooth=0.1)
+		
+		#medialSpline = SplineFit(medial1, smooth=0.1)
+
+		motionT, motionCov = self.makeMotionConstraint(i,j)
+		travelDelta = motionT[0,0]
+
+		
+		#curve1 = node1.getGPACurve()
+		#curve2 = node2.getGPACurve()
+		#posture1 = node1.getGPACPosture()
+		#posture2 = node2.getGPACPosture()
+		
+		#curve1 = node1.getStableGPACurve()
+		#curve2 = node2.getStableGPACurve()
+		#posture1 = node1.getStableGPACPosture()
+		#posture2 = node2.getStableGPACPosture()
+
+
+		#(points1, points2, offset, costThresh = 0.004, minMatchDist = 2.0, plotIter = False, n1 = 0, n2 = 0):
+		if travelDelta < 0.3:
+			offset = estimateMotion.makeGuess2(curve1, curve2, 0.0, posture1, posture2, forward = True)
+		else:
+			offset = estimateMotion.makeGuess2(curve1, curve2, 0.0, posture1, posture2, forward = False)
+			
+		result = gen_icp.motionICP(curve1.getUniformSamples(), curve2.getUniformSamples(), offset, plotIter = False, n1 = i, n2 = j)
+		#result = gen_icp.motionICP(curve1.getUniformSamples(), curve2.getUniformSamples(), offset, plotIter = True, n1 = i, n2 = j)
+
+		transform = matrix([[result[0]], [result[1]], [result[2]]])
+		covE =  self.E_overlap
+		
+		print "making overlap constraint:", result[0], result[1], result[2]
+		
+		return transform, covE				
+
 	def makeOverlapConstraint(self, i, j ):	
 
 		motionT, motionCov = self.makeMotionConstraint(i,j)
@@ -2920,12 +3083,12 @@ class PoseGraph:
 
 		node1 = self.nodeHash[i]
 		node2 = self.nodeHash[j]
-			
+		
 		#curve1 = node1.getGPACurve()
 		#curve2 = node2.getGPACurve()
 		#posture1 = node1.getGPACPosture()
 		#posture2 = node2.getGPACPosture()
-
+		
 		curve1 = node1.getStableGPACurve()
 		curve2 = node2.getStableGPACurve()
 		posture1 = node1.getStableGPACPosture()
@@ -5174,7 +5337,8 @@ class PoseGraph:
 
 		#print constraintData2[0]	
 		print "received", len(constraintResults), "constraint results"
-		print constraintResults[0]	
+		if len(constraintResults) > 0:
+			print constraintResults[0]	
 
 		self.goodHypotheses = []
 		self.badHypotheses1 = []

@@ -8,6 +8,8 @@ from random import random
 import functions
 from copy import copy
 from OccupancyMap import OccupancyMap
+from SplineFit import SplineFit
+import math
 
 
 class VisualGraph:
@@ -69,11 +71,12 @@ class VisualGraph:
 			
 			#self.drawShapeConstraints(i)
 
-		"""
 		self.drawMap()
+
+		"""		
 		self.drawConstraints(num_poses)
 
-		
+
 		self.poseGraph.performShapeConstraints()
 		self.drawMap()
 		self.drawConstraints(num_poses+1)
@@ -88,9 +91,9 @@ class VisualGraph:
 		self.poseGraph.resetGraphToGround()
 		self.drawMap()
 		self.drawConstraints(num_poses+3)
-		"""
 		
-		#self.drawPoses()
+		self.drawPoses()
+		"""
 
 	def testHypotheses(self, dirName, num_poses, hypFile):
 		self.sensorHypotheses = self.poseGraph.sensorHypotheses
@@ -170,9 +173,66 @@ class VisualGraph:
 			pylab.clf()
 
 			hull = PoseGraph.computeBareHull(self.nodeHash[i], sweep = False)
+			#hull = PoseGraph.computeBareHull(self.nodeHash[6], sweep = False)
 			hull.append(hull[0])
 
+			medial = gen_icp.getMedialAxis(hull)
+			
+			edge1 = medial[0:2]
+			edge2 = medial[-2:]
+			
+			frontVec = [edge1[0][0]-edge1[1][0], edge1[0][1]-edge1[1][1]]
+			backVec = [edge2[1][0]-edge2[0][0], edge2[1][1]-edge2[0][1]]
+			frontMag = math.sqrt(frontVec[0]*frontVec[0] + frontVec[1]*frontVec[1])
+			backMag = math.sqrt(backVec[0]*backVec[0] + backVec[1]*backVec[1])
+			
+			frontVec[0] /= frontMag
+			frontVec[1] /= frontMag
+			backVec[0] /= backMag
+			backVec[1] /= backMag
+			
+			newP1 = (edge1[1][0] + frontVec[0]*2, edge1[1][1] + frontVec[1]*2)
+			newP2 = (edge2[0][0] + backVec[0]*2, edge2[0][1] + backVec[1]*2)
+
+			edge1 = [newP1, edge1[1]]
+			edge2 = [edge2[0], newP2]
+
+			
+			interPoints = []
+			for j in range(len(hull)-1):
+				hullEdge = [hull[j],hull[j+1]]
+				isIntersect1, point1 = functions.Intersect(edge1, hullEdge)
+				if isIntersect1:
+					#print "found", point1, "while intersecting"
+					#print edge1
+					#print hullEdge
+					#print
+					interPoints.append(point1)
+					break
+
+			for j in range(len(hull)-1):
+				hullEdge = [hull[j],hull[j+1]]
+				isIntersect2, point2 = functions.Intersect(edge2, hullEdge)
+				if isIntersect2:
+					#print "found", point2, "while intersecting"
+					#print edge2
+					#print hullEdge
+					#print
+					interPoints.append(point2)
+					break
+				
+			medial = medial[1:-2]
+			if isIntersect1:
+				medial.insert(0, point1)
+			if isIntersect2:
+				medial.append(point2)
+			
+			
+			medialSpline = SplineFit(medial, smooth=0.1)
+			medialPoints = medialSpline.getUniformSamples()
+
 			node1 = self.nodeHash[i]
+			#node1 = self.nodeHash[6]
 			currPose = node1.getGlobalGPACPose()
 			currProfile = Pose(currPose)
 			posture1 = node1.getStableGPACPosture()
@@ -184,10 +244,14 @@ class VisualGraph:
 			posture2_trans = []
 			for p in posture2:
 				posture2_trans.append(gen_icp.dispOffset(p, currPose))	
-
+			
 			hull_trans = []
 			for p in hull:
 				hull_trans.append(gen_icp.dispOffset(p, currPose))	
+			
+			medial_trans = []
+			for p in medial:
+				medial_trans.append(gen_icp.dispOffset(p, currPose))	
 			
 			xP = []
 			yP = []
@@ -212,6 +276,27 @@ class VisualGraph:
 				yP.append(p[1])
 			pylab.plot(xP,yP, color=(112/256.,147/256.,219/256.))	
 
+			xP = []
+			yP = []
+			for p in medialPoints:
+				xP.append(p[0])
+				yP.append(p[1])
+			pylab.plot(xP,yP, color=(0.5,0.5,1.))	
+
+			xP = []
+			yP = []
+			for p in medial:
+				xP.append(p[0])
+				yP.append(p[1])
+			pylab.plot(xP,yP, color=(0.,0.,1.))	
+
+			#xP = []
+			#yP = []
+			#for p in interPoints:
+			#	xP.append(p[0])
+			#	yP.append(p[1])
+			#pylab.scatter(xP,yP, color=(0.,0.,1.))	
+
 			count1 = 0
 			count2 = 0
 
@@ -229,6 +314,7 @@ class VisualGraph:
 			pylab.xlim(-3,3)
 			pylab.ylim(-2,2)
 			pylab.savefig("plotPose%04u.png" % i)
+			#pylab.show()
 
 	def drawShapeConstraints(self, id):
 
