@@ -6,6 +6,7 @@ ext_modules = [Extension("transform", ["transform.pyx"]),
 			Extension("stability", ["stability.pyx", "ValueStability.cpp"], language="c++"),
 			Extension("reference", ["reference.pyx", "RefNode.cpp"], language="c++"),
 			Extension("servo", ["servo.pyx"]),
+			Extension("func", ["func.pyx"]),
 			Extension("icp", ["icp.pyx"])]
 #ext_modules = [Extension("transform", ["transform.pyx"]), Extension("stability", ["stability.pyx"], language="c++")]
 

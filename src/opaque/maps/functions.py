@@ -1,5 +1,6 @@
 from math import *
 from copy import *
+from func import IsContained
 
 # this function converts the angle to its equivalent # in the range [-pi,pi]
 def normalizeAngle(angle):
@@ -26,12 +27,12 @@ def LeftOn(Ax,Ay,Bx,By,Cx,Cy):
 	return (Area2(Ax,Ay,Bx,By,Cx,Cy) >= 0)
 
 # determine if point is located within a bounding box specified by vertices RectVert
-def IsContained(RectVert, Point):
-	for i in range(4):
-		if not (LeftOn(RectVert[i%4][0],RectVert[i%4][1],
-					   RectVert[(i+1)%4][0],RectVert[(i+1)%4][1], Point[0], Point[1])):
-			return False
-	return True
+#def IsContained(RectVert, Point):
+#	for i in range(4):
+#		if not (LeftOn(RectVert[i%4][0],RectVert[i%4][1],
+#					   RectVert[(i+1)%4][0],RectVert[(i+1)%4][1], Point[0], Point[1])):
+#			return False
+#	return True
 
 def point_inside_polygon(x,y,poly):
 

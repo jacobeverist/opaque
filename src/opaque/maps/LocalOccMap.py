@@ -13,7 +13,7 @@ from functions import *
 class LocalOccMap:
 
 	#def __init__(self, probe, contacts, nodeID):
-	def __init__(self, localNode, direction = None):
+	def __init__(self, localNode, sweepDir = None):
 
 		self.localNode = localNode
 
@@ -33,7 +33,7 @@ class LocalOccMap:
 		self.prevJoints = [0.0,0.0,0.0,0.0]
 		self.rootNeighbors = [18,19,20,21]
 
-		self.direction = direction
+		self.direction = sweepDir
 
 		self.nodeID = self.localNode.getNodeID()
 		

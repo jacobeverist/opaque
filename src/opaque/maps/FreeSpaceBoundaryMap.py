@@ -4,12 +4,14 @@ import Image
 
 class FreeSpaceBoundaryMap(Map):
 
-	def __init__(self, occMap, mapSize):
+	def __init__(self, mapSize, occMap = 0):
 		Map.__init__(self, mapSize)
 		
 		self.nodeCount = 0
 		self.fileName = "mapBoundaryMap%04u.png"
-		self.update(occMap)
+		
+		if occMap != 0:
+			self.update(occMap)
 	
 	def update(self, occMap):
 		

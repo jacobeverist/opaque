@@ -38,7 +38,21 @@ class SplineFit:
 		self.tck, self.u = scipy.interpolate.splprep(intArray, s = self.smoothNess, k=self.kp)
 
 
+	def findU(self, point):
 
+		samples = scipy.arange(0.0,1.0,0.01)
+		sample_points = self.getUVecSet(samples)
+		
+		minI = -1
+		minDist = 1e100
+		
+		for i in range(len(sample_points)):
+			dist = sqrt((sample_points[i][0]-point[0])**2 + (sample_points[i][1]-point[1])**2)
+			if dist < minDist:
+				minI = i
+				minDist = dist
+				
+		return minI * 0.01
 
 	def getUniformSamples(self):
 		

@@ -49,7 +49,9 @@ class MapGraph:
 		self.gndImage = self.gndMapImage.load()
 		gndDraw = ImageDraw.Draw(self.gndMapImage)
 		
+
 		walls = self.probe.getWalls()
+		self.loadWalls(walls)
 		for wall in walls:
 			wallPoints = []
 			for p in wall:
@@ -61,9 +63,12 @@ class MapGraph:
 		self.gndMapImage.save("mapGndGraph.png")
 
 		self.occMap = OccupancyMap(self.probe, self, self.mapSize)
-		self.boundMap = FreeSpaceBoundaryMap(self.occMap, self.mapSize)
+		self.boundMap = FreeSpaceBoundaryMap(self.mapSize)
 		self.frontierMap = FrontierMap(self, self.mapSize)
 		self.voronoiMap = VoronoiMap(self, self.mapSize)
+		
+		" whether or not the data needs to be synchronized "
+		self.isDirty = False
 
 		if False:
 			for k in range(1):
@@ -222,13 +227,15 @@ class MapGraph:
 		" add the constraint edges to the graph "
 		self.poseGraph.loadConstraints(dirName, num_poses-1)
 
+		self.isDirty = True
+
 		#self.drawConstraints()
 
 		" save the maps "		
 		#self.synch()
 		#self.saveMap()
 
-	def newInPlaceNode(self, direction):
+	def newInPlaceNode(self, direction, travelDir):
 		
 		if self.numNodes > 0:
 			
@@ -237,14 +244,20 @@ class MapGraph:
 
 			self.currNode.saveToFile()
 
-		self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, self.pixelSize, stabilizePose = self.isStable, direction = direction)
+		self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, self.pixelSize, stabilizePose = self.isStable, direction = direction, travelDir = travelDir)
 		
 		self.poseGraph.addInPlaceNode(self.currNode)
 
 		self.stablePose.reset()
 		self.stablePose.setNode(self.currNode)
+
+	def loadWalls(self, walls):
+		self.walls = walls
+
+	def getWalls(self):
+		return self.walls
 	
-	def newNode(self, stepDist, direction):
+	def newNode(self, stepDist, direction, travelDir):
 
 		if self.numNodes > 0:
 			
@@ -253,7 +266,7 @@ class MapGraph:
 
 			self.currNode.saveToFile()
 
-		self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, self.pixelSize, stabilizePose = self.isStable, direction = True)		
+		self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, self.pixelSize, stabilizePose = self.isStable, direction = direction, travelDir = travelDir)		
 		
 		self.poseGraph.addNode(self.currNode)
 
@@ -317,6 +330,9 @@ class MapGraph:
 		self.voronoiMap.update()
 
 		print "Voronoi Map Updated"
+		
+		self.isDirty = False
+
 
 	def correctPosture(self):
 		self.currNode.updateCorrectPosture()
@@ -327,6 +343,8 @@ class MapGraph:
 		
 	def update(self, isForward=True):
 
+		self.isDirty = True
+
 		self.stablePose.setDirection(isForward)
 
 		" if the configuration is a stable pose, the maximum displacement is not exceeded "
@@ -336,13 +354,20 @@ class MapGraph:
 			pass
 		
 	def computeHeadPath(self, currPose, frontierPoint, exploreRoot):
+		if self.isDirty:
+			self.synch()
+
 		vals = self.navRoadMap.computeHeadPath(currPose, frontierPoint, exploreRoot)
 		return vals
 
 	def selectNextFrontier(self):
+		if self.isDirty:
+			self.synch()
 		return self.frontierMap.selectNextFrontier()
 
 	def isFrontier(self):
+		if self.isDirty:
+			self.synch()
 		return self.frontierMap.isFrontier()
 
 	def getNodeOccMap(self, nodeNum):
@@ -371,6 +396,9 @@ class MapGraph:
 		
 	def saveMap(self):
 		
+		if self.isDirty:
+			self.synch()
+
 		" save the global maps to file "
 
 		print "saving global occupancy map"

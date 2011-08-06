@@ -23,45 +23,47 @@ class Solver(pb.Root):
 
     def remote_shapeICP2(self, args):
         estPose1 = args[0]
-	estPose2 = args[1]
-	hull1 = args[2]
-	hull2 = args[3]
-	posture1_unstable = args[4]
-	posture1_stable = args[5]
-	posture2_unstable = args[6]
-	posture2_stable = args[7]
-	costThresh = args[8]
-	minMatchDist = args[9]
-	plotIteration = args[10]
-	n1 = args[11]
-	n2 = args[12]
-
-	offset, cost, status = gen_icp.shapeICP2(estPose1, estPose2, hull1, hull2, posture1_unstable, posture1_stable, posture2_unstable, posture2_stable, costThresh, minMatchDist, plotIteration, n1, n2)
-
+        estPose2 = args[1]
+        hull1 = args[2]
+        hull2 = args[3]
+        medial1 = args[4]
+        medial2 = args[5]
+        posture1_unstable = args[6]
+        posture1_stable = args[7]
+        posture2_unstable = args[8]
+        posture2_stable = args[9]
+        costThresh = args[10]
+        minMatchDist = args[11]
+        plotIteration = args[12]
+        n1 = args[13]
+        n2 = args[14]
+        
+        offset, cost, status = gen_icp.shapeICP2(estPose1, estPose2, hull1, hull2, medial1, medial2, posture1_unstable, posture1_stable, posture2_unstable, posture2_stable, costThresh, minMatchDist, plotIteration, n1, n2)
+        
         print "sensor constraint: %d -> %d" %(n1,n2), "cost =", cost
-
-	" cast the values to float so they pass the type security of jelly "
-	offset = [float(offset[0]), float(offset[1]), float(offset[2])]
-
-	return offset, cost, status
+        
+        " cast the values to float so they pass the type security of jelly "
+        offset = [float(offset[0]), float(offset[1]), float(offset[2])]
+        
+        return offset, cost, status
 
     def remote_shapeICP(self, args):
         estPose1 = args[0]
-	firstGuess = args[1]
-	hull1 = args[2]
-	hull2 = args[3]
-	stablePoints1 = args[4]
-	stablePoints2 = args[5]
-	uniform1 = args[6]
-	uniform2 = args[7]
-	isForward = args[8]
-	(headPoint1,tailPoint1,headPoint2,tailPoint2) = args[9]
-	circles = args[10]
-	costThresh = args[11]
-	minMatchDist = args[12]
-	plotIteration = args[13]
-	n1 = args[14]
-	n2 = args[15]
+        firstGuess = args[1]
+        hull1 = args[2]
+        hull2 = args[3]
+        stablePoints1 = args[4]
+        stablePoints2 = args[5]
+        uniform1 = args[6]
+        uniform2 = args[7]
+        isForward = args[8]
+        (headPoint1,tailPoint1,headPoint2,tailPoint2) = args[9]
+        circles = args[10]
+        costThresh = args[11]
+        minMatchDist = args[12]
+        plotIteration = args[13]
+        n1 = args[14]
+        n2 = args[15]
         offset, cost = gen_icp.shapeICP(estPose1, firstGuess, hull1, hull2, stablePoints1, stablePoints2, uniform1, uniform2, isForward, (headPoint1,tailPoint1,headPoint2,tailPoint2), circles, costThresh, minMatchDist, plotIteration, n1, n2)
         print "sensor constraint: %d -> %d" %(n1,n2), "cost =", cost
 

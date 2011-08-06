@@ -34,6 +34,8 @@ from copy import copy
 import Image
 import ImageDraw
 
+import cProfile
+
 renderCount = 0
 
 GND_PRIORITY = 10
@@ -42,7 +44,6 @@ CORNER_PRIORITY = 3
 SHAPE_PRIORITY = 2
 OVERLAP_PRIORITY = 0
 MOTION_PRIORITY = 0
-
 
 
 def decimatePoints(points):
@@ -59,7 +60,7 @@ def computeBareHull(node1, sweep = False):
 	
 	" Read in data of Alpha-Shapes without their associated covariances "
 	node1.computeAlphaBoundary(sweep = sweep)
-	a_data = node1.getAlphaBoundary()
+	a_data = node1.getAlphaBoundary(sweep = sweep)
 	a_data = decimatePoints(a_data)
 	
 	" convert hull points to GPAC coordinates "
@@ -76,7 +77,7 @@ def computeHull(node1, sweep = False):
 	
 	" Read in data of Alpha-Shapes and add their associated covariances "
 	node1.computeAlphaBoundary(sweep = sweep)
-	a_data = node1.getAlphaBoundary()
+	a_data = node1.getAlphaBoundary(sweep = sweep)
 	a_data = decimatePoints(a_data)
 	
 	" convert hull points to GPAC coordinates before adding covariances "
@@ -100,7 +101,7 @@ def computeBoundary(node1, sweep = False):
 	" Read in data of Alpha-Shapes and add their associated covariances "
 	node1.boundaryMap.getBoundaryPoints()
 	#computeAlphaBoundary(sweep = sweep)
-	a_data = node1.getAlphaBoundary()
+	a_data = node1.getAlphaBoundary(sweep = sweep)
 	a_data = decimatePoints(a_data)
 	
 	" convert hull points to GPAC coordinates before adding covariances "
@@ -183,6 +184,7 @@ class PoseGraph:
 		self.cornerBins = []
 		self.b_hulls = []
 		self.a_hulls = []
+		self.a_medial = []
 
 		self.E_gnd = matrix([[ 0.00001, 0.0, 0.0 ],
 							[ 0.0, 0.00001, 0.0],
@@ -196,9 +198,13 @@ class PoseGraph:
 							[ 0.0, 0.05, 0.0],
 							[ 0.0, 0.0, pi/16.0 ]])
 
-		self.E_overlap = matrix([[ 0.2,  0.0, 0.0],
-							[ 0.0,  0.02, 0.0],
-							[0.0, 0.0,  0.1]])
+		self.E_overlap = matrix([[ 0.1,  0.0, 0.0],
+							[ 0.0,  0.01, 0.0],
+							[0.0, 0.0,  0.02]])
+
+		#self.E_overlap = matrix([[ 0.2,  0.0, 0.0],
+		#					[ 0.0,  0.02, 0.0],
+		#					[0.0, 0.0,  0.1]])
 
 		self.E_motion = matrix([[ 0.06, 0.0, 0.0],
 							[0.0,  5.0, 0.0],
@@ -744,7 +750,6 @@ class PoseGraph:
 			for i in range(len(self.cornerBins)):
 				print i, self.cornerBins[i]
 
-
 	def loadNewNode(self, newNode):
 
 		self.currNode = newNode
@@ -754,6 +759,28 @@ class PoseGraph:
 		self.a_hulls.append(computeHull(self.nodeHash[nodeID], sweep = False))
 		self.b_hulls.append(computeHull(self.nodeHash[nodeID], sweep = True))
 
+		self.a_medial.append(self.nodeHash[nodeID].getMedialAxis(sweep = False))
+
+		if nodeID < 26:
+			direction = True
+		elif nodeID < 34:
+			direction = False
+		elif nodeID < 38:
+			direction = True
+		elif nodeID < 42:
+			direction = False
+		elif nodeID < 46:
+			direction = True
+		elif nodeID < 60:
+			direction = False
+		elif nodeID < 64:
+			direction = True
+		else:
+			direction = False
+
+		
+
+		print "direction =", direction
 		#return
 
 		if nodeID > 0:
@@ -768,7 +795,21 @@ class PoseGraph:
 				#self.edgePriorityHash[(nodeID-1, nodeID)].append([transform, covE, MOTION_PRIORITY])
 				
 				#transform, covE = self.makeOverlapConstraint(nodeID-2, nodeID)
-				transform, covE = self.makeOverlapConstraint2(nodeID-2, nodeID)
+				#transform, covE = self.makeOverlapConstraint2(nodeID-2, nodeID)
+				transform, covE = self.makeMedialOverlapConstraint(nodeID-2, nodeID, isMove = True, isForward = direction )
+
+				
+
+	
+				#def wrapMedial(self, i,j,result):
+				#		result.append(self.makeMedialOverlapConstraint(i,j))
+
+				#result = []
+				#cProfile.run('self.wrapMedial(nodeID-2, nodeID, result)', 'prof_result_%04u_%04u' % (nodeID-2, nodeID))
+				#transform = result[0]
+				#covE = result[1]
+				
+
 				self.addPriorityEdge([nodeID-2,nodeID,transform,covE], OVERLAP_PRIORITY)
 	
 				" merge constraints by priority and updated estimated poses "
@@ -777,11 +818,11 @@ class PoseGraph:
 				" try to perform corner constraints "
 				" overwrite overlap/motion constraints"
 				" corner constraints with past nodes "
-				#self.addCornerConstraints(nodeID)
-				
+				self.addCornerConstraints(nodeID)
+			
 				
 				" merge the constraints "
-				#self.mergePriorityConstraints()
+				self.mergePriorityConstraints()
 
 
 				" check that each bin is well-connected, otherwise, try to add constraints "
@@ -860,7 +901,8 @@ class PoseGraph:
 				self.addPriorityEdge([nodeID-1,nodeID,transform,covE], INPLACE_PRIORITY)
 
 				if nodeID > 2:
-					transform, covE = self.makeOverlapConstraint2(nodeID-2, nodeID)
+					#transform, covE = self.makeOverlapConstraint2(nodeID-2, nodeID)
+					transform, covE = self.makeMedialOverlapConstraint(nodeID-2, nodeID, isMove = True, isForward = direction)
 					self.addPriorityEdge([nodeID-2,nodeID,transform,covE], OVERLAP_PRIORITY)
 
 	
@@ -870,9 +912,9 @@ class PoseGraph:
 				" try to perform corner constraints "
 				" overwrite overlap/motion constraints"
 				" corner constraints with past nodes "
-				#self.addCornerConstraints(nodeID)
+				self.addCornerConstraints(nodeID)
 
-				#self.mergePriorityConstraints()
+				self.mergePriorityConstraints()
 				
 				" 1) add inplace constraint "
 				" 2) attempt corner constraint with past nodes, replacing overlaps and sensors "
@@ -1092,6 +1134,69 @@ class PoseGraph:
 		totalError = self.computeCornerClusterError()
 		"""
 
+	def correctNode(self, newNode):
+
+		self.currNode = newNode
+		nodeID = self.numNodes
+		self.nodeHash[nodeID] = self.currNode
+		self.numNodes += 1
+		self.a_hulls.append(computeHull(self.nodeHash[nodeID], sweep = False))
+		self.b_hulls.append(computeHull(self.nodeHash[nodeID], sweep = True))
+
+		self.a_medial.append(self.nodeHash[nodeID].getMedialAxis(sweep = False))
+		
+		
+		if nodeID > 0:
+			if nodeID % 2 == 0:
+
+				direction = self.currNode.travelDir
+
+				transform, covE = self.makeMedialOverlapConstraint(nodeID-2, nodeID, isMove = True, isForward = direction )
+
+				self.addPriorityEdge([nodeID-2,nodeID,transform,covE], OVERLAP_PRIORITY)
+	
+				" merge constraints by priority and updated estimated poses "
+				self.mergePriorityConstraints()
+
+				" try to perform corner constraints "
+				" overwrite overlap/motion constraints"
+				" corner constraints with past nodes "
+				self.addCornerConstraints(nodeID)
+			
+				
+				" merge the constraints "
+				self.mergePriorityConstraints()
+
+
+				" check that each bin is well-connected, otherwise, try to add constraints "
+				for bin in self.cornerBins:
+					pass
+			else:
+	
+				transform, covE = self.makeInPlaceConstraint(nodeID-1, nodeID)
+				self.addPriorityEdge([nodeID-1,nodeID,transform,covE], INPLACE_PRIORITY)
+
+				if nodeID > 2:
+					#transform, covE = self.makeOverlapConstraint2(nodeID-2, nodeID)
+					transform, covE = self.makeMedialOverlapConstraint(nodeID-2, nodeID, isMove = True, isForward = direction)
+					self.addPriorityEdge([nodeID-2,nodeID,transform,covE], OVERLAP_PRIORITY)
+
+	
+				" merge constraints by priority and updated estimated poses "
+				self.mergePriorityConstraints()
+
+				" try to perform corner constraints "
+				" overwrite overlap/motion constraints"
+				" corner constraints with past nodes "
+				self.addCornerConstraints(nodeID)
+
+				self.mergePriorityConstraints()
+				
+				" check that each bin is well-connected, otherwise, try to add constraints "
+				for bin in self.cornerBins:
+					pass
+
+
 	def resetGraphToGround(self):
 		
 		self.deleteAllEdges()
@@ -1099,7 +1204,11 @@ class PoseGraph:
 		for i in range(self.numNodes):
 			" reset the estimated pose to ground pose "
 			pastNode = self.nodeHash[i]
-			pastNode.setEstPose(pastNode.getGndPose())
+			gndPose = pastNode.getGndPose()
+			#gndProf = Pose(gndPose)
+			#gndRootPose = pastNode.gndRootPose
+			#pastNode.setEstPose(gndProf.convertLocalOffsetToGlobal(gndRootPose))
+			pastNode.setEstPose(gndPose)
 
 		" now create ground constraints "
 		" ground constraints are generated from ground truth data "
@@ -1305,6 +1414,30 @@ class PoseGraph:
 				" merge the constraints "
 				self.mergePriorityConstraints()
 		
+
+
+	def performOverlapConstraints(self):
+		
+		paths = []
+		for i in range(self.numNodes):
+			paths.append(bayes.dijkstra_proj(i, self.numNodes, self.edgeHash))
+		
+		newConstraints = self.addOverlapConstraints(paths)
+
+		print "adding", len(newConstraints), "overlap constraints"
+
+		for const in newConstraints:
+			n1 = const[0]
+			n2 = const[1]
+			transform = const[2]
+			covE = const[3]
+
+			self.addPriorityEdge([n1,n2,transform,covE], SHAPE_PRIORITY)
+
+		" merge the constraints "
+		self.mergePriorityConstraints()
+
+
 
 	def performShapeConstraints(self):
 		
@@ -2921,41 +3054,18 @@ class PoseGraph:
 
 		hull1 = computeBareHull(self.nodeHash[i], sweep = False)
 		hull1.append(hull1[0])
-		medial1 = gen_icp.getMedialAxis(hull1)
-		#medial1 = medial1[1:-2]
+		medial1 = self.nodeHash[i].getMedialAxis(sweep = False)
 
 		hull2 = computeBareHull(self.nodeHash[j], sweep = False)
 		hull2.append(hull2[0])
-		medial2 = gen_icp.getMedialAxis(hull2)
-		#medial2 = medial2[1:-2]
-		
+		medial2 = self.nodeHash[j].getMedialAxis(sweep = False)
+
 
 		node1 = self.nodeHash[i]
 		node2 = self.nodeHash[j]
 		posture1 = node1.getStableGPACPosture()
 		posture2 = node2.getStableGPACPosture()		
-		curve1 = StableCurve(posture1)
-		curve2 = StableCurve(posture2)
-		uniform1 = curve1.getPlot()
-		uniform2 = curve2.getPlot()
-	
-		" check if the medial axis is ordered correctly "
-		distFore1 = (medial1[1][0]-uniform1[1][0])**2 + (medial1[1][1]-uniform1[1][1])**2
-		distBack1 = (medial1[-2][0]-uniform1[-2][0])**2 + (medial1[-2][1]-uniform1[-2][1])**2
-	
-		if distFore1 > 1 and distBack1 > 1:
-			medial1.reverse()
-	
-		distFore2 = (medial2[1][0]-uniform2[1][0])**2 + (medial2[1][1]-uniform2[1][1])**2
-		distBack2 = (medial2[-2][0]-uniform2[-2][0])**2 + (medial2[-2][1]-uniform2[-2][1])**2
-	
-		if distFore2 > 1 and distBack2 > 1:
-			medial2.reverse()
 
-		
-		
-		
-		
 		edge1 = medial1[0:2]
 		edge2 = medial1[-2:]
 		
@@ -3039,28 +3149,12 @@ class PoseGraph:
 		if isIntersect2:
 			medial2.append(point2)
 		
-
 		curve1 = SplineFit(medial1, smooth=0.1)
 		curve2 = SplineFit(medial2, smooth=0.1)
 		
-		#medialSpline = SplineFit(medial1, smooth=0.1)
-
 		motionT, motionCov = self.makeMotionConstraint(i,j)
 		travelDelta = motionT[0,0]
 
-		
-		#curve1 = node1.getGPACurve()
-		#curve2 = node2.getGPACurve()
-		#posture1 = node1.getGPACPosture()
-		#posture2 = node2.getGPACPosture()
-		
-		#curve1 = node1.getStableGPACurve()
-		#curve2 = node2.getStableGPACurve()
-		#posture1 = node1.getStableGPACPosture()
-		#posture2 = node2.getStableGPACPosture()
-
-
-		#(points1, points2, offset, costThresh = 0.004, minMatchDist = 2.0, plotIter = False, n1 = 0, n2 = 0):
 		if travelDelta < 0.3:
 			offset = estimateMotion.makeGuess2(curve1, curve2, 0.0, posture1, posture2, forward = True)
 		else:
@@ -3075,6 +3169,210 @@ class PoseGraph:
 		print "making overlap constraint:", result[0], result[1], result[2]
 		
 		return transform, covE				
+
+
+	def makeMedialOverlapConstraint(self, i, j, isMove = True, isForward = True ):
+
+		print "recomputing hulls and medial axis"
+		" compute the medial axis for each pose "
+		hull1 = computeBareHull(self.nodeHash[i], sweep = False)
+		hull1.append(hull1[0])
+		medial1 = self.nodeHash[i].getMedialAxis(sweep = False)
+
+		hull2 = computeBareHull(self.nodeHash[j], sweep = False)
+		hull2.append(hull2[0])
+		medial2 = self.nodeHash[j].getMedialAxis(sweep = False)
+
+		
+		node1 = self.nodeHash[i]
+		node2 = self.nodeHash[j]
+		posture1 = node1.getStableGPACPosture()
+		posture2 = node2.getStableGPACPosture()		
+
+		" take the long length segments at tips of medial axis"
+		edge1 = medial1[0:2]
+		edge2 = medial1[-2:]
+		
+		frontVec = [edge1[0][0]-edge1[1][0], edge1[0][1]-edge1[1][1]]
+		backVec = [edge2[1][0]-edge2[0][0], edge2[1][1]-edge2[0][1]]
+		frontMag = math.sqrt(frontVec[0]*frontVec[0] + frontVec[1]*frontVec[1])
+		backMag = math.sqrt(backVec[0]*backVec[0] + backVec[1]*backVec[1])
+		
+		frontVec[0] /= frontMag
+		frontVec[1] /= frontMag
+		backVec[0] /= backMag
+		backVec[1] /= backMag
+		
+		" make a smaller version of these edges "
+		newP1 = (edge1[1][0] + frontVec[0]*2, edge1[1][1] + frontVec[1]*2)
+		newP2 = (edge2[0][0] + backVec[0]*2, edge2[0][1] + backVec[1]*2)
+
+		edge1 = [newP1, edge1[1]]
+		edge2 = [edge2[0], newP2]
+
+		" find the intersection points with the hull "
+		interPoints = []
+		for k in range(len(hull1)-1):
+			hullEdge = [hull1[k],hull1[k+1]]
+			isIntersect1, point1 = Intersect(edge1, hullEdge)
+			if isIntersect1:
+				interPoints.append(point1)
+				break
+
+		for k in range(len(hull1)-1):
+			hullEdge = [hull1[k],hull1[k+1]]
+			isIntersect2, point2 = Intersect(edge2, hullEdge)
+			if isIntersect2:
+				interPoints.append(point2)
+				break
+
+		" replace the extended edges with a termination point at the hull edge "			
+		medial1 = medial1[1:-2]
+		if isIntersect1:
+			medial1.insert(0, point1)
+		if isIntersect2:
+			medial1.append(point2)
+
+		TAILDIST = 0.5
+
+		" cut off the tail of the non-sweeping side "
+		if i % 2 == 0:
+			termPoint = medial1[-1]
+			for k in range(len(medial1)):
+				candPoint = medial1[-k-1]
+				dist = sqrt((termPoint[0]-candPoint[0])**2 + (termPoint[1]-candPoint[1])**2)
+				if dist > TAILDIST:
+					break
+				
+			medial1 = medial1[:-k-1]
+		else:
+			termPoint = medial1[0]
+			for k in range(len(medial1)):
+				candPoint = medial1[k]
+				dist = sqrt((termPoint[0]-candPoint[0])**2 + (termPoint[1]-candPoint[1])**2)
+				if dist > TAILDIST:
+					break
+			medial1 = medial1[k:]
+
+
+		" take the long length segments at tips of medial axis"
+		edge1 = medial2[0:2]
+		edge2 = medial2[-2:]
+		
+		frontVec = [edge1[0][0]-edge1[1][0], edge1[0][1]-edge1[1][1]]
+		backVec = [edge2[1][0]-edge2[0][0], edge2[1][1]-edge2[0][1]]
+		frontMag = math.sqrt(frontVec[0]*frontVec[0] + frontVec[1]*frontVec[1])
+		backMag = math.sqrt(backVec[0]*backVec[0] + backVec[1]*backVec[1])
+		
+		frontVec[0] /= frontMag
+		frontVec[1] /= frontMag
+		backVec[0] /= backMag
+		backVec[1] /= backMag
+		
+		" make a smaller version of these edges "
+		newP1 = (edge1[1][0] + frontVec[0]*2, edge1[1][1] + frontVec[1]*2)
+		newP2 = (edge2[0][0] + backVec[0]*2, edge2[0][1] + backVec[1]*2)
+
+		edge1 = [newP1, edge1[1]]
+		edge2 = [edge2[0], newP2]
+
+		
+		" find the intersection points with the hull "
+		interPoints = []
+		for k in range(len(hull2)-1):
+			hullEdge = [hull2[k],hull2[k+1]]
+			isIntersect1, point1 = Intersect(edge1, hullEdge)
+			if isIntersect1:
+				interPoints.append(point1)
+				break
+
+		for k in range(len(hull2)-1):
+			hullEdge = [hull2[k],hull2[k+1]]
+			isIntersect2, point2 = Intersect(edge2, hullEdge)
+			if isIntersect2:
+				interPoints.append(point2)
+				break
+		
+		" replace the extended edges with a termination point at the hull edge "			
+		medial2 = medial2[1:-2]
+		if isIntersect1:
+			medial2.insert(0, point1)
+		if isIntersect2:
+			medial2.append(point2)
+		
+
+		" cut off the tail of the non-sweeping side "
+
+		if j % 2 == 0:
+			termPoint = medial2[-1]
+			for k in range(len(medial2)):
+				candPoint = medial2[-k-1]
+				dist = sqrt((termPoint[0]-candPoint[0])**2 + (termPoint[1]-candPoint[1])**2)
+				if dist > TAILDIST:
+					break
+				
+			medial2 = medial2[:-k-1]
+		else:
+			termPoint = medial2[0]
+			for k in range(len(medial2)):
+				candPoint = medial2[k]
+				dist = sqrt((termPoint[0]-candPoint[0])**2 + (termPoint[1]-candPoint[1])**2)
+				if dist > TAILDIST:
+					break
+			medial2 = medial2[k:]
+		
+		estPose1 = node1.getGlobalGPACPose()		
+		estPose2 = node2.getGlobalGPACPose()
+		
+		medialSpline1 = SplineFit(medial1, smooth=0.1)
+		medialSpline2 = SplineFit(medial2, smooth=0.1)
+
+
+		#samples = scipy.arange(0.0,1.0,0.01)
+
+		if isMove:
+			if isForward:
+				u2 = 0.6
+			else:
+				u2 = 0.4
+		else:
+			poseOrigin = Pose(estPose1)
+			offset = poseOrigin.convertGlobalPoseToLocal(estPose2)
+			
+			points2 = medialSpline2.getUniformSamples()
+			p_1 = medialSpline1.getU(0.5)
+			
+			points2_offset = []
+			for p in points2:
+				result = gen_icp.dispOffset(p, offset)		
+				points2_offset.append(result)
+	
+			p_2, i_2, minDist = gen_icp.findClosestPointInA(points2_offset, p_1)
+	
+			u2 = medialSpline2.findU(points2[i_2])	
+			
+			if u2 > 0.9 or u2 < 0.1:
+				raise
+
+		print "u2 =", u2
+
+
+		#motionT, motionCov = self.makeMotionConstraint(i,j)
+		#travelDelta = motionT[0,0]
+		
+		u1 = 0.5
+		#u2 = 0.6
+		angGuess = 0.0
+
+		result = gen_icp.overlapICP(estPose1, [u1, u2, angGuess], hull1, hull2, medial1, medial2, plotIter = False, n1 = i, n2 = j)
+
+		transform = matrix([[result[0]], [result[1]], [result[2]]])
+		covE =  self.E_overlap
+		
+		print "making overlap constraint:", result[0], result[1], result[2]
+		
+		return transform, covE				
+
 
 	def makeOverlapConstraint(self, i, j ):	
 
@@ -3560,7 +3858,7 @@ class PoseGraph:
 		
 		return offset, covar, cost
 
-	def makeShapeConstraintData2(self, transform, n1, n2, hull1, hull2):		
+	def makeShapeConstraintData2(self, transform, n1, n2, hull1, hull2, medial1, medial2):		
 
 		" TUNE ME:  threshold cost difference between iterations to determine if converged "
 		costThresh = 0.1
@@ -3583,7 +3881,7 @@ class PoseGraph:
 		posture2_unstable = node2.getGPACPosture()
 		posture2_stable = node2.getStableGPACPosture()
 
-		return (estPose1, estPose2, hull1, hull2, posture1_unstable, posture1_stable, posture2_unstable, posture1_stable, costThresh, minMatchDist, plotIteration, n1, n2)
+		return (estPose1, estPose2, hull1, hull2, medial1, medial2, posture1_unstable, posture1_stable, posture2_unstable, posture1_stable, costThresh, minMatchDist, plotIteration, n1, n2)
 
 	def makeShapeConstraintData(self, transform, n1, n2, hull1, hull2):		
 
@@ -4089,7 +4387,8 @@ class PoseGraph:
 	def findOverlapCandidates(self, paths, targetNode = -1):
 
 		SENSOR_RADIUS = 0.0
-		DIST_THRESHOLD = 6.0
+		#DIST_THRESHOLD = 6.0
+		DIST_THRESHOLD = 0.8
 		
 		" select pairs to attempt a sensor constraint "
 		pair_candidates = []
@@ -4768,7 +5067,6 @@ class PoseGraph:
 	
 		return pair_unique
 
-
 	def correctPoses3(self):
 
 		""" 
@@ -5289,6 +5587,139 @@ class PoseGraph:
 		#return added_hypotheses
 		return selected
 
+	def addOverlapConstraints(self, paths, targetNode = None, matchNode = None):
+
+		if targetNode != None:
+			if matchNode != None:
+				sensor_pairs = [[0.0,targetNode,matchNode,paths[targetNode][matchNode][0]]]
+			else:
+				sensor_pairs = self.findOverlapCandidates(paths, targetNode = targetNode)
+		else:
+			sensor_pairs = self.findOverlapCandidates(paths)
+			
+		print "received", len(sensor_pairs), "possible pairs"
+		#return	
+		
+		" make hypothesized constraints out of the pairs "
+		constraintResults = []
+		for i in range(len(sensor_pairs)):
+			p = sensor_pairs[i]
+			transform = p[3]
+			n1 = p[1]
+			n2 = p[2]
+
+			try:
+				transform, covE = self.makeMedialOverlapConstraint(n1, n2, isMove = False)
+				constraintResults.append([n1, n2, transform, covE])
+			except:
+				pass
+
+		print "received", len(constraintResults), "constraint results"
+		if len(constraintResults) > 0:
+			print constraintResults[0]	
+		
+		totalHypotheses = constraintResults
+		
+		results = []
+		for i in range(len(totalHypotheses)):
+			for j in range(i+1, len(totalHypotheses)):
+				
+				hyp1 = totalHypotheses[i]
+				hyp2 = totalHypotheses[j]
+				
+				m1 = hyp1[0]
+				m2 = hyp1[1]
+				
+				n1 = hyp2[0]
+				n2 = hyp2[1]
+				
+				Tp1 = paths[m2][n1][0]
+				Ep1 = paths[m2][n1][1]
+				
+				Tp2 = paths[n2][m1][0]
+				Ep2 = paths[n2][m1][1]
+				
+				Th1 = hyp1[2]
+				Th2 = hyp2[2]
+				
+				Ch1 = hyp1[3]
+				Ch2 = hyp2[3]
+				
+				" m1->m2, m2->n1, n1->n2, n2->m1 "
+				" Th1, Tp1, Th2, Tp2 "
+
+				covE = Ch1
+				result1 = Th1
+				result2, cov2 = doTransform(result1, Tp1, covE, Ep1)
+				result3, cov3 = doTransform(result2, Th2, cov2, Ch2)
+				result4, cov4 = doTransform(result3, Tp2, cov3, Ep2)
+				
+				invMat = scipy.linalg.inv(cov4)
+				err = sqrt(numpy.transpose(result4) * invMat * result4)
+				results.append([err, i, j])
+
+					
+		results.sort()
+		
+		print "len(totalHypotheses) =", len(totalHypotheses)
+				
+		if len(totalHypotheses) < 2:
+			print "too little hypotheses, rejecting"
+			return [], []
+		
+		" set all proscribed hypothesis sets to maximum error "	
+		maxError = 0.0
+		for result in results:
+			if result[0] != None and result[0] > maxError:
+				maxError = result[0]
+
+		maxError = maxError*2
+
+		for result in results:
+			if result[0] == None:
+				result[0] = maxError
+	
+		" create the consistency matrix "
+		A = matrix(len(totalHypotheses)*len(totalHypotheses)*[0.0], dtype=float)
+		A.resize(len(totalHypotheses), len(totalHypotheses))
+			
+		" populate consistency matrix "					
+		for result in results:
+			i = result[1]
+			j = result[2]
+			A[i,j] = maxError - result[0]
+			A[j,i] = maxError - result[0]
+
+		" do graph clustering of consistency matrix "
+		w = []
+		e = []
+		for i in range(100):
+			e, lmbda = scsgp.dominantEigenvectors(A)
+			w = scsgp.getIndicatorVector(e[0])
+			w2 = scsgp.getIndicatorVector(e[1])
+			if len(e) <= 1:
+				break
+
+			" threshold test l1 / l2"
+			ratio = lmbda[0][0,0] / lmbda[1][0,0]
+			if ratio >= 2.0:
+				break
+
+		selected = []	
+		for i in range(len(totalHypotheses)):
+			if w[i,0] >= 1.0:
+				selected.append(totalHypotheses[i])
+
+		selected2 = []	
+		for i in range(len(totalHypotheses)):
+			if w2[i,0] >= 1.0:
+				selected2.append(totalHypotheses[i])
+
+		#return selected, selected2
+
+		return selected2
+
+
 	def addShapeConstraints(self, paths, targetNode = None, matchNode = None):
 
 		if targetNode != None:
@@ -5304,6 +5735,7 @@ class PoseGraph:
 		#a_hulls = [0 for i in range(self.numNodes)]
 		
 		a_hulls = self.a_hulls
+		a_medial = self.a_medial
 		
 		#for i in range(self.numNodes):
 		#	a_hulls[i] = computeHull(self.nodeHash[i], sweep = False)
@@ -5322,7 +5754,7 @@ class PoseGraph:
 			n1 = p[1]
 			n2 = p[2]
 			#constraintData.append(self.makeShapeConstraintData(transform, n1, n2, a_hulls[n1], a_hulls[n2]))
-			constraintData2.append(self.makeShapeConstraintData2(transform, n1, n2, a_hulls[n1], a_hulls[n2]))
+			constraintData2.append(self.makeShapeConstraintData2(transform, n1, n2, a_hulls[n1], a_hulls[n2], a_medial[n1], a_medial[n2]))
 			#return (estPose1, estPose2, hull1, hull2, posture1_unstable, posture1_stable, posture2_unstable, posture1_stable, costThresh, minMatchDist, plotIteration, n1, n2)
 			
 			if len(constraintData2) >= 16:

@@ -61,8 +61,10 @@ class VisualGraph:
 
 			self.localNodes.append(currNode)
 			
-			#self.poseGraph.loadNewNode(currNode)
-			self.poseGraph.loadNodeGroundPast(currNode)
+
+			self.poseGraph.loadNewNode(currNode)
+			#self.poseGraph.resetGraphToGround()						
+			#self.poseGraph.loadNodeGroundPast(currNode)
 	
 			#if i % 10 == 0:
 			#	self.poseGraph.makeCornerBinConsistent()
@@ -72,28 +74,31 @@ class VisualGraph:
 			#self.drawShapeConstraints(i)
 
 		self.drawMap()
+		#self.drawConstraints(num_poses)
 
-		"""		
-		self.drawConstraints(num_poses)
+		#self.poseGraph.performOverlapConstraints()
+		#self.drawMap()
+		#self.drawConstraints(num_poses+1)
 
-
+		"""
 		self.poseGraph.performShapeConstraints()
 		self.drawMap()
 		self.drawConstraints(num_poses+1)
-
+		"""		
+		"""
 		for i in range(0, num_poses):
 			self.poseGraph.addCornerConstraints(i)			
 			self.poseGraph.mergePriorityConstraints()
 		
 		self.drawMap()
-		self.drawConstraints(num_poses+2)
-		
+		self.drawConstraints(num_poses+1)
+		"""
+
 		self.poseGraph.resetGraphToGround()
 		self.drawMap()
-		self.drawConstraints(num_poses+3)
+		self.drawConstraints(num_poses)
 		
-		self.drawPoses()
-		"""
+		#self.drawPoses()
 
 	def testHypotheses(self, dirName, num_poses, hypFile):
 		self.sensorHypotheses = self.poseGraph.sensorHypotheses
@@ -176,7 +181,9 @@ class VisualGraph:
 			#hull = PoseGraph.computeBareHull(self.nodeHash[6], sweep = False)
 			hull.append(hull[0])
 
-			medial = gen_icp.getMedialAxis(hull)
+			#medial = gen_icp.getMedialAxis(hull)
+			medial = self.nodeHash[i].getMedialAxis()
+
 			
 			edge1 = medial[0:2]
 			edge2 = medial[-2:]
@@ -443,7 +450,7 @@ class VisualGraph:
 		
 		for k, v in edgeHash.items():
 			
-			print len(v), "edges printing"
+			#print len(v), "edges printing"
 			for i in range(len(v)):
 
 				pylab.clf()

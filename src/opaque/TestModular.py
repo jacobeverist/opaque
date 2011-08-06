@@ -350,7 +350,7 @@ class TestModular(SnakeControl):
 				#exit()
 
 
-				self.mapGraph.newNode(self.stepDist, self.direction)
+				self.mapGraph.newNode(self.stepDist, True, self.direction)
 				self.mapGraph.forceUpdate(False)
 				
 				self.contacts.resetPose(self.mapGraph.currNode.getEstPose())
@@ -381,12 +381,12 @@ class TestModular(SnakeControl):
 				#if self.mapGraph.currNode.nodeID == 4:
 				#self.mapGraph.update()
 				self.mapGraph.correctPosture()
-				self.mapGraph.localizeCurrentNode()
-				self.mapGraph.synch()
-				self.mapGraph.saveMap()
+				#self.mapGraph.localizeCurrentNode()
+				#self.mapGraph.synch()
+				#self.mapGraph.saveMap()
 				self.mapGraph.saveLocalMap()
 				self.mapGraph.poseGraph.drawConstraints()				
-				self.mapGraph.newInPlaceNode(False)
+				self.mapGraph.newInPlaceNode(False, self.direction)
 				#self.mapGraph.currNode.resetPosture()		
 			
 		elif self.globalState == 8:
@@ -410,11 +410,11 @@ class TestModular(SnakeControl):
 				#exit()
 
 				#self.mapGraph.correctPoses2()
-				self.mapGraph.correctPosture()
-				self.mapGraph.localizeCurrentNode()
+				#self.mapGraph.correctPosture()
+				#self.mapGraph.localizeCurrentNode()
 				#self.mapGraph.relaxCorrect()
-				self.mapGraph.synch()
-				self.mapGraph.saveMap()
+				#self.mapGraph.synch()
+				#self.mapGraph.saveMap()
 				self.mapGraph.saveLocalMap()
 				self.mapGraph.poseGraph.drawConstraints()				
 				
@@ -436,9 +436,12 @@ class TestModular(SnakeControl):
 				foreAvg = frontSum / len(frontProbeError)
 				
 				
+				#if self.mapGraph.poseGraph.numNodes >= 2:
+				#	exit()
+				
 				print "foreAvg =", foreAvg
 				#foreAvg = 2.0
-				foreAvg = 0.0
+				#foreAvg = 0.0
 				if foreAvg >= 1.4:
 					self.globalState = 10
 				else:
@@ -495,7 +498,6 @@ class TestModular(SnakeControl):
 				self.globalState = 6
 		
 		elif self.globalState == 12:
-			
 			pass
 
 		for i in range(self.numJoints):

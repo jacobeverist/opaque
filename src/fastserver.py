@@ -72,11 +72,11 @@ class Controller(object):
     def scheduleJobs(self, remoteMethodName, nextStep):
         deferreds = []
 
-	self.jobFinishedCallback = nextStep
-
-	solvers = self.solvers.values()
-	
-	#for arguments in self.constraintData:
+        self.jobFinishedCallback = nextStep
+        
+        solvers = self.solvers.values()
+        
+        #for arguments in self.constraintData:
         for i in range(len(self.constraintData)):
             arguments = self.constraintData[i]
             solver = solvers[ i % len(solvers) ] 
