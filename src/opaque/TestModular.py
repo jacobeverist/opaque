@@ -99,8 +99,8 @@ class TestModular(SnakeControl):
 
 	def grabImage(self):
 
-		inc = 50
-		#inc = 200
+		#inc = 50
+		inc = 200
 		#inc = 1000
 		#inc = 500
 
@@ -169,9 +169,10 @@ class TestModular(SnakeControl):
 		
 	def frameStarted(self):
 		
+		
 		#self.grabPosture()
 		
-		#self.grabImage()
+		self.grabImage()
 		#self.grabAngles()
 
 
@@ -381,11 +382,14 @@ class TestModular(SnakeControl):
 				#if self.mapGraph.currNode.nodeID == 4:
 				#self.mapGraph.update()
 				self.mapGraph.correctPosture()
-				#self.mapGraph.localizeCurrentNode()
+				self.mapGraph.localizeCurrentNode()
+				self.contacts.resetPose(self.mapGraph.currNode.getEstPose())
+				self.lastPose = self.contacts.getAverageSegPose(0)
+
 				#self.mapGraph.synch()
 				#self.mapGraph.saveMap()
 				self.mapGraph.saveLocalMap()
-				self.mapGraph.poseGraph.drawConstraints()				
+				self.mapGraph.drawConstraints()				
 				self.mapGraph.newInPlaceNode(False, self.direction)
 				#self.mapGraph.currNode.resetPosture()		
 			
@@ -410,21 +414,24 @@ class TestModular(SnakeControl):
 				#exit()
 
 				#self.mapGraph.correctPoses2()
-				#self.mapGraph.correctPosture()
-				#self.mapGraph.localizeCurrentNode()
+				self.mapGraph.correctPosture()
+				self.mapGraph.localizeCurrentNode()
+				self.contacts.resetPose(self.mapGraph.currNode.getEstPose())
+				self.lastPose = self.contacts.getAverageSegPose(0)
+
 				#self.mapGraph.relaxCorrect()
 				#self.mapGraph.synch()
 				#self.mapGraph.saveMap()
 				self.mapGraph.saveLocalMap()
-				self.mapGraph.poseGraph.drawConstraints()				
+				self.mapGraph.drawConstraints()				
 				
 		
 				#self.currPose = self.contacts.getAverageSegPose(0)
-				deltaDist = sqrt((self.currPose[0]-self.lastPose[0])**2 + (self.currPose[1]-self.lastPose[1])**2)
+				#deltaDist = sqrt((self.currPose[0]-self.lastPose[0])**2 + (self.currPose[1]-self.lastPose[1])**2)
 
 				" FORCE to the probe to continue walking forward "
 				#deltaDist = 1.0
-				print "deltaDist =", deltaDist
+				#print "deltaDist =", deltaDist
 	
 				#self.lastPose = self.currPose
 				
@@ -436,9 +443,6 @@ class TestModular(SnakeControl):
 				foreAvg = frontSum / len(frontProbeError)
 				
 				
-				#if self.mapGraph.poseGraph.numNodes >= 2:
-				#	exit()
-				
 				print "foreAvg =", foreAvg
 				#foreAvg = 2.0
 				#foreAvg = 0.0
@@ -446,24 +450,7 @@ class TestModular(SnakeControl):
 					self.globalState = 10
 				else:
 					self.globalState = 4
-				
-				#deltaDist = 1.0
-
-				#deltaDist = 0.0
-
-				#if deltaDist > 0.4:
-				
-				#if self.mapGraph.numNodes > 30:
-				#	self.mapGraph.currNode.saveToFile()
-				#	exit()
-				
-				#if deltaDist > 0.2:
-				#	self.globalState = 4
-				#else:
-				#	self.globalState = 10
 					
-				#self.globalState = 10
-		
 		elif self.globalState == 10:
 			
 			" select the destination and generate path "
@@ -483,6 +470,9 @@ class TestModular(SnakeControl):
 			self.globalState = 11
 
 		elif self.globalState == 11:
+
+			if self.mapGraph.numNodes > 40:
+				exit()
 			
 			" Instantiate the Path Step behavior and give it the path to follow "
 		
@@ -897,8 +887,8 @@ class TestModular(SnakeControl):
 
 				self.localPathState = 2
 
-
-				self.mapGraph.newNode(self.stepDist, self.localDirection)
+				self.mapGraph.newNode(self.stepDist, True, self.localDirection)
+				#self.mapGraph.newNode(self.stepDist, self.localDirection)
 				self.mapGraph.forceUpdate(False)
 
 				#self.mapGraph.localizeCurrentNode()
@@ -1001,15 +991,18 @@ class TestModular(SnakeControl):
 			
 			if isDone:
 				#self.mapGraph.update()
+				
 				self.mapGraph.correctPosture()
 				self.mapGraph.localizeCurrentNode()
+				self.contacts.resetPose(self.mapGraph.currNode.getEstPose())
+				self.lastPose = self.contacts.getAverageSegPose(0)
 
-				self.mapGraph.synch()
-				self.mapGraph.saveMap()
+				#self.mapGraph.synch()
+				#self.mapGraph.saveMap()
 				self.mapGraph.saveLocalMap()
-				self.mapGraph.poseGraph.drawConstraints()				
+				self.mapGraph.drawConstraints()				
 				
-				self.mapGraph.newInPlaceNode(False)
+				self.mapGraph.newInPlaceNode(False, self.direction)
 				#self.mapGraph.currNode.resetPosture()		
 				self.localPathState = 4			
 			
@@ -1030,14 +1023,15 @@ class TestModular(SnakeControl):
 
 				#self.mapGraph.update()
 				self.mapGraph.correctPosture()
-
 				self.mapGraph.localizeCurrentNode()
 				#self.mapGraph.relaxCorrect()
+				self.contacts.resetPose(self.mapGraph.currNode.getEstPose())
+				self.lastPose = self.contacts.getAverageSegPose(0)
 
-				self.mapGraph.synch()
-				self.mapGraph.saveMap()
+				#self.mapGraph.synch()
+				#self.mapGraph.saveMap()
 				self.mapGraph.saveLocalMap()
-				self.mapGraph.poseGraph.drawConstraints()				
+				self.mapGraph.drawConstraints()				
 
 
 				self.localPathState = 1

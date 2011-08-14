@@ -514,6 +514,7 @@ class LocalNode:
 		
 		return self.centerCurve.getPose()
 	
+	
 	def getGlobalGPACPose(self):
 
 		localGPACPose = self.getLocalGPACPose()	
@@ -987,7 +988,7 @@ class LocalNode:
 		self.occMap.buildMap()
 		self.sweepMap.buildMap()
 		
-		self.computeAlphaBoundary()
+		#self.computeAlphaBoundary()
 
 		self.boundaryMap.update()
 		self.obstacleMap.update()
@@ -1334,6 +1335,10 @@ class LocalNode:
 		
 		
 	def computeAlphaBoundary(self, sweep = False):
+
+		" synchronize maps first "
+		if self.isDirty():
+			self.synch()
 
 		if sweep and self.hullBComputed:
 			#print "sweep hull already computed "

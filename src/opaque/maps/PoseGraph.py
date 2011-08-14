@@ -42,7 +42,7 @@ GND_PRIORITY = 10
 INPLACE_PRIORITY = 5
 CORNER_PRIORITY = 3
 SHAPE_PRIORITY = 2
-OVERLAP_PRIORITY = 0
+OVERLAP_PRIORITY = 1
 MOTION_PRIORITY = 0
 
 
@@ -761,6 +761,7 @@ class PoseGraph:
 
 		self.a_medial.append(self.nodeHash[nodeID].getMedialAxis(sweep = False))
 
+		"""
 		if nodeID < 26:
 			direction = True
 		elif nodeID < 34:
@@ -777,10 +778,11 @@ class PoseGraph:
 			direction = True
 		else:
 			direction = False
+		"""
 
-		
+		direction = newNode.travelDir
 
-		print "direction =", direction
+		#print "direction =", direction
 		#return
 
 		if nodeID > 0:
@@ -796,11 +798,24 @@ class PoseGraph:
 				
 				#transform, covE = self.makeOverlapConstraint(nodeID-2, nodeID)
 				#transform, covE = self.makeOverlapConstraint2(nodeID-2, nodeID)
-				transform, covE = self.makeMedialOverlapConstraint(nodeID-2, nodeID, isMove = True, isForward = direction )
-
+				transform1, covE1, hist1 = self.makeMedialOverlapConstraint(nodeID-2, nodeID, isMove = True, isForward = direction )
+				if hist1[2] > 0:
 				
+					transform2, covE2, hist2 = self.makeMedialOverlapConstraint(nodeID-2, nodeID, isMove = True, isForward = not direction )
 
 	
+					if hist1[2] < hist2[2]:
+						transform = transform1
+						covE = covE1
+					else:
+						transform = transform2
+						covE = covE2
+				else:
+					transform = transform1
+					covE = covE1
+					
+
+
 				#def wrapMedial(self, i,j,result):
 				#		result.append(self.makeMedialOverlapConstraint(i,j))
 
@@ -815,14 +830,15 @@ class PoseGraph:
 				" merge constraints by priority and updated estimated poses "
 				self.mergePriorityConstraints()
 
+
 				" try to perform corner constraints "
 				" overwrite overlap/motion constraints"
 				" corner constraints with past nodes "
-				self.addCornerConstraints(nodeID)
+				#self.addCornerConstraints(nodeID)
 			
 				
 				" merge the constraints "
-				self.mergePriorityConstraints()
+				#self.mergePriorityConstraints()
 
 
 				" check that each bin is well-connected, otherwise, try to add constraints "
@@ -899,10 +915,26 @@ class PoseGraph:
 						
 				transform, covE = self.makeInPlaceConstraint(nodeID-1, nodeID)
 				self.addPriorityEdge([nodeID-1,nodeID,transform,covE], INPLACE_PRIORITY)
+				#transform, covE = self.makeMedialOverlapConstraint(nodeID-1, nodeID, isMove = False, isForward = direction)
+				#self.addPriorityEdge([nodeID-2,nodeID,transform,covE], OVERLAP_PRIORITY)
 
 				if nodeID > 2:
 					#transform, covE = self.makeOverlapConstraint2(nodeID-2, nodeID)
-					transform, covE = self.makeMedialOverlapConstraint(nodeID-2, nodeID, isMove = True, isForward = direction)
+					transform1, covE1, hist1 = self.makeMedialOverlapConstraint(nodeID-2, nodeID, isMove = True, isForward = direction)
+					if hist1[2] > 0:
+						transform2, covE2, hist2 = self.makeMedialOverlapConstraint(nodeID-2, nodeID, isMove = True, isForward = not direction )
+					
+						if hist1[2] < hist2[2]:
+							transform = transform1
+							covE = covE1
+						else:
+							transform = transform2
+							covE = covE2
+					else:
+						transform = transform1
+						covE = covE1
+						
+					
 					self.addPriorityEdge([nodeID-2,nodeID,transform,covE], OVERLAP_PRIORITY)
 
 	
@@ -912,9 +944,9 @@ class PoseGraph:
 				" try to perform corner constraints "
 				" overwrite overlap/motion constraints"
 				" corner constraints with past nodes "
-				self.addCornerConstraints(nodeID)
+				#self.addCornerConstraints(nodeID)
 
-				self.mergePriorityConstraints()
+				#self.mergePriorityConstraints()
 				
 				" 1) add inplace constraint "
 				" 2) attempt corner constraint with past nodes, replacing overlaps and sensors "
@@ -1134,12 +1166,12 @@ class PoseGraph:
 		totalError = self.computeCornerClusterError()
 		"""
 
-	def correctNode(self, newNode):
+	def correctNode(self, nodeID):
 
-		self.currNode = newNode
-		nodeID = self.numNodes
-		self.nodeHash[nodeID] = self.currNode
-		self.numNodes += 1
+		#self.currNode = newNode
+		#nodeID = self.numNodes
+		#self.nodeHash[nodeID] = self.currNode
+		#self.numNodes += 1
 		self.a_hulls.append(computeHull(self.nodeHash[nodeID], sweep = False))
 		self.b_hulls.append(computeHull(self.nodeHash[nodeID], sweep = True))
 
@@ -1173,6 +1205,8 @@ class PoseGraph:
 					pass
 			else:
 	
+				direction = self.currNode.travelDir
+
 				transform, covE = self.makeInPlaceConstraint(nodeID-1, nodeID)
 				self.addPriorityEdge([nodeID-1,nodeID,transform,covE], INPLACE_PRIORITY)
 
@@ -1195,7 +1229,11 @@ class PoseGraph:
 				" check that each bin is well-connected, otherwise, try to add constraints "
 				for bin in self.cornerBins:
 					pass
+		
+		if nodeID > 0 and nodeID % 10 == 0:
+			self.performOverlapConstraints()
 
+				
 
 	def resetGraphToGround(self):
 		
@@ -1422,6 +1460,8 @@ class PoseGraph:
 		for i in range(self.numNodes):
 			paths.append(bayes.dijkstra_proj(i, self.numNodes, self.edgeHash))
 		
+		self.deleteAllPriority(SHAPE_PRIORITY)
+
 		newConstraints = self.addOverlapConstraints(paths)
 
 		print "adding", len(newConstraints), "overlap constraints"
@@ -3171,7 +3211,7 @@ class PoseGraph:
 		return transform, covE				
 
 
-	def makeMedialOverlapConstraint(self, i, j, isMove = True, isForward = True ):
+	def makeMedialOverlapConstraint(self, i, j, isMove = True, isForward = True, inPlace = False ):
 
 		print "recomputing hulls and medial axis"
 		" compute the medial axis for each pose "
@@ -3330,11 +3370,26 @@ class PoseGraph:
 
 		#samples = scipy.arange(0.0,1.0,0.01)
 
-		if isMove:
+		#originU1 = medialSpline2.findU(node1.rootPose)	
+		#originU2 = medialSpline2.findU(node2.rootPose)	
+		originU1 = medialSpline2.findU([0.0,0.0])	
+		originU2 = medialSpline2.findU([0.0,0.0])	
+
+		#medialSpline1.getUOfDist(originU1, dist)
+
+		if inPlace:
+			u2 = originU2
+			print "computed u2 =", u2, "from originU2 =", originU2
+
+		elif isMove:
+			
 			if isForward:
-				u2 = 0.6
+				#u2 = 0.6
+				u2 = medialSpline2.getUOfDist(originU2, 0.3)
 			else:
-				u2 = 0.4
+				u2 = medialSpline2.getUOfDist(originU2, -0.3)
+				#u2 = 0.4
+			print "computed u2 =", u2, "from originU2 =", originU2
 		else:
 			poseOrigin = Pose(estPose1)
 			offset = poseOrigin.convertGlobalPoseToLocal(estPose2)
@@ -3360,18 +3415,20 @@ class PoseGraph:
 		#motionT, motionCov = self.makeMotionConstraint(i,j)
 		#travelDelta = motionT[0,0]
 		
-		u1 = 0.5
+		u1 = originU1
+		#u1 = 0.5
 		#u2 = 0.6
 		angGuess = 0.0
 
-		result = gen_icp.overlapICP(estPose1, [u1, u2, angGuess], hull1, hull2, medial1, medial2, plotIter = False, n1 = i, n2 = j)
+		#result = gen_icp.overlapICP(estPose1, [u1, u2, angGuess], hull1, hull2, medial1, medial2, node1.rootPose, node2.rootPose, plotIter = True, n1 = i, n2 = j)
+		result, hist = gen_icp.overlapICP(estPose1, [u1, u2, angGuess], hull1, hull2, medial1, medial2, [0.0,0.0], [0.0,0.0], plotIter = True, n1 = i, n2 = j)
 
 		transform = matrix([[result[0]], [result[1]], [result[2]]])
 		covE =  self.E_overlap
 		
 		print "making overlap constraint:", result[0], result[1], result[2]
 		
-		return transform, covE				
+		return transform, covE, hist
 
 
 	def makeOverlapConstraint(self, i, j ):	
@@ -4092,7 +4149,7 @@ class PoseGraph:
 		self.saveConstraints()
 		
 		self.numNodes += 1
-			
+					
 	def addNode(self, newNode):
 		
 		self.currNode = newNode
@@ -4103,8 +4160,8 @@ class PoseGraph:
 			transform, covE = self.makeMotionConstraint(self.numNodes-1, self.numNodes)
 			self.motion_constraints.append([self.numNodes-1, self.numNodes, transform, covE])
 			
-			transform, covE = self.makeOverlapConstraint(self.numNodes-1, self.numNodes)
-			self.overlap_constraints.append([self.numNodes-1, self.numNodes, transform, covE])
+			#transform, covE = self.makeOverlapConstraint(self.numNodes-1, self.numNodes)
+			#self.overlap_constraints.append([self.numNodes-1, self.numNodes, transform, covE])
 
 			offset = [transform[0,0], transform[1,0], transform[2,0]]
 			currProfile = Pose(self.nodeHash[self.numNodes-1].getGlobalGPACPose())
@@ -5665,7 +5722,7 @@ class PoseGraph:
 				
 		if len(totalHypotheses) < 2:
 			print "too little hypotheses, rejecting"
-			return [], []
+			return []
 		
 		" set all proscribed hypothesis sets to maximum error "	
 		maxError = 0.0

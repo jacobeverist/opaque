@@ -101,6 +101,71 @@ class SplineFit:
 	def findClosestFromPointSet(self):
 		pass
 
+
+	def getUOfDist(self, startU, dist):
+
+		" search algorithm.   Find a high and a low "
+		" subdivide and determine if higher or lower than minimum point "
+		" repeat to a desired precision "
+
+		magDist = abs(dist)
+		
+		#print "dist =", dist, "startU =", startU
+		
+		if dist >= 0:
+			highU = 1.0
+			lowU = startU
+			termDist = self.dist(startU, highU)
+			#print "termDist =", termDist
+			if termDist < magDist:
+				return highU
+
+		else:
+			highU = startU
+			lowU = 0.0
+			termDist = self.dist(startU, lowU)
+			#print "termDist =", termDist
+
+			if termDist < magDist:
+				return lowU
+		
+		count = 0
+		
+		while True:
+			" find U between the highest and lowest"
+			midU = (highU - lowU)/2.0 + lowU
+			midDist = self.dist(startU, midU)
+			
+			#print "midU =", midU, "midDist =", midDist
+			
+			if dist >= 0:
+				if midDist > magDist:
+					highU = midU
+					lowU = lowU
+				else:
+					highU = highU
+					lowU = midU
+			else:
+				if midDist > magDist:
+					highU = highU
+					lowU = midU
+				else:
+					highU = midU
+					lowU = lowU
+					
+			#print "highU =", highU, "lowU =", lowU
+			
+			" terminate when close enough "
+			if abs(magDist-midDist) < 0.01:
+				return midU
+
+			count += 1
+			if count > 30:
+				print "Fail getUofDist:"
+				print startU, dist, highU, lowU, midU, midDist
+				raise
+	
+
 	def getPointOfDist(self, dist):
 		# return a point of dist distance along the spline from the origin
 
@@ -154,7 +219,12 @@ class SplineFit:
 		totalDist = 0.0
 
 		if u1 >= u2:
-			raise
+			tempU = u1
+			u1 = u2
+			u2 = tempU
+			
+		#if u1 >= u2:
+		#	raise
 
 
 		unew = scipy.arange(u1, u2 + iter, iter)

@@ -76,9 +76,9 @@ class VisualGraph:
 		self.drawMap()
 		#self.drawConstraints(num_poses)
 
-		#self.poseGraph.performOverlapConstraints()
-		#self.drawMap()
-		#self.drawConstraints(num_poses+1)
+		self.poseGraph.performOverlapConstraints()
+		self.drawMap()
+		self.drawConstraints(num_poses)
 
 		"""
 		self.poseGraph.performShapeConstraints()
@@ -96,9 +96,9 @@ class VisualGraph:
 
 		self.poseGraph.resetGraphToGround()
 		self.drawMap()
-		self.drawConstraints(num_poses)
+		self.drawConstraints(num_poses+1)
 		
-		#self.drawPoses()
+		self.drawPoses()
 
 	def testHypotheses(self, dirName, num_poses, hypFile):
 		self.sensorHypotheses = self.poseGraph.sensorHypotheses
@@ -674,7 +674,7 @@ class VisualGraph:
 		#pylab.ylim(-10,10)
 		pylab.ylim(-8,8)
 		if id == []:
-			pylab.savefig("plotEstimate%04u.png" % i)
+			pylab.savefig("plotEstimate%04u.png" % self.numNodes)
 		else:
 			pylab.savefig("plotEstimate%04u.png" % id)
 

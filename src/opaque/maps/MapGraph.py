@@ -1,4 +1,6 @@
-from PoseGraph import PoseGraph
+from PoseGraph import PoseGraph, computeBareHull, OVERLAP_PRIORITY
+from Pose import Pose
+
 from LocalNode import LocalNode
 from VoronoiMap import VoronoiMap
 from FrontierMap import FrontierMap
@@ -7,8 +9,12 @@ from FreeSpaceBoundaryMap import FreeSpaceBoundaryMap
 from NavRoadMap import NavRoadMap
 from StablePose import StablePose
 
+import gen_icp
+
+
 import pylab
 from math import *
+from random import random
 
 import Image
 import ImageDraw
@@ -69,6 +75,10 @@ class MapGraph:
 		
 		" whether or not the data needs to be synchronized "
 		self.isDirty = False
+
+		self.colors = []
+		for i in range(100):
+			self.colors.append((random(),random(),random()))
 
 		if False:
 			for k in range(1):
@@ -195,8 +205,334 @@ class MapGraph:
 				pylab.savefig("testplot%04u.png" % k)
 				pylab.show()
 
+	def drawOverlapConstraints(self, id):
+
+		numEdges = 0
+
+		edges = self.poseGraph.getPriorityEdges(self, priorityLevel = OVERLAP_PRIORITY)
+
+
+		for edge in edges:
+
+			pylab.clf()
+
+			nodeID1 = edge[0]
+			nodeID2 = edge[1]
+			status = edge[4]
+
+			if edge[0] < edge[1]:
+				nodeID1 = edge[0]
+				nodeID2 = edge[1]
+				transform = edge[2]
+				offset = [transform[0,0], transform[1,0], transform[2,0]]
+
+			else:
+				nodeID1 = edge[1]
+				nodeID2 = edge[0]
+				transform = edge[2]
+				offset = [transform[0,0], transform[1,0], transform[2,0]]
+				prof1 = Pose(offset)
+				offset = prof1.convertGlobalPoseToLocal([0.0,0.0,0.0])
+		
+
+			hull1 = computeBareHull(self.nodeHash[nodeID1], sweep = False)
+			hull1.append(hull1[0])
+
+			node1 = self.nodeHash[nodeID1]
+			currPose = node1.getGlobalGPACPose()
+			currProfile = Pose(currPose)
+			posture1 = node1.getStableGPACPosture()
+			posture1_trans = []
+			for p in posture1:
+				posture1_trans.append(gen_icp.dispOffset(p, currPose))	
+
+			occ1 = node1.getOccPoints()
+			occ1_trans = []
+			for p in occ1:
+				occ1_trans.append(gen_icp.dispOffset(p, currPose))	
+
+			hull1_trans = []
+			for p in hull1:
+				hull1_trans.append(gen_icp.dispOffset(p, currPose))	
+							
+			xP = []
+			yP = []
+			for p in hull1_trans:
+				xP.append(p[0])
+				yP.append(p[1])
+			#pylab.plot(xP,yP, color=(112/256.,147/256.,219/256.))	
+			pylab.plot(xP,yP, color='r', linewidth=2)	
+
+			xP = []
+			yP = []
+			for p in occ1_trans:
+				xP.append(p[0])
+				yP.append(p[1])
+			pylab.scatter(xP,yP, color=(1.0,0.5,0.5), faceted = False)
+
+
+
+			estPose2 = currProfile.convertLocalOffsetToGlobal(offset)
+			
+			hull2 = PoseGraph.computeBareHull(self.nodeHash[nodeID2], sweep = False)
+			hull2.append(hull2[0])
+
+			node2 = self.nodeHash[nodeID2]
+			#currPose = node2.getGlobalGPACPose()
+			currProfile = Pose(estPose2)
+			posture2 = node2.getStableGPACPosture()
+			posture2_trans = []
+			for p in posture2:
+				posture2_trans.append(gen_icp.dispOffset(p, estPose2))	
+
+			occ2 = node2.getOccPoints()
+			occ2_trans = []
+			for p in occ2:
+				occ2_trans.append(gen_icp.dispOffset(p, estPose2))	
+
+			hull2_trans = []
+			for p in hull2:
+				hull2_trans.append(gen_icp.dispOffset(p, estPose2))	
+			
+			xP = []
+			yP = []
+			for p in hull2_trans:
+				xP.append(p[0])
+				yP.append(p[1])
+			pylab.plot(xP,yP, color=(52/256.,87/256.,159/256.), linewidth=2)
+
+			xP = []
+			yP = []
+			for p in occ2_trans:
+				xP.append(p[0])
+				yP.append(p[1])
+			pylab.scatter(xP,yP, color=(192./256.,227./256.,256./256.), faceted = False)
+	
+			self.drawWalls()
+			
+			pylab.xlim(currPose[0]-4, currPose[0]+4)					
+			pylab.ylim(currPose[1]-3, currPose[1]+3)
+			
+			if status == 1:
+				statusStr = "ORI_FAIL"
+			elif status == 2:
+				statusStr = "COST_FAIL"
+			elif status == 3:
+				statusStr = "HYP_FAIL"
+			else:
+				statusStr = "UNKN_FAIL"
+
+			pylab.title("%d -> %d, status = %s" % (nodeID1, nodeID2, statusStr))
+			
+			pylab.savefig("plotBadShapeConstraint%04u_%04u.png" % (id, numEdges))
+
+			numEdges += 1
+
+
+		numEdges = 0
+		edgeHash = self.poseGraph.getPriorityEdges(PoseGraph.SHAPE_PRIORITY)
+
+		
+		for k, v in edgeHash.items():
+			
+			#print len(v), "edges printing"
+			for i in range(len(v)):
+
+				pylab.clf()
+				
+				if k[0] < k[1]:
+					nodeID1 = k[0]
+					nodeID2 = k[1]
+					transform = v[i][0]
+					offset = [transform[0,0], transform[1,0], transform[2,0]]
+
+				else:
+					nodeID1 = k[1]
+					nodeID2 = k[0]
+					transform = v[i][0]
+					offset = [transform[0,0], transform[1,0], transform[2,0]]
+					prof1 = Pose(offset)
+					offset = prof1.convertGlobalPoseToLocal([0.0,0.0,0.0])
+	
+				hull1 = PoseGraph.computeBareHull(self.nodeHash[nodeID1], sweep = False)
+				hull1.append(hull1[0])
+	
+				node1 = self.nodeHash[nodeID1]
+				currPose = node1.getGlobalGPACPose()
+				currProfile = Pose(currPose)
+				posture1 = node1.getStableGPACPosture()
+				posture1_trans = []
+				for p in posture1:
+					posture1_trans.append(gen_icp.dispOffset(p, currPose))	
+
+				occ1 = node1.getOccPoints()
+				occ1_trans = []
+				for p in occ1:
+					occ1_trans.append(gen_icp.dispOffset(p, currPose))	
+	
+				hull1_trans = []
+				for p in hull1:
+					hull1_trans.append(gen_icp.dispOffset(p, currPose))	
+								
+				xP = []
+				yP = []
+				for p in hull1_trans:
+					xP.append(p[0])
+					yP.append(p[1])
+				#pylab.plot(xP,yP, color=(112/256.,147/256.,219/256.))	
+				pylab.plot(xP,yP, color='r', linewidth=2)	
+
+				xP = []
+				yP = []
+				for p in occ1_trans:
+					xP.append(p[0])
+					yP.append(p[1])
+				pylab.scatter(xP,yP, color=(1.0,0.5,0.5), faceted = False)
+
+
+
+				estPose2 = currProfile.convertLocalOffsetToGlobal(offset)
+				
+				hull2 = PoseGraph.computeBareHull(self.nodeHash[nodeID2], sweep = False)
+				hull2.append(hull2[0])
+	
+				node2 = self.nodeHash[nodeID2]
+				#currPose = node2.getGlobalGPACPose()
+				currProfile = Pose(estPose2)
+				posture2 = node2.getStableGPACPosture()
+				posture2_trans = []
+				for p in posture2:
+					posture2_trans.append(gen_icp.dispOffset(p, estPose2))	
+
+				occ2 = node2.getOccPoints()
+				occ2_trans = []
+				for p in occ2:
+					occ2_trans.append(gen_icp.dispOffset(p, estPose2))	
+	
+				hull2_trans = []
+				for p in hull2:
+					hull2_trans.append(gen_icp.dispOffset(p, estPose2))	
+				
+				xP = []
+				yP = []
+				for p in hull2_trans:
+					xP.append(p[0])
+					yP.append(p[1])
+				pylab.plot(xP,yP, color=(52/256.,87/256.,159/256.), linewidth=2)
+
+				xP = []
+				yP = []
+				for p in occ2_trans:
+					xP.append(p[0])
+					yP.append(p[1])
+				pylab.scatter(xP,yP, color=(192./256.,227./256.,256./256.), faceted = False)
+		
+				self.drawWalls()
+				
+				pylab.xlim(currPose[0]-4, currPose[0]+4)					
+				pylab.ylim(currPose[1]-3, currPose[1]+3)
+
+				pylab.title("%d -> %d" % (nodeID1, nodeID2))
+				
+				#pylab.xlim(-5,10)
+				#pylab.ylim(-8,8)
+				pylab.savefig("plotShapeConstraint%04u_%04u.png" % (id, numEdges))
+	
+				numEdges += 1
+	
+
+	def drawConstraints(self, id = []):
+		
+		poses = []
+		for i in range(self.numNodes):
+			poses.append(self.nodeHash[i].getGlobalGPACPose())
+	
+		cornerTrans = []
+
+		pylab.clf()
+		for i in range(self.numNodes):
+
+			hull = computeBareHull(self.nodeHash[i], sweep = False)
+			hull.append(hull[0])
+
+			node1 = self.nodeHash[i]
+			currPose = node1.getGlobalGPACPose()
+			currProfile = Pose(currPose)
+			posture1 = node1.getStableGPACPosture()
+			posture_trans = []
+			for p in posture1:
+				posture_trans.append(gen_icp.dispOffset(p, currPose))	
+
+			hull_trans = []
+			for p in hull:
+				hull_trans.append(gen_icp.dispOffset(p, currPose))	
+			
+			" extract corner points for each node "
+			cornerCandidates = node1.cornerCandidates
+			cornerPoints = []
+			for cand in cornerCandidates:
+				cornerPoints.append(cand[0])
+			
+			for p in cornerPoints:
+				cornerTrans.append(gen_icp.dispOffset(p, currPose))		
+			
+			if i == (self.numNodes - 1):
+				xP = []
+				yP = []
+				for p in posture_trans:
+					xP.append(p[0])
+					yP.append(p[1])
+				pylab.plot(xP,yP, color=(255/256.,182/256.,193/256.))	
+
+			xP = []
+			yP = []
+			for p in hull_trans:
+				xP.append(p[0])
+				yP.append(p[1])
+			pylab.plot(xP,yP, color=(112/256.,147/256.,219/256.))	
+
+		for i in range(len(self.poseGraph.cornerBins)):
+			bin = self.poseGraph.cornerBins[i]
+			clusterTrans = []
+			for item in bin:
+				nodeID, cornerID = item
+				currPose = self.nodeHash[nodeID].getGlobalGPACPose()
+				cornerP = self.nodeHash[nodeID].cornerCandidates[cornerID][0]
+				clusterTrans.append(gen_icp.dispOffset(cornerP, currPose))
+
+			if len(clusterTrans) > 0:
+				xP = []
+				yP = []
+				for p in clusterTrans:
+					xP.append(p[0])
+					yP.append(p[1])
+				pylab.scatter(xP,yP, color=self.colors[i], linewidth=1, zorder=10)	
+
+		self.drawWalls()
+
+
+			
+		pylab.xlim(-5,10)
+		pylab.ylim(-8,8)
+		if id == []:
+			pylab.savefig("plotEstimate%04u.png" % self.numNodes)
+		else:
+			pylab.savefig("plotEstimate%04u.png" % id)
+
+	def drawWalls(self):
+		for wall in self.walls:
+			xP = []
+			yP = []
+			for i in range(len(wall)):
+				p = wall[i]
+				xP.append(p[0])
+				yP.append(p[1])
+	
+			pylab.plot(xP,yP, linewidth=2, color = 'g')
+
 	def localizeCurrentNode(self):
-		self.poseGraph.localizeCurrentNode()
+		#self.poseGraph.localizeCurrentNode()
+		self.poseGraph.correctNode(self.currNode.nodeID)
 
 	def __getattr__(self, name):
 
@@ -331,6 +667,10 @@ class MapGraph:
 
 		print "Voronoi Map Updated"
 		
+		self.navRoadMap = NavRoadMap(self.mapSize, self.probe, self.voronoiMap.getGraph(), localNode = self.currNode)
+
+		print "Navigation Road Map Updated"
+
 		self.isDirty = False
 
 

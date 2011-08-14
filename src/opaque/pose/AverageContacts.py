@@ -492,13 +492,13 @@ class AverageContacts:
 			newNode = self.createNewNode(19, forcePose = estPose)
 			##self.createEdges(newNode)
 
-		print "self.activeRef =", self.activeRef
-		print "startJoint, endJoint =", startJoint, endJoint
+		#print "self.activeRef =", self.activeRef
+		#print "startJoint, endJoint =", startJoint, endJoint
 
 		for i in range(startJoint, endJoint):
 			#if not self.activeRef[i] and not self.maxErrorReached[i] and (self.avgErr[i] > self.errorThresh) and (self.mask[i] > self.maskThresh) and (self.maskTime[i] > self.timeThresh):
 			if not self.activeRef[i]:
-				print "creating reference node", i
+				#print "creating reference node", i
 
 				# create a new reference node
 				newNode = self.createNewNode(i)
