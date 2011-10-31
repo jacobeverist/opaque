@@ -267,29 +267,28 @@ class SnakeApp(sf.Application):
 			
 			" junction test "
 
-			# Y - junction, test 1 			
-			"""
-			WLEN = 3.0
-			WLEN2 = 5.0
-			wall1 = [[-14.0, -0.2], [-4.0, -0.2], [-4.0 + WLEN*cos(pi/3), -0.2 - WLEN*sin(pi/3)]]
-			wall2 = [[-4.0 + WLEN2*cos(pi/3), 0.2 + WLEN2*sin(pi/3)], [-4.0, 0.2] ,[-14.0, 0.2]]
-			w1 = wall1[2]
-			w2 = wall2[0]
+			# Y - junction, test 1 				
+			#WLEN = 3.0
+			#WLEN2 = 5.0
+			#wall1 = [[-14.0, -0.2], [-4.0, -0.2], [-4.0 + WLEN*cos(pi/3), -0.2 - WLEN*sin(pi/3)]]
+			#wall2 = [[-4.0 + WLEN2*cos(pi/3), 0.2 + WLEN2*sin(pi/3)], [-4.0, 0.2] ,[-14.0, 0.2]]
+			#w1 = wall1[2]
+			#w2 = wall2[0]
+
+			#wall3 = [[w1[0] + 0.4*cos(pi/6), w1[1] + 0.4*sin(pi/6)], [0.4*cos(pi/6) - 4, 0.0], [w2[0] + 0.4*cos(pi/6), w2[1] - 0.4*sin(pi/6)], w2]
+			#lp = wall3[0]
+			#rp = wall3[2]
+
+			#wall6 = [lp, [lp[0] + WLEN*cos(pi/6), lp[1] + WLEN*sin(pi/6)]]
+			#wall6.append([wall6[1][0] + 0.4*cos(pi/3), wall6[1][1] - 0.4*sin(pi/3)])
+			#wall6.append([wall6[2][0] - WLEN*cos(pi/6), wall6[2][1] - WLEN*sin(pi/6)])
+			#wall6.append([wall6[3][0] + WLEN*cos(pi/3), wall6[3][1] - WLEN*sin(pi/3)])
+			#wall6.append([wall6[4][0] - 0.4*cos(pi/6), wall6[4][1] - 0.4*sin(pi/6)])
+			#wall6.append(w1)
+			#wall6.reverse()
 			
-			wall3 = [[w1[0] + 0.4*cos(pi/6), w1[1] + 0.4*sin(pi/6)], [0.4*cos(pi/6) - 4, 0.0], [w2[0] + 0.4*cos(pi/6), w2[1] - 0.4*sin(pi/6)], w2]
-			lp = wall3[0]
-			rp = wall3[2]
+			#walls = [wall1, wall2, wall3, wall6]
 			
-			wall6 = [lp, [lp[0] + WLEN*cos(pi/6), lp[1] + WLEN*sin(pi/6)]]
-			wall6.append([wall6[1][0] + 0.4*cos(pi/3), wall6[1][1] - 0.4*sin(pi/3)])
-			wall6.append([wall6[2][0] - WLEN*cos(pi/6), wall6[2][1] - WLEN*sin(pi/6)])
-			wall6.append([wall6[3][0] + WLEN*cos(pi/3), wall6[3][1] - WLEN*sin(pi/3)])
-			wall6.append([wall6[4][0] - 0.4*cos(pi/6), wall6[4][1] - 0.4*sin(pi/6)])
-			wall6.append(w1)
-			wall6.reverse()
-			
-			wall7 = [[-4.6+6.0,-0.2],[-4.6+6.0,0.2]]
-			"""
 	
 			# T - junctions, test 2
 			#wall1 = [[-14.0, -0.2], [-4.0, -0.2], [-4,-4.2], [-3.6,-4.2], [-3.6,-0.2], [2.0,-0.2], [2.0,0.2]]
@@ -305,10 +304,10 @@ class SnakeApp(sf.Application):
 
 
 			# L - junction, right, test 4
-			#wall1 = [[-14.0, -0.2], [-3.6,-0.2], [-3.6,0.2]]
-			#wall2 = [[-14.0, 0.2], [-4.0, 0.2], [-4.0,3.6], [-3.6,3.6], [-3.6,0.2]]
-			#wall2.reverse()
-			#walls = [wall1, wall2]
+			wall1 = [[-14.0, -0.2], [-3.6,-0.2], [-3.6,0.2]]
+			wall2 = [[-14.0, 0.2], [-4.0, 0.2], [-4.0,3.6], [-3.6,3.6], [-3.6,0.2]]
+			wall2.reverse()
+			walls = [wall1, wall2]
 
 			# 45 degree junction, right, test 5
 			#WLEN2 = 5.0
@@ -320,16 +319,15 @@ class SnakeApp(sf.Application):
 			#walls = [wall1, wall2, wall3]
 			
 			# cross - junctions, test 6
-			wall1 = [[-14.0, -0.2], [-4.0, -0.2], [-4,-4.2], [-3.6,-4.2], [-3.6,-0.2], [2.0,-0.2], [2.0,0.2]]
-			wall2 = [[-14.0, 0.2], [-4.0, 0.2], [-4.0,3.6], [-3.6,3.6], [-3.6,0.2], [2.0,0.2]]
-			wall2.reverse()
-			walls = [wall1, wall2]
+			#wall1 = [[-14.0, -0.2], [-4.0, -0.2], [-4,-4.2], [-3.6,-4.2], [-3.6,-0.2], [2.0,-0.2], [2.0,0.2]]
+			#wall2 = [[-14.0, 0.2], [-4.0, 0.2], [-4.0,3.6], [-3.6,3.6], [-3.6,0.2], [2.0,0.2]]
+			#wall2.reverse()
+			#walls = [wall1, wall2]
 			
 			
 			
 			#walls = [wall1]
 			
-			#walls = [wall1, wall2, wall3, wall6]
 			
 			#wall1 = [[-14.0, -0.2], [-4.0, -0.2], [-4.0, 0.2] ,[-14.0, 0.2]]
 			#walls = [wall1]

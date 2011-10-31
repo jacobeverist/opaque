@@ -115,10 +115,10 @@ class TestProcess(SnakeControl):
 			self.mapGraph = VisualGraph(self.probe, self.contacts)
 
 			# cross - junctions, test 6
-			wall1 = [[-14.0, -0.2], [-4.0, -0.2], [-4,-4.2], [-3.6,-4.2], [-3.6,-0.2], [2.0,-0.2], [2.0,0.2]]
-			wall2 = [[-14.0, 0.2], [-4.0, 0.2], [-4.0,3.6], [-3.6,3.6], [-3.6,0.2], [2.0,0.2]]
-			wall2.reverse()
-			walls = [wall1, wall2]			
+			#wall1 = [[-14.0, -0.2], [-4.0, -0.2], [-4,-4.2], [-3.6,-4.2], [-3.6,-0.2], [2.0,-0.2], [2.0,0.2]]
+			#wall2 = [[-14.0, 0.2], [-4.0, 0.2], [-4.0,3.6], [-3.6,3.6], [-3.6,0.2], [2.0,0.2]]
+			#wall2.reverse()
+			#walls = [wall1, wall2]			
 
 			# 45 degree junction, right, test 5
 			#WLEN2 = 5.0
@@ -134,7 +134,7 @@ class TestProcess(SnakeControl):
 			#wall2 = [[-14.0, 0.2], [-4.0, 0.2], [-4.0,3.6], [-3.6,3.6], [-3.6,0.2]]
 			#wall2.reverse()
 			#walls = [wall1, wall2]
-
+			
 			# L - junction, left, test 3
 			#wall1 = [[-14.0, -0.2], [-4.0, -0.2], [-4,-4.2], [-3.6,-4.2], [-3.6,-0.2], [-3.6,0.2]]
 			#wall2 = [[-14.0, 0.2], [-3.6,0.2]]
@@ -149,7 +149,7 @@ class TestProcess(SnakeControl):
 
 			# Y - junction, test 1 			
 
-			"""
+			
 			WLEN = 3.0
 			WLEN2 = 5.0
 			wall1 = [[-14.0, -0.2], [-4.0, -0.2], [-4.0 + WLEN*cos(pi/3), -0.2 - WLEN*sin(pi/3)]]
@@ -169,7 +169,7 @@ class TestProcess(SnakeControl):
 			wall6.append(w1)
 			wall6.reverse()
 			walls = [wall1, wall2, wall3, wall6]
-			"""
+			
 
 
 			
@@ -198,15 +198,27 @@ class TestProcess(SnakeControl):
 			#self.mapGraph.loadSeries("testData/junctionTest3", 19)
 			#self.mapGraph.loadSeries("testData/junctionTest2", 192)
 			#self.mapGraph.loadSeries("testData/junctionTest1", 117)
-
+			#exit()
+			
 			#self.mapGraph.loadSeries("testData/junctionTest1", 117)
 
-			self.mapGraph.loadSeries("testData/junctionTest7", 40)
+			#self.mapGraph.loadSeries("testData/junctionTest7", 40)
+			#self.mapGraph.loadSeries("testData/junctionTest7", 28)
+			#self.mapGraph.loadSeries("testData/junctionTest8", 40)
+			#self.mapGraph.loadSeries("testData/junctionTest9", 40)
+			#self.mapGraph.loadSeries("testData/junctionTest11", 40)
+			#self.mapGraph.loadSeries("testData/junctionTest11", 30)
+			#self.mapGraph.loadSeries(".", 40)
+			#self.mapGraph.loadSeries(".", 3)
+			self.mapGraph.loadSeries("testData/junctionTest13", 40)
+
+			#self.mapGraph.loadSeries("testData/junctionTest8", 40)
+			#self.mapGraph.loadSeries("testData/junctionTest8", 20)
 
 
 			#self.mapGraph.loadSeries("testData/junctionTest1", 13)
 			#self.mapGraph.loadSeries("testData/junctionTest1", 66)
-			#self.mapGraph.loadSeries("testData/junctionTest1", 67)
+			#self.mapGraph.loadSeries("tes tData/junctionTest1", 67)
 
 			#self.mapGraph.loadSeries("testData/junctionTest1", 25)
 			#self.mapGraph.loadSeries("testData/junctionTest2", 26)

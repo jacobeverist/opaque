@@ -391,6 +391,7 @@ class TestModular(SnakeControl):
 				self.mapGraph.saveLocalMap()
 				self.mapGraph.drawConstraints()				
 				self.mapGraph.newInPlaceNode(False, self.direction)
+				#self.mapGraph.newNode(self.stepDist, False, self.direction)
 				#self.mapGraph.currNode.resetPosture()		
 			
 		elif self.globalState == 8:
@@ -445,11 +446,16 @@ class TestModular(SnakeControl):
 				
 				print "foreAvg =", foreAvg
 				#foreAvg = 2.0
-				#foreAvg = 0.0
+				foreAvg = 0.0
 				if foreAvg >= 1.4:
 					self.globalState = 10
 				else:
 					self.globalState = 4
+					
+				if self.mapGraph.numNodes > 26:
+					self.direction = False	
+				if self.mapGraph.numNodes > 40:
+					exit()	
 					
 		elif self.globalState == 10:
 			
@@ -582,7 +588,7 @@ class TestModular(SnakeControl):
 			
 			" extend the front "
 			self.behavior = FrontExtend(self.robotParam, self.contacts, self.direction)
-			self.behavior.reset(probeState, True)
+			self.behavior.reset(probeState, self.direction)
 			
 			" hold the back pose anchor "
 			self.holdP = HoldPosition(self.robotParam)
@@ -1003,6 +1009,7 @@ class TestModular(SnakeControl):
 				self.mapGraph.drawConstraints()				
 				
 				self.mapGraph.newInPlaceNode(False, self.direction)
+				#self.mapGraph.newNode(self.stepDist, False, self.direction)
 				#self.mapGraph.currNode.resetPosture()		
 				self.localPathState = 4			
 			

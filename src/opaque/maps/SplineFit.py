@@ -231,8 +231,11 @@ class SplineFit:
 		out = scipy.interpolate.splev(unew,self.tck)
 
 		points = []
-		for i in range(len(out[0])):
-			points.append([out[0][i],out[1][i]])
+		if len(unew) > 1:
+			for i in range(len(out[0])):
+				points.append([out[0][i],out[1][i]])
+		elif len(unew) == 1:
+			points = [out]
 
 		#print "measuring", u1, "to", u2+iter, "with", len(points), "results"
 		#print points
@@ -447,6 +450,7 @@ class SplineFit:
 		return zipPoints
 	
 	def getUVecSet(self, u_set):
+		
 		for u in u_set:
 			if u < 0.0 or u > 1.0:
 				print "ERROR: u =", u
@@ -456,7 +460,7 @@ class SplineFit:
 		
 		# zip the points together
 		zipPoints = []
-				
+		
 		iter = 0.01
 		
 		for i in range(len(u_set)):

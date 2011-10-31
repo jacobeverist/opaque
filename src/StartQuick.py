@@ -30,9 +30,7 @@ if __name__ == '__main__':
 		" add control program "		
 		probe = createTest()
 
-		
 		#runTest(probe)
-		
 		
 		" while loop "		
 		cProfile.run('runTest(probe)', 'test_prof')

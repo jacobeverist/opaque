@@ -302,7 +302,7 @@ class LocalOccMap:
 		return actualConfig	
 	
 	def computeFreeSpace(self):
-							
+		
 		# 1. for every joint reference, compute the distal desired joint configuration and the actual joint configuration
 		# 2. for desired joint configuration, set occupancy to obstacle if not already free space
 		# 3. for actual joint configuration, set to free space, even if previously set as obstacle
