@@ -121,6 +121,9 @@ class LocalNode:
 		
 		self.cornerCandidates = []
 		
+		
+		self.hasDeparture = False
+		
 		#pylab.clf()
 
 		#xP = []
@@ -130,6 +133,12 @@ class LocalNode:
 		#	yP.append(p[1])
 		
 		#pylab.plot(xP,yP, color='b')
+		
+	def setDeparture(self, val):
+		self.hasDeparture = val
+		
+	def getDeparture(self):
+		return self.hasDeparture
 		
 	def resetPosture(self):
 		
@@ -965,6 +974,10 @@ class LocalNode:
 		#gndProf = Pose(self.gndPose)
 		#self.setGndPose(gndProf.convertLocalOffsetToGlobal(self.gndRootPose))
 		
+		#f = open(dirName + "/posture%04u.txt" % self.nodeID, 'r')
+		#self.localPosture = eval(f.read().rstrip())
+		#f.close()
+		#self.centerCurve = GPACurve(self.localPosture, rotated=True)
 		
 		" compute a fitted curve of a center point "
 		self.centerCurve = GPACurve(self.localPosture, rotated=True)
@@ -1030,6 +1043,7 @@ class LocalNode:
 
 
 			distFromCenter = sqrt(pnt2[0]**2 + pnt2[1]**2)
+			#print "candidate:", cand
 			#print "distFromCenter =", distFromCenter, self.nodeID
 
 
@@ -1973,25 +1987,26 @@ class LocalNode:
 	def computeAlpha2(self, points, radius = 0.2):
 		
 		numPoints = len(points)
-		inputStr = str(numPoints) + " "
 
-		" alpha shape circle radius "
-		inputStr += str(radius) + " "
+		isDone = False
 		
-		for p in points:
-			p2 = copy(p)
-			" add a little bit of noise to avoid degenerate conditions in CGAL "
-			p2[0] += random.gauss(0.0,0.0001)
-			p2[1] += random.gauss(0.0,0.0001)
+		while not isDone:
 
-			inputStr += str(p2[0]) + " " + str(p2[1]) + " "
-		
-		inputStr += "\n"
-		
-		#print inputStr
-		
-		if True:
-
+			inputStr = str(numPoints) + " "
+	
+			" alpha shape circle radius "
+			inputStr += str(radius) + " "
+			
+			for p in points:
+				p2 = copy(p)
+				" add a little bit of noise to avoid degenerate conditions in CGAL "
+				p2[0] += random.gauss(0.0,0.0001)
+				p2[1] += random.gauss(0.0,0.0001)
+	
+				inputStr += str(p2[0]) + " " + str(p2[1]) + " "
+			
+			inputStr += "\n"
+			
 			try:			
 				" start the subprocess "
 				subProc = Popen(["./alpha2.exe"], stdin=PIPE, stdout=PIPE)
@@ -2015,9 +2030,11 @@ class LocalNode:
 				vertices = []
 				for i in range(len(sArr)/2):
 					vertices.append([float(sArr[2*i]), float(sArr[2*i + 1])])
+				isDone = True
 			except:
-				print "hull has holes!"
+				print "hull has holes!  retrying..."
 				#print sArr
+		"""
 		else:
 			maxX = 0
 			minX = 1e10
@@ -2042,7 +2059,7 @@ class LocalNode:
 			vertices.append([maxX,minY])
 			vertices.append([minX,minY])
 			vertices.append([minX,maxY])
-		
+		"""
 			
 		return vertices
 							

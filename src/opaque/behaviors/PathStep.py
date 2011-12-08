@@ -23,7 +23,7 @@ from math import pi, cos, sin, fabs, sqrt
 
 class PathStep(Behavior):
 
-	def __init__(self, robotParam, probeState, contacts, mapGraph, direction = True, path = []):
+	def __init__(self, robotParam, probeState, contacts, mapGraph, path = []):
 		Behavior.__init__(self, robotParam)
 
 		print "creating PathStep"
@@ -42,11 +42,11 @@ class PathStep(Behavior):
 		self.compliantTorque = 0.005
 		#self.compliantTorque = 3.0
 		
-		self.direction = direction
+		self.direction = True
 		self.isInit = False
 
 		self.holdT = HoldTransition(robotParam)
-		self.holdSlideT = HoldSlideTransition(robotParam, direction)
+		#self.holdSlideT = HoldSlideTransition(robotParam, direction)
 
 		self.cPoints = []
 		
@@ -78,7 +78,8 @@ class PathStep(Behavior):
 		#self.jerkAngles = [0.0,0.0,0.0,0.0]
 		#self.prevJerkAngles = [0.0,0.0,0.0,0.0]
 		
-		if direction:
+		#if direction:
+		if True:
 			self.spliceJoint = 7
 		else:
 			self.spliceJoint = 31
@@ -147,6 +148,10 @@ class PathStep(Behavior):
 		
 		self.computeCurve()
 						
+						
+	def getDirection(self):
+		return self.direction
+	
 	def setDirection(self, isForward):
 
 		self.direction = isForward

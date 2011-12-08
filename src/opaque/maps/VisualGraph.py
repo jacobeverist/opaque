@@ -48,7 +48,7 @@ class VisualGraph:
 				
 				" since estimated poses are modified from the original motion estimation, we need to restore them "
 
-				f = open(dirName + "/motion_constraints_%04u.txt" % i, 'r')
+				f = open(dirName + "/motion_constraints_%04u.txt" % (i+1), 'r')
 				motion_constraints = eval(f.read().rstrip())
 				f.close()				
 				transform = motion_constraints[-1][2]
@@ -72,12 +72,12 @@ class VisualGraph:
 			#if i % 10 == 0:
 			#	self.poseGraph.makeCornerBinConsistent()
 
-			self.poseGraph.addCornerConstraints(i)			
+			#self.poseGraph.addCornerConstraints(i)			
 			self.poseGraph.mergePriorityConstraints()
 
 	
 			self.drawConstraints(i)
-			self.drawTopology2(i)
+			#self.drawTopology2(i)
 			#self.drawMedialPath(i)
 			
 			#self.drawShapeConstraints(i)
@@ -87,13 +87,13 @@ class VisualGraph:
 		self.drawPoses()
 		
 		#self.drawAllConstraints()
-
+		
 		#exit()
 
-		self.poseGraph.performOverlapConstraints()
-		self.drawMap()
-		self.drawConstraints(num_poses)
-		self.drawTopology2(num_poses)
+		#self.poseGraph.performOverlapConstraints()
+		#self.drawMap()
+		#self.drawConstraints(num_poses)
+		#self.drawTopology2(num_poses)
 		#self.drawMedialPath(num_poses)
 		"""
 		self.poseGraph.performShapeConstraints()
@@ -105,9 +105,9 @@ class VisualGraph:
 		#	self.poseGraph.addCornerConstraints(i)			
 		#	self.poseGraph.mergePriorityConstraints()
 		
-		self.drawMap()
-		self.drawConstraints(num_poses+1)
-		self.drawTopology2(num_poses+1)
+		#self.drawMap()
+		#self.drawConstraints(num_poses)
+		#self.drawTopology2(num_poses+1)
 		#self.drawMedialPath(num_poses+1)
 		
 		self.drawAllConstraints()
@@ -117,8 +117,8 @@ class VisualGraph:
 		#self.drawMap()
 		#self.drawConstraints(num_poses+2)
 		#self.drawMedialPath(num_poses+2)
-		
-		self.drawPoses()
+		#
+		#self.drawPoses()
 
 	def testHypotheses(self, dirName, num_poses, hypFile):
 		self.sensorHypotheses = self.poseGraph.sensorHypotheses

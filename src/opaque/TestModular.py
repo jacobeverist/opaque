@@ -68,6 +68,7 @@ class TestModular(SnakeControl):
 		self.exploreRoot = [-3.5,0.0]
 		self.pathStep = 0
 		
+		self.localPathDirection = True
 		self.localPathState = 0
 		self.localState = 0
 		self.globalState = 0
@@ -446,16 +447,16 @@ class TestModular(SnakeControl):
 				
 				print "foreAvg =", foreAvg
 				#foreAvg = 2.0
-				foreAvg = 0.0
+				#foreAvg = 0.0
 				if foreAvg >= 1.4:
 					self.globalState = 10
 				else:
 					self.globalState = 4
 					
-				if self.mapGraph.numNodes > 26:
-					self.direction = False	
-				if self.mapGraph.numNodes > 40:
-					exit()	
+				#if self.mapGraph.numNodes > 26:
+				#	self.direction = False	
+				#if self.mapGraph.numNodes > 40:
+				#	exit()	
 					
 		elif self.globalState == 10:
 			
@@ -477,8 +478,8 @@ class TestModular(SnakeControl):
 
 		elif self.globalState == 11:
 
-			if self.mapGraph.numNodes > 40:
-				exit()
+			#if self.mapGraph.numNodes > 40:
+			#	exit()
 			
 			" Instantiate the Path Step behavior and give it the path to follow "
 		
@@ -770,7 +771,7 @@ class TestModular(SnakeControl):
 			print "START:  doPathStep()", direction
 
 			" instantiate the behavior "
-			self.behavior = PathStep(self.robotParam, probeState, self.contacts, self.mapGraph, direction)
+			self.behavior = PathStep(self.robotParam, probeState, self.contacts, self.mapGraph)
 
 			newPaths = deepcopy(wayPaths)
 			if not direction:
@@ -780,6 +781,9 @@ class TestModular(SnakeControl):
 
 			" anchoring turned off "
 			self.isAnchored = False
+
+			self.localPathDirection = self.behavior.getDirection()
+
 			
 			self.localState = 1
 			
@@ -893,7 +897,7 @@ class TestModular(SnakeControl):
 
 				self.localPathState = 2
 
-				self.mapGraph.newNode(self.stepDist, True, self.localDirection)
+				self.mapGraph.newNode(self.stepDist, True, self.localPathDirection)
 				#self.mapGraph.newNode(self.stepDist, self.localDirection)
 				self.mapGraph.forceUpdate(False)
 
@@ -1008,7 +1012,7 @@ class TestModular(SnakeControl):
 				self.mapGraph.saveLocalMap()
 				self.mapGraph.drawConstraints()				
 				
-				self.mapGraph.newInPlaceNode(False, self.direction)
+				self.mapGraph.newInPlaceNode(False, self.localPathDirection)
 				#self.mapGraph.newNode(self.stepDist, False, self.direction)
 				#self.mapGraph.currNode.resetPosture()		
 				self.localPathState = 4			

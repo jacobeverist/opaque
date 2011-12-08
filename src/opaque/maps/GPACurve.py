@@ -41,17 +41,30 @@ class GPACurve:
 
 		" perturb the points to prevent degeneracies "
 		for p in newP:
-			intArray[0].append(p[0] + gauss(0.0,0.0001))
-			intArray[1].append(p[1] + gauss(0.0,0.0001))
+			intArray[0].append(p[0])
+			intArray[1].append(p[1])
+			#intArray[0].append(p[0] + gauss(0.0,0.0001))
+			#intArray[1].append(p[1] + gauss(0.0,0.0001))
 
 		" performing spline fit "
 		self.tck, self.u = scipy.interpolate.splprep(intArray, s = self.smoothNess, k=self.kp)
 
-		" perturb the points to prevent degeneracies "	
-		self.spline = scipy.interpolate.UnivariateSpline(intArray[0], intArray[1], s = 2.0)
+		#print "spline points:", newP
 
-		knots = self.spline.get_knots()
-		xMid = (knots[0] + knots[1])/2.0
+		" perturb the points to prevent degeneracies "	
+		#self.spline = scipy.interpolate.UnivariateSpline(intArray[0], intArray[1], s = 2.0)
+		
+		#print self.spline
+
+
+		#knots = self.spline.get_knots()
+		#print knots
+		#xMid = (knots[0] + knots[1])/2.0
+		
+		self.isChanged = True
+		self.savedPose = []
+		
+		self.getPose()
 
 
 	def getKnots(self):
@@ -134,12 +147,18 @@ class GPACurve:
 	    
 	    return rotatedPosture, angle
 	  
-	  
-	def getPose(self):
+
+
+	def getMidPose(self):
 		
 		knots = self.spline.get_knots()
 		
-		xMid = (knots[0] + knots[1])/2.0
+		xSum = 0.0
+		for i in range(len(knots)):
+			xSum += knots[i]
+			
+		xMid = xSum / len(knots)
+		#xMid = (knots[0] + knots[1])/2.0
 		yMid = self.spline(xMid)
 
 		x2 = xMid + 0.001
@@ -286,6 +305,81 @@ class GPACurve:
 			# decrease the estimate
 			if estDist > dist:
 				estU -= jumpVal
+
+	# compute the distance along the curve between the points parameterized by u1 and u2
+	def getPose(self, iter = 0.0001):
+
+
+		if not self.isChanged:
+			return self.savedPose
+		
+		u1 = 0.0
+		u2 = 1.0
+		totalDist = 0.0
+
+		unew = scipy.arange(u1, u2 + iter, iter)
+		out = scipy.interpolate.splev(unew,self.tck)
+
+		points = []
+		for i in range(len(out[0])):
+			points.append([out[0][i],out[1][i]])
+
+		origin = points.pop(0)
+		while len(points) > 0:
+			pnt = points[0]
+			#print pnt, origin
+			dist = sqrt( (pnt[0]-origin[0])**2 + (pnt[1]-origin[1])**2 )
+			totalDist += dist
+			origin = points.pop(0)
+
+
+		halfDist = totalDist / 2.0
+
+		#print "totalDist =", totalDist
+		#print "halfDist =", halfDist
+
+		totalDist = 0.0
+
+		points = []
+		for i in range(len(out[0])):
+			points.append([out[0][i],out[1][i]])
+
+		midPoint1 = []
+		midPoint2 = []
+		origin = points[0]
+		for i in range(1,len(points)):
+			pnt = points[i]
+			dist = sqrt( (pnt[0]-origin[0])**2 + (pnt[1]-origin[1])**2 )
+			totalDist += dist
+			origin = pnt
+
+			if totalDist >= halfDist:
+				#print "midPoint =", i, i+1, "at", totalDist
+				midPoint1 = points[i]
+				midPoint2 = points[i+1]
+				break
+
+		if self.rotated:
+			midPoint1 = self.rotateProfile.convertLocalToGlobal(midPoint1)
+			midPoint2 = self.rotateProfile.convertLocalToGlobal(midPoint2)
+
+
+		# tangent vector
+		vec = [midPoint2[0] - midPoint1[0], midPoint2[1] - midPoint1[1]]
+
+		# normalize
+		mag = sqrt(vec[0]**2 + vec[1]**2)
+		vec = [vec[0]/mag, vec[1]/mag]
+
+		angle = acos(vec[0])
+		if asin(vec[1]) < 0:
+			angle = -angle
+		
+		self.savedPose = [midPoint1[0], midPoint1[1], angle]
+		self.isChanged = False
+		
+		return self.savedPose
+
 
 	# compute the distance along the curve between the points parameterized by u1 and u2
 	def dist(self, u1, u2, iter = 0.0001):

@@ -110,7 +110,7 @@ class SplineFit:
 
 		magDist = abs(dist)
 		
-		#print "dist =", dist, "startU =", startU
+		#print "dist =", dist, "startU =", startU, "magDist =", magDist
 		
 		if dist >= 0:
 			highU = 1.0
@@ -157,6 +157,8 @@ class SplineFit:
 			
 			" terminate when close enough "
 			if abs(magDist-midDist) < 0.01:
+				#print "returning u =", midU, "for midU =", midU
+				#print
 				return midU
 
 			count += 1

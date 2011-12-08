@@ -101,7 +101,7 @@ def extractCornerCandidates(pilImg, estPose = []):
 	global saveCount
 	global histCount
 
-	isRender = False
+	isRender = True
 	
 
 
@@ -111,8 +111,8 @@ def extractCornerCandidates(pilImg, estPose = []):
 	img = cv.CreateImageHeader(pilImg.size, cv.IPL_DEPTH_8U, 1)
 	cv.SetData(img, pilImg.tostring())
 
-	if isRender:
-		cv.SaveImage("%04u_0.png" % saveCount, img)
+	#if isRender:
+	#	cv.SaveImage("%04u_0.png" % saveCount, img)
 	
 	if isRender and len(estPose) > 0:
 		color_dst = cv.CreateImage(cv.GetSize(img), 8, 3)
@@ -173,7 +173,6 @@ def extractCornerCandidates(pilImg, estPose = []):
 		cv.SaveImage("%04u_0.png" % saveCount, color_dst)
 	
 	CORNER_THRESH = 400
-	ROI_SIZE = 15
 
 	size = cv.GetSize(img)
 	maxX = size[0]
@@ -183,6 +182,11 @@ def extractCornerCandidates(pilImg, estPose = []):
 	" 1st, run Sobel corner detector to detect corners "
 	corners = cv.CreateImage(cv.GetSize(img), cv.IPL_DEPTH_32F, 1)
 	cv.PreCornerDetect(img, corners, apertureSize=9)
+
+	" 1st, run Sobel corner detector to detect corners "
+	corners2 = cv.CreateImage(cv.GetSize(img), cv.IPL_DEPTH_32F, 1)
+	cv.PreCornerDetect(img, corners2, apertureSize=13)
+
 
 	" 2nd, run Canny edge detector to get the boundary points "
 	edges = cv.CreateImage(cv.GetSize(img), cv.IPL_DEPTH_8U, 1)
@@ -212,7 +216,8 @@ def extractCornerCandidates(pilImg, estPose = []):
 		
 	#print count, "points over", maxVal
 
-
+	#ROI_SIZE = 10
+	ROI_SIZE = 15
 	DIST_RES = 6
 	ANG_RES = 0.1* pi /180.
 	THRESH = 10 
@@ -226,7 +231,7 @@ def extractCornerCandidates(pilImg, estPose = []):
 	cornerCandidates = []
 	" 4th, for each maximum point, compute a corner centered on the point "
 	for pnt in maxPoints:
-		cv.SetImageROI(edges, (pnt[0]-(ROI_SIZE-1)/2, pnt[1]-(ROI_SIZE-1)/2, 15, 15))
+		cv.SetImageROI(edges, (pnt[0]-(ROI_SIZE-1)/2, pnt[1]-(ROI_SIZE-1)/2, ROI_SIZE, ROI_SIZE))
 
 		color_dst = cv.CreateImage(cv.GetSize(edges), 8, 3)
 		cv.CvtColor(edges, color_dst, cv.CV_GRAY2BGR)
@@ -257,13 +262,16 @@ def extractCornerCandidates(pilImg, estPose = []):
 		results.sort()
 		results.reverse()
 
+
+		#print "top edge votes for point:", pnt
 		TOP_NUM = 10
 		initVals = []
 		for k in range(TOP_NUM):
 			rho, theta = results[k][1]
+			#print results[k][0]
 			for m in range(results[k][0]):
 				initVals.append(theta)
-
+		#print
 
 
 		" 8th, perform k-means clustering to select the two most likely edges that would form a corner "
@@ -542,7 +550,7 @@ def extractCornerCandidates(pilImg, estPose = []):
 		#print resultVector
 
 		numCandidates = resultVector.max()
-		avgs = [[[0.0,0.0],0.0,[0.0, 0.0]] for i in range(numCandidates)]
+		avgs = [[[0.0,0.0],0.0,[0.0, 0.0],0.0,0.0] for i in range(numCandidates)]
 		nums = [0 for i in range(numCandidates)]
 
 		for k in range(len(points)):
@@ -550,6 +558,9 @@ def extractCornerCandidates(pilImg, estPose = []):
 			valY = features[k,1]
 			cornerVal = cornerCandidates[k][4]
 			inwardVec = cornerCandidates[k][3]
+
+			theta1 = cornerCandidates[k][0][1]
+			theta2 = cornerCandidates[k][1][1]
 
 			clustID = resultVector[k]
 			" average point "
@@ -563,6 +574,10 @@ def extractCornerCandidates(pilImg, estPose = []):
 			avgs[clustID-1][2][0] += inwardVec[0]
 			avgs[clustID-1][2][1] += inwardVec[1]
 
+			" average the thetas "
+			avgs[clustID-1][3] += theta1
+			avgs[clustID-1][4] += theta2
+			
 			nums[clustID-1] += 1
 
 		for k in range(numCandidates):
@@ -576,11 +591,118 @@ def extractCornerCandidates(pilImg, estPose = []):
 			vec[1] /= mag
 			avgs[k][2] = vec
 
-			finalCandidates.append((avgs[k][0], avgs[k][1], avgs[k][2]))
+			avgs[k][3] /= nums[k]
+			avgs[k][4] /= nums[k]
+
+
+			finalCandidates.append((avgs[k][0], avgs[k][1], avgs[k][2], avgs[k][3], avgs[k][4]))
 	else:
 
 		for ((rho1,theta1),(rho2,theta2), point, inwardVec, cornerAngle) in cornerCandidates:
-			finalCandidates.append((point, cornerAngle, inwardVec))
+			finalCandidates.append((point, cornerAngle, inwardVec, theta1, theta2))
+
+	cv.ResetImageROI(edges)
+
+
+	ROI_SIZE_2 = 21
+	finalFinalCandidates = []
+
+	for (point, cornerAngle, inwardVec, theta1, theta2) in finalCandidates:
+		pnt = point
+		#cv.SetImageROI(edges, (pnt[0]-(ROI_SIZE_2-1)/2, pnt[1]-(ROI_SIZE_2-1)/2, ROI_SIZE_2, ROI_SIZE_2))
+
+		" 5th, create a series of hypothesized lines going through the centroid "
+		rho1 = (ROI_SIZE_2-1.)/2. * cos(theta1) + (ROI_SIZE_2-1.)/2. * sin(theta1)
+		rho2 = (ROI_SIZE_2-1.)/2. * cos(theta2) + (ROI_SIZE_2-1.)/2. * sin(theta2)
+
+		halfAngle = cornerAngle / 2.0
+		rightVec = [inwardVec[0]*cos(halfAngle) - inwardVec[1]*sin(halfAngle), inwardVec[0]*sin(halfAngle) + inwardVec[1]*cos(halfAngle)]
+		leftVec = [inwardVec[0]*cos(halfAngle) + inwardVec[1]*sin(halfAngle), inwardVec[0]*sin(halfAngle) - inwardVec[1]*cos(halfAngle)]
+
+		distCount1 = 0
+		distCount2 = 0
+		
+		WID = 2
+		
+		for i in range(0,21):
+			ptR = [pnt[0] + 0.5 + rightVec[0]*i, pnt[1] + 0.5 + rightVec[1]*i]
+			
+			
+			ptR[0] = int(floor(ptR[0]))
+			ptR[1] = int(floor(ptR[1]))
+			hasEdge = False
+			for m in range(ptR[0]-WID,ptR[0]+WID+1):
+				for n in range(ptR[1]-WID,ptR[1]+WID+1):
+					#print m, n, edges[m,n]
+					if edges[n,m] > 0:
+						hasEdge = True
+			if hasEdge:
+				distCount1 += 1
+			else:
+				break
+			
+		for i in range(0,21):
+			ptL = [pnt[0] + 0.5 + leftVec[0]*i, pnt[1] + 0.5 + leftVec[1]*i]
+
+			ptL[0] = int(floor(ptL[0]))
+			ptL[1] = int(floor(ptL[1]))
+			hasEdge = False
+			for m in range(ptL[0]-WID,ptL[0]+WID+1):
+				for n in range(ptL[1]-WID,ptL[1]+WID+1):
+					if edges[n,m] > 0:
+						hasEdge = True
+			if hasEdge:
+				distCount2 += 1
+			else:
+				break
+		
+		"""
+		if ptR[0] > pnt[0]:
+			rangeX = range(pnt[0],ptR[0]+1)
+		else:
+			rangeX = range(ptR[0],pnt[0]+1)
+
+		if ptR[1] > pnt[1]:
+			rangeY = range(pnt[1],ptR[1]+1)
+		else:
+			rangeY = range(ptR[1],pnt[1]+1)
+			
+		for m in rangeX:
+			for n in rangeY:
+				if edges[n,m] > 0:
+					rhoN = m * cos(theta1) + n * sin(theta1)
+					dist = fabs(rhoN-rho1)
+					if dist <= 1.0:
+						distCount1 += 1
+
+		" 6th, for each point in the neighborhood, vote for each fitting line "
+		distCount1 = 0
+		distCount2 = 0
+		size = cv.GetSize(edges)
+		localMaxX = size[0]
+		localMaxY = size[1]
+		for m in range(localMaxX):
+			for n in range(localMaxY):
+				if edges[n,m] > 0:
+					rhoN = m * cos(theta1) + n * sin(theta1)
+					dist = fabs(rhoN-rho1)
+					if dist <= 1.0:
+						distCount1 += 1
+
+					rhoN = m * cos(theta2) + n * sin(theta2)
+					dist = fabs(rhoN-rho2)
+					if dist <= 1.0:
+						distCount2 += 1
+		"""
+
+		
+		cornerVal = corners2[pnt[1],pnt[0]]
+
+		if cornerVal >= 1000000:
+			finalFinalCandidates.append((point, cornerAngle, inwardVec, theta1, theta2))
+
+		print "corner candidate:", cornerVal, distCount1, distCount2, pnt, cornerAngle, inwardVec
+		print
 
 	cv.ResetImageROI(edges)
 
@@ -588,7 +710,7 @@ def extractCornerCandidates(pilImg, estPose = []):
 		color_dst = cv.CreateImage(cv.GetSize(edges), 8, 3)
 		cv.CvtColor(edges, color_dst, cv.CV_GRAY2BGR)
 		angles = []
-		for (point, cornerAngle, inwardVec) in finalCandidates:
+		for (point, cornerAngle, inwardVec, theta1, theta2) in finalFinalCandidates:
 	
 			angles.append(cornerAngle)
 	
@@ -601,7 +723,7 @@ def extractCornerCandidates(pilImg, estPose = []):
 			cv.Line(color_dst, (indX, indY), (indX_2, indY_2), cv.CV_RGB(255, 0, 0), 2, 8)
 	
 	
-		numCorners = len(finalCandidates)
+		numCorners = len(finalFinalCandidates)
 		font = cv.InitFont(cv.CV_FONT_HERSHEY_COMPLEX, 0.5, 0.5, 0.0, 1, cv.CV_AA)
 		cv.PutText(color_dst, "%d candidate corners" % numCorners, (10, 50), font, cv.RGB(255,255,255)) 
 		cv.SaveImage("%04u_3.png" % saveCount, color_dst)
@@ -610,7 +732,7 @@ def extractCornerCandidates(pilImg, estPose = []):
 	" compute the direction of the corner.  vector goes inward towards open space "
 
 	#print len(finalCandidates), "corner candidates"
-	return finalCandidates
+	return finalFinalCandidates
 
 def findCornerCandidates(lines, edgeImage, cornersImage):
 

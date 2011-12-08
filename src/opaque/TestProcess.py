@@ -208,9 +208,11 @@ class TestProcess(SnakeControl):
 			#self.mapGraph.loadSeries("testData/junctionTest9", 40)
 			#self.mapGraph.loadSeries("testData/junctionTest11", 40)
 			#self.mapGraph.loadSeries("testData/junctionTest11", 30)
-			#self.mapGraph.loadSeries(".", 40)
+			#self.mapGraph.loadSeries(".", 49)
+			self.mapGraph.loadSeries(".", 88)
+			#self.mapGraph.loadSeries("testData/junctionTest16", 49)
 			#self.mapGraph.loadSeries(".", 3)
-			self.mapGraph.loadSeries("testData/junctionTest13", 40)
+			#self.mapGraph.loadSeries("testData/junctionTest13", 40)
 
 			#self.mapGraph.loadSeries("testData/junctionTest8", 40)
 			#self.mapGraph.loadSeries("testData/junctionTest8", 20)
