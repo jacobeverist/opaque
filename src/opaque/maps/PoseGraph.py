@@ -1507,7 +1507,7 @@ class PoseGraph:
 		return trimmedPaths
 
 
-	def getPathOrdering(self, nodeID1, nodeID2, pathIDs):
+	def getPathOrdering(self, nodeID, pathIDs):
 
 		"""
 		for pathID in pathIDs:
@@ -1522,138 +1522,154 @@ class PoseGraph:
 			departurePoint2, isInterior2, isExist2 = self.getDeparturePoint(path, nodeID2, hull)
 		"""
 
-		for nodeID in [nodeID1, nodeID2]:
-	
-			node2 = self.nodeHash[nodeID]
-	
-			if node2.isBowtie:			
-				hull2 = computeBareHull(node2, sweep = False, static = True)
-				hull2.append(hull2[0])
-				medial2 = node2.getStaticMedialAxis()
-	
-			else:
-				hull2 = computeBareHull(node2, sweep = False)
-				hull2.append(hull2[0])
-				medial2 = node2.getMedialAxis(sweep = False)
-	
-			" take the long length segments at tips of medial axis"
-			edge1 = medial2[0:2]
-			edge2 = medial2[-2:]
-			
-			frontVec = [edge1[0][0]-edge1[1][0], edge1[0][1]-edge1[1][1]]
-			backVec = [edge2[1][0]-edge2[0][0], edge2[1][1]-edge2[0][1]]
-			frontMag = math.sqrt(frontVec[0]*frontVec[0] + frontVec[1]*frontVec[1])
-			backMag = math.sqrt(backVec[0]*backVec[0] + backVec[1]*backVec[1])
-			
-			frontVec[0] /= frontMag
-			frontVec[1] /= frontMag
-			backVec[0] /= backMag
-			backVec[1] /= backMag
-			
-			" make a smaller version of these edges "
-			newP1 = (edge1[1][0] + frontVec[0]*2, edge1[1][1] + frontVec[1]*2)
-			newP2 = (edge2[0][0] + backVec[0]*2, edge2[0][1] + backVec[1]*2)
-	
-			edge1 = [newP1, edge1[1]]
-			edge2 = [edge2[0], newP2]
-	
-			
-			" find the intersection points with the hull "
-			interPoints = []
-			for k in range(len(hull2)-1):
-				hullEdge = [hull2[k],hull2[k+1]]
-				isIntersect1, point1 = Intersect(edge1, hullEdge)
-				if isIntersect1:
-					interPoints.append(point1)
-					break
-	
-			for k in range(len(hull2)-1):
-				hullEdge = [hull2[k],hull2[k+1]]
-				isIntersect2, point2 = Intersect(edge2, hullEdge)
-				if isIntersect2:
-					interPoints.append(point2)
-					break
-			
-			" replace the extended edges with a termination point at the hull edge "			
-			medial2 = medial2[1:-2]
+		node2 = self.nodeHash[nodeID]
+
+		if node2.isBowtie:			
+			hull2 = computeBareHull(node2, sweep = False, static = True)
+			hull2.append(hull2[0])
+			medial2 = node2.getStaticMedialAxis()
+
+		else:
+			hull2 = computeBareHull(node2, sweep = False)
+			hull2.append(hull2[0])
+			medial2 = node2.getMedialAxis(sweep = False)
+
+		" take the long length segments at tips of medial axis"
+		edge1 = medial2[0:2]
+		edge2 = medial2[-2:]
+		
+		frontVec = [edge1[0][0]-edge1[1][0], edge1[0][1]-edge1[1][1]]
+		backVec = [edge2[1][0]-edge2[0][0], edge2[1][1]-edge2[0][1]]
+		frontMag = math.sqrt(frontVec[0]*frontVec[0] + frontVec[1]*frontVec[1])
+		backMag = math.sqrt(backVec[0]*backVec[0] + backVec[1]*backVec[1])
+		
+		frontVec[0] /= frontMag
+		frontVec[1] /= frontMag
+		backVec[0] /= backMag
+		backVec[1] /= backMag
+		
+		" make a smaller version of these edges "
+		newP1 = (edge1[1][0] + frontVec[0]*2, edge1[1][1] + frontVec[1]*2)
+		newP2 = (edge2[0][0] + backVec[0]*2, edge2[0][1] + backVec[1]*2)
+
+		edge1 = [newP1, edge1[1]]
+		edge2 = [edge2[0], newP2]
+
+		
+		" find the intersection points with the hull "
+		interPoints = []
+		for k in range(len(hull2)-1):
+			hullEdge = [hull2[k],hull2[k+1]]
+			isIntersect1, point1 = Intersect(edge1, hullEdge)
 			if isIntersect1:
-				medial2.insert(0, point1)
+				interPoints.append(point1)
+				break
+
+		for k in range(len(hull2)-1):
+			hullEdge = [hull2[k],hull2[k+1]]
+			isIntersect2, point2 = Intersect(edge2, hullEdge)
 			if isIntersect2:
-				medial2.append(point2)
+				interPoints.append(point2)
+				break
+		
+		" replace the extended edges with a termination point at the hull edge "			
+		medial2 = medial2[1:-2]
+		if isIntersect1:
+			medial2.insert(0, point1)
+		if isIntersect2:
+			medial2.append(point2)
+		
+
+		" cut off the tail of the non-sweeping side "
+		TAILDIST = 0.5
+
+		if nodeID % 2 == 0:
+			termPoint = medial2[-1]
+			for k in range(len(medial2)):
+				candPoint = medial2[-k-1]
+				dist = sqrt((termPoint[0]-candPoint[0])**2 + (termPoint[1]-candPoint[1])**2)
+				if dist > TAILDIST:
+					break
+			medial2 = medial2[:-k-1]
+
+		else:
+			termPoint = medial2[0]
+			for k in range(len(medial2)):
+				candPoint = medial2[k]
+				dist = sqrt((termPoint[0]-candPoint[0])**2 + (termPoint[1]-candPoint[1])**2)
+				if dist > TAILDIST:
+					break
+			medial2 = medial2[k:]
+		
+		estPose2 = node2.getGlobalGPACPose()		
 			
-	
-			" cut off the tail of the non-sweeping side "
-			TAILDIST = 0.5
-	
-			if nodeID % 2 == 0:
-				termPoint = medial2[-1]
-				for k in range(len(medial2)):
-					candPoint = medial2[-k-1]
-					dist = sqrt((termPoint[0]-candPoint[0])**2 + (termPoint[1]-candPoint[1])**2)
-					if dist > TAILDIST:
-						break
-				medial2 = medial2[:-k-1]
-	
-			else:
-				termPoint = medial2[0]
-				for k in range(len(medial2)):
-					candPoint = medial2[k]
-					dist = sqrt((termPoint[0]-candPoint[0])**2 + (termPoint[1]-candPoint[1])**2)
-					if dist > TAILDIST:
-						break
-				medial2 = medial2[k:]
+		minMatchDist2 = 0.2
+		#minMatchDist2 = 0.5
+		#minMatchDist2 = 2.0
 			
-			estPose2 = node2.getGlobalGPACPose()		
-				
-			minMatchDist2 = 0.2
-			#minMatchDist2 = 0.5
-			#minMatchDist2 = 2.0
-				
-			" set the initial guess "
-			poseOrigin = Pose(estPose2)
-							
-			localizedPaths = []
-			for pathID in pathIDs:
-				path = self.paths[pathID]
-				
-				localPath = []
-				for pnt in path:
-					localPath.append(poseOrigin.convertGlobalToLocal(pnt))
-				
-				localizedPaths.append(localPath)
-				
-			" find minimum distance and its associated path "
+		" set the initial guess "
+		poseOrigin = Pose(estPose2)
 						
-			medialSpline2 = SplineFit(medial2, smooth=0.1)
-			points2 = gen_icp.addGPACVectorCovariance(medialSpline2.getUniformSamples(),high_var=0.05, low_var = 0.001)
-	
-			" transformed points without associated covariance "
-			poly2 = []
-			for p in points2:
-				poly2.append([p[0],p[1]])			
-				
-				
-			" for each point on the medial axis, find it's closest pathID "
-			pathSelect = []
-			for pnt1 in poly2:
-
-				minDist = 1e100
-				minPathID = -1
-				
-				for i in range(len(localizedPaths)):
-					path = localizedPaths[i]
-					
-					for pnt2 in path:
-						dist = sqrt((pnt2[0]-pnt1[0])**2 + (pnt2[0]-pnt1[0])**2)
-						if dist < minDist:
-							minDist = dist
-							minPathID = pathIDs[i]
-				
-				pathSelect.append(minPathID)
+		localizedPaths = []
+		for pathID in pathIDs:
+			path = self.paths[pathID]
 			
-			" smooth out the list, so we have only an exclusive ordering of paths along the curve "
-			print nodeID, "select:", pathSelect
+			localPath = []
+			for pnt in path:
+				localPath.append(poseOrigin.convertGlobalToLocal(pnt))
+			
+			localizedPaths.append(localPath)
+			
+		" find minimum distance and its associated path "
+					
+		medialSpline2 = SplineFit(medial2, smooth=0.1)
+		points2 = gen_icp.addGPACVectorCovariance(medialSpline2.getUniformSamples(),high_var=0.05, low_var = 0.001)
 
+		" transformed points without associated covariance "
+		poly2 = []
+		for p in points2:
+			poly2.append([p[0],p[1]])			
+			
+		
+		" for each point on the medial axis, find it's closest pathID "
+		pathSelect = []
+		for pnt1 in poly2:
+
+			minDist = 1e100
+			minPathID = -1
+			
+			for i in range(len(localizedPaths)):
+				path = localizedPaths[i]
+				
+				for pnt2 in path:
+					dist = sqrt((pnt2[0]-pnt1[0])**2 + (pnt2[0]-pnt1[0])**2)
+					if dist < minDist:
+						minDist = dist
+						minPathID = pathIDs[i]
+			
+			pathSelect.append(minPathID)
+		
+		" find the average position of each path ID"
+		avgIDPosition = {}
+		avgIDCount = {}
+		for pathID in pathIDs:
+			avgIDPosition[pathID] = 0
+			avgIDCount[pathID] = 0
+			
+		for i in range(len(pathSelect)):
+			avgIDPosition[pathSelect[i]] += i
+			avgIDCount[pathSelect[i]] += 1
+
+		for pathID in pathIDs:
+			avgIDPosition[pathID] /= avgIDCount[pathID]
+			
+			
+		" now sort out the order "
+		orderedPaths = sorted(avgIDPosition, key=avgIDPosition.__getitem__)		
+		
+		print "orderedPaths:", orderedPaths
+		
+		return orderedPaths
 
 	def getDeparturePoint(self, currPath, nodeID, hull):
 		
