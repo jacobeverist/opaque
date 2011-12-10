@@ -1507,6 +1507,23 @@ class PoseGraph:
 		return trimmedPaths
 
 
+	def getOverlappingPaths(self, nodeID):
+	
+		node = self.nodeHash[nodeID]
+		
+		overlappedPaths = []
+	
+		for pathID in range(len(self.trimmedPaths)):
+			sum1 = self.getOverlapCondition(self.trimmedPaths[pathID], nodeID)
+			
+			if sum1 <= 1e10:
+				overlappedPaths.append(pathID)
+			
+			#sum1 = self.getOverlapSum(self.trimmedPaths[pathID], path2[0:minI2+1] + [self.junctionPoint])
+		
+		return overlappedPaths
+
+
 	def getPathOrdering(self, nodeID, pathIDs):
 
 		"""
@@ -2600,10 +2617,17 @@ class PoseGraph:
 			self.paths[0], self.hulls[0] = self.getTopology(self.nodeSets[0])
 			self.paths[1], self.hulls[1] = self.getTopology(self.nodeSets[1])
 
-			self.trimmedPaths = self.trimPaths(self.paths)
 
 			nodeID1 = self.numNodes-4
 			nodeID2 = self.numNodes-3
+
+			self.trimmedPaths = self.trimPaths(self.paths)
+			pathIDs1 = self.getOverlappingPaths(nodeID1)
+			pathIDs2 = self.getOverlappingPaths(nodeID2)
+
+			orderedPathIDs1 = self.getPathOrdering(nodeID1, pathIDs1)
+			orderedPathIDs2 = self.getPathOrdering(nodeID2, pathIDs2)
+
 
 			" is current node sufficiently overlapped with current path? "
 			#isOverlapped = getOverlapCondition(currPath, self.numNodes-1)
@@ -2629,7 +2653,6 @@ class PoseGraph:
 			departurePoint3, isInterior3, isExist3 = self.getDeparturePoint(self.paths[1], nodeID2, self.hulls[1])
 
 			
-			#self.getPathOrdering(nodeID1, nodeID2, [0,1])
 			
 			
 			"""			
