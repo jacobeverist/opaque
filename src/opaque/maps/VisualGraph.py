@@ -36,8 +36,59 @@ class VisualGraph:
 		MAPSIZE = 20.0
 		self.occMap = OccupancyMap(self.probe, self, MAPSIZE)
 
+	def restoreSeries(self, dirName, num_poses):
+
+		self.poseGraph.restoreState(dirName, num_poses)
+
+		PIXELSIZE = 0.05
+		for i in range(0, num_poses):
+
+			print "loading node", i			
+			currNode = LocalNode(self.probe, self.contacts, i, 19, PIXELSIZE)
+			currNode.readFromFile(dirName, i)
+
+			self.localNodes.append(currNode)
+			
+			self.poseGraph.restoreNode(dirName, currNode)		
+		
+		self.poseGraph.mergePriorityConstraints()
+
+		for i in range(num_poses, num_poses+4):
+
+			print "loading node", self.numNodes			
+			currNode = LocalNode(self.probe, self.contacts, i, 19, PIXELSIZE)
+
+			if i > 0 and i % 2 == 0:
+				
+				" since estimated poses are modified from the original motion estimation, we need to restore them "
+
+				f = open(dirName + "/motion_constraints_%04u.txt" % (i+1), 'r')
+				motion_constraints = eval(f.read().rstrip())
+				f.close()				
+				transform = motion_constraints[-1][2]
+				offset = [transform[0,0], transform[1,0], transform[2,0]]
+				
+				estPose1 = self.poseGraph.nodeHash[i-1].getEstPose()
+				profile1 = Pose(estPose1)
+				estPose2 = profile1.convertLocalOffsetToGlobal(offset)
+				
+				currNode.readFromFile(dirName, i, forcedPose = estPose2)
+			else:
+				currNode.readFromFile(dirName, i)
+
+			self.localNodes.append(currNode)
+			
+
+			self.poseGraph.loadNewNode(currNode)
+			self.poseGraph.mergePriorityConstraints()
+			self.drawConstraints(i)
+		
+		return
+
+
 	def loadSeries(self, dirName, num_poses):
 		
+	
 		PIXELSIZE = 0.05
 		for i in range(0, num_poses):
 
@@ -81,6 +132,8 @@ class VisualGraph:
 			#self.drawMedialPath(i)
 			
 			#self.drawShapeConstraints(i)
+
+			self.poseGraph.saveState()
 
 		self.drawMap()
 		#self.drawConstraints(num_poses)
