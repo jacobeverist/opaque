@@ -2009,7 +2009,8 @@ class LocalNode:
 			
 			try:			
 				" start the subprocess "
-				subProc = Popen(["./alpha2.exe"], stdin=PIPE, stdout=PIPE)
+				#subProc = Popen(["./alpha2.exe"], stdin=PIPE, stdout=PIPE)
+				subProc = Popen(["./alpha2"], stdin=PIPE, stdout=PIPE)
 				
 				" send input and receive output "
 				sout, serr = subProc.communicate(inputStr)

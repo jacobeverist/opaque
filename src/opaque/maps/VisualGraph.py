@@ -63,7 +63,8 @@ class VisualGraph:
 				" since estimated poses are modified from the original motion estimation, we need to restore them "
 
 				f = open(dirName + "/motion_constraints_%04u.txt" % (i+1), 'r')
-				motion_constraints = eval(f.read().rstrip())
+				#motion_constraints = eval(f.read().rstrip())
+				motion_constraints = eval(f.read().replace('\r\n','\n'))
 				f.close()				
 				transform = motion_constraints[-1][2]
 				offset = [transform[0,0], transform[1,0], transform[2,0]]
@@ -100,7 +101,8 @@ class VisualGraph:
 				" since estimated poses are modified from the original motion estimation, we need to restore them "
 
 				f = open(dirName + "/motion_constraints_%04u.txt" % (i+1), 'r')
-				motion_constraints = eval(f.read().rstrip())
+				#motion_constraints = eval(f.read().rstrip())
+				motion_constraints = eval(f.read().replace('\r\n','\n'))
 				f.close()				
 				transform = motion_constraints[-1][2]
 				offset = [transform[0,0], transform[1,0], transform[2,0]]

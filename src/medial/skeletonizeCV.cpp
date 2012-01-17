@@ -8,39 +8,123 @@
 	March, 2010.
 	I have also a Java version of this program.
 */
-
-#include <stdio.h>
-#include <OpenCV/cv.h>
-#include <OpenCV/highgui.h>
+#include "skeletonizeCV.h"
 
 #define NORTH 1
 #define SOUTH 3
 
-void skeletonize(IplImage *src); 
+//int runAlg(int index, int sizeX, int sizeY, int numPoints, double *polyX, double *polyY, char *input, char *result) {
+int runAlg(int index, int sizeX, int sizeY, int numPoints, double *polyX, double *polyY, char *result) {
 
-int main (int argc, char * const argv[]) {
 	IplImage *image = 0, *srcCopy = 0;
-	int w, h, i, j, r, g, b;
+	int w, h, i, j, b;
 	CvScalar pixel, pixOut;
-	
-	if(argc != 2) {
-		printf("Usage: skeletonize <image_file>\n");
-		exit(1);
-	}
-	
-	image = cvLoadImage(argv[1], CV_LOAD_IMAGE_GRAYSCALE);
-	//image = cvLoadImage(argv[1], 1);
-	if (!image) {
-		printf("Can't find %s\n", argv[1]);
-		exit(1);
-	}
+
+	image = cvCreateImage(cvSize(sizeX,sizeY), IPL_DEPTH_8U, 1);
 
 	w = image->width;
 	h = image->height;
-	//srcCopy = cvCreateImage(cvGetSize(image), IPL_DEPTH_8U, 3);
-	srcCopy = cvCreateImage(cvGetSize(image), IPL_DEPTH_8U, 1);
+	//srcCopy = cvCreateImage(cvGetSize(image), IPL_DEPTH_8U, 1);
+	srcCopy = cvCreateImage(cvSize(sizeX,sizeY), IPL_DEPTH_8U, 1);
 
-  for (i = 0; i < h; i++) {
+	/*
+	for (i = 0; i < h; i++) {
+		for (j = 0; j < w; j++) { 
+			if (input[i*sizeX + j] == 0) 
+				pixOut.val[0] = 0;
+			else
+				pixOut.val[0] = 255;
+			cvSet2D(image, i, j, pixOut);
+		}
+	}
+	*/
+
+	char buff[256] = {'\0'};
+	//sprintf(buff, "medial_%02d_1.png", index);
+	//cvSaveImage(buff, image);
+
+	//printf("size = %d %d", w, h);
+
+	for (i = 0; i < h; i++) {
+		for (j = 0; j < w; j++) { 
+			pixOut.val[0] = 255;
+			cvSet2D(image, i, j, pixOut);
+		}
+	}
+
+	// set the boundary points
+	//for (i = 0; i < numPoints; i++) {
+	//	pixOut.val[0] = 0;
+	//	cvSet2D(image, (int)polyX[i], (int)polyY[i], pixOut);
+	//}
+
+	//sprintf(buff, "medial_%02d_2.png", index);
+	//cvSaveImage(buff, image);
+
+	//  public-domain code by Darel Rex Finley, 2007
+	int  nodes;
+	int nodeX[1000];
+	int pixelX, pixelY, swap ;
+
+	//  Loop through the rows of the image.
+	for (pixelY=0; pixelY<sizeY; pixelY++) {
+
+		//  Build a list of nodes.
+		nodes=0; j=numPoints-1;
+		for (i=0; i<numPoints; i++) {
+			if ( polyY[i] < (double) pixelY && polyY[j]>=(double) pixelY || 
+				polyY[j]<(double) pixelY && polyY[i]>=(double) pixelY) {
+
+				nodeX[nodes++]=(int) floor( polyX[i]+(pixelY-polyY[i])/(polyY[j]-polyY[i])*(polyX[j]-polyX[i]) + 0.5);
+			}
+			j=i;
+		}
+
+		//  Sort the nodes, via a simple "Bubble" sort.
+		i=0;
+		while (i<(nodes-1)) {
+			if (nodeX[i]>nodeX[i+1]) {
+				swap=nodeX[i];
+				nodeX[i]=nodeX[i+1];
+				nodeX[i+1]=swap;
+				if (i) {
+					i--;
+				}
+			}
+			else {
+				i++;
+			}
+		}
+
+		//  Fill the pixels between node pairs.
+		for (i=0; i<nodes; i+=2) {
+			if   (nodeX[i]>= sizeX)
+				break;
+
+			if   (nodeX[i+1]>  0 ) {
+
+				if (nodeX[i] < 0 )
+					nodeX[i]= 0;
+
+				if (nodeX[i+1] > sizeX)
+					nodeX[i+1]= sizeX;
+
+				for (j=nodeX[i]; j<=nodeX[i+1]; j++) {
+					pixOut.val[0] = 0;
+					cvSet2D(image, j, pixelY, pixOut);
+				}
+			}
+		}
+		//printf("\n\n");
+	}
+
+	//cvSaveImage("filledPolygon.png", image);
+	//sprintf(buff, "medial_%02d_2.png", index);
+	//cvSaveImage(buff, image);
+
+
+
+	for (i = 0; i < h; i++) {
 		for (j = 0; j < w; j++) { 
 			pixel = cvGet2D(image, i, j);
 			b = pixel.val[0];
@@ -54,26 +138,20 @@ int main (int argc, char * const argv[]) {
 
 	skeletonize(srcCopy);
 
-	cvSaveImage("out.png", srcCopy, 0);
+	//sprintf(buff, "medial_%02d_3.png", index);
+	//cvSaveImage(buff, srcCopy);
 
-	//cvNamedWindow("Original", CV_WINDOW_AUTOSIZE);
-	  //cvMoveWindow("Original", 100, 100);
-	//cvShowImage("Original", image);
-
-	//cvNamedWindow("Skeleton", CV_WINDOW_AUTOSIZE);
-	  //cvMoveWindow("Skeleton", 150, 150);
-	//cvShowImage("Skeleton", srcCopy);
-
-	//cvWaitKey(0);
+	for (i = 0; i < h; i++) {
+		for (j = 0; j < w; j++) { 
+			pixel = cvGet2D(srcCopy, i, j);
+			result[i*sizeX + j] = pixel.val[0];
+		}
+	}
 
 	// Release images' buffers...
 	cvReleaseImage(&image);
 	cvReleaseImage(&srcCopy);
 	
-	//...and windows
-	cvDestroyWindow("Original");
-	cvDestroyWindow("Skeleton");
-
   return 0;
 }
 

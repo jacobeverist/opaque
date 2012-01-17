@@ -1081,6 +1081,36 @@ def findClosestPointInA(a_trans, b):
 	else:
 		raise
 
+def findClosestPointWithAngle(points1, pnt, angleThresh):
+
+	ax = pnt[0]
+	ay = pnt[1]	
+	a_theta = pnt[2]
+		
+	minDist = 1e100
+	minPoint = None
+	minI = 0
+
+	#for p in points1:
+	for i in range(len(points1)):
+
+		p = points1[i]
+		
+		angDiff = abs(functions.normalizeAngle(a_theta-p[2]))
+		#print "angDiff =", angDiff
+		if angleThresh > angDiff or (math.pi - angleThresh) < angDiff:
+	
+			dist = math.sqrt((p[0]-ax)**2 + (p[1]-ay)**2)
+			if dist < minDist:
+				minPoint = copy(p)
+				minDist = dist
+				minI = i
+
+	if minPoint != None:
+		return minPoint, minI, minDist
+	else:
+		raise
+
 
 # for point T*a, find the closest point b in B
 def findClosestPointInB(b_data, a, offset):
@@ -4208,9 +4238,15 @@ def globalOverlapICP(initGuess, globalPath, hull, medialPoints,  plotIter = Fals
 		currU = newU
 		
 		" compute offset from newU and newAng"
-		pose1 = globalSpline.getUVecSet([u1, u1+0.02])[0]
+		if u1 >= 0.98:
+			pose1 = globalSpline.getUVecSet([1.0-0.01, 1.0])[0]
+		else:				
+			pose1 = globalSpline.getUVecSet([u1, u1+0.02])[0]
 		#pose1 = localSpline.getUVecSet([u1, u1+0.02])[0]
-		pose2 = medialSpline.getUVecSet([currU, currU+0.02])[0]
+		if currU >= 0.98:
+			pose2 = medialSpline.getUVecSet([1.0 - 0.01,1.0])[0]
+		else:
+			pose2 = medialSpline.getUVecSet([currU, currU+0.02])[0]
 
 		point1 = [pose1[0],pose1[1]]
 		point2 = [pose2[0],pose2[1]]
@@ -4570,8 +4606,6 @@ def overlapICP2(estPose1, initGuess, hull1, hull2, medialPoints1, medialPoints2,
 
 					" we store the untransformed point, but the transformed covariance of the A point "
 					support_pairs.append([points2[i],p_1,C2,C1])
-
-
 
 		#if plotIter and startIteration == numIterations:
 		if plotIter:

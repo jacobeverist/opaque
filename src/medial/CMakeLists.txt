@@ -5,11 +5,13 @@ cmake_minimum_required (VERSION 2.6)
 project (SKELETON) 
 
 
-include_directories (C:/OpenCV2.2/include)
+#include_directories (C:/OpenCV2.2/include)
+include_directories (/opt/local/include)
 
-link_directories (C:/OpenCV2.2/lib)
+#link_directories (C:/OpenCV2.2/lib)
+link_directories (/opt/local/lib)
 
 add_executable (cvSkel skeletonizeCV.c) 
 
-target_link_libraries (cvSkel opencv_core220 opencv_highgui220) 
+target_link_libraries (cvSkel opencv_core.2.3.1 opencv_highgui.2.3.1 opencv_imgproc.2.3.1) 
 
