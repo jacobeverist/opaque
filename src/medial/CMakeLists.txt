@@ -5,13 +5,19 @@ cmake_minimum_required (VERSION 2.6)
 project (SKELETON) 
 
 
-#include_directories (C:/OpenCV2.2/include)
-include_directories (/opt/local/include)
+IF(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+	include_directories (C:/OpenCV2.2/include)
+	link_directories (C:/OpenCV2.2/lib)
+	add_executable (cvSkel skeletonizeCV.c) 
+	target_link_libraries (cvSkel opencv_core220 opencv_highgui220 opencv_imgproc220) 
+ENDIF(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 
-#link_directories (C:/OpenCV2.2/lib)
-link_directories (/opt/local/lib)
+IF(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+	include_directories (/opt/local/include)
+	link_directories (/opt/local/lib)
+	add_executable (cvSkel skeletonizeCV.c) 
+	target_link_libraries (cvSkel opencv_core.2.3.1 opencv_highgui.2.3.1 opencv_imgproc.2.3.1) 
+ENDIF(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 
-add_executable (cvSkel skeletonizeCV.c) 
 
-target_link_libraries (cvSkel opencv_core.2.3.1 opencv_highgui.2.3.1 opencv_imgproc.2.3.1) 
 

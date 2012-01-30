@@ -1,3 +1,4 @@
+import sys
 
 from numpy import *
 from scipy.optimize import *
@@ -631,7 +632,7 @@ class PoseGraph:
 
 		" alpha shape circle radius "
 		inputStr += str(radius) + " "
-		
+
 		for p in medialPointSoup:
 			p2 = copy(p)
 			" add a little bit of noise to avoid degenerate conditions in CGAL "
@@ -646,7 +647,10 @@ class PoseGraph:
 		try:			
 			" start the subprocess "
 			#subProc = Popen(["./alpha2.exe"], stdin=PIPE, stdout=PIPE)
-			subProc = Popen(["./alpha2"], stdin=PIPE, stdout=PIPE)
+			if sys.platform == "win32":
+				subProc = Popen(["alpha2.exe"], stdin=PIPE, stdout=PIPE)
+			else:
+				subProc = Popen(["./alpha2"], stdin=PIPE, stdout=PIPE)
 			
 			#print subProc.stdin, subProc.stderr, subProc.stdout
 			#print "input:", inputStr
@@ -3004,6 +3008,7 @@ class PoseGraph:
 		self.c_hulls.append(computeHull(self.nodeHash[nodeID], static = True))
 		
 		direction = newNode.travelDir
+
 
 		if nodeID > 0:
 			if nodeID % 2 == 0:

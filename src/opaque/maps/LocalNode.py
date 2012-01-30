@@ -1,3 +1,4 @@
+import sys
 
 from LocalOccMap import *
 from LocalBoundaryMap import *
@@ -2062,8 +2063,11 @@ class LocalNode:
 			
 			try:			
 				" start the subprocess "
-				#subProc = Popen(["./alpha2.exe"], stdin=PIPE, stdout=PIPE)
-				subProc = Popen(["./alpha2"], stdin=PIPE, stdout=PIPE)
+				if sys.platform == "win32":
+					subProc = Popen(["alpha2.exe"], stdin=PIPE, stdout=PIPE)
+				else:
+					subProc = Popen(["./alpha2"], stdin=PIPE, stdout=PIPE)
+					
 				
 				" send input and receive output "
 				sout, serr = subProc.communicate(inputStr)

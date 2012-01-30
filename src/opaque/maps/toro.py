@@ -309,13 +309,21 @@ def executeToro(fileName):
 	fileRoot = copy(fileName)
 	fileRoot = fileRoot[:-6]
 
-	os.system("mkdir toro_tmp")
-	os.system("cp " + fileName + " toro_tmp")
-	os.system("cp toro toro_tmp")
-	#os.system("cp toro.exe toro_tmp")
-	os.chdir("toro_tmp")
-	result = os.system("./toro -nde " + fileName + " 2> toro.out.txt")
-	
+	if sys.platform == "win32":
+		os.system("mkdir toro_tmp")
+		os.system("cp " + fileName + " toro_tmp")
+		os.system("cp toro.exe toro_tmp")
+		os.chdir("toro_tmp")
+		result = os.system("toro -nde " + fileName + " 2> toro.out.txt")
+		
+	else:
+		os.system("mkdir toro_tmp")
+		os.system("cp " + fileName + " toro_tmp")
+		os.system("cp toro toro_tmp")
+		#os.system("cp toro.exe toro_tmp")
+		os.chdir("toro_tmp")
+		result = os.system("./toro -nde " + fileName + " 2> toro.out.txt")
+
 	if result != 0 and result != 1:
 		print "returned", result
 		raise
