@@ -53,7 +53,7 @@ class VisualGraph:
 		
 		self.poseGraph.mergePriorityConstraints()
 
-		for i in range(num_poses, num_poses+4):
+		for i in range(num_poses, num_poses+10):
 
 			print "loading node", self.numNodes			
 			currNode = LocalNode(self.probe, self.contacts, i, 19, PIXELSIZE)
@@ -1032,6 +1032,25 @@ class VisualGraph:
 	
 				pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
 
+
+				" create the ground constraints "
+				gndGPAC1Pose = self.nodeHash[nodeID1].getGndGlobalGPACPose()
+				currProfile = Pose(gndGPAC1Pose)
+				gndGPAC2Pose = self.nodeHash[nodeID2].getGndGlobalGPACPose()
+				gndOffset = currProfile.convertGlobalPoseToLocal(gndGPAC2Pose)
+
+				xP = []
+				yP = []
+				for p in hull2:
+					p1 = gen_icp.dispOffset(p,gndOffset)
+					
+					p2 = poseOrigin.convertLocalToGlobal(p1)
+					xP.append(p2[0])	
+					yP.append(p2[1])
+	
+				pylab.plot(xP,yP,linewidth=1, color=(1.0,0.5,0.5))
+
+
 				medialPath1 = self.nodeHash[nodeID1].medialPathCut
 				medialPath2 = self.nodeHash[nodeID2].medialPathCut
 				medial_trans = []
@@ -1044,7 +1063,7 @@ class VisualGraph:
 					p1 = poseOrigin.convertLocalToGlobal(p)
 					xP.append(p1[0])
 					yP.append(p1[1])
-				pylab.plot(xP,yP,linewidth=1, color=(0.5,0.5,1.0))
+				pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
 
 				xP = []
 				yP = []
@@ -1052,6 +1071,15 @@ class VisualGraph:
 					p1 = poseOrigin.convertLocalToGlobal(p)
 					xP.append(p1[0])
 					yP.append(p1[1])
+				pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
+
+				xP = []
+				yP = []
+				for p in medialPath2:
+					p1 = gen_icp.dispOffset(p, gndOffset)
+					p2 = poseOrigin.convertLocalToGlobal(p1)
+					xP.append(p2[0])
+					yP.append(p2[1])
 				pylab.plot(xP,yP,linewidth=1, color=(1.0,0.5,0.5))
 	
 				self.drawWalls()
@@ -1066,7 +1094,7 @@ class VisualGraph:
 				if priority == PoseGraph.SHAPE_PRIORITY:
 					typeStr = "SHAPE:"
 
-				pylab.title(typeStr + "  %u -> %u" % (nodeID1, nodeID2))
+				pylab.title(typeStr + "  %u -> %u, covar: %1.5f %1.5f %1.5f" % (nodeID1, nodeID2, covE[0,0],covE[1,1],covE[2,2]))
 
 	
 				pylab.xlim(estPose1[0]-4, estPose1[0]+4)					

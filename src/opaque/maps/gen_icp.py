@@ -3453,7 +3453,7 @@ def shapeICP2(estPose1, estPose2, hull1, hull2, medial1, medial2, posture1_unsta
 
 	return offset, lastCost, status
 	
-def overlapICP(estPose1, initGuess, hull1, hull2, medialPoints1, medialPoints2, rootPose1, rootPose2, inPlace = False, plotIter = False, n1 = 0, n2 = 0, uRange = 1.5):
+def overlapICP(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1, medialPoints2, rootPose1, rootPose2, inPlace = False, plotIter = False, n1 = 0, n2 = 0, uRange = 1.5):
 
 	global numIterations
 
@@ -3674,6 +3674,18 @@ def overlapICP(estPose1, initGuess, hull1, hull2, medialPoints1, medialPoints2, 
 
 			pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
 
+			xP = []
+			yP = []
+			for b in points2:
+				p = [b[0],b[1]]
+				p = dispOffset(p,gndOffset)
+				
+				p1 = poseOrigin.convertLocalToGlobal(p)
+				xP.append(p1[0])	
+				yP.append(p1[1])
+
+			pylab.plot(xP,yP,linewidth=1, color=(1.0,0.5,0.5))
+
 			#center2Global = poseOrigin.convertLocalToGlobal(center2)
 			#cir = pylab.Circle((center2Global[0],center2Global[1]), radius=radius2,  ec='r', fc='none')
 			#pylab.gca().add_patch(cir)
@@ -3722,6 +3734,18 @@ def overlapICP(estPose1, initGuess, hull1, hull2, medialPoints1, medialPoints2, 
 				yP.append(p1[1])
 
 			pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
+
+			xP = []
+			yP = []
+			for b in a_data_raw:
+				p = [b[0],b[1]]
+				p = dispOffset(p,gndOffset)
+				
+				p1 = poseOrigin.convertLocalToGlobal(p)
+				xP.append(p1[0])	
+				yP.append(p1[1])
+
+			pylab.plot(xP,yP,linewidth=1, color=(1.0,0.5,0.5))
 
 			"""
 			xP = []
@@ -3858,6 +3882,18 @@ def overlapICP(estPose1, initGuess, hull1, hull2, medialPoints1, medialPoints2, 
 			
 			pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
 
+			xP = []
+			yP = []
+			for b in points2:
+				p = [b[0],b[1]]
+				p = dispOffset(p,gndOffset)
+				
+				p1 = poseOrigin.convertLocalToGlobal(p)
+				xP.append(p1[0])	
+				yP.append(p1[1])
+
+			pylab.plot(xP,yP,linewidth=1, color=(1.0,0.5,0.5))
+
 			#center2Global = poseOrigin.convertLocalToGlobal(center2)
 			#cir = pylab.Circle((center2Global[0],center2Global[1]), radius=radius2,  ec='r', fc='none')
 			#pylab.gca().add_patch(cir)
@@ -3905,6 +3941,20 @@ def overlapICP(estPose1, initGuess, hull1, hull2, medialPoints1, medialPoints2, 
 				yP.append(p1[1])
 			
 			pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
+
+			xP = []
+			yP = []
+			for b in a_data_raw:
+				p = [b[0],b[1]]
+				p = dispOffset(p,gndOffset)
+				
+				p1 = poseOrigin.convertLocalToGlobal(p)
+				xP.append(p1[0])	
+				yP.append(p1[1])
+
+			pylab.plot(xP,yP,linewidth=1, color=(1.0,0.5,0.5))
+
+			
 			"""
 			xP = []
 			yP = []
@@ -3956,7 +4006,6 @@ def overlapICP(estPose1, initGuess, hull1, hull2, medialPoints1, medialPoints2, 
 	offset[2] =  functions.normalizeAngle(offset[2])	
 	return offset, histogram
 
-#def globalOverlapICP(estPose, initGuess, globalPath, hull, medialPoints,  plotIter = False, n1 = 0, n2 = 0):
 def globalOverlapICP(initGuess, globalPath, hull, medialPoints,  plotIter = False, n1 = 0, n2 = 0):
 
 	global numIterations
@@ -4218,7 +4267,7 @@ def globalOverlapICP(initGuess, globalPath, hull, medialPoints,  plotIter = Fals
 			cost = medialOverlapCostFunc([currU, currAng], match_pairs, globalSpline, medialSpline, uHigh, uLow, u1)
 			
 			#pylab.title("%u %u, u1 = %1.3f, u2 = %1.3f, ang = %1.3f" % (n1, n2, u1, currU, currAng))
-			pylab.title("%u %u, u1 = %1.3f, u2 = %1.3f, ang = %1.3f, cost = %f" % (n1, n2, u1, currU, currAng, cost))
+			pylab.title("%u, u1 = %1.3f, u2 = %1.3f, ang = %1.3f, cost = %f" % (n1, u1, currU, currAng, cost))
 
 			pylab.xlim(currPose[0]-4, currPose[0]+4)					
 			pylab.ylim(currPose[1]-3, currPose[1]+3)
@@ -4386,7 +4435,7 @@ def globalOverlapICP(initGuess, globalPath, hull, medialPoints,  plotIter = Fals
 			#lowCount, midCount, highCount = overlapHistogram([currU,currAng], match_pairs, medialSpline1, medialSpline2, u1)			
 			#pylab.title("%u %u, u1 = %1.3f, u2 = %1.3f, ang = %1.3f, hist = %d %d %d" % (n1, n2, u1, currU, currAng, lowCount, midCount, highCount))
 
-			pylab.title("%u %u, u1 = %1.3f, u2 = %1.3f, ang = %1.3f, cost = %f" % (n1, n2, u1, currU, currAng, newCost))
+			pylab.title("%u, u1 = %1.3f, u2 = %1.3f, ang = %1.3f, cost = %f" % (n1, u1, currU, currAng, newCost))
 
 			pylab.xlim(currPose[0]-4, currPose[0]+4)					
 			pylab.ylim(currPose[1]-3, currPose[1]+3)

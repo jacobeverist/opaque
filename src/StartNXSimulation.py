@@ -6,6 +6,10 @@
 # setup and input handling.
 # */
 
+
+import random
+random.seed(0)
+
 ANY_QUERY_MASK                  = 1<<0
 STATIC_GEOMETRY_QUERY_MASK      = 1<<4
 WORLD_STEP = 0.001

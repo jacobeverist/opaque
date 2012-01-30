@@ -15,6 +15,7 @@ from medialaxis import computeMedialAxis
 import graph
 
 import random
+import functions
 #import Image
 from numpy import array, dot, transpose
 
@@ -124,6 +125,8 @@ class LocalNode:
 		
 		self.hasDeparture = False
 		
+		self.isFeatureless = None
+		
 		#pylab.clf()
 
 		#xP = []
@@ -133,6 +136,56 @@ class LocalNode:
 		#	yP.append(p[1])
 		
 		#pylab.plot(xP,yP, color='b')
+		
+	def getIsFeatureless(self):
+		
+		if self.isFeatureless != None:
+			return self.isFeatureless
+		
+		if self.isBowtie:			
+			medialAxis = self.getStaticMedialAxis()
+		
+		else:
+			medialAxis = self.getMedialAxis(sweep = False)
+
+		medialSpline = SplineFit(medialAxis,smooth=0.1)
+		
+		medialPoints = medialSpline.getUniformSamples(spacing = 0.05)
+
+		xP = []
+		yP = []
+		for p in medialPoints:
+			xP.append(p[0])
+			yP.append(p[1])
+		
+		(ar1,br1)= scipy.polyfit(xP,yP,1)
+		
+		" compute point distances from the fitted line "
+		xf1 = [medialPoints[0][0], medialPoints[-1][0]]
+		yf1 = scipy.polyval([ar1,br1],xf1)			
+		linePoints1 = [[xf1[0],yf1[0]], [xf1[-1],yf1[-1]]]
+		linePoints2 = functions.makePointsUniform( linePoints1, max_spacing = 0.04)
+		
+		distances = []
+		for p in medialPoints:
+			p_1, i_1, minDist = functions.findClosestPoint(linePoints2, p)
+			distances.append(minDist)
+			
+		sum = 0.0
+		for dist in distances:
+			sum += dist
+		
+		distAvg = sum / len(distances)
+		
+		print "node", self.nodeID, "has featurelessness of", distAvg
+		if distAvg > 1.0:
+			self.isFeatureless = False
+			return False
+		
+		else:
+			self.isFeatureless = True
+			return True
+		
 		
 	def setDeparture(self, val):
 		self.hasDeparture = val

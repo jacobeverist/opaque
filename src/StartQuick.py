@@ -1,3 +1,8 @@
+
+import random
+random.seed(0)
+
+
 from opaque.robot.QuickProbe import QuickProbe
 from opaque.TestProcess import TestProcess
 from opaque.ControlError import *

@@ -13,6 +13,32 @@ def normalizeAngle(angle):
 
 	return angle 
 
+def makePointsUniform(points, max_spacing = 0.04):
+	
+	" make the points uniformly distributed "
+	
+	new_points = []
+	
+	for i in range(len(points)-1):
+		p0 = points[i]
+		p1 = points[i+1]
+		dist = sqrt((p0[0]-p1[0])**2 + (p0[1]-p1[1])**2)
+
+		vec = [p1[0]-p0[0], p1[1]-p0[1]]
+		vec[0] /= dist
+		vec[1] /= dist
+		
+		new_points.append(copy(p0))
+		
+		if dist > max_spacing:
+			" cut into pieces max_spacing length or less "
+			numCount = int(floor(dist / max_spacing))
+			
+			for j in range(1, numCount+1):
+				newP = [j*max_spacing*vec[0] + p0[0], j*max_spacing*vec[1] + p0[1], p0[2]]
+				new_points.append(newP)
+	
+	return new_points		
 
 # determines signed area of 3 points (used for solving Point in Polygon problem)
 def Area2(Ax,Ay,Bx,By,Cx,Cy):
