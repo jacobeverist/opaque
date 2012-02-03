@@ -214,7 +214,7 @@ class TestProcess(SnakeControl):
 			#self.mapGraph.restoreSeries("resultProcess_2011_12_11", 22)
 			#self.mapGraph.restoreSeries("resultProcess_2011_12_11", 23)
 			#self.mapGraph.loadSeries("resultProcess_2011_12_11", 30)
-			self.mapGraph.loadSeries("resultProcess_2011_12_11", 86)
+			self.mapGraph.loadSeries("resultProcess_2011_12_11", 49)
 			#self.mapGraph.loadSeries("testData/junctionTest16", 49)
 			#self.mapGraph.loadSeries(".", 3)
 			#self.mapGraph.loadSeries("testData/junctionTest13", 40)

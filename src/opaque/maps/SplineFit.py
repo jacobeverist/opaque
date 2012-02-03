@@ -54,11 +54,11 @@ class SplineFit:
 				
 		return minI * 0.01
 
-	def getUniformSamples(self, spacing = 0.01):
+	def getUniformSamples(self, spacing = 0.04):
 		
-		samples = scipy.arange(0.0,1.0,spacing)
+		samples = scipy.arange(0.0,1.0,0.05)
 		sample_points = self.getUVecSet(samples)
-		sample_points = self.makePointsUniform(sample_points)
+		sample_points = self.makePointsUniform(sample_points, max_spacing = spacing)
 		return sample_points
 	
 	def makePointsUniform(self, points, max_spacing = 0.04):
