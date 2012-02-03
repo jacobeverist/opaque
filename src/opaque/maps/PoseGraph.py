@@ -1882,6 +1882,7 @@ class PoseGraph:
 		" cut off the tail of the non-sweeping side "
 		TAILDIST = 0.5
 
+		"""
 		if nodeID % 2 == 0:
 			termPoint = medial2[-1]
 			for k in range(len(medial2)):
@@ -1899,6 +1900,7 @@ class PoseGraph:
 				if dist > TAILDIST:
 					break
 			medial2 = medial2[k:]
+		"""
 		
 		estPose2 = node2.getGlobalGPACPose()		
 			
@@ -2175,6 +2177,7 @@ class PoseGraph:
 		" cut off the tail of the non-sweeping side "
 		TAILDIST = 0.5
 
+		"""
 		if nodeID % 2 == 0:
 			termPoint = medial2[-1]
 			for k in range(len(medial2)):
@@ -2192,6 +2195,7 @@ class PoseGraph:
 				if dist > TAILDIST:
 					break
 			medial2 = medial2[k:]
+		"""
 		
 		estPose2 = node2.getGlobalGPACPose()		
 		
@@ -2836,6 +2840,7 @@ class PoseGraph:
 		" cut off the tail of the non-sweeping side "
 		TAILDIST = 0.5
 
+		"""
 		if nodeID % 2 == 0:
 			termPoint = medial2[-1]
 			for k in range(len(medial2)):
@@ -2853,6 +2858,7 @@ class PoseGraph:
 				if dist > TAILDIST:
 					break
 			medial2 = medial2[k:]
+		"""
 		
 		estPose2 = node2.getGlobalGPACPose()		
 			
@@ -3226,7 +3232,7 @@ class PoseGraph:
 				self.trimmedPaths = self.trimPaths(paths)
 				
 				pylab.clf()
-
+				
 				#print self.trimmedPaths
 
 				print len(self.trimmedPaths), "paths"
@@ -3897,15 +3903,27 @@ class PoseGraph:
 						
 						if [item for inner_list in interiors2 for item in inner_list].count(True) == 0:
 
+							" determine which paths are leaves "
+							isAChild = [True for k in range(self.numPaths)]
+							for k in orderedPathIDs2:
+								currPath = self.pathParents[k]
+								currParent = currPath[0]
+								if currParent != None and orderedPathIDs2.count(currParent) > 0:
+									isAChild[currParent] = False
+
+							print "isAChild:", isAChild
+
 							minPathID = 0
 							minSum = 1e100
 							for pathID in orderedPathIDs2:
-								sum1 = self.getOverlapCondition(self.trimmedPaths[pathID], nodeID2)
 								
-								if sum1 < minSum:
-									minPathID = pathID
-									minSum = sum1
-								print "overlap sum", pathID, "=", sum1						
+								if isAChild[pathID]:
+									sum1 = self.getOverlapCondition(self.trimmedPaths[pathID], nodeID2)
+									
+									if sum1 < minSum:
+										minPathID = pathID
+										minSum = sum1
+									print "overlap sum", pathID, "=", sum1						
 
 							print "maximum overlap path is", minPathID
 
@@ -3926,7 +3944,7 @@ class PoseGraph:
 								doConstraint = True
 		
 							if doConstraint:
-
+								
 								" control point nearest the GPAC origin "
 								globalPoint1 = self.nodeHash[nodeID2].getGlobalGPACPose()[:2]
 
@@ -3944,10 +3962,7 @@ class PoseGraph:
 								totalGuesses.sort()
 								
 								guessPose1 = totalGuesses[0][2]
-
 								
-								#" control point nearest the GPAC origin "
-								#localPoint1 = self.nodeHash[nodeID2].getGlobalGPACPose()[:2]
 									
 								#guessPose1, cost1 = self.makeGlobalMedialOverlapConstraint(nodeID2, self.trimmedPaths[minPathID], localPoint1, localPoint1)
 								self.nodeHash[nodeID2].setGPACPose(guessPose1)
@@ -3955,6 +3970,8 @@ class PoseGraph:
 								" make path constraint "
 								print "minPathID: addPathConstraints(", minPathID, nodeID2
 								self.addPathConstraints(self.nodeSets[minPathID], nodeID2)
+
+
 
 						
 						elif len(orderedPathIDs2) == 2:

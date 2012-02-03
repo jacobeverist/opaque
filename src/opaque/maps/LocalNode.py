@@ -151,7 +151,8 @@ class LocalNode:
 
 		medialSpline = SplineFit(medialAxis,smooth=0.1)
 		
-		medialPoints = medialSpline.getUniformSamples(spacing = 0.05)
+		#medialPoints = medialSpline.getUniformSamples(spacing = 0.05)
+		medialPoints = medialSpline.getUniformSamples(spacing = 0.1)
 
 		xP = []
 		yP = []
@@ -165,7 +166,10 @@ class LocalNode:
 		xf1 = [medialPoints[0][0], medialPoints[-1][0]]
 		yf1 = scipy.polyval([ar1,br1],xf1)			
 		linePoints1 = [[xf1[0],yf1[0]], [xf1[-1],yf1[-1]]]
-		linePoints2 = functions.makePointsUniform( linePoints1, max_spacing = 0.04)
+		#linePoints2 = functions.makePointsUniform( linePoints1, max_spacing = 0.04)
+		linePoints2 = functions.makePointsUniform( linePoints1, max_spacing = 0.1)
+		
+		print "isFeatureless() with", len(medialPoints), "medial points and", len(linePoints2), "line points"
 		
 		distances = []
 		for p in medialPoints:
