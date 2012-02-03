@@ -3503,8 +3503,19 @@ def overlapICP(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1, medi
 		uLow = u2 - 0.08
 
 
-	pose1 = medialSpline1.getUVecSet([u1, u1+0.02])[0]
-	pose2 = medialSpline2.getUVecSet([currU, currU + 0.02])[0]
+	if u1+0.02 > 1.0:
+		pose1 = medialSpline1.getUVecSet([0.98, 1.0])[0]
+	elif u1 < 0.0:
+		pose1 = medialSpline1.getUVecSet([0.0, 0.02])[0]
+	else:
+		pose1 = medialSpline1.getUVecSet([u1, u1+0.02])[0]
+
+	if currU+0.02 > 1.0:
+		pose2 = medialSpline2.getUVecSet([0.98, 1.0])[0]
+	elif currU < 0.0:
+		pose2 = medialSpline2.getUVecSet([0.0, 0.02])[0]
+	else:
+		pose2 = medialSpline2.getUVecSet([currU, currU + 0.02])[0]
 
 	point1 = [pose1[0],pose1[1]]
 	point2 = [pose2[0],pose2[1]]
