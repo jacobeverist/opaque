@@ -165,7 +165,7 @@ def computeBoundary(node1, sweep = False):
 	
 	return a_data_GPAC
 
-def computeHullAxis(node2, tailCutOff = False):
+def computeHullAxis(nodeID, node2, tailCutOff = False):
 	
 	if node2.isBowtie:			
 		hull2 = computeBareHull(node2, sweep = False, static = True)
@@ -898,6 +898,11 @@ class PoseGraph:
 		node1 = self.nodeHash[nodeID1]
 		node2 = self.nodeHash[nodeID2]
 
+		#hull1, medial1 = computeHullAxis(nodeID1, node1, tailCutOff = True)
+		hull2, medial2 = computeHullAxis(nodeID2, node2, tailCutOff = True)
+
+
+		"""
 		if node2.isBowtie:			
 			hull2 = computeBareHull(node2, sweep = False, static = True)
 			hull2.append(hull2[0])
@@ -974,6 +979,7 @@ class PoseGraph:
 				if dist > TAILDIST:
 					break
 			medial2 = medial2[k:]
+		"""
 		
 		estPose1 = node1.getGlobalGPACPose()		
 			
@@ -1027,7 +1033,7 @@ class PoseGraph:
 					support_pairs.append([points2[i],p_1,C2,C1])
 
 		vals = []
-		sum = 0.0
+		sum1 = 0.0
 		for pair in support_pairs:
 	
 			a = pair[0]
@@ -1053,9 +1059,9 @@ class PoseGraph:
 			val = gen_icp.computeMatchErrorP(offset, [ax,ay], [bx,by], [c11,c12,c21,c22], [b11,b12,b21,b22])
 			
 			vals.append(val)
-			sum += val
+			sum1 += val
 			
-		return sum
+		return sum1
 
 
 	def addPriorityEdge(self, edge, priority):
@@ -1905,7 +1911,7 @@ class PoseGraph:
 
 		node2 = self.nodeHash[nodeID]
 
-		hull2, medial2 = computeHullAxis(node2, tailCutOff = False)
+		hull2, medial2 = computeHullAxis(nodeID, node2, tailCutOff = False)
 		
 		"""
 		if node2.isBowtie:			
@@ -2203,7 +2209,7 @@ class PoseGraph:
 		
 		node2 = self.nodeHash[nodeID]
 
-		hull2, medial2 = computeHullAxis(node2, tailCutOff = False)
+		hull2, medial2 = computeHullAxis(nodeID, node2, tailCutOff = False)
 
 		"""		
 		if node2.isBowtie:			
@@ -2869,7 +2875,7 @@ class PoseGraph:
 
 		node2 = self.nodeHash[nodeID]
 
-		hull2, medial2 = computeHullAxis(node2, tailCutOff = False)
+		hull2, medial2 = computeHullAxis(nodeID, node2, tailCutOff = False)
 
 		"""
 		if node2.isBowtie:			
@@ -3011,7 +3017,7 @@ class PoseGraph:
 			cost = 1e100
 		else:
 			vals = []
-			sum = 0.0
+			sum1 = 0.0
 			for pair in support_pairs:
 		
 				a = pair[0]
@@ -3037,9 +3043,9 @@ class PoseGraph:
 				val = gen_icp.computeMatchErrorP([0.0,0.0,0.0], [ax,ay], [bx,by], [c11,c12,c21,c22], [b11,b12,b21,b22])
 				
 				vals.append(val)
-				sum += val
+				sum1 += val
 				
-			cost = sum / len(support_pairs)
+			cost = sum1 / len(support_pairs)
 			
 
 		pylab.clf()
@@ -3107,6 +3113,8 @@ class PoseGraph:
 		direction = newNode.travelDir
 
 
+		newNode.getIsFeatureless()
+		
 		if nodeID > 0:
 			if nodeID % 2 == 0:
 
@@ -6330,6 +6338,9 @@ class PoseGraph:
 		node2 = self.nodeHash[j]
 		posture1 = node1.getStableGPACPosture()
 		posture2 = node2.getStableGPACPosture()		
+		#hull1, medial1 = computeHullAxis(nodeID, node1, tailCutOff = True)
+		#hull2, medial2 = computeHullAxis(nodeID, node2, tailCutOff = True)
+
 
 		edge1 = medial1[0:2]
 		edge2 = medial1[-2:]
@@ -6437,6 +6448,15 @@ class PoseGraph:
 
 	def computeMedialError(self, i, j, offset):
 
+
+		node1 = self.nodeHash[i]
+		node2 = self.nodeHash[j]
+		posture1 = node1.getStableGPACPosture()
+		posture2 = node2.getStableGPACPosture()		
+		hull1, medial1 = computeHullAxis(i, node1, tailCutOff = True)
+		hull2, medial2 = computeHullAxis(j, node2, tailCutOff = True)
+
+		"""
 		if self.nodeHash[i].isBowtie:			
 			hull1 = computeBareHull(self.nodeHash[i], sweep = False, static = True)
 			hull1.append(hull1[0])
@@ -6455,11 +6475,6 @@ class PoseGraph:
 			hull2 = computeBareHull(self.nodeHash[j], sweep = False)
 			hull2.append(hull2[0])
 			medial2 = self.nodeHash[j].getMedialAxis(sweep = False)
-
-		node1 = self.nodeHash[i]
-		node2 = self.nodeHash[j]
-		posture1 = node1.getStableGPACPosture()
-		posture2 = node2.getStableGPACPosture()		
 
 		" take the long length segments at tips of medial axis"
 		edge1 = medial1[0:2]
@@ -6592,6 +6607,8 @@ class PoseGraph:
 				if dist > TAILDIST:
 					break
 			medial2 = medial2[k:]
+		"""
+		
 		
 		estPose1 = node1.getGlobalGPACPose()		
 		estPose2 = node2.getGlobalGPACPose()
@@ -6680,7 +6697,7 @@ class PoseGraph:
 					match_pairs.append([points2_offset[i_2],points1[i],C2,C1])
 
 		vals = []
-		sum = 0.0
+		sum1 = 0.0
 		for pair in match_pairs:
 	
 			a = pair[0]
@@ -6706,10 +6723,10 @@ class PoseGraph:
 			val = gen_icp.computeMatchErrorP([0.0,0.0,0.0], [ax,ay], [bx,by], [c11,c12,c21,c22], [b11,b12,b21,b22])
 						
 			vals.append(val)
-			sum += val
+			sum1 += val
 
 
-		return sum
+		return sum1
 
 
 	def makeGlobalMedialOverlapConstraint(self, nodeID, globalPath, globalJunctionPoint, globalDeparturePoint):
@@ -6717,6 +6734,13 @@ class PoseGraph:
 		#print "recomputing hulls and medial axis"
 		" compute the medial axis for each pose "
 		
+
+
+		node1 = self.nodeHash[nodeID]
+		posture1 = node1.getStableGPACPosture()
+		hull1, medial1 = computeHullAxis(nodeID, node1, tailCutOff = True)
+
+		"""
 		if self.nodeHash[nodeID].isBowtie:			
 			hull1 = computeBareHull(self.nodeHash[nodeID], sweep = False, static = True)
 			hull1.append(hull1[0])
@@ -6725,11 +6749,6 @@ class PoseGraph:
 			hull1 = computeBareHull(self.nodeHash[nodeID], sweep = False)
 			hull1.append(hull1[0])
 			medial1 = self.nodeHash[nodeID].getMedialAxis(sweep = False)			
-
-
-		node1 = self.nodeHash[nodeID]
-		posture1 = node1.getStableGPACPosture()
-		#hull1, medial1 = computeHullAxis(node1, tailCutOff = True)
 
 		" take the long length segments at tips of medial axis"
 		edge1 = medial1[0:2]
@@ -6795,7 +6814,7 @@ class PoseGraph:
 				if dist > TAILDIST:
 					break
 			medial1 = medial1[k:]
-
+		"""
 		
 		globalPathReverse = deepcopy(globalPath)
 		globalPathReverse.reverse()
@@ -6868,6 +6887,25 @@ class PoseGraph:
 		print "recomputing hulls and medial axis"
 		" compute the medial axis for each pose "
 		
+			
+
+		#self.nodeHash[i].computeStaticAlphaBoundary()
+		#print "static alpha computed"
+
+		#hull2 = computeBareHull(self.nodeHash[j], sweep = False)
+		#hull2 = computeBareHull(self.nodeHash[j], sweep = False, static = True)
+		#hull2.append(hull2[0])
+		#medial2 = self.nodeHash[j].getMedialAxis(sweep = False)
+		#medial2 = self.nodeHash[j].getStaticMedialAxis()
+
+		node1 = self.nodeHash[i]
+		node2 = self.nodeHash[j]
+		posture1 = node1.getStableGPACPosture()
+		posture2 = node2.getStableGPACPosture()
+		hull1, medial1 = computeHullAxis(i, node1, tailCutOff = True)
+		hull2, medial2 = computeHullAxis(j, node2, tailCutOff = True)
+
+		"""
 		if self.nodeHash[i].isBowtie:			
 			hull1 = computeBareHull(self.nodeHash[i], sweep = False, static = True)
 			hull1.append(hull1[0])
@@ -6886,23 +6924,6 @@ class PoseGraph:
 			hull2 = computeBareHull(self.nodeHash[j], sweep = False)
 			hull2.append(hull2[0])
 			medial2 = self.nodeHash[j].getMedialAxis(sweep = False)
-			
-
-		#self.nodeHash[i].computeStaticAlphaBoundary()
-		#print "static alpha computed"
-
-		#hull2 = computeBareHull(self.nodeHash[j], sweep = False)
-		#hull2 = computeBareHull(self.nodeHash[j], sweep = False, static = True)
-		#hull2.append(hull2[0])
-		#medial2 = self.nodeHash[j].getMedialAxis(sweep = False)
-		#medial2 = self.nodeHash[j].getStaticMedialAxis()
-
-		node1 = self.nodeHash[i]
-		node2 = self.nodeHash[j]
-		posture1 = node1.getStableGPACPosture()
-		posture2 = node2.getStableGPACPosture()
-		#hull1, medial1 = computeHullAxis(node1, tailCutOff = True)
-		#hull2, medial2 = computeHullAxis(node2, tailCutOff = True)
 
 
 		" take the long length segments at tips of medial axis"
@@ -7036,6 +7057,7 @@ class PoseGraph:
 				if dist > TAILDIST:
 					break
 			medial2 = medial2[k:]
+		"""
 		
 		estPose1 = node1.getGlobalGPACPose()		
 		estPose2 = node2.getGlobalGPACPose()

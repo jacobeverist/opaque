@@ -767,7 +767,7 @@ def disp(ai, bi, T):
 
 """
 def computeMatchErrorC(offset, a, b, Ca, Cb):
-	#sum += computeMatchErrorC([xd, yd, theta], [ax,ay], [bx,by], [c11,c12,c21,c22], [b11,b12,b21,b22])
+	#sum1 += computeMatchErrorC([xd, yd, theta], [ax,ay], [bx,by], [c11,c12,c21,c22], [b11,b12,b21,b22])
 
 	xd = offset[0]
 	yd = offset[1]
@@ -1230,7 +1230,7 @@ def cornerMatchQuality(currAng, match_pairs, point1, point2, ang1, ang2, thresh)
 	offset = computeOffset(point1, point2, ang1, ang2 + currAng)
 
 	vals = []
-	sum = 0.0
+	sum1 = 0.0
 	for pair in match_pairs:
 
 		a = pair[0]
@@ -1255,7 +1255,7 @@ def cornerMatchQuality(currAng, match_pairs, point1, point2, ang1, ang2, thresh)
 	
 		val = computeMatchErrorP(offset, [ax,ay], [bx,by], [c11,c12,c21,c22], [b11,b12,b21,b22])
 		vals.append(val)
-		sum += val
+		sum1 += val
 
 	"""
 	for pair in match_pairs:
@@ -1327,7 +1327,7 @@ def medialOverlapInPlaceCostFunc(params, match_pairs, medialSpline1, medialSplin
 	offset = computeOffset(point1, point2, ang1, ang2 + currAng)
 
 	vals = []
-	sum = 0.0
+	sum1 = 0.0
 	for pair in match_pairs:
 
 		a = pair[0]
@@ -1355,9 +1355,9 @@ def medialOverlapInPlaceCostFunc(params, match_pairs, medialSpline1, medialSplin
 		#val += a[3] - (b[3] + offset[2])
 		
 		vals.append(val)
-		sum += val
+		sum1 += val
 		
-	return sum
+	return sum1
 
 def medialOverlapCostFunc(params, match_pairs, medialSpline1, medialSpline2, uHigh, uLow, u1):
 	global numIterations
@@ -1424,7 +1424,7 @@ def medialOverlapCostFunc(params, match_pairs, medialSpline1, medialSpline2, uHi
 	offset = computeOffset(point1, point2, ang1, ang2 + currAng)
 
 	vals = []
-	sum = 0.0
+	sum1 = 0.0
 	for pair in match_pairs:
 
 		a = pair[0]
@@ -1452,9 +1452,9 @@ def medialOverlapCostFunc(params, match_pairs, medialSpline1, medialSpline2, uHi
 		#val += a[3] - (b[3] + offset[2])
 		
 		vals.append(val)
-		sum += val
+		sum1 += val
 		
-	return sum
+	return sum1
 
 def overlapHistogram(params, match_pairs, medialSpline1, medialSpline2, u1):
 	global numIterations
@@ -1496,7 +1496,7 @@ def overlapHistogram(params, match_pairs, medialSpline1, medialSpline2, u1):
 	offset = computeOffset(point1, point2, ang1, ang2 + currAng)
 
 	vals = []
-	sum = 0.0
+	sum1 = 0.0
 	for pair in match_pairs:
 
 		a = pair[0]
@@ -1566,7 +1566,7 @@ def cornerCostFunc(currAng, match_pairs, point1, point2, ang1, ang2, a_data_raw 
 	offset = computeOffset(point1, point2, ang1, ang2 + currAng)
 
 	vals = []
-	sum = 0.0
+	sum1 = 0.0
 	for pair in match_pairs:
 
 		a = pair[0]
@@ -1591,7 +1591,7 @@ def cornerCostFunc(currAng, match_pairs, point1, point2, ang1, ang2, a_data_raw 
 	
 		val = computeMatchErrorP(offset, [ax,ay], [bx,by], [c11,c12,c21,c22], [b11,b12,b21,b22])
 		vals.append(val)
-		sum += val
+		sum1 += val
 
 	if isPrint:
 		thresh = 0.01
@@ -1605,23 +1605,23 @@ def cornerCostFunc(currAng, match_pairs, point1, point2, ang1, ang2, a_data_raw 
 				
 		print "match errors:", upCount, "> threshold,", downCount, "< threshold"
 		
-	return sum
+	return sum1
 
 
 def shapeCost(offset, match_pairs):
 	global numIterations
 	global fig
 	
-	sum = 0.0
+	sum1 = 0.0
 	for pair in match_pairs:
 
 		#print "pair:", repr(pair)
 		a = pair[0]
 		b = pair[1]
 		
-		sum += computeMatchError(offset, a, b, pair[2], pair[3])
+		sum1 += computeMatchError(offset, a, b, pair[2], pair[3])
 		
-	return sum
+	return sum1
 
 """
 def shapeCostC(offset, match_pairs):
@@ -1629,7 +1629,7 @@ def shapeCostC(offset, match_pairs):
 	global fig
 
 
-	sum = 0.0
+	sum1 = 0.0
 	for pair in match_pairs:
 
 		#print "pair:", pair
@@ -1657,16 +1657,16 @@ def shapeCostC(offset, match_pairs):
 		b21 = Cb[1][0]
 		b22 = Cb[1][1]	
 
-		sum += computeMatchErrorC([xd, yd, theta], [ax,ay], [bx,by], [c11,c12,c21,c22], [b11,b12,b21,b22])
+		sum1 += computeMatchErrorC([xd, yd, theta], [ax,ay], [bx,by], [c11,c12,c21,c22], [b11,b12,b21,b22])
 		
-	return sum
+	return sum1
 """
 
 def cost_func(offset, match_pairs, a_data_raw = [], polyB = [], circles = []):
 	global numIterations
 	global fig
 	
-	sum = 0.0
+	sum1 = 0.0
 	
 	for pair in match_pairs:
 
@@ -1690,7 +1690,7 @@ def cost_func(offset, match_pairs, a_data_raw = [], polyB = [], circles = []):
 		b21 = Cb[1][0]
 		b22 = Cb[1][1]	
 	
-		sum += computeMatchErrorP(offset, [ax,ay], [bx,by], [c11,c12,c21,c22], [b11,b12,b21,b22])
+		sum1 += computeMatchErrorP(offset, [ax,ay], [bx,by], [c11,c12,c21,c22], [b11,b12,b21,b22])
 	
 	
 	"""
@@ -1703,7 +1703,7 @@ def cost_func(offset, match_pairs, a_data_raw = [], polyB = [], circles = []):
 		sum += computeMatchError(offset, a, b, pair[2], pair[3])
 	"""
 	
-	return sum
+	return sum1
 
 
 def addDistanceFromOriginCovariance(points, tan_var=0.1, perp_var=0.01):
