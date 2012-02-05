@@ -22,6 +22,133 @@ from numpy import array, dot, transpose
 
 estPlotCount = 0
 
+def decimatePoints(points):
+	result = []
+
+	for i in range(len(points)):
+		#if i%2 == 0:
+		if i%4 == 0:
+			result.append(points[i])
+
+	return result
+
+def computeBareHull(node1, sweep = False, static = False):
+	
+	if static:
+		node1.computeStaticAlphaBoundary()
+
+		a_data = node1.getAlphaBoundary(static=True)
+		a_data = decimatePoints(a_data)
+
+		" convert hull points to GPAC coordinates before adding covariances "
+		localGPACPose = node1.getLocalGPACPose()
+		localGPACProfile = Pose(localGPACPose)
+		
+		a_data_GPAC = []
+		for pnt in a_data:
+			a_data_GPAC.append(localGPACProfile.convertGlobalToLocal(pnt))
+		
+	else:
+				
+		" Read in data of Alpha-Shapes without their associated covariances "
+		node1.computeAlphaBoundary(sweep = sweep)
+		a_data = node1.getAlphaBoundary(sweep = sweep)
+		a_data = decimatePoints(a_data)
+		
+		" convert hull points to GPAC coordinates "
+		localGPACPose = node1.getLocalGPACPose()
+		localGPACProfile = Pose(localGPACPose)
+		
+		a_data_GPAC = []
+		for pnt in a_data:
+			a_data_GPAC.append(localGPACProfile.convertGlobalToLocal(pnt))
+	
+	return a_data_GPAC
+
+
+def computeHullAxis(nodeID, node2, tailCutOff = False):
+	
+	if node2.isBowtie:			
+		hull2 = computeBareHull(node2, sweep = False, static = True)
+		hull2.append(hull2[0])
+		medial2 = node2.getStaticMedialAxis()
+
+	else:
+		hull2 = computeBareHull(node2, sweep = False)
+		hull2.append(hull2[0])
+		medial2 = node2.getMedialAxis(sweep = False)
+
+	" take the long length segments at tips of medial axis"
+	edge1 = medial2[0:2]
+	edge2 = medial2[-2:]
+	
+	frontVec = [edge1[0][0]-edge1[1][0], edge1[0][1]-edge1[1][1]]
+	backVec = [edge2[1][0]-edge2[0][0], edge2[1][1]-edge2[0][1]]
+	frontMag = math.sqrt(frontVec[0]*frontVec[0] + frontVec[1]*frontVec[1])
+	backMag = math.sqrt(backVec[0]*backVec[0] + backVec[1]*backVec[1])
+	
+	frontVec[0] /= frontMag
+	frontVec[1] /= frontMag
+	backVec[0] /= backMag
+	backVec[1] /= backMag
+	
+	" make a smaller version of these edges "
+	newP1 = (edge1[1][0] + frontVec[0]*2, edge1[1][1] + frontVec[1]*2)
+	newP2 = (edge2[0][0] + backVec[0]*2, edge2[0][1] + backVec[1]*2)
+
+	edge1 = [newP1, edge1[1]]
+	edge2 = [edge2[0], newP2]
+
+	
+	" find the intersection points with the hull "
+	interPoints = []
+	for k in range(len(hull2)-1):
+		hullEdge = [hull2[k],hull2[k+1]]
+		isIntersect1, point1 = Intersect(edge1, hullEdge)
+		if isIntersect1:
+			interPoints.append(point1)
+			break
+
+	for k in range(len(hull2)-1):
+		hullEdge = [hull2[k],hull2[k+1]]
+		isIntersect2, point2 = Intersect(edge2, hullEdge)
+		if isIntersect2:
+			interPoints.append(point2)
+			break
+	
+	" replace the extended edges with a termination point at the hull edge "			
+	medial2 = medial2[1:-2]
+	if isIntersect1:
+		medial2.insert(0, point1)
+	if isIntersect2:
+		medial2.append(point2)
+	
+
+	" cut off the tail of the non-sweeping side "
+	TAILDIST = 0.5
+
+	if tailCutOff:
+		
+		if nodeID % 2 == 0:
+			termPoint = medial2[-1]
+			for k in range(len(medial2)):
+				candPoint = medial2[-k-1]
+				dist = sqrt((termPoint[0]-candPoint[0])**2 + (termPoint[1]-candPoint[1])**2)
+				if dist > TAILDIST:
+					break
+			medial2 = medial2[:-k-1]
+	
+		else:
+			termPoint = medial2[0]
+			for k in range(len(medial2)):
+				candPoint = medial2[k]
+				dist = sqrt((termPoint[0]-candPoint[0])**2 + (termPoint[1]-candPoint[1])**2)
+				if dist > TAILDIST:
+					break
+			medial2 = medial2[k:]
+			
+	return hull2, medial2
+
 def getLongestPath(node, currSum, currPath, tree, isVisited, nodePath, nodeSum):
 
 	if isVisited[node]:
@@ -143,16 +270,27 @@ class LocalNode:
 		if self.isFeatureless != None:
 			return self.isFeatureless
 		
-		if self.isBowtie:			
-			medialAxis = self.getStaticMedialAxis()
+		print "isBowtie:", self.isBowtie
 		
-		else:
-			medialAxis = self.getMedialAxis(sweep = False)
+		#if self.isBowtie:			
+		#	medialAxis = self.getStaticMedialAxis()
+		
+		#else:
+		#	medialAxis = self.getMedialAxis(sweep = False)
+		
+		hull, medialAxis = computeHullAxis(self.nodeID, self, tailCutOff = False)
+		#medialAxis = medialAxis[1:-2]
+
+		print "len(medialAxis) =", len(medialAxis)
+		print medialAxis[0], medialAxis[-1]
 
 		medialSpline = SplineFit(medialAxis,smooth=0.1)
 		
 		#medialPoints = medialSpline.getUniformSamples(spacing = 0.05)
 		medialPoints = medialSpline.getUniformSamples(spacing = 0.1)
+
+		print "len(medialPoints) =", len(medialPoints)
+		print medialPoints[0], medialPoints[-1]
 
 		xP = []
 		yP = []
@@ -162,6 +300,8 @@ class LocalNode:
 		
 		(ar1,br1)= scipy.polyfit(xP,yP,1)
 		
+		print "(ar1,br1) =", (ar1,br1)
+		
 		" compute point distances from the fitted line "
 		xf1 = [medialPoints[0][0], medialPoints[-1][0]]
 		yf1 = scipy.polyval([ar1,br1],xf1)			
@@ -169,7 +309,12 @@ class LocalNode:
 		#linePoints2 = functions.makePointsUniform( linePoints1, max_spacing = 0.04)
 		linePoints2 = functions.makePointsUniform( linePoints1, max_spacing = 0.1)
 		
-		print "isFeatureless() with", len(medialPoints), "medial points and", len(linePoints2), "line points"
+		print "linePoints1 =", linePoints1
+		print "len(linePoints2) =", len(linePoints2)
+		print linePoints2[0], linePoints2[-1]
+		
+		
+		print self.nodeID, "isFeatureless() with", len(medialPoints), "medial points and spline length =", medialSpline.length()
 		
 		distances = []
 		for p in medialPoints:
@@ -183,7 +328,7 @@ class LocalNode:
 		distAvg = sum / len(distances)
 		
 		print "node", self.nodeID, "has featurelessness of", distAvg
-		if distAvg > 1.0:
+		if distAvg > 0.04:
 			self.isFeatureless = False
 			return False
 		
