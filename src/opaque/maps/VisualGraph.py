@@ -2267,7 +2267,7 @@ class VisualGraph:
 
 			self.currNode.saveToFile()
 
-		self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, self.pixelSize, stabilizePose = self.isStable, direction = direction)
+		self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, self.pixelSize, stabilizePose = self.isStable, faceDir = direction)
 		
 		self.poseGraph.addInPlaceNode(self.currNode)
 
@@ -2283,7 +2283,7 @@ class VisualGraph:
 
 			self.currNode.saveToFile()
 
-		self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, self.pixelSize, stabilizePose = self.isStable, direction = True)		
+		self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, self.pixelSize, stabilizePose = self.isStable, faceDir = True)		
 		
 		self.poseGraph.addNode(self.currNode)
 
@@ -2292,7 +2292,7 @@ class VisualGraph:
 
 	def initNode(self, estPose, direction):
 
-		self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, self.pixelSize, stabilizePose = self.isStable, direction = True)
+		self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, self.pixelSize, stabilizePose = self.isStable, faceDir = True)
 
 		self.poseGraph.addInitNode(self.currNode, estPose)
 		
