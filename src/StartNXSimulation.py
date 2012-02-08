@@ -23,6 +23,7 @@ import sf_OIS as sf
 from opaque.robot.PhysXProbe import PhysXProbe
 from opaque.robot.BulletProbe import BulletProbe
 from opaque.TestModular import TestModular
+from opaque.TestNavigation import TestNavigation
 from opaque.TestHoldPosition import TestHoldPosition
 from opaque.TestHoldTransition import TestHoldTransition
 from opaque.TestHoldTransition import TestHoldTransition
@@ -226,7 +227,8 @@ class SnakeApp(sf.Application):
 		self.drawThings.setSim(self.sceneManager)
 		self.drawThings.setRenderView(self.renderWindow)
 
-		currControl = TestModular(self.probe, self.drawThings)	
+		currControl = TestNavigation(self.probe, self.drawThings)	
+		#currControl = TestModular(self.probe, self.drawThings)	
 		#currControl = TestAnchorTransition(self.probe, self.drawThings)
 		#currControl = TestHoldPosition(self.probe, self.drawThings)
 		#currControl = TestHoldTransition(self.probe, self.drawThings)

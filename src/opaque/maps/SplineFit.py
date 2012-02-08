@@ -143,7 +143,7 @@ class SplineFit:
 				else:
 					highU = midU
 					lowU = lowU
-					
+			
 			#print "highU =", highU, "lowU =", lowU
 			
 			" terminate when close enough "
@@ -208,7 +208,7 @@ class SplineFit:
 				estU -= jumpVal
 
 	# compute the distance along the curve between the points parameterized by u1 and u2
-	def dist(self, u1, u2, iter = 0.0001):
+	def dist(self, u1, u2, iter = 0.005):
 		totalDist = 0.0
 
 		if u1 >= u2:
@@ -249,25 +249,38 @@ class SplineFit:
 	# compute the tangent vector to u1
 	def getUVector(self, u1, iter = 0.01):
 
+		#print "getUVector(", u1, ")"
+
 		if u1 < 0.0 or u1 > 1.0:
 			print "ERROR: u =", u1
 			raise
 
-		if u1 > 1.0 - iter:
+		iterVal = 1.0-iter
+		#print "u1 > 1.0 - iter:", repr(u1), "> ", repr(iterVal)
+		if u1 >= iterVal:
 			u1 = u1-iter
+			#print "u1 changed to", u1
+		#else:
+		#	print "u1 not changed", u1
+
+		#print "u1=", u1
 
 		unew1 = [u1]
 		newPoint1 = scipy.interpolate.splev(unew1,self.tck)
 		unew2 = [u1 + iter]
 		newPoint2 = scipy.interpolate.splev(unew2,self.tck)
+		
+		#print unew1, newPoint1, unew2, newPoint2
 
 		# tangent vector
 		vec = [newPoint2[0] - newPoint1[0], newPoint2[1] - newPoint1[1]]
 
+		#print "vec=", vec
 		# normalize
 		mag = sqrt(vec[0]**2 + vec[1]**2)
 		vec = [vec[0]/mag, vec[1]/mag]
 
+		#print "returning vec=", vec
 		return vec
 
 	# return the length of the curve

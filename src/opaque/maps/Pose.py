@@ -14,7 +14,7 @@ class Pose:
 	   self.estPose = copy(newPose)
 	   self.dist = sqrt(self.estPose[0]**2 + self.estPose[1]**2)
 
-	   if self.dist != 0:
+	   if self.dist > 0.0:
 		   self.vecAng = acos(self.estPose[0]/self.dist)
 		   if asin(self.estPose[1]/self.dist) < 0:
 				   self.vecAng = -self.vecAng

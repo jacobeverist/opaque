@@ -168,7 +168,7 @@ def getLongestPath(node, currSum, currPath, tree, isVisited, nodePath, nodeSum):
 
 class LocalNode:
 
-	def __init__(self, probe, contacts, nodeID, rootNode, pixelSize, stabilizePose = False, direction = True, travelDir = True):
+	def __init__(self, probe, contacts, nodeID, rootNode, pixelSize, stabilizePose = False, faceDir = True, travelDir = True):
 
 		self.pixelSize = pixelSize
 
@@ -178,7 +178,7 @@ class LocalNode:
 		self.segLength = self.robotParam['segLength']
 		self.mapSize = self.segLength*self.numSegs + 2.0 + 2.0
 		
-		self.direction = direction
+		self.faceDir = faceDir
 		self.travelDir = travelDir
 
 		self.nodeID = nodeID
@@ -206,7 +206,7 @@ class LocalNode:
 		self.setGndPose(self.probe.getActualJointPose(self.rootNode))
 
 		# MAPS
-		self.sweepMap = LocalOccMap(self, sweepDir = self.direction)
+		self.sweepMap = LocalOccMap(self, sweepDir = self.faceDir)
 		self.occMap = LocalOccMap(self)
 		self.boundaryMap = LocalBoundaryMap(self)
 		self.obstacleMap = LocalObstacleMap(self)
@@ -1075,7 +1075,7 @@ class LocalNode:
 		f.close()
 
 		f = open("direction%04u.txt" % self.nodeID, 'w')
-		f.write(repr(self.direction))
+		f.write(repr(self.faceDir))
 		f.write("\n")
 		f.close()
 
@@ -1150,7 +1150,7 @@ class LocalNode:
 		f.close()
 
 		f = open(dirName + "/direction%04u.txt" % self.nodeID, 'r')
-		self.direction = eval(f.read().rstrip())
+		self.faceDir = eval(f.read().rstrip())
 		f.close()
 
 		f = open(dirName + "/correctedPosture%04u.txt" % self.nodeID, 'r')
@@ -1198,7 +1198,7 @@ class LocalNode:
 		for j in range(self.numSegs-1):
 			self.correctedPosture.append(self.probe.getJointPose(self.rootPose, self.rootNode, j))
 		
-	def update(self, isForward = True):
+	def update(self):
 		
 		if self.stabilizePose:
 			self.stabilizeRootPose()
@@ -1270,6 +1270,8 @@ class LocalNode:
 		self.occMap.saveMap()
 		self.sweepMap.saveMap()
 		self.obstacleMap.saveMap()
+		
+		self.saveToFile()
 
 	def getOccPoints(self, sweep = False):
 

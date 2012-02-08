@@ -41,7 +41,7 @@ class TestNavigation(SnakeControl):
 		
 		self.setTimerAliasing(1)
 		
-		self.direction = True
+		self.travelDir = True
 		
 		" pose estimation "
 		self.contacts = AverageContacts(self.probe)
@@ -259,7 +259,7 @@ class TestNavigation(SnakeControl):
 			initPose = [-0.83215373754501343, 0.046221695840358734, -2.1473097801208496]
 			#initpose = [-0.70651340484619141, 0.02392122894525528, -2.0914869430965584]
 
-			#self.mapGraph.initNode(initPose, self.direction)
+			#self.mapGraph.initNode(initPose, self.travelDir)
 			#self.mapGraph.forceUpdate()
 			#self.mapGraph.relaxCorrect()
 			#self.mapGraph.synch()
@@ -281,7 +281,7 @@ class TestNavigation(SnakeControl):
 			#self.mapGraph.loadFile("testData/constraints", 17)
 			#self.mapGraph.loadFile("testData/backtrack1", 7)
 
-			#self.mapGraph.newNode(0.0, self.direction)
+			#self.mapGraph.newNode(0.0, self.travelDir)
 			#self.mapGraph.forceUpdate(False)
 			#self.mapGraph.synch()
 			#self.mapGraph.saveMap()
@@ -296,7 +296,7 @@ class TestNavigation(SnakeControl):
 
 
 			
-			#self.mapGraph.newNode(0.0, self.direction)
+			#self.mapGraph.newNode(0.0, self.travelDir)
 			#self.mapGraph.forceUpdate(False)
 			#self.mapGraph.synch()
 			#self.mapGraph.saveMap()
@@ -317,7 +317,7 @@ class TestNavigation(SnakeControl):
 			#self.globalState = 10
 
 			#self.restState = deepcopy(probeState)
-			#self.mapGraph.newNode(self.stepDist, self.direction)
+			#self.mapGraph.newNode(self.stepDist, self.travelDir)
 			#self.mapGraph.forceUpdate(False)
 			#self.globalState = 6
 			self.currPose = self.contacts.getAverageSegPose(0)
@@ -351,9 +351,9 @@ class TestNavigation(SnakeControl):
 
 				#exit()
 
-
-				self.mapGraph.newNode(self.stepDist, True, self.direction)
-				self.mapGraph.forceUpdate(False)
+				faceDir = True
+				self.mapGraph.newNode(faceDir, self.travelDir)
+				self.mapGraph.forceUpdate(faceDir)
 				
 				self.contacts.resetPose(self.mapGraph.currNode.getEstPose())
 				self.lastPose = self.contacts.getAverageSegPose(0)
@@ -380,8 +380,7 @@ class TestNavigation(SnakeControl):
 			
 			if isDone:
 				self.globalState = 8
-				#if self.mapGraph.currNode.nodeID == 4:
-				#self.mapGraph.update()
+
 				self.mapGraph.correctPosture()
 				self.mapGraph.localizeCurrentNode()
 				self.contacts.resetPose(self.mapGraph.currNode.getEstPose())
@@ -390,11 +389,12 @@ class TestNavigation(SnakeControl):
 				#self.mapGraph.synch()
 				#self.mapGraph.saveMap()
 				self.mapGraph.saveLocalMap()
-				self.mapGraph.drawConstraints()				
-				self.mapGraph.newInPlaceNode(False, self.direction)
-				#self.mapGraph.newNode(self.stepDist, False, self.direction)
-				#self.mapGraph.currNode.resetPosture()		
-			
+				self.mapGraph.drawConstraints()
+				
+				faceDir = False		
+				self.mapGraph.newNode(faceDir, self.travelDir)
+				self.mapGraph.forceUpdate(faceDir)
+
 		elif self.globalState == 8:
 	
 			" do a backward poking behavior to sense the environment"
@@ -454,7 +454,7 @@ class TestNavigation(SnakeControl):
 					self.globalState = 4
 					
 				#if self.mapGraph.numNodes > 26:
-				#	self.direction = False	
+				#	self.travelDir = False	
 				#if self.mapGraph.numNodes > 40:
 				#	exit()	
 					
@@ -588,8 +588,8 @@ class TestNavigation(SnakeControl):
 			self.lastPose = self.contacts.getAveragePose(0)
 			
 			" extend the front "
-			self.behavior = FrontExtend(self.robotParam, self.contacts, self.direction)
-			self.behavior.reset(probeState, self.direction)
+			self.behavior = FrontExtend(self.robotParam, self.contacts, self.travelDir)
+			self.behavior.reset(probeState, self.travelDir)
 			
 			" hold the back pose anchor "
 			self.holdP = HoldPosition(self.robotParam)
@@ -634,7 +634,7 @@ class TestNavigation(SnakeControl):
 		if self.localState == 0:
 			print "START:  doAdaptiveStep()"
 			
-			self.behavior = AdaptiveStep(self.robotParam, probeState, self.contacts, self.mapGraph, self.direction)
+			self.behavior = AdaptiveStep(self.robotParam, probeState, self.contacts, self.mapGraph, self.travelDir)
 			self.behavior.reset(probeState)
 			self.behavior.setTopJoint(self.topJoint)
 			
@@ -783,7 +783,7 @@ class TestNavigation(SnakeControl):
 			self.isAnchored = False
 
 			self.localPathDirection = self.behavior.getDirection()
-
+			
 			
 			self.localState = 1
 			
@@ -897,9 +897,9 @@ class TestNavigation(SnakeControl):
 
 				self.localPathState = 2
 
-				self.mapGraph.newNode(self.stepDist, True, self.localPathDirection)
+				self.mapGraph.newNode(True, self.localPathDirection)
 				#self.mapGraph.newNode(self.stepDist, self.localDirection)
-				self.mapGraph.forceUpdate(False)
+				self.mapGraph.forceUpdate(True)
 
 				#self.mapGraph.localizeCurrentNode()
 	
@@ -1012,11 +1012,12 @@ class TestNavigation(SnakeControl):
 				self.mapGraph.saveLocalMap()
 				self.mapGraph.drawConstraints()				
 				
-				self.mapGraph.newInPlaceNode(False, self.localPathDirection)
-				#self.mapGraph.newNode(self.stepDist, False, self.direction)
+				self.mapGraph.newNode(False, self.localPathDirection)
+				self.mapGraph.forceUpdate(True)
+				#self.mapGraph.newNode(self.stepDist, False, self.travelDir)
 				#self.mapGraph.currNode.resetPosture()		
 				self.localPathState = 4			
-			
+				
 		elif self.localPathState == 4:
 	
 			" do a backward poking behavior to sense the environment"
