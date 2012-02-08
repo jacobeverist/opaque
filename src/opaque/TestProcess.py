@@ -150,25 +150,57 @@ class TestProcess(SnakeControl):
 			# Y - junction, test 1 			
 
 			
-			WLEN = 3.0
-			WLEN2 = 5.0
-			wall1 = [[-14.0, -0.2], [-4.0, -0.2], [-4.0 + WLEN*cos(pi/3), -0.2 - WLEN*sin(pi/3)]]
-			wall2 = [[-4.0 + WLEN2*cos(pi/3), 0.2 + WLEN2*sin(pi/3)], [-4.0, 0.2] ,[-14.0, 0.2]]
+			#WLEN = 3.0
+			#WLEN2 = 5.0
+			#wall1 = [[-14.0, -0.2], [-4.0, -0.2], [-4.0 + WLEN*cos(pi/3), -0.2 - WLEN*sin(pi/3)]]
+			#wall2 = [[-4.0 + WLEN2*cos(pi/3), 0.2 + WLEN2*sin(pi/3)], [-4.0, 0.2] ,[-14.0, 0.2]]
+			#w1 = wall1[2]
+			#w2 = wall2[0]
+			
+			#wall3 = [[w1[0] + 0.4*cos(pi/6), w1[1] + 0.4*sin(pi/6)], [0.4*cos(pi/6) - 4, 0.0], [w2[0] + 0.4*cos(pi/6), w2[1] - 0.4*sin(pi/6)], w2]
+			#lp = wall3[0]
+			#rp = wall3[2]
+			
+			#wall6 = [lp, [lp[0] + WLEN*cos(pi/6), lp[1] + WLEN*sin(pi/6)]]
+			#wall6.append([wall6[1][0] + 0.4*cos(pi/3), wall6[1][1] - 0.4*sin(pi/3)])
+			#wall6.append([wall6[2][0] - WLEN*cos(pi/6), wall6[2][1] - WLEN*sin(pi/6)])
+			#wall6.append([wall6[3][0] + WLEN*cos(pi/3), wall6[3][1] - WLEN*sin(pi/3)])
+			#wall6.append([wall6[4][0] - 0.4*cos(pi/6), wall6[4][1] - 0.4*sin(pi/6)])
+			#wall6.append(w1)
+			#wall6.reverse()
+			#walls = [wall1, wall2, wall3, wall6]
+
+			# triple-Y - multi-junction, test 1 				
+			WLEN = 2.0
+			WWID = 0.4
+			wall1 = [[-11.0, -WWID/2.0], [-4.0, -WWID/2.0], [-4.0 + WLEN*cos(-pi/3), -WWID/2.0 + WLEN*sin(-pi/3)]]
+			wall2 = [[-11.0, WWID/2.0], [-4.0, WWID/2.0], [-4.0 + WLEN*cos(pi/3), WWID/2.0 + WLEN*sin(pi/3)]]
+			#wall2 = [[-4.0 + WLEN2*cos(pi/3), 0.2 + WLEN2*sin(pi/3)], [-4.0, 0.2] ,[-14.0, 0.2]]
 			w1 = wall1[2]
-			w2 = wall2[0]
+			w2 = wall2[2]
+
+			wall3 = [[w1[0] + WWID*cos(pi/6), w1[1] + WWID*sin(pi/6)], [WWID*cos(pi/6) - 4, 0.0], [w2[0] + WWID*cos(pi/6), w2[1] - 0.4*sin(pi/6)]]
+
+			wall4 = [w1, [w1[0] + WLEN*cos(-2*pi/3), w1[1] + WLEN*sin(-2*pi/3)]]			
+			wall5 = [w2, [w2[0] + WLEN*cos(2*pi/3), w2[1] + WLEN*sin(2*pi/3)]]
 			
-			wall3 = [[w1[0] + 0.4*cos(pi/6), w1[1] + 0.4*sin(pi/6)], [0.4*cos(pi/6) - 4, 0.0], [w2[0] + 0.4*cos(pi/6), w2[1] - 0.4*sin(pi/6)], w2]
-			lp = wall3[0]
-			rp = wall3[2]
+			wall4.append([wall4[-1][0] + WWID*cos(-2*pi/3 + pi/2), wall4[-1][1] + WWID*sin(-2*pi/3 + pi/2)])
+			wall4.append([wall4[-1][0] + WLEN*cos(-2*pi/3 + pi), wall4[-1][1] + WLEN*sin(-2*pi/3 + pi)])
+			wall4.append([wall4[-1][0] + WLEN*cos(-2*pi/3 + pi - pi/3), wall4[-1][1] + WLEN*sin(-2*pi/3 + pi - pi/3)])
+			wall4.append([wall4[-1][0] + WWID*cos(-2*pi/3 + pi - pi/3 + pi/2.), wall4[-1][1] + WWID*sin(-2*pi/3 + pi - pi/3 + pi/2.)])
+			wall4.append([wall4[-1][0] + WLEN*cos(-2*pi/3 + pi - pi/3 + pi), wall4[-1][1] + WLEN*sin(-2*pi/3 + pi - pi/3 + pi)])
+
+			wall5.append([wall5[-1][0] + WWID*cos(2*pi/3 - pi/2), wall5[-1][1] + WWID*sin(2*pi/3 - pi/2)])
+			wall5.append([wall5[-1][0] + WLEN*cos(2*pi/3 - pi), wall5[-1][1] + WLEN*sin(2*pi/3 - pi)])
+			wall5.append([wall5[-1][0] + WLEN*cos(2*pi/3 - pi + pi/3), wall5[-1][1] + WLEN*sin(2*pi/3 - pi + pi/3)])
+			wall5.append([wall5[-1][0] + WWID*cos(2*pi/3 - pi + pi/3 - pi/2.), wall5[-1][1] + WWID*sin(2*pi/3 - pi + pi/3 - pi/2.)])
+			wall5.append([wall5[-1][0] + WLEN*cos(2*pi/3 - pi + pi/3 - pi), wall5[-1][1] + WLEN*sin(2*pi/3 - pi + pi/3 - pi)])
 			
-			wall6 = [lp, [lp[0] + WLEN*cos(pi/6), lp[1] + WLEN*sin(pi/6)]]
-			wall6.append([wall6[1][0] + 0.4*cos(pi/3), wall6[1][1] - 0.4*sin(pi/3)])
-			wall6.append([wall6[2][0] - WLEN*cos(pi/6), wall6[2][1] - WLEN*sin(pi/6)])
-			wall6.append([wall6[3][0] + WLEN*cos(pi/3), wall6[3][1] - WLEN*sin(pi/3)])
-			wall6.append([wall6[4][0] - 0.4*cos(pi/6), wall6[4][1] - 0.4*sin(pi/6)])
-			wall6.append(w1)
-			wall6.reverse()
-			walls = [wall1, wall2, wall3, wall6]
+			wall5.reverse()
+			
+			wall6 = [[-11.0, WWID/2.0],[-11.0, -WWID/2.0]]
+			
+			walls = [wall1, wall2, wall3, wall4, wall5, wall6]
 			
 
 
@@ -214,7 +246,8 @@ class TestProcess(SnakeControl):
 			#self.mapGraph.restoreSeries("resultProcess_2011_12_11", 22)
 			#self.mapGraph.restoreSeries("resultProcess_2011_12_11", 23)
 			#self.mapGraph.loadSeries("resultProcess_2011_12_11", 30)
-			self.mapGraph.loadSeries("resultProcess_2011_12_11", 49)
+			#self.mapGraph.loadSeries("resultProcess_2011_12_11", 49)
+			self.mapGraph.loadSeries("resultProcess_2012_02_03", 69)
 			#self.mapGraph.loadSeries("testData/junctionTest16", 49)
 			#self.mapGraph.loadSeries(".", 3)
 			#self.mapGraph.loadSeries("testData/junctionTest13", 40)

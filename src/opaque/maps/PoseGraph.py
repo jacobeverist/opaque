@@ -2027,7 +2027,8 @@ class PoseGraph:
 			poly2.append([p[0],p[1]])			
 		
 		pathSelect = []
-		minMatchDist2 = 0.5
+		#minMatchDist2 = 0.5
+		minMatchDist2 = 1.0
 
 		for i in range(len(vecPoints2)):
 
@@ -2960,8 +2961,8 @@ class PoseGraph:
 		estPose2 = node2.getGlobalGPACPose()		
 			
 		#minMatchDist2 = 0.2
-		minMatchDist2 = 0.5
-		#minMatchDist2 = 1.0
+		#minMatchDist2 = 0.5
+		minMatchDist2 = 1.0
 		#minMatchDist2 = 2.0
 			
 		" set the initial guess "
@@ -3113,7 +3114,7 @@ class PoseGraph:
 		direction = newNode.travelDir
 
 
-		newNode.getIsFeatureless()
+		#newNode.getIsFeatureless()
 		
 		if nodeID > 0:
 			if nodeID % 2 == 0:
