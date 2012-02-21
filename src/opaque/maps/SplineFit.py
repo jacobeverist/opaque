@@ -93,7 +93,7 @@ class SplineFit:
 		pass
 
 
-	def getUOfDist(self, startU, dist):
+	def getUOfDist(self, startU, dist, distIter = None):
 
 		" search algorithm.   Find a high and a low "
 		" subdivide and determine if higher or lower than minimum point "
@@ -106,7 +106,11 @@ class SplineFit:
 		if dist >= 0:
 			highU = 1.0
 			lowU = startU
-			termDist = self.dist(startU, highU)
+			
+			if distIter != None:
+				termDist = self.dist(startU, highU, iter = distIter)
+			else:
+				termDist = self.dist(startU, highU)
 			#print "termDist =", termDist
 			if termDist < magDist:
 				return highU
@@ -114,7 +118,10 @@ class SplineFit:
 		else:
 			highU = startU
 			lowU = 0.0
-			termDist = self.dist(startU, lowU)
+			if distIter != None:
+				termDist = self.dist(startU, lowU, iter = distIter)
+			else:
+				termDist = self.dist(startU, lowU)
 			#print "termDist =", termDist
 
 			if termDist < magDist:
@@ -125,7 +132,10 @@ class SplineFit:
 		while True:
 			" find U between the highest and lowest"
 			midU = (highU - lowU)/2.0 + lowU
-			midDist = self.dist(startU, midU)
+			if distIter != None:
+				midDist = self.dist(startU, midU, iter = distIter)
+			else:
+				midDist = self.dist(startU, midU)
 			
 			#print "midU =", midU, "midDist =", midDist
 			
@@ -242,6 +252,7 @@ class SplineFit:
 			#print pnt, origin
 			dist = sqrt( (pnt[0]-origin[0])**2 + (pnt[1]-origin[1])**2 )
 			totalDist += dist
+			#print "totalDist =", totalDist
 			origin = points.pop(0)
 
 		return totalDist

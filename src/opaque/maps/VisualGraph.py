@@ -93,7 +93,7 @@ class VisualGraph:
 		PIXELSIZE = 0.05
 		for i in range(0, num_poses):
 
-			print "loading node", self.numNodes			
+			print "loading node", i		
 			currNode = LocalNode(self.probe, self.contacts, i, 19, PIXELSIZE)
 
 			if i > 0 and i % 2 == 0:

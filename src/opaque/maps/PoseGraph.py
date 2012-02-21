@@ -144,7 +144,8 @@ def computeHull(node1, sweep = False, static = False):
 def computeBoundary(node1, sweep = False):
 	
 	" Read in data of Alpha-Shapes and add their associated covariances "
-	node1.boundaryMap.getBoundaryPoints()
+	node1.computeAlphaBoundary(sweep)
+	#node1.boundaryMap.getBoundaryPoints()
 	#computeAlphaBoundary(sweep = sweep)
 	a_data = node1.getAlphaBoundary(sweep = sweep)
 	a_data = decimatePoints(a_data)
