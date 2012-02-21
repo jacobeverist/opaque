@@ -1344,23 +1344,23 @@ class LocalNode:
 		hull = a_data_GPAC
 		hull.append(hull[0])
 		
-		minX = 1e100
-		maxX = -1e100
-		minY = 1e100
-		maxY = -1e100
+		minX1 = 1e100
+		maxX1 = -1e100
+		minY1 = 1e100
+		maxY1 = -1e100
 		for p in hull:
-			if p[0] > maxX:
-				maxX = p[0]
-			if p[0] < minX:
-				minX = p[0]
-			if p[1] > maxY:
-				maxY = p[1]
-			if p[1] < minY:
-				minY = p[1]
+			if p[0] > maxX1:
+				maxX1 = p[0]
+			if p[0] < minX1:
+				minX1 = p[0]
+			if p[1] > maxY1:
+				maxY1 = p[1]
+			if p[1] < minY1:
+				minY1 = p[1]
 	
 	
 		PIXELSIZE = 0.05
-		mapSize = 2*max(max(maxX,math.fabs(minX)),max(maxY,math.fabs(minY))) + 1
+		mapSize = 2*max(max(maxX1,math.fabs(minX1)),max(maxY1,math.fabs(minY1))) + 1
 		pixelSize = PIXELSIZE
 		numPixel = int(2.0*mapSize / pixelSize + 1.0)
 		divPix = math.floor((2.0*mapSize/pixelSize)/mapSize)
@@ -1381,6 +1381,7 @@ class LocalNode:
 			p = hull[i]
 			gridHull.append(realToGrid(p))
 	
+		"""		
 		minX = 1e100
 		maxX = -1e100
 		minY = 1e100
@@ -1395,7 +1396,6 @@ class LocalNode:
 			if p[1] < minY:
 				minY = p[1]
 
-		"""		
 		xRange = range(minX, maxX + 1)
 		yRange = range(minY, maxY + 1)	
 
@@ -1416,14 +1416,8 @@ class LocalNode:
 		for p in interior:
 			imga[p[0],p[1]] = 0
 		"""
-		
-		#inputImg.save("medialIn_%04u.png" % self.nodeID)
-	
-		#inputImg = Image.new('L', (numPixel,numPixel), 255)
+			
 		resultImg = Image.new('L', (numPixel,numPixel))
-		#resultImg = Image.new('L', (numPixel,numPixel))
-		#resultImg = computeMedialAxis(inputImg, resultImg)
-		#resultImg = computeMedialAxis(self.nodeID, numPixel,numPixel, inputImg, resultImg, len(gridHull[:-2]), gridHull[:-2])
 		resultImg = computeMedialAxis(self.nodeID, numPixel,numPixel, resultImg, len(gridHull[:-2]), gridHull[:-2])
 		
 		
