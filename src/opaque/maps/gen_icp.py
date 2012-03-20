@@ -3495,8 +3495,8 @@ def overlapICP(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1, medi
 	medialSpline1 = SplineFit(medialPoints1, smooth=0.1)
 	medialSpline2 = SplineFit(medialPoints2, smooth=0.1)
 
-	uHigh = medialSpline2.getUOfDist(u2, uRange)
-	uLow = medialSpline2.getUOfDist(u2, -uRange)
+	uHigh = medialSpline2.getUOfDist(u2, uRange, distIter = 0.001)
+	uLow = medialSpline2.getUOfDist(u2, -uRange, distIter = 0.001)
 
 	if inPlace:
 		uHigh = u2 + 0.08

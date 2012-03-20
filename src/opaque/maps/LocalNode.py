@@ -1404,23 +1404,23 @@ class LocalNode:
 		sweepHull = b_data_GPAC
 		sweepHull.append(sweepHull[0])
 		
-		minX = 1e100
-		maxX = -1e100
-		minY = 1e100
-		maxY = -1e100
+		minX1 = 1e100
+		maxX1 = -1e100
+		minY1 = 1e100
+		maxY1 = -1e100
 		for p in hull:
-			if p[0] > maxX:
-				maxX = p[0]
-			if p[0] < minX:
-				minX = p[0]
-			if p[1] > maxY:
-				maxY = p[1]
-			if p[1] < minY:
-				minY = p[1]
+			if p[0] > maxX1:
+				maxX1 = p[0]
+			if p[0] < minX1:
+				minX1 = p[0]
+			if p[1] > maxY1:
+				maxY1 = p[1]
+			if p[1] < minY1:
+				minY1 = p[1]
 	
 	
 		PIXELSIZE = 0.05
-		mapSize = 2*max(max(maxX,math.fabs(minX)),max(maxY,math.fabs(minY))) + 1
+		mapSize = 2*max(max(maxX1,math.fabs(minX1)),max(maxY1,math.fabs(minY1))) + 1
 		pixelSize = PIXELSIZE
 		numPixel = int(2.0*mapSize / pixelSize + 1.0)
 		divPix = math.floor((2.0*mapSize/pixelSize)/mapSize)
@@ -1572,7 +1572,6 @@ class LocalNode:
 			if p[1] < minY:
 				minY = p[1]
 
-		
 		xRange = range(minX, maxX + 1)
 		yRange = range(minY, maxY + 1)	
 
@@ -1589,6 +1588,8 @@ class LocalNode:
 				if point_inside_polygon(i, j, gridSweep):
 					interior2.append((i,j))
 		
+		
+		
 		inputImg = Image.new('L', (numPixel,numPixel), 0)
 		imga = inputImg.load()
 		
@@ -1598,8 +1599,8 @@ class LocalNode:
 		
 		for p in interior:
 			imga[p[0],p[1]] = 255
+			
 		
-
 		inputImg2 = Image.new('L', (numPixel,numPixel), 0)
 		imga = inputImg2.load()
 		
@@ -1613,25 +1614,6 @@ class LocalNode:
 		
 		#inputImg.save("medialOut_%04u_1.png" % self.nodeID)
 
-		vertices, lines, edges = computeVoronoi(sweepHull[:-2])
-		roadGraph = pruneEdges(inputImg2, vertices, lines, edges)
-		voronoiImg2 = Image.new('L', (numPixel,numPixel), 255)
-		
-		
-		voronoiDraw = ImageDraw.Draw(voronoiImg2)
-
-		edges = roadGraph.edges()
-		for edge in edges:
-			v1 = roadGraph.get_node_attributes(edge[0])
-			v2 = roadGraph.get_node_attributes(edge[1])
-			
-			# get grid value of real point
-			i1, j1 = realToGrid(v1)
-			i2, j2 = realToGrid(v2)
-
-			voronoiDraw.line([(i1,j1),(i2,j2)], fill = 0)
-
-		#voronoiImg.save("medialOut_%04u_3.png" % self.nodeID)
 
 		vertices, lines, edges = computeVoronoi(hull[:-2])
 		roadGraph = pruneEdges(inputImg, vertices, lines, edges)
@@ -1650,6 +1632,26 @@ class LocalNode:
 			i2, j2 = realToGrid(v2)
 
 			voronoiDraw.line([(i1,j1),(i2,j2)], fill = 0)
+
+
+		vertices, lines, edges = computeVoronoi(sweepHull[:-2])
+		roadGraph = pruneEdges(inputImg2, vertices, lines, edges)
+		voronoiImg2 = Image.new('L', (numPixel,numPixel), 255)
+				
+		voronoiDraw = ImageDraw.Draw(voronoiImg2)
+
+		edges = roadGraph.edges()
+		for edge in edges:
+			v1 = roadGraph.get_node_attributes(edge[0])
+			v2 = roadGraph.get_node_attributes(edge[1])
+			
+			# get grid value of real point
+			i1, j1 = realToGrid(v1)
+			i2, j2 = realToGrid(v2)
+
+			voronoiDraw.line([(i1,j1),(i2,j2)], fill = 0)
+
+		#voronoiImg.save("medialOut_%04u_3.png" % self.nodeID)
 
 
 	

@@ -1810,7 +1810,7 @@ class PoseGraph:
 		depPoints = []
 
 		for pathID in orderedPathIDs:
-			departurePoint1, isInterior1, isExist1, departurePoint2, isInterior2, isExist2 = self.getDeparturePoint(self.trimmedPaths[pathID], nodeID)
+			departurePoint1, isInterior1, isExist1, discDist1, departurePoint2, isInterior2, isExist2, discDist2 = self.getDeparturePoint(self.trimmedPaths[pathID], nodeID)
 			departures.append([isExist1,isExist2])
 			interiors.append([isInterior1, isInterior2])
 			depPoints.append([departurePoint1, departurePoint2])
@@ -2207,7 +2207,7 @@ class PoseGraph:
 		departurePoint2 = 0
 		
 		if len(currPath) == 0:
-			return departurePoint1, isInterior1, isExist1, departurePoint2, isInterior2, isExist2
+			return departurePoint1, isInterior1, isExist1, 0.0, departurePoint2, isInterior2, isExist2, 0.0
 		
 		node2 = self.nodeHash[nodeID]
 
@@ -2320,23 +2320,37 @@ class PoseGraph:
 		#	backI += indices[i]
 		#backI /= len(distances)-backDep
 
+		tipMatch1 = pathPoints[indices[0]]
+
+		" discrepancy distance between tip closest point and average departure point "
+		dist1 = sqrt((tipMatch1[0]-pathPoints[max1][0])**2 + (tipMatch1[1] - pathPoints[max1][1])**2)
+
+		tipMatch2 = pathPoints[indices[-1]]
+
+		" discrepancy distance between tip closest point and average departure point "
+		dist2 = sqrt((tipMatch2[0]-pathPoints[max2][0])**2 + (tipMatch2[1] - pathPoints[max2][1])**2)
+
 		if maxFront > 0.5:
 			departurePoint1 = pathPoints[max1]
 			isExist1 = True
+
 
 			if max1 == 0 or max1 == len(pathPoints)-1:
 				isInterior1 = False
 			else:
 				isInterior1 = True
 
+
 		if maxBack > 0.5:
 			departurePoint2 = pathPoints[max2]
 			isExist2 = True
+
 
 			if max2 == 0 or max2 == len(pathPoints)-1:
 				isInterior2 = False
 			else:
 				isInterior2 = True
+
 
 		if maxFront > maxBack:
 			departurePoint = departurePoint1
@@ -2347,6 +2361,7 @@ class PoseGraph:
 			departurePoint = departurePoint2
 			isExist = isExist2
 			isInterior = isInterior2
+
 			
 		"""
 		if maxFront > 0.5 and maxFront > maxBack:
@@ -2421,15 +2436,26 @@ class PoseGraph:
 		#yP = [pathPoints[max1][1],pathPoints[max2][1]]
 		#pylab.scatter(xP,yP, color='r')		
 
-		if isExist1:	
-			xP = [departurePoint1[0]]
-			yP = [departurePoint1[1]]
+		#if isExist1:	
+		if True:	
+			xP = [pathPoints[max1][0]]
+			yP = [pathPoints[max1][1]]
 			pylab.scatter(xP,yP, color='b')		
 
-		if isExist2:	
-			xP = [departurePoint2[0]]
-			yP = [departurePoint2[1]]
-			pylab.scatter(xP,yP, color='g')		
+			xP = [tipMatch1[0]]
+			yP = [tipMatch1[1]]
+			pylab.scatter(xP,yP, color='r')		
+
+
+		#if isExist2:	
+		if True:
+			xP = [pathPoints[max2][0]]
+			yP = [pathPoints[max2][1]]
+			pylab.scatter(xP,yP, color='b')		
+
+			xP = [tipMatch2[0]]
+			yP = [tipMatch2[1]]
+			pylab.scatter(xP,yP, color='r')		
 
 
 		xP = []
@@ -2468,16 +2494,19 @@ class PoseGraph:
 		#	xP.append(p[0])
 		#	yP.append(p[1])
 		#pylab.plot(xP,yP, color='r')
+		
+		
+		
 		pylab.xlim(-5,10)
 		pylab.ylim(-8,8)
 		#pylab.title("nodeID %d: %d %d" % (nodeID, isInterior, isExist))
-		pylab.title("nodeID %d: %s %s" % (nodeID, repr([isExist1, isExist2]), repr([isInterior1, isInterior2])))
+		pylab.title("nodeID %d: %f, %f, %s %s" % (nodeID, dist1, dist2, repr([isExist1, isExist2]), repr([isInterior1, isInterior2])))
 		pylab.savefig("departure_%04u.png" % self.pathPlotCount)
 		
 		self.pathPlotCount += 1
 		
 		#return departurePoint, isInterior, isExist
-		return departurePoint1, isInterior1, isExist1, departurePoint2, isInterior2, isExist2
+		return departurePoint1, isInterior1, isExist1, dist1, departurePoint2, isInterior2, isExist2, dist2
 
 
 	" returns the endpoints of a subpath of path 2 that does not overlap path 1 "
@@ -3308,13 +3337,13 @@ class PoseGraph:
 				print "orderedPathIDs2:", orderedPathIDs2
 				
 				for pathID in orderedPathIDs1:
-					departurePoint1, isInterior1, isExist1, departurePoint2, isInterior2, isExist2 = self.getDeparturePoint(self.trimmedPaths[pathID], nodeID1)
+					departurePoint1, isInterior1, isExist1, discDist1, departurePoint2, isInterior2, isExist2, discDist2 = self.getDeparturePoint(self.trimmedPaths[pathID], nodeID1)
 					departures1.append([isExist1,isExist2])
 					interiors1.append([isInterior1, isInterior2])
 					depPoints1.append([departurePoint1, departurePoint2])
 				
 				for pathID in orderedPathIDs2:
-					departurePoint1, isInterior1, isExist1, departurePoint2, isInterior2, isExist2 = self.getDeparturePoint(self.trimmedPaths[pathID], nodeID2)
+					departurePoint1, isInterior1, isExist1, discDist1, departurePoint2, isInterior2, isExist2, discDist2 = self.getDeparturePoint(self.trimmedPaths[pathID], nodeID2)
 					departures2.append([isExist1,isExist2])
 					interiors2.append([isInterior1, isInterior2])
 					depPoints2.append([departurePoint1, departurePoint2])
@@ -4555,10 +4584,12 @@ class PoseGraph:
 				departures1 = []
 				interiors1 = []
 				depPoints1 = []
+				distances1 = []
 	
 				departures2 = []
 				interiors2 = []
 				depPoints2 = []
+				distances2 = []
 
 				
 				paths = {}
@@ -4638,16 +4669,18 @@ class PoseGraph:
 				" now compute whether there are departure points after we have guessed a better position in synch with the paths "
 				
 				for pathID in orderedPathIDs1:
-					departurePoint1, isInterior1, isExist1, departurePoint2, isInterior2, isExist2 = self.getDeparturePoint(self.trimmedPaths[pathID], nodeID1)
+					departurePoint1, isInterior1, isExist1, discDist1, departurePoint2, isInterior2, isExist2, discDist2 = self.getDeparturePoint(self.trimmedPaths[pathID], nodeID1)
 					departures1.append([isExist1,isExist2])
 					interiors1.append([isInterior1, isInterior2])
 					depPoints1.append([departurePoint1, departurePoint2])
+					distances1.append([discDist1, discDist2])
 				
 				for pathID in orderedPathIDs2:
-					departurePoint1, isInterior1, isExist1, departurePoint2, isInterior2, isExist2 = self.getDeparturePoint(self.trimmedPaths[pathID], nodeID2)
+					departurePoint1, isInterior1, isExist1, discDist1, departurePoint2, isInterior2, isExist2, discDist2 = self.getDeparturePoint(self.trimmedPaths[pathID], nodeID2)
 					departures2.append([isExist1,isExist2])
 					interiors2.append([isInterior1, isInterior2])
 					depPoints2.append([departurePoint1, departurePoint2])
+					distances2.append([discDist1, discDist2])
 					
 				print "node", nodeID1, ":", departures1, interiors1
 				print "node", nodeID2, ":", departures2, interiors2
@@ -4655,11 +4688,146 @@ class PoseGraph:
 				" new junction finding logic "
 				" if terminal departures for each medial axis are None or exterior, than we stay on existing paths "
 				" if a terminal departure exists that is internal, than we have a new junction "
+				DISC_THRESH = 0.2
+				
 				foreTerm1 = departures1[0][0] and interiors1[0][0]
 				backTerm1 = departures1[-1][1] and interiors1[-1][1]
 				
+				discForeTerm1 = distances1[0][0] > DISC_THRESH
+				discBackTerm1 = distances1[-1][1] > DISC_THRESH
+				
 				foreTerm2 = departures2[0][0] and interiors2[0][0]
 				backTerm2 = departures2[-1][1] and interiors2[-1][1]
+
+				discForeTerm2 = distances2[0][0] > DISC_THRESH
+				discBackTerm2 = distances2[-1][1] > DISC_THRESH
+				
+				
+				" check for the cases that internal departure may have a departure point discrepancy, "
+				" then we should perform a pose adjustment and recompute departures "
+				print "checking discrepancy in departure:", nodeID1, nodeID2, foreTerm1, discForeTerm1, backTerm1, discBackTerm1, foreTerm2, discForeTerm2, backTerm2, discBackTerm2
+
+				#if discForeTerm1 or discBackTerm1 or discForeTerm2 or discBackTerm2:
+				if foreTerm1 and discForeTerm1 or backTerm1 and discBackTerm1 or foreTerm2 and discForeTerm2 or backTerm2 and discBackTerm2:
+
+					print "adjusting pose guess of node because of discrepancy:", nodeID1, nodeID2
+
+					#if discForeTerm1 or discBackTerm1:
+					if foreTerm1 and discForeTerm1 or backTerm1 and discBackTerm1:
+
+
+						" control point nearest the GPAC origin "
+						globalPoint1 = self.nodeHash[nodeID1].getGlobalGPACPose()[:2]
+
+						splicedPaths1 = self.splicePathIDs(orderedPathIDs1)
+
+						totalGuesses = []
+						for path in splicedPaths1:
+		
+							" make the path constraints "								
+							guessPose1, cost1 = self.makeGlobalMedialOverlapConstraint(nodeID1, path, globalPoint1, globalPoint1)
+							
+							estPose = self.nodeHash[nodeID1].getGlobalGPACPose()
+							angDiff = abs(estPose[2]-guessPose1[2])
+							totalGuesses.append((angDiff, cost1, guessPose1))
+						
+						totalGuesses.sort()
+						guessPose = totalGuesses[0][2]
+						self.nodeHash[nodeID1].setGPACPose(guessPose)
+
+
+						#if foreTerm1 and discForeTerm1:
+						#	pathID = orderedPathIDs1[0]
+						#elif backTerm1 and discBackTerm1:
+						#	pathID = orderedPathIDs1[-1]
+						
+							
+						#guessPose1, cost1 = self.makeGlobalMedialOverlapConstraint(nodeID1, self.trimmedPaths[pathID], globalPoint1, globalPoint1)
+						#self.nodeHash[nodeID1].setGPACPose(guessPose1)
+							
+					#elif discForeTerm2 or discBackTerm2:
+					elif foreTerm2 and discForeTerm2 or backTerm2 and discBackTerm2:
+
+						" control point nearest the GPAC origin "
+						globalPoint1 = self.nodeHash[nodeID2].getGlobalGPACPose()[:2]
+
+
+						splicedPaths2 = self.splicePathIDs(orderedPathIDs2)
+
+						totalGuesses = []
+						for path in splicedPaths2:
+		
+							" make the path constraints "								
+							guessPose1, cost1 = self.makeGlobalMedialOverlapConstraint(nodeID2, path, globalPoint1, globalPoint1)
+							
+							estPose = self.nodeHash[nodeID2].getGlobalGPACPose()
+							angDiff = abs(estPose[2]-guessPose1[2])
+							totalGuesses.append((angDiff, cost1, guessPose1))
+						
+						totalGuesses.sort()
+						guessPose = totalGuesses[0][2]
+						self.nodeHash[nodeID2].setGPACPose(guessPose)
+
+						#if foreTerm2 and discForeTerm2:
+						#	pathID = orderedPathIDs2[0]
+						#elif backTerm2 and discBackTerm2:
+						#	pathID = orderedPathIDs2[-1]
+							
+						#guessPose1, cost1 = self.makeGlobalMedialOverlapConstraint(nodeID2, self.trimmedPaths[pathID], globalPoint1, globalPoint1)
+						#self.nodeHash[nodeID2].setGPACPose(guessPose1)
+
+					departures1 = []
+					interiors1 = []
+					depPoints1 = []
+					distances1 = []
+		
+					departures2 = []
+					interiors2 = []
+					depPoints2 = []
+					distances2 = []
+					
+					" the overlapping paths are computed from the initial guess of position "
+					orderedPathIDs1 = self.getOrderedOverlappingPaths(nodeID1)
+					orderedPathIDs2 = self.getOrderedOverlappingPaths(nodeID2)
+					
+					print "orderedPathIDs1:", orderedPathIDs1
+					print "orderedPathIDs2:", orderedPathIDs2
+					
+					" now compute whether there are departure points after we have guessed a better position in synch with the paths "
+					for pathID in orderedPathIDs1:
+						departurePoint1, isInterior1, isExist1, discDist1, departurePoint2, isInterior2, isExist2, discDist2 = self.getDeparturePoint(self.trimmedPaths[pathID], nodeID1)
+						departures1.append([isExist1,isExist2])
+						interiors1.append([isInterior1, isInterior2])
+						depPoints1.append([departurePoint1, departurePoint2])
+						distances1.append([discDist1, discDist2])
+					
+					for pathID in orderedPathIDs2:
+						departurePoint1, isInterior1, isExist1, discDist1, departurePoint2, isInterior2, isExist2, discDist2 = self.getDeparturePoint(self.trimmedPaths[pathID], nodeID2)
+						departures2.append([isExist1,isExist2])
+						interiors2.append([isInterior1, isInterior2])
+						depPoints2.append([departurePoint1, departurePoint2])
+						distances2.append([discDist1, discDist2])
+						
+					print "node", nodeID1, ":", departures1, interiors1
+					print "node", nodeID2, ":", departures2, interiors2
+		
+					" new junction finding logic "
+					" if terminal departures for each medial axis are None or exterior, than we stay on existing paths "
+					" if a terminal departure exists that is internal, than we have a new junction "
+					
+					foreTerm1 = departures1[0][0] and interiors1[0][0]
+					backTerm1 = departures1[-1][1] and interiors1[-1][1]
+					
+					discForeTerm1 = distances1[0][0] > DISC_THRESH
+					discBackTerm1 = distances1[-1][1] > DISC_THRESH
+					
+					foreTerm2 = departures2[0][0] and interiors2[0][0]
+					backTerm2 = departures2[-1][1] and interiors2[-1][1]
+	
+					discForeTerm2 = distances2[0][0] > DISC_THRESH
+					discBackTerm2 = distances2[-1][1] > DISC_THRESH
+					
+
 				
 				newPaths = []
 				
@@ -8437,14 +8605,14 @@ class PoseGraph:
 					foreAvg = frontSum / len(frontProbeError)
 									
 					if foreAvg >= 1.4:
-						u2 = medialSpline2.getUOfDist(originU2, 0.0)
+						u2 = medialSpline2.getUOfDist(originU2, 0.0, distIter = 0.001)
 					else:	
-						u2 = medialSpline2.getUOfDist(originU2, 0.3)
+						u2 = medialSpline2.getUOfDist(originU2, 0.3, distIter = 0.001)
 				else:	
-					u2 = medialSpline2.getUOfDist(originU2, 0.3)
+					u2 = medialSpline2.getUOfDist(originU2, 0.3, distIter = 0.001)
 					
 			else:
-				u2 = medialSpline2.getUOfDist(originU2, -0.3)
+				u2 = medialSpline2.getUOfDist(originU2, -0.3, distIter = 0.001)
 				#u2 = 0.4
 			print "computed u2 =", u2, "from originU2 =", originU2
 			 
