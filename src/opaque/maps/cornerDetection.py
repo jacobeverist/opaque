@@ -701,8 +701,8 @@ def extractCornerCandidates(pilImg, estPose = []):
 		if cornerVal >= 1000000:
 			finalFinalCandidates.append((point, cornerAngle, inwardVec, theta1, theta2))
 
-		print "corner candidate:", cornerVal, distCount1, distCount2, pnt, cornerAngle, inwardVec
-		print
+		#print "corner candidate:", cornerVal, distCount1, distCount2, pnt, cornerAngle, inwardVec
+		#print
 
 	cv.ResetImageROI(edges)
 

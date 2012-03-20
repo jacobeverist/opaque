@@ -6,6 +6,7 @@ from LocalObstacleMap import *
 from SplineFit import *
 from Pose import Pose
 from cornerDetection import extractCornerCandidates
+from voronoi import Site, computeVoronoiDiagram
 
 import estimateMotion
 from GPACurve import GPACurve
@@ -1189,6 +1190,43 @@ class LocalNode:
 		
 		self.synch()
 		
+		
+		" Plot the GPAC curve and origin "
+		"""
+		pylab.clf()
+
+		xP = []
+		yP = []
+		for p in self.localPosture:
+			xP.append(p[0])
+			yP.append(p[1])
+		pylab.plot(xP,yP)	
+
+		
+		xP = []
+		yP = []
+		for p in self.splPoints:
+			xP.append(p[0])
+			yP.append(p[1])
+		
+		pylab.plot(xP,yP)
+
+
+		pose = self.getLocalGPACPose()
+
+		pylab.scatter([pose[0]],[pose[1]])
+
+
+		pylab.xlim(-3,3)
+		pylab.ylim(-2,2)
+		pylab.savefig("plotGPAC%04u.png" % self.nodeID)
+
+		"""
+
+
+		self.getMedialAxis()
+
+		
 	def obstCallBack(self, direction):
 		#self.currNode.obstCallBack(direction)		
 		self.obstacleMap.updateContact(direction)
@@ -1303,6 +1341,7 @@ class LocalNode:
 
 		return points
 
+
 	def getMedialAxis(self, sweep = False):
 
 		if sweep and self.medialBComputed:
@@ -1328,21 +1367,42 @@ class LocalNode:
 		
 			return result
 
-		a_data = self.getAlphaBoundary(sweep = sweep)
-		a_data = decimatePoints(a_data)
 		
 		" convert hull points to GPAC coordinates "
 		localGPACPose = self.getLocalGPACPose()
 		localGPACProfile = Pose(localGPACPose)
-		
+
+		a_data = self.getAlphaBoundary(sweep = sweep)
+		a_data = decimatePoints(a_data)
+
 		a_data_GPAC = []
 		for pnt in a_data:
 			a_data_GPAC.append(localGPACProfile.convertGlobalToLocal(pnt))
+
+		occPoints = self.estOccPoints
+		occPoints_GPAC = []
+		for pnt in occPoints:
+			occPoints_GPAC.append(localGPACProfile.convertGlobalToLocal(pnt))
 		
+		self.computeAlphaBoundary(sweep = True)
+		b_data = self.getAlphaBoundary(sweep = True)
+		b_data = decimatePoints(b_data)
+				
+		b_data_GPAC = []
+		for pnt in b_data:
+			b_data_GPAC.append(localGPACProfile.convertGlobalToLocal(pnt))
+		
+
+
+		#print "len(occPoints) =", len(occPoints_GPAC)
+
 		#return a_data_GPAC		
 		
 		hull = a_data_GPAC
 		hull.append(hull[0])
+
+		sweepHull = b_data_GPAC
+		sweepHull.append(sweepHull[0])
 		
 		minX1 = 1e100
 		maxX1 = -1e100
@@ -1375,13 +1435,129 @@ class LocalNode:
 			j = indices[1]
 			point = [(i - numPixel/2 - 1)*(pixelSize/2.0) + pixelSize/2.0, (j - numPixel/2 - 1)*(pixelSize/2.0) + pixelSize/2.0]
 			return point
+
+		def computeVoronoi(boundaryPoints):
+			
+			'''
+			Compute the voronoi diagram using a 3rd party library.
+			
+			Voronoi diagram data structures
+			----
+			
+			self.vertices, 2-tuples
+			self.lines, 3-tuples: a,b,c for a*x + b*y = c
+			self.edges, 3-tuples, (l, v1, v2)  line, vertex 1, vertex 2
+			vertex -1 means edge extends to infinity
+			'''
 	
+			sites = []
+			for p in boundaryPoints:
+				sites.append(Site(p[0],p[1]))
+
+			vertices = []
+			lines = []
+			edges = []			
+			if sites != []:
+				vertices, lines, edges = computeVoronoiDiagram(sites)
+
+			return vertices, lines, edges
+	
+		def pruneEdges(occMap, vertices, lines, edges):
+			
+			'''remove edges and vertices that are outside the explored area'''
+	
+			#NEIGHBOR_WIDTH = 3
+			NEIGHBOR_WIDTH = 0
+
+			roadGraph = graph.graph()	
+			
+			xSize, ySize = numPixel, numPixel
+			#occPix = self.occMapImage.load()
+	
+			#occPix = self.occMap.image
+			occPix = occMap.load()
+	
+			newVertices = {}
+			newEdges = []
+	
+			# checking all edges to check within the free space
+			for edge in edges:
+				v1 = edge[1]
+				v2 = edge[2]
+	
+				if v1 != -1 and v2 != -1:
+	
+					# get grid value of real point
+					i1, j1 = realToGrid(vertices[v1])
+					i2, j2 = realToGrid(vertices[v2])
+					
+					if i1 < xSize and i1 >= 0 and i2 < xSize and i2 >= 0 and j1 < ySize and j1 >= 0 and j2 < ySize and j2 >= 0 :
+						seg = [(i1,j1),(i2,j2)]
+	
+						indX1 = seg[0][0]
+						indY1 = seg[0][1]
+						indX2 = seg[1][0]
+						indY2 = seg[1][1]
+	
+						isOK = True
+	
+						for i in range(-NEIGHBOR_WIDTH,NEIGHBOR_WIDTH+1,1):
+							for j in range(-NEIGHBOR_WIDTH,NEIGHBOR_WIDTH+1,1):
+	
+								if indX1+i > numPixel or indX1+i < 0 or indY1+j > numPixel or indY1+j < 0:
+									isOK = False
+								else:
+									val1 = occPix[indX1 + i, indY1 + j]
+									if val1 <= 127: # 0 or 127
+										isOK = False
+	
+								if indX2+i > numPixel or indX2+i < 0 or indY2+j > numPixel or indY2+j < 0:
+									isOK = False
+								else:
+									val2 = occPix[indX2 + i, indY2 + j]
+									if val2 <= 127: # 0 or 127
+										isOK = False
+	
+						if isOK:
+							# 1. add node if not already added
+							# 2. add edge
+	
+							newVertices[v1] = vertices[v1]
+							newVertices[v2] = vertices[v2]
+	
+							newEdges.append([v1,v2])
+	
+			for key, attr in newVertices.iteritems():
+				roadGraph.add_node(key, attr)
+	
+			for edge in newEdges:
+				roadGraph.add_edge(edge[0], edge[1])
+	
+				# assign weights to the edges according to their length
+				v1 = roadGraph.get_node_attributes(edge[0])
+				v2 = roadGraph.get_node_attributes(edge[1])
+				length = sqrt((v2[0]-v1[0])**2+(v2[1]-v1[1])**2)
+				roadGraph.set_edge_weight(edge[0],edge[1],length)
+		
+			return roadGraph
+		
+
+
+		gridOccPoints = []
+		for pnt in occPoints_GPAC:
+			gridOccPoints.append(realToGrid(pnt))
+			#gridOccPoints.append(localGPACProfile.convertGlobalToLocal(pnt))
+		
 		gridHull = []
 		for i in range(len(hull)):
 			p = hull[i]
 			gridHull.append(realToGrid(p))
+
+		gridSweep = []
+		for i in range(len(sweepHull)):
+			p = sweepHull[i]
+			gridSweep.append(realToGrid(p))
 	
-		"""		
 		minX = 1e100
 		maxX = -1e100
 		minY = 1e100
@@ -1400,28 +1576,110 @@ class LocalNode:
 		yRange = range(minY, maxY + 1)	
 
 		interior = []
+		interior2 = []
 	
 		for i in xRange:
 			for j in yRange:
 				if point_inside_polygon(i, j, gridHull):
 					interior.append((i,j))
+
+		for i in xRange:
+			for j in yRange:
+				if point_inside_polygon(i, j, gridSweep):
+					interior2.append((i,j))
 		
-		inputImg = Image.new('L', (numPixel,numPixel), 255)
+		
+		
+		inputImg = Image.new('L', (numPixel,numPixel), 0)
 		imga = inputImg.load()
 		
 		for i in range(len(gridHull)):
 			p = gridHull[i]
-			imga[p[0],p[1]] = 0
+			imga[p[0],p[1]] = 255
 		
 		for p in interior:
-			imga[p[0],p[1]] = 0
-		"""
+			imga[p[0],p[1]] = 255
 			
+		
+		inputImg2 = Image.new('L', (numPixel,numPixel), 0)
+		imga = inputImg2.load()
+		
+		for i in range(len(gridSweep)):
+			p = gridSweep[i]
+			imga[p[0],p[1]] = 255
+		
+		for p in interior2:
+			imga[p[0],p[1]] = 255
+
+		
+		#inputImg.save("medialOut_%04u_1.png" % self.nodeID)
+
+
+		vertices, lines, edges = computeVoronoi(hull[:-2])
+		roadGraph = pruneEdges(inputImg, vertices, lines, edges)
+		voronoiImg = Image.new('L', (numPixel,numPixel), 255)
+		
+		
+		voronoiDraw = ImageDraw.Draw(voronoiImg)
+
+		edges = roadGraph.edges()
+		for edge in edges:
+			v1 = roadGraph.get_node_attributes(edge[0])
+			v2 = roadGraph.get_node_attributes(edge[1])
+			
+			# get grid value of real point
+			i1, j1 = realToGrid(v1)
+			i2, j2 = realToGrid(v2)
+
+			voronoiDraw.line([(i1,j1),(i2,j2)], fill = 0)
+
+
+		vertices, lines, edges = computeVoronoi(sweepHull[:-2])
+		roadGraph = pruneEdges(inputImg2, vertices, lines, edges)
+		voronoiImg2 = Image.new('L', (numPixel,numPixel), 255)
+				
+		voronoiDraw = ImageDraw.Draw(voronoiImg2)
+
+		edges = roadGraph.edges()
+		for edge in edges:
+			v1 = roadGraph.get_node_attributes(edge[0])
+			v2 = roadGraph.get_node_attributes(edge[1])
+			
+			# get grid value of real point
+			i1, j1 = realToGrid(v1)
+			i2, j2 = realToGrid(v2)
+
+			voronoiDraw.line([(i1,j1),(i2,j2)], fill = 0)
+
+		#voronoiImg.save("medialOut_%04u_3.png" % self.nodeID)
+
+
+	
 		resultImg = Image.new('L', (numPixel,numPixel))
+		resultImg2 = Image.new('L', (numPixel,numPixel))
 		resultImg = computeMedialAxis(self.nodeID, numPixel,numPixel, resultImg, len(gridHull[:-2]), gridHull[:-2])
+		resultImg2 = computeMedialAxis(self.nodeID, numPixel,numPixel, resultImg2, len(gridSweep[:-2]), gridSweep[:-2])
+
+
+		occImg = Image.new('L', (numPixel,numPixel), 0)
+		imga = occImg.load()
+		for i in range(len(gridOccPoints)):
+			p = gridOccPoints[i]
+			imga[p[0],p[1]] = 255
+			
+
+
+		imgOut = Image.new('L', (4*numPixel,2*numPixel))
+		imgOut.paste(occImg, (0,0))
+		imgOut.paste(inputImg, (numPixel,0))
+		imgOut.paste(resultImg, (2*numPixel, 0))
+		imgOut.paste(voronoiImg, (3*numPixel, 0))
+		imgOut.paste(inputImg2, (numPixel, numPixel))
+		imgOut.paste(resultImg2, (2*numPixel, numPixel))
+		imgOut.paste(voronoiImg2, (3*numPixel, numPixel))
+		imgOut.save("medialOut_%04u.png" % self.nodeID)
 		
-		
-		#resultImg.save("medialOut_%04u.png" % self.nodeID)
+		#resultImg.save("medialOut_%04u_2.png" % self.nodeID)
 		imgA = resultImg.load()
 	
 		points = []
@@ -1441,7 +1699,7 @@ class LocalNode:
 					builtGraph[(i,j)] = []
 					for k in range(i-1, i+2):
 						for l in range(j-1, j+2):
-							if imgA[k,l] == 0:
+							if imgA[k,l] == 0 and not (k == i and l == j):
 								builtGraph[(i,j)].append((k,l))
 								medialGraph.add_edge((i,j), (k,l))
 								
@@ -1464,7 +1722,109 @@ class LocalNode:
 		for k, v in uni_mst.items():
 			if len(v) == 1:
 				leaves.append(k)
+				
+				
+		#print len(leaves), "leaves"
+
+		for leaf in leaves:
+			#print "delete", leaf
+			medialGraph.del_node(leaf)	
+		mst = medialGraph.minimal_spanning_tree()
 	
+		uni_mst = {}
+		isVisited = {}
+		nodeSum = {}
+		for k, v in mst.items():
+			uni_mst[k] = []
+			isVisited[k] = 0
+			nodeSum[k] = 0
+	
+		for k, v in mst.items():
+			if v != None:
+				uni_mst[k].append(v)
+				uni_mst[v].append(k)
+	
+		leaves = []
+		for k, v in uni_mst.items():
+			if len(v) == 1:
+				leaves.append(k)
+				
+				
+		print len(leaves), "leaves"
+
+		if True:
+			imgA = resultImg2.load()
+			points2 = []
+			for i in range(1, numPixel-1):
+				for j in range(1, numPixel-1):
+					if imgA[i,j] == 0:
+						points2.append((i,j))
+		
+			medialGraph2 = graph.graph()
+			for p in points2:
+				medialGraph2.add_node(p, [])
+		
+			builtGraph2 = {}
+			for i in range(2, numPixel-2):
+				for j in range(2, numPixel-2):
+					if imgA[i,j] == 0:
+						builtGraph2[(i,j)] = []
+						for k in range(i-1, i+2):
+							for l in range(j-1, j+2):
+								if imgA[k,l] == 0 and not (k == i and l == j):
+									builtGraph2[(i,j)].append((k,l))
+									medialGraph2.add_edge((i,j), (k,l))
+									
+			mst2 = medialGraph2.minimal_spanning_tree()
+		
+			uni_mst2 = {}
+			isVisited2 = {}
+			nodeSum2 = {}
+			for k, v in mst2.items():
+				uni_mst2[k] = []
+				isVisited2[k] = 0
+				nodeSum2[k] = 0
+		
+			for k, v in mst2.items():
+				if v != None:
+					uni_mst2[k].append(v)
+					uni_mst2[v].append(k)
+		
+			leaves2 = []
+			for k, v in uni_mst2.items():
+				if len(v) == 1:
+					leaves2.append(k)
+					
+					
+			#print len(leaves), "leaves"
+	
+			for leaf in leaves2:
+				#print "delete", leaf
+				medialGraph2.del_node(leaf)	
+			mst2 = medialGraph2.minimal_spanning_tree()
+		
+			uni_mst2 = {}
+			isVisited2 = {}
+			nodeSum2 = {}
+			for k, v in mst2.items():
+				uni_mst2[k] = []
+				isVisited2[k] = 0
+				nodeSum2[k] = 0
+		
+			for k, v in mst2.items():
+				if v != None:
+					uni_mst2[k].append(v)
+					uni_mst2[v].append(k)
+		
+			leaves2 = []
+			for k, v in uni_mst2.items():
+				if len(v) == 1:
+					leaves2.append(k)
+					
+					
+			print len(leaves2), "leaves"
+			
+
 	
 		" find the longest path from each leaf"
 		maxPairDist = 0
@@ -1709,7 +2069,7 @@ class LocalNode:
 			if currU >= termU:
 				break
 
-			nextU = medialSpline2.getUOfDist(currU, 0.04)			
+			nextU = medialSpline2.getUOfDist(currU, 0.04, distIter = 0.001)			
 			currU = nextU
 				
 		
@@ -2119,7 +2479,7 @@ class LocalNode:
 			#print points
 		
 			if sweep:	
-				self.b_vert = self.computeAlpha2(points, radius = 0.02)
+				self.b_vert = self.computeAlpha2(points, radius = 0.001)
 				" cut out the repeat vertex "
 				self.b_vert = self.b_vert[:-1]
 				
