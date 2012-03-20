@@ -96,7 +96,8 @@ class VisualGraph:
 			print "loading node", i		
 			currNode = LocalNode(self.probe, self.contacts, i, 19, PIXELSIZE)
 
-			if i > 0 and i % 2 == 0:
+			#if i > 0 and i % 2 == 0:
+			if False:	
 				
 				" since estimated poses are modified from the original motion estimation, we need to restore them "
 
@@ -107,7 +108,7 @@ class VisualGraph:
 				transform = motion_constraints[-1][2]
 				offset = [transform[0,0], transform[1,0], transform[2,0]]
 				
-				estPose1 = self.poseGraph.nodeHash[i-1].getEstPose()
+				estPose1 = self.localNodes[i-1].getEstPose()
 				profile1 = Pose(estPose1)
 				estPose2 = profile1.convertLocalOffsetToGlobal(offset)
 				
@@ -118,7 +119,7 @@ class VisualGraph:
 			self.localNodes.append(currNode)
 			
 
-			self.poseGraph.loadNewNode(currNode)
+			#self.poseGraph.loadNewNode(currNode)
 			#self.poseGraph.resetGraphToGround()						
 			#self.poseGraph.loadNodeGroundPast(currNode)
 	
@@ -126,16 +127,17 @@ class VisualGraph:
 			#	self.poseGraph.makeCornerBinConsistent()
 
 			#self.poseGraph.addCornerConstraints(i)			
-			self.poseGraph.mergePriorityConstraints()
+			#self.poseGraph.mergePriorityConstraints()
 
 	
-			self.drawConstraints(i)
+			self.drawMotion(i)
+			#self.drawConstraints(i)
 			#self.drawTopology2(i)
 			#self.drawMedialPath(i)
 			
 			#self.drawShapeConstraints(i)
 
-			self.poseGraph.saveState()
+			#self.poseGraph.saveState()
 
 		self.drawMap()
 		#self.drawConstraints(num_poses)
@@ -1857,6 +1859,83 @@ class VisualGraph:
 			pylab.savefig("plotEstimate%04u.png" % self.numNodes)
 		else:
 			pylab.savefig("plotEstimate%04u.png" % id)
+
+	
+	def drawMotion(self, id = []):
+		
+
+		"""
+		f = open(dirName + "/motion_constraints_%04u.txt" % (i+1), 'r')
+		motion_constraints = eval(f.read().replace('\r\n','\n'))
+		f.close()				
+		transform = motion_constraints[-1][2]
+		offset = [transform[0,0], transform[1,0], transform[2,0]]
+		
+		estPose1 = self.poseGraph.nodeHash[i-1].getEstPose()
+		profile1 = Pose(estPose1)
+		estPose2 = profile1.convertLocalOffsetToGlobal(offset)
+		
+		currNode.readFromFile(dirName, i, forcedPose = estPose2)
+		"""
+		
+		print "drawing", len(self.localNodes), "nodes"
+		
+
+		pylab.clf()
+		for i in range(len(self.localNodes)):
+
+			node1 = self.localNodes[i]
+			posture1 = node1.getStableGPACPosture()
+				
+			gndPose = node1.getGndGlobalGPACPose()
+			posture_gnd = []
+			for p in posture1:
+				posture_gnd.append(gen_icp.dispOffset(p, gndPose))
+							
+			xP = []
+			yP = []
+			for p in posture_gnd:
+				xP.append(p[0])
+				yP.append(p[1])
+			#pylab.plot(xP,yP, color=(.5,0.2,0.2))	
+			pylab.plot(xP,yP, color=(255/256.,182/256.,193/256.))	
+
+		for i in range(len(self.localNodes)):
+
+			node1 = self.localNodes[i]
+			currPose = node1.getGlobalGPACPose()
+			currProfile = Pose(currPose)
+			posture1 = node1.getStableGPACPosture()
+			posture_trans = []
+			for p in posture1:
+				posture_trans.append(gen_icp.dispOffset(p, currPose))
+				
+			
+			xP = []
+			yP = []
+			for p in posture_trans:
+				xP.append(p[0])
+				yP.append(p[1])
+			#pylab.plot(xP,yP, color=(255/256.,182/256.,193/256.))	
+			pylab.plot(xP,yP, color=(0,0,0))	
+
+		self.drawWalls()
+
+
+		pylab.xlim(-3,6)
+		pylab.ylim(-4,4)
+		
+		#pylab.xlim(-3,12)
+		#pylab.ylim(-4,12)
+
+		#pylab.xlim(-5,10)
+		#pylab.xlim(-8,12)
+		#pylab.ylim(-10,10)
+		#pylab.ylim(-8,8)
+		if id == []:
+			pylab.savefig("plotMotion%04u.png" % self.numNodes)
+		else:
+			pylab.savefig("plotMotion%04u.png" % id)
 
 	def drawMedialPath(self, id = []):
 		
