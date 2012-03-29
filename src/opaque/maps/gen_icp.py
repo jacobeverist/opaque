@@ -1726,6 +1726,9 @@ def addDistanceFromOriginCovariance(points, tan_var=0.1, perp_var=0.01):
 		# 3. computeVectorCovariance() with tan_var, perp_var proportional to dist, and tan_var larger
 		C = computeVectorCovariance(rotVec,dist*tan_var,dist*perp_var)
 
+		#print "point:", p
+		#print "adding:", C
+		
 		if len(p) <= 2:
 			p.append(C)
 		else:
@@ -1741,9 +1744,10 @@ def addGPACVectorCovariance(points, high_var=1.0, low_var=0.001):
 	newPoints = []
 
 	for p in points:
-		C = numpy.matrix([	[high_var, 0.0],
-				[0.0, high_var]
-				])
+		#C = numpy.matrix([	[high_var, 0.0],
+		#		[0.0, high_var]
+		#		])
+		C = [ [high_var, 0.], [0., high_var]]
 
 		# the covariance matrix that enforces the point-to-plane constraint
 		normVec = [math.cos(p[2]+math.pi/2.0), math.sin(p[2]+math.pi/2.0)]		
@@ -1759,9 +1763,10 @@ def addGPACVectorCovarianceWithAngle(points, high_var=1.0, low_var=0.001):
 	newPoints = []
 
 	for p in points:
-		C = numpy.matrix([	[high_var, 0.0],
-				[0.0, high_var]
-				])
+		#C = numpy.matrix([	[high_var, 0.0],
+		#		[0.0, high_var]
+		#		])
+		C = [ [high_var, 0.], [0., high_var]]
 
 		# the covariance matrix that enforces the point-to-plane constraint
 		normVec = [math.cos(p[2]+math.pi/2.0), math.sin(p[2]+math.pi/2.0)]		
@@ -1775,9 +1780,10 @@ def addGPACVectorCovarianceWithAngle(points, high_var=1.0, low_var=0.001):
 def addPointToLineCovariance(points, high_var=1.0, low_var=0.001):
 
 	for p in points:
-		C = numpy.matrix([	[high_var, 0.0],
-				[0.0, high_var]
-				])
+		C = [ [high_var, 0.], [0., high_var]]
+		#C = numpy.matrix([	[high_var, 0.0],
+		#		[0.0, high_var]
+		#		])
 
 		try:
 			# the covariance matrix that enforces the point-to-plane constraint

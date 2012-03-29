@@ -14,6 +14,7 @@ import graph
 from subprocess import Popen, PIPE
 from medialaxis import computeMedialAxis
 import Image
+import sys
 
 class VisualGraph:
 
@@ -96,8 +97,7 @@ class VisualGraph:
 			print "loading node", i		
 			currNode = LocalNode(self.probe, self.contacts, i, 19, PIXELSIZE)
 
-			#if i > 0 and i % 2 == 0:
-			if False:	
+			if i > 0 and i % 2 == 0:
 				
 				" since estimated poses are modified from the original motion estimation, we need to restore them "
 
@@ -119,7 +119,7 @@ class VisualGraph:
 			self.localNodes.append(currNode)
 			
 
-			#self.poseGraph.loadNewNode(currNode)
+			self.poseGraph.loadNewNode(currNode)
 			#self.poseGraph.resetGraphToGround()						
 			#self.poseGraph.loadNodeGroundPast(currNode)
 	
@@ -127,11 +127,11 @@ class VisualGraph:
 			#	self.poseGraph.makeCornerBinConsistent()
 
 			#self.poseGraph.addCornerConstraints(i)			
-			#self.poseGraph.mergePriorityConstraints()
+			self.poseGraph.mergePriorityConstraints()
 
 	
-			self.drawMotion(i)
-			#self.drawConstraints(i)
+			#self.drawMotion(i)
+			self.drawConstraints(i)
 			#self.drawTopology2(i)
 			#self.drawMedialPath(i)
 			
@@ -761,16 +761,60 @@ class VisualGraph:
 			" alpha shape circle radius "
 			inputStr += str(radius) + " "
 			
-			for p in medialPointSoup:
-				p2 = copy(p)
-				" add a little bit of noise to avoid degenerate conditions in CGAL "
-				#p2[0] += gauss(0.0,0.0001)
-				#p2[1] += gauss(0.0,0.0001)
+			#for p in medialPointSoup:
+			#	p2 = copy(p)
+			#	" add a little bit of noise to avoid degenerate conditions in CGAL "	
+			#	inputStr += str(p2[0]) + " " + str(p2[1]) + " "
+			#
+			#inputStr += "\n"
+
+			isDone = False
+			
+			while not isDone:
 	
-				inputStr += str(p2[0]) + " " + str(p2[1]) + " "
+				inputStr = str(numPoints) + " "
+		
+				" alpha shape circle radius "
+				inputStr += str(radius) + " "
+				
+				for p in medialPointSoup:
+					p2 = copy(p)
+					" add a little bit of noise to avoid degenerate conditions in CGAL "
+					p2[0] += random.gauss(0.0,0.000001)
+					p2[1] += random.gauss(0.0,0.000001)
+		
+					inputStr += str(p2[0]) + " " + str(p2[1]) + " "
+				
+				inputStr += "\n"
+				
+				try:			
+					" start the subprocess "
+					if sys.platform == "win32":
+						subProc = Popen(["alpha2.exe"], stdin=PIPE, stdout=PIPE)
+					else:
+						subProc = Popen(["./alpha2"], stdin=PIPE, stdout=PIPE)
+						
+					
+					" send input and receive output "
+					sout, serr = subProc.communicate(inputStr)
 			
-			inputStr += "\n"
+					" convert string output to typed data "
+					sArr = sout.split(" ")
+					
+					numVert = int(sArr[0])
+					
+					sArr = sArr[1:]
+					
+					
+					vertices = []
+					for i in range(len(sArr)/2):
+						vertices.append([float(sArr[2*i]), float(sArr[2*i + 1])])
+					isDone = True
+				except:
+					print "hull has holes!  retrying..."
+					#print sArr	
 			
+			"""
 			vertices = []
 			try:			
 				" start the subprocess "
@@ -794,7 +838,8 @@ class VisualGraph:
 					vertices.append([float(sArr[2*i]), float(sArr[2*i + 1])])
 			except:
 				print "hull has holes!"
-			
+			"""
+
 			" cut out the repeat vertex "
 			vertices = vertices[:-1]
 			

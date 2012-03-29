@@ -13,6 +13,8 @@ class SplineFit:
 		self.smoothNess = smooth
 		self.kp = kp
 		
+		#print "spline received", len(points), "points"
+		
 		newP = []
 		for p in points:
 			if p not in newP:
