@@ -97,8 +97,8 @@ class VisualGraph:
 			print "loading node", i		
 			currNode = LocalNode(self.probe, self.contacts, i, 19, PIXELSIZE)
 
-			if i > 0 and i % 2 == 0:
-				
+			#if i > 0 and i % 2 == 0:
+			if False:	
 				" since estimated poses are modified from the original motion estimation, we need to restore them "
 
 				f = open(dirName + "/motion_constraints_%04u.txt" % (i+1), 'r')
@@ -131,17 +131,18 @@ class VisualGraph:
 
 	
 			#self.drawMotion(i)
-			self.drawConstraints(i)
+			#self.drawConstraints(i)
 			#self.drawTopology2(i)
 			#self.drawMedialPath(i)
 			
 			#self.drawShapeConstraints(i)
 
 			#self.poseGraph.saveState()
+		
 
 		self.drawMap()
-		#self.drawConstraints(num_poses)
-		self.drawPoses()
+		self.drawConstraints(num_poses)
+		#self.drawPoses()
 		
 		#self.drawAllConstraints()
 		

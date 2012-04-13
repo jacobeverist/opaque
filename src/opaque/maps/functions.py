@@ -13,6 +13,15 @@ def normalizeAngle(angle):
 
 	return angle 
 
+def diffAngle(angle1, angle2):
+	
+	midPhi = angle1
+	
+	tempAngle1 = 0.0
+	tempAngle2 = normalizeAngle(angle2 - midPhi)
+
+	return tempAngle1-tempAngle2
+
 def findClosestPoint(a_trans, b):
 
 	minDist = 1e100

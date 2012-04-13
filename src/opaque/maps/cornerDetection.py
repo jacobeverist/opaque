@@ -101,7 +101,7 @@ def extractCornerCandidates(pilImg, estPose = []):
 	global saveCount
 	global histCount
 
-	isRender = True
+	isRender = False
 	
 
 
@@ -170,7 +170,7 @@ def extractCornerCandidates(pilImg, estPose = []):
 				indY_2 = wall[i+1][1]
 				cv.Line(color_dst, (indX, indY), (indX_2, indY_2), cv.CV_RGB(0, 0, 0), 1, 8)
 		
-		cv.SaveImage("%04u_0.png" % saveCount, color_dst)
+		#cv.SaveImage("%04u_0.png" % saveCount, color_dst)
 	
 	CORNER_THRESH = 400
 
@@ -212,7 +212,7 @@ def extractCornerCandidates(pilImg, estPose = []):
 		cv.CvtColor(edges, color_dst, cv.CV_GRAY2BGR)
 		for point in maxPoints:
 			cv.Circle(color_dst, point, 2, cv.CV_RGB(0,0,255), thickness=1, lineType=8, shift=0) 
-		cv.SaveImage("%04u_2.png" % saveCount, color_dst)
+		#cv.SaveImage("%04u_2.png" % saveCount, color_dst)
 		
 	#print count, "points over", maxVal
 

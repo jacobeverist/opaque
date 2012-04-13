@@ -22,6 +22,7 @@ import functions
 from numpy import array, dot, transpose
 
 estPlotCount = 0
+alphaCount = 0
 
 def decimatePoints(points):
 	result = []
@@ -1614,7 +1615,8 @@ class LocalNode:
 		
 		#inputImg.save("medialOut_%04u_1.png" % self.nodeID)
 
-
+		
+		"""
 		vertices, lines, edges = computeVoronoi(hull[:-2])
 		roadGraph = pruneEdges(inputImg, vertices, lines, edges)
 		voronoiImg = Image.new('L', (numPixel,numPixel), 255)
@@ -1650,8 +1652,7 @@ class LocalNode:
 			i2, j2 = realToGrid(v2)
 
 			voronoiDraw.line([(i1,j1),(i2,j2)], fill = 0)
-
-		#voronoiImg.save("medialOut_%04u_3.png" % self.nodeID)
+		"""
 
 
 	
@@ -1668,7 +1669,7 @@ class LocalNode:
 			imga[p[0],p[1]] = 255
 			
 
-
+		"""
 		imgOut = Image.new('L', (4*numPixel,2*numPixel))
 		imgOut.paste(occImg, (0,0))
 		imgOut.paste(inputImg, (numPixel,0))
@@ -1678,6 +1679,7 @@ class LocalNode:
 		imgOut.paste(resultImg2, (2*numPixel, numPixel))
 		imgOut.paste(voronoiImg2, (3*numPixel, numPixel))
 		imgOut.save("medialOut_%04u.png" % self.nodeID)
+		"""
 		
 		#resultImg.save("medialOut_%04u_2.png" % self.nodeID)
 		imgA = resultImg.load()
@@ -2073,18 +2075,56 @@ class LocalNode:
 			currU = nextU
 				
 		
+		numSamples = len(self.medialWidth)
+		
+		" divide into 5 histograms "
+		histDiv = numSamples / 5
+		currDiv = 0
+		divSums = [0.0 for k in range(5)]
+		divIndexes = [0 for k in range(5)]
+		
+		for k in range(5):
+			divIndexes[k] = (k+1) * histDiv
+		
+		" set last bin to infinite boundary "
+		divIndexes[-1] = 1e100
+		
+		" pad the middle with the remainder "
+		remainderTotal = numSamples % 5
+		divIndexes[2] += remainderTotal
+		divIndexes[3] += remainderTotal
+			
+		print "numSamples:", numSamples
+		print "histDiv:", histDiv
+		print "divIndexes:", divIndexes
+		for k in range(numSamples):
+			
+			width = self.medialWidth[k][3] + self.medialWidth[k][4]
+			#print k, ">", divIndexes[currDiv]
+			if k > divIndexes[currDiv]:
+				currDiv += 1
+			
+			divSums[currDiv] += width
+			
+		print "divSums:", divSums
+			
+		if divSums[2] < divSums[0] and divSums[2] < divSums[4]:
+			self.isBowtie = True
+			print "BOWTIE"
+		else:
+			self.medialPathCut = medial2
 
-		totalWidth = 0.0
-		for samp in self.medialWidth:
-			width = samp[3] + samp[4]
-			totalWidth += width
+		#totalWidth = 0.0
+		#for samp in self.medialWidth:
+		#	width = samp[3] + samp[4]
+		#	totalWidth += width
 
 		#if totalWidth > 65.0:
 		#if totalWidth > 60.0:
-		if totalWidth > 50.0:
-			self.isBowtie = True
-		else:		
-			self.medialPathCut = medial2
+		#if totalWidth > 50.0:
+		#	self.isBowtie = True
+		#else:		
+		#	self.medialPathCut = medial2
 			
 
 		if sweep:
@@ -2545,6 +2585,10 @@ class LocalNode:
 	
 	def computeAlpha2(self, points, radius = 0.2):
 		
+		global alphaCount
+		
+		plotIter = False
+		
 		numPoints = len(points)
 
 		isDone = False
@@ -2556,16 +2600,24 @@ class LocalNode:
 			" alpha shape circle radius "
 			inputStr += str(radius) + " "
 			
+			xP = []
+			yP = []
 			for p in points:
 				p2 = copy(p)
 				" add a little bit of noise to avoid degenerate conditions in CGAL "
 				p2[0] += random.gauss(0.0,0.0001)
 				p2[1] += random.gauss(0.0,0.0001)
 	
+				xP.append(p2[0])
+				yP.append(p2[1])
+	
 				inputStr += str(p2[0]) + " " + str(p2[1]) + " "
 			
 			inputStr += "\n"
 			
+			if plotIter:
+				pylab.clf()
+				pylab.scatter(xP,yP, color='b')
 			try:			
 				" start the subprocess "
 				if sys.platform == "win32":
@@ -2593,8 +2645,30 @@ class LocalNode:
 				vertices = []
 				for i in range(len(sArr)/2):
 					vertices.append([float(sArr[2*i]), float(sArr[2*i + 1])])
+					
+				if plotIter:
+					xP = []
+					yP = []
+					for p in vertices:
+						xP.append(p[0])
+						yP.append(p[1])
+						
+					pylab.plot(xP,yP, color='r')
+	
+					pylab.xlim(-3,3)
+					pylab.ylim(-3,3)
+					pylab.title("nodeID = %d, radius = %f, numPoints = %d" % (self.nodeID, radius, numPoints))
+					pylab.savefig("alphaResult_%04d.png" % alphaCount)
+					alphaCount += 1
+								
 				isDone = True
 			except:
+				if plotIter:
+					pylab.xlim(-3,3)
+					pylab.ylim(-3,3)
+					pylab.title("FAIL: nodeID = %d, radius = %f, numPoints = %d" % (self.nodeID, radius, numPoints))
+					pylab.savefig("alphaResult_%04d.png" % alphaCount)
+					alphaCount += 1
 				print "hull has holes!  retrying..."
 				#print sArr
 		"""

@@ -1,3 +1,6 @@
+import random
+random.seed(0)
+
 from SnakeControl import SnakeControl
 from copy import *
 from math import *
@@ -360,6 +363,7 @@ class TestNavigation(SnakeControl):
 				
 				self.globalState = 6
 				#self.globalState = 9
+				#self.globalState = 7
 
 				#self.probe.restorePose()
 				self.isCapture = True
@@ -379,6 +383,7 @@ class TestNavigation(SnakeControl):
 			isDone = self.doReturnToRest()
 			
 			if isDone:
+				#self.globalState = 9
 				self.globalState = 8
 
 				self.mapGraph.correctPosture()
@@ -445,7 +450,7 @@ class TestNavigation(SnakeControl):
 				foreAvg = frontSum / len(frontProbeError)
 				
 				
-				print "foreAvg =", foreAvg
+				#print "foreAvg =", foreAvg
 				#foreAvg = 2.0
 				#foreAvg = 0.0
 				if foreAvg >= 1.4:
@@ -1001,6 +1006,22 @@ class TestNavigation(SnakeControl):
 			
 			if isDone:
 				#self.mapGraph.update()
+
+
+				#self.mapGraph.correctPosture()
+				#self.mapGraph.localizeCurrentNode()
+				#self.contacts.resetPose(self.mapGraph.currNode.getEstPose())
+				#self.lastPose = self.contacts.getAverageSegPose(0)
+
+				#self.mapGraph.synch()
+				#self.mapGraph.saveMap()
+				#self.mapGraph.saveLocalMap()
+				#self.mapGraph.drawConstraints()
+				
+				#faceDir = False		
+				#self.mapGraph.newNode(faceDir, self.travelDir)
+				#self.mapGraph.forceUpdate(faceDir)
+
 				
 				self.mapGraph.correctPosture()
 				self.mapGraph.localizeCurrentNode()
@@ -1012,8 +1033,9 @@ class TestNavigation(SnakeControl):
 				self.mapGraph.saveLocalMap()
 				self.mapGraph.drawConstraints()				
 				
-				self.mapGraph.newNode(False, self.localPathDirection)
-				self.mapGraph.forceUpdate(True)
+				faceDir = False
+				self.mapGraph.newNode(faceDir, self.localPathDirection)
+				self.mapGraph.forceUpdate(faceDir)
 				#self.mapGraph.newNode(self.stepDist, False, self.travelDir)
 				#self.mapGraph.currNode.resetPosture()		
 				self.localPathState = 4			
@@ -1044,6 +1066,7 @@ class TestNavigation(SnakeControl):
 				#self.mapGraph.saveMap()
 				self.mapGraph.saveLocalMap()
 				self.mapGraph.drawConstraints()				
+
 
 
 				self.localPathState = 1

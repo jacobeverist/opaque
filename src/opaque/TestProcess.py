@@ -1,3 +1,6 @@
+import random
+random.seed(0)
+
 from SnakeControl import SnakeControl
 from copy import *
 from math import *
@@ -222,54 +225,10 @@ class TestProcess(SnakeControl):
 			#self.mapGraph.saveMap()
 
 			#self.mapGraph.testHypotheses("testData/sensorLocalize2", 175, "cornerHypotheses_2011_06_05.txt")
-			#self.mapGraph.loadSeries("testData/sensorLocalize2", 175)
-			#self.mapGraph.loadSeries("testData/sensorLocalize2", 161)
-			#self.mapGraph.loadSeries("testData/sensorLocalize2", 28)
-			#self.mapGraph.loadSeries("testData/sensorLocalize2", 10)
-			#self.mapGraph.loadSeries("testData/sensorLocalize2", 53)
-			#self.mapGraph.loadSeries("testData/junctionTest6", 16)
-			#self.mapGraph.loadSeries("testData/junctionTest5", 94)
-			#self.mapGraph.loadSeries("testData/junctionTest4", 22)
-			#self.mapGraph.loadSeries("testData/junctionTest3", 19)
-			#self.mapGraph.loadSeries("testData/junctionTest2", 192)
-			#self.mapGraph.loadSeries("testData/junctionTest1", 117)
-			#exit()
-			
-			#self.mapGraph.loadSeries("testData/junctionTest1", 117)
-
-			#self.mapGraph.loadSeries("testData/junctionTest7", 40)
-			#self.mapGraph.loadSeries("testData/junctionTest7", 28)
-			#self.mapGraph.loadSeries("testData/junctionTest8", 40)
-			#self.mapGraph.loadSeries("testData/junctionTest9", 40)
-			#self.mapGraph.loadSeries("testData/junctionTest11", 40)
-			#self.mapGraph.loadSeries("testData/junctionTest11", 30)
-			#self.mapGraph.loadSeries(".", 49)
-			#self.mapGraph.loadSeries(".", 88)
-			#self.mapGraph.loadSeries(".", 6)
-			#self.mapGraph.restoreSeries("resultProcess_2011_12_11", 22)
-			#self.mapGraph.restoreSeries("resultProcess_2011_12_11", 23)
-			#self.mapGraph.loadSeries("resultProcess_2011_12_11", 30)
-			#self.mapGraph.loadSeries("resultProcess_2011_12_11", 49)
-			self.mapGraph.loadSeries("resultProcess_2012_02_03", 69)
-			#self.mapGraph.loadSeries("resultProcess_2012_01_30", 100)
-			#self.mapGraph.loadSeries("testData/junctionTest16", 49)
-			#self.mapGraph.loadSeries(".",68)
-			#self.mapGraph.loadSeries("testData/junctionTest13", 40)
-
-			#self.mapGraph.loadSeries("testData/junctionTest8", 40)
-			#self.mapGraph.loadSeries("testData/junctionTest8", 20)
-
-
-			#self.mapGraph.loadSeries("testData/junctionTest1", 13)
-			#self.mapGraph.loadSeries("testData/junctionTest1", 66)
-			#self.mapGraph.loadSeries("tes tData/junctionTest1", 67)
-
-			#self.mapGraph.loadSeries("testData/junctionTest1", 25)
-			#self.mapGraph.loadSeries("testData/junctionTest2", 26)
-			#self.mapGraph.loadSeries("testData/junctionTest3", 19)
-			#self.mapGraph.loadSeries("testData/junctionTest4", 22)
-			#self.mapGraph.loadSeries("testData/junctionTest5", 28)
-			#self.mapGraph.loadSeries("testData/junctionTest6", 16)
+			#self.mapGraph.loadSeries("resultProcess_2012_04_05", 20)
+			#self.mapGraph.loadSeries("resultProcess_2012_04_04", 38)
+			self.mapGraph.loadSeries("resultProcess_2012_04_06", 44)
+			#self.mapGraph.loadSeries("resultProcess_2012_04_07", 38)
 			
 			#self.mapGraph.instantSensorTest("testData/sensorLocalize2", 175)
 			#self.mapGraph.instantSensorTest("testData/sensorLocalize2", 50)
