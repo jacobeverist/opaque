@@ -20,6 +20,8 @@ int runAlg(int index, int sizeX, int sizeY, int numPoints, double *polyX, double
 	int w, h, i, j, b;
 	CvScalar pixel, pixOut;
 
+	srand(0);
+
 	image = cvCreateImage(cvSize(sizeX,sizeY), IPL_DEPTH_8U, 1);
 
 	w = image->width;
