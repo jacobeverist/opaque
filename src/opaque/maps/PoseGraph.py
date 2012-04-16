@@ -1638,6 +1638,28 @@ class PoseGraph:
 			for i in range(len(self.cornerBins)):
 				print i, self.cornerBins[i]
 
+	def getPathTerms(self):
+
+		terms = []
+
+		numPaths = len(self.paths)
+		for k in range(numPaths):
+
+			path = self.paths[k]
+			
+			pathSpline = SplineFit(path, smooth=0.1)
+			vecPoints = pathSpline.getUniformSamples()
+			
+			angleSum = 0.0
+			for p in vecPoints[-11:]:
+				angleSum += p[2]
+				
+			angleAvg = angleSum / 10.
+			
+			terms.append([vecPoints[-1][0],vecPoints[-1][1], angleAvg])
+
+		return terms
+
 	def trimPaths(self, paths):
 
 		trimmedPaths = []
@@ -1857,14 +1879,16 @@ class PoseGraph:
 		"""
 		pylab.clf()
 
-		for path in trimmedPaths:
+		for k in range(len(self.trimmedPaths)):
+			path = self.trimmedPaths[k]
+			print "path has", len(path), "points"
 			xP = []
 			yP = []
 			for p in path:
 				xP.append(p[0])
 				yP.append(p[1])
-
-			pylab.plot(xP,yP)
+	
+			pylab.plot(xP,yP, color = self.colors[k])
 
 		pylab.title("Trimmed Paths, numNodes = %d" % self.numNodes)
 		pylab.savefig("trimmedPath_%04u.png" % self.trimCount)
@@ -3219,6 +3243,9 @@ class PoseGraph:
 
 		#self.a_medial.append(self.nodeHash[nodeID].getMedialAxis(sweep = False))
 		#self.c_hulls.append(computeHull(self.nodeHash[nodeID], static = True))
+		#alphaHull = computeHull(self.nodeHash[nodeID], static = True)
+		##longPaths, medialLongPaths, longMedialWidths = self.nodeHash[nodeID].computeFullSkeleton(alphaHull)
+		
 		
 		return self.integrateNode(newNode, nodeID)
 
@@ -3365,7 +3392,7 @@ class PoseGraph:
 				for p in self.paths[k]:
 					xP.append(p[0])
 					yP.append(p[1])
-				pylab.plot(xP,yP, color=self.colors[k])
+				pylab.plot(xP,yP, color=self.colors[k], linewidth=4)
 
 
 				for nodeID in self.nodeSets[k]:
@@ -3410,7 +3437,7 @@ class PoseGraph:
 					xP.append(p[0])
 					yP.append(p[1])
 					
-				pylab.plot(xP,yP, color=self.colors[k])
+				pylab.plot(xP,yP, '--', color=self.colors[k], linewidth=4)
 				
 			print self.nodeSets.values()	
 			pylab.title("%s" % repr(self.nodeSets.values()))
@@ -3455,7 +3482,8 @@ class PoseGraph:
 
 				print len(self.trimmedPaths), "paths"
 
-				for path in self.trimmedPaths:
+				for k in range(len(self.trimmedPaths)):
+					path = self.trimmedPaths[k]
 					print "path has", len(path), "points"
 					xP = []
 					yP = []
@@ -3463,10 +3491,10 @@ class PoseGraph:
 						xP.append(p[0])
 						yP.append(p[1])
 		
-					pylab.plot(xP,yP)
+					pylab.plot(xP,yP, color = self.colors[k])
 
-				pylab.xlim(-4,4)
-				pylab.ylim(-4,4)
+				#pylab.xlim(-4,4)
+				#pylab.ylim(-4,4)
 		
 				pylab.title("Trimmed Paths, numNodes = %d" % self.numNodes)
 				pylab.savefig("trimmedPath_%04u.png" % self.trimCount)
@@ -3862,7 +3890,7 @@ class PoseGraph:
 								depPoints2.insert(0, [None, None])
 	
 								poseOrigin = Pose(self.nodeHash[branchNodeID].getEstPose())
-								self.pathParents.append([pathID, branchNodeID, poseOrigin.poseOrigin.convertGlobalPoseToLocal(junctionAug), True])
+								self.pathParents.append([pathID, branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug), True])
 								self.nodeSets[self.numPaths] = []
 								newPaths.append(self.numPaths)
 								self.numPaths += 1
@@ -4183,7 +4211,8 @@ class PoseGraph:
 
 				print len(self.trimmedPaths), "paths"
 
-				for path in self.trimmedPaths:
+				for k in range(len(self.trimmedPaths)):
+					path = self.trimmedPaths[k]
 					print "path has", len(path), "points"
 					xP = []
 					yP = []
@@ -4191,8 +4220,8 @@ class PoseGraph:
 						xP.append(p[0])
 						yP.append(p[1])
 		
-					pylab.plot(xP,yP)
-
+					pylab.plot(xP,yP, color = self.colors[k])
+					
 				pylab.xlim(-4,4)
 				pylab.ylim(-4,4)
 		
@@ -5055,7 +5084,7 @@ class PoseGraph:
 				for p in self.paths[k]:
 					xP.append(p[0])
 					yP.append(p[1])
-				pylab.plot(xP,yP, color=self.colors[k])
+				pylab.plot(xP,yP, color=self.colors[k], linewidth=4)
 
 
 				for nodeID in self.nodeSets[k]:
@@ -5089,7 +5118,9 @@ class PoseGraph:
 					xP.append(p[0])
 					yP.append(p[1])
 					
-				pylab.plot(xP,yP, color=self.colors[k])
+				#pylab.plot(xP,yP, color=self.colors[k])
+				#pylab.plot(xP,yP, color=self.colors[k], linewidth=2, '--')
+				pylab.plot(xP,yP, '--', color=self.colors[k], linewidth=4)
 				
 			pylab.title("%s" % repr(self.nodeSets.values()))
 			pylab.savefig("pathAndHull_%04u.png" % self.numNodes)
@@ -7740,7 +7771,7 @@ class PoseGraph:
 
 		#originU1 = medialSpline2.findU(node1.rootPose)	
 		#originU2 = medialSpline2.findU(node2.rootPose)	
-		originU1 = medialSpline2.findU([0.0,0.0])	
+		originU1 = medialSpline1.findU([0.0,0.0])	
 		originU2 = medialSpline2.findU([0.0,0.0])	
 
 		#medialSpline1.getUOfDist(originU1, dist)

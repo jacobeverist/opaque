@@ -167,7 +167,7 @@ class SplineFit:
 			count += 1
 			if count > 30:
 				print "Fail getUofDist:"
-				print startU, dist, highU, lowU, midU, midDist
+				print startU, dist, highU, lowU, midU, midDist, magDist
 				raise
 	
 

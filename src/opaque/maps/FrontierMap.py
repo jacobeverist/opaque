@@ -38,27 +38,32 @@ class FrontierMap(Map):
 		tempImage.save(self.fileName % self.saveCount)	
 		self.saveCount += 1
 		
-	def isFrontier(self):
+	def isFrontier(self, loc = None):
 		" checks if there are frontier points directly in front of snake "
 		" if there are enough, it will return true "
 		
 		
-		points = self.mapGraph.getCenterPoints()
-		
-		print "centerPoints =", points
+		if loc == None:
+			points = self.mapGraph.getCenterPoints()
 			
-		spline = SplineFit(points, kp=2)
-		self.checkSpline = spline
-		
-		vec = spline.getUVector(0.9)
-		tip = spline.getU(1.0)
-		
-		#vecDist = 1.0
-		#vecDist = 0.7
-		vecDist = 0.75
-		x = tip[0] + vec[0]*vecDist
-		y = tip[1] + vec[1]*vecDist
-
+			print "centerPoints =", points
+				
+			spline = SplineFit(points, kp=2)
+			self.checkSpline = spline
+			
+			vec = spline.getUVector(0.9)
+			tip = spline.getU(1.0)
+			
+			#vecDist = 1.0
+			#vecDist = 0.7
+			vecDist = 0.75
+			x = tip[0] + vec[0]*vecDist
+			y = tip[1] + vec[1]*vecDist
+		else:
+			x = loc[0]
+			y = loc[1]
+			
+			
 		#x = point[0]
 		#y = point[1]
 		radius = 0.6
@@ -281,7 +286,7 @@ class FrontierMap(Map):
 		
 		frontierDensity.save("mapFrontierDensity%04u.png" % self.saveCount)		
 
-		#self.saveCount += 1
+		self.saveCount += 1
 			
 		x, y = self.gridToReal([xMax, yMax])
 

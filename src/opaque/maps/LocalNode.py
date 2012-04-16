@@ -23,6 +23,8 @@ from numpy import array, dot, transpose
 
 estPlotCount = 0
 alphaCount = 0
+splineCount = 0
+
 
 def decimatePoints(points):
 	result = []
@@ -168,6 +170,116 @@ def getLongestPath(node, currSum, currPath, tree, isVisited, nodePath, nodeSum):
 	isVisited[node] = 0
 
 
+		
+
+	def computeVoronoi(boundaryPoints):
+		
+		'''
+		Compute the voronoi diagram using a 3rd party library.
+		
+		Voronoi diagram data structures
+		----
+		
+		self.vertices, 2-tuples
+		self.lines, 3-tuples: a,b,c for a*x + b*y = c
+		self.edges, 3-tuples, (l, v1, v2)  line, vertex 1, vertex 2
+		vertex -1 means edge extends to infinity
+		'''
+
+		sites = []
+		for p in boundaryPoints:
+			sites.append(Site(p[0],p[1]))
+
+		vertices = []
+		lines = []
+		edges = []			
+		if sites != []:
+			vertices, lines, edges = computeVoronoiDiagram(sites)
+
+		return vertices, lines, edges
+
+	def pruneEdges(occMap, vertices, lines, edges):
+		
+		'''remove edges and vertices that are outside the explored area'''
+
+		#NEIGHBOR_WIDTH = 3
+		NEIGHBOR_WIDTH = 0
+
+		roadGraph = graph.graph()	
+		
+		xSize, ySize = numPixel, numPixel
+		#occPix = self.occMapImage.load()
+
+		#occPix = self.occMap.image
+		occPix = occMap.load()
+
+		newVertices = {}
+		newEdges = []
+
+		# checking all edges to check within the free space
+		for edge in edges:
+			v1 = edge[1]
+			v2 = edge[2]
+
+			if v1 != -1 and v2 != -1:
+
+				# get grid value of real point
+				i1, j1 = realToGrid(vertices[v1])
+				i2, j2 = realToGrid(vertices[v2])
+				
+				if i1 < xSize and i1 >= 0 and i2 < xSize and i2 >= 0 and j1 < ySize and j1 >= 0 and j2 < ySize and j2 >= 0 :
+					seg = [(i1,j1),(i2,j2)]
+
+					indX1 = seg[0][0]
+					indY1 = seg[0][1]
+					indX2 = seg[1][0]
+					indY2 = seg[1][1]
+
+					isOK = True
+
+					for i in range(-NEIGHBOR_WIDTH,NEIGHBOR_WIDTH+1,1):
+						for j in range(-NEIGHBOR_WIDTH,NEIGHBOR_WIDTH+1,1):
+
+							if indX1+i > numPixel or indX1+i < 0 or indY1+j > numPixel or indY1+j < 0:
+								isOK = False
+							else:
+								val1 = occPix[indX1 + i, indY1 + j]
+								if val1 <= 127: # 0 or 127
+									isOK = False
+
+							if indX2+i > numPixel or indX2+i < 0 or indY2+j > numPixel or indY2+j < 0:
+								isOK = False
+							else:
+								val2 = occPix[indX2 + i, indY2 + j]
+								if val2 <= 127: # 0 or 127
+									isOK = False
+
+					if isOK:
+						# 1. add node if not already added
+						# 2. add edge
+
+						newVertices[v1] = vertices[v1]
+						newVertices[v2] = vertices[v2]
+
+						newEdges.append([v1,v2])
+
+		for key, attr in newVertices.iteritems():
+			roadGraph.add_node(key, attr)
+
+		for edge in newEdges:
+			roadGraph.add_edge(edge[0], edge[1])
+
+			# assign weights to the edges according to their length
+			v1 = roadGraph.get_node_attributes(edge[0])
+			v2 = roadGraph.get_node_attributes(edge[1])
+			length = sqrt((v2[0]-v1[0])**2+(v2[1]-v1[1])**2)
+			roadGraph.set_edge_weight(edge[0],edge[1],length)
+	
+		return roadGraph
+	
+
+
+
 class LocalNode:
 
 	def __init__(self, probe, contacts, nodeID, rootNode, pixelSize, stabilizePose = False, faceDir = True, travelDir = True):
@@ -234,9 +346,9 @@ class LocalNode:
 
 
 		" alpha hull boundary "
-		self.a_vert = []
-		self.b_vert = []
-		self.c_vert = []
+		self.a_vert = []   # full hull
+		self.b_vert = []   # sweep hull
+		self.c_vert = []   # static hull
 		self.medialPathA = []
 		self.medialPathB = []
 		self.medialPathC = []
@@ -247,7 +359,8 @@ class LocalNode:
 		self.medialBComputed = False		
 		self.medialCComputed = False		
 		self.isBowtie = False
-
+		self.medialLongPath = []
+		
 		self.medialPathCut = []
 		
 		self.cornerCandidates = []
@@ -1343,8 +1456,957 @@ class LocalNode:
 		return points
 
 
-	def getMedialAxis(self, sweep = False):
+	def computeFullSkeleton(self, alphaHull):
+		
+		global splineCount
+		
+		" FIND BOUNDING BOX "		
+		hull = alphaHull
+		hull.append(hull[0])
+		minX1 = 1e100
+		maxX1 = -1e100
+		minY1 = 1e100
+		maxY1 = -1e100
+		for p in hull:
+			if p[0] > maxX1:
+				maxX1 = p[0]
+			if p[0] < minX1:
+				minX1 = p[0]
+			if p[1] > maxY1:
+				maxY1 = p[1]
+			if p[1] < minY1:
+				minY1 = p[1]
+	
+	
+		" SPECIFY SIZE OF GRID AND CONVERSION PARAMETERS "
+		PIXELSIZE = 0.05
+		mapSize = 2*max(max(maxX1,math.fabs(minX1)),max(maxY1,math.fabs(minY1))) + 1
+		pixelSize = PIXELSIZE
+		numPixel = int(2.0*mapSize / pixelSize + 1.0)
+		divPix = math.floor((2.0*mapSize/pixelSize)/mapSize)
 
+		def realToGrid(point):
+			indexX = int(math.floor(point[0]*divPix)) + numPixel/2 + 1
+			indexY = int(math.floor(point[1]*divPix)) + numPixel/2 + 1
+			return indexX, indexY
+	
+		def gridToReal(indices):
+			i = indices[0]
+			j = indices[1]
+			point = [(i - numPixel/2 - 1)*(pixelSize/2.0) + pixelSize/2.0, (j - numPixel/2 - 1)*(pixelSize/2.0) + pixelSize/2.0]
+			return point
+
+
+		" CONVERT HULL TO GRID COORDINATES "
+
+		gridHull = []
+		for i in range(len(hull)):
+			p = hull[i]
+			gridHull.append(realToGrid(p))
+
+		" BOUNDING BOX OF GRID HULL "
+		minX = 1e100
+		maxX = -1e100
+		minY = 1e100
+		maxY = -1e100
+		for p in gridHull:
+			if p[0] > maxX:
+				maxX = p[0]
+			if p[0] < minX:
+				minX = p[0]
+			if p[1] > maxY:
+				maxY = p[1]
+			if p[1] < minY:
+				minY = p[1]
+
+		" FIND INTERIOR POINTS OF GRID HULL "
+		xRange = range(minX, maxX + 1)
+		yRange = range(minY, maxY + 1)	
+
+		interior = []
+			
+		for i in xRange:
+			for j in yRange:
+				if point_inside_polygon(i, j, gridHull):
+					interior.append((i,j))
+		
+		" POPULATE AN IMAGE WITH GRID HULL AND INTERIOR "
+		inputImg = Image.new('L', (numPixel,numPixel), 0)
+		imga = inputImg.load()
+		
+		for i in range(len(gridHull)):
+			p = gridHull[i]
+			imga[p[0],p[1]] = 255
+		
+		for p in interior:
+			imga[p[0],p[1]] = 255
+
+
+		" COMPUTE MEDIAL AXIS OF IMAGE "
+		resultImg = Image.new('L', (numPixel,numPixel))
+		resultImg = computeMedialAxis(self.nodeID, numPixel,numPixel, resultImg, len(gridHull[:-2]), gridHull[:-2])
+		#resultImg.save("medialOut_%04u.png" % self.nodeID)
+		
+		
+		" EXTRACT POINTS FROM GRID TO LIST "
+		imgA = resultImg.load()
+	
+		points = []
+		for i in range(1, numPixel-1):
+			for j in range(1, numPixel-1):
+				if imgA[i,j] == 0:
+					points.append((i,j))
+	
+	
+		" CREATE GRAPH NODES FOR EACH POINT "
+		medialGraph = graph.graph()
+		for p in points:
+			medialGraph.add_node(p, [])
+	
+		" ADD EDGES BETWEEN NEIGHBORS "
+		builtGraph = {}
+		for i in range(2, numPixel-2):
+			for j in range(2, numPixel-2):
+				if imgA[i,j] == 0:
+					builtGraph[(i,j)] = []
+					for k in range(i-1, i+2):
+						for l in range(j-1, j+2):
+							if imgA[k,l] == 0 and not (k == i and l == j):
+								builtGraph[(i,j)].append((k,l))
+								medialGraph.add_edge((i,j), (k,l))
+				
+		" COMPUTE MINIMUM SPANNING TREE "
+		mst = medialGraph.minimal_spanning_tree()
+	
+		" INITIALIZE DATA DICTS FOR UNIDIRECTIONAL MST"
+		uni_mst = {}
+		for k, v in mst.items():
+			uni_mst[k] = []
+	
+		" ADD EDGES TO DICT TREE REPRESENTATION "
+		for k, v in mst.items():
+			if v != None:
+				uni_mst[k].append(v)
+				uni_mst[v].append(k)
+	
+		
+		" LOCATE ALL LEAVES "
+		leaves = []
+		for k, v in uni_mst.items():
+			if len(v) == 1:
+				leaves.append(k)
+		
+		" DELETE ALL NODES THAT ARE LEAVES, TO REMOVE SINGLE NODE BRANCHES "
+		for leaf in leaves:
+			medialGraph.del_node(leaf)	
+			
+		" RECOMPUTE MST "
+		mst = medialGraph.minimal_spanning_tree()
+	
+		" AGAIN, CREATE OUR DATA STRUCTURES AND IDENTIFY LEAVES "
+		uni_mst = {}
+		for k, v in mst.items():
+			uni_mst[k] = []
+	
+		for k, v in mst.items():
+			if v != None:
+				uni_mst[k].append(v)
+				uni_mst[v].append(k)
+	
+	
+		" RECORD THE LEAVES AND JUNCTIONS "
+		leaves = []
+		junctions = []
+		for k, v in uni_mst.items():
+			if len(v) == 1:
+				leaves.append(k)
+
+			if len(v) > 2:
+				junctions.append(k)
+
+		" SAVE FOR LATER, IDENTIFIED BY THEIR INDEX NOW "
+		self.numLeafs = len(leaves)
+		self.allLeafs = []
+		self.allJunctions = []
+		for leaf in leaves:
+			self.allLeafs.append(gridToReal(leaf))
+		
+		for junc in junctions:
+			self.allJunctions.append(gridToReal(junc))
+				
+		" FIND ALL THE PATHS BETWEEN LEAVES "		
+		nodePaths = {}
+		for leaf in leaves:
+			
+			
+			" INITIALIZE DATA DICTS FOR VISITED, PATH SO FAR, AND NODE HOP COUNT"
+			isVisited = {}
+			nodeSum = {}
+			nodePath = {}
+			for k, v in uni_mst.items():
+				isVisited[k] = 0
+				nodeSum[k] = 0
+				nodePath[k] = []
+	
+			" PERFORM DFS FOR THIS LEAF "
+			getLongestPath(leaf, 0, [], uni_mst, isVisited, nodePath, nodeSum)
+	
+			" SAVE THE RESULTING PATH DATA STRUCTURE "
+			nodePaths[leaf] = nodePath
+
+		longPaths = []
+
+		" FOR EVERY PAIR OF LEAVES, SAVE ITS PATH IF ITS LONG ENOUGH "
+		" should have X choose 2 combinations"
+		
+		MAX_LEN = 2
+		for leaf1 in leaves:
+			for leaf2 in leaves:
+				if leaf1 < leaf2:
+					if len(nodePaths[leaf1][leaf2]) > MAX_LEN:
+						longPaths.append((len(nodePaths[leaf1][leaf2]),deepcopy(nodePaths[leaf1][leaf2])))
+		
+		" SORT FOR THE LONGEST TO SHORTEST "
+		longPaths.sort(reverse=True)
+		
+		" REMOVE SIZE FROM TUPLE  "
+		for k in range(len(longPaths)):
+			longPaths[k] = longPaths[k][1]
+			
+		
+		" GET THE LEAF INDEXES TO EACH PATH "
+		self.leafPairs = []
+		for path in longPaths:
+			leaf1 = path[0]
+			leaf2 = path[-1]	
+			
+			leafID1 = leaves.index(leaf1)
+			leafID2 = leaves.index(leaf2)
+
+			self.leafPairs.append((leafID1,leafID2))
+			
+		print "leafPairs:", self.leafPairs
+
+		for k in range(len(longPaths)):
+			path = longPaths[k]
+			realPath = []
+			for p in path:
+				realPath.append(gridToReal(p))
+			
+			longPaths[k] = realPath
+					
+		if True:
+			pylab.clf()
+	
+			for path in longPaths:
+				xP = []
+				yP = []
+				for p in path:
+					#p2 = gridToReal(p)
+					xP.append(p[0])
+					yP.append(p[1])
+	
+				pylab.plot(xP,yP)
+			#pylab.scatter(xP,yP, color='b')
+	
+			xP = []
+			yP = []
+			for p in hull:
+				xP.append(p[0])
+				yP.append(p[1])
+			pylab.plot(xP,yP, color='r')
+			
+			sizes = []
+			for path in longPaths:
+				sizes.append(len(path))
+			
+			pylab.title("Paths %s" % sizes)
+			pylab.savefig("medialOut2_%04u.png" % self.nodeID)
+	
+
+		longMedialWidths = []
+		medialLongPaths = []
+		for longPath in longPaths:
+			
+			leafPath = deepcopy(longPath)
+			
+			frontVec = [0.,0.]
+			backVec = [0.,0.]
+			indic = range(3)
+			#indic = range(16)
+			indic.reverse()
+		
+			for i in indic:
+				p1 = leafPath[i+2]
+				p2 = leafPath[i]
+				vec = [p2[0]-p1[0], p2[1]-p1[1]]
+				frontVec[0] += vec[0]
+				frontVec[1] += vec[1]
+		
+				p1 = leafPath[-i-3]
+				p2 = leafPath[-i-1]
+				vec = [p2[0]-p1[0], p2[1]-p1[1]]
+				backVec[0] += vec[0]
+				backVec[1] += vec[1]
+		
+			frontMag = math.sqrt(frontVec[0]*frontVec[0] + frontVec[1]*frontVec[1])
+			backMag = math.sqrt(backVec[0]*backVec[0] + backVec[1]*backVec[1])
+		
+			frontVec[0] /= frontMag
+			frontVec[1] /= frontMag
+			backVec[0] /= backMag
+			backVec[1] /= backMag
+		
+			newP1 = (leafPath[0][0] + frontVec[0]*10, leafPath[0][1] + frontVec[1]*10)
+			newP2 = (leafPath[-1][0] + backVec[0]*10, leafPath[-1][1] + backVec[1]*10)
+			#newP1 = (longPath[0][0] + frontVec[0]*500, longPath[0][1] + frontVec[1]*500)
+			#newP2 = (longPath[-1][0] + backVec[0]*500, longPath[-1][1] + backVec[1]*500)
+
+			" convert path points to real "
+			#realPath = []
+			#for p in longPath:
+			#	realPath.append(gridToReal(p))
+
+			"""
+			pylab.clf()
+
+			xP = []
+			yP = []
+			for p in longPath:
+				p1 = gridToReal(p)
+				xP.append(p1[0])
+				yP.append(p1[1])
+			pylab.plot(xP,yP, color='b')
+			
+			#pylab.scatter([linePoint[0]], [linePoint[1]])
+			
+			pylab.xlim(-25,25)
+			pylab.ylim(-25,25)		
+			
+			pylab.title("%d" % self.nodeID)
+			pylab.savefig("spline_%06u.png" % splineCount)
+			splineCount += 1
+			"""
+		
+			leafPath.insert(0,newP1)
+			leafPath.append(newP2)
+		
+		
+			" convert path points to real "
+			realPath = []
+			for p in longPath:
+				realPath.append(p)
+				#realPath.append(gridToReal(p))
+
+			"""
+			pylab.clf()
+
+			xP = []
+			yP = []
+			for p in realPath:
+				xP.append(p[0])
+				yP.append(p[1])
+			pylab.plot(xP,yP, color='b')
+			
+			#pylab.scatter([linePoint[0]], [linePoint[1]])
+			
+			pylab.xlim(-25,25)
+			pylab.ylim(-25,25)		
+			
+			pylab.title("%d" % self.nodeID)
+			pylab.savefig("spline_%06u.png" % splineCount)
+			splineCount += 1
+			"""
+			
+			posture1 = self.getStableGPACPosture()
+			curve1 = StableCurve(posture1)
+			uniform1 = curve1.getPlot()
+		
+			" check if the medial axis is ordered correctly "
+			distFore1 = (realPath[1][0]-uniform1[1][0])**2 + (realPath[1][1]-uniform1[1][1])**2
+			distBack1 = (realPath[-2][0]-uniform1[-2][0])**2 + (realPath[-2][1]-uniform1[-2][1])**2
+		
+			if distFore1 > 1 and distBack1 > 1:
+				realPath.reverse()
+	
+			medialLongPaths.append(realPath)
+	
+			medial2 = realPath
+					
+			TAILDIST = 0.5
+	
+			" take the long length segments at tips of medial axis"
+			edge1 = medial2[0:2]
+			edge2 = medial2[-2:]
+			
+			frontVec = [edge1[0][0]-edge1[1][0], edge1[0][1]-edge1[1][1]]
+			backVec = [edge2[1][0]-edge2[0][0], edge2[1][1]-edge2[0][1]]
+			frontMag = math.sqrt(frontVec[0]*frontVec[0] + frontVec[1]*frontVec[1])
+			backMag = math.sqrt(backVec[0]*backVec[0] + backVec[1]*backVec[1])
+			
+			frontVec[0] /= frontMag
+			frontVec[1] /= frontMag
+			backVec[0] /= backMag
+			backVec[1] /= backMag
+			
+			" make a smaller version of these edges "
+			newP1 = (edge1[1][0] + frontVec[0]*2, edge1[1][1] + frontVec[1]*2)
+			newP2 = (edge2[0][0] + backVec[0]*2, edge2[0][1] + backVec[1]*2)
+	
+			edge1 = [newP1, edge1[1]]
+			edge2 = [edge2[0], newP2]
+		
+			" find the intersection points with the hull "
+			interPoints = []
+			for k in range(len(hull)-1):
+				hullEdge = [hull[k],hull[k+1]]
+				isIntersect1, point1 = Intersect(edge1, hullEdge)
+				if isIntersect1:
+					interPoints.append(point1)
+					break
+	
+			for k in range(len(hull)-1):
+				hullEdge = [hull[k],hull[k+1]]
+				isIntersect2, point2 = Intersect(edge2, hullEdge)
+				if isIntersect2:
+					interPoints.append(point2)
+					break
+			
+			" replace the extended edges with a termination point at the hull edge "			
+			medial2 = medial2[1:-2]
+
+
+			
+			if isIntersect1:
+				medial2.insert(0, point1)
+			if isIntersect2:
+				medial2.append(point2)
+			
+			"""
+			" cut off the tail of the non-sweeping side "
+			if self.nodeID % 2 == 0:
+				termPoint = medial2[-1]
+				for k in range(len(medial2)):
+					candPoint = medial2[-k-1]
+					dist = sqrt((termPoint[0]-candPoint[0])**2 + (termPoint[1]-candPoint[1])**2)
+					if dist > TAILDIST:
+						break
+				medial2 = medial2[:-k-1]
+	
+			else:
+				termPoint = medial2[0]
+				for k in range(len(medial2)):
+					candPoint = medial2[k]
+					dist = sqrt((termPoint[0]-candPoint[0])**2 + (termPoint[1]-candPoint[1])**2)
+					if dist > TAILDIST:
+						break
+				medial2 = medial2[k:]
+			"""
+	
+	
+			
+			print "len(medial2) =", len(medial2)
+			medialSpline2 = SplineFit(medial2, smooth=0.1)
+	
+	
+			mPoints = medialSpline2.getUniformSamples()
+			
+			pylab.clf()
+			xP = []
+			yP = []
+			for p in mPoints:
+				xP.append(p[0])
+				yP.append(p[1])
+			pylab.plot(xP,yP, color='r')
+
+			xP = []
+			yP = []
+			for p in hull:
+				xP.append(p[0])
+				yP.append(p[1])
+			pylab.plot(xP,yP, color='g')
+
+			xP = []
+			yP = []
+			for p in medial2:
+				xP.append(p[0])
+				yP.append(p[1])
+			pylab.plot(xP,yP, color='b')
+			
+			#pylab.scatter([linePoint[0]], [linePoint[1]])
+			
+			pylab.xlim(-4,4)
+			pylab.ylim(-4,4)		
+			
+			pylab.title("%d" % self.nodeID)
+			pylab.savefig("spline_%06u.png" % splineCount)
+			splineCount += 1
+				
+			initU = 0.0
+			currU = initU
+			#termU = 0.9
+			termU = 1.0
+			
+			medialWidth= []
+			while True:
+
+
+								
+				linePoint = medialSpline2.getU(currU)
+				vec = medialSpline2.getUVector(currU)
+
+
+										
+				rightVec = [vec[0]*cos(pi/2.0) + vec[1]*sin(pi/2.0), -vec[0]*sin(pi/2.0) + vec[1]*cos(pi/2.0)]
+				leftVec = [vec[0]*cos(pi/2.0) - vec[1]*sin(pi/2.0), vec[0]*sin(pi/2.0) + vec[1]*cos(pi/2.0)]
+	
+				edgeR = [linePoint, [linePoint[0]+rightVec[0]*1.0, linePoint[1]+rightVec[1]*1.0]]
+				edgeL = [linePoint, [linePoint[0]+leftVec[0]*1.0, linePoint[1]+leftVec[1]*1.0]]
+	
+				rightPoint = []
+				for k in range(len(hull)-1):
+					hullEdge = [hull[k],hull[k+1]]
+					isIntersect1, point1 = Intersect(edgeR, hullEdge)
+					if isIntersect1:
+						rightPoint = point1
+						break
+	
+				leftPoint = []
+				for k in range(len(hull)-1):
+					hullEdge = [hull[k],hull[k+1]]
+					isIntersect1, point1 = Intersect(edgeL, hullEdge)
+					if isIntersect1:
+						leftPoint = point1
+						break
+	
+				if len(rightPoint) > 0:
+					distR = sqrt((rightPoint[0]-linePoint[0])**2 + (rightPoint[1]-linePoint[1])**2)
+				else:
+					distR = 0.0
+				
+				if len(leftPoint) > 0:
+					distL = sqrt((leftPoint[0]-linePoint[0])**2 + (leftPoint[1]-linePoint[1])**2)
+				else:
+					distL = 0.0
+				
+				if distL == 0.0:
+					distL = distR
+					
+				if distR == 0.0:
+					distR = distL				
+				
+				medialWidth.append([linePoint[0],linePoint[1],currU, distR, distL])
+
+				if currU >= termU:
+					break
+	
+				nextU = medialSpline2.getUOfDist(currU, 0.04, distIter = 0.001)			
+				currU = nextU
+					
+			longMedialWidths.append(medialWidth)
+			
+			numSamples = len(medialWidth)
+			
+			" divide into 5 histograms "
+			histDiv = numSamples / 5
+			currDiv = 0
+			divSums = [0.0 for k in range(5)]
+			divIndexes = [0 for k in range(5)]
+			
+			for k in range(5):
+				divIndexes[k] = (k+1) * histDiv
+			
+			" set last bin to infinite boundary "
+			divIndexes[-1] = 1e100
+			
+			" pad the middle with the remainder "
+			remainderTotal = numSamples % 5
+			divIndexes[2] += remainderTotal
+			divIndexes[3] += remainderTotal
+				
+			print "numSamples:", numSamples
+			print "histDiv:", histDiv
+			print "divIndexes:", divIndexes
+			for k in range(numSamples):
+				
+				width = medialWidth[k][3] + medialWidth[k][4]
+				if k > divIndexes[currDiv]:
+					currDiv += 1
+				
+				divSums[currDiv] += width
+				
+	
+			greatCount = 0
+			for k in range(5):
+				if divSums[k] > 12.0:
+					greatCount += 1
+	
+			print "divSums:", greatCount, divSums
+
+			"""				
+			if divSums[2] < divSums[0] and divSums[2] < divSums[4]:
+				self.isBowtie = True
+				print "BOWTIE"
+			elif greatCount > 4:
+				self.isBowtie = True
+				print "BOWTIE"
+			else:
+				self.medialPathCut = medial2
+			"""
+
+
+
+
+		return longPaths, medialLongPaths, longMedialWidths
+				
+
+	def getMedialAxis(self, sweep = False):
+		
+		global splineCount
+		
+		if sweep and self.medialBComputed:
+			return deepcopy(self.medialPathB)
+
+		if not sweep and self.medialAComputed:
+			return deepcopy(self.medialPathA)
+
+		" make sure alpha boundary is built "
+		self.computeAlphaBoundary(sweep)
+		
+		a_data = self.getAlphaBoundary(sweep = sweep)
+		a_data = decimatePoints(a_data)
+
+		" CONVERT HULL TO GPAC COORDINATES "
+		localGPACPose = self.getLocalGPACPose()
+		localGPACProfile = Pose(localGPACPose)
+
+		a_data_GPAC = []
+		for pnt in a_data:
+			a_data_GPAC.append(localGPACProfile.convertGlobalToLocal(pnt))
+
+		" FIND BOUNDING BOX "		
+		hull = a_data_GPAC
+		hull.append(hull[0])
+
+
+		longPaths, medialLongPaths, longMedialWidths = self.computeFullSkeleton(hull)
+
+		if len(longPaths) > 1:
+			print "MULTI-JUNCTION SITUATION"
+			
+			" record the edge points, the intersection points, each of splice paths "
+			self.splicePaths = deepcopy(longPaths)
+			self.splicedMedialPaths = deepcopy(medialLongPaths)
+			
+			self.numLeafs = len(longPaths)
+		
+		
+		
+		" FIRST MEDIAL AXIS IS THE LONGEST "
+		maxPath = longPaths[0]
+
+		frontVec = [0.,0.]
+		backVec = [0.,0.]
+		#indic = range(6)
+		indic = range(16)
+		indic.reverse()
+	
+		for i in indic:
+			p1 = maxPath[i+2]
+			p2 = maxPath[i]
+			vec = [p2[0]-p1[0], p2[1]-p1[1]]
+			frontVec[0] += vec[0]
+			frontVec[1] += vec[1]
+	
+			p1 = maxPath[-i-3]
+			p2 = maxPath[-i-1]
+			vec = [p2[0]-p1[0], p2[1]-p1[1]]
+			backVec[0] += vec[0]
+			backVec[1] += vec[1]
+	
+		frontMag = math.sqrt(frontVec[0]*frontVec[0] + frontVec[1]*frontVec[1])
+		backMag = math.sqrt(backVec[0]*backVec[0] + backVec[1]*backVec[1])
+	
+		frontVec[0] /= frontMag
+		frontVec[1] /= frontMag
+		backVec[0] /= backMag
+		backVec[1] /= backMag
+	
+		newP1 = (maxPath[0][0] + frontVec[0]*10, maxPath[0][1] + frontVec[1]*10)
+		newP2 = (maxPath[-1][0] + backVec[0]*10, maxPath[-1][1] + backVec[1]*10)
+		
+		#newP1 = (maxPath[0][0] + frontVec[0]*500, maxPath[0][1] + frontVec[1]*500)
+		#newP2 = (maxPath[-1][0] + backVec[0]*500, maxPath[-1][1] + backVec[1]*500)
+	
+		maxPath.insert(0,newP1)
+		maxPath.append(newP2)
+	
+	
+		" convert path points to real "
+		realPath = []
+		for p in maxPath:
+			#realPath.append(gridToReal(p))
+			realPath.append(p)
+
+		posture1 = self.getStableGPACPosture()
+		curve1 = StableCurve(posture1)
+		uniform1 = curve1.getPlot()
+	
+		" check if the medial axis is ordered correctly "
+		distFore1 = (realPath[1][0]-uniform1[1][0])**2 + (realPath[1][1]-uniform1[1][1])**2
+		distBack1 = (realPath[-2][0]-uniform1[-2][0])**2 + (realPath[-2][1]-uniform1[-2][1])**2
+	
+		if distFore1 > 1 and distBack1 > 1:
+			realPath.reverse()
+
+
+
+		if sweep:
+			self.medialBComputed = True		
+			self.medialPathB = realPath
+
+		if not sweep:
+			self.medialAComputed = True
+			self.medialPathA = realPath
+
+
+		if sweep:
+			medial2 = self.medialPathB
+		else:
+			medial2 = self.medialPathA
+		
+		TAILDIST = 0.5
+
+		" take the long length segments at tips of medial axis"
+		edge1 = medial2[0:2]
+		edge2 = medial2[-2:]
+		
+		frontVec = [edge1[0][0]-edge1[1][0], edge1[0][1]-edge1[1][1]]
+		backVec = [edge2[1][0]-edge2[0][0], edge2[1][1]-edge2[0][1]]
+		frontMag = math.sqrt(frontVec[0]*frontVec[0] + frontVec[1]*frontVec[1])
+		backMag = math.sqrt(backVec[0]*backVec[0] + backVec[1]*backVec[1])
+		
+		frontVec[0] /= frontMag
+		frontVec[1] /= frontMag
+		backVec[0] /= backMag
+		backVec[1] /= backMag
+		
+		" make a smaller version of these edges "
+		newP1 = (edge1[1][0] + frontVec[0]*2, edge1[1][1] + frontVec[1]*2)
+		newP2 = (edge2[0][0] + backVec[0]*2, edge2[0][1] + backVec[1]*2)
+
+		edge1 = [newP1, edge1[1]]
+		edge2 = [edge2[0], newP2]
+	
+		" find the intersection points with the hull "
+		interPoints = []
+		for k in range(len(hull)-1):
+			hullEdge = [hull[k],hull[k+1]]
+			isIntersect1, point1 = Intersect(edge1, hullEdge)
+			if isIntersect1:
+				interPoints.append(point1)
+				break
+
+		for k in range(len(hull)-1):
+			hullEdge = [hull[k],hull[k+1]]
+			isIntersect2, point2 = Intersect(edge2, hullEdge)
+			if isIntersect2:
+				interPoints.append(point2)
+				break
+		
+		" replace the extended edges with a termination point at the hull edge "			
+		medial2 = medial2[1:-2]
+		if isIntersect1:
+			medial2.insert(0, point1)
+		if isIntersect2:
+			medial2.append(point2)
+		
+		" cut off the tail of the non-sweeping side "
+		if self.nodeID % 2 == 0:
+			termPoint = medial2[-1]
+			for k in range(len(medial2)):
+				candPoint = medial2[-k-1]
+				dist = sqrt((termPoint[0]-candPoint[0])**2 + (termPoint[1]-candPoint[1])**2)
+				if dist > TAILDIST:
+					break
+			medial2 = medial2[:-k-1]
+
+		else:
+			termPoint = medial2[0]
+			for k in range(len(medial2)):
+				candPoint = medial2[k]
+				dist = sqrt((termPoint[0]-candPoint[0])**2 + (termPoint[1]-candPoint[1])**2)
+				if dist > TAILDIST:
+					break
+			medial2 = medial2[k:]
+
+
+		
+		medialSpline2 = SplineFit(medial2, smooth=0.1)
+
+
+
+		if True:
+			pylab.clf()
+	
+			xP = []
+			yP = []
+			for p in medial2:
+				xP.append(p[0])
+				yP.append(p[1])
+
+			pylab.plot(xP,yP)
+	
+			xP = []
+			yP = []
+			for p in hull:
+				xP.append(p[0])
+				yP.append(p[1])
+			pylab.plot(xP,yP, color='r')
+						
+			pylab.title("Medial %d" % self.nodeID)
+			pylab.savefig("medialOut_%04u.png" % self.nodeID)
+
+
+		initU = 0.0
+		currU = initU
+		#termU = 0.9
+		termU = 1.0
+		self.medialWidth = []
+		self.lineEdges = []
+		while True:
+			
+			linePoint = medialSpline2.getU(currU)
+			vec = medialSpline2.getUVector(currU)
+			
+			angle = acos(vec[0])
+			if asin(vec[1]) < 0:
+				angle = -angle
+
+
+			rightAng = angle + pi/2.0
+			leftAng = angle - pi/2.0
+			
+			rightVec = [vec[0]*cos(pi/2.0) + vec[1]*sin(pi/2.0), -vec[0]*sin(pi/2.0) + vec[1]*cos(pi/2.0)]
+			leftVec = [vec[0]*cos(pi/2.0) - vec[1]*sin(pi/2.0), vec[0]*sin(pi/2.0) + vec[1]*cos(pi/2.0)]
+
+			edgeR = [linePoint, [linePoint[0]+rightVec[0]*1.0, linePoint[1]+rightVec[1]*1.0]]
+			edgeL = [linePoint, [linePoint[0]+leftVec[0]*1.0, linePoint[1]+leftVec[1]*1.0]]
+
+			rightPoint = []
+			for k in range(len(hull)-1):
+				hullEdge = [hull[k],hull[k+1]]
+				isIntersect1, point1 = Intersect(edgeR, hullEdge)
+				if isIntersect1:
+					rightPoint = point1
+					break
+
+			leftPoint = []
+			for k in range(len(hull)-1):
+				hullEdge = [hull[k],hull[k+1]]
+				isIntersect1, point1 = Intersect(edgeL, hullEdge)
+				if isIntersect1:
+					leftPoint = point1
+					break
+
+			#self.lineEdges.append(edgeR)
+			#self.lineEdges.append(edgeL)
+
+			#print leftPoint, rightPoint, linePoint
+			if len(rightPoint) > 0:
+				distR = sqrt((rightPoint[0]-linePoint[0])**2 + (rightPoint[1]-linePoint[1])**2)
+				self.lineEdges.append([rightPoint,linePoint])
+			else:
+				distR = 0.0
+			
+			if len(leftPoint) > 0:
+				distL = sqrt((leftPoint[0]-linePoint[0])**2 + (leftPoint[1]-linePoint[1])**2)
+				self.lineEdges.append([leftPoint,linePoint])
+			else:
+				distL = 0.0
+			
+			if distL == 0.0:
+				distL = distR
+				
+			if distR == 0.0:
+				distR = distL				
+			
+			#print "distR,distL =", distR, distL
+			#print "currU =", currU, "avgDist =", (distR+distL)/2.0, "diff =", distR-distL
+			self.medialWidth.append([linePoint[0],linePoint[1],currU, distR, distL])
+
+			#print "currU =", currU
+
+			if currU >= termU:
+				break
+
+			nextU = medialSpline2.getUOfDist(currU, 0.04, distIter = 0.001)			
+			currU = nextU
+				
+		
+		numSamples = len(self.medialWidth)
+		
+		" divide into 5 histograms "
+		histDiv = numSamples / 5
+		currDiv = 0
+		divSums = [0.0 for k in range(5)]
+		divIndexes = [0 for k in range(5)]
+		
+		for k in range(5):
+			divIndexes[k] = (k+1) * histDiv
+		
+		" set last bin to infinite boundary "
+		divIndexes[-1] = 1e100
+		
+		" pad the middle with the remainder "
+		remainderTotal = numSamples % 5
+		divIndexes[2] += remainderTotal
+		divIndexes[3] += remainderTotal
+			
+		print "numSamples:", numSamples
+		print "histDiv:", histDiv
+		print "divIndexes:", divIndexes
+		for k in range(numSamples):
+			
+			width = self.medialWidth[k][3] + self.medialWidth[k][4]
+			#print k, ">", divIndexes[currDiv]
+			if k > divIndexes[currDiv]:
+				currDiv += 1
+			
+			divSums[currDiv] += width
+			
+
+		greatCount = 0
+		for k in range(5):
+			if divSums[k] > 12.0:
+				greatCount += 1
+
+		print "divSums:", greatCount, divSums
+			
+		if divSums[2] < divSums[0] and divSums[2] < divSums[4]:
+			self.isBowtie = True
+			print "BOWTIE"
+		elif greatCount > 4:
+			self.isBowtie = True
+			print "BOWTIE"
+		else:
+			self.medialPathCut = medial2
+
+
+		if sweep:
+			return deepcopy(self.medialPathB)
+
+		if not sweep:
+			return deepcopy(self.medialPathA)
+		
+	
+		raise
+
+
+	def getMedialAxis_Old(self, sweep = False):
+
+		global splineCount
+		
 		if sweep and self.medialBComputed:
 			#print "sweep medial axis already computed "
 			return deepcopy(self.medialPathB)
@@ -1358,6 +2420,7 @@ class LocalNode:
 		" make sure alpha boundary is built "
 		self.computeAlphaBoundary(sweep)
 		
+		"""
 		def decimatePoints(points):
 			result = []
 		
@@ -1367,7 +2430,7 @@ class LocalNode:
 					result.append(points[i])
 		
 			return result
-
+		"""
 		
 		" convert hull points to GPAC coordinates "
 		localGPACPose = self.getLocalGPACPose()
@@ -1437,6 +2500,7 @@ class LocalNode:
 			point = [(i - numPixel/2 - 1)*(pixelSize/2.0) + pixelSize/2.0, (j - numPixel/2 - 1)*(pixelSize/2.0) + pixelSize/2.0]
 			return point
 
+		"""
 		def computeVoronoi(boundaryPoints):
 			
 			'''
@@ -1542,7 +2606,7 @@ class LocalNode:
 		
 			return roadGraph
 		
-
+		"""
 
 		gridOccPoints = []
 		for pnt in occPoints_GPAC:
@@ -1681,7 +2745,7 @@ class LocalNode:
 		imgOut.save("medialOut_%04u.png" % self.nodeID)
 		"""
 		
-		#resultImg.save("medialOut_%04u_2.png" % self.nodeID)
+		#resultImg.save("medialOut_%04u.png" % self.nodeID)
 		imgA = resultImg.load()
 	
 		points = []
@@ -1824,7 +2888,7 @@ class LocalNode:
 					leaves2.append(k)
 					
 					
-			print len(leaves2), "leaves"
+			#print len(leaves2), "leaves"
 			
 
 	
@@ -1832,6 +2896,7 @@ class LocalNode:
 		maxPairDist = 0
 		maxPair = None
 		maxPath = []
+		nodePaths = {}
 		for leaf in leaves:
 	
 			isVisited = {}
@@ -1843,6 +2908,8 @@ class LocalNode:
 				nodePath[k] = []
 	
 			getLongestPath(leaf, 0, [], uni_mst, isVisited, nodePath, nodeSum)
+	
+			nodePaths[leaf] = nodePath
 	
 			maxDist = 0
 			maxNode = None
@@ -1858,8 +2925,58 @@ class LocalNode:
 				maxPairDist = maxDist
 				maxPair = [leaf, maxNode]
 				maxPath = nodePath[maxNode]
+
+		"""
+		self.longPaths = []
+
+		MAX_LEN = 2
+		for leaf1 in leaves:
+			for leaf2 in leaves:
+				if leaf1 < leaf2:
+					if len(nodePaths[leaf1][leaf2]) > MAX_LEN:
+						self.longPaths.append((len(nodePaths[leaf1][leaf2]),deepcopy(nodePaths[leaf1][leaf2])))
+					
+		self.longPaths.sort(reverse=True)
+		
+		" remove the size from tuple "
+		for k in range(len(self.longPaths)):
+			self.longPaths[k] = self.longPaths[k][1]
+		"""
+					
+		if False:
+			pylab.clf()
+	
+			for path in self.longPaths:
+				xP = []
+				yP = []
+				for p in path:
+					p2 = gridToReal(p)
+					xP.append(p2[0])
+					yP.append(p2[1])
+	
+				pylab.plot(xP,yP)
+			#pylab.scatter(xP,yP, color='b')
+	
+			xP = []
+			yP = []
+			for p in hull:
+				xP.append(p[0])
+				yP.append(p[1])
+			pylab.plot(xP,yP, color='r')
+			
+			sizes = []
+			for path in self.longPaths:
+				sizes.append(len(path))
+			
+			pylab.title("Paths %s" % sizes)
+			pylab.savefig("medialOut_%04u.png" % self.nodeID)
 	
 	
+
+
+	
+	
+		
 		frontVec = [0.,0.]
 		backVec = [0.,0.]
 		#indic = range(6)
@@ -2017,9 +3134,6 @@ class LocalNode:
 			
 			rightVec = [vec[0]*cos(pi/2.0) + vec[1]*sin(pi/2.0), -vec[0]*sin(pi/2.0) + vec[1]*cos(pi/2.0)]
 			leftVec = [vec[0]*cos(pi/2.0) - vec[1]*sin(pi/2.0), vec[0]*sin(pi/2.0) + vec[1]*cos(pi/2.0)]
-			#print sqrt(rightVec[0]*rightVec[0] + rightVec[1]*rightVec[1]), sqrt(leftVec[0]*leftVec[0] + leftVec[1]*leftVec[1])
-			#rightVec = [cos(rightAng), sin(rightAng)]
-			#leftVec = [cos(leftAng), sin(leftAng)]
 
 			edgeR = [linePoint, [linePoint[0]+rightVec[0]*1.0, linePoint[1]+rightVec[1]*1.0]]
 			edgeL = [linePoint, [linePoint[0]+leftVec[0]*1.0, linePoint[1]+leftVec[1]*1.0]]
@@ -2106,26 +3220,25 @@ class LocalNode:
 			
 			divSums[currDiv] += width
 			
-		print "divSums:", divSums
+
+		greatCount = 0
+		for k in range(5):
+			if divSums[k] > 12.0:
+				greatCount += 1
+
+		print "divSums:", greatCount, divSums
 			
 		if divSums[2] < divSums[0] and divSums[2] < divSums[4]:
+			self.isBowtie = True
+			print "BOWTIE"
+		elif greatCount > 4:
 			self.isBowtie = True
 			print "BOWTIE"
 		else:
 			self.medialPathCut = medial2
 
-		#totalWidth = 0.0
-		#for samp in self.medialWidth:
-		#	width = samp[3] + samp[4]
-		#	totalWidth += width
 
-		#if totalWidth > 65.0:
-		#if totalWidth > 60.0:
-		#if totalWidth > 50.0:
-		#	self.isBowtie = True
-		#else:		
-		#	self.medialPathCut = medial2
-			
+
 
 		if sweep:
 			return deepcopy(self.medialPathB)
@@ -2135,6 +3248,7 @@ class LocalNode:
 		
 	
 		raise
+
 
 	def getStaticMedialAxis(self):
 
@@ -2169,6 +3283,176 @@ class LocalNode:
 				
 		hull = a_data_GPAC
 		hull.append(hull[0])
+
+		longPaths, medialLongPaths, longMedialWidths = self.computeFullSkeleton(hull)
+
+		maxPath = deepcopy(longPaths[0])
+		
+		frontVec = [0.,0.]
+		backVec = [0.,0.]
+		#indic = range(6)
+		indic = range(16)
+		indic.reverse()
+	
+		for i in indic:
+			p1 = maxPath[i+2]
+			p2 = maxPath[i]
+			vec = [p2[0]-p1[0], p2[1]-p1[1]]
+			frontVec[0] += vec[0]
+			frontVec[1] += vec[1]
+	
+			p1 = maxPath[-i-3]
+			p2 = maxPath[-i-1]
+			vec = [p2[0]-p1[0], p2[1]-p1[1]]
+			backVec[0] += vec[0]
+			backVec[1] += vec[1]
+	
+		frontMag = math.sqrt(frontVec[0]*frontVec[0] + frontVec[1]*frontVec[1])
+		backMag = math.sqrt(backVec[0]*backVec[0] + backVec[1]*backVec[1])
+	
+		frontVec[0] /= frontMag
+		frontVec[1] /= frontMag
+		backVec[0] /= backMag
+		backVec[1] /= backMag
+	
+		newP1 = (maxPath[0][0] + frontVec[0]*10, maxPath[0][1] + frontVec[1]*10)
+		newP2 = (maxPath[-1][0] + backVec[0]*10, maxPath[-1][1] + backVec[1]*10)
+	
+		maxPath.insert(0,newP1)
+		maxPath.append(newP2)
+	
+	
+		" convert path points to real "
+		realPath = []
+		for p in maxPath:
+			realPath.append(p)
+
+		posture1 = self.getStableGPACPosture()
+		curve1 = StableCurve(posture1)
+		uniform1 = curve1.getPlot()
+	
+		" check if the medial axis is ordered correctly "
+		distFore1 = (realPath[1][0]-uniform1[1][0])**2 + (realPath[1][1]-uniform1[1][1])**2
+		distBack1 = (realPath[-2][0]-uniform1[-2][0])**2 + (realPath[-2][1]-uniform1[-2][1])**2
+	
+		if distFore1 > 1 and distBack1 > 1:
+			realPath.reverse()
+
+
+
+		self.medialCComputed = True		
+		self.medialPathC = realPath
+
+		medial2 = self.medialPathC
+
+		
+		TAILDIST = 0.5
+
+		" take the long length segments at tips of medial axis"
+		edge1 = medial2[0:2]
+		edge2 = medial2[-2:]
+		
+		frontVec = [edge1[0][0]-edge1[1][0], edge1[0][1]-edge1[1][1]]
+		backVec = [edge2[1][0]-edge2[0][0], edge2[1][1]-edge2[0][1]]
+		frontMag = math.sqrt(frontVec[0]*frontVec[0] + frontVec[1]*frontVec[1])
+		backMag = math.sqrt(backVec[0]*backVec[0] + backVec[1]*backVec[1])
+		
+		frontVec[0] /= frontMag
+		frontVec[1] /= frontMag
+		backVec[0] /= backMag
+		backVec[1] /= backMag
+		
+		" make a smaller version of these edges "
+		newP1 = (edge1[1][0] + frontVec[0]*2, edge1[1][1] + frontVec[1]*2)
+		newP2 = (edge2[0][0] + backVec[0]*2, edge2[0][1] + backVec[1]*2)
+
+		edge1 = [newP1, edge1[1]]
+		edge2 = [edge2[0], newP2]
+	
+		" find the intersection points with the hull "
+		interPoints = []
+		for k in range(len(hull)-1):
+			hullEdge = [hull[k],hull[k+1]]
+			isIntersect1, point1 = Intersect(edge1, hullEdge)
+			if isIntersect1:
+				interPoints.append(point1)
+				break
+
+		for k in range(len(hull)-1):
+			hullEdge = [hull[k],hull[k+1]]
+			isIntersect2, point2 = Intersect(edge2, hullEdge)
+			if isIntersect2:
+				interPoints.append(point2)
+				break
+		
+		" replace the extended edges with a termination point at the hull edge "			
+		medial2 = medial2[1:-2]
+		if isIntersect1:
+			medial2.insert(0, point1)
+		if isIntersect2:
+			medial2.append(point2)
+		
+		" cut off the tail of the non-sweeping side "
+		if self.nodeID % 2 == 0:
+			termPoint = medial2[-1]
+			for k in range(len(medial2)):
+				candPoint = medial2[-k-1]
+				dist = sqrt((termPoint[0]-candPoint[0])**2 + (termPoint[1]-candPoint[1])**2)
+				if dist > TAILDIST:
+					break
+			medial2 = medial2[:-k-1]
+
+		else:
+			termPoint = medial2[0]
+			for k in range(len(medial2)):
+				candPoint = medial2[k]
+				dist = sqrt((termPoint[0]-candPoint[0])**2 + (termPoint[1]-candPoint[1])**2)
+				if dist > TAILDIST:
+					break
+			medial2 = medial2[k:]
+			
+		self.medialPathCut = medial2
+			
+
+
+		return deepcopy(self.medialPathC)
+	
+		raise
+
+	def getStaticMedialAxis_Old(self):
+
+		if self.medialCComputed:
+			return deepcopy(self.medialPathC)
+
+		print "computing medial axis"
+
+		" make sure alpha boundary is built "
+		self.computeStaticAlphaBoundary()
+		
+		def decimatePoints(points):
+			result = []
+		
+			for i in range(len(points)):
+				#if i%2 == 0:
+				if i%4 == 0:
+					result.append(points[i])
+		
+			return result
+
+		a_data = self.getAlphaBoundary(static = True)
+		a_data = decimatePoints(a_data)
+		
+		" convert hull points to GPAC coordinates "
+		localGPACPose = self.getLocalGPACPose()
+		localGPACProfile = Pose(localGPACPose)
+		
+		a_data_GPAC = []
+		for pnt in a_data:
+			a_data_GPAC.append(localGPACProfile.convertGlobalToLocal(pnt))
+				
+		hull = a_data_GPAC
+		hull.append(hull[0])
+
 		
 		minX = 1e100
 		maxX = -1e100

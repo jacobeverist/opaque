@@ -1316,8 +1316,21 @@ def medialOverlapInPlaceCostFunc(params, match_pairs, medialSpline1, medialSplin
 		return 1e5 * (currU - 0.85)
 
 	" compute the point and angles from the paramters "
-	pose1 = medialSpline1.getUVecSet([u1, u1+0.02])[0]
-	pose2 = medialSpline2.getUVecSet([currU, currU + 0.02])[0]
+	#pose1 = medialSpline1.getUVecSet([u1, u1+0.02])[0]
+	#pose2 = medialSpline2.getUVecSet([currU, currU + 0.02])[0]
+	if u1+0.02 > 1.0:
+		pose1 = medialSpline1.getUVecSet([0.98, 1.0])[0]
+	elif u1 < 0.0:
+		pose1 = medialSpline1.getUVecSet([0.0, 0.02])[0]
+	else:
+		pose1 = medialSpline1.getUVecSet([u1, u1+0.02])[0]
+
+	if currU+0.02 > 1.0:
+		pose2 = medialSpline2.getUVecSet([0.98, 1.0])[0]
+	elif currU < 0.0:
+		pose2 = medialSpline2.getUVecSet([0.0, 0.02])[0]
+	else:
+		pose2 = medialSpline2.getUVecSet([currU, currU + 0.02])[0]
 
 	point1 = [pose1[0],pose1[1]]
 	point2 = [pose2[0],pose2[1]]
@@ -1403,17 +1416,31 @@ def medialOverlapCostFunc(params, match_pairs, medialSpline1, medialSpline2, uHi
 		return 1e5 * (currU - uHigh+0.05)
 
 	" compute the point and angles from the parameters "
-	u1_iter = u1 + 0.02
-	currU_iter = currU + 0.02
-	if u1_iter <= 1.0:
-		pose1 = medialSpline1.getUVecSet([u1, u1_iter])[0]
-	else:
-		pose1 = medialSpline1.getUVecSet([u1-0.02, u1])[0]
+	#u1_iter = u1 + 0.02
+	#currU_iter = currU + 0.02
+	#if u1_iter <= 1.0:
+	#	pose1 = medialSpline1.getUVecSet([u1, u1_iter])[0]
+	#else:
+	#	pose1 = medialSpline1.getUVecSet([u1-0.02, u1])[0]
 		
-	if currU_iter <= 1.0:
-		pose2 = medialSpline2.getUVecSet([currU, currU_iter])[0]
+	#if currU_iter <= 1.0:
+	#	pose2 = medialSpline2.getUVecSet([currU, currU_iter])[0]
+	#else:
+	#	pose2 = medialSpline2.getUVecSet([currU - 0.02, currU])[0]
+
+	if u1+0.02 > 1.0:
+		pose1 = medialSpline1.getUVecSet([0.98, 1.0])[0]
+	elif u1 < 0.0:
+		pose1 = medialSpline1.getUVecSet([0.0, 0.02])[0]
 	else:
-		pose2 = medialSpline2.getUVecSet([currU - 0.02, currU])[0]
+		pose1 = medialSpline1.getUVecSet([u1, u1+0.02])[0]
+
+	if currU+0.02 > 1.0:
+		pose2 = medialSpline2.getUVecSet([0.98, 1.0])[0]
+	elif currU < 0.0:
+		pose2 = medialSpline2.getUVecSet([0.0, 0.02])[0]
+	else:
+		pose2 = medialSpline2.getUVecSet([currU, currU + 0.02])[0]
 		
 
 	point1 = [pose1[0],pose1[1]]
@@ -1485,8 +1512,21 @@ def overlapHistogram(params, match_pairs, medialSpline1, medialSpline2, u1):
 	#print "trying:", currU, currAng
 	
 	" compute the point and angles from the paramters "
-	pose1 = medialSpline1.getUVecSet([u1, u1+0.02])[0]
-	pose2 = medialSpline2.getUVecSet([currU, currU + 0.02])[0]
+	#pose1 = medialSpline1.getUVecSet([u1, u1+0.02])[0]
+	#pose2 = medialSpline2.getUVecSet([currU, currU + 0.02])[0]
+	if u1+0.02 > 1.0:
+		pose1 = medialSpline1.getUVecSet([0.98, 1.0])[0]
+	elif u1 < 0.0:
+		pose1 = medialSpline1.getUVecSet([0.0, 0.02])[0]
+	else:
+		pose1 = medialSpline1.getUVecSet([u1, u1+0.02])[0]
+
+	if currU+0.02 > 1.0:
+		pose2 = medialSpline2.getUVecSet([0.98, 1.0])[0]
+	elif currU < 0.0:
+		pose2 = medialSpline2.getUVecSet([0.0, 0.02])[0]
+	else:
+		pose2 = medialSpline2.getUVecSet([currU, currU + 0.02])[0]
 
 	point1 = [pose1[0],pose1[1]]
 	point2 = [pose2[0],pose2[1]]
@@ -3934,8 +3974,23 @@ def overlapICP(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1, medi
 			print "currU =", currU, "currAng =", currAng, "newCost =", newCost
 
 		" compute offset from newU and newAng"
-		pose1 = medialSpline1.getUVecSet([u1, u1+0.02])[0]
-		pose2 = medialSpline2.getUVecSet([currU, currU+0.02])[0]
+
+		if u1+0.02 > 1.0:
+			pose1 = medialSpline1.getUVecSet([0.98, 1.0])[0]
+		elif u1 < 0.0:
+			pose1 = medialSpline1.getUVecSet([0.0, 0.02])[0]
+		else:
+			pose1 = medialSpline1.getUVecSet([u1, u1+0.02])[0]
+	
+		if currU+0.02 > 1.0:
+			pose2 = medialSpline2.getUVecSet([0.98, 1.0])[0]
+		elif currU < 0.0:
+			pose2 = medialSpline2.getUVecSet([0.0, 0.02])[0]
+		else:
+			pose2 = medialSpline2.getUVecSet([currU, currU + 0.02])[0]
+
+		#pose1 = medialSpline1.getUVecSet([u1, u1+0.02])[0]
+		#pose2 = medialSpline2.getUVecSet([currU, currU+0.02])[0]
 	
 		point1 = [pose1[0],pose1[1]]
 		point2 = [pose2[0],pose2[1]]
@@ -4546,15 +4601,32 @@ def globalOverlapICP(initGuess, globalPath, hull, medialPoints,  plotIter = Fals
 		currU = newU
 		
 		" compute offset from newU and newAng"
-		if u1 >= 0.98:
-			pose1 = globalSpline.getUVecSet([1.0-0.01, 1.0])[0]
-		else:				
-			pose1 = globalSpline.getUVecSet([u1, u1+0.02])[0]
+		#if u1 >= 0.98:
+		#	pose1 = globalSpline.getUVecSet([1.0-0.01, 1.0])[0]
+		#else:				
+		#	pose1 = globalSpline.getUVecSet([u1, u1+0.02])[0]
 		#pose1 = localSpline.getUVecSet([u1, u1+0.02])[0]
-		if currU >= 0.98:
-			pose2 = medialSpline.getUVecSet([1.0 - 0.01,1.0])[0]
+		#if currU >= 0.98:
+		#	pose2 = medialSpline.getUVecSet([1.0 - 0.01,1.0])[0]
+		#else:
+		#	pose2 = medialSpline.getUVecSet([currU, currU+0.02])[0]
+
+
+		if u1+0.02 > 1.0:
+			pose1 = globalSpline.getUVecSet([0.98, 1.0])[0]
+		elif u1 < 0.0:
+			pose1 = globalSpline.getUVecSet([0.0, 0.02])[0]
 		else:
-			pose2 = medialSpline.getUVecSet([currU, currU+0.02])[0]
+			pose1 = globalSpline.getUVecSet([u1, u1+0.02])[0]
+	
+		if currU+0.02 > 1.0:
+			pose2 = medialSpline.getUVecSet([0.98, 1.0])[0]
+		elif currU < 0.0:
+			pose2 = medialSpline.getUVecSet([0.0, 0.02])[0]
+		else:
+			pose2 = medialSpline.getUVecSet([currU, currU + 0.02])[0]
+			
+
 
 		point1 = [pose1[0],pose1[1]]
 		point2 = [pose2[0],pose2[1]]
@@ -4833,9 +4905,22 @@ def overlapICP2(estPose1, initGuess, hull1, hull2, medialPoints1, medialPoints2,
 	medialSpline2 = SplineFit(medialPoints2, smooth=0.1)
 
 
-	pose1 = medialSpline1.getUVecSet([u1, u1+0.02])[0]
-	pose2 = medialSpline2.getUVecSet([currU, currU + 0.02])[0]
+	##pose1 = medialSpline1.getUVecSet([u1, u1+0.02])[0]
+	#pose2 = medialSpline2.getUVecSet([currU, currU + 0.02])[0]
+	if u1+0.02 > 1.0:
+		pose1 = medialSpline1.getUVecSet([0.98, 1.0])[0]
+	elif u1 < 0.0:
+		pose1 = medialSpline1.getUVecSet([0.0, 0.02])[0]
+	else:
+		pose1 = medialSpline1.getUVecSet([u1, u1+0.02])[0]
 
+	if currU+0.02 > 1.0:
+		pose2 = medialSpline2.getUVecSet([0.98, 1.0])[0]
+	elif currU < 0.0:
+		pose2 = medialSpline2.getUVecSet([0.0, 0.02])[0]
+	else:
+		pose2 = medialSpline2.getUVecSet([currU, currU + 0.02])[0]
+		
 	point1 = [pose1[0],pose1[1]]
 	point2 = [pose2[0],pose2[1]]
 	ang1 = pose1[2]
@@ -5184,9 +5269,22 @@ def overlapICP2(estPose1, initGuess, hull1, hull2, medialPoints1, medialPoints2,
 			print "currU =", currU, "currAng =", currAng, "newCost =", newCost
 
 		" compute offset from newU and newAng"
-		pose1 = medialSpline1.getUVecSet([u1, u1+0.02])[0]
-		pose2 = medialSpline2.getUVecSet([currU, currU+0.02])[0]
-	
+		#pose1 = medialSpline1.getUVecSet([u1, u1+0.02])[0]
+		#pose2 = medialSpline2.getUVecSet([currU, currU+0.02])[0]
+		if u1+0.02 > 1.0:
+			pose1 = medialSpline1.getUVecSet([0.98, 1.0])[0]
+		elif u1 < 0.0:
+			pose1 = medialSpline1.getUVecSet([0.0, 0.02])[0]
+		else:
+			pose1 = medialSpline1.getUVecSet([u1, u1+0.02])[0]
+		
+		if currU+0.02 > 1.0:
+			pose2 = medialSpline2.getUVecSet([0.98, 1.0])[0]
+		elif currU < 0.0:
+			pose2 = medialSpline2.getUVecSet([0.0, 0.02])[0]
+		else:
+			pose2 = medialSpline2.getUVecSet([currU, currU + 0.02])[0]
+				
 		point1 = [pose1[0],pose1[1]]
 		point2 = [pose2[0],pose2[1]]
 		ang1 = pose1[2]

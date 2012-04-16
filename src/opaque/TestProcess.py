@@ -227,7 +227,8 @@ class TestProcess(SnakeControl):
 			#self.mapGraph.testHypotheses("testData/sensorLocalize2", 175, "cornerHypotheses_2011_06_05.txt")
 			#self.mapGraph.loadSeries("resultProcess_2012_04_05", 20)
 			#self.mapGraph.loadSeries("resultProcess_2012_04_04", 38)
-			self.mapGraph.loadSeries("resultProcess_2012_04_06", 44)
+			#self.mapGraph.loadSeries("resultProcess_2012_04_13_1", 14)
+			self.mapGraph.loadSeries("resultProcess_2012_04_13_2", 16)
 			#self.mapGraph.loadSeries("resultProcess_2012_04_07", 38)
 			
 			#self.mapGraph.instantSensorTest("testData/sensorLocalize2", 175)

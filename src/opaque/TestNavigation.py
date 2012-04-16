@@ -468,8 +468,10 @@ class TestNavigation(SnakeControl):
 			" select the destination and generate path "
 			
 			" select the point to go to "
-			frontierPoint = self.mapGraph.selectNextFrontier()
-		
+			#frontierPoint = self.mapGraph.selectNextFrontier()
+			#frontierPoint = self.mapGraph.selectNextFrontier()
+			frontierPoint = self.mapGraph.selectNextDestination()
+			
 			#frontierPoint = [1.07-0.4, 0.0]
 			#649, 358
 			#frontierPoint = [6.0, -1.5]
@@ -845,6 +847,8 @@ class TestNavigation(SnakeControl):
 			print len(self.localWayPoints), "wayPoints"
 			for i in range(len(self.localWayPoints)):
 				print self.localWayPoints[i]
+			
+			
 			
 			self.currPose = self.contacts.getAverageSegPose(0)
 

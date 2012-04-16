@@ -705,6 +705,21 @@ class MapGraph:
 			self.synch()
 		return self.frontierMap.selectNextFrontier()
 
+	def selectNextDestination(self):
+		if self.isDirty:
+			self.synch()
+			
+		" get the termination point and orientation of each path "
+		terms = self.poseGraph.getPathTerms()
+		
+		for term in terms:
+			
+			if self.frontierMap.isFrontier(loc = term):
+				return term
+		
+			
+		return self.frontierMap.selectNextFrontier()
+
 	def isFrontier(self):
 		if self.isDirty:
 			self.synch()
