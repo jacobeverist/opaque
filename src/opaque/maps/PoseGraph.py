@@ -363,6 +363,7 @@ class PoseGraph:
 		
 		self.pathPlotCount = 0
 		self.overlapPlotCount = 0
+		self.pathDrawCount = 0
 		#self.numPaths = 2
 		#self.paths = {0 : [], 1 : []}
 		#self.hulls = {0 : [], 1 : []}
@@ -1877,22 +1878,7 @@ class PoseGraph:
 				trimmedPaths.append(deepcopy(newPath3))
 
 		"""
-		pylab.clf()
-
-		for k in range(len(self.trimmedPaths)):
-			path = self.trimmedPaths[k]
-			print "path has", len(path), "points"
-			xP = []
-			yP = []
-			for p in path:
-				xP.append(p[0])
-				yP.append(p[1])
-	
-			pylab.plot(xP,yP, color = self.colors[k])
-
-		pylab.title("Trimmed Paths, numNodes = %d" % self.numNodes)
-		pylab.savefig("trimmedPath_%04u.png" % self.trimCount)
-		self.trimCount += 1
+		self.drawTrimmedPaths(self.trimmedPaths)
 		"""
 		
 		
@@ -2508,10 +2494,15 @@ class PoseGraph:
 			isExist1 = True
 
 
+
 			if max1 == 0 or max1 == len(pathPoints)-1:
 				isInterior1 = False
 			else:
 				isInterior1 = True
+
+			# Test purposes only
+			#if nodeID == 4 or nodeID == 5:
+			#	isInterior1 = True
 
 
 		if maxBack > 0.5:
@@ -2523,6 +2514,8 @@ class PoseGraph:
 				isInterior2 = False
 			else:
 				isInterior2 = True
+
+
 
 			
 		"""
@@ -3249,13 +3242,94 @@ class PoseGraph:
 		
 		return self.integrateNode(newNode, nodeID)
 
+
+	def drawTrimmedPaths(self, trimmedPaths):
+		
+		pylab.clf()
+		
+		for k in range(len(trimmedPaths)):
+			path = trimmedPaths[k]
+			print "path has", len(path), "points"
+			xP = []
+			yP = []
+			for p in path:
+				xP.append(p[0])
+				yP.append(p[1])
+
+			pylab.plot(xP,yP, color = self.colors[k])
+
+		#pylab.xlim(-4,4)
+		#pylab.ylim(-4,4)
+
+		pylab.title("Trimmed Paths, numNodes = %d" % self.numNodes)
+		pylab.savefig("trimmedPath_%04u.png" % self.trimCount)
+		self.trimCount += 1
+
+
+
+	def drawPathAndHull(self):
+		
+		
+		pylab.clf()
+		for k in range(len(self.nodeSets)):
+			xP = []
+			yP = []
+			
+			for p in self.paths[k]:
+				xP.append(p[0])
+				yP.append(p[1])
+			pylab.plot(xP,yP, color=self.colors[k], linewidth=4)
+
+
+			for nodeID in self.nodeSets[k]:
+				xP = []
+				yP = []
+
+				estPose1 = self.nodeHash[nodeID].getGlobalGPACPose()		
+		
+				if self.nodeHash[nodeID].isBowtie:			
+					hull1 = computeBareHull(self.nodeHash[nodeID], sweep = False, static = True)
+				else:
+					hull1 = computeBareHull(self.nodeHash[nodeID], sweep = False)
+		
+				" set the origin of pose 1 "
+				poseOrigin = Pose(estPose1)
+		
+				points = []
+				for p in hull1:
+					p1 = poseOrigin.convertLocalToGlobal(p)
+					points.append(p1)
+				
+				for p in points:
+					xP.append(p[0])
+					yP.append(p[1])
+					
+				pylab.plot(xP,yP, color=self.colors[k])
+
+			xP = []
+			yP = []
+			for p in self.hulls[k]:
+				xP.append(p[0])
+				yP.append(p[1])
+				
+			pylab.plot(xP,yP, '--', color=self.colors[k], linewidth=4)
+			
+		print "pathAndHull:", self.pathDrawCount, self.nodeSets.values()	
+		pylab.title("%s" % repr(self.nodeSets.values()))
+		pylab.savefig("pathAndHull_%04u.png" % self.pathDrawCount)
+
+		self.pathDrawCount += 1
+
 	def integrateNode(self, newNode, nodeID):
 
-		global topCount
-
+		" DIRECTION OF TRAVEL FROM PREVIOUS POSE PAIR "
 		direction = newNode.travelDir
 
+
+		
 		if nodeID > 0:
+			
+			" ESTIMATE TRAVEL WITH MEDIAL OVERLAP CONSTRAINT OF EVEN NUMBER POSE "
 			if nodeID % 2 == 0:
 
 				transform1, covE1, hist1 = self.makeMedialOverlapConstraint(nodeID-2, nodeID, isMove = True, isForward = direction )
@@ -3283,6 +3357,8 @@ class PoseGraph:
 				" merge constraints by priority and updated estimated poses "
 				self.mergePriorityConstraints()
 
+				" ODD NUMBER POSES RECEIVE INPLACE CONSTRAINT WITH EVEN PAIR "
+				" PERFORM MEDIAL OVERLAP WITH PREVIOUS ODD NUMBER POSE "
 			else:
 			
 				" FIXME:  apply this support check to spliced paths "
@@ -3364,99 +3440,41 @@ class PoseGraph:
 				" merge constraints by priority and updated estimated poses "
 				self.mergePriorityConstraints()
 
-		" check for a branching condition "
 
-		
-		
-		
-		" if not the very first path "
-		#if self.currPath != -1 and self.numNodes > 2
+		" CHECK FOR A BRANCHING EVENT "
 		
 		if self.numNodes >= 4 and self.numNodes % 2 == 0:
-			
-			" TODO: check for branch for latest node "
-			#currPath = self.paths[self.currPath]
-			#self.paths[0], self.hulls[0] = self.getTopology(self.nodeSets[0])
-			#self.paths[1], self.hulls[1] = self.getTopology(self.nodeSets[1])
 
+
+			" COMPUTE MEDIAL AXIS FROM UNION OF PATH-CLASSIFIED NODES "
 			for k in range(len(self.nodeSets)):
-				print "computing path for node set", k, "topCount =", topCount, ":", self.nodeSets[k]
+				print "computing path for node set", k, ":", self.nodeSets[k]
 				self.paths[k], self.hulls[k] = self.getTopology(self.nodeSets[k])
-						
-			
-			pylab.clf()
-			for k in range(len(self.nodeSets)):
-				xP = []
-				yP = []
-				
-				for p in self.paths[k]:
-					xP.append(p[0])
-					yP.append(p[1])
-				pylab.plot(xP,yP, color=self.colors[k], linewidth=4)
-
-
-				for nodeID in self.nodeSets[k]:
-					xP = []
-					yP = []
-
-					#if self.nodeHash[nodeID].isBowtie:			
-					#	points = node1.getAlphaBoundary(static=True)
-					#else:
-					#	points = node1.getAlphaBoundary(sweep = False)
-
-					estPose1 = self.nodeHash[nodeID].getGlobalGPACPose()		
-			
-					if self.nodeHash[nodeID].isBowtie:			
-						hull1 = computeBareHull(self.nodeHash[nodeID], sweep = False, static = True)
-					else:
-						hull1 = computeBareHull(self.nodeHash[nodeID], sweep = False)
-			
-					" set the origin of pose 1 "
-					poseOrigin = Pose(estPose1)
-			
-					points = []
-					for p in hull1:
-						p1 = poseOrigin.convertLocalToGlobal(p)
-						points.append(p1)
 					
-					#poseLocal = Pose(self.nodeHash[nodeID].getEstPose())
-
-					for p in points:
-						#nP = poseLocal.convertLocalToGlobal(p)
-						#xP.append(nP[0])
-						#yP.append(nP[1])
-						
-						xP.append(p[0])
-						yP.append(p[1])
-						
-					pylab.plot(xP,yP, color=self.colors[k])
-
-				xP = []
-				yP = []
-				for p in self.hulls[k]:
-					xP.append(p[0])
-					yP.append(p[1])
-					
-				pylab.plot(xP,yP, '--', color=self.colors[k], linewidth=4)
-				
-			print self.nodeSets.values()	
-			pylab.title("%s" % repr(self.nodeSets.values()))
-			pylab.savefig("pathAndHull_%04u.png" % (self.numNodes-1))
+			self.drawPathAndHull()
 			
+			" DETECT BRANCHING EVENTS FOR THE NODES OF LAST STOP "
+			" AFTER ODD-NUMBER OVERLAP OF CURRENT STOP HAS IRONED OUT ERRORS "
 			nodeID1 = self.numNodes-4
 			nodeID2 = self.numNodes-3
-			
-			
-			#self.nodeHash[nodeID1].getIsFeatureless()
-			#self.nodeHash[nodeID2].getIsFeatureless()
-			
-			if len(self.paths[0]) > 0:
+		
+			" IF THIS IS THE FIRST NODES IN THE FIRST PATH, JUST ADD THEM AS DEFAULT, DO NOTHING "
+			if len(self.paths[0]) == 0:
+				" first nodes in path 0 "					
+				self.nodeSets[0].append(nodeID1)
+				self.nodeSets[0].append(nodeID2)
+
+				" NOT THE FIRST, NOW CHECK FOR BRANCHING FROM PATHS "			
+			else:
+				
+				" departure events for node 1 "
 				departures1 = []
 				interiors1 = []
 				depPoints1 = []
 				distances1 = []
 				depAngles1 = []
 	
+				" departure events for node 2 "
 				departures2 = []
 				interiors2 = []
 				depPoints2 = []
@@ -3464,6 +3482,7 @@ class PoseGraph:
 				depAngles2 = []
 
 				
+				" raw medial axis of union of path nodes "
 				paths = {}
 				for k in range(len(self.paths)):
 					path = self.paths[k]
@@ -3474,42 +3493,15 @@ class PoseGraph:
 				for k in range(len(paths)):
 					print k, len(paths[k])
 	
+	
+				" TRIM THE RAW PATHS TO ONLY EXTRUDE FROM THEIR BRANCHING POINT "
 				self.trimmedPaths = self.trimPaths(paths)
-				
-				pylab.clf()
-				
-				#print self.trimmedPaths
-
-				print len(self.trimmedPaths), "paths"
-
-				for k in range(len(self.trimmedPaths)):
-					path = self.trimmedPaths[k]
-					print "path has", len(path), "points"
-					xP = []
-					yP = []
-					for p in path:
-						xP.append(p[0])
-						yP.append(p[1])
-		
-					pylab.plot(xP,yP, color = self.colors[k])
-
-				#pylab.xlim(-4,4)
-				#pylab.ylim(-4,4)
-		
-				pylab.title("Trimmed Paths, numNodes = %d" % self.numNodes)
-				pylab.savefig("trimmedPath_%04u.png" % self.trimCount)
-				self.trimCount += 1
-
-				
-				
+				self.drawTrimmedPaths(self.trimmedPaths)
 				print "trimmed paths:", len(self.trimmedPaths)
 	
-				#print "pathIDs1:", pathIDs1
-				#print "pathIDs2:", pathIDs2
 				
-				#orderedPathIDs1 = self.getPathOrdering(nodeID1, pathIDs1)
-				#orderedPathIDs2 = self.getPathOrdering(nodeID2, pathIDs2)
-				
+				" GET THE ORDERED LIST OF OVERLAPPING PATHS FOR EACH NODE "
+					
 				" the overlapping paths are computed from the initial guess of position "
 				orderedPathIDs1 = self.getOrderedOverlappingPaths(nodeID1)
 				orderedPathIDs2 = self.getOrderedOverlappingPaths(nodeID2)
@@ -3517,30 +3509,8 @@ class PoseGraph:
 				print "orderedPathIDs1:", orderedPathIDs1
 				print "orderedPathIDs2:", orderedPathIDs2
 				
-				"""
-				guessPose1, cost1 = self.makeGlobalMedialOverlapConstraint(nodeID1, self.trimmedPaths[pathID], globalPoint1, globalPoint1)
-				self.nodeHash[nodeID1].setGPACPose(guessPose1)
-
-				totalGuesses = []
 				
-				for path in splicedPaths1:
-
-					" make the path constraints "								
-					guessPose1, cost1 = self.makeGlobalMedialOverlapConstraint(nodeID1, path, globalPathJunctionPoint, globalPathJunctionPoint)
-					
-					estPose = self.nodeHash[nodeID1].getGlobalGPACPose()
-					angDiff = abs(estPose[2]-guessPose1[2])
-					totalGuesses.append((angDiff, cost1, guessPose1))
-				
-				totalGuesses.sort()
-				
-				guessPose = totalGuesses[0][2]
-				
-				self.nodeHash[nodeID1].setGPACPose(guessPose)
-				"""
-				
-				" now compute whether there are departure points after we have guessed a better position in synch with the paths "
-				
+				" COMPUTE DEPARTURE EVENTS FOR EACH OVERLAPPING PATH SECTION "
 				for pathID in orderedPathIDs1:
 					departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2 = self.getDeparturePoint(self.trimmedPaths[pathID], nodeID1)
 					departures1.append([isExist1,isExist2])
@@ -3557,14 +3527,18 @@ class PoseGraph:
 					distances2.append([discDist1, discDist2])
 					depAngles2.append([depAngle1, depAngle2])
 					
-				print "node", nodeID1, ":", departures1, interiors1
-				print "node", nodeID2, ":", departures2, interiors2
+				print "node departures", nodeID1, ":", departures1
+				print "node  interiors", nodeID1, ":", interiors1
+				print "node departures", nodeID2, ":", departures2
+				print "node  interiors", nodeID2, ":", interiors2
+	
 	
 				" new junction finding logic "
 				" if terminal departures for each medial axis are None or exterior, than we stay on existing paths "
 				" if a terminal departure exists that is internal, than we have a new junction "
 				DISC_THRESH = 0.2
 
+				" NODE1: CHECK FRONT AND BACK FOR BRANCHING EVENTS "
 				frontExist1 = departures1[0][0]
 				backExist1 =  departures1[-1][1]
 				frontInterior1 = interiors1[0][0]
@@ -3573,15 +3547,14 @@ class PoseGraph:
 				foreTerm1 = frontInterior1 and frontExist1
 				backTerm1 = backInterior1 and backExist1
 				
-				
+				" DISCREPANCY BETWEEN TIP-CLOSEST and DEPARTURE-CLOSEST POINT ON PATH "				
 				discForeTerm1 = distances1[0][0] > DISC_THRESH
 				discBackTerm1 = distances1[-1][1] > DISC_THRESH
 				
 				foreAngle1 = depAngles1[0][0]
 				backAngle1 = depAngles1[-1][1]
 				
-				#foreTerm2 = departures2[0][0] and interiors2[0][0]
-				#backTerm2 = departures2[-1][1] and interiors2[-1][1]
+				" NODE2: CHECK FRONT AND BACK FOR BRANCHING EVENTS "
 				frontExist2 = departures2[0][0]
 				backExist2 =  departures2[-1][1]
 				frontInterior2 = interiors2[0][0]
@@ -3762,27 +3735,102 @@ class PoseGraph:
 				print "frontAngDiff:", frontAngDiff
 				print "backAngDiff:", backAngDiff
 
+
+
 				newPaths = []
+	
+				frontExist1 = departures1[0][0]
+				frontInterior1 = interiors1[0][0]
+		
+				frontExist2 = departures2[0][0]
+				frontInterior1 = interiors2[0][0]
 				
+				depAngle1 = depAngles1[0][0]
+				depAngle2 = depAngles2[0][0]
 				
-				"""
-				1)  both nodes departing
-					- are same departure  ( equal departing angle and are on top of each other)  1 new path
-					- are different departures ( different departing angle and are not necessarily on top of each other) 2 new paths
+				depPoint1 = depPoints1[0][0]
+				depPoint2 = depPoints2[0][0]
+				
+				parentPathID1 = orderedPathIDs1[0]
+				parentPathID2 = orderedPathIDs2[0]
+	
+	
+				isBranch, pathBranchIDs = self.determineBranch(nodeID1, nodeID2, frontExist1, frontExist2, frontInterior1, frontInterior2, depAngle1, depAngle2, depPoint1, depPoint2, parentPathID1, parentPathID2)
+
+				print "determineBranch:"
+				print isBranch
+				print pathBranchIDs
+	
+				if isBranch[0]:
+					orderedPathIDs1.insert(0,pathBranchIDs[0])
+					departures1.insert(0, [False, False])
+					interiors1.insert(0, [False, False])
+					depPoints1.insert(0, [None, None])
+	
+				if isBranch[1]:
+					orderedPathIDs2.insert(0,pathBranchIDs[1])
+					departures2.insert(0, [False, False])
+					interiors2.insert(0, [False, False])
+					depPoints2.insert(0, [None, None])
 					
-				2) neither node is departing
-					- are on same path
-					
-				3) one node is departing only
-					- is only one departure ( other node has no departure, or has external departure but not same angle )
-					- is a false departure  ( falseness happens if bad map data, ignore )
-					- are both departing ( should have at least external departure on both, compare departure angle )
+				for pathID in pathBranchIDs:
+					if pathID != -1 and newPaths.count(pathID) == 0:
+						newPaths.append(pathID)
+
+
+
+
+				backExist1 = departures1[-1][1]
+				backInterior1 = interiors1[-1][1]
+		
+				backExist2 = departures2[-1][1]
+				backInterior1 = interiors2[-1][1]
 				
-				Now, we have the departing angles, but we need to compare them with each other.
+				depAngle1 = depAngles1[-1][1]
+				depAngle2 = depAngles2[-1][1]
 				
+				depPoint1 = depPoints1[-1][1]
+				depPoint2 = depPoints2[-1][1]
+	
+				parentPathID1 = orderedPathIDs1[-1]
+				parentPathID2 = orderedPathIDs2[-1]
+				print "self.pathParents:", self.pathParents
+				print "self.nodeSets:", self.nodeSets
+				print "newPaths:", newPaths
+				print "self.numPaths:", self.numPaths
+	
+	
+				isBranch, pathBranchIDs = self.determineBranch(nodeID1, nodeID2, backExist1, backExist2, backInterior1, backInterior2, depAngle1, depAngle2, depPoint1, depPoint2, parentPathID1, parentPathID2)
+				print "determineBranch:"
+				print isBranch
+				print pathBranchIDs
+	
+				if isBranch[0]:
+					orderedPathIDs1.append(0,pathBranchIDs[0])
+					departures1.append([False, False])
+					interiors1.append([False, False])
+					depPoints1.append([None, None])
+	
+				if isBranch[1]:
+					orderedPathIDs2.append(pathBranchIDs[1])
+					departures2.append([False, False])
+					interiors2.append([False, False])
+					depPoints2.append([None, None])
+	
+				for pathID in pathBranchIDs:
+					if pathID != -1 and newPaths.count(pathID) == 0:
+						newPaths.append(pathID)
+				print "self.pathParents:", self.pathParents
+				print "self.nodeSets:", self.nodeSets
+				print "newPaths:", newPaths
+				print "self.numPaths:", self.numPaths
 				
-				
+
+
+
+
 				"""
+				newPaths = []
 				
 				" 60 degree threshold "
 				ANG_THRESH = 1.047
@@ -4156,7 +4204,7 @@ class PoseGraph:
 							raise
 
 
-
+				"""
 
 
 
@@ -4204,30 +4252,9 @@ class PoseGraph:
 						isNew2 = True
 				
 	
-
-				pylab.clf()
-
-				#print self.trimmedPaths
-
-				print len(self.trimmedPaths), "paths"
-
-				for k in range(len(self.trimmedPaths)):
-					path = self.trimmedPaths[k]
-					print "path has", len(path), "points"
-					xP = []
-					yP = []
-					for p in path:
-						xP.append(p[0])
-						yP.append(p[1])
-		
-					pylab.plot(xP,yP, color = self.colors[k])
-					
-				pylab.xlim(-4,4)
-				pylab.ylim(-4,4)
-		
-				pylab.title("Trimmed Paths, numNodes = %d" % self.numNodes)
-				pylab.savefig("trimmedPath_%04u.png" % self.trimCount)
-				self.trimCount += 1
+				
+				self.drawTrimmedPaths(self.trimmedPaths)
+				print "trimmed paths:", len(self.trimmedPaths)
 
 
 
@@ -4239,6 +4266,24 @@ class PoseGraph:
 				" nodeID1:  is it in a junction or a single path? "
 				
 				
+				if not isNew1:
+					self.constrainToPaths(nodeID1, orderedPathIDs1, departures1, interiors1, depPoints1)
+					
+				if not isNew2:
+					self.constrainToPaths(nodeID2, orderedPathIDs2, departures2, interiors2, depPoints2)
+
+				self.mergePriorityConstraints()
+
+			for k in range(len(self.nodeSets)):
+				print "computing path for node set", k, ":", self.nodeSets[k]
+				self.paths[k], self.hulls[k] = self.getTopology(self.nodeSets[k])
+
+			self.drawPathAndHull()
+			
+			return
+
+
+			if False:				
 				if not isNew1:
 					splicedPaths1 = self.splicePathIDs(orderedPathIDs1)
 
@@ -5060,75 +5105,1392 @@ class PoseGraph:
 				#self.paths[self.numPaths], self.hulls[self.numPaths] = self.getTopology(self.nodeSets[self.numPaths])
 			
 				#pass
-			else:
-				" first nodes in path 0 "
-				#if self.numPaths == 0:
-				#	self.nodeSets[0] = []
-				#	self.pathParents.append([None, None, None])
-				#	self.numPaths += 1
-					
-				self.nodeSets[0].append(nodeID1)
-				self.nodeSets[0].append(nodeID2)
+
 
 
 
 			for k in range(len(self.nodeSets)):
-				print "computing path for node set", k, "topCount =", topCount, ":", self.nodeSets[k]
+				print "computing path for node set", k, ":", self.nodeSets[k]
 				self.paths[k], self.hulls[k] = self.getTopology(self.nodeSets[k])
+
+			self.drawPathAndHull()
 			
-			pylab.clf()
-			for k in range(len(self.nodeSets)):
-				xP = []
-				yP = []
-				
-				for p in self.paths[k]:
-					xP.append(p[0])
-					yP.append(p[1])
-				pylab.plot(xP,yP, color=self.colors[k], linewidth=4)
-
-
-				for nodeID in self.nodeSets[k]:
-					xP = []
-					yP = []
-
-					estPose1 = self.nodeHash[nodeID].getGlobalGPACPose()		
-			
-					if self.nodeHash[nodeID].isBowtie:			
-						hull1 = computeBareHull(self.nodeHash[nodeID], sweep = False, static = True)
-					else:
-						hull1 = computeBareHull(self.nodeHash[nodeID], sweep = False)
-			
-					" set the origin of pose 1 "
-					poseOrigin = Pose(estPose1)
-			
-					points = []
-					for p in hull1:
-						p1 = poseOrigin.convertLocalToGlobal(p)
-						points.append(p1)
-					
-					for p in points:
-						xP.append(p[0])
-						yP.append(p[1])
-						
-					pylab.plot(xP,yP, color=self.colors[k])
-
-				xP = []
-				yP = []
-				for p in self.hulls[k]:
-					xP.append(p[0])
-					yP.append(p[1])
-					
-				#pylab.plot(xP,yP, color=self.colors[k])
-				#pylab.plot(xP,yP, color=self.colors[k], linewidth=2, '--')
-				pylab.plot(xP,yP, '--', color=self.colors[k], linewidth=4)
-				
-			pylab.title("%s" % repr(self.nodeSets.values()))
-			pylab.savefig("pathAndHull_%04u.png" % self.numNodes)
-
-
-
-
 			return
+
+	def addNewPath(self, parentID, branchNodeID, localJunctionPose):
+				
+		" FIXME:  Branch direction does not seem to be used properly yet.  Only used in getOverlapDeparture() "
+		self.pathParents.append([parentID, branchNodeID, localJunctionPose, True])
+
+		newPathID = self.numPaths
+		self.nodeSets[newPathID] = []
+		self.numPaths += 1
+
+		return newPathID
+			
+	def constrainToPaths(self, nodeID, orderedPathIDs, departures, interiors, depPoints):
+			
+		"1)  guess pose in front if there is a departure with local and path junction points (not first node) "
+		"2)  guess pose in back if there is a departure with local and path junction points (not first node) "
+		"3)  select choice with the lowest cost "
+		"4)  guess pose with no departure point with guessed control points len(orderedPathIDs) == 1"
+		
+		" nodeID1:  is it in a junction or a single path? "
+		
+		splicedPaths1 = self.splicePathIDs(orderedPathIDs)
+
+		if len(orderedPathIDs) == 1:
+
+			" in a single path "
+
+			pathID = orderedPathIDs[0]
+			nodeSet = self.nodeSets[pathID]
+			
+			" check that we're not the only pose in the path "
+			" does it contain at least one node that is not nodeID1 or nodeID2 "
+			doConstraint = False
+			
+			" companion node iD "
+			if nodeID % 2 == 0:
+				pairNodeID = nodeID + 1
+			else:
+				pairNodeID = nodeID - 1
+				 
+			if len(nodeSet) == 1:						
+				if nodeSet.count(nodeID) == 0:
+					doConstraint = True
+			
+			elif len(nodeSet) == 2:						
+				if nodeSet.count(nodeID) == 0 or nodeSet.count(pairNodeID) == 0:
+					doConstraint = True
+			
+			elif len(nodeSet) > 2:
+				doConstraint = True
+
+			if doConstraint:
+				
+				" control point nearest the GPAC origin "
+				globalPoint1 = self.nodeHash[nodeID].getGlobalGPACPose()[:2]
+					
+				guessPose1, cost1 = self.makeGlobalMedialOverlapConstraint(nodeID, self.trimmedPaths[pathID], globalPoint1, globalPoint1)
+				self.nodeHash[nodeID].setGPACPose(guessPose1)
+
+				" make path constraint "
+				print "pathID: addPathConstraints(", pathID, nodeID
+				self.addPathConstraints(self.nodeSets[pathID], nodeID)
+			
+		else:
+			" in at least one junction "
+			
+			" we don't intersect the junction sufficiently "
+			" add constraints to most overlapped path"
+			#if interiors.count(True) == 0:
+			" no recognized internal departure point "
+			if [item for inner_list in interiors for item in inner_list].count(True) == 0:
+
+
+				" determine which paths are leaves "
+				isAChild = [True for k in range(self.numPaths)]
+				for k in orderedPathIDs:
+					currPath = self.pathParents[k]
+					currParent = currPath[0]
+					if currParent != None and orderedPathIDs.count(currParent) > 0:
+						isAChild[currParent] = False
+
+				print "isAChild:", isAChild
+
+				minPathID = 0
+				minSum = 1e100
+				for pathID in orderedPathIDs:
+					
+					if isAChild[pathID]:
+						sum1 = self.getOverlapCondition(self.trimmedPaths[pathID], nodeID)
+						
+						if sum1 < minSum:
+							minPathID = pathID
+							minSum = sum1
+						print "overlap sum", pathID, "=", sum1						
+
+				print "maximum overlap path is", minPathID
+
+				nodeSet = self.nodeSets[minPathID]
+				
+				" check that we're not the only pose in the path "
+				" does it contain at least one node that is not nodeID or nodeID2 "
+				doConstraint = False
+
+				" companion node iD "
+				if nodeID % 2 == 0:
+					pairNodeID = nodeID + 1
+				else:
+					pairNodeID = nodeID - 1
+
+				if len(nodeSet) == 1:						
+					if nodeSet.count(nodeID) == 0:
+						doConstraint = True
+				
+				elif len(nodeSet) == 2:						
+					if nodeSet.count(nodeID) == 0 or nodeSet.count(pairNodeID) == 0:
+						doConstraint = True
+				
+				elif len(nodeSet) > 2:
+					doConstraint = True
+
+				if doConstraint:
+					
+					" control point nearest the GPAC origin "
+					globalPoint1 = self.nodeHash[nodeID].getGlobalGPACPose()[:2]
+
+					totalGuesses = []
+					
+					for path in splicedPaths1:
+
+						" make the path constraints "								
+						guessPose1, cost1 = self.makeGlobalMedialOverlapConstraint(nodeID, path, globalPoint1, globalPoint1)
+						
+						estPose = self.nodeHash[nodeID].getGlobalGPACPose()
+						angDiff = abs(estPose[2]-guessPose1[2])
+						totalGuesses.append((angDiff, cost1, guessPose1))
+					
+					totalGuesses.sort()
+					
+					guessPose1 = totalGuesses[0][2]
+					
+						
+					#guessPose1, cost1 = self.makeGlobalMedialOverlapConstraint(nodeID, self.trimmedPaths[minPathID], localPoint1, localPoint1)
+					self.nodeHash[nodeID].setGPACPose(guessPose1)
+
+					" make path constraint "
+					print "minPathID: addPathConstraints(", minPathID, nodeID
+					self.addPathConstraints(self.nodeSets[minPathID], nodeID)
+
+
+
+
+
+
+			
+			elif len(orderedPathIDs) == 2:
+				
+				" one junction point "
+				pathID1 = orderedPathIDs[0]
+				pathID2 = orderedPathIDs[1]
+
+				#[pathID, branchNodeID, poseOrigin.convertGlobalToLocal(globalJunctionPoint)]
+				
+				" find parent-child relationship "
+				val1 = self.pathParents[pathID1]
+				val2 = self.pathParents[pathID2]
+
+
+				if val1[0] == None:
+					parentPath = pathID1
+					childPath = pathID2
+					
+				elif val2[0] == None:					
+					parentPath = pathID2
+					childPath = pathID1
+					
+				else:
+					parentID1 = val1[0]
+					parentID2 = val2[0]
+					
+					if parentID1 == pathID2:
+						parentPath = pathID2
+						childPath = pathID1
+					elif parentID2 == pathID1:
+						parentPath = pathID1
+						childPath = pathID2
+					else:
+						raise
+
+				" global path point "
+				localJunctionNodeID = self.pathParents[childPath][1]
+				localPathJunctionPoint = self.pathParents[childPath][2]						
+				
+				localJunctionNode = self.nodeHash[localJunctionNodeID]
+				poseOrigin = Pose(localJunctionNode.getEstPose())
+				globalPathJunctionPoint = poseOrigin.convertLocalToGlobal(localPathJunctionPoint)
+			
+				print departures, interiors
+				print pathID1, childPath, parentPath
+			
+				" new node departure point "
+				" try childPath first "
+				if childPath == pathID1:
+					index1 = orderedPathIDs.index(pathID1)			
+					isDepExists1 = departures[index1][1] and interiors[index1][1]
+					depPoint1 = depPoints[index1][1]
+					print "caseA:", index1, isDepExists1
+				
+				else:
+					index2 = orderedPathIDs.index(pathID2)
+					isDepExists1 = departures[index2][0] and interiors[index2][0]
+					depPoint1 = depPoints[index2][0]
+					print "caseB:", index2, isDepExists1
+
+				" try parentPath first "
+				if parentPath == pathID1:
+					index1 = orderedPathIDs.index(pathID1)
+					isDepExists2 = departures[index1][1] and interiors[index1][1]
+					depPoint2 = depPoints[index1][1]
+					print "caseC:", index1, isDepExists2
+				else:
+					index2 = orderedPathIDs.index(pathID2)
+					isDepExists2 = departures[index2][0] and interiors[index2][0]
+					depPoint2 = depPoints[index2][0]
+					print "caseD:", index2, isDepExists2
+				
+				
+				if isDepExists1:
+					
+					totalGuesses = []
+					
+					for path in splicedPaths1:
+
+						" make the path constraints "								
+						guessPose1, cost1 = self.makeGlobalMedialOverlapConstraint(nodeID, path, globalPathJunctionPoint, globalPathJunctionPoint)
+						
+						estPose = self.nodeHash[nodeID].getGlobalGPACPose()
+						angDiff = abs(estPose[2]-guessPose1[2])
+						totalGuesses.append((angDiff, cost1, guessPose1))
+					
+					totalGuesses.sort()
+					
+					guessPose = totalGuesses[0][2]
+					
+					self.nodeHash[nodeID].setGPACPose(guessPose)
+
+					" make path constraint "
+					print "childPath: addPathConstraints(", childPath, nodeID
+					self.addPathConstraints(self.nodeSets[childPath], nodeID)
+
+				
+				elif isDepExists2:
+					totalGuesses = []
+					
+					for path in splicedPaths1:
+
+						" make the path constraints "								
+						guessPose1, cost1 = self.makeGlobalMedialOverlapConstraint(nodeID, path, globalPathJunctionPoint, depPoint2)
+
+						estPose = self.nodeHash[nodeID].getGlobalGPACPose()
+						angDiff = abs(estPose[2]-guessPose1[2])
+						totalGuesses.append((angDiff, cost1, guessPose1))
+					
+					totalGuesses.sort()
+					
+					guessPose = totalGuesses[0][2]
+
+					self.nodeHash[nodeID].setGPACPose(guessPose)
+
+					" make path constraint "
+					print "childPath: addPathConstraints(", childPath, nodeID
+					self.addPathConstraints(self.nodeSets[childPath], nodeID)
+
+				
+				else:
+					print "no local junction point "
+					raise
+		
+			else:
+				" two or more junction points "
+				pathID1_1 = orderedPathIDs[0]
+				pathID1_2 = orderedPathIDs[1]
+				pathID2_1 = orderedPathIDs[-1]
+				pathID2_2 = orderedPathIDs[-2]
+
+				" pick the newest path from where to sample the local junction "
+				if pathID1_1 > pathID2_2:
+					pathID1 = pathID1_1
+					pathID2 = pathID1_2
+				else:
+					pathID1 = pathID2_1
+					pathID2 = pathID2_2
+					
+				" find parent-child relationship "
+				val1 = self.pathParents[pathID1]
+				val2 = self.pathParents[pathID2]
+
+
+				if val1[0] == None:
+					parentPath = pathID1
+					childPath = pathID2
+
+				elif val2[0] == None:					
+					parentPath = pathID2
+					childPath = pathID1
+
+				else:
+					parentID1 = val1[0]
+					parentID2 = val2[0]
+					
+					if parentID1 == pathID2:
+						parentPath = pathID2
+						childPath = pathID1
+					elif parentID2 == pathID1:
+						parentPath = pathID1
+						childPath = pathID2
+					else:
+						raise
+
+				if self.pathParents[childPath][0] != parentPath:
+					print "WARNING: selected childPath", childPath, "does not have parent", parentPath, "but has instead", self.pathParents[childPath][0]
+
+				" global path point "
+				" we don't check, but we assume the parent here is the parent in our orderedPaths"
+				localJunctionNodeID = self.pathParents[childPath][1]
+				localPathJunctionPoint = self.pathParents[childPath][2]						
+				
+				localJunctionNode = self.nodeHash[localJunctionNodeID]
+				poseOrigin = Pose(localJunctionNode.getEstPose())
+				globalPathJunctionPoint = poseOrigin.convertLocalToGlobal(localPathJunctionPoint)
+			
+				totalGuesses = []
+				
+				for path in splicedPaths1:
+
+					" make the path constraints "								
+					guessPose1, cost1 = self.makeGlobalMedialOverlapConstraint(nodeID, path, globalPathJunctionPoint, globalPathJunctionPoint)
+					estPose = self.nodeHash[nodeID].getGlobalGPACPose()
+					angDiff = abs(estPose[2]-guessPose1[2])
+					totalGuesses.append((angDiff, cost1, guessPose1))
+				
+				totalGuesses.sort()
+				
+				guessPose = totalGuesses[0][2]
+				
+				self.nodeHash[nodeID].setGPACPose(guessPose)
+
+				" make path constraint "
+				print "childPath: addPathConstraints(", childPath, nodeID
+				self.addPathConstraints(self.nodeSets[childPath], nodeID)
+
+	def determineBranch(self, nodeID1, nodeID2, frontExist1, frontExist2, frontInterior1, frontInterior2, depAngle1, depAngle2, depPoint1, depPoint2, parentPathID1, parentPathID2):
+		
+		"""
+		1)  both nodes departing
+			- are same departure  ( equal departing angle and are on top of each other)  1 new path
+			- are different departures ( different departing angle and are not necessarily on top of each other) 2 new paths
+			
+		2) neither node is departing
+			- are on same path
+			
+		3) one node is departing only
+			- is only one departure ( other node has no departure, or has external departure but not same angle )
+			- is a false departure  ( falseness happens if bad map data, ignore )
+			- are both departing ( should have at least external departure on both, compare departure angle )
+		
+		Now, we have the departing angles, but we need to compare them with each other.	
+		"""
+
+		
+		
+		foreTerm1 = frontInterior1 and frontExist1
+		foreTerm2 = frontInterior2 and frontExist2
+
+		frontAngDiff = diffAngle(depAngle1, depAngle2)
+
+		pathBranchIDs = [-1, -1]
+		isBranch = [False, False]
+		
+		" 60 degree threshold "
+		ANG_THRESH = 1.047
+		#ANG_THRESH = 0.3
+		
+		if foreTerm1 or foreTerm2:
+
+			if foreTerm1 and foreTerm2:
+				" both departing case: check if same or different "
+				if fabs(frontAngDiff) < ANG_THRESH:
+					" are on top of each other and are branching to the same path "
+
+					if self.checkUniqueBranch(parentPathID1, nodeID1, depAngle1, depPoint1) and self.checkUniqueBranch(parentPathID2, nodeID2, depAngle2, depPoint2):
+
+						
+						pathID = parentPathID1
+						branchNodeID = nodeID1
+						globalJunctionPoint = depPoint1
+						depAng = depAngle1
+						junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
+
+						poseOrigin = Pose(self.nodeHash[branchNodeID].getEstPose())
+						
+						newPathID = self.addNewPath(pathID, branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
+						pathBranchIDs[0] = newPathID
+						pathBranchIDs[1] = newPathID
+
+						isBranch[0] = True
+						isBranch[1] = True
+
+						print "foreA"
+				else:
+					" these are branching to separate new paths "
+
+					if self.checkUniqueBranch(parentPathID1, nodeID1, depAngle1, depPoint1) and self.checkUniqueBranch(parentPathID2, nodeID2, depAngle2, depPoint2):
+
+
+						pathID = parentPathID1
+						branchNodeID = nodeID1
+						globalJunctionPoint = depPoint1
+						depAng = depAngle1
+						junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
+
+						poseOrigin = Pose(self.nodeHash[branchNodeID].getEstPose())
+						newPathID1 = self.addNewPath(pathID, branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
+						pathBranchIDs[0] = newPathID1
+						isBranch[0] = True
+
+
+
+						pathID = parentPathID2
+						branchNodeID = nodeID2
+						globalJunctionPoint = depPoint2
+						depAng = depAngle2
+						junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
+
+						poseOrigin = Pose(self.nodeHash[branchNodeID].getEstPose())
+						newPathID2 = self.addNewPath(pathID, branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
+						pathBranchIDs[1] = newPathID2
+						isBranch[1] = True
+						print "foreB"
+			
+			elif foreTerm1 and not foreTerm2:
+				
+				if self.checkUniqueBranch(parentPathID1, nodeID1, depAngle1, depPoint1):
+					
+					if frontExist2 and fabs(frontAngDiff) < ANG_THRESH:
+						" both have same departure "
+						pathID = parentPathID1
+						branchNodeID = nodeID1
+						globalJunctionPoint = depPoint1
+						depAng = depAngle1
+						junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
+
+
+						poseOrigin = Pose(self.nodeHash[branchNodeID].getEstPose())
+						newPathID = self.addNewPath(pathID, branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
+						pathBranchIDs[0] = newPathID
+						pathBranchIDs[1] = newPathID
+						isBranch[0] = True
+						isBranch[1] = True
+
+						print "foreC"
+						
+					else:
+						" foreTerm1 has unique departure "	
+						pathID = parentPathID1
+						branchNodeID = nodeID1
+						globalJunctionPoint = depPoint1
+						depAng = depAngle1
+						junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
+
+						poseOrigin = Pose(self.nodeHash[branchNodeID].getEstPose())
+						newPathID = self.addNewPath(pathID, branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
+						pathBranchIDs[0] = newPathID
+						isBranch[0] = True
+
+						print "foreD"
+
+			elif foreTerm2 and not foreTerm1:
+
+				if self.checkUniqueBranch(parentPathID2, nodeID2, depAngle2, depPoint2):
+
+					if frontExist1 and fabs(frontAngDiff) < ANG_THRESH:
+
+						" both have same departure "
+						pathID = parentPathID2
+						branchNodeID = nodeID2
+						globalJunctionPoint = depPoint2
+						depAng = depAngle2
+						junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
+
+						poseOrigin = Pose(self.nodeHash[branchNodeID].getEstPose())
+						newPathID = self.addNewPath(pathID, branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
+						pathBranchIDs[0] = newPathID
+						pathBranchIDs[1] = newPathID
+						isBranch[0] = True
+						isBranch[1] = True
+
+						print "foreE"
+
+					else:
+						" foreTerm2 has unique departure "	
+						pathID = parentPathID2
+						branchNodeID = nodeID2
+						globalJunctionPoint = depPoint2
+						depAng = depAngle2
+						junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
+
+						poseOrigin = Pose(self.nodeHash[branchNodeID].getEstPose())
+						newPathID = self.addNewPath(pathID, branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
+						pathBranchIDs[1] = newPathID
+						isBranch[1] = True
+
+						print "foreF"
+			else:
+				print "foreG"
+				" no new departure, just add nodes to the leaf paths "
+				pathID = parentPathID1
+				branchNodeID = nodeID1
+				globalJunctionPoint = depPoint1
+				
+				if parentPathID1 != parentPathID2:
+					print "departing path IDs of two colocated nodes are not the same"
+					raise
+		
+		
+		return isBranch, pathBranchIDs
+		
+		"""
+		pathID = parentPathID1
+		branchNodeID = nodeID1
+		globalJunctionPoint = depPoint1
+		depAng = depAngle1
+		junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
+	
+		orderedPathIDs1.insert(0,self.numPaths)
+		departures1.insert(0, [False, False])
+		interiors1.insert(0, [False, False])
+		depPoints1.insert(0, [None, None])
+	
+		orderedPathIDs2.insert(0,self.numPaths)
+		departures2.insert(0, [False, False])
+		interiors2.insert(0, [False, False])
+		depPoints2.insert(0, [None, None])
+	
+		poseOrigin = Pose(self.nodeHash[branchNodeID].getEstPose())
+		self.pathParents.append([pathID, branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug), True])
+		self.nodeSets[self.numPaths] = []
+		newPaths.append(self.numPaths)
+		self.numPaths += 1
+		"""
+
+
+
+	def checkForBranches(self, nodeID1, nodeID2):
+
+		" CHECK FOR A BRANCHING EVENT FROM LEAF "
+
+		" IF THIS IS THE FIRST NODES IN THE FIRST PATH, JUST ADD THEM AS DEFAULT, DO NOTHING "
+		if len(self.paths[0]) == 0:
+			" first nodes in path 0 "					
+			self.nodeSets[0].append(nodeID1)
+			self.nodeSets[0].append(nodeID2)
+
+			" NOT THE FIRST, NOW CHECK FOR BRANCHING FROM PATHS "			
+		else:
+			
+			" departure events for node 1 "
+			departures1 = []
+			interiors1 = []
+			depPoints1 = []
+			distances1 = []
+			depAngles1 = []
+
+			" departure events for node 2 "
+			departures2 = []
+			interiors2 = []
+			depPoints2 = []
+			distances2 = []
+			depAngles2 = []
+
+			
+			" raw medial axis of union of path nodes "
+			paths = {}
+			for k in range(len(self.paths)):
+				path = self.paths[k]
+				if len(path) > 0:
+					paths[k] = path
+
+			print "paths:", len(paths)
+			for k in range(len(paths)):
+				print k, len(paths[k])
+
+
+			" TRIM THE RAW PATHS TO ONLY EXTRUDE FROM THEIR BRANCHING POINT "
+			self.trimmedPaths = self.trimPaths(paths)
+			self.drawTrimmedPaths(self.trimmedPaths)
+			print "trimmed paths:", len(self.trimmedPaths)
+
+			
+			" GET THE ORDERED LIST OF OVERLAPPING PATHS FOR EACH NODE "
+				
+			" the overlapping paths are computed from the initial guess of position "
+			orderedPathIDs1 = self.getOrderedOverlappingPaths(nodeID1)
+			orderedPathIDs2 = self.getOrderedOverlappingPaths(nodeID2)
+			
+			print "orderedPathIDs1:", orderedPathIDs1
+			print "orderedPathIDs2:", orderedPathIDs2
+			
+			
+			" COMPUTE DEPARTURE EVENTS FOR EACH OVERLAPPING PATH SECTION "
+			for pathID in orderedPathIDs1:
+				departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2 = self.getDeparturePoint(self.trimmedPaths[pathID], nodeID1)
+				departures1.append([isExist1,isExist2])
+				interiors1.append([isInterior1, isInterior2])
+				depPoints1.append([departurePoint1, departurePoint2])
+				distances1.append([discDist1, discDist2])
+				depAngles1.append([depAngle1, depAngle2])
+			
+			for pathID in orderedPathIDs2:
+				departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2 = self.getDeparturePoint(self.trimmedPaths[pathID], nodeID2)
+				departures2.append([isExist1,isExist2])
+				interiors2.append([isInterior1, isInterior2])
+				depPoints2.append([departurePoint1, departurePoint2])
+				distances2.append([discDist1, discDist2])
+				depAngles2.append([depAngle1, depAngle2])
+				
+			print "node departures", nodeID1, ":", departures1
+			print "node  interiors", nodeID1, ":", interiors1
+			print "node departures", nodeID2, ":", departures2
+			print "node  interiors", nodeID2, ":", interiors2
+
+
+			" new junction finding logic "
+			" if terminal departures for each medial axis are None or exterior, than we stay on existing paths "
+			" if a terminal departure exists that is internal, than we have a new junction "
+			DISC_THRESH = 0.2
+
+			" NODE1: CHECK FRONT AND BACK FOR BRANCHING EVENTS "
+			frontExist1 = departures1[0][0]
+			backExist1 =  departures1[-1][1]
+			frontInterior1 = interiors1[0][0]
+			backInterior1 = interiors1[-1][1]
+
+			foreTerm1 = frontInterior1 and frontExist1
+			backTerm1 = backInterior1 and backExist1
+			
+			" DISCREPANCY BETWEEN TIP-CLOSEST and DEPARTURE-CLOSEST POINT ON PATH "				
+			discForeTerm1 = distances1[0][0] > DISC_THRESH
+			discBackTerm1 = distances1[-1][1] > DISC_THRESH
+			
+			foreAngle1 = depAngles1[0][0]
+			backAngle1 = depAngles1[-1][1]
+			
+			" NODE2: CHECK FRONT AND BACK FOR BRANCHING EVENTS "
+			frontExist2 = departures2[0][0]
+			backExist2 =  departures2[-1][1]
+			frontInterior2 = interiors2[0][0]
+			backInterior2 = interiors2[-1][1]
+
+			foreTerm2 = frontInterior2 and frontExist2
+			backTerm2 = backInterior2 and backExist2
+
+
+			discForeTerm2 = distances2[0][0] > DISC_THRESH
+			discBackTerm2 = distances2[-1][1] > DISC_THRESH
+
+			foreAngle2 = depAngles2[0][0]
+			backAngle2 = depAngles2[-1][1]
+
+			frontAngDiff = diffAngle(foreAngle1, foreAngle2)
+			backAngDiff = diffAngle(backAngle1, backAngle2)
+
+
+			print "pass1:", frontExist1, backExist1, frontInterior1, backInterior1, foreTerm1, backTerm1, discForeTerm1, discBackTerm1, foreAngle1, backAngle1
+			print "pass1:", frontExist2, backExist2, frontInterior2, backInterior2, foreTerm2, backTerm2, discForeTerm2, discBackTerm2, foreAngle2, backAngle2
+
+			" check for the cases that internal departure may have a departure point discrepancy, "
+			" then we should perform a pose adjustment and recompute departures "
+			print "checking discrepancy in departure:", nodeID1, nodeID2, foreTerm1, discForeTerm1, backTerm1, discBackTerm1, foreTerm2, discForeTerm2, backTerm2, discBackTerm2
+
+			#if discForeTerm1 or discBackTerm1 or discForeTerm2 or discBackTerm2:
+			if foreTerm1 and discForeTerm1 or backTerm1 and discBackTerm1 or foreTerm2 and discForeTerm2 or backTerm2 and discBackTerm2:
+
+				print "adjusting pose guess of node because of discrepancy:", nodeID1, nodeID2
+
+				#if discForeTerm1 or discBackTerm1:
+				if foreTerm1 and discForeTerm1 or backTerm1 and discBackTerm1:
+
+
+					" control point nearest the GPAC origin "
+					globalPoint1 = self.nodeHash[nodeID1].getGlobalGPACPose()[:2]
+
+					splicedPaths1 = self.splicePathIDs(orderedPathIDs1)
+
+					totalGuesses = []
+					for path in splicedPaths1:
+	
+						" make the path constraints "								
+						guessPose1, cost1 = self.makeGlobalMedialOverlapConstraint(nodeID1, path, globalPoint1, globalPoint1)
+						
+						estPose = self.nodeHash[nodeID1].getGlobalGPACPose()
+						angDiff = abs(estPose[2]-guessPose1[2])
+						totalGuesses.append((angDiff, cost1, guessPose1))
+					
+					totalGuesses.sort()
+					guessPose = totalGuesses[0][2]
+					self.nodeHash[nodeID1].setGPACPose(guessPose)
+
+
+					#if foreTerm1 and discForeTerm1:
+					#	pathID = orderedPathIDs1[0]
+					#elif backTerm1 and discBackTerm1:
+					#	pathID = orderedPathIDs1[-1]
+					
+						
+					#guessPose1, cost1 = self.makeGlobalMedialOverlapConstraint(nodeID1, self.trimmedPaths[pathID], globalPoint1, globalPoint1)
+					#self.nodeHash[nodeID1].setGPACPose(guessPose1)
+						
+				#elif discForeTerm2 or discBackTerm2:
+				elif foreTerm2 and discForeTerm2 or backTerm2 and discBackTerm2:
+
+					" control point nearest the GPAC origin "
+					globalPoint1 = self.nodeHash[nodeID2].getGlobalGPACPose()[:2]
+
+
+					splicedPaths2 = self.splicePathIDs(orderedPathIDs2)
+
+					totalGuesses = []
+					for path in splicedPaths2:
+	
+						" make the path constraints "								
+						guessPose1, cost1 = self.makeGlobalMedialOverlapConstraint(nodeID2, path, globalPoint1, globalPoint1)
+						
+						estPose = self.nodeHash[nodeID2].getGlobalGPACPose()
+						angDiff = abs(estPose[2]-guessPose1[2])
+						totalGuesses.append((angDiff, cost1, guessPose1))
+					
+					totalGuesses.sort()
+					guessPose = totalGuesses[0][2]
+					self.nodeHash[nodeID2].setGPACPose(guessPose)
+
+					#if foreTerm2 and discForeTerm2:
+					#	pathID = orderedPathIDs2[0]
+					#elif backTerm2 and discBackTerm2:
+					#	pathID = orderedPathIDs2[-1]
+						
+					#guessPose1, cost1 = self.makeGlobalMedialOverlapConstraint(nodeID2, self.trimmedPaths[pathID], globalPoint1, globalPoint1)
+					#self.nodeHash[nodeID2].setGPACPose(guessPose1)
+
+				departures1 = []
+				interiors1 = []
+				depPoints1 = []
+				distances1 = []
+				depAngles1 = []
+	
+				departures2 = []
+				interiors2 = []
+				depPoints2 = []
+				distances2 = []
+				depAngles2 = []
+				
+				" the overlapping paths are computed from the initial guess of position "
+				orderedPathIDs1 = self.getOrderedOverlappingPaths(nodeID1)
+				orderedPathIDs2 = self.getOrderedOverlappingPaths(nodeID2)
+				
+				print "orderedPathIDs1:", orderedPathIDs1
+				print "orderedPathIDs2:", orderedPathIDs2
+				
+				" now compute whether there are departure points after we have guessed a better position in synch with the paths "
+				for pathID in orderedPathIDs1:
+					departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2 = self.getDeparturePoint(self.trimmedPaths[pathID], nodeID1)
+					departures1.append([isExist1,isExist2])
+					interiors1.append([isInterior1, isInterior2])
+					depPoints1.append([departurePoint1, departurePoint2])
+					distances1.append([discDist1, discDist2])
+					depAngles1.append([depAngle1, depAngle2])
+				
+				for pathID in orderedPathIDs2:
+					departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2 = self.getDeparturePoint(self.trimmedPaths[pathID], nodeID2)
+					departures2.append([isExist1,isExist2])
+					interiors2.append([isInterior1, isInterior2])
+					depPoints2.append([departurePoint1, departurePoint2])
+					distances2.append([discDist1, discDist2])
+					depAngles2.append([depAngle1, depAngle2])
+					
+				print "node", nodeID1, ":", departures1, interiors1
+				print "node", nodeID2, ":", departures2, interiors2
+	
+				" new junction finding logic "
+				" if terminal departures for each medial axis are None or exterior, than we stay on existing paths "
+				" if a terminal departure exists that is internal, than we have a new junction "
+				
+				frontExist1 = departures1[0][0]
+				backExist1 =  departures1[-1][1]
+				frontInterior1 = interiors1[0][0]
+				backInterior1 = interiors1[-1][1]
+
+				foreTerm1 = frontInterior1 and frontExist1
+				backTerm1 = backInterior1 and backExist1
+				
+				
+				discForeTerm1 = distances1[0][0] > DISC_THRESH
+				discBackTerm1 = distances1[-1][1] > DISC_THRESH
+				
+				foreAngle1 = depAngles1[0][0]
+				backAngle1 = depAngles1[-1][1]
+				
+				#foreTerm2 = departures2[0][0] and interiors2[0][0]
+				#backTerm2 = departures2[-1][1] and interiors2[-1][1]
+				frontExist2 = departures2[0][0]
+				backExist2 =  departures2[-1][1]
+				frontInterior2 = interiors2[0][0]
+				backInterior2 = interiors2[-1][1]
+
+				foreTerm2 = frontInterior2 and frontExist2
+				backTerm2 = backInterior2 and backExist2
+
+
+				discForeTerm2 = distances2[0][0] > DISC_THRESH
+				discBackTerm2 = distances2[-1][1] > DISC_THRESH
+
+				foreAngle2 = depAngles2[0][0]
+				backAngle2 = depAngles2[-1][1]
+				
+
+				frontAngDiff = diffAngle(foreAngle1, foreAngle2)
+				backAngDiff = diffAngle(backAngle1, backAngle2)
+
+				print "pass2:", frontExist1, backExist1, frontInterior1, backInterior1, foreTerm1, backTerm1, discForeTerm1, discBackTerm1, foreAngle1, backAngle1
+				print "pass2:", frontExist2, backExist2, frontInterior2, backInterior2, foreTerm2, backTerm2, discForeTerm2, discBackTerm2, foreAngle2, backAngle2
+				
+			print "frontAngDiff:", frontAngDiff
+			print "backAngDiff:", backAngDiff
+
+
+			newPaths = []
+
+			frontExist1 = departures1[0][0]
+			frontInterior1 = interiors1[0][0]
+	
+			frontExist2 = departures2[0][0]
+			frontInterior1 = interiors2[0][0]
+			
+			depAngle1 = depAngles1[0][0]
+			depAngle2 = depAngles2[0][0]
+			
+			depPoint1 = depPoints1[0][0]
+			depPoint2 = depPoints2[0][0]
+			
+			parentPathID1 = orderedPathIDs1[0]
+			parentPathID2 = orderedPathIDs2[0]
+
+
+			isBranch, pathBranchIDs = self.determineBranch(nodeID1, nodeID2, frontExist1, frontExist2, frontInterior1, frontInterior2, depAngle1, depAngle2, depPoint1, depPoint2, parentPathID1, parentPathID2)
+
+			if isBranch[0]:
+				orderedPathIDs1.insert(0,pathBranchIDs[0])
+				departures1.insert(0, [False, False])
+				interiors1.insert(0, [False, False])
+				depPoints1.insert(0, [None, None])
+
+			if isBranch[1]:
+				orderedPathIDs2.insert(0,pathBranchIDs[1])
+				departures2.insert(0, [False, False])
+				interiors2.insert(0, [False, False])
+				depPoints2.insert(0, [None, None])
+				
+			for pathID in pathBranchIDs:
+				if pathID != -1 and newPaths.count(pathID) == 0:
+					newPaths.append(pathID)
+			
+			#for newPath in addThesePaths:
+			#	self.pathParents.append(newPath)
+			#	self.nodeSets[newPath[0]] = []
+			#	newPaths.append(newPath[0])
+			#	self.numPaths += 1
+
+
+			backExist1 = departures1[-1][1]
+			backInterior1 = interiors1[-1][1]
+	
+			backExist2 = departures2[-1][1]
+			backInterior1 = interiors2[-1][1]
+			
+			depAngle1 = depAngles1[-1][1]
+			depAngle2 = depAngles2[-1][1]
+			
+			depPoint1 = depPoints1[-1][1]
+			depPoint2 = depPoints2[-1][1]
+
+			parentPathID1 = orderedPathIDs1[-1]
+			parentPathID2 = orderedPathIDs2[-1]
+
+
+			isBranch, pathBranchIDs = self.determineBranch(nodeID1, nodeID2, backExist1, backExist2, backInterior1, backInterior2, depAngle1, depAngle2, depPoint1, depPoint2, parentPathID1, parentPathID2)
+
+			if isBranch[0]:
+				orderedPathIDs1.append(0,pathBranchIDs[0])
+				departures1.append([False, False])
+				interiors1.append([False, False])
+				depPoints1.append([None, None])
+
+			if isBranch[1]:
+				orderedPathIDs2.append(pathBranchIDs[1])
+				departures2.append([False, False])
+				interiors2.append([False, False])
+				depPoints2.append([None, None])
+
+			for pathID in pathBranchIDs:
+				if pathID != -1 and newPaths.count(pathID) == 0:
+					newPaths.append(pathID)
+			
+			#for newPath in addThesePaths:
+			#	self.pathParents.append(newPath)
+			#	self.nodeSets[newPath[0]] = []
+			#	newPaths.append(newPath[0])
+			#	self.numPaths += 1
+
+	
+
+
+
+			"""
+			newPaths = []
+			
+			" 60 degree threshold "
+			ANG_THRESH = 1.047
+			#ANG_THRESH = 0.3
+			
+			if foreTerm1 or foreTerm2:
+
+				if foreTerm1 and foreTerm2:
+					" both departing case: check if same or different "
+					if fabs(frontAngDiff) < ANG_THRESH:
+						" are on top of each other and are branching to the same path "
+
+						if self.checkUniqueBranch(orderedPathIDs1[0], nodeID1, depAngles1[0][0], depPoints1[0][0]) and self.checkUniqueBranch(orderedPathIDs2[0], nodeID2, depAngles2[0][0], depPoints2[0][0]):
+
+							
+							pathID = orderedPathIDs1[0]
+							branchNodeID = nodeID1
+							globalJunctionPoint = depPoints1[0][0]
+							depAng = depAngles1[0][0]
+							junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
+
+							orderedPathIDs1.insert(0,self.numPaths)
+							departures1.insert(0, [False, False])
+							interiors1.insert(0, [False, False])
+							depPoints1.insert(0, [None, None])
+
+							orderedPathIDs2.insert(0,self.numPaths)
+							departures2.insert(0, [False, False])
+							interiors2.insert(0, [False, False])
+							depPoints2.insert(0, [None, None])
+
+							poseOrigin = Pose(self.nodeHash[branchNodeID].getEstPose())
+							self.pathParents.append([pathID, branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug), True])
+							self.nodeSets[self.numPaths] = []
+							newPaths.append(self.numPaths)
+							self.numPaths += 1
+
+							print "foreA"
+					else:
+						" these are branching to separate new paths "
+
+						if self.checkUniqueBranch(orderedPathIDs1[0], nodeID1, depAngles1[0][0], depPoints1[0][0]) and self.checkUniqueBranch(orderedPathIDs2[0], nodeID2, depAngles2[0][0], depPoints2[0][0]):
+
+
+							pathID = orderedPathIDs1[0]
+							branchNodeID = nodeID1
+							globalJunctionPoint = depPoints1[0][0]
+							depAng = depAngles1[0][0]
+							junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
+
+							orderedPathIDs1.insert(0,self.numPaths)
+							departures1.insert(0, [False, False])
+							interiors1.insert(0, [False, False])
+							depPoints1.insert(0, [None, None])
+
+							poseOrigin = Pose(self.nodeHash[branchNodeID].getEstPose())
+							self.pathParents.append([pathID, branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug), True])
+							self.nodeSets[self.numPaths] = []
+							newPaths.append(self.numPaths)
+							self.numPaths += 1
+
+
+
+							pathID = orderedPathIDs2[0]
+							branchNodeID = nodeID2
+							globalJunctionPoint = depPoints2[0][0]
+							depAng = depAngles2[0][0]
+							junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
+
+							orderedPathIDs2.insert(0,self.numPaths)
+							departures2.insert(0, [False, False])
+							interiors2.insert(0, [False, False])
+							depPoints2.insert(0, [None, None])
+
+
+							poseOrigin = Pose(self.nodeHash[branchNodeID].getEstPose())
+							self.pathParents.append([pathID, branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug), True])
+							self.nodeSets[self.numPaths] = []
+							newPaths.append(self.numPaths)
+							self.numPaths += 1
+							print "foreB"
+				
+				elif foreTerm1 and not foreTerm2:
+					
+					if self.checkUniqueBranch(orderedPathIDs1[0], nodeID1, depAngles1[0][0], depPoints1[0][0]):
+						
+						if frontExist2 and fabs(frontAngDiff) < ANG_THRESH:
+							" both have same departure "
+							pathID = orderedPathIDs1[0]
+							branchNodeID = nodeID1
+							globalJunctionPoint = depPoints1[0][0]
+							depAng = depAngles1[0][0]
+							junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
+							#depAng1 = depAngles1[0][0]
+							#depAng2 = depAngles2[0][0]
+
+							orderedPathIDs1.insert(0,self.numPaths)
+							departures1.insert(0, [False, False])
+							interiors1.insert(0, [False, False])
+							depPoints1.insert(0, [None, None])
+
+							orderedPathIDs2.insert(0,self.numPaths)
+							departures2.insert(0, [False, False])
+							interiors2.insert(0, [False, False])
+							depPoints2.insert(0, [None, None])
+
+							poseOrigin = Pose(self.nodeHash[branchNodeID].getEstPose())
+							self.pathParents.append([pathID, branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug), True])
+							self.nodeSets[self.numPaths] = []
+							newPaths.append(self.numPaths)
+							self.numPaths += 1
+							print "foreC"
+							
+						else:
+							" foreTerm1 has unique departure "	
+							pathID = orderedPathIDs1[0]
+							branchNodeID = nodeID1
+							globalJunctionPoint = depPoints1[0][0]
+							depAng = depAngles1[0][0]
+							junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
+
+							orderedPathIDs1.insert(0,self.numPaths)
+							departures1.insert(0, [False, False])
+							interiors1.insert(0, [False, False])
+							depPoints1.insert(0, [None, None])
+
+							poseOrigin = Pose(self.nodeHash[branchNodeID].getEstPose())
+							self.pathParents.append([pathID, branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug), True])
+							self.nodeSets[self.numPaths] = []
+							newPaths.append(self.numPaths)
+							self.numPaths += 1
+							print "foreD"
+
+				elif foreTerm2 and not foreTerm1:
+
+					if self.checkUniqueBranch(orderedPathIDs2[0], nodeID2, depAngles2[0][0], depPoints2[0][0]):
+
+						if frontExist1 and fabs(frontAngDiff) < ANG_THRESH:
+
+							" both have same departure "
+							pathID = orderedPathIDs2[0]
+							branchNodeID = nodeID2
+							globalJunctionPoint = depPoints2[0][0]
+							depAng = depAngles2[0][0]
+							junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
+
+							orderedPathIDs1.insert(0,self.numPaths)
+							departures1.insert(0, [False, False])
+							interiors1.insert(0, [False, False])
+							depPoints1.insert(0, [None, None])
+
+							orderedPathIDs2.insert(0,self.numPaths)
+							departures2.insert(0, [False, False])
+							interiors2.insert(0, [False, False])
+							depPoints2.insert(0, [None, None])
+
+							poseOrigin = Pose(self.nodeHash[branchNodeID].getEstPose())
+							self.pathParents.append([pathID, branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug), True])
+							self.nodeSets[self.numPaths] = []
+							newPaths.append(self.numPaths)
+							self.numPaths += 1
+							print "foreE"
+
+						else:
+							" foreTerm2 has unique departure "	
+							pathID = orderedPathIDs2[0]
+							branchNodeID = nodeID2
+							globalJunctionPoint = depPoints2[0][0]
+							depAng = depAngles2[0][0]
+							junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
+
+							orderedPathIDs2.insert(0,self.numPaths)
+							departures2.insert(0, [False, False])
+							interiors2.insert(0, [False, False])
+							depPoints2.insert(0, [None, None])
+
+							poseOrigin = Pose(self.nodeHash[branchNodeID].getEstPose())
+							self.pathParents.append([pathID, branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug), True])
+							self.nodeSets[self.numPaths] = []
+							newPaths.append(self.numPaths)
+							self.numPaths += 1
+
+							print "foreF"
+				else:
+					print "foreG"
+					" no new departure, just add nodes to the leaf paths "
+					pathID = orderedPathIDs1[0]
+					branchNodeID = nodeID1
+					globalJunctionPoint = depPoints1[0][0]
+					
+					if orderedPathIDs1[0] != orderedPathIDs2[0]:
+						print "departing path IDs of two colocated nodes are not the same"
+						raise
+
+			if backTerm1 or backTerm2:
+
+				if backTerm1 and backTerm2:
+					" both departing case: check if same or different "
+					if fabs(backAngDiff) < ANG_THRESH:
+						" are on top of each other and are branching to the same path "
+
+						if self.checkUniqueBranch(orderedPathIDs1[-1], nodeID1, depAngles1[-1][1], depPoints1[-1][1]) and self.checkUniqueBranch(orderedPathIDs2[-1], nodeID2, depAngles2[-1][1], depPoints2[-1][1]):
+
+							pathID = orderedPathIDs1[-1]
+							branchNodeID = nodeID1
+							globalJunctionPoint = depPoints1[-1][1]
+							depAng = depAngles1[-1][1]
+							junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
+
+							orderedPathIDs1.append(self.numPaths)
+							departures1.append([False, False])
+							interiors1.append([False, False])
+							depPoints1.append([None, None])
+
+							orderedPathIDs2.append(self.numPaths)
+							departures2.append([False, False])
+							interiors2.append([False, False])
+							depPoints2.append([None, None])
+
+							poseOrigin = Pose(self.nodeHash[branchNodeID].getEstPose())
+							self.pathParents.append([pathID, branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug), True])
+							self.nodeSets[self.numPaths] = []
+							newPaths.append(self.numPaths)
+							self.numPaths += 1
+							print "backA"
+
+					else:
+						" these are branching to separate new paths "
+						if self.checkUniqueBranch(orderedPathIDs1[-1], nodeID1, depAngles1[-1][1], depPoints1[-1][1]) and self.checkUniqueBranch(orderedPathIDs2[-1], nodeID2, depAngles2[-1][1], depPoints2[-1][1]):
+
+							pathID = orderedPathIDs1[-1]
+							branchNodeID = nodeID1
+							globalJunctionPoint = depPoints1[-1][1]
+							depAng = depAngles1[-1][1]
+							junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
+
+							orderedPathIDs1.append(self.numPaths)
+							departures1.append([False, False])
+							interiors1.append([False, False])
+							depPoints1.append([None, None])
+
+							poseOrigin = Pose(self.nodeHash[branchNodeID].getEstPose())
+							self.pathParents.append([pathID, branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug), True])
+							self.nodeSets[self.numPaths] = []
+							newPaths.append(self.numPaths)
+							self.numPaths += 1
+
+							pathID = orderedPathIDs2[-1]
+							branchNodeID = nodeID2
+							globalJunctionPoint = depPoints2[-1][1]
+							depAng = depAngles2[-1][1]
+							junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
+
+							orderedPathIDs2.append(self.numPaths)
+							departures2.append([False, False])
+							interiors2.append([False, False])
+							depPoints2.append([None, None])
+
+							poseOrigin = Pose(self.nodeHash[branchNodeID].getEstPose())
+							self.pathParents.append([pathID, branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug), True])
+							self.nodeSets[self.numPaths] = []
+							newPaths.append(self.numPaths)
+							self.numPaths += 1
+							print "backB"					
+				elif backTerm1 and not backTerm2:
+					
+					if self.checkUniqueBranch(orderedPathIDs1[-1], nodeID1, depAngles1[-1][1], depPoints1[-1][1]):
+						
+						if backExist2 and fabs(backAngDiff) < ANG_THRESH:
+							" both have same departure "
+							pathID = orderedPathIDs1[-1]
+							branchNodeID = nodeID1
+							globalJunctionPoint = depPoints1[-1][1]
+							depAng = depAngles1[-1][1]
+							junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
+
+							orderedPathIDs1.append(self.numPaths)
+							departures1.append([False, False])
+							interiors1.append([False, False])
+							depPoints1.append([None, None])
+
+							orderedPathIDs2.append(self.numPaths)
+							departures2.append([False, False])
+							interiors2.append([False, False])
+							depPoints2.append([None, None])
+
+							poseOrigin = Pose(self.nodeHash[branchNodeID].getEstPose())
+							self.pathParents.append([pathID, branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug), True])
+							self.nodeSets[self.numPaths] = []
+							newPaths.append(self.numPaths)
+							self.numPaths += 1
+							print "backC"
+						else:
+							" backTerm1 has unique departure "	
+							pathID = orderedPathIDs1[-1]
+							branchNodeID = nodeID1
+							globalJunctionPoint = depPoints1[-1][1]
+							depAng = depAngles1[-1][1]
+							junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
+
+							orderedPathIDs1.append(self.numPaths)
+							departures1.append([False, False])
+							interiors1.append([False, False])
+							depPoints1.append([None, None])
+
+							poseOrigin = Pose(self.nodeHash[branchNodeID].getEstPose())
+							self.pathParents.append([pathID, branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug), True])
+							self.nodeSets[self.numPaths] = []
+							newPaths.append(self.numPaths)
+							self.numPaths += 1
+							print "backD"
+
+				elif backTerm2 and not backTerm1:
+
+					if self.checkUniqueBranch(orderedPathIDs2[-1], nodeID2, depAngles2[-1][1], depPoints2[-1][1]):
+
+						if backExist1 and fabs(backAngDiff) < ANG_THRESH:
+
+							" both have same departure "
+							pathID = orderedPathIDs2[-1]
+							branchNodeID = nodeID2
+							globalJunctionPoint = depPoints2[-1][1]
+							depAng = depAngles2[-1][1]
+							junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
+
+							orderedPathIDs1.append(self.numPaths)
+							departures1.append([False, False])
+							interiors1.append([False, False])
+							depPoints1.append([None, None])
+
+							orderedPathIDs2.append(self.numPaths)
+							departures2.append([False, False])
+							interiors2.append([False, False])
+							depPoints2.append([None, None])
+
+							poseOrigin = Pose(self.nodeHash[branchNodeID].getEstPose())
+							self.pathParents.append([pathID, branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug), True])
+							self.nodeSets[self.numPaths] = []
+							newPaths.append(self.numPaths)
+							self.numPaths += 1
+							print "backE"
+						else:
+							" backTerm2 has unique departure "	
+							self.checkUniqueBranch(orderedPathIDs2[-1], nodeID2, depAngles2[-1][1], depPoints2[-1][1])
+
+							pathID = orderedPathIDs2[-1]
+							branchNodeID = nodeID2
+							globalJunctionPoint = depPoints2[-1][1]
+							depAng = depAngles2[-1][1]
+							junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
+
+							orderedPathIDs2.append(self.numPaths)
+							departures2.append([False, False])
+							interiors2.append([False, False])
+							depPoints2.append([None, None])
+
+							poseOrigin = Pose(self.nodeHash[branchNodeID].getEstPose())
+							self.pathParents.append([pathID, branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug), True])
+							self.nodeSets[self.numPaths] = []
+							newPaths.append(self.numPaths)
+							self.numPaths += 1
+							print "backF"
+				else:
+					print "backG"
+					" no new departure, just add nodes to the leaf paths "
+					pathID = orderedPathIDs1[-1]
+					branchNodeID = nodeID1
+					globalJunctionPoint = depPoints1[-1][1]
+					if orderedPathIDs1[-1] != orderedPathIDs2[-1]:
+						print "departing path IDs of two colocated nodes are not the same"
+						raise
+			"""
+
+
+
+
+
+			" determine which paths are leaves "
+			print "self.pathParents:", self.pathParents
+			isAParent = [False for k in range(self.numPaths)]
+			for k in orderedPathIDs1:
+				print "index:", k
+				currPath = self.pathParents[k]
+				currParent = currPath[0]
+				if currParent != None:
+					isAParent[currParent] = True
+			
+			"add nodes to paths that are the leaves "
+			for pathID in orderedPathIDs1:
+				if not isAParent[pathID]:				
+					self.nodeSets[pathID].append(nodeID1)
+
+			isAParent = [False for k in range(self.numPaths)]
+			for k in orderedPathIDs2:
+				print "index:", k
+				currPath = self.pathParents[k]
+				currParent = currPath[0]
+				if currParent != None:
+					isAParent[currParent] = True
+
+			for pathID in orderedPathIDs2:
+				if not isAParent[pathID]:				
+					self.nodeSets[pathID].append(nodeID2)
+
+			paths = {}
+			for k in range(len(self.paths)):
+				path = self.paths[k]
+				if len(path) > 0:
+					paths[k] = path	
+			self.trimmedPaths = self.trimPaths(paths)
+
+			" perform path constraints only if we have not created a new path "
+			isNew1 = False
+			isNew2 = False
+			for pathID in newPaths:
+				if orderedPathIDs1.count(pathID) > 0:
+					isNew1 = True
+				if orderedPathIDs2.count(pathID) > 0:
+					isNew2 = True
+			
+
+
+			self.drawTrimmedPaths(self.trimmedPaths)
+			print "trimmed paths:", len(self.trimmedPaths)
+
+
+
+			"1)  guess pose in front if there is a departure with local and path junction points (not first node) "
+			"2)  guess pose in back if there is a departure with local and path junction points (not first node) "
+			"3)  select choice with the lowest cost "
+			"4)  guess pose with no departure point with guessed control points len(orderedPathIDs) == 1"
+			
+			" nodeID1:  is it in a junction or a single path? "
+
+			if not isNew1:
+				self.constrainToPaths(nodeID1, orderedPathIDs1, departures1, interiors1, depPoints1)
+				
+			if not isNew2:
+				self.constrainToPaths(nodeID2, orderedPathIDs2, departures2, interiors2, depPoints2)
+
+			self.mergePriorityConstraints()
+
+
+		for k in range(len(self.nodeSets)):
+			print "computing path for node set", k, ":", self.nodeSets[k]
+			self.paths[k], self.hulls[k] = self.getTopology(self.nodeSets[k])
+
+		self.drawPathAndHull()
+		
+		return
+	
+		
 
 
 	def checkUniqueBranch(self, parentPathID, nodeID1, depAngle, depPoint):
