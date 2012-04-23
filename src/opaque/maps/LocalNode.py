@@ -18,6 +18,7 @@ import graph
 
 import random
 import functions
+from functions import decimatePoints
 #import Image
 from numpy import array, dot, transpose
 
@@ -25,16 +26,6 @@ estPlotCount = 0
 alphaCount = 0
 splineCount = 0
 
-
-def decimatePoints(points):
-	result = []
-
-	for i in range(len(points)):
-		#if i%2 == 0:
-		if i%4 == 0:
-			result.append(points[i])
-
-	return result
 
 def computeBareHull(node1, sweep = False, static = False):
 	
@@ -70,6 +61,28 @@ def computeBareHull(node1, sweep = False, static = False):
 	return a_data_GPAC
 
 
+def computeHullAxis(nodeID, node2, tailCutOff = False):
+
+	medial2 = node2.getBestMedialAxis()
+
+	if tailCutOff:
+		medial2 = node2.medialTailCuts[0]
+	else:
+		medial2 = node2.medialLongPaths[0]
+
+
+	if node2.isBowtie:			
+		hull2 = computeBareHull(node2, sweep = False, static = True)
+		hull2.append(hull2[0])
+
+	else:
+		hull2 = computeBareHull(node2, sweep = False)
+		hull2.append(hull2[0])
+	
+	
+	return hull2, medial2
+
+"""
 def computeHullAxis(nodeID, node2, tailCutOff = False):
 	
 	if node2.isBowtie:			
@@ -152,6 +165,7 @@ def computeHullAxis(nodeID, node2, tailCutOff = False):
 			medial2 = medial2[k:]
 			
 	return hull2, medial2
+"""
 
 def getLongestPath(node, currSum, currPath, tree, isVisited, nodePath, nodeSum):
 
@@ -364,7 +378,12 @@ class LocalNode:
 		self.medialPathCut = []
 		
 		self.cornerCandidates = []
-		
+
+		self.longPaths = []
+		self.medialLongPaths = []
+		self.medialTailCuts = []
+		self.longMedialWidths = []
+		self.bowtieValues = []
 		
 		self.hasDeparture = False
 		
@@ -1338,7 +1357,7 @@ class LocalNode:
 		"""
 
 
-		self.getMedialAxis()
+		self.getBestMedialAxis()
 
 		
 	def obstCallBack(self, direction):
@@ -1363,6 +1382,12 @@ class LocalNode:
 		self.hullBComputed = False
 		self.medialAComputed = False
 		self.medialBComputed = False		
+
+		self.longPaths = []
+		self.medialLongPaths = []
+		self.medialTailCuts = []
+		self.longMedialWidths = []
+		self.bowtieValues = []
 	
 	def isDirty(self):
 		return self.dirty
@@ -1427,6 +1452,8 @@ class LocalNode:
 
 	def getOccPoints(self, sweep = False):
 
+
+
 		" 1. pick out the points "
 		if sweep:
 			numPixel = self.sweepMap.numPixel
@@ -1455,10 +1482,26 @@ class LocalNode:
 
 		return points
 
+	def getNumLeafs(self):
+		
+		if len(self.longPaths) > 0:
+			return self.numLeafs
+		
+		self.getBestMedialAxis()
+		
+		return self.numLeafs
 
 	def computeFullSkeleton(self, alphaHull):
 		
 		global splineCount
+
+		" DO NOT RECOMPUTE, RETURN PREVIOUS "
+		if len(self.longPaths) > 0:
+			print "returning caseE"
+			return self.longPaths, self.medialLongPaths, self.medialTailCuts, self.longMedialWidths, self.bowtieValues
+
+
+
 		
 		" FIND BOUNDING BOX "		
 		hull = alphaHull
@@ -1654,8 +1697,6 @@ class LocalNode:
 			" SAVE THE RESULTING PATH DATA STRUCTURE "
 			nodePaths[leaf] = nodePath
 
-		longPaths = []
-
 		" FOR EVERY PAIR OF LEAVES, SAVE ITS PATH IF ITS LONG ENOUGH "
 		" should have X choose 2 combinations"
 		
@@ -1664,19 +1705,19 @@ class LocalNode:
 			for leaf2 in leaves:
 				if leaf1 < leaf2:
 					if len(nodePaths[leaf1][leaf2]) > MAX_LEN:
-						longPaths.append((len(nodePaths[leaf1][leaf2]),deepcopy(nodePaths[leaf1][leaf2])))
+						self.longPaths.append((len(nodePaths[leaf1][leaf2]),deepcopy(nodePaths[leaf1][leaf2])))
 		
 		" SORT FOR THE LONGEST TO SHORTEST "
-		longPaths.sort(reverse=True)
+		self.longPaths.sort(reverse=True)
 		
 		" REMOVE SIZE FROM TUPLE  "
-		for k in range(len(longPaths)):
-			longPaths[k] = longPaths[k][1]
+		for k in range(len(self.longPaths)):
+			self.longPaths[k] = self.longPaths[k][1]
 			
 		
 		" GET THE LEAF INDEXES TO EACH PATH "
 		self.leafPairs = []
-		for path in longPaths:
+		for path in self.longPaths:
 			leaf1 = path[0]
 			leaf2 = path[-1]	
 			
@@ -1687,18 +1728,18 @@ class LocalNode:
 			
 		print "leafPairs:", self.leafPairs
 
-		for k in range(len(longPaths)):
-			path = longPaths[k]
+		for k in range(len(self.longPaths)):
+			path = self.longPaths[k]
 			realPath = []
 			for p in path:
 				realPath.append(gridToReal(p))
 			
-			longPaths[k] = realPath
+			self.longPaths[k] = realPath
 					
 		if True:
 			pylab.clf()
 	
-			for path in longPaths:
+			for path in self.longPaths:
 				xP = []
 				yP = []
 				for p in path:
@@ -1717,16 +1758,17 @@ class LocalNode:
 			pylab.plot(xP,yP, color='r')
 			
 			sizes = []
-			for path in longPaths:
+			for path in self.longPaths:
 				sizes.append(len(path))
 			
 			pylab.title("Paths %s" % sizes)
 			pylab.savefig("medialOut2_%04u.png" % self.nodeID)
 	
 
-		longMedialWidths = []
-		medialLongPaths = []
-		for longPath in longPaths:
+		#longMedialWidths = []
+		#medialLongPaths = []
+		#medialTailCuts = []
+		for longPath in self.longPaths:
 			
 			leafPath = deepcopy(longPath)
 			
@@ -1823,15 +1865,15 @@ class LocalNode:
 			uniform1 = curve1.getPlot()
 		
 			" check if the medial axis is ordered correctly "
+			" ORDER NOT GUARANTEED IF MORE THAN ONE AXIS "
 			distFore1 = (realPath[1][0]-uniform1[1][0])**2 + (realPath[1][1]-uniform1[1][1])**2
 			distBack1 = (realPath[-2][0]-uniform1[-2][0])**2 + (realPath[-2][1]-uniform1[-2][1])**2
 		
 			if distFore1 > 1 and distBack1 > 1:
 				realPath.reverse()
 	
-			medialLongPaths.append(realPath)
 	
-			medial2 = realPath
+			medial2 = deepcopy(realPath)
 					
 			TAILDIST = 0.5
 	
@@ -1882,27 +1924,32 @@ class LocalNode:
 			if isIntersect2:
 				medial2.append(point2)
 			
-			"""
+
+			self.medialLongPaths.append(deepcopy(medial2))
+			
+			" TAIL CUTOFF MEDIAL AXIS "
+			medial3 = deepcopy(medial2)
+			
 			" cut off the tail of the non-sweeping side "
 			if self.nodeID % 2 == 0:
-				termPoint = medial2[-1]
-				for k in range(len(medial2)):
-					candPoint = medial2[-k-1]
+				termPoint = medial3[-1]
+				for k in range(len(medial3)):
+					candPoint = medial3[-k-1]
 					dist = sqrt((termPoint[0]-candPoint[0])**2 + (termPoint[1]-candPoint[1])**2)
 					if dist > TAILDIST:
 						break
-				medial2 = medial2[:-k-1]
+				medial3 = medial3[:-k-1]
 	
 			else:
-				termPoint = medial2[0]
-				for k in range(len(medial2)):
-					candPoint = medial2[k]
+				termPoint = medial3[0]
+				for k in range(len(medial3)):
+					candPoint = medial3[k]
 					dist = sqrt((termPoint[0]-candPoint[0])**2 + (termPoint[1]-candPoint[1])**2)
 					if dist > TAILDIST:
 						break
-				medial2 = medial2[k:]
-			"""
+				medial3 = medial3[k:]
 	
+			self.medialTailCuts.append(medial3)
 	
 			
 			print "len(medial2) =", len(medial2)
@@ -2003,7 +2050,7 @@ class LocalNode:
 				nextU = medialSpline2.getUOfDist(currU, 0.04, distIter = 0.001)			
 				currU = nextU
 					
-			longMedialWidths.append(medialWidth)
+			self.longMedialWidths.append(medialWidth)
 			
 			numSamples = len(medialWidth)
 			
@@ -2040,27 +2087,152 @@ class LocalNode:
 			for k in range(5):
 				if divSums[k] > 12.0:
 					greatCount += 1
-	
-			print "divSums:", greatCount, divSums
-
-			"""				
-			if divSums[2] < divSums[0] and divSums[2] < divSums[4]:
-				self.isBowtie = True
-				print "BOWTIE"
-			elif greatCount > 4:
-				self.isBowtie = True
-				print "BOWTIE"
-			else:
-				self.medialPathCut = medial2
-			"""
+			
+			self.bowtieValues.append((greatCount,divSums))
 
 
-
-
-		return longPaths, medialLongPaths, longMedialWidths
+		print "returning caseF"
+		return self.longPaths, self.medialLongPaths, self.medialTailCuts, self.longMedialWidths, self.bowtieValues
 				
 
-	def getMedialAxis(self, sweep = False):
+	def getBestMedialAxis(self):
+		
+		global splineCount
+		
+		print "getBestMedialAxis():", self.isBowtie, self.medialAComputed, self.medialCComputed
+		
+		
+		if not self.isBowtie and self.medialAComputed:
+			print "returning caseA"
+			return deepcopy(self.medialPathA)
+
+
+		elif self.isBowtie and self.medialCComputed:
+			print "returning caseB"
+			return deepcopy(self.medialPathC)	
+
+		" make sure alpha boundary is built "
+		self.computeAlphaBoundary()
+		
+		a_data = self.getAlphaBoundary()
+		a_data = decimatePoints(a_data)
+
+		" CONVERT HULL TO GPAC COORDINATES "
+		localGPACPose = self.getLocalGPACPose()
+		localGPACProfile = Pose(localGPACPose)
+
+		a_data_GPAC = []
+		for pnt in a_data:
+			a_data_GPAC.append(localGPACProfile.convertGlobalToLocal(pnt))
+
+		" FIND BOUNDING BOX "		
+		hull = a_data_GPAC
+		hull.append(hull[0])
+
+		longPaths, medialLongPaths, medialTailCuts, longMedialWidths, bowtieValues = self.computeFullSkeleton(hull)
+
+		if len(longPaths) > 1:
+			print "MULTI-JUNCTION SITUATION"
+			
+			" record the edge points, the intersection points, each of splice paths "
+			self.splicePaths = deepcopy(longPaths)
+			self.splicedMedialPaths = deepcopy(medialLongPaths)
+			
+			self.numLeafs = len(longPaths)
+		
+		
+		
+		" FIRST MEDIAL AXIS IS THE LONGEST "
+		realPath = medialLongPaths[0]
+
+		self.medialAComputed = True
+		self.medialPathA = realPath
+		
+		medial2 = medialTailCuts[0]
+
+		
+		medialSpline2 = SplineFit(medial2, smooth=0.1)
+
+
+		if True:
+			pylab.clf()
+	
+			xP = []
+			yP = []
+			for p in medial2:
+				xP.append(p[0])
+				yP.append(p[1])
+
+			pylab.plot(xP,yP)
+	
+			xP = []
+			yP = []
+			for p in hull:
+				xP.append(p[0])
+				yP.append(p[1])
+			pylab.plot(xP,yP, color='r')
+						
+			pylab.title("Medial %d" % self.nodeID)
+			pylab.savefig("medialOut_%04u.png" % self.nodeID)
+
+
+		greatCount, divSums = bowtieValues[0]
+		print "divSums:", greatCount, divSums
+		
+		if divSums[2] < divSums[0] and divSums[2] < divSums[4]:
+			self.isBowtie = True
+			print "BOWTIE"
+		elif greatCount >= 4:
+			self.isBowtie = True
+			print "BOWTIE"
+		else:
+			self.medialPathCut = medial2
+			print "returning caseC"
+			return deepcopy(self.medialPathA)
+
+
+		self.longPaths = []
+		self.medialLongPaths = []
+		self.medialTailCuts = []
+		self.longMedialWidths = []
+		self.bowtieValues = []
+
+
+		print "computing medial axis"
+
+		" make sure alpha boundary is built "
+		self.computeStaticAlphaBoundary()
+		
+		a_data = self.getAlphaBoundary(static = True)
+		a_data = decimatePoints(a_data)
+		
+		" convert hull points to GPAC coordinates "
+		localGPACPose = self.getLocalGPACPose()
+		localGPACProfile = Pose(localGPACPose)
+		
+		a_data_GPAC = []
+		for pnt in a_data:
+			a_data_GPAC.append(localGPACProfile.convertGlobalToLocal(pnt))
+				
+		hull = a_data_GPAC
+		hull.append(hull[0])
+
+		longPaths, medialLongPaths, medialTailCuts, longMedialWidths, bowtieValues = self.computeFullSkeleton(hull)
+
+		maxPath = deepcopy(longPaths[0])
+
+		self.medialCComputed = True		
+		self.medialPathC = maxPath
+		self.medialPathCut = maxPath
+
+		print "returning caseD"
+		return deepcopy(self.medialPathC)
+		
+	
+		raise
+
+
+	def getMedialAxisdfadfd(self, sweep = False):
 		
 		global splineCount
 		
@@ -2088,8 +2260,7 @@ class LocalNode:
 		hull = a_data_GPAC
 		hull.append(hull[0])
 
-
-		longPaths, medialLongPaths, longMedialWidths = self.computeFullSkeleton(hull)
+		longPaths, medialLongPaths, medialTailCuts, longMedialWidths, bowtieValues = self.computeFullSkeleton(hull)
 
 		if len(longPaths) > 1:
 			print "MULTI-JUNCTION SITUATION"
@@ -2103,62 +2274,7 @@ class LocalNode:
 		
 		
 		" FIRST MEDIAL AXIS IS THE LONGEST "
-		maxPath = longPaths[0]
-
-		frontVec = [0.,0.]
-		backVec = [0.,0.]
-		#indic = range(6)
-		indic = range(16)
-		indic.reverse()
-	
-		for i in indic:
-			p1 = maxPath[i+2]
-			p2 = maxPath[i]
-			vec = [p2[0]-p1[0], p2[1]-p1[1]]
-			frontVec[0] += vec[0]
-			frontVec[1] += vec[1]
-	
-			p1 = maxPath[-i-3]
-			p2 = maxPath[-i-1]
-			vec = [p2[0]-p1[0], p2[1]-p1[1]]
-			backVec[0] += vec[0]
-			backVec[1] += vec[1]
-	
-		frontMag = math.sqrt(frontVec[0]*frontVec[0] + frontVec[1]*frontVec[1])
-		backMag = math.sqrt(backVec[0]*backVec[0] + backVec[1]*backVec[1])
-	
-		frontVec[0] /= frontMag
-		frontVec[1] /= frontMag
-		backVec[0] /= backMag
-		backVec[1] /= backMag
-	
-		newP1 = (maxPath[0][0] + frontVec[0]*10, maxPath[0][1] + frontVec[1]*10)
-		newP2 = (maxPath[-1][0] + backVec[0]*10, maxPath[-1][1] + backVec[1]*10)
-		
-		#newP1 = (maxPath[0][0] + frontVec[0]*500, maxPath[0][1] + frontVec[1]*500)
-		#newP2 = (maxPath[-1][0] + backVec[0]*500, maxPath[-1][1] + backVec[1]*500)
-	
-		maxPath.insert(0,newP1)
-		maxPath.append(newP2)
-	
-	
-		" convert path points to real "
-		realPath = []
-		for p in maxPath:
-			#realPath.append(gridToReal(p))
-			realPath.append(p)
-
-		posture1 = self.getStableGPACPosture()
-		curve1 = StableCurve(posture1)
-		uniform1 = curve1.getPlot()
-	
-		" check if the medial axis is ordered correctly "
-		distFore1 = (realPath[1][0]-uniform1[1][0])**2 + (realPath[1][1]-uniform1[1][1])**2
-		distBack1 = (realPath[-2][0]-uniform1[-2][0])**2 + (realPath[-2][1]-uniform1[-2][1])**2
-	
-		if distFore1 > 1 and distBack1 > 1:
-			realPath.reverse()
-
+		realPath = medialLongPaths[0]
 
 
 		if sweep:
@@ -2168,78 +2284,8 @@ class LocalNode:
 		if not sweep:
 			self.medialAComputed = True
 			self.medialPathA = realPath
-
-
-		if sweep:
-			medial2 = self.medialPathB
-		else:
-			medial2 = self.medialPathA
 		
-		TAILDIST = 0.5
-
-		" take the long length segments at tips of medial axis"
-		edge1 = medial2[0:2]
-		edge2 = medial2[-2:]
-		
-		frontVec = [edge1[0][0]-edge1[1][0], edge1[0][1]-edge1[1][1]]
-		backVec = [edge2[1][0]-edge2[0][0], edge2[1][1]-edge2[0][1]]
-		frontMag = math.sqrt(frontVec[0]*frontVec[0] + frontVec[1]*frontVec[1])
-		backMag = math.sqrt(backVec[0]*backVec[0] + backVec[1]*backVec[1])
-		
-		frontVec[0] /= frontMag
-		frontVec[1] /= frontMag
-		backVec[0] /= backMag
-		backVec[1] /= backMag
-		
-		" make a smaller version of these edges "
-		newP1 = (edge1[1][0] + frontVec[0]*2, edge1[1][1] + frontVec[1]*2)
-		newP2 = (edge2[0][0] + backVec[0]*2, edge2[0][1] + backVec[1]*2)
-
-		edge1 = [newP1, edge1[1]]
-		edge2 = [edge2[0], newP2]
-	
-		" find the intersection points with the hull "
-		interPoints = []
-		for k in range(len(hull)-1):
-			hullEdge = [hull[k],hull[k+1]]
-			isIntersect1, point1 = Intersect(edge1, hullEdge)
-			if isIntersect1:
-				interPoints.append(point1)
-				break
-
-		for k in range(len(hull)-1):
-			hullEdge = [hull[k],hull[k+1]]
-			isIntersect2, point2 = Intersect(edge2, hullEdge)
-			if isIntersect2:
-				interPoints.append(point2)
-				break
-		
-		" replace the extended edges with a termination point at the hull edge "			
-		medial2 = medial2[1:-2]
-		if isIntersect1:
-			medial2.insert(0, point1)
-		if isIntersect2:
-			medial2.append(point2)
-		
-		" cut off the tail of the non-sweeping side "
-		if self.nodeID % 2 == 0:
-			termPoint = medial2[-1]
-			for k in range(len(medial2)):
-				candPoint = medial2[-k-1]
-				dist = sqrt((termPoint[0]-candPoint[0])**2 + (termPoint[1]-candPoint[1])**2)
-				if dist > TAILDIST:
-					break
-			medial2 = medial2[:-k-1]
-
-		else:
-			termPoint = medial2[0]
-			for k in range(len(medial2)):
-				candPoint = medial2[k]
-				dist = sqrt((termPoint[0]-candPoint[0])**2 + (termPoint[1]-candPoint[1])**2)
-				if dist > TAILDIST:
-					break
-			medial2 = medial2[k:]
-
+		medial2 = medialTailCuts[0]
 
 		
 		medialSpline2 = SplineFit(medial2, smooth=0.1)
@@ -2268,121 +2314,9 @@ class LocalNode:
 			pylab.savefig("medialOut_%04u.png" % self.nodeID)
 
 
-		initU = 0.0
-		currU = initU
-		#termU = 0.9
-		termU = 1.0
-		self.medialWidth = []
-		self.lineEdges = []
-		while True:
-			
-			linePoint = medialSpline2.getU(currU)
-			vec = medialSpline2.getUVector(currU)
-			
-			angle = acos(vec[0])
-			if asin(vec[1]) < 0:
-				angle = -angle
-
-
-			rightAng = angle + pi/2.0
-			leftAng = angle - pi/2.0
-			
-			rightVec = [vec[0]*cos(pi/2.0) + vec[1]*sin(pi/2.0), -vec[0]*sin(pi/2.0) + vec[1]*cos(pi/2.0)]
-			leftVec = [vec[0]*cos(pi/2.0) - vec[1]*sin(pi/2.0), vec[0]*sin(pi/2.0) + vec[1]*cos(pi/2.0)]
-
-			edgeR = [linePoint, [linePoint[0]+rightVec[0]*1.0, linePoint[1]+rightVec[1]*1.0]]
-			edgeL = [linePoint, [linePoint[0]+leftVec[0]*1.0, linePoint[1]+leftVec[1]*1.0]]
-
-			rightPoint = []
-			for k in range(len(hull)-1):
-				hullEdge = [hull[k],hull[k+1]]
-				isIntersect1, point1 = Intersect(edgeR, hullEdge)
-				if isIntersect1:
-					rightPoint = point1
-					break
-
-			leftPoint = []
-			for k in range(len(hull)-1):
-				hullEdge = [hull[k],hull[k+1]]
-				isIntersect1, point1 = Intersect(edgeL, hullEdge)
-				if isIntersect1:
-					leftPoint = point1
-					break
-
-			#self.lineEdges.append(edgeR)
-			#self.lineEdges.append(edgeL)
-
-			#print leftPoint, rightPoint, linePoint
-			if len(rightPoint) > 0:
-				distR = sqrt((rightPoint[0]-linePoint[0])**2 + (rightPoint[1]-linePoint[1])**2)
-				self.lineEdges.append([rightPoint,linePoint])
-			else:
-				distR = 0.0
-			
-			if len(leftPoint) > 0:
-				distL = sqrt((leftPoint[0]-linePoint[0])**2 + (leftPoint[1]-linePoint[1])**2)
-				self.lineEdges.append([leftPoint,linePoint])
-			else:
-				distL = 0.0
-			
-			if distL == 0.0:
-				distL = distR
-				
-			if distR == 0.0:
-				distR = distL				
-			
-			#print "distR,distL =", distR, distL
-			#print "currU =", currU, "avgDist =", (distR+distL)/2.0, "diff =", distR-distL
-			self.medialWidth.append([linePoint[0],linePoint[1],currU, distR, distL])
-
-			#print "currU =", currU
-
-			if currU >= termU:
-				break
-
-			nextU = medialSpline2.getUOfDist(currU, 0.04, distIter = 0.001)			
-			currU = nextU
-				
-		
-		numSamples = len(self.medialWidth)
-		
-		" divide into 5 histograms "
-		histDiv = numSamples / 5
-		currDiv = 0
-		divSums = [0.0 for k in range(5)]
-		divIndexes = [0 for k in range(5)]
-		
-		for k in range(5):
-			divIndexes[k] = (k+1) * histDiv
-		
-		" set last bin to infinite boundary "
-		divIndexes[-1] = 1e100
-		
-		" pad the middle with the remainder "
-		remainderTotal = numSamples % 5
-		divIndexes[2] += remainderTotal
-		divIndexes[3] += remainderTotal
-			
-		print "numSamples:", numSamples
-		print "histDiv:", histDiv
-		print "divIndexes:", divIndexes
-		for k in range(numSamples):
-			
-			width = self.medialWidth[k][3] + self.medialWidth[k][4]
-			#print k, ">", divIndexes[currDiv]
-			if k > divIndexes[currDiv]:
-				currDiv += 1
-			
-			divSums[currDiv] += width
-			
-
-		greatCount = 0
-		for k in range(5):
-			if divSums[k] > 12.0:
-				greatCount += 1
-
+		greatCount, divSums = bowtieValues[0]
 		print "divSums:", greatCount, divSums
-			
+		
 		if divSums[2] < divSums[0] and divSums[2] < divSums[4]:
 			self.isBowtie = True
 			print "BOWTIE"
@@ -2419,18 +2353,6 @@ class LocalNode:
 
 		" make sure alpha boundary is built "
 		self.computeAlphaBoundary(sweep)
-		
-		"""
-		def decimatePoints(points):
-			result = []
-		
-			for i in range(len(points)):
-				#if i%2 == 0:
-				if i%4 == 0:
-					result.append(points[i])
-		
-			return result
-		"""
 		
 		" convert hull points to GPAC coordinates "
 		localGPACPose = self.getLocalGPACPose()
@@ -3260,16 +3182,6 @@ class LocalNode:
 		" make sure alpha boundary is built "
 		self.computeStaticAlphaBoundary()
 		
-		def decimatePoints(points):
-			result = []
-		
-			for i in range(len(points)):
-				#if i%2 == 0:
-				if i%4 == 0:
-					result.append(points[i])
-		
-			return result
-
 		a_data = self.getAlphaBoundary(static = True)
 		a_data = decimatePoints(a_data)
 		
@@ -3284,140 +3196,14 @@ class LocalNode:
 		hull = a_data_GPAC
 		hull.append(hull[0])
 
-		longPaths, medialLongPaths, longMedialWidths = self.computeFullSkeleton(hull)
+		longPaths, medialLongPaths, medialTailCuts, longMedialWidths, bowtieValues = self.computeFullSkeleton(hull)
 
 		maxPath = deepcopy(longPaths[0])
-		
-		frontVec = [0.,0.]
-		backVec = [0.,0.]
-		#indic = range(6)
-		indic = range(16)
-		indic.reverse()
-	
-		for i in indic:
-			p1 = maxPath[i+2]
-			p2 = maxPath[i]
-			vec = [p2[0]-p1[0], p2[1]-p1[1]]
-			frontVec[0] += vec[0]
-			frontVec[1] += vec[1]
-	
-			p1 = maxPath[-i-3]
-			p2 = maxPath[-i-1]
-			vec = [p2[0]-p1[0], p2[1]-p1[1]]
-			backVec[0] += vec[0]
-			backVec[1] += vec[1]
-	
-		frontMag = math.sqrt(frontVec[0]*frontVec[0] + frontVec[1]*frontVec[1])
-		backMag = math.sqrt(backVec[0]*backVec[0] + backVec[1]*backVec[1])
-	
-		frontVec[0] /= frontMag
-		frontVec[1] /= frontMag
-		backVec[0] /= backMag
-		backVec[1] /= backMag
-	
-		newP1 = (maxPath[0][0] + frontVec[0]*10, maxPath[0][1] + frontVec[1]*10)
-		newP2 = (maxPath[-1][0] + backVec[0]*10, maxPath[-1][1] + backVec[1]*10)
-	
-		maxPath.insert(0,newP1)
-		maxPath.append(newP2)
-	
-	
-		" convert path points to real "
-		realPath = []
-		for p in maxPath:
-			realPath.append(p)
-
-		posture1 = self.getStableGPACPosture()
-		curve1 = StableCurve(posture1)
-		uniform1 = curve1.getPlot()
-	
-		" check if the medial axis is ordered correctly "
-		distFore1 = (realPath[1][0]-uniform1[1][0])**2 + (realPath[1][1]-uniform1[1][1])**2
-		distBack1 = (realPath[-2][0]-uniform1[-2][0])**2 + (realPath[-2][1]-uniform1[-2][1])**2
-	
-		if distFore1 > 1 and distBack1 > 1:
-			realPath.reverse()
-
-
 
 		self.medialCComputed = True		
-		self.medialPathC = realPath
-
-		medial2 = self.medialPathC
-
-		
-		TAILDIST = 0.5
-
-		" take the long length segments at tips of medial axis"
-		edge1 = medial2[0:2]
-		edge2 = medial2[-2:]
-		
-		frontVec = [edge1[0][0]-edge1[1][0], edge1[0][1]-edge1[1][1]]
-		backVec = [edge2[1][0]-edge2[0][0], edge2[1][1]-edge2[0][1]]
-		frontMag = math.sqrt(frontVec[0]*frontVec[0] + frontVec[1]*frontVec[1])
-		backMag = math.sqrt(backVec[0]*backVec[0] + backVec[1]*backVec[1])
-		
-		frontVec[0] /= frontMag
-		frontVec[1] /= frontMag
-		backVec[0] /= backMag
-		backVec[1] /= backMag
-		
-		" make a smaller version of these edges "
-		newP1 = (edge1[1][0] + frontVec[0]*2, edge1[1][1] + frontVec[1]*2)
-		newP2 = (edge2[0][0] + backVec[0]*2, edge2[0][1] + backVec[1]*2)
-
-		edge1 = [newP1, edge1[1]]
-		edge2 = [edge2[0], newP2]
-	
-		" find the intersection points with the hull "
-		interPoints = []
-		for k in range(len(hull)-1):
-			hullEdge = [hull[k],hull[k+1]]
-			isIntersect1, point1 = Intersect(edge1, hullEdge)
-			if isIntersect1:
-				interPoints.append(point1)
-				break
-
-		for k in range(len(hull)-1):
-			hullEdge = [hull[k],hull[k+1]]
-			isIntersect2, point2 = Intersect(edge2, hullEdge)
-			if isIntersect2:
-				interPoints.append(point2)
-				break
-		
-		" replace the extended edges with a termination point at the hull edge "			
-		medial2 = medial2[1:-2]
-		if isIntersect1:
-			medial2.insert(0, point1)
-		if isIntersect2:
-			medial2.append(point2)
-		
-		" cut off the tail of the non-sweeping side "
-		if self.nodeID % 2 == 0:
-			termPoint = medial2[-1]
-			for k in range(len(medial2)):
-				candPoint = medial2[-k-1]
-				dist = sqrt((termPoint[0]-candPoint[0])**2 + (termPoint[1]-candPoint[1])**2)
-				if dist > TAILDIST:
-					break
-			medial2 = medial2[:-k-1]
-
-		else:
-			termPoint = medial2[0]
-			for k in range(len(medial2)):
-				candPoint = medial2[k]
-				dist = sqrt((termPoint[0]-candPoint[0])**2 + (termPoint[1]-candPoint[1])**2)
-				if dist > TAILDIST:
-					break
-			medial2 = medial2[k:]
-			
-		self.medialPathCut = medial2
-			
-
+		self.medialPathC = maxPath
 
 		return deepcopy(self.medialPathC)
-	
-		raise
 
 	def getStaticMedialAxis_Old(self):
 
@@ -3428,16 +3214,6 @@ class LocalNode:
 
 		" make sure alpha boundary is built "
 		self.computeStaticAlphaBoundary()
-		
-		def decimatePoints(points):
-			result = []
-		
-			for i in range(len(points)):
-				#if i%2 == 0:
-				if i%4 == 0:
-					result.append(points[i])
-		
-			return result
 
 		a_data = self.getAlphaBoundary(static = True)
 		a_data = decimatePoints(a_data)
@@ -3836,6 +3612,39 @@ class LocalNode:
 			return self.a_vert
 			
 
+	def getBareHull(self):
+		
+		if self.isBowtie:
+			self.computeStaticAlphaBoundary()
+	
+			a_data = self.getAlphaBoundary(static=True)
+			a_data = decimatePoints(a_data)
+	
+			" convert hull points to GPAC coordinates before adding covariances "
+			localGPACPose = self.getLocalGPACPose()
+			localGPACProfile = Pose(localGPACPose)
+			
+			a_data_GPAC = []
+			for pnt in a_data:
+				a_data_GPAC.append(localGPACProfile.convertGlobalToLocal(pnt))
+			
+		else:
+					
+			" Read in data of Alpha-Shapes without their associated covariances "
+			self.computeAlphaBoundary()
+			a_data = self.getAlphaBoundary()
+			a_data = decimatePoints(a_data)
+			
+			" convert hull points to GPAC coordinates "
+			localGPACPose = self.getLocalGPACPose()
+			localGPACProfile = Pose(localGPACPose)
+			
+			a_data_GPAC = []
+			for pnt in a_data:
+				a_data_GPAC.append(localGPACProfile.convertGlobalToLocal(pnt))
+		
+		return a_data_GPAC
+	
 	def convertAlphaUniform(self, a_vert, max_spacing = 0.04):
 		
 		" make the vertices uniformly distributed "

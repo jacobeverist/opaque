@@ -1,6 +1,7 @@
 from math import *
 from copy import *
 from func import IsContained
+from numpy import matrix
 
 # this function converts the angle to its equivalent # in the range [-pi,pi]
 def normalizeAngle(angle):
@@ -259,3 +260,37 @@ def closestSegPoint(seg, tPoint):
 		print "failed finding closest point of seg", seg, "to tPoint", tPoint
 
 		raise
+	
+
+
+def decimatePoints(points):
+	result = []
+
+	for i in range(len(points)):
+		#if i%2 == 0:
+		if i%4 == 0:
+			result.append(points[i])
+
+	return result
+
+def doTransform(T1, T2, E1, E2):
+
+	x1 = T1[0,0]	
+	y1 = T1[1,0]
+	p1 = T1[2,0]
+
+	x2 = T2[0,0]	
+	y2 = T2[1,0]
+	p2 = T2[2,0]
+
+	newT = matrix([[x1 + x2*cos(p1) - y2*sin(p1)],
+		[y1 + x2*sin(p1) + y2*cos(p1)],
+		[p1+p2]],dtype=float)
+
+	J1 = matrix([[1,0,-x2*sin(p1) - y2*cos(p1)],[0,1,x2*cos(p1) - y2*sin(p1)],[0,0,1]],dtype=float)
+	J2 = matrix([[cos(p1), -sin(p1), 0], [sin(p1), cos(p1), 0], [0, 0, 1]],dtype=float)
+						
+	newE = J1 * E1 * J1.T + J2 * E2 * J2.T
+	
+	return newT, newE
+

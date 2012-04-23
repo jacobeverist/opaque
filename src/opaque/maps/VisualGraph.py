@@ -131,7 +131,7 @@ class VisualGraph:
 
 	
 			#self.drawMotion(i)
-			#self.drawConstraints(i)
+			self.drawConstraints(i)
 			#self.drawTopology2(i)
 			#self.drawMedialPath(i)
 			

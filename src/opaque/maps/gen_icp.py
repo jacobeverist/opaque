@@ -3617,10 +3617,12 @@ def overlapICP(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1, medi
 	for p in points1:
 		poly1.append([p[0],p[1]])	
 
-	if inPlace:
+	#if inPlace:
+	if False:
 		offset[2] =  functions.normalizeAngle(offset[2])	
 
-		if plotIter:
+		#if plotIter:
+		if True:
 			
 			" set the origin of pose 1 "
 			poseOrigin = Pose(estPose1)
@@ -3717,7 +3719,7 @@ def overlapICP(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1, medi
 
 			plotEnv()		
 			
-			pylab.title("%u %u, u1 = %1.3f, u2 = %1.3f, (%1.3f,%1.3f), ang = %1.3f" % (n1, n2, u1, currU, uLow, uHigh, currAng))
+			pylab.title("%s %s, ang = %1.3f" % (repr(n1), repr(n2), currAng))
 			pylab.xlim(estPose1[0]-4, estPose1[0]+4)					
 			pylab.ylim(estPose1[1]-3, estPose1[1]+3)
 			pylab.savefig("ICP_plot_%04u_0.png" % numIterations)
@@ -3939,7 +3941,7 @@ def overlapICP(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1, medi
 			
 			#pylab.title("%u %u, u = %f" % (n1, n2, currU))
 			lowCount, midCount, highCount = overlapHistogram([currU,currAng], match_pairs, medialSpline1, medialSpline2, u1)			
-			pylab.title("%u %u, u1 = %1.3f, u2 = %1.3f, (%1.3f,%1.3f), ang = %1.3f, hist = %d %d %d" % (n1, n2, u1, currU, uLow, uHigh, currAng, lowCount, midCount, highCount))
+			pylab.title("%s %s, ang = %1.3f, hist = %d %d %d" % (repr(n1), repr(n2), currAng, lowCount, midCount, highCount))
 			pylab.xlim(estPose1[0]-4, estPose1[0]+4)					
 			pylab.ylim(estPose1[1]-3, estPose1[1]+3)
 			#pylab.xlim(-3,3)
@@ -4163,7 +4165,7 @@ def overlapICP(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1, medi
 			lowCount, midCount, highCount = overlapHistogram([currU,currAng], match_pairs, medialSpline1, medialSpline2, u1)			
 			#pylab.title("%u %u, u1 = %1.3f, u2 = %1.3f, hist = %d %d %d" % (n1, n2, u1, currU, lowCount, midCount, highCount))
 			#pylab.title("%u %u, u1 = %1.3f, u2 = %1.3f, ang = %1.3f, hist = %d %d %d" % (n1, n2, u1, currU, currAng, lowCount, midCount, highCount))
-			pylab.title("%u %u, u1 = %1.3f, u2 = %1.3f, (%1.3f,%1.3f), ang = %1.3f, hist = %d %d %d" % (n1, n2, u1, currU, uLow, uHigh, currAng, lowCount, midCount, highCount))
+			pylab.title("%s %s, ang = %1.3f, hist = %d %d %d" % (repr(n1), repr(n2), currAng, lowCount, midCount, highCount))
 			#pylab.title("%u %u, %u, u1 = %1.3f, u2 = %1.3f" % (n1, n2, len(match_pairs), u1, currU))
 			pylab.xlim(estPose1[0]-4, estPose1[0]+4)					
 			pylab.ylim(estPose1[1]-3, estPose1[1]+3)
@@ -4291,7 +4293,7 @@ def overlapICP(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1, medi
 		plotEnv()		
 		
 		lowCount, midCount, highCount = overlapHistogram([currU,currAng], match_pairs, medialSpline1, medialSpline2, u1)			
-		pylab.title("%u %u, u1 = %1.3f, u2 = %1.3f, (%1.3f,%1.3f), ang = %1.3f, hist = %d %d %d" % (n1, n2, u1, currU, uLow, uHigh, currAng, lowCount, midCount, highCount))
+		pylab.title("%s %s, ang = %1.3f, hist = %d %d %d" % (repr(n1), repr(n2), currAng, lowCount, midCount, highCount))
 		pylab.xlim(estPose1[0]-4, estPose1[0]+4)					
 		pylab.ylim(estPose1[1]-3, estPose1[1]+3)
 		pylab.savefig("ICP_plot_%04u_1.png" % numIterations)
