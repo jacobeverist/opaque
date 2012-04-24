@@ -4940,13 +4940,13 @@ class PoseGraph:
 		return resultPose, lastCost
 
 
-	def makeMultiJunctionMedialOverlapConstraint(self, i, j, isMove = True, isForward = True, inPlace = False, uRange = 1.5 ):
+	def makeMultiJunctionMedialOverlapConstraint(self, nodeID1, nodeID2, isMove = True, isForward = True, inPlace = False, uRange = 1.5 ):
 
 		#isMove = False
 		#inPlace = True
 
-		node1 = self.nodeHash[i]
-		node2 = self.nodeHash[j]
+		node1 = self.nodeHash[nodeID1]
+		node2 = self.nodeHash[nodeID2]
 
 
 		hull1 = node1.getBareHull()
@@ -4973,12 +4973,161 @@ class PoseGraph:
 				medial2 = node2.medialLongPaths[l]
 				
 
-
-				for medialDir in [True, False]:
-					for travelDir in [True, False]:
-		
-						orientedMedial2 = deepcopy(medial2)
+				if isMove:
+				
+					" if isMove is True, then we align medial2 with medial1 "		
+					orientedMedial2 = deepcopy(medial2)
 						
+					medial2Reverse = deepcopy(medial2)
+					medial2Reverse.reverse()
+					
+					medialSpline1 = SplineFit(medial1, smooth=0.1)
+					medialSpline2 = SplineFit(medial2, smooth=0.1)
+					medialSplineReverse2 = SplineFit(medial2Reverse, smooth=0.1)
+
+					overlapMatch = []
+					angleSum1 = 0.0
+					angleSum2 = 0.0
+					for i in range(0,len(medial1)):
+						p_1 = medial1[i]
+						p_2, j, minDist = gen_icp.findClosestPointInA(medial2, p_1)
+						if minDist < 0.5:
+							overlapMatch.append((i,j,minDist))
+			
+							pathU1 = medialSpline1.findU(p_1)	
+							pathU2 = medialSpline2.findU(p_2)	
+							pathU2_R = medialSplineReverse2.findU(p_2)	
+			
+							pathVec1 = medialSpline1.getUVector(pathU1)
+							pathVec2 = medialSpline2.getUVector(pathU2)
+							pathVec2_R = medialSplineReverse2.getUVector(pathU2_R)
+							
+							val1 = pathVec1[0]*pathVec2[0] + pathVec1[1]*pathVec2[1]
+							if val1 > 1.0:
+								val1 = 1.0
+							elif val1 < -1.0:
+								val1 = -1.0
+							ang1 = acos(val1)
+							
+							val2 = pathVec1[0]*pathVec2_R[0] + pathVec1[1]*pathVec2_R[1]
+							if val2 > 1.0:
+								val2 = 1.0
+							elif val2 < -1.0:
+								val2 = -1.0
+							ang2 = acos(val2)
+
+							angleSum1 += ang1
+							angleSum2 += ang2
+					
+					" select global path orientation based on which has the smallest angle between tangent vectors "
+					print i, "angleSum1 =", angleSum1, "angleSum2 =", angleSum2
+					if angleSum1 > angleSum2:
+						orientedMedial2 = deepcopy(medial2Reverse)
+					else:
+						orientedMedial2 = deepcopy(medial2)
+
+					medialSpline1 = SplineFit(medial1, smooth=0.1)
+					medialSpline2 = SplineFit(orientedMedial2, smooth=0.1)
+			
+					originU1 = medialSpline1.findU([0.0,0.0])	
+					originU2 = medialSpline2.findU([0.0,0.0])	
+					
+					if isForward:
+						
+						moveU = 0.3
+							
+						if len(node2.frontProbeError) > 0:
+			
+							frontSum = 0.0
+							frontProbeError = node2.frontProbeError
+							for n in frontProbeError:
+								frontSum += n
+							foreAvg = frontSum / len(frontProbeError)
+											
+							if foreAvg >= 1.4:
+								u2 = medialSpline2.getUOfDist(originU2, 0.0, distIter = 0.001)
+							else:	
+								u2 = medialSpline2.getUOfDist(originU2, moveU, distIter = 0.001)
+						else:	
+							u2 = medialSpline2.getUOfDist(originU2, moveU, distIter = 0.001)
+							
+					else:
+						moveU = -0.3
+						u2 = medialSpline2.getUOfDist(originU2, moveU, distIter = 0.001)
+					
+					print "computed u2 =", u2, "from originU2 =", originU2
+
+					u1 = originU1
+					angGuess = 0.0
+				
+					" create the ground constraints "
+					gndGPAC1Pose = node1.getGndGlobalGPACPose()
+					currProfile = Pose(gndGPAC1Pose)
+					gndGPAC2Pose = node2.getGndGlobalGPACPose()
+					gndOffset = currProfile.convertGlobalPoseToLocal(gndGPAC2Pose)
+					
+					#result, hist = gen_icp.overlapICP(estPose1, diffOffset, [u1, u2, angGuess], hull1, hull2, orientedMedial1, medial2, [0.0,0.0], [0.0,0.0], inPlace = inPlace, plotIter = False, n1 = (i,k), n2 = (j,l), uRange = uRange)
+					result, hist = gen_icp.overlapICP(estPose1, gndOffset, [u1, u2, angGuess], hull1, hull2, medial1, orientedMedial2, [0.0,0.0], [0.0,0.0], inPlace = inPlace, plotIter = False, n1 = (nodeID1,k), n2 = (nodeID2,l), uRange = uRange)
+					
+					transform = matrix([[result[0]], [result[1]], [result[2]]])
+					covE =  self.E_overlap
+					
+					print "making overlap constraint:", result[0], result[1], result[2]
+					
+					angDiff = abs(diffAngle(diffOffset[2], transform[2,0]))			
+					#totalGuesses.append((angDiff, result[2], result[3], result[4]))
+	
+					points1 = medialSpline1.getUniformSamples()
+					points2 = medialSpline2.getUniformSamples()
+					p_1 = medialSpline1.getU(0.5)
+					
+					
+					offset = [transform[0,0], transform[1,0], transform[2,0]]
+					fitProfile = Pose(offset)
+					
+					points2_offset = []
+					for p in points2:
+						result = fitProfile.convertLocalOffsetToGlobal(p)
+						points2_offset.append(result)		
+					
+					overlapMatch = []
+					matchCount = 0
+					overlapSum = 0.0
+					angleSum = 0.0
+					for m in range(0,len(points2_offset)):
+						p_2 = points2_offset[m]
+						p_1, n, minDist = gen_icp.findClosestPointInA(points1, p_2)
+		
+						if minDist < 0.1:
+							overlapMatch.append((m,n,minDist))
+							matchCount += 1
+							
+							overlapSum += minDist
+							
+							ang1 = p_1[2]
+							ang2 = p_2[2]
+	
+							angleSum += abs(diffAngle(ang1,ang2))
+								
+					if matchCount > 0:
+						angleSum /= matchCount
+						overlapSum /= matchCount
+			
+			
+					medialError, matchCount = self.computeMedialError(nodeID1, nodeID2, offset, minMatchDist = 0.5, tail1=k, tail2=l)
+	
+			
+					results.append((hist[0], angleSum, medialError, matchCount, angDiff, k, l, transform, covE, hist, matchCount, overlapSum, angleSum))
+
+
+
+
+
+				else:
+					for medialDir in [True, False]:
+
+						orientedMedial2 = deepcopy(medial2)
+		
 						if medialDir:
 							orientedMedial2.reverse()
 		
@@ -4993,32 +5142,7 @@ class PoseGraph:
 							originU2 = 0.4
 							u2 = originU2
 							print "computed u2 =", u2, "from originU2 =", originU2
-				
-						elif isMove:
-							
-							#if isForward:
-							if travelDir:
-								
-								if len(node2.frontProbeError) > 0:
-					
-									frontSum = 0.0
-									frontProbeError = node2.frontProbeError
-									for n in frontProbeError:
-										frontSum += n
-									foreAvg = frontSum / len(frontProbeError)
-													
-									if foreAvg >= 1.4:
-										u2 = medialSpline2.getUOfDist(originU2, 0.0, distIter = 0.001)
-									else:	
-										u2 = medialSpline2.getUOfDist(originU2, 0.3, distIter = 0.001)
-								else:	
-									u2 = medialSpline2.getUOfDist(originU2, 0.3, distIter = 0.001)
-									
-							else:
-								u2 = medialSpline2.getUOfDist(originU2, -0.3, distIter = 0.001)
-								#u2 = 0.4
-							print "computed u2 =", u2, "from originU2 =", originU2
-							 
+
 						else:
 							poseOrigin = Pose(estPose1)
 							offset = poseOrigin.convertGlobalPoseToLocal(estPose2)
@@ -5049,21 +5173,21 @@ class PoseGraph:
 		
 						
 						#result, hist = gen_icp.overlapICP(estPose1, diffOffset, [u1, u2, angGuess], hull1, hull2, orientedMedial1, medial2, [0.0,0.0], [0.0,0.0], inPlace = inPlace, plotIter = False, n1 = (i,k), n2 = (j,l), uRange = uRange)
-						result, hist = gen_icp.overlapICP(estPose1, gndOffset, [u1, u2, angGuess], hull1, hull2, medial1, orientedMedial2, [0.0,0.0], [0.0,0.0], inPlace = inPlace, plotIter = False, n1 = (i,k), n2 = (j,l), uRange = uRange)
-				
+						result, hist = gen_icp.overlapICP(estPose1, gndOffset, [u1, u2, angGuess], hull1, hull2, medial1, orientedMedial2, [0.0,0.0], [0.0,0.0], inPlace = inPlace, plotIter = False, n1 = (nodeID1,k), n2 = (nodeID2,l), uRange = uRange)
+						
 						transform = matrix([[result[0]], [result[1]], [result[2]]])
 						covE =  self.E_overlap
 						
 						print "making overlap constraint:", result[0], result[1], result[2]
-		
+						
 						angDiff = abs(diffAngle(diffOffset[2], transform[2,0]))			
 						#totalGuesses.append((angDiff, result[2], result[3], result[4]))
 		
 						points1 = medialSpline1.getUniformSamples()
 						points2 = medialSpline2.getUniformSamples()
 						p_1 = medialSpline1.getU(0.5)
-		
-		
+						
+						
 						offset = [transform[0,0], transform[1,0], transform[2,0]]
 						fitProfile = Pose(offset)
 						
@@ -5096,7 +5220,7 @@ class PoseGraph:
 							overlapSum /= matchCount
 				
 				
-						medialError, matchCount = self.computeMedialError(i, j, offset, minMatchDist = 0.5, tail1=k, tail2=l)
+						medialError, matchCount = self.computeMedialError(nodeID1, nodeID2, offset, minMatchDist = 0.5, tail1=k, tail2=l)
 		
 				
 						results.append((hist[0], angleSum, medialError, matchCount, angDiff, k, l, transform, covE, hist, matchCount, overlapSum, angleSum))
@@ -5104,7 +5228,7 @@ class PoseGraph:
 		results.sort(reverse=True)
 		#results.sort(reverse=False)
 		
-		print "Multi-Junction Overlap of", i, "and", j
+		print "Multi-Junction Overlap of", nodeID1, "and", nodeID2
 		selectedIndex = 0
 		#for result in results:
 		for k in range(len(results)):
