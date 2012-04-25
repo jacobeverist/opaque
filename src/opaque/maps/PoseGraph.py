@@ -4945,6 +4945,29 @@ class PoseGraph:
 		#isMove = False
 		#inPlace = True
 
+		def computeOffset(point1, point2, ang1, ang2):
+		
+			" corner points and orientations "
+			corner1Pose = [point1[0], point1[1], ang1]
+			corner2Pose = [point2[0], point2[1], ang2]
+			
+			" convert the desired intersection point on curve 1 into global coordinates "
+			poseProfile1 = Pose([0.0,0.0,0.0])
+				
+			" now convert this point into a pose, and perform the inverse transform using corner2Pose "
+			desGlobalPose2 = Pose(corner1Pose)
+			
+			" perform inverse offset from the destination pose "
+			negCurve2Pose = desGlobalPose2.doInverse(corner2Pose)
+			
+			" relative pose between pose 1 and pose 2 to make corners coincide and same angle "
+			resPose2 = desGlobalPose2.convertLocalOffsetToGlobal(negCurve2Pose)
+			localOffset = poseProfile1.convertGlobalPoseToLocal(resPose2)
+			
+			return [localOffset[0], localOffset[1], localOffset[2]]
+
+
+
 		node1 = self.nodeHash[nodeID1]
 		node2 = self.nodeHash[nodeID2]
 
@@ -4974,26 +4997,63 @@ class PoseGraph:
 				
 
 				if isMove:
-				
-					" if isMove is True, then we align medial2 with medial1 "		
-					orientedMedial2 = deepcopy(medial2)
-						
-					medial2Reverse = deepcopy(medial2)
-					medial2Reverse.reverse()
 					
 					medialSpline1 = SplineFit(medial1, smooth=0.1)
 					medialSpline2 = SplineFit(medial2, smooth=0.1)
-					medialSplineReverse2 = SplineFit(medial2Reverse, smooth=0.1)
+
+					pose1 = medialSpline1.getUVecSet([0.5, 0.5+0.02])[0]	
+					pose2 = medialSpline2.getUVecSet([0.5, 0.5+0.02])[0]
+				
+					point1 = [pose1[0],pose1[1]]
+					point2 = [pose2[0],pose2[1]]
+					ang1 = pose1[2]
+					ang2 = pose2[2]
+				
+					offset = computeOffset(point1, point2, ang1, ang2)
+
+					points1 = medialSpline1.getUniformSamples()
+					points2 = medialSpline2.getUniformSamples()
+				
+				
+					" transform the past poses "
+					points2_offset = []
+					medialProfile = Pose(offset)
+					for p in points2:
+						result = medialProfile.convertLocalOffsetToGlobal(p)
+						points2_offset.append(result)
+
+					" transform the past poses "
+					medial2_offset = []
+					for p in medial2:
+						result = medialProfile.convertLocalToGlobal(p)
+						medial2_offset.append(result)
+
+				
+					" if isMove is True, then we align medial2 with medial1 "
+					points2R_offset = deepcopy(points2_offset)
+					points2R_offset.reverse()
+							
+					#orientedMedial2 = deepcopy(medial2_offset)
+
+					#medial2Reverse = deepcopy(medial2_offset)
+					#medial2Reverse.reverse()
+											
+					#medialSpline1 = SplineFit(medial1, smooth=0.1)
+					#medialSpline2 = SplineFit(medial2_offset, smooth=0.1)
+					#medialSplineReverse2 = SplineFit(medial2Reverse, smooth=0.1)
 
 					overlapMatch = []
 					angleSum1 = 0.0
 					angleSum2 = 0.0
-					for i in range(0,len(medial1)):
-						p_1 = medial1[i]
-						p_2, j, minDist = gen_icp.findClosestPointInA(medial2, p_1)
+					for i in range(0,len(points1)):
+						p_1 = points1[i]
+						p_2, j, minDist = gen_icp.findClosestPointInA(points2_offset, p_1)
 						if minDist < 0.5:
 							overlapMatch.append((i,j,minDist))
+
+							p_2R, j, minDist = gen_icp.findClosestPointInA(points2R_offset, p_2)
 			
+							"""
 							pathU1 = medialSpline1.findU(p_1)	
 							pathU2 = medialSpline2.findU(p_2)	
 							pathU2_R = medialSplineReverse2.findU(p_2)	
@@ -5015,14 +5075,20 @@ class PoseGraph:
 							elif val2 < -1.0:
 								val2 = -1.0
 							ang2 = acos(val2)
-
+							"""
+							
+							ang1 = abs(diffAngle(p_1[2], p_2[2]))
+							ang2 = abs(diffAngle(p_1[2], p_2R[2]))
+							
 							angleSum1 += ang1
 							angleSum2 += ang2
 					
 					" select global path orientation based on which has the smallest angle between tangent vectors "
 					print i, "angleSum1 =", angleSum1, "angleSum2 =", angleSum2
 					if angleSum1 > angleSum2:
-						orientedMedial2 = deepcopy(medial2Reverse)
+						#orientedMedial2 = deepcopy(medial2Reverse)
+						medial2Reverse = deepcopy(medial2)
+						medial2Reverse.reverse()
 					else:
 						orientedMedial2 = deepcopy(medial2)
 
@@ -5034,7 +5100,7 @@ class PoseGraph:
 					
 					if isForward:
 						
-						moveU = 0.3
+						moveDist = 0.3
 							
 						if len(node2.frontProbeError) > 0:
 			
@@ -5047,13 +5113,13 @@ class PoseGraph:
 							if foreAvg >= 1.4:
 								u2 = medialSpline2.getUOfDist(originU2, 0.0, distIter = 0.001)
 							else:	
-								u2 = medialSpline2.getUOfDist(originU2, moveU, distIter = 0.001)
+								u2 = medialSpline2.getUOfDist(originU2, moveDist, distIter = 0.001)
 						else:	
-							u2 = medialSpline2.getUOfDist(originU2, moveU, distIter = 0.001)
+							u2 = medialSpline2.getUOfDist(originU2, moveDist, distIter = 0.001)
 							
 					else:
-						moveU = -0.3
-						u2 = medialSpline2.getUOfDist(originU2, moveU, distIter = 0.001)
+						moveDist = -0.3
+						u2 = medialSpline2.getUOfDist(originU2, moveDist, distIter = 0.001)
 					
 					print "computed u2 =", u2, "from originU2 =", originU2
 
