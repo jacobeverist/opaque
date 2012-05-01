@@ -255,6 +255,8 @@ class PoseGraph:
 		self.probe = probe
 		self.contacts = contacts
 		
+		self.walls = self.probe.getWalls()
+		
 		self.initPose = self.probe.getActualJointPose(19)
 		self.nodeHash = {}
 		self.edgeHash = {}
@@ -330,6 +332,7 @@ class PoseGraph:
 		self.currPath = 0
 		self.junctionPoint = 0
 		self.pathParents = [[None,None,None,None]]
+		self.pathTermsVisited = {0: False}
 
 		self.trimCount = 0
 		self.spliceCount = 0
@@ -414,6 +417,7 @@ class PoseGraph:
 		currPathID = pathIDs[0]
 		
 		while True:
+			print "currPathID =", currPathID
 			parent = self.pathParents[currPathID]
 			thisParentID = parent[0]
 			
@@ -536,6 +540,7 @@ class PoseGraph:
 			currNode = startNode1
 			splicedPath1 = []
 			while currNode != (childPathID, childTermI):
+				print currNode, "!=", (childPathID, childTermI)
 				splicedPath1.append(pathGraph.get_node_attributes(currNode))
 				currNode = shortestPathSpanTree[currNode]
 			splicedPath1.append(pathGraph.get_node_attributes(currNode))
@@ -543,6 +548,7 @@ class PoseGraph:
 			currNode = startNode2
 			splicedPath2 = []
 			while currNode != (childPathID, childTermI):
+				print currNode, "!=", (childPathID, childTermI)
 				splicedPath2.append(pathGraph.get_node_attributes(currNode))
 				currNode = shortestPathSpanTree[currNode]
 			splicedPath2.append(pathGraph.get_node_attributes(currNode))
@@ -591,6 +597,7 @@ class PoseGraph:
 
 			splicedPath = []
 			while currNode != (rightPathID, rightTermI):
+				print currNode, "!=", (rightPathID, rightTermI)
 				splicedPath.append(pathGraph.get_node_attributes(currNode))
 				currNode = shortestPathSpanTree[currNode]
 			splicedPath.append(pathGraph.get_node_attributes(currNode))
@@ -1080,25 +1087,71 @@ class PoseGraph:
 
 		self.edgePriorityHash = {}
 
+
+	def pathTermVisited(self, pathID):
+		
+		self.pathTermsVisited[pathID] = True
+
+	def getPathTermsVisited(self):
+		return self.pathTermsVisited
+
+
 	def getPathTerms(self):
 
 		terms = []
 
-		numPaths = len(self.paths)
-		for k in range(numPaths):
+		for pathID in range(self.numPaths):
 
-			path = self.paths[k]
-			
-			pathSpline = SplineFit(path, smooth=0.1)
-			vecPoints = pathSpline.getUniformSamples()
-			
-			angleSum = 0.0
-			for p in vecPoints[-11:]:
-				angleSum += p[2]
+			junctionNodeID = self.pathParents[pathID][1]
+			path = self.trimmedPaths[pathID]
+			if junctionNodeID == None:
+
+				poseOrigin = Pose(self.nodeHash[0].getEstPose())
+				originPoint = poseOrigin.convertLocalToGlobal([0.0,0.0])
+
+				dist1 = sqrt((path[0][0]-originPoint[0])**2 + (path[0][1]-originPoint[1])**2)
+				dist2 = sqrt((path[-1][0]-originPoint[0])**2 + (path[-1][1]-originPoint[1])**2)
+
+				if dist1 > dist2:
+					terms.append([path[0][0],path[0][1], 0.0])
+				else:
+					terms.append([path[-1][0],path[-1][1], 0.0])
 				
-			angleAvg = angleSum / 10.
+
+			else:
+				
+				localJunctionPoint = self.pathParents[pathID][2]
+				poseOrigin = Pose(self.nodeHash[junctionNodeID].getEstPose())
+				junctionPoint = poseOrigin.convertLocalToGlobal(localJunctionPoint)
+	
+				minDist = 1e100
+				minI = 0		
+				for i in range(len(path)):
+					pnt = path[i]
+					dist = sqrt((pnt[0]-junctionPoint[0])**2 + (pnt[1]-junctionPoint[1])**2)
+				
+					if dist < minDist:
+						minDist1 = dist
+						minI = i
+	
+				if minI < abs(minI-len(path)-1):
+					termI = len(path)-1
+					pathSpline = SplineFit(path, smooth=0.1)
+					vecPoints = pathSpline.getUniformSamples()
+					terms.append([vecPoints[termI][0],vecPoints[termI][1], vecPoints[termI][2]])
+				else:
+					termI = 0
+					pathSpline = SplineFit(path, smooth=0.1)
+					vecPoints = pathSpline.getUniformSamples()
+					terms.append([vecPoints[termI][0],vecPoints[termI][1], vecPoints[termI][2]])
 			
-			terms.append([vecPoints[-1][0],vecPoints[-1][1], angleAvg])
+			
+			#angleSum = 0.0
+			#for p in vecPoints[-11:]:
+			#	angleSum += p[2]
+				
+			#angleAvg = angleSum / 10.
+			
 
 		return terms
 
@@ -1229,7 +1282,9 @@ class PoseGraph:
 					"secP1 is terminal N"
 					index = juncI+10
 					if index >= len(path2):
-						index = len(path2)-1
+						
+						" ensure at least 2 elements in path "
+						index = len(path2)-2
 					#newPath2 = [junctionPoint] + path2[index:]
 					newPath2 = path2[index:]
 					
@@ -1246,7 +1301,8 @@ class PoseGraph:
 					"secP2 is terminal N"
 					index = juncI+10
 					if index >= len(path2):
-						index = len(path2)-1
+						" ensure at least 2 elements in path "
+						index = len(path2)-2
 					#newPath2 = [junctionPoint] + path2[index:]
 					newPath2 = path2[index:]
 				
@@ -1292,7 +1348,10 @@ class PoseGraph:
 				" make sure path is greater than 5 points "
 				while len(newPath3) <= 5:
 	
+					#print "len(newPath3) =", len(newPath3), "<= 5"
+	
 					max_spacing /= 2
+					print "max_spacing =", max_spacing
 					
 					newPath3 = [copy(newPath2[0])]
 										
@@ -2238,15 +2297,15 @@ class PoseGraph:
 		print "pathSec2 hypothesis angle and overlap sum and match count:", angleSum2, overlapSum2, matchCount2
 
 		" distance of departure point from known junction point "
-		juncDist1 = -1
-		juncDist2 = -1
-		if len(pathSec1) > 0:
-			p0 = pathSec1[0]
-			juncDist1 = sqrt((globalJunctionPoint[0]-p0[0])**2 + (globalJunctionPoint[1]-p0[1])**2)
+		#juncDist1 = -1
+		#juncDist2 = -1
+		#if len(pathSec1) > 0:
+		p0 = pathSec1[0]
+		juncDist1 = sqrt((globalJunctionPoint[0]-p0[0])**2 + (globalJunctionPoint[1]-p0[1])**2)
 
-		if len(pathSec2) > 0:
-			p0 = pathSec2[0]
-			juncDist2 = sqrt((globalJunctionPoint[0]-p0[0])**2 + (globalJunctionPoint[1]-p0[1])**2)
+		#if len(pathSec2) > 0:
+		p0 = pathSec2[0]
+		juncDist2 = sqrt((globalJunctionPoint[0]-p0[0])**2 + (globalJunctionPoint[1]-p0[1])**2)
 
 		print "pathSec1 hypothesis discrepancy distance:", juncDist1
 		print "pathSec2 hypothesis discrepancy distance:", juncDist2
@@ -2338,6 +2397,30 @@ class PoseGraph:
 		secP1 = []
 		secP2 = []
 
+		"""
+		cases
+		1) near-zero length of path section, never departs, not the path, high juncDist
+		2) near-zero length, no match count, low juncDist, correct path
+		3) high path length, high match count, low juncDist, incorrect path 
+		4) no match count, high junc dist, incorrect
+		5) no match count, low junc dist, correct
+		"""
+		
+		if juncDist1 < juncDist2:
+			
+			" FIXME: if [0,frontDepI] has high overlap compared to total length, then we reject it "
+			#if matchCount1 > 0 and frontDepI :
+			#	pass
+			
+			
+			secP1 = pathPoints2[0]
+			secP2 = pathPoints2[frontDepI]
+		else:
+			" FIXME: if [backDepI,len(distances)-1] has high overlap compared to total length, then we reject it "
+			secP1 = pathPoints2[backDepI]
+			secP2 = pathPoints2[len(distances)-1]
+
+		"""
 		if matchCount1 > 0 and matchCount2 > 0:
 			if juncDist1 < juncDist2:
 				secP1 = pathPoints2[0]
@@ -2357,7 +2440,7 @@ class PoseGraph:
 		else:
 			print "no overlap detected!"
 			raise
-				
+		"""	
 		
 
 		#if isInterior1 and isInterior2:
@@ -2518,8 +2601,6 @@ class PoseGraph:
 
 	def correctNode2(self, nodeID):
 
-		"FIXME:  add latest changes from loadNewNode() "
-
 		newNode = self.nodeHash[nodeID]		
 
 		return self.integrateNode(newNode, nodeID)
@@ -2541,11 +2622,17 @@ class PoseGraph:
 		direction = newNode.travelDir
 
 
+
+		" ensure the axes are computed before this check "
+		computeHullAxis(nodeID, newNode, tailCutOff = False)
+		
 		
 		if nodeID > 0:
 			
 			" ESTIMATE TRAVEL WITH MEDIAL OVERLAP CONSTRAINT OF EVEN NUMBER POSE "
 			if nodeID % 2 == 0:
+				
+				
 
 				if self.nodeHash[nodeID-2].getNumLeafs() > 2 or self.nodeHash[nodeID].getNumLeafs() > 2:
 					#transform1, covE1, hist1 = self.makeMultiJunctionMedialOverlapConstraint(nodeID-2, nodeID, isMove = True, isForward = direction )
@@ -3024,7 +3111,7 @@ class PoseGraph:
 				print pathBranchIDs
 	
 				if isBranch[0]:
-					orderedPathIDs1.append(0,pathBranchIDs[0])
+					orderedPathIDs1.append(pathBranchIDs[0])
 					departures1.append([False, False])
 					interiors1.append([False, False])
 					depPoints1.append([None, None])
@@ -3125,7 +3212,9 @@ class PoseGraph:
 		" FIXME:  Branch direction does not seem to be used properly yet.  Only used in getOverlapDeparture() "
 		self.pathParents.append([parentID, branchNodeID, localJunctionPose, True])
 
+
 		newPathID = self.numPaths
+		self.pathTermsVisited[newPathID] = False
 		self.nodeSets[newPathID] = []
 		self.numPaths += 1
 
@@ -6088,9 +6177,22 @@ class PoseGraph:
 		#pylab.xlim(-4,4)
 		#pylab.ylim(-4,4)
 
+		self.drawWalls()
+
 		pylab.title("Trimmed Paths, numNodes = %d" % self.numNodes)
 		pylab.savefig("trimmedPath_%04u.png" % self.trimCount)
 		self.trimCount += 1
+
+	def drawWalls(self):
+		for wall in self.walls:
+			xP = []
+			yP = []
+			for i in range(len(wall)):
+				p = wall[i]
+				xP.append(p[0])
+				yP.append(p[1])
+	
+			pylab.plot(xP,yP, linewidth=2, color = 'g')
 
 
 

@@ -373,7 +373,6 @@ class LocalNode:
 		self.medialBComputed = False		
 		self.medialCComputed = False		
 		self.isBowtie = False
-		self.medialLongPath = []
 		
 		self.medialPathCut = []
 		

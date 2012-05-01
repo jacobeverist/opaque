@@ -608,6 +608,10 @@ class MapGraph:
 
 		self.stablePose.reset()
 		self.stablePose.setNode(self.currNode)
+		
+		if self.poseGraph.numNodes > 100:
+			print "max number of nodes reached, returning"
+			raise
 
 	def initNode(self, estPose, direction):
 
@@ -692,6 +696,13 @@ class MapGraph:
 			self.currNode.update()
 		else:
 			pass
+
+	def computePath(self, currPose, frontierPoint):
+		if self.isDirty:
+			self.synch()
+
+		path = self.navRoadMap.computePath(currPose, frontierPoint)
+		return path
 		
 	def computeHeadPath(self, currPose, frontierPoint, exploreRoot):
 		if self.isDirty:
@@ -711,13 +722,26 @@ class MapGraph:
 			
 		" get the termination point and orientation of each path "
 		terms = self.poseGraph.getPathTerms()
+		termsVisited = self.poseGraph.getPathTermsVisited()
 		
-		for term in terms:
+		print "Terms:", terms
+		print "TermsVisited:", termsVisited
+		
+		
+		for k in range(len(terms)):
+			term = terms[k]
 			
-			if self.frontierMap.isFrontier(loc = term):
+			if not termsVisited[k]:
+				self.poseGraph.pathTermVisited(k)
+				print "selecting term", k
 				return term
 		
-			
+		#for term in terms:
+		#	
+		#	if self.frontierMap.isFrontier(loc = term):
+		#		return term
+		
+		print "all terms reached, selecting frontier point"
 		return self.frontierMap.selectNextFrontier()
 
 	def isFrontier(self):

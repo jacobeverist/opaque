@@ -38,18 +38,20 @@ class FrontierMap(Map):
 		tempImage.save(self.fileName % self.saveCount)	
 		self.saveCount += 1
 		
-	def isFrontier(self, loc = None):
+	def isFrontier(self, loc):
 		" checks if there are frontier points directly in front of snake "
 		" if there are enough, it will return true "
 		
+
+		#points = self.mapGraph.getCenterPoints()
 		
-		if loc == None:
-			points = self.mapGraph.getCenterPoints()
+		#print "centerPoints =", points
 			
-			print "centerPoints =", points
-				
-			spline = SplineFit(points, kp=2)
-			self.checkSpline = spline
+		#spline = SplineFit(points, kp=2)
+		#self.checkSpline = spline
+		
+		"""
+		if loc == None:
 			
 			vec = spline.getUVector(0.9)
 			tip = spline.getU(1.0)
@@ -62,6 +64,10 @@ class FrontierMap(Map):
 		else:
 			x = loc[0]
 			y = loc[1]
+		"""
+
+		x = loc[0]
+		y = loc[1]
 			
 			
 		#x = point[0]
@@ -107,8 +113,8 @@ class FrontierMap(Map):
 			self.yMax = highIndexY
 		"""
 			
-		upoints = arange(0,1.0,0.01)
-		splPoints = self.checkSpline.getUSet(upoints)
+		#upoints = arange(0,1.0,0.01)
+		#splPoints = self.checkSpline.getUSet(upoints)
 
 		#Image.new('L', (self.numPixel,self.numPixel),0)
 		im = self.mapImage.copy()
@@ -116,9 +122,9 @@ class FrontierMap(Map):
 		draw = ImageDraw.Draw(im)
 		draw.ellipse((lowIndexX, lowIndexY, highIndexX, highIndexY), outline=255)
 		
-		for p in splPoints:
-			m,n = self.realToGrid(p)
-			imPix[m,n] = 255
+		#for p in splPoints:
+		#	m,n = self.realToGrid(p)
+		#	imPix[m,n] = 255
 		
 		filename = "mapCheckMap%04u.png"
 		im.save(filename % (self.saveCount))

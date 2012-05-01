@@ -31,6 +31,8 @@ from opaque.TestHoldSlideTransition import TestHoldSlideTransition
 from opaque.TestAnchorTransition import TestAnchorTransition
 from opaque.TestFrontExtend import TestFrontExtend
 from opaque.TestPokeWalls import TestPokeWalls
+from opaque.ControlError import *
+
 #from opaque.environment.WallSections import WallSections
 from DrawThings import DrawThings
 
@@ -332,7 +334,7 @@ class SnakeApp(sf.Application):
 			
 
 			# triple-Y - multi-junction, test 1 				
-			WLEN = 2.0
+			WLEN = 5.0
 			WLEN2 = 1.0
 			WWID = 0.4
 			wall1 = [[-11.0, -WWID/2.0], [-4.0, -WWID/2.0], [-4.0 + WLEN2*cos(-pi/3), -WWID/2.0 + WLEN2*sin(-pi/3)]]
@@ -452,7 +454,17 @@ if __name__ == '__main__':
 		
 		#prof.runcall(application.go)
 		#prof.dump_stats("profile_info2") 
-	except ogre.OgreException, e:
+	
+	except ControlError as inst:
+		print inst.value
+
+	except:
 		traceback.print_exc()
-		print e
+		print "Exception:", sys.exc_info()[0]
+
+
+	
+	#except ogre.OgreException, e:
+	#	traceback.print_exc()
+	#	print e
 

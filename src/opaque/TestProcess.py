@@ -228,9 +228,9 @@ class TestProcess(SnakeControl):
 			#self.mapGraph.loadSeries("resultProcess_2012_04_05", 20)
 			#self.mapGraph.loadSeries("resultProcess_2012_04_04", 38)
 			#self.mapGraph.loadSeries("resultProcess_2012_04_11", 52)
-			#self.mapGraph.loadSeries("resultProcess_2012_04_12_2", 47)
+			self.mapGraph.loadSeries("resultProcess_2012_04_12_2", 47)
 			#self.mapGraph.loadSeries("resultProcess_2012_04_13_1", 14)
-			self.mapGraph.loadSeries("resultProcess_2012_04_13_2", 16)
+			#self.mapGraph.loadSeries("resultProcess_2012_04_13_2", 16)
 			#self.mapGraph.loadSeries("resultProcess_2012_04_13_3", 14)
 			#self.mapGraph.loadSeries("resultProcess_2012_04_07", 38)
 			
