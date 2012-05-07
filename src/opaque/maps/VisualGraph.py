@@ -46,13 +46,19 @@ class VisualGraph:
 
 			print "loading node", i			
 			currNode = LocalNode(self.probe, self.contacts, i, 19, PIXELSIZE)
-			currNode.readFromFile(dirName, i)
+			currNode.readFromFile2(dirName, i)
 
 			self.localNodes.append(currNode)
 			
-			self.poseGraph.restoreNode(dirName, currNode)		
+			self.poseGraph.nodeHash[i] = currNode
+
+			#self.poseGraph.restoreNode(dirName, currNode)		
 		
 		self.poseGraph.mergePriorityConstraints()
+
+		self.drawConstraints()
+
+		return
 
 		for i in range(num_poses, num_poses+10):
 
@@ -114,7 +120,7 @@ class VisualGraph:
 				
 				currNode.readFromFile(dirName, i, forcedPose = estPose2)
 			else:
-				currNode.readFromFile(dirName, i)
+				currNode.readFromFile2(dirName, i)
 
 			self.localNodes.append(currNode)
 			
@@ -1165,297 +1171,7 @@ class VisualGraph:
 				const_count += 1
 
 		return
-
-		for item in self.poseGraph.inplace1:
-
-			val = v[0]
-			nodeID1 = item[0]
-			nodeID2 = item[1]
-			transform = item[2]
-			covE = item[3]
-			priority = PoseGraph.INPLACE_PRIORITY
-			
-			estPose1 = self.nodeHash[nodeID1].getGlobalGPACPose()		
-
-		
-			if self.nodeHash[nodeID1].isBowtie:			
-				hull1 = PoseGraph.computeBareHull(self.nodeHash[nodeID1], sweep = False, static = True)
-				hull1.append(hull1[0])
-			else:
-				hull1 = PoseGraph.computeBareHull(self.nodeHash[nodeID1], sweep = False)
-				hull1.append(hull1[0])
-
-			if self.nodeHash[nodeID2].isBowtie:			
-				hull2 = PoseGraph.computeBareHull(self.nodeHash[nodeID2], sweep = False, static = True)
-				hull2.append(hull2[0])
-			else:
-				hull2 = PoseGraph.computeBareHull(self.nodeHash[nodeID2], sweep = False)
-				hull2.append(hull2[0])
-
-
-			offset = [transform[0,0], transform[1,0], transform[2,0]]
-
-			#hull2_trans = []
-			#for p in hull2:
-			#	hull2_trans.append(gen_icp.dispOffset(p, offset))	
-
-			" set the origin of pose 1 "
-			poseOrigin = Pose(estPose1)
 	
-			pylab.clf()
-			pylab.axes()
-			
-			xP = []
-			yP = []
-			for b in hull1:
-				p1 = poseOrigin.convertLocalToGlobal(b)
-	
-				xP.append(p1[0])	
-				yP.append(p1[1])
-	
-			pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
-
-
-			xP = []
-			yP = []
-			for p in hull2:
-				p1 = gen_icp.dispOffset(p,offset)
-				
-				p2 = poseOrigin.convertLocalToGlobal(p1)
-				xP.append(p2[0])	
-				yP.append(p2[1])
-
-			pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
-
-			medialPath1 = self.nodeHash[nodeID1].medialPathCut
-			medialPath2 = self.nodeHash[nodeID2].medialPathCut
-			medial_trans = []
-			for p in medialPath2:
-				medial_trans.append(gen_icp.dispOffset(p, offset))	
-
-			xP = []
-			yP = []
-			for p in medialPath1:
-				p1 = poseOrigin.convertLocalToGlobal(p)
-				xP.append(p1[0])
-				yP.append(p1[1])
-			pylab.plot(xP,yP,linewidth=1, color=(0.5,0.5,1.0))
-
-			xP = []
-			yP = []
-			for p in medial_trans:
-				p1 = poseOrigin.convertLocalToGlobal(p)
-				xP.append(p1[0])
-				yP.append(p1[1])
-			pylab.plot(xP,yP,linewidth=1, color=(1.0,0.5,0.5))
-
-			self.drawWalls()
-
-			typeStr = "INPLACE1:"
-			pylab.title(typeStr + "  %u -> %u" % (nodeID1, nodeID2))
-
-
-			pylab.xlim(estPose1[0]-4, estPose1[0]+4)					
-			pylab.ylim(estPose1[1]-3, estPose1[1]+3)
-
-			pylab.savefig("constraint_%03u_%03u_inplace1.png" % (nodeID1,nodeID2))
-
-			pylab.clf()				
-				
-		for item in self.poseGraph.inplace2:
-
-			val = v[0]
-			nodeID1 = item[0]
-			nodeID2 = item[1]
-			transform = item[2]
-			covE = item[3]
-			priority = PoseGraph.INPLACE_PRIORITY
-			
-			estPose1 = self.nodeHash[nodeID1].getGlobalGPACPose()		
-
-		
-			if self.nodeHash[nodeID1].isBowtie:			
-				hull1 = PoseGraph.computeBareHull(self.nodeHash[nodeID1], sweep = False, static = True)
-				hull1.append(hull1[0])
-			else:
-				hull1 = PoseGraph.computeBareHull(self.nodeHash[nodeID1], sweep = False)
-				hull1.append(hull1[0])
-
-			if self.nodeHash[nodeID2].isBowtie:			
-				hull2 = PoseGraph.computeBareHull(self.nodeHash[nodeID2], sweep = False, static = True)
-				hull2.append(hull2[0])
-			else:
-				hull2 = PoseGraph.computeBareHull(self.nodeHash[nodeID2], sweep = False)
-				hull2.append(hull2[0])
-
-
-			offset = [transform[0,0], transform[1,0], transform[2,0]]
-
-			#hull2_trans = []
-			#for p in hull2:
-			#	hull2_trans.append(gen_icp.dispOffset(p, offset))	
-
-			" set the origin of pose 1 "
-			poseOrigin = Pose(estPose1)
-	
-			pylab.clf()
-			pylab.axes()
-			
-			xP = []
-			yP = []
-			for b in hull1:
-				p1 = poseOrigin.convertLocalToGlobal(b)
-	
-				xP.append(p1[0])	
-				yP.append(p1[1])
-	
-			pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
-
-
-			xP = []
-			yP = []
-			for p in hull2:
-				p1 = gen_icp.dispOffset(p,offset)
-				
-				p2 = poseOrigin.convertLocalToGlobal(p1)
-				xP.append(p2[0])	
-				yP.append(p2[1])
-
-			pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
-
-			medialPath1 = self.nodeHash[nodeID1].medialPathCut
-			medialPath2 = self.nodeHash[nodeID2].medialPathCut
-			medial_trans = []
-			for p in medialPath2:
-				medial_trans.append(gen_icp.dispOffset(p, offset))	
-
-			xP = []
-			yP = []
-			for p in medialPath1:
-				p1 = poseOrigin.convertLocalToGlobal(p)
-				xP.append(p1[0])
-				yP.append(p1[1])
-			pylab.plot(xP,yP,linewidth=1, color=(0.5,0.5,1.0))
-
-			xP = []
-			yP = []
-			for p in medial_trans:
-				p1 = poseOrigin.convertLocalToGlobal(p)
-				xP.append(p1[0])
-				yP.append(p1[1])
-			pylab.plot(xP,yP,linewidth=1, color=(1.0,0.5,0.5))
-
-			self.drawWalls()
-
-			typeStr = "INPLACE2:"
-			pylab.title(typeStr + "  %u -> %u" % (nodeID1, nodeID2))
-
-
-			pylab.xlim(estPose1[0]-4, estPose1[0]+4)					
-			pylab.ylim(estPose1[1]-3, estPose1[1]+3)
-
-			pylab.savefig("constraint_%03u_%03u_inplace2.png" % (nodeID1,nodeID2))
-
-			pylab.clf()					
-
-		for item in self.poseGraph.inplace3:
-
-			val = v[0]
-			nodeID1 = item[0]
-			nodeID2 = item[1]
-			transform = item[2]
-			covE = item[3]
-			priority = PoseGraph.INPLACE_PRIORITY
-			
-			estPose1 = self.nodeHash[nodeID1].getGlobalGPACPose()		
-
-		
-			if self.nodeHash[nodeID1].isBowtie:			
-				hull1 = PoseGraph.computeBareHull(self.nodeHash[nodeID1], sweep = False, static = True)
-				hull1.append(hull1[0])
-			else:
-				hull1 = PoseGraph.computeBareHull(self.nodeHash[nodeID1], sweep = False)
-				hull1.append(hull1[0])
-
-			if self.nodeHash[nodeID2].isBowtie:			
-				hull2 = PoseGraph.computeBareHull(self.nodeHash[nodeID2], sweep = False, static = True)
-				hull2.append(hull2[0])
-			else:
-				hull2 = PoseGraph.computeBareHull(self.nodeHash[nodeID2], sweep = False)
-				hull2.append(hull2[0])
-
-
-			offset = [transform[0,0], transform[1,0], transform[2,0]]
-
-			#hull2_trans = []
-			#for p in hull2:
-			#	hull2_trans.append(gen_icp.dispOffset(p, offset))	
-
-			" set the origin of pose 1 "
-			poseOrigin = Pose(estPose1)
-	
-			pylab.clf()
-			pylab.axes()
-			
-			xP = []
-			yP = []
-			for b in hull1:
-				p1 = poseOrigin.convertLocalToGlobal(b)
-	
-				xP.append(p1[0])	
-				yP.append(p1[1])
-	
-			pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
-
-
-			xP = []
-			yP = []
-			for p in hull2:
-				p1 = gen_icp.dispOffset(p,offset)
-				
-				p2 = poseOrigin.convertLocalToGlobal(p1)
-				xP.append(p2[0])	
-				yP.append(p2[1])
-
-			pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
-
-			medialPath1 = self.nodeHash[nodeID1].medialPathCut
-			medialPath2 = self.nodeHash[nodeID2].medialPathCut
-			medial_trans = []
-			for p in medialPath2:
-				medial_trans.append(gen_icp.dispOffset(p, offset))	
-
-			xP = []
-			yP = []
-			for p in medialPath1:
-				p1 = poseOrigin.convertLocalToGlobal(p)
-				xP.append(p1[0])
-				yP.append(p1[1])
-			pylab.plot(xP,yP,linewidth=1, color=(0.5,0.5,1.0))
-
-			xP = []
-			yP = []
-			for p in medial_trans:
-				p1 = poseOrigin.convertLocalToGlobal(p)
-				xP.append(p1[0])
-				yP.append(p1[1])
-			pylab.plot(xP,yP,linewidth=1, color=(1.0,0.5,0.5))
-
-			self.drawWalls()
-
-			typeStr = "INPLACE3:"
-			pylab.title(typeStr + "  %u -> %u" % (nodeID1, nodeID2))
-
-
-			pylab.xlim(estPose1[0]-4, estPose1[0]+4)					
-			pylab.ylim(estPose1[1]-3, estPose1[1]+3)
-
-			pylab.savefig("constraint_%03u_%03u_inplace3.png" % (nodeID1,nodeID2))
-
-			pylab.clf()					
-		
-		return
-		
 		poses = []
 		for i in range(self.numNodes):
 			poses.append(self.nodeHash[i].getGlobalGPACPose())

@@ -39,6 +39,8 @@ class MapGraph:
 		self.initPose = self.probe.getActualJointPose(19)
 		
 		self.currNode = 0
+		self.foreNode = 0
+		self.backNode = 0
 
 		self.pixelSize = PIXELSIZE
 		self.mapSize = MAPSIZE
@@ -452,8 +454,15 @@ class MapGraph:
 		pylab.clf()
 		for i in range(self.numNodes):
 
-			hull = computeBareHull(self.nodeHash[i], sweep = False)
-			hull.append(hull[0])
+			if self.nodeHash[i].isBowtie:			
+				hull = computeBareHull(self.nodeHash[i], sweep = False, static = True)
+				hull.append(hull[0])
+			else:
+				hull = computeBareHull(self.nodeHash[i], sweep = False)
+				hull.append(hull[0])
+
+			#hull = computeBareHull(self.nodeHash[i], sweep = False)
+			#hull.append(hull[0])
 
 			node1 = self.nodeHash[i]
 			currPose = node1.getGlobalGPACPose()
@@ -530,9 +539,16 @@ class MapGraph:
 	
 			pylab.plot(xP,yP, linewidth=2, color = 'g')
 
-	def localizeCurrentNode(self):
-		#self.poseGraph.localizeCurrentNode()
-		self.poseGraph.correctNode2(self.currNode.nodeID)
+	def localizePose(self):
+		self.poseGraph.loadNewNode(self.foreNode)
+		self.poseGraph.loadNewNode(self.backNode)
+		#self.poseGraph.correctNode2(self.foreNode.nodeID)
+		#self.poseGraph.correctNode2(self.backNode.nodeID)
+		
+
+	#def localizeCurrentNode(self):
+	#	#self.poseGraph.localizeCurrentNode()
+	#	self.poseGraph.correctNode2(self.currNode.nodeID)
 
 	def __getattr__(self, name):
 
@@ -541,6 +557,48 @@ class MapGraph:
 
 		if name == "nodeHash":
 			return self.poseGraph.nodeHash
+
+	def restoreSeries(self, dirName, num_poses):
+
+		self.poseGraph.restoreState(dirName, num_poses)
+
+		PIXELSIZE = 0.05
+		for i in range(0, num_poses):
+
+			print "loading node", i			
+			self.currNode = LocalNode(self.probe, self.contacts, i, 19, PIXELSIZE)
+			self.currNode.readFromFile2(dirName, i)			
+			self.poseGraph.nodeHash[i] = self.currNode
+					
+		
+		self.poseGraph.mergePriorityConstraints()
+		
+		
+		self.isDirty = True
+		
+		self.synch()
+		
+		self.saveMap()
+
+	def loadSeries(self, dirName, num_poses):
+	
+		numNodes = 0
+		self.currNode = 0
+			
+		PIXELSIZE = 0.05
+		for i in range(0, num_poses):
+
+			print "loading node", i		
+			currNode = LocalNode(self.probe, self.contacts, i, 19, PIXELSIZE)
+			currNode.readFromFile(dirName, i)
+			self.poseGraph.loadNewNode(currNode)
+			self.poseGraph.mergePriorityConstraints()
+			self.drawConstraints(i)
+
+		self.isDirty = True
+
+		self.synch()
+		self.saveMap()
 
 	def loadFile(self, dirName, num_poses):
 		
@@ -602,22 +660,52 @@ class MapGraph:
 		#
 		#	self.currNode.saveToFile()
 
-		self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, self.pixelSize, stabilizePose = self.isStable, faceDir = faceDir, travelDir = travelDir)		
 		
-		self.poseGraph.addNode(self.currNode)
+		if faceDir:
+			self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, self.pixelSize, stabilizePose = self.isStable, faceDir = faceDir, travelDir = travelDir)		
+			self.foreNode = self.currNode
+		else:
+			self.currNode = LocalNode(self.probe, self.contacts, self.numNodes+1, 19, self.pixelSize, stabilizePose = self.isStable, faceDir = faceDir, travelDir = travelDir)		
+			self.backNode = self.currNode
+		
+		#self.poseGraph.addNode(self.currNode)
 
 		self.stablePose.reset()
 		self.stablePose.setNode(self.currNode)
 		
-		if self.poseGraph.numNodes > 100:
-			print "max number of nodes reached, returning"
-			raise
+		#if self.poseGraph.numNodes > 100:
+		#	print "max number of nodes reached, returning"
+		#	raise
 
-	def initNode(self, estPose, direction):
+	def pairDone(self):
 
-		self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, self.pixelSize, stabilizePose = self.isStable, faceDir = True)
+		" pair this last node, and the node before as a paired set for a local pose "
+		#node1 = self.nodeHash[self.numNodes-1]
+		#node2 = self.nodeHash[self.numNodes-2]
 
-		self.poseGraph.addInitNode(self.currNode, estPose)
+		self.foreNode.setPartnerNodeID(self.backNode.nodeID)
+		self.backNode.setPartnerNodeID(self.foreNode.nodeID)
+
+		#node1.setPartnerNodeID(self.numNodes-2)
+		#node2.setPartnerNodeID(self.numNodes-1)
+		
+		#self.poseGraph.pairLastTwo()
+
+	def insertPose(self, estPose, direction):
+
+
+		self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, self.pixelSize, stabilizePose = self.isStable, faceDir = True, travelDir = direction)		
+		self.foreNode = self.currNode
+		self.forceUpdate(True)		
+		self.currNode = LocalNode(self.probe, self.contacts, self.numNodes+1, 19, self.pixelSize, stabilizePose = self.isStable, faceDir = False, travelDir = direction)		
+		self.backNode = self.currNode
+		self.forceUpdate(False)		
+
+		self.poseGraph.insertPose(self.foreNode, self.backNode, initLocation = estPose)
+		#self.poseGraph.addInitNode(self.foreNode, estPose)
+		#self.poseGraph.loadNewNode(self.foreNode)
+		#self.poseGraph.loadNewNode(self.backNode)
+
 		
 		self.stablePose.reset()
 		self.stablePose.setNode(self.currNode)	
@@ -766,12 +854,15 @@ class MapGraph:
 	
 	def saveLocalMap(self):
 		" save the local map "
-		if self.currNode != 0:
-			self.currNode.saveMap()
-			
-	def saveConstraints(self):
+		if self.foreNode != 0:
+			self.foreNode.saveMap()
 
-		self.poseGraph.saveConstraints()
+		if self.backNode != 0:
+			self.backNode.saveMap()
+			
+	def saveState(self):
+
+		self.poseGraph.saveState()
 		
 	def saveMap(self):
 		

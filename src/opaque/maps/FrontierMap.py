@@ -184,7 +184,8 @@ class FrontierMap(Map):
 		boundImg = self.mapGraph.boundMap.image
 		obstImg = self.obstacleMap.load()
 
-		for i in range(self.numPixel/2+20,self.numPixel-sumRange):
+		#for i in range(self.numPixel/2+20,self.numPixel-sumRange):
+		for i in range(sumRange,self.numPixel-sumRange):
 			for j in range(sumRange,self.numPixel-sumRange):
 				if boundImg[i,j] == 255:
 	

@@ -39,7 +39,8 @@ class PathStep(Behavior):
 		self.frontAnchorFit = 0
 		self.concertinaFit = 0
 
-		self.compliantTorque = 0.005
+		#self.compliantTorque = 0.005
+		self.compliantTorque = 0.1
 		#self.compliantTorque = 3.0
 		
 		self.direction = True

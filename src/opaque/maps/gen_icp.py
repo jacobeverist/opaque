@@ -1372,6 +1372,53 @@ def medialOverlapInPlaceCostFunc(params, match_pairs, medialSpline1, medialSplin
 		
 	return sum1
 
+def medialOverlapTransformCostFunc(params, gPointHash, tPoints2_trans, arcDist1):
+	
+	currArcDist = params[0]
+	currAngOffset = params[1]
+
+
+	newPoints = []
+	for p in tPoints2_trans:
+		newPoints.append((p[0]+arcDist1-currArcDist, p[1] + currAngOffset))
+
+	sum1 = 0.0
+	count = 0
+	for p in newPoints:
+
+
+		thisDist = p[0]
+		index = math.floor(thisDist*10)
+		try:
+			pointSet = gPointHash[index]
+
+		except:
+			val = 0.0
+			
+		else:
+			if len(pointSet) == 0:
+				raise
+			
+			minDist = 1e100
+			minI = -1
+			for i in range(len(pointSet)):
+				
+				currDist = abs(p[0]-pointSet[i][0])
+				if currDist < minDist:
+					minDist = currDist
+					minI = i
+			
+			val = abs(p[1] - pointSet[minI][1])
+
+			sum1 += val
+			count += 1
+
+	if count != 0:
+		sum1 /= count
+		return sum1
+
+	return 1e100
+
 def medialOverlapCostFunc(params, match_pairs, medialSpline1, medialSpline2, uHigh, uLow, u1):
 	global numIterations
 
@@ -1482,6 +1529,7 @@ def medialOverlapCostFunc(params, match_pairs, medialSpline1, medialSpline2, uHi
 		sum1 += val
 		
 	return sum1
+
 
 def overlapHistogram(params, match_pairs, medialSpline1, medialSpline2, u1):
 	global numIterations
@@ -3618,7 +3666,7 @@ def overlapICP(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1, medi
 		poly1.append([p[0],p[1]])	
 
 	#if inPlace:
-	if False:
+	if True:
 		offset[2] =  functions.normalizeAngle(offset[2])	
 
 		#if plotIter:
@@ -3627,9 +3675,15 @@ def overlapICP(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1, medi
 			" set the origin of pose 1 "
 			poseOrigin = Pose(estPose1)
 	
-			pylab.clf()
-			pylab.axes()
+			#pylab.clf()
+			#pylab.axes()
 			
+			#pylab.subplot(121)
+			fig1 = pylab.figure(2)
+			fig1.clf()
+
+			axes2 = fig1.add_subplot(122)
+
 			xP = []
 			yP = []
 			for b in poly1:
@@ -3638,7 +3692,7 @@ def overlapICP(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1, medi
 				xP.append(p1[0])	
 				yP.append(p1[1])
 	
-			pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+			axes2.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
 	
 			xP = []
 			yP = []
@@ -3650,7 +3704,7 @@ def overlapICP(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1, medi
 				xP.append(p1[0])	
 				yP.append(p1[1])
 
-			pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
+			axes2.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
 
 			xP = []
 			yP = []
@@ -3662,7 +3716,7 @@ def overlapICP(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1, medi
 				xP.append(p1[0])	
 				yP.append(p1[1])
 
-			pylab.plot(xP,yP,linewidth=1, color=(1.0,0.5,0.5))
+			axes2.plot(xP,yP,linewidth=1, color=(1.0,0.5,0.5))
 
 			point2_trans = dispOffset(point2, offset)
 			p1 = poseOrigin.convertLocalToGlobal(point1)
@@ -3670,7 +3724,7 @@ def overlapICP(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1, medi
 
 			xP = [p1[0],p2[0]]
 			yP = [p1[1],p2[1]]
-			pylab.scatter(xP,yP,color='b')
+			axes2.scatter(xP,yP,color='b')
 
 
 			gpac2_trans = dispOffset(rootPose1, offset)
@@ -3679,7 +3733,7 @@ def overlapICP(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1, medi
 
 			xP = [gpac1[0],gpac2[0]]
 			yP = [gpac1[1],gpac2[1]]
-			pylab.scatter(xP,yP,color='r')
+			axes2.scatter(xP,yP,color='r')
 
 
 			xP = []
@@ -3690,7 +3744,7 @@ def overlapICP(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1, medi
 				xP.append(p1[0])	
 				yP.append(p1[1])
 			
-			pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+			axes2.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
 
 
 			xP = []
@@ -3703,7 +3757,7 @@ def overlapICP(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1, medi
 				xP.append(p1[0])	
 				yP.append(p1[1])
 
-			pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
+			axes2.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
 
 			xP = []
 			yP = []
@@ -3715,20 +3769,98 @@ def overlapICP(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1, medi
 				xP.append(p1[0])	
 				yP.append(p1[1])
 
-			pylab.plot(xP,yP,linewidth=1, color=(1.0,0.5,0.5))
+			axes2.plot(xP,yP,linewidth=1, color=(1.0,0.5,0.5))
 
-			plotEnv()		
+			plotEnv(axes2)		
 			
-			pylab.title("%s %s, ang = %1.3f" % (repr(n1), repr(n2), currAng))
-			pylab.xlim(estPose1[0]-4, estPose1[0]+4)					
-			pylab.ylim(estPose1[1]-3, estPose1[1]+3)
-			pylab.savefig("ICP_plot_%04u_0.png" % numIterations)
+			axes2.set_title("%s %s, ang = %1.3f" % (repr(n1), repr(n2), currAng))
+			axes2.set_xlim(estPose1[0]-4, estPose1[0]+4)					
+			axes2.set_ylim(estPose1[1]-3, estPose1[1]+3)
+			
+
+			axes1 = fig1.add_subplot(121)
+			axes1.grid(True)
+			
+			
+			
+
+			
+			#pylab.subplot(122)
+			#pylab.xlim(-4,4)
+			#pylab.ylim(-4,4)
+			
+			tPoints1 = medialSpline1.getTransformCurve()
+			#tPoints2 = medialSpline2.getTransformCurve()
+			medialPoints2_gnd = []
+			for b in medialPoints2:
+				p = [b[0],b[1]]
+				p = dispOffset(p,gndOffset)
+				
+				#p1 = poseOrigin.convertLocalToGlobal(p)
+				medialPoints2_gnd.append(p)
+
+			medialSpline2_gnd = SplineFit(medialPoints2_gnd, smooth=0.1)
+			tPoints2_gnd = medialSpline2_gnd.getTransformCurve()
+
+			medialPoints2_trans = []
+			for b in medialPoints2:
+				p = [b[0],b[1]]
+				p = dispOffset(p,offset)
+				
+				#p1 = poseOrigin.convertLocalToGlobal(p)
+				medialPoints2_trans.append(p)
+
+			medialSpline2_trans = SplineFit(medialPoints2_trans, smooth=0.1)
+			tPoints2_trans = medialSpline2_trans.getTransformCurve()
+
+
+
+			dist1 = medialSpline1.dist(0.0, u1, iter = 0.005)	
+
+			xP = []
+			yP = []
+			for p in tPoints1:
+				xP.append(p[0]+2.0)
+				yP.append(p[1])
+			axes1.plot(xP,yP, color='b')
+
+			dist2 = medialSpline1.dist(0.0, currU, iter = 0.005)				
+
+			xP = []
+			yP = []
+			for p in tPoints2_trans:
+				xP.append(p[0]+dist1-dist2+2.0)
+				yP.append(p[1])
+			axes1.plot(xP,yP, color='r')
+
+			#xP = []
+			#yP = []
+			#for p in tPoints2_gnd:
+			#	xP.append(p[0])
+			#	yP.append(p[1])
+			#axes1.plot(xP,yP, color=(1.0,0.5,0.5))
+			
+			axes1.set_xlabel("distance")
+			axes1.set_ylabel("angle (radians)")
+			axes1.set_xlim(0,10)
+			axes1.set_ylim(-4,4)		
+			
+			#fig1.set_size_inches(12,6)
+
+
+			#fig1 = pylab.gcf()
+			#fig1.set_size_inches(12,6)
+			fig1.savefig("ICP_plot_%04u_0.png" % numIterations)
+			#fig1.set_size_inches(8,6)
 			pylab.clf()			
+			
+			pylab.figure(1)
+	
 			
 			numIterations += 1
 	
 		
-		return offset, (0,0,0)
+		#return offset, (0,0,0)
 
 
 	while True:
@@ -4182,7 +4314,172 @@ def overlapICP(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1, medi
 		#	minMatchDist = 0.25
 	
 	if True:
+
+		" set the origin of pose 1 "
+		poseOrigin = Pose(estPose1)
+
+		fig1 = pylab.figure(2)
+		fig1.clf()
+
+		axes2 = fig1.add_subplot(122)
+
+		xP = []
+		yP = []
+		for b in poly1:
+			p1 = poseOrigin.convertLocalToGlobal(b)
+
+			xP.append(p1[0])	
+			yP.append(p1[1])
+
+		axes2.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+
+		xP = []
+		yP = []
+		for b in points2:
+			p = [b[0],b[1]]
+			p = dispOffset(p,offset)
+			
+			p1 = poseOrigin.convertLocalToGlobal(p)
+			xP.append(p1[0])	
+			yP.append(p1[1])
+
+		axes2.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
+
+		xP = []
+		yP = []
+		for b in points2:
+			p = [b[0],b[1]]
+			p = dispOffset(p,gndOffset)
+			
+			p1 = poseOrigin.convertLocalToGlobal(p)
+			xP.append(p1[0])	
+			yP.append(p1[1])
+
+		axes2.plot(xP,yP,linewidth=1, color=(1.0,0.5,0.5))
+
+		point2_trans = dispOffset(point2, offset)
+		p1 = poseOrigin.convertLocalToGlobal(point1)
+		p2 = poseOrigin.convertLocalToGlobal(point2_trans)
+
+		xP = [p1[0],p2[0]]
+		yP = [p1[1],p2[1]]
+		axes2.scatter(xP,yP,color='b')
+
+
+		gpac2_trans = dispOffset(rootPose1, offset)
+		gpac1 = poseOrigin.convertLocalToGlobal(rootPose2)
+		gpac2 = poseOrigin.convertLocalToGlobal(gpac2_trans)
+
+		xP = [gpac1[0],gpac2[0]]
+		yP = [gpac1[1],gpac2[1]]
+		axes2.scatter(xP,yP,color='r')
+
+
+		xP = []
+		yP = []
+		for b in polyB:
+			p1 = poseOrigin.convertLocalToGlobal(b)
+
+			xP.append(p1[0])	
+			yP.append(p1[1])
 		
+		axes2.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+
+
+		xP = []
+		yP = []
+		for b in a_data_raw:
+			p = [b[0],b[1]]
+			p = dispOffset(p,offset)
+			
+			p1 = poseOrigin.convertLocalToGlobal(p)
+			xP.append(p1[0])	
+			yP.append(p1[1])
+
+		axes2.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
+
+		xP = []
+		yP = []
+		for b in a_data_raw:
+			p = [b[0],b[1]]
+			p = dispOffset(p,gndOffset)
+			
+			p1 = poseOrigin.convertLocalToGlobal(p)
+			xP.append(p1[0])	
+			yP.append(p1[1])
+
+		axes2.plot(xP,yP,linewidth=1, color=(1.0,0.5,0.5))
+
+		plotEnv(axes2)		
+		
+		axes2.set_title("%s %s, ang = %1.3f" % (repr(n1), repr(n2), currAng))
+		axes2.set_xlim(estPose1[0]-4, estPose1[0]+4)					
+		axes2.set_ylim(estPose1[1]-3, estPose1[1]+3)
+		
+
+		axes1 = fig1.add_subplot(121)
+		axes1.grid(True)
+
+		tPoints1 = medialSpline1.getTransformCurve()
+		#tPoints2 = medialSpline2.getTransformCurve()
+		medialPoints2_gnd = []
+		for b in medialPoints2:
+			p = [b[0],b[1]]
+			p = dispOffset(p,gndOffset)
+			
+			#p1 = poseOrigin.convertLocalToGlobal(p)
+			medialPoints2_gnd.append(p)
+
+		medialSpline2_gnd = SplineFit(medialPoints2_gnd, smooth=0.1)
+		tPoints2_gnd = medialSpline2_gnd.getTransformCurve()
+
+		medialPoints2_trans = []
+		for b in medialPoints2:
+			p = [b[0],b[1]]
+			p = dispOffset(p,offset)
+			
+			#p1 = poseOrigin.convertLocalToGlobal(p)
+			medialPoints2_trans.append(p)
+
+		medialSpline2_trans = SplineFit(medialPoints2_trans, smooth=0.1)
+		tPoints2_trans = medialSpline2_trans.getTransformCurve()
+
+		dist1 = medialSpline1.dist(0.0, u1, iter = 0.005)	
+
+		xP = []
+		yP = []
+		for p in tPoints1:
+			xP.append(p[0]+2.0)
+			yP.append(p[1])
+		axes1.plot(xP,yP, color='b')
+
+		dist2 = medialSpline1.dist(0.0, currU, iter = 0.005)				
+
+		xP = []
+		yP = []
+		for p in tPoints2_trans:
+			xP.append(p[0]+dist1-dist2+2.0)
+			yP.append(p[1])
+		axes1.plot(xP,yP, color='r')
+
+
+
+		#xP = []
+		#yP = []
+		#for p in tPoints2_gnd:
+		#	xP.append(p[0])
+		#	yP.append(p[1])
+		#axes1.plot(xP,yP, color=(1.0,0.5,0.5))
+		
+		axes1.set_xlabel("distance")
+		axes1.set_ylabel("angle (radians)")
+		axes1.set_xlim(0,10)
+		axes1.set_ylim(-4,4)		
+
+		fig1.savefig("ICP_plot_%04u_0.png" % numIterations)
+		pylab.clf()			
+		pylab.figure(1)
+		"""
 		" set the origin of pose 1 "
 		poseOrigin = Pose(estPose1)
 
@@ -4297,7 +4594,8 @@ def overlapICP(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1, medi
 		pylab.xlim(estPose1[0]-4, estPose1[0]+4)					
 		pylab.ylim(estPose1[1]-3, estPose1[1]+3)
 		pylab.savefig("ICP_plot_%04u_1.png" % numIterations)
-		pylab.clf()			
+		pylab.clf()		
+		"""	
 		numIterations += 1
 
 
@@ -4481,58 +4779,6 @@ def globalOverlapICP(initGuess, globalPath, hull, medialPoints,  plotIter = Fals
 		#if plotIter and startIteration == numIterations:
 		if plotIter:
 			
-			" set the origin of pose 1 "
-			poseOrigin = Pose(currPose)
-	
-			pylab.clf()
-			pylab.axes()
-			match_global = []
-			
-			for pair in match_pairs:
-				p1 = pair[0]
-				p2 = pair[1]
-				
-				p1_o = dispOffset(p1, currPose)
-				
-				p1_g = p1_o
-				p2_g = p2
-				match_global.append([p1_g,p2_g])
-
-			draw_matches(match_global, [0.0,0.0,0.0])
-
-			
-			xP = []
-			yP = []
-			for b in globalPoly:
-				p1 = b
-				xP.append(p1[0])	
-				yP.append(p1[1])
-	
-			pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
-
-			pylab.scatter([globalPoly[0][0]],[globalPoly[0][1]],color=(0.0,0.0,1.0))
-
-			#center1Global = poseOrigin.convertLocalToGlobal(center1)
-			#cir = pylab.Circle((center1Global[0],center1Global[1]), radius=radius1,  ec='b', fc='none')
-			#pylab.gca().add_patch(cir)
-
-
-			xP = []
-			yP = []
-			for b in points:
-				p = [b[0],b[1]]
-				p1 = dispOffset(p,currPose)
-				
-				#p1 = poseOrigin.convertLocalToGlobal(p)
-				xP.append(p1[0])	
-				yP.append(p1[1])
-
-			pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
-
-			u0 = points[0]
-			u0L = dispOffset(u0,currPose)
-
-			pylab.scatter([u0L[0]],[u0L[1]],color=(1.0,0.0,0.0))
 
 			#center2Global = poseOrigin.convertLocalToGlobal(center2)
 			#cir = pylab.Circle((center2Global[0],center2Global[1]), radius=radius2,  ec='r', fc='none')
@@ -4566,6 +4812,53 @@ def globalOverlapICP(initGuess, globalPath, hull, medialPoints,  plotIter = Fals
 			pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
 			"""
 
+			fig1 = pylab.figure(2)
+			fig1.clf()
+
+			axes2 = fig1.add_subplot(122)
+
+			match_global = []
+			
+			for pair in match_pairs:
+				p1 = pair[0]
+				p2 = pair[1]
+				
+				p1_o = dispOffset(p1, currPose)
+				
+				p1_g = p1_o
+				p2_g = p2
+				match_global.append([p1_g,p2_g])
+
+			draw_matches(match_global, [0.0,0.0,0.0], axes2)
+
+			
+			xP = []
+			yP = []
+			for b in globalPoly:
+				p1 = b
+				xP.append(p1[0])	
+				yP.append(p1[1])
+	
+			axes2.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+
+			axes2.scatter([globalPoly[0][0]],[globalPoly[0][1]],color=(0.0,0.0,1.0))
+
+			xP = []
+			yP = []
+			for b in points:
+				p = [b[0],b[1]]
+				p1 = dispOffset(p,currPose)
+				
+				xP.append(p1[0])	
+				yP.append(p1[1])
+
+			axes2.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
+
+			u0 = points[0]
+			u0L = dispOffset(u0,currPose)
+
+			axes2.scatter([u0L[0]],[u0L[1]],color=(1.0,0.0,0.0))
+
 			xP = []
 			yP = []
 			for b in a_data_raw:
@@ -4576,19 +4869,71 @@ def globalOverlapICP(initGuess, globalPath, hull, medialPoints,  plotIter = Fals
 				xP.append(p1[0])	
 				yP.append(p1[1])
 
-			pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
+			axes2.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
+
+
 
 			
-			plotEnv()		
-			cost = medialOverlapCostFunc([currU, currAng], match_pairs, globalSpline, medialSpline, uHigh, uLow, u1)
-			
-			#pylab.title("%u %u, u1 = %1.3f, u2 = %1.3f, ang = %1.3f" % (n1, n2, u1, currU, currAng))
-			pylab.title("%u, u1 = %1.3f, u2 = %1.3f, ang = %1.3f, cost = %f" % (n1, u1, currU, currAng, cost))
+			cost = medialOverlapCostFunc([currU, currAng], match_pairs, globalSpline, medialSpline, uHigh, uLow, u1)			
 
-			pylab.xlim(currPose[0]-4, currPose[0]+4)					
-			pylab.ylim(currPose[1]-3, currPose[1]+3)
-			pylab.savefig("ICP_plot_%04u_0.png" % numIterations)
+			plotEnv(axes2)					
+			axes2.set_title("%u, u1 = %1.3f, u2 = %1.3f, ang = %1.3f, cost = %f" % (n1, u1, currU, currAng, cost))
+
+			#axes2.set_title("%s %s, ang = %1.3f" % (repr(n1), repr(n2), currAng))
+			axes2.set_xlim(currPose[0]-4, currPose[0]+4)					
+			axes2.set_ylim(currPose[1]-3, currPose[1]+3)
+			
+
+			axes1 = fig1.add_subplot(121)
+			axes1.grid(True)
+			
+			gPoints = globalSpline.getTransformCurve()
+			angOffset = -gPoints[0][1]
+			gPoints = globalSpline.getTransformCurve(angOffset)
+
+			dist1 = globalSpline.dist(0.0, u1, iter = 0.005)				
+
+			xP = []
+			yP = []
+			for p in gPoints:
+				xP.append(p[0])
+				yP.append(p[1])
+			axes1.plot(xP,yP, color='b')
+
+			medialPoints_trans = []
+			for b in medialPoints:
+				p = [b[0],b[1]]
+				p = dispOffset(p,currPose)
+				
+				medialPoints_trans.append(p)
+
+			medialSpline_trans = SplineFit(medialPoints_trans, smooth=0.1)
+			tPoints2_trans = medialSpline_trans.getTransformCurve(offset = angOffset, compareAngle = gPoints[0][1])
+
+
+
+
+			dist2 = medialSpline_trans.dist(0.0, currU, iter = 0.005)	
+
+			xP = []
+			yP = []
+			for p in tPoints2_trans:
+				xP.append(p[0]+dist1-dist2)
+				yP.append(p[1])
+			axes1.plot(xP,yP, color='r')
+
+			
+			axes1.set_xlabel("distance")
+			axes1.set_ylabel("angle (radians)")
+			axes1.set_xlim(-2,10)
+			axes1.set_ylim(-6,6)		
+
+			fig1.savefig("ICP_plot_%04u_0.png" % numIterations)
 			pylab.clf()			
+			
+			pylab.figure(1)			
+			
+
 
 		#newParam = scipy.optimize.fmin(medialOverlapCostFunc, [currU,currAng], [match_pairs, localSpline, medialSpline, uHigh, uLow, u1], disp = 0)
 		newParam = scipy.optimize.fmin(medialOverlapCostFunc, [currU,currAng], [match_pairs, globalSpline, medialSpline, uHigh, uLow, u1], disp = 0)
@@ -4666,11 +5011,12 @@ def globalOverlapICP(initGuess, globalPath, hull, medialPoints,  plotIter = Fals
 		# optionally draw the position of the points in current transform
 		if plotIter:
 			
-			" set the origin of pose 1 "
-			poseOrigin = Pose(currPose)
-			
-			pylab.clf()
-			pylab.axes()
+
+			fig1 = pylab.figure(2)
+			fig1.clf()
+
+			axes2 = fig1.add_subplot(122)
+
 			match_global = []
 			
 			for pair in match_pairs:
@@ -4683,7 +5029,7 @@ def globalOverlapICP(initGuess, globalPath, hull, medialPoints,  plotIter = Fals
 				p2_g = p2
 				match_global.append([p1_g,p2_g])
 
-			draw_matches(match_global, [0.0,0.0,0.0])
+			draw_matches(match_global, [0.0,0.0,0.0], axes2)
 
 			
 			xP = []
@@ -4693,14 +5039,9 @@ def globalOverlapICP(initGuess, globalPath, hull, medialPoints,  plotIter = Fals
 				xP.append(p1[0])	
 				yP.append(p1[1])
 	
-			pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+			axes2.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
 
-			pylab.scatter([globalPoly[0][0]],[globalPoly[0][1]],color=(0.0,0.0,1.0))
-
-			#center1Global = poseOrigin.convertLocalToGlobal(center1)
-			#cir = pylab.Circle((center1Global[0],center1Global[1]), radius=radius1,  ec='b', fc='none')
-			#pylab.gca().add_patch(cir)
-
+			axes2.scatter([globalPoly[0][0]],[globalPoly[0][1]],color=(0.0,0.0,1.0))
 
 			xP = []
 			yP = []
@@ -4708,48 +5049,15 @@ def globalOverlapICP(initGuess, globalPath, hull, medialPoints,  plotIter = Fals
 				p = [b[0],b[1]]
 				p1 = dispOffset(p,currPose)
 				
-				#p1 = poseOrigin.convertLocalToGlobal(p)
 				xP.append(p1[0])	
 				yP.append(p1[1])
 
-			pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
+			axes2.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
 
 			u0 = points[0]
 			u0L = dispOffset(u0,currPose)
 
-			pylab.scatter([u0L[0]],[u0L[1]],color=(1.0,0.0,0.0))
-
-			#center2Global = poseOrigin.convertLocalToGlobal(center2)
-			#cir = pylab.Circle((center2Global[0],center2Global[1]), radius=radius2,  ec='r', fc='none')
-			#pylab.gca().add_patch(cir)
-
-
-			#point_trans = dispOffset(point2, offset)
-			#p1 = point1
-			#p2 = poseOrigin.convertLocalToGlobal(point_trans)
-
-			#xP = [p1[0],p2[0]]
-			#yP = [p1[1],p2[1]]
-			#pylab.scatter(xP,yP,color='b')
-
-
-			#gpac2_trans = dispOffset(rootPose1, offset)
-			#gpac1 = poseOrigin.convertLocalToGlobal(rootPose2)
-			#gpac2 = poseOrigin.convertLocalToGlobal(gpac2_trans)
-			#xP = [gpac1[0],gpac2[0]]
-			#yP = [gpac1[1],gpac2[1]]
-			#pylab.scatter(xP,yP,color='r')
-
-
-			"""
-			xP = []
-			yP = []
-			for p1 in globalPath:
-				xP.append(p1[0])	
-				yP.append(p1[1])
-			
-			pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
-			"""
+			axes2.scatter([u0L[0]],[u0L[1]],color=(1.0,0.0,0.0))
 
 			xP = []
 			yP = []
@@ -4761,19 +5069,67 @@ def globalOverlapICP(initGuess, globalPath, hull, medialPoints,  plotIter = Fals
 				xP.append(p1[0])	
 				yP.append(p1[1])
 
-			pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
+			axes2.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
 
-			plotEnv()		
+
+
 			
-			#lowCount, midCount, highCount = overlapHistogram([currU,currAng], match_pairs, medialSpline1, medialSpline2, u1)			
-			#pylab.title("%u %u, u1 = %1.3f, u2 = %1.3f, ang = %1.3f, hist = %d %d %d" % (n1, n2, u1, currU, currAng, lowCount, midCount, highCount))
+			cost = medialOverlapCostFunc([currU, currAng], match_pairs, globalSpline, medialSpline, uHigh, uLow, u1)			
 
-			pylab.title("%u, u1 = %1.3f, u2 = %1.3f, ang = %1.3f, cost = %f" % (n1, u1, currU, currAng, newCost))
+			plotEnv(axes2)					
+			axes2.set_title("%u, u1 = %1.3f, u2 = %1.3f, ang = %1.3f, cost = %f" % (n1, u1, currU, currAng, cost))
 
-			pylab.xlim(currPose[0]-4, currPose[0]+4)					
-			pylab.ylim(currPose[1]-3, currPose[1]+3)
-			pylab.savefig("ICP_plot_%04u_1.png" % numIterations)
+			#axes2.set_title("%s %s, ang = %1.3f" % (repr(n1), repr(n2), currAng))
+			axes2.set_xlim(currPose[0]-4, currPose[0]+4)					
+			axes2.set_ylim(currPose[1]-3, currPose[1]+3)
+			
+
+			axes1 = fig1.add_subplot(121)
+			axes1.grid(True)
+			
+			gPoints = globalSpline.getTransformCurve()
+			angOffset = -gPoints[0][1]
+			gPoints = globalSpline.getTransformCurve(angOffset)
+
+			dist1 = globalSpline.dist(0.0, u1, iter = 0.005)				
+
+			xP = []
+			yP = []
+			for p in gPoints:
+				xP.append(p[0])
+				yP.append(p[1])
+			axes1.plot(xP,yP, color='b')
+
+			medialPoints_trans = []
+			for b in medialPoints:
+				p = [b[0],b[1]]
+				p = dispOffset(p,currPose)
+				
+				medialPoints_trans.append(p)
+
+			medialSpline_trans = SplineFit(medialPoints_trans, smooth=0.1)
+			#tPoints2_trans = medialSpline_trans.getTransformCurve(angOffset)
+			tPoints2_trans = medialSpline_trans.getTransformCurve(offset = angOffset, compareAngle = gPoints[0][1])
+
+			dist2 = medialSpline_trans.dist(0.0, currU, iter = 0.005)	
+
+			xP = []
+			yP = []
+			for p in tPoints2_trans:
+				xP.append(p[0]+dist1-dist2)
+				yP.append(p[1])
+			axes1.plot(xP,yP, color='r')
+
+			
+			axes1.set_xlabel("distance")
+			axes1.set_ylabel("angle (radians)")
+			axes1.set_xlim(-2,10)
+			axes1.set_ylim(-6,6)		
+
+			fig1.savefig("ICP_plot_%04u_0.png" % numIterations)
 			pylab.clf()			
+			
+			pylab.figure(1)			
 
 		
 		numIterations += 1
@@ -4781,77 +5137,77 @@ def globalOverlapICP(initGuess, globalPath, hull, medialPoints,  plotIter = Fals
 		if isTerminate:
 			break
 
-		" draw final position "
-		if True:
+	" draw final position "
+	if False:
+		
+		" set the origin of pose 1 "
+		poseOrigin = Pose(currPose)
+		
+		pylab.clf()
+		pylab.axes()
+		match_global = []
+		
+		for pair in match_pairs:
+			p1 = pair[0]
+			p2 = pair[1]
 			
-			" set the origin of pose 1 "
-			poseOrigin = Pose(currPose)
+			p1_o = dispOffset(p1, currPose)
 			
-			pylab.clf()
-			pylab.axes()
-			match_global = []
+			p1_g = p1_o
+			p2_g = p2
+			match_global.append([p1_g,p2_g])
+
+		draw_matches(match_global, [0.0,0.0,0.0])
+
+		
+		xP = []
+		yP = []
+		for b in globalPoly:
+			p1 = b
+			xP.append(p1[0])	
+			yP.append(p1[1])
+
+		pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+
+		pylab.scatter([globalPoly[0][0]],[globalPoly[0][1]],color=(0.0,0.0,1.0))
+
+		xP = []
+		yP = []
+		for b in points:
+			p = [b[0],b[1]]
+			p1 = dispOffset(p,currPose)
 			
-			for pair in match_pairs:
-				p1 = pair[0]
-				p2 = pair[1]
-				
-				p1_o = dispOffset(p1, currPose)
-				
-				p1_g = p1_o
-				p2_g = p2
-				match_global.append([p1_g,p2_g])
+			#p1 = poseOrigin.convertLocalToGlobal(p)
+			xP.append(p1[0])	
+			yP.append(p1[1])
 
-			draw_matches(match_global, [0.0,0.0,0.0])
+		pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
 
+		u0 = points[0]
+		u0L = dispOffset(u0,currPose)
+
+		pylab.scatter([u0L[0]],[u0L[1]],color=(1.0,0.0,0.0))
+
+		xP = []
+		yP = []
+		for b in a_data_raw:
+			p = [b[0],b[1]]
+			p1 = dispOffset(p,currPose)
 			
-			xP = []
-			yP = []
-			for b in globalPoly:
-				p1 = b
-				xP.append(p1[0])	
-				yP.append(p1[1])
-	
-			pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+			#p1 = poseOrigin.convertLocalToGlobal(p)
+			xP.append(p1[0])	
+			yP.append(p1[1])
 
-			pylab.scatter([globalPoly[0][0]],[globalPoly[0][1]],color=(0.0,0.0,1.0))
+		pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
 
-			xP = []
-			yP = []
-			for b in points:
-				p = [b[0],b[1]]
-				p1 = dispOffset(p,currPose)
-				
-				#p1 = poseOrigin.convertLocalToGlobal(p)
-				xP.append(p1[0])	
-				yP.append(p1[1])
+		plotEnv()		
+		pylab.title("%u, u1 = %1.3f, u2 = %1.3f, ang = %1.3f, cost = %f" % (n1, u1, currU, currAng, newCost))
 
-			pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
-
-			u0 = points[0]
-			u0L = dispOffset(u0,currPose)
-
-			pylab.scatter([u0L[0]],[u0L[1]],color=(1.0,0.0,0.0))
-
-			xP = []
-			yP = []
-			for b in a_data_raw:
-				p = [b[0],b[1]]
-				p1 = dispOffset(p,currPose)
-				
-				#p1 = poseOrigin.convertLocalToGlobal(p)
-				xP.append(p1[0])	
-				yP.append(p1[1])
-
-			pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
-
-			plotEnv()		
-			pylab.title("%u, u1 = %1.3f, u2 = %1.3f, ang = %1.3f, cost = %f" % (n1, u1, currU, currAng, newCost))
-
-			pylab.xlim(currPose[0]-4, currPose[0]+4)					
-			pylab.ylim(currPose[1]-3, currPose[1]+3)
-			pylab.savefig("ICP_plot_%04u_1.png" % numIterations)
-			pylab.clf()			
-			numIterations += 1
+		pylab.xlim(currPose[0]-4, currPose[0]+4)					
+		pylab.ylim(currPose[1]-3, currPose[1]+3)
+		pylab.savefig("ICP_plot_%04u_1.png" % numIterations)
+		pylab.clf()			
+		numIterations += 1
 		
 	#histogram = overlapHistogram([currU,currAng], match_pairs, medialSpline1, medialSpline2, u1)			
 
@@ -4861,6 +5217,552 @@ def globalOverlapICP(initGuess, globalPath, hull, medialPoints,  plotIter = Fals
 	return currPose, newCost
 	#return offset
 	#return offset, histogram
+
+def globalOverlapTransformICP(initGuess, globalPath, hull, medialPoints,  plotIter = False, n1 = 0, n2 = 0):
+
+	global numIterations
+	
+	def computeOffset(point1, point2, ang1, ang2):
+	
+		" corner points and orientations "
+		corner1Pose = [point1[0], point1[1], ang1]
+		corner2Pose = [point2[0], point2[1], ang2]
+		
+		" convert the desired intersection point on curve 1 into global coordinates "
+		poseProfile1 = Pose([0.0,0.0,0.0])
+			
+		" now convert this point into a pose, and perform the inverse transform using corner2Pose "
+		desGlobalPose2 = Pose(corner1Pose)
+		
+		" perform inverse offset from the destination pose "
+		negCurve2Pose = desGlobalPose2.doInverse(corner2Pose)
+		
+		" relative pose between pose 1 and pose 2 to make corners coincide and same angle "
+		resPose2 = desGlobalPose2.convertLocalOffsetToGlobal(negCurve2Pose)
+		localOffset = poseProfile1.convertGlobalPoseToLocal(resPose2)
+		
+		return [localOffset[0], localOffset[1], localOffset[2]]
+
+	u1 = initGuess[0]
+	u2 = initGuess[1]
+
+	uHigh = u2 + 0.2
+	uLow = u2 - 0.2
+
+	currU = u2
+	currAng = initGuess[2]
+	
+	globalSpline = SplineFit(globalPath, smooth=0.1)
+	medialSpline = SplineFit(medialPoints, smooth=0.1)
+
+	if u1+0.02 > 1.0:
+		pose1 = globalSpline.getUVecSet([0.98, 1.0])[0]
+	elif u1 < 0.0:
+		pose1 = globalSpline.getUVecSet([0.0, 0.02])[0]
+	else:
+		pose1 = globalSpline.getUVecSet([u1, u1+0.02])[0]
+
+	if currU+0.02 > 1.0:
+		pose2 = medialSpline.getUVecSet([0.98, 1.0])[0]
+	elif currU < 0.0:
+		pose2 = medialSpline.getUVecSet([0.0, 0.02])[0]
+	else:
+		pose2 = medialSpline.getUVecSet([currU, currU + 0.02])[0]
+	
+	point1 = [pose1[0],pose1[1]]
+	point2 = [pose2[0],pose2[1]]
+	ang1 = pose1[2]
+	ang2 = pose2[2]
+
+	currPose = computeOffset(point1, point2, ang1, ang2 + currAng)
+
+	" transform the new pose "
+	a_data_raw = hull
+	a_data = []
+	for p in a_data_raw:
+		result = dispOffset(p, currPose)		
+		a_data.append(result)	
+	
+	costThresh = 0.004
+	minMatchDist = 2.0
+	lastCost = 1e100
+	
+	startIteration = numIterations
+
+	" sample a series of points from the medial curves "
+	" augment points with point-to-line covariances "
+	" treat the points with the point-to-line constraint "
+	globalPoints = addGPACVectorCovariance(globalSpline.getUniformSamples(),high_var=0.05, low_var = 0.05)
+	points = addGPACVectorCovariance(medialSpline.getUniformSamples(),high_var=0.05, low_var = 0.05)
+
+	globalPoly = []		
+	for p in globalPoints:
+		globalPoly.append([p[0],p[1]])	
+
+
+	" arc-angle transform points "
+	gPoints = globalSpline.getTransformCurve()
+	arcDist1 = globalSpline.dist(0.0, u1, iter = 0.005)				
+	angOffset = -gPoints[0][1]
+	gPointsOffset = globalSpline.getTransformCurve(angOffset)
+
+
+	gPointHash = {}
+	maxArcDist = gPoints[-1][0]
+	minArcDist = 0.0
+
+	" divide into boxes of 0.1 "
+	for p in gPoints:
+		thisDist = p[0]
+		index = math.floor(thisDist*10)
+		try:
+			gPointHash[index].append(copy(p))
+		except:
+			gPointHash[index] = [copy(p)]
+
+
+	medialPoints_trans = []
+	for b in medialPoints:
+		p = [b[0],b[1]]
+		p = dispOffset(p,currPose)
+		
+		medialPoints_trans.append(p)
+
+	medialSpline_trans = SplineFit(medialPoints_trans, smooth=0.1)
+	tPoints2_trans = medialSpline_trans.getTransformCurve(compareAngle = gPoints[0][1])
+
+	arcDist2 = medialSpline_trans.dist(0.0, currU, iter = 0.005)	
+
+	currAngOffset = 0.0
+	currArcDist = arcDist2
+
+	while True:
+		
+		" find the matching pairs "
+		match_pairs = []
+
+		" transform the target Hull with the latest offset "
+		points_offset = []
+		for p in points:
+			result = dispPoint(p, currPose)		
+			points_offset.append(result)
+		
+		" transformed points without associated covariance "
+		posePoly = []
+		for p in points_offset:
+			posePoly.append([p[0],p[1]])	
+		
+		" get the circles and radii "
+		radius2, center2 = computeEnclosingCircle(points_offset)
+
+		for i in range(len(globalPoints)):
+			p_1 = globalPoly[i]
+	
+			if isInCircle(p_1, radius2, center2):
+		
+				" for every point of B, find it's closest neighbor in transformed A "
+				p_2, i_2, minDist = findClosestPointInA(points_offset, p_1)
+	
+				if minDist <= minMatchDist:
+		
+					" add to the list of match pairs less than 1.0 distance apart "
+					" keep A points and covariances untransformed "
+					C2 = points[i_2][2]
+					
+					C1 = globalPoints[i][2]
+	
+					" we store the untransformed point, but the transformed covariance of the A point "
+					match_pairs.append([points[i_2],globalPoints[i],C2,C1])
+
+		if plotIter:
+
+			fig1 = pylab.figure(2)
+			fig1.clf()
+
+			axes2 = fig1.add_subplot(122)
+
+			match_global = []
+			
+			for pair in match_pairs:
+				p1 = pair[0]
+				p2 = pair[1]
+				
+				p1_o = dispOffset(p1, currPose)
+				
+				p1_g = p1_o
+				p2_g = p2
+				match_global.append([p1_g,p2_g])
+
+			draw_matches(match_global, [0.0,0.0,0.0], axes2)
+
+			
+			xP = []
+			yP = []
+			for b in globalPoly:
+				p1 = b
+				xP.append(p1[0])	
+				yP.append(p1[1])
+	
+			axes2.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+
+			axes2.scatter([globalPoly[0][0]],[globalPoly[0][1]],color=(0.0,0.0,1.0))
+
+			xP = []
+			yP = []
+			for b in points:
+				p = [b[0],b[1]]
+				p1 = dispOffset(p,currPose)
+				
+				xP.append(p1[0])	
+				yP.append(p1[1])
+
+			axes2.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
+
+			u0 = points[0]
+			u0L = dispOffset(u0,currPose)
+
+			axes2.scatter([u0L[0]],[u0L[1]],color=(1.0,0.0,0.0))
+
+			xP = []
+			yP = []
+			for b in a_data_raw:
+				p = [b[0],b[1]]
+				p1 = dispOffset(p,currPose)
+				
+				#p1 = poseOrigin.convertLocalToGlobal(p)
+				xP.append(p1[0])	
+				yP.append(p1[1])
+
+			axes2.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
+			
+			cost = medialOverlapCostFunc([currU, currAng], match_pairs, globalSpline, medialSpline, uHigh, uLow, u1)			
+
+			plotEnv(axes2)					
+			axes2.set_title("%u, u1 = %1.3f, u2 = %1.3f, ang = %1.3f, cost = %f" % (n1, u1, currU, currAng, cost))
+
+			axes2.set_xlim(currPose[0]-4, currPose[0]+4)					
+			axes2.set_ylim(currPose[1]-3, currPose[1]+3)
+		
+
+			axes1 = fig1.add_subplot(121)
+			axes1.grid(True)
+			
+			#gPoints = globalSpline.getTransformCurve()
+			#angOffset = -gPoints[0][1]
+			#gPointsOffset = globalSpline.getTransformCurve(angOffset)
+
+			#dist1 = globalSpline.dist(0.0, u1, iter = 0.005)				
+
+			xP = []
+			yP = []
+			for p in gPointsOffset:
+				xP.append(p[0])
+				yP.append(p[1])
+			axes1.plot(xP,yP, color='b')
+
+			#medialPoints_trans = []
+			#for b in medialPoints:
+			#	p = [b[0],b[1]]
+			#	p = dispOffset(p,currPose)
+			#	
+			#	medialPoints_trans.append(p)
+
+			medialSpline_trans = SplineFit(medialPoints_trans, smooth=0.1)
+			tPointsTemp = medialSpline_trans.getTransformCurve(offset = angOffset, compareAngle = gPointsOffset[0][1])
+
+
+
+
+			#dist2 = medialSpline_trans.dist(0.0, currU, iter = 0.005)	
+
+			xP = []
+			yP = []
+			for p in tPointsTemp:
+				xP.append(p[0]+arcDist1-currArcDist)
+				yP.append(p[1])
+			axes1.plot(xP,yP, color='r')
+
+
+			thisCost = medialOverlapTransformCostFunc([currArcDist,currAngOffset], gPointHash, tPoints2_trans, arcDist1)
+			
+			axes1.set_title("dist,ang,cost = %1.3f,%1.3f,%1.3f" % (currArcDist, currAngOffset, thisCost))
+			axes1.set_xlabel("distance")
+			axes1.set_ylabel("angle (radians)")
+			axes1.set_xlim(-2,10)
+			axes1.set_ylim(-6,6)		
+
+			fig1.savefig("ICP_plot_%04u_0.png" % numIterations)
+			pylab.clf()			
+			
+			pylab.figure(1)			
+			
+			numIterations += 1
+
+		"""
+		gPoints
+		arcDist1
+		gPointHash
+		tPoints2_trans
+		arcDist2
+		currAngOffset
+		currArcDist
+		"""
+
+		newParam = scipy.optimize.fmin(medialOverlapTransformCostFunc, [currArcDist,currAngOffset], [gPointHash, tPoints2_trans, arcDist1], disp = 0)
+
+		newArcDist = newParam[0]
+		newAngOffset = newParam[1]
+		
+		newCost = medialOverlapTransformCostFunc([currArcDist,currAngOffset], gPointHash, tPoints2_trans, arcDist1)
+
+		currArcDist = newArcDist
+		currAngOffset = newAngOffset
+
+
+		dist1 = globalSpline.dist(0.0, u1, iter = 0.005)				
+		dist2 = medialSpline_trans.dist(0.0, currU, iter = 0.005)	
+		xP.append(p[0]+dist1-dist2)
+
+		currU = medialSpline.getUOfDist(0.0, currArcDist, distIter = 0.001)
+
+		currAng = initGuess[2] + currAngOffset 
+		
+		if u1+0.02 > 1.0:
+			pose1 = globalSpline.getUVecSet([0.98, 1.0])[0]
+		elif u1 < 0.0:
+			pose1 = globalSpline.getUVecSet([0.0, 0.02])[0]
+		else:
+			pose1 = globalSpline.getUVecSet([u1, u1+0.02])[0]
+	
+		if currU+0.02 > 1.0:
+			pose2 = medialSpline.getUVecSet([0.98, 1.0])[0]
+		elif currU < 0.0:
+			pose2 = medialSpline.getUVecSet([0.0, 0.02])[0]
+		else:
+			pose2 = medialSpline.getUVecSet([currU, currU + 0.02])[0]
+			
+
+
+		point1 = [pose1[0],pose1[1]]
+		point2 = [pose2[0],pose2[1]]
+		ang1 = pose1[2]
+		ang2 = pose2[2]
+	
+		currPose = computeOffset(point1, point2, ang1, ang2 + currAng)
+		
+		" check for convergence condition, different between last and current cost is below threshold "
+		
+		isTerminate = False
+		if abs(lastCost - newCost) < costThresh or (numIterations - startIteration) > 10:
+			isTerminate = True
+			print "terminating globalOverlapTransform:", lastCost, newCost, costThresh, numIterations, startIteration
+		
+		" update after check for termination condition "
+		lastCost = newCost
+
+		" optionally draw the position of the points in current transform "
+		if plotIter:
+
+
+			fig1 = pylab.figure(2)
+			fig1.clf()
+
+			axes2 = fig1.add_subplot(122)
+
+			match_global = []
+			
+			for pair in match_pairs:
+				p1 = pair[0]
+				p2 = pair[1]
+				
+				p1_o = dispOffset(p1, currPose)
+				
+				p1_g = p1_o
+				p2_g = p2
+				match_global.append([p1_g,p2_g])
+
+			draw_matches(match_global, [0.0,0.0,0.0], axes2)
+
+			
+			xP = []
+			yP = []
+			for b in globalPoly:
+				p1 = b
+				xP.append(p1[0])	
+				yP.append(p1[1])
+	
+			axes2.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+
+			axes2.scatter([globalPoly[0][0]],[globalPoly[0][1]],color=(0.0,0.0,1.0))
+
+			xP = []
+			yP = []
+			for b in points:
+				p = [b[0],b[1]]
+				p1 = dispOffset(p,currPose)
+				
+				xP.append(p1[0])	
+				yP.append(p1[1])
+
+			axes2.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
+
+			u0 = points[0]
+			u0L = dispOffset(u0,currPose)
+
+			axes2.scatter([u0L[0]],[u0L[1]],color=(1.0,0.0,0.0))
+
+			xP = []
+			yP = []
+			for b in a_data_raw:
+				p = [b[0],b[1]]
+				p1 = dispOffset(p,currPose)
+				
+				#p1 = poseOrigin.convertLocalToGlobal(p)
+				xP.append(p1[0])	
+				yP.append(p1[1])
+
+			axes2.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
+			
+			cost = medialOverlapCostFunc([currU, currAng], match_pairs, globalSpline, medialSpline, uHigh, uLow, u1)			
+
+			plotEnv(axes2)					
+			axes2.set_title("%u, u1 = %1.3f, u2 = %1.3f, ang = %1.3f, cost = %f" % (n1, u1, currU, currAng, cost))
+
+			axes2.set_xlim(currPose[0]-4, currPose[0]+4)					
+			axes2.set_ylim(currPose[1]-3, currPose[1]+3)
+		
+
+			axes1 = fig1.add_subplot(121)
+			axes1.grid(True)
+			
+			#gPoints = globalSpline.getTransformCurve()
+			#angOffset = -gPoints[0][1]
+			#gPointsOffset = globalSpline.getTransformCurve(angOffset)
+
+			#dist1 = globalSpline.dist(0.0, u1, iter = 0.005)				
+
+			xP = []
+			yP = []
+			for p in gPointsOffset:
+				xP.append(p[0])
+				yP.append(p[1])
+			axes1.plot(xP,yP, color='b')
+
+			#medialPoints_trans = []
+			#for b in medialPoints:
+			#	p = [b[0],b[1]]
+			#	p = dispOffset(p,currPose)
+			#	
+			#	medialPoints_trans.append(p)
+
+			medialSpline_trans = SplineFit(medialPoints_trans, smooth=0.1)
+			tPointsTemp = medialSpline_trans.getTransformCurve(offset = angOffset, compareAngle = gPointsOffset[0][1])
+
+
+
+
+			#dist2 = medialSpline_trans.dist(0.0, currU, iter = 0.005)	
+
+			xP = []
+			yP = []
+			for p in tPointsTemp:
+				xP.append(p[0]+arcDist1-currArcDist)
+				yP.append(p[1])
+			axes1.plot(xP,yP, color='r')
+
+			
+			#axes1.set_title("Transform ICP: arcDist = %1.3f, angOffset = %1.3f, cost = %1.3f" % (currArcDist, currAngOffset, newCost))
+			axes1.set_title("dist,ang,cost = %1.3f,%1.3f,%1.3f" % (currArcDist, currAngOffset, thisCost))
+			axes1.set_xlabel("distance")
+			axes1.set_ylabel("angle (radians)")
+			axes1.set_xlim(-2,10)
+			axes1.set_ylim(-6,6)		
+
+			fig1.savefig("ICP_plot_%04u_0.png" % numIterations)
+			pylab.clf()			
+			
+			pylab.figure(1)			
+			
+		
+		numIterations += 1
+		
+		if isTerminate:
+			break
+
+	" draw final position "
+	if False:
+		
+		" set the origin of pose 1 "
+		poseOrigin = Pose(currPose)
+		
+		pylab.clf()
+		pylab.axes()
+		match_global = []
+		
+		for pair in match_pairs:
+			p1 = pair[0]
+			p2 = pair[1]
+			
+			p1_o = dispOffset(p1, currPose)
+			
+			p1_g = p1_o
+			p2_g = p2
+			match_global.append([p1_g,p2_g])
+
+		draw_matches(match_global, [0.0,0.0,0.0])
+
+		
+		xP = []
+		yP = []
+		for b in globalPoly:
+			p1 = b
+			xP.append(p1[0])	
+			yP.append(p1[1])
+
+		pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+
+		pylab.scatter([globalPoly[0][0]],[globalPoly[0][1]],color=(0.0,0.0,1.0))
+
+		xP = []
+		yP = []
+		for b in points:
+			p = [b[0],b[1]]
+			p1 = dispOffset(p,currPose)
+			
+			#p1 = poseOrigin.convertLocalToGlobal(p)
+			xP.append(p1[0])	
+			yP.append(p1[1])
+
+		pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
+
+		u0 = points[0]
+		u0L = dispOffset(u0,currPose)
+
+		pylab.scatter([u0L[0]],[u0L[1]],color=(1.0,0.0,0.0))
+
+		xP = []
+		yP = []
+		for b in a_data_raw:
+			p = [b[0],b[1]]
+			p1 = dispOffset(p,currPose)
+			
+			#p1 = poseOrigin.convertLocalToGlobal(p)
+			xP.append(p1[0])	
+			yP.append(p1[1])
+
+		pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
+
+		plotEnv()		
+		pylab.title("%u, u1 = %1.3f, u2 = %1.3f, ang = %1.3f, cost = %f" % (n1, u1, currU, currAng, newCost))
+
+		pylab.xlim(currPose[0]-4, currPose[0]+4)					
+		pylab.ylim(currPose[1]-3, currPose[1]+3)
+		pylab.savefig("ICP_plot_%04u_1.png" % numIterations)
+		pylab.clf()			
+		numIterations += 1
+	
+	print "returning Transform", currPose
+	return currPose, newCost
 
 def overlapICP2(estPose1, initGuess, hull1, hull2, medialPoints1, medialPoints2, supportLine, rootPose1, rootPose2, inPlace = False, plotIter = False, n1 = 0, n2 = 0):
 
@@ -6220,7 +7122,7 @@ def motionICP(points1, points2, offset, costThresh = 0.004, minMatchDist = 2.0, 
 	
 	return offset
 
-def plotEnv():
+def plotEnv(axes = 0):
 
 	"""
 	WLEN = 3.0
@@ -6322,24 +7224,47 @@ def plotEnv():
 			wall[i] = p
 
 
-	for wall in walls:
-		xP = []
-		yP = []
-		for i in range(len(wall)):
-			p = copy(wall[i])
-			xP.append(p[0])
-			yP.append(p[1])
-
-		pylab.plot(xP,yP, linewidth=2, color = 'g')
+	if axes == 0:
 	
-def draw_matches(match_pairs, offset):
+		for wall in walls:
+			xP = []
+			yP = []
+			for i in range(len(wall)):
+				p = copy(wall[i])
+				xP.append(p[0])
+				yP.append(p[1])
+	
+			pylab.plot(xP,yP, linewidth=2, color = 'g')
 
-	for pair in match_pairs:
-		a_off = dispOffset(pair[0], offset)
-		b = pair[1]
+	else:
 
-		pylab.plot([a_off[0],b[0]], [a_off[1],b[1]])
+		for wall in walls:
+			xP = []
+			yP = []
+			for i in range(len(wall)):
+				p = copy(wall[i])
+				xP.append(p[0])
+				yP.append(p[1])
+	
+			axes.plot(xP,yP, linewidth=2, color = 'g')
+		
+	
+def draw_matches(match_pairs, offset, axes = 0):
 
+
+	if axes == 0:
+		for pair in match_pairs:
+			a_off = dispOffset(pair[0], offset)
+			b = pair[1]
+	
+			pylab.plot([a_off[0],b[0]], [a_off[1],b[1]])
+
+	else:
+		for pair in match_pairs:
+			a_off = dispOffset(pair[0], offset)
+			b = pair[1]
+	
+			axes.plot([a_off[0],b[0]], [a_off[1],b[1]])
 
 def draw(a_pnts, b_pnts, filename, fileWrite = True):
 

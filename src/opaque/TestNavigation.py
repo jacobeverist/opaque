@@ -95,6 +95,7 @@ class TestNavigation(SnakeControl):
 
 		self.globalTimer = 1
 		
+		
 	def updateMaps(self):
 		pass
 	
@@ -292,6 +293,17 @@ class TestNavigation(SnakeControl):
 			#self.mapGraph.loadFile("testData/backtrack1", 7)
 			#self.mapGraph.loadFile("testData/backtrack2", 47)
 			#self.mapGraph.loadFile("testData/backtrack2", 47)
+			#self.mapGraph.loadSeries("resultProcess_2012_04_13_3", 14)
+			#self.mapGraph.restoreSeries("resultProcess_2012_05_02_2", 4)
+			#self.mapGraph.restoreSeries("resultProcess_2012_05_02_2", 4)
+
+			#self.mapGraph.restoreSeries("resultProcess_2012_05_03",10)
+			#self.mapGraph.restoreSeries("resultProcess_2012_05_04", 30)
+			self.mapGraph.restoreSeries("resultProcess_2012_05_04", 10)
+			#exit()
+			self.mapGraph.insertPose(self.probe.getActualJointPose(19), self.travelDir)
+			
+			#self.mapGraph.insertPose([0.0,0.0,pi], self.travelDir)
 			
 			#exit()
 			#E = self.computeCovar()
@@ -387,14 +399,16 @@ class TestNavigation(SnakeControl):
 				self.globalState = 8
 
 				self.mapGraph.correctPosture()
-				self.mapGraph.localizeCurrentNode()
+				#self.mapGraph.localizeCurrentNode()
 				self.contacts.resetPose(self.mapGraph.currNode.getEstPose())
 				self.lastPose = self.contacts.getAverageSegPose(0)
 
 				#self.mapGraph.synch()
 				#self.mapGraph.saveMap()
-				self.mapGraph.saveLocalMap()
+				#self.mapGraph.saveLocalMap()
+				#self.mapGraph.saveState()
 				self.mapGraph.drawConstraints()
+				
 				
 				faceDir = False		
 				self.mapGraph.newNode(faceDir, self.travelDir)
@@ -422,7 +436,9 @@ class TestNavigation(SnakeControl):
 
 				#self.mapGraph.correctPoses2()
 				self.mapGraph.correctPosture()
-				self.mapGraph.localizeCurrentNode()
+				#self.mapGraph.localizeCurrentNode()
+				self.mapGraph.pairDone()
+				self.mapGraph.localizePose()
 				self.contacts.resetPose(self.mapGraph.currNode.getEstPose())
 				self.lastPose = self.contacts.getAverageSegPose(0)
 
@@ -430,9 +446,13 @@ class TestNavigation(SnakeControl):
 				#self.mapGraph.synch()
 				#self.mapGraph.saveMap()
 				self.mapGraph.saveLocalMap()
+				self.mapGraph.saveState()
 				self.mapGraph.drawConstraints()				
 				
-		
+
+				if self.mapGraph.numNodes > 24:
+					exit()
+				
 				#self.currPose = self.contacts.getAverageSegPose(0)
 				#deltaDist = sqrt((self.currPose[0]-self.lastPose[0])**2 + (self.currPose[1]-self.lastPose[1])**2)
 
@@ -1044,13 +1064,14 @@ class TestNavigation(SnakeControl):
 
 				
 				self.mapGraph.correctPosture()
-				self.mapGraph.localizeCurrentNode()
+				#self.mapGraph.localizeCurrentNode()
 				self.contacts.resetPose(self.mapGraph.currNode.getEstPose())
 				self.lastPose = self.contacts.getAverageSegPose(0)
 
 				#self.mapGraph.synch()
 				#self.mapGraph.saveMap()
 				self.mapGraph.saveLocalMap()
+				self.mapGraph.saveState()
 				self.mapGraph.drawConstraints()				
 				
 				faceDir = False
@@ -1077,7 +1098,9 @@ class TestNavigation(SnakeControl):
 
 				#self.mapGraph.update()
 				self.mapGraph.correctPosture()
-				self.mapGraph.localizeCurrentNode()
+				#self.mapGraph.localizeCurrentNode()
+				self.mapGraph.pairDone()
+				self.mapGraph.localizePose()
 				#self.mapGraph.relaxCorrect()
 				self.contacts.resetPose(self.mapGraph.currNode.getEstPose())
 				self.lastPose = self.contacts.getAverageSegPose(0)
@@ -1085,6 +1108,7 @@ class TestNavigation(SnakeControl):
 				#self.mapGraph.synch()
 				#self.mapGraph.saveMap()
 				self.mapGraph.saveLocalMap()
+				self.mapGraph.saveState()
 				self.mapGraph.drawConstraints()				
 
 
@@ -1323,18 +1347,20 @@ class TestNavigation(SnakeControl):
 
 				
 				self.mapGraph.correctPosture()
-				self.mapGraph.localizeCurrentNode()
+				#self.mapGraph.localizeCurrentNode()
 				self.contacts.resetPose(self.mapGraph.currNode.getEstPose())
 				self.lastPose = self.contacts.getAverageSegPose(0)
 
 				#self.mapGraph.synch()
 				#self.mapGraph.saveMap()
 				self.mapGraph.saveLocalMap()
+				self.mapGraph.saveState()
 				self.mapGraph.drawConstraints()				
 				
 				faceDir = False
 				self.mapGraph.newNode(faceDir, self.localPathDirection)
 				self.mapGraph.forceUpdate(faceDir)
+
 				#self.mapGraph.newNode(self.stepDist, False, self.travelDir)
 				#self.mapGraph.currNode.resetPosture()		
 				self.localPathState = 4			
@@ -1356,7 +1382,10 @@ class TestNavigation(SnakeControl):
 
 				#self.mapGraph.update()
 				self.mapGraph.correctPosture()
-				self.mapGraph.localizeCurrentNode()
+				#self.mapGraph.localizeCurrentNode()
+				
+				self.mapGraph.pairDone()
+				self.mapGraph.localizePose()
 				#self.mapGraph.relaxCorrect()
 				self.contacts.resetPose(self.mapGraph.currNode.getEstPose())
 				self.lastPose = self.contacts.getAverageSegPose(0)
@@ -1364,6 +1393,7 @@ class TestNavigation(SnakeControl):
 				#self.mapGraph.synch()
 				#self.mapGraph.saveMap()
 				self.mapGraph.saveLocalMap()
+				self.mapGraph.saveState()
 				self.mapGraph.drawConstraints()				
 
 

@@ -5,6 +5,7 @@ from random import gauss
 from copy import copy
 from math import floor, asin, acos
 from time import time
+from functions import closestAngle
 
 class SplineFit:
 
@@ -90,7 +91,39 @@ class SplineFit:
 		
 		return new_points		
 
+	def getTransformCurve(self, offset = 0.0, compareAngle = None):
+		
+		#points = self.getUniformSamples(spacing = 0.01)
 
+		samples = scipy.arange(0.0,1.0,0.005)
+		sample_points = self.getUVecSet(samples)
+		points = self.makePointsUniform(sample_points, max_spacing = 0.01)
+
+		" transform angle to y coordinate, and total distance to the x coordinate "
+
+		totalDist = 0.0
+		candAngle = points[0][2]+offset
+		if compareAngle != None:
+			nextAngle = closestAngle(compareAngle, candAngle)
+			print "compareAngle:", compareAngle, candAngle, nextAngle
+		else:
+			nextAngle = candAngle
+		
+		points_trans = [(totalDist, nextAngle)]
+		for i in range(len(points)-1):
+			p0 = points[i]
+			p1 = points[i+1]
+			dist = sqrt((p0[0]-p1[0])**2 + (p0[1]-p1[1])**2)
+			totalDist += dist
+			prevAngle = points_trans[i][1]
+			candAngle = p1[2] + offset
+			nextAngle = closestAngle(prevAngle, candAngle)
+			if i == 0:
+				print "closetAngle:", offset, prevAngle, candAngle, nextAngle
+			points_trans.append((totalDist, nextAngle))
+			
+		return points_trans
+			
 	def findClosestFromPointSet(self):
 		pass
 

@@ -308,6 +308,7 @@ class LocalNode:
 		
 		self.faceDir = faceDir
 		self.travelDir = travelDir
+		self.partnerNodeID = 0
 
 		self.nodeID = nodeID
 		self.probe = probe
@@ -387,7 +388,7 @@ class LocalNode:
 		self.hasDeparture = False
 		
 		self.isFeatureless = None
-		
+				
 		#pylab.clf()
 
 		#xP = []
@@ -397,6 +398,11 @@ class LocalNode:
 		#	yP.append(p[1])
 		
 		#pylab.plot(xP,yP, color='b')
+		
+		
+	def setPartnerNodeID(self, nodeID):
+		print "setting", self.nodeID, "partner to", nodeID
+		self.partnerNodeID = nodeID	
 		
 	def getIsFeatureless(self):
 		
@@ -1242,6 +1248,77 @@ class LocalNode:
 		f.write("\n")
 		f.close()
 
+
+	def saveToFile2(self):
+
+		saveFile = ""
+		saveFile += "self.localPosture = " + repr(self.localPosture) + "\n"
+		saveFile += "self.faceDir = " + repr(self.faceDir) + "\n"
+		saveFile += "self.travelDir = " + repr(self.travelDir) + "\n"
+		saveFile += "self.frontProbeError = " + repr(self.frontProbeError) + "\n"
+		saveFile += "self.backProbeError = " + repr(self.backProbeError) + "\n"
+		saveFile += "self.correctedPosture = " + repr(self.correctedPosture) + "\n"
+		saveFile += "self.rootPose = " + repr(self.rootPose) + "\n"
+		saveFile += "self.gndRootPose = " + repr(self.gndRootPose) + "\n"
+		saveFile += "self.partnerNodeID = " + repr(self.partnerNodeID) + "\n"
+
+
+		saveFile += "self.estPose = " + repr(self.estPose) + "\n"
+		saveFile += "self.dist = " + repr(self.dist) + "\n"
+		saveFile += "self.vecAng = " + repr(self.vecAng) + "\n"
+		saveFile += "self.backR = " + repr(self.backR) + "\n"
+		saveFile += "self.foreR = " + repr(self.foreR) + "\n"
+		saveFile += "self.R = " + repr(self.R) + "\n"
+
+		saveFile += "self.gndPose = " + repr(self.gndPose) + "\n"
+		saveFile += "self.gndDist = " + repr(self.gndDist) + "\n"
+		saveFile += "self.gndVecAng = " + repr(self.gndVecAng) + "\n"
+		saveFile += "self.gndBackR = " + repr(self.gndBackR) + "\n"
+		saveFile += "self.gndForeR = " + repr(self.gndForeR) + "\n"
+		saveFile += "self.gndR = " + repr(self.gndR) + "\n"
+
+
+
+		f = open("localStateSave_%04u.txt" % (self.nodeID), 'w')
+		f.write(saveFile)
+		f.close()		
+
+
+	def readFromFile2(self, dirName, nodeID, forcedPose = []):
+
+		print "loading" + dirName + "/localStateSave_%04u.txt" % nodeID
+
+		self.nodeID = nodeID
+
+		" occupancy map "
+		self.occMap.readFromFile(dirName)
+	
+		" obstacle map "
+		self.obstacleMap.readFromFile(dirName)
+
+		" occupancy map "
+		self.sweepMap.readFromFile(dirName)
+
+
+		f = open(dirName + "/localStateSave_%04u.txt" % nodeID, 'r')		
+		saveStr = f.read()
+		f.close()
+		
+		saveStr = saveStr.replace('\r\n','\n')		
+		exec(saveStr)
+		
+		if len(forcedPose) != 0:
+			self.setEstPose(forcedPose)
+			
+
+		" compute a fitted curve of a center point "
+		self.centerCurve = GPACurve(self.localPosture, rotated=True)
+		upoints = arange(0,1.0,0.01)
+		self.splPoints = self.centerCurve.getUSet(upoints)
+		
+		self.synch()
+		self.getBestMedialAxis()
+		
 	
 	def readFromFile(self, dirName, nodeID, forcedPose = []):
 		
@@ -1447,7 +1524,7 @@ class LocalNode:
 		self.sweepMap.saveMap()
 		self.obstacleMap.saveMap()
 		
-		self.saveToFile()
+		self.saveToFile2()
 
 	def getOccPoints(self, sweep = False):
 
@@ -1956,36 +2033,63 @@ class LocalNode:
 	
 	
 			mPoints = medialSpline2.getUniformSamples()
+			tPoints = medialSpline2.getTransformCurve()
+
 			
 			pylab.clf()
+			
+			#fig1.clf()
+			fig1 = pylab.figure(2)
+			#fig1 = pylab.gcf()
+			axes2 = fig1.add_subplot(122)
+			#fig1.subplot(122)
 			xP = []
 			yP = []
 			for p in mPoints:
 				xP.append(p[0])
 				yP.append(p[1])
-			pylab.plot(xP,yP, color='r')
+			axes2.plot(xP,yP, color='r')
 
 			xP = []
 			yP = []
 			for p in hull:
 				xP.append(p[0])
 				yP.append(p[1])
-			pylab.plot(xP,yP, color='g')
+			axes2.plot(xP,yP, color='g')
 
 			xP = []
 			yP = []
 			for p in medial2:
 				xP.append(p[0])
 				yP.append(p[1])
-			pylab.plot(xP,yP, color='b')
+			axes2.plot(xP,yP, color='b')
+
+			#pylab.scatter(xP,yP, color='k')
 			
 			#pylab.scatter([linePoint[0]], [linePoint[1]])
 			
-			pylab.xlim(-4,4)
-			pylab.ylim(-4,4)		
+			axes2.set_xlim(-4,4)
+			axes2.set_ylim(-4,4)		
 			
-			pylab.title("%d" % self.nodeID)
-			pylab.savefig("spline_%06u.png" % splineCount)
+			axes2.set_title("%d" % self.nodeID)
+
+			axes1 = fig1.add_subplot(121)
+			axes1.grid(True)
+			xP = []
+			yP = []
+			for p in tPoints:
+				xP.append(p[0])
+				yP.append(p[1])
+			axes1.plot(xP,yP, color='k')
+			axes1.set_xlabel("distance")
+			axes1.set_ylabel("angle (radians)")
+			axes1.set_xlim(0,10)
+			axes1.set_ylim(-4,4)		
+			
+			fig1.set_size_inches(12,6)
+			fig1.savefig("spline_%06u.png" % splineCount)
+			pylab.clf()			
+			pylab.figure(1)
 			splineCount += 1
 				
 			initU = 0.0

@@ -14,6 +14,25 @@ def normalizeAngle(angle):
 
 	return angle 
 
+def closestAngle(angleOrigin, angleNext):
+
+	minDist = abs(angleOrigin - angleNext)
+	minAngle = angleNext
+
+	tempAngle = angleNext + 2*pi
+	while abs(angleOrigin-tempAngle) < minDist:
+		minDist = abs(angleOrigin-tempAngle)
+		minAngle = tempAngle
+		tempAngle = tempAngle + 2*pi
+
+	tempAngle = angleNext - 2*pi
+	while abs(angleOrigin-tempAngle) < minDist:
+		minDist = abs(angleOrigin-tempAngle)
+		minAngle = tempAngle
+		tempAngle = tempAngle - 2*pi
+
+	return minAngle 
+
 def diffAngle(angle1, angle2):
 	
 	midPhi = angle1
