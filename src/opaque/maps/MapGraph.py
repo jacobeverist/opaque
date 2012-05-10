@@ -784,6 +784,12 @@ class MapGraph:
 			self.currNode.update()
 		else:
 			pass
+	
+	def computeGraphPath(self, startPose, endPose):
+		
+		path = self.poseGraph.computeNavigationPath(startPose, endPose)
+
+		return path
 
 	def computePath(self, currPose, frontierPoint):
 		if self.isDirty:
@@ -795,6 +801,8 @@ class MapGraph:
 	def computeHeadPath(self, currPose, frontierPoint, exploreRoot):
 		if self.isDirty:
 			self.synch()
+
+		#self.poseGraph.computeNavigationPath(currPose, frontierPoint)
 
 		vals = self.navRoadMap.computeHeadPath(currPose, frontierPoint, exploreRoot)
 		return vals

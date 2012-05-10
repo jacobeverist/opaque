@@ -328,8 +328,8 @@ class TestNavigation(SnakeControl):
 			self.restState = deepcopy(probeState)
 			
 			#self.globalState = 6
-			self.globalState = 4
-			#self.globalState = 10
+			#self.globalState = 4
+			self.globalState = 10
 
 			#self.restState = deepcopy(probeState)
 			#self.mapGraph.newNode(self.stepDist, self.travelDir)
@@ -450,8 +450,8 @@ class TestNavigation(SnakeControl):
 				self.mapGraph.drawConstraints()				
 				
 
-				if self.mapGraph.numNodes > 24:
-					exit()
+				#if self.mapGraph.numNodes > 24:
+				#	exit()
 				
 				#self.currPose = self.contacts.getAverageSegPose(0)
 				#deltaDist = sqrt((self.currPose[0]-self.lastPose[0])**2 + (self.currPose[1]-self.lastPose[1])**2)
@@ -485,7 +485,8 @@ class TestNavigation(SnakeControl):
 				#	exit()	
 					
 		elif self.globalState == 10:
-			
+
+			self.contacts.setCautious(True)			
 			" select the destination and generate path "
 			
 			" select the point to go to "
@@ -498,9 +499,17 @@ class TestNavigation(SnakeControl):
 			#frontierPoint = [6.0, -1.5]
 			
 			" generate the path "
-			originPath, goalPath, breakPoint = self.mapGraph.computeHeadPath(self.currPose, frontierPoint, self.exploreRoot)
-			self.wayPoints = [breakPoint, goalPath[-1]]
-			self.wayPaths = [originPath, goalPath]
+			#originPath, goalPath, breakPoint = self.mapGraph.computeHeadPath(self.currPose, frontierPoint, self.exploreRoot)
+			#self.wayPoints = [breakPoint, goalPath[-1]]
+			#self.wayPaths = [originPath, goalPath]
+
+			goalPath = self.mapGraph.computeGraphPath(self.currPose, frontierPoint)
+			self.wayPoints = [frontierPoint]
+			self.wayPaths = [goalPath]
+			
+			print "self.wayPoints =", self.wayPoints
+			print "self.wayPaths =", self.wayPaths
+
 
 
 			#goalPath = self.mapGraph.computePath(self.currPose, frontierPoint)
@@ -528,6 +537,7 @@ class TestNavigation(SnakeControl):
 				self.lastPose = [-100.0, -100.0]
 				
 				self.globalState = 6
+				self.contacts.setCautious(False)			
 		
 		elif self.globalState == 12:
 			pass

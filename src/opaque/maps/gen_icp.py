@@ -1372,10 +1372,59 @@ def medialOverlapInPlaceCostFunc(params, match_pairs, medialSpline1, medialSplin
 		
 	return sum1
 
-def medialOverlapTransformCostFunc(params, gPointHash, tPoints2_trans, arcDist1):
+def medialOverlapTransformCostFunc(params, match_pairs, arcDist1):
 	
 	currArcDist = params[0]
 	currAngOffset = params[1]
+
+	"""
+	sum = 0.0
+	for pair in match_pairs:
+		p1 = pair[0]
+		p2 = pair[1]
+		
+		dist = math.sqrt((p1[0] + arcDist1 - currArcDist - p2[0])**2+(p1[1] + currAngOffset - p2[1])**2)
+		sum += dist
+
+	print "currArcDist,currAngOffset:", currArcDist, currAngOffset
+	print "match count:", len(match_pairs), sum
+
+	return sum
+	"""
+	
+	vals = []
+	sum1 = 0.0
+	for pair in match_pairs:
+
+		a = pair[0]
+		b = pair[1]
+		Ca = a[2]
+		Cb = b[2]
+
+		ax = a[0]
+		ay = a[1]		
+		bx = b[0]
+		by = b[1]
+
+		c11 = Ca[0][0]
+		c12 = Ca[0][1]
+		c21 = Ca[1][0]
+		c22 = Ca[1][1]
+				
+		b11 = Cb[0][0]
+		b12 = Cb[0][1]
+		b21 = Cb[1][0]
+		b22 = Cb[1][1]	
+	
+		val = computeMatchErrorP([arcDist1 - currArcDist, currAngOffset, 0.0], [ax,ay], [bx,by], [c11,c12,c21,c22], [b11,b12,b21,b22])		
+		vals.append(val)
+		sum1 += val
+
+	print "currArcDist,currAngOffset:", currArcDist, currAngOffset
+	print "match count:", len(match_pairs), sum1
+		
+	return sum1
+
 
 
 	newPoints = []
@@ -1412,6 +1461,8 @@ def medialOverlapTransformCostFunc(params, gPointHash, tPoints2_trans, arcDist1)
 
 			sum1 += val
 			count += 1
+	
+	print "match count:", count, sum1
 
 	if count != 0:
 		sum1 /= count
@@ -1890,6 +1941,7 @@ def addPointToLineCovariance(points, high_var=1.0, low_var=0.001):
 			p[2][1][1] += C[1][1]
 			
 			#p[2] += C
+	#return newPoints
 
 " check if a point is contained in a circle "
 def isInCircle(p, radius, center):
@@ -5274,7 +5326,15 @@ def globalOverlapTransformICP(initGuess, globalPath, hull, medialPoints,  plotIt
 	ang1 = pose1[2]
 	ang2 = pose2[2]
 
-	currPose = computeOffset(point1, point2, ang1, ang2 + currAng)
+	gpacPoint1 = [pose1[0],pose1[1]]
+	gpacPoint2 = [pose2[0],pose2[1]]
+	
+	gpacAng1 = pose1[2]
+	gpacAng2 = pose2[2]
+
+	currPose = computeOffset(gpacPoint1, gpacPoint2, gpacAng1, gpacAng2 + currAng)
+	#currPose = computeOffset(point1, point2, ang1, ang2)
+	#currPose[2] += currAng
 
 	" transform the new pose "
 	a_data_raw = hull
@@ -5284,7 +5344,8 @@ def globalOverlapTransformICP(initGuess, globalPath, hull, medialPoints,  plotIt
 		a_data.append(result)	
 	
 	costThresh = 0.004
-	minMatchDist = 2.0
+	#minMatchDist = 2.0
+	minMatchDist = 1.0
 	lastCost = 1e100
 	
 	startIteration = numIterations
@@ -5294,6 +5355,7 @@ def globalOverlapTransformICP(initGuess, globalPath, hull, medialPoints,  plotIt
 	" treat the points with the point-to-line constraint "
 	globalPoints = addGPACVectorCovariance(globalSpline.getUniformSamples(),high_var=0.05, low_var = 0.05)
 	points = addGPACVectorCovariance(medialSpline.getUniformSamples(),high_var=0.05, low_var = 0.05)
+	
 
 	globalPoly = []		
 	for p in globalPoints:
@@ -5306,6 +5368,9 @@ def globalOverlapTransformICP(initGuess, globalPath, hull, medialPoints,  plotIt
 	angOffset = -gPoints[0][1]
 	gPointsOffset = globalSpline.getTransformCurve(angOffset)
 
+
+	addPointToLineCovariance(gPoints, high_var=1.0, low_var=0.001)
+	g1Covar = gPoints
 
 	gPointHash = {}
 	maxArcDist = gPoints[-1][0]
@@ -5320,6 +5385,7 @@ def globalOverlapTransformICP(initGuess, globalPath, hull, medialPoints,  plotIt
 		except:
 			gPointHash[index] = [copy(p)]
 
+	print "gPointHash:", gPointHash
 
 	medialPoints_trans = []
 	for b in medialPoints:
@@ -5331,15 +5397,17 @@ def globalOverlapTransformICP(initGuess, globalPath, hull, medialPoints,  plotIt
 	medialSpline_trans = SplineFit(medialPoints_trans, smooth=0.1)
 	tPoints2_trans = medialSpline_trans.getTransformCurve(compareAngle = gPoints[0][1])
 
+	addPointToLineCovariance(tPoints2_trans, high_var=1.0, low_var=0.001)
+	trans2Covar = tPoints2_trans
+
 	arcDist2 = medialSpline_trans.dist(0.0, currU, iter = 0.005)	
 
 	currAngOffset = 0.0
 	currArcDist = arcDist2
 
 	while True:
-		
-		" find the matching pairs "
-		match_pairs = []
+
+		"""
 
 		" transform the target Hull with the latest offset "
 		points_offset = []
@@ -5351,7 +5419,7 @@ def globalOverlapTransformICP(initGuess, globalPath, hull, medialPoints,  plotIt
 		posePoly = []
 		for p in points_offset:
 			posePoly.append([p[0],p[1]])	
-		
+	
 		" get the circles and radii "
 		radius2, center2 = computeEnclosingCircle(points_offset)
 
@@ -5373,6 +5441,42 @@ def globalOverlapTransformICP(initGuess, globalPath, hull, medialPoints,  plotIt
 	
 					" we store the untransformed point, but the transformed covariance of the A point "
 					match_pairs.append([points[i_2],globalPoints[i],C2,C1])
+		"""
+		#radius2, center2 = computeEnclosingCircle(points_offset)
+
+		
+		" find the matching pairs "
+		match_pairs = []
+					
+		tPointsTemp = []
+		#for p in tPoints2_trans:
+		for p in trans2Covar:
+			tPointsTemp.append((p[0]+arcDist1-currArcDist, p[1] + currAngOffset, p[2]))
+
+
+		#for i in range(len(gPoints)):
+		#	p_1 = gPoints[i]
+		#
+		#	" for every point of B, find it's closest neighbor in transformed A "
+		#	p_2, i_2, minDist = findClosestPointInA(tPointsTemp, p_1)
+		#
+		#	if minDist <= minMatchDist:
+		#		" we store the untransformed point, but the transformed covariance of the A point "
+		#		match_pairs.append([tPoints2_trans[i_2],gPoints[i]])
+
+		for i in range(len(tPointsTemp)):
+			p_1 = tPointsTemp[i]
+		
+			" for every point of B, find it's closest neighbor in transformed A "
+			p_2, i_2, minDist = findClosestPointInA(gPoints, p_1)
+
+			if minDist <= minMatchDist:
+				" we store the untransformed point, but the transformed covariance of the A point "
+				#match_pairs.append([tPoints2_trans[i],gPoints[i_2]])
+				match_pairs.append([trans2Covar[i],gPoints[i_2]])
+
+
+
 
 		if plotIter:
 
@@ -5381,19 +5485,19 @@ def globalOverlapTransformICP(initGuess, globalPath, hull, medialPoints,  plotIt
 
 			axes2 = fig1.add_subplot(122)
 
-			match_global = []
+			#match_global = []
 			
-			for pair in match_pairs:
-				p1 = pair[0]
-				p2 = pair[1]
+			#for pair in match_pairs:
+			#	p1 = pair[0]
+			#	p2 = pair[1]
 				
-				p1_o = dispOffset(p1, currPose)
+			#	p1_o = dispOffset(p1, currPose)
 				
-				p1_g = p1_o
-				p2_g = p2
-				match_global.append([p1_g,p2_g])
+			#	p1_g = p1_o
+			#	p2_g = p2
+			#	match_global.append([p1_g,p2_g])
 
-			draw_matches(match_global, [0.0,0.0,0.0], axes2)
+			#draw_matches(match_global, [0.0,0.0,0.0], axes2)
 
 			
 			xP = []
@@ -5435,7 +5539,8 @@ def globalOverlapTransformICP(initGuess, globalPath, hull, medialPoints,  plotIt
 
 			axes2.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
 			
-			cost = medialOverlapCostFunc([currU, currAng], match_pairs, globalSpline, medialSpline, uHigh, uLow, u1)			
+			#cost = medialOverlapCostFunc([currU, currAng], match_pairs, globalSpline, medialSpline, uHigh, uLow, u1)			
+			cost = 0.0
 
 			plotEnv(axes2)					
 			axes2.set_title("%u, u1 = %1.3f, u2 = %1.3f, ang = %1.3f, cost = %f" % (n1, u1, currU, currAng, cost))
@@ -5470,20 +5575,20 @@ def globalOverlapTransformICP(initGuess, globalPath, hull, medialPoints,  plotIt
 			medialSpline_trans = SplineFit(medialPoints_trans, smooth=0.1)
 			tPointsTemp = medialSpline_trans.getTransformCurve(offset = angOffset, compareAngle = gPointsOffset[0][1])
 
-
-
-
 			#dist2 = medialSpline_trans.dist(0.0, currU, iter = 0.005)	
 
 			xP = []
 			yP = []
 			for p in tPointsTemp:
 				xP.append(p[0]+arcDist1-currArcDist)
-				yP.append(p[1])
+				yP.append(p[1]+currAngOffset)
 			axes1.plot(xP,yP, color='r')
 
 
-			thisCost = medialOverlapTransformCostFunc([currArcDist,currAngOffset], gPointHash, tPoints2_trans, arcDist1)
+			#draw_matches(match_pairs, [0.0,0.0,0.0], axes1)
+			draw_matches(match_pairs, [arcDist1-currArcDist,currAngOffset,0.0], axes1)
+
+			thisCost = medialOverlapTransformCostFunc([currArcDist,currAngOffset], match_pairs, arcDist1)
 			
 			axes1.set_title("dist,ang,cost = %1.3f,%1.3f,%1.3f" % (currArcDist, currAngOffset, thisCost))
 			axes1.set_xlabel("distance")
@@ -5508,12 +5613,14 @@ def globalOverlapTransformICP(initGuess, globalPath, hull, medialPoints,  plotIt
 		currArcDist
 		"""
 
-		newParam = scipy.optimize.fmin(medialOverlapTransformCostFunc, [currArcDist,currAngOffset], [gPointHash, tPoints2_trans, arcDist1], disp = 0)
+		#newParam = scipy.optimize.fmin(medialOverlapCostFunc, [currU,currAng], [match_pairs, globalSpline, medialSpline, uHigh, uLow, u1], disp = 0)
+
+		newParam = scipy.optimize.fmin(medialOverlapTransformCostFunc, [currArcDist,currAngOffset], [match_pairs, arcDist1], disp = 0)
 
 		newArcDist = newParam[0]
 		newAngOffset = newParam[1]
 		
-		newCost = medialOverlapTransformCostFunc([currArcDist,currAngOffset], gPointHash, tPoints2_trans, arcDist1)
+		newCost = medialOverlapTransformCostFunc([currArcDist,currAngOffset], match_pairs, arcDist1)
 
 		currArcDist = newArcDist
 		currAngOffset = newAngOffset
@@ -5527,12 +5634,12 @@ def globalOverlapTransformICP(initGuess, globalPath, hull, medialPoints,  plotIt
 
 		currAng = initGuess[2] + currAngOffset 
 		
-		if u1+0.02 > 1.0:
-			pose1 = globalSpline.getUVecSet([0.98, 1.0])[0]
-		elif u1 < 0.0:
-			pose1 = globalSpline.getUVecSet([0.0, 0.02])[0]
-		else:
-			pose1 = globalSpline.getUVecSet([u1, u1+0.02])[0]
+		#if u1+0.02 > 1.0:
+		#	pose1 = globalSpline.getUVecSet([0.98, 1.0])[0]
+		#elif u1 < 0.0:
+		#	pose1 = globalSpline.getUVecSet([0.0, 0.02])[0]
+		#else:
+		#	pose1 = globalSpline.getUVecSet([u1, u1+0.02])[0]
 	
 		if currU+0.02 > 1.0:
 			pose2 = medialSpline.getUVecSet([0.98, 1.0])[0]
@@ -5540,15 +5647,23 @@ def globalOverlapTransformICP(initGuess, globalPath, hull, medialPoints,  plotIt
 			pose2 = medialSpline.getUVecSet([0.0, 0.02])[0]
 		else:
 			pose2 = medialSpline.getUVecSet([currU, currU + 0.02])[0]
+
+		#gpacPoint1 = [pose1[0],pose1[1]]
+		gpacPoint2 = [pose2[0],pose2[1]]
+		
+		#gpacAng1 = pose1[2]
+		#gpacAng2 = pose2[2]
+	
+		currPose = computeOffset(gpacPoint1, gpacPoint2, gpacAng1, gpacAng2 + currAng)
 			
 
 
-		point1 = [pose1[0],pose1[1]]
-		point2 = [pose2[0],pose2[1]]
-		ang1 = pose1[2]
-		ang2 = pose2[2]
-	
-		currPose = computeOffset(point1, point2, ang1, ang2 + currAng)
+		#point1 = [pose1[0],pose1[1]]
+		#point2 = [pose2[0],pose2[1]]
+		#ang1 = pose1[2]
+		#ang2 = pose2[2]	
+		#currPose = computeOffset(point1, point2, ang1, ang2)
+		#currPose[2] += currAng
 		
 		" check for convergence condition, different between last and current cost is below threshold "
 		
@@ -5570,18 +5685,20 @@ def globalOverlapTransformICP(initGuess, globalPath, hull, medialPoints,  plotIt
 			axes2 = fig1.add_subplot(122)
 
 			match_global = []
-			
-			for pair in match_pairs:
-				p1 = pair[0]
-				p2 = pair[1]
-				
-				p1_o = dispOffset(p1, currPose)
-				
-				p1_g = p1_o
-				p2_g = p2
-				match_global.append([p1_g,p2_g])
 
-			draw_matches(match_global, [0.0,0.0,0.0], axes2)
+
+						
+			#for pair in match_pairs:
+			#	p1 = pair[0]
+			#	p2 = pair[1]
+				
+			#	p1_o = dispOffset(p1, currPose)
+				
+			#	p1_g = p1_o
+			#	p2_g = p2
+			#	match_global.append([p1_g,p2_g])
+
+			#draw_matches(match_global, [0.0,0.0,0.0], axes2)
 
 			
 			xP = []
@@ -5623,7 +5740,8 @@ def globalOverlapTransformICP(initGuess, globalPath, hull, medialPoints,  plotIt
 
 			axes2.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
 			
-			cost = medialOverlapCostFunc([currU, currAng], match_pairs, globalSpline, medialSpline, uHigh, uLow, u1)			
+			cost = 0.0
+			#cost = medialOverlapCostFunc([currU, currAng], match_pairs, globalSpline, medialSpline, uHigh, uLow, u1)			
 
 			plotEnv(axes2)					
 			axes2.set_title("%u, u1 = %1.3f, u2 = %1.3f, ang = %1.3f, cost = %f" % (n1, u1, currU, currAng, cost))
@@ -5661,14 +5779,18 @@ def globalOverlapTransformICP(initGuess, globalPath, hull, medialPoints,  plotIt
 
 
 
+
+
 			#dist2 = medialSpline_trans.dist(0.0, currU, iter = 0.005)	
 
 			xP = []
 			yP = []
 			for p in tPointsTemp:
 				xP.append(p[0]+arcDist1-currArcDist)
-				yP.append(p[1])
+				yP.append(p[1]+currAngOffset)
 			axes1.plot(xP,yP, color='r')
+
+			draw_matches(match_pairs, [arcDist1-currArcDist,currAngOffset,0.0], axes1)
 
 			
 			#axes1.set_title("Transform ICP: arcDist = %1.3f, angOffset = %1.3f, cost = %1.3f" % (currArcDist, currAngOffset, newCost))

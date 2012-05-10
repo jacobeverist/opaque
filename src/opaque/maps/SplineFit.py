@@ -95,7 +95,7 @@ class SplineFit:
 		
 		#points = self.getUniformSamples(spacing = 0.01)
 
-		samples = scipy.arange(0.0,1.0,0.005)
+		samples = scipy.arange(0.0,1.0,0.01)
 		sample_points = self.getUVecSet(samples)
 		points = self.makePointsUniform(sample_points, max_spacing = 0.01)
 
@@ -109,7 +109,7 @@ class SplineFit:
 		else:
 			nextAngle = candAngle
 		
-		points_trans = [(totalDist, nextAngle)]
+		points_trans = [[totalDist, nextAngle]]
 		for i in range(len(points)-1):
 			p0 = points[i]
 			p1 = points[i+1]
@@ -119,10 +119,17 @@ class SplineFit:
 			candAngle = p1[2] + offset
 			nextAngle = closestAngle(prevAngle, candAngle)
 			if i == 0:
-				print "closetAngle:", offset, prevAngle, candAngle, nextAngle
-			points_trans.append((totalDist, nextAngle))
+				print "closestAngle:", offset, prevAngle, candAngle, nextAngle
+			points_trans.append([totalDist, nextAngle])
 			
-		return points_trans
+		" thin out the points "
+		points2 = []
+		for i in range(len(points_trans)):
+			if i % 2 == 0:
+				points2.append(points_trans[i])
+			
+		return points2
+		#return points_trans
 			
 	def findClosestFromPointSet(self):
 		pass

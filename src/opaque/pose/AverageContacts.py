@@ -108,6 +108,28 @@ class AverageContacts:
 		#if not stable:
 			#print "not stable"
 		return stable
+
+	def setCautious(self, isCautious = False):
+		print "setCautious:", isCautious
+		if isCautious:
+			self.varThresh = 0.001
+			self.jointVar = []
+			for i in range(self.numJoints):
+				self.jointVar.append(ValueStability(self.varThresh, 20))
+				
+			#self.timeThresh = 50.0
+			self.setTimeThresh(50.0)
+		else:
+			self.varThresh = 0.1
+			self.jointVar = []
+			for i in range(self.numJoints):
+				self.jointVar.append(ValueStability(self.varThresh, 2))
+			
+			#self.timeThresh = 1.0
+			self.setTimeThresh(1.0)
+			
+		#self.varThresh = varThresh
+		
 			
 	def setTimerAliasing(self, timeInc):
 		self.timeInc = timeInc

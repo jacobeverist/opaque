@@ -117,7 +117,7 @@ class GlobalCurveSlide(Behavior):
 		if self.moveCount > 5 :
 
 			self.moveCount = 0
-			return True
+			#return True
 	
 			self.count += 1
 	

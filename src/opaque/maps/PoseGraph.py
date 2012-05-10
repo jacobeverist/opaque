@@ -518,13 +518,13 @@ class PoseGraph:
 			startNode1 = shortestPathSpanTree[(rootPathID, 0)]
 			startNode2 = shortestPathSpanTree[(rootPathID, len(rootPath)-1)]
 			
-			print "len(shortestPathSpanTree) =", len(shortestPathSpanTree)
+			#print "len(shortestPathSpanTree) =", len(shortestPathSpanTree)
 			#print "shorestPathSpanTree:", shortestPathSpanTree
 
 			currNode = startNode1
 			splicedPath1 = []
 			while currNode != (childPathID, childTermI):
-				print currNode, "!=", (childPathID, childTermI)
+				#print currNode, "!=", (childPathID, childTermI)
 				splicedPath1.append(pathGraph.get_node_attributes(currNode))
 				currNode = shortestPathSpanTree[currNode]
 			splicedPath1.append(pathGraph.get_node_attributes(currNode))
@@ -532,7 +532,7 @@ class PoseGraph:
 			currNode = startNode2
 			splicedPath2 = []
 			while currNode != (childPathID, childTermI):
-				print currNode, "!=", (childPathID, childTermI)
+				#print currNode, "!=", (childPathID, childTermI)
 				splicedPath2.append(pathGraph.get_node_attributes(currNode))
 				currNode = shortestPathSpanTree[currNode]
 			splicedPath2.append(pathGraph.get_node_attributes(currNode))
@@ -1137,6 +1137,8 @@ class PoseGraph:
 			#angleAvg = angleSum / 10.
 			
 
+		print "returning path terms:", terms
+
 		return terms
 
 	def trimPaths(self, paths):
@@ -1505,6 +1507,33 @@ class PoseGraph:
 			
 		print "finalPathIDs:", finalPathIDs	
 		return finalPathIDs
+	
+	
+	def getPathPath(self, startPathID, endPathID):
+		" given start pathID and end pathID, what is the series of paths I need to follow to get from start to end "
+
+		if startPathID == endPathID:
+			return [startPathID]
+		
+		pathGraph = graph.graph()
+
+		for pathID in range(self.numPaths):
+			pathGraph.add_node(pathID, [])
+			
+		for pathID in range(self.numPaths):	
+			parentPathID = self.pathParents[pathID][0]
+			if parentPathID != None:
+				pathGraph.add_edge(pathID, parentPathID)
+		
+		shortestPathSpanTree, shortestDist = pathGraph.shortest_path(endPathID)
+		nextPathID = shortestPathSpanTree[startPathID]
+
+		splicedPaths = [startPathID, nextPathID]
+		while nextPathID != endPathID:
+			nextPathID = shortestPathSpanTree[nextPathID]
+			splicedPaths.append(nextPathID)
+
+		return splicedPaths
 
 	def getPathOrdering(self, nodeID, pathIDs):
 
@@ -3817,9 +3846,18 @@ class PoseGraph:
 
 				print "isAChild:", isAChild
 
-				minPathID = 0
-				minSum = 1e100
+
+				" of all the paths that are children, pick the lowest overlap sum one "
+				pathCandidates = []
 				for pathID in orderedPathIDs:
+					if isAChild[pathID]:
+						pathCandidates.append(pathID)
+				
+				" initialize to the first child path "
+				minPathID = pathCandidates[0]
+				minSum = 1e100
+				
+				for pathID in pathCandidates:
 					
 					if isAChild[pathID]:
 						sum1 = self.getOverlapCondition(self.trimmedPaths[pathID], nodeID)
@@ -5549,7 +5587,7 @@ class PoseGraph:
 		angGuess = 0.0
 		
 		resultPose, lastCost = gen_icp.globalOverlapICP([u1, u2, angGuess], orientedGlobalPath, hull1, medial1,  plotIter = True, n1 = nodeID, n2 = 0)
-		resultPose2, lastCost2 = gen_icp.globalOverlapTransformICP([u1, u2, angGuess], orientedGlobalPath, hull1, medial1,  plotIter = True, n1 = nodeID, n2 = 0)
+		#resultPose2, lastCost2 = gen_icp.globalOverlapTransformICP([u1, u2, angGuess], orientedGlobalPath, hull1, medial1,  plotIter = True, n1 = nodeID, n2 = 0)
 
 
 		print "estimating branch pose", nodeID, "at",  resultPose[0], resultPose[1], resultPose[2]
@@ -6189,6 +6227,97 @@ class PoseGraph:
 		
 		return transform, covE
 
+
+	def computeNavigationPath(self, startPose, endPose):
+		
+		" get the trimmed paths "
+		
+		" find closest point on each path "
+		minI1 = 0
+		minJ1 = 0
+		minDist1 = 1e100
+		minI2 = 0
+		minJ2 = 0
+		minDist2 = 1e100
+		for i in range(len(self.trimmedPaths)):
+			path = self.trimmedPaths[i]
+			for j in range(len(path)):
+				p0 = path[j]
+				dist = sqrt((startPose[0]-p0[0])**2 + (startPose[1]-p0[1])**2)
+				
+				if dist < minDist1:
+					minDist1 = dist
+					minI1 = i
+					minJ1 = j
+
+				dist = sqrt((endPose[0]-p0[0])**2 + (endPose[1]-p0[1])**2)
+
+				if dist < minDist2:
+					minDist2 = dist
+					minI2 = i
+					minJ2 = j
+		
+		" select shortest one "
+		
+		" get origin and target path "
+		
+		" get splice of origin and target path "
+		" splice minJ1 and minJ2 "
+		orderPathIDs = self.getPathPath(minI1, minI2)		
+		
+		splicedPaths = self.splicePathIDs(orderPathIDs)
+		
+		print len(splicedPaths), "spliced paths for path finding "
+		
+		" again, find closest point of start and end pose "
+		
+		minTotalDist = 3e100
+		minSplicePathID = 0
+		spliceIndex = (0,1)
+		for i in range(len(splicedPaths)):
+
+			minDist1 = 1e100
+			minDist2 = 1e100
+
+			minJ1 = 0
+			minJ2 = 0
+
+			
+			path = splicedPaths[i]
+
+			for j in range(len(path)):
+				p0 = path[j]
+				dist1 = sqrt((startPose[0]-p0[0])**2 + (startPose[1]-p0[1])**2)
+				
+				if dist1 < minDist1:
+					minDist1 = dist1
+					minJ1 = j
+
+				dist2 = sqrt((endPose[0]-p0[0])**2 + (endPose[1]-p0[1])**2)
+
+				if dist2 < minDist2:
+					minDist2 = dist2
+					minJ2 = j
+
+			
+			totalDist = minDist1 + minDist2
+			if totalDist < minTotalDist:
+				minTotalDist = totalDist
+				minSplicePathID = i
+				spliceIndex = (minJ1,minJ2)
+
+			print i, path[0], path[-1], minJ1, minJ2, minDist1, minDist2, totalDist, minTotalDist, minSplicePathID, spliceIndex
+		
+		
+		" return splicePath[startIndex:endIndex+1]"
+		if spliceIndex[0] < spliceIndex[1]:
+			#return splicedPaths[minSplicePathID][spliceIndex[0]:spliceIndex[1]+1]
+			return splicedPaths[minSplicePathID]
+		else:
+			#path = splicedPaths[minSplicePathID][spliceIndex[1]:spliceIndex[0]+1]
+			path = splicedPaths[minSplicePathID]
+			path.reverse()
+			return path
 		
 
 	def addPathConstraints(self, pathNodes, targetNodeID, insertNode = False):

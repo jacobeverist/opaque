@@ -20,7 +20,7 @@ import ogre.io.OIS as OIS
 import sf_OIS as sf
 
 #from opaque.robot.SuperbotSnake import SuperbotSnake
-from opaque.robot.PhysXProbe import PhysXProbe
+#from opaque.robot.PhysXProbe import PhysXProbe
 from opaque.robot.BulletProbe import BulletProbe
 from opaque.TestModular import TestModular
 from opaque.TestNavigation import TestNavigation
