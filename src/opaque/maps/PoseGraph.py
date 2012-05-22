@@ -5586,8 +5586,20 @@ class PoseGraph:
 		u1 = originU1
 		angGuess = 0.0
 		
-		resultPose, lastCost = gen_icp.globalOverlapICP([u1, u2, angGuess], orientedGlobalPath, hull1, medial1,  plotIter = True, n1 = nodeID, n2 = 0)
+		#resultPose, lastCost = gen_icp.globalOverlapICP([u1, u2, angGuess], orientedGlobalPath, hull1, medial1,  plotIter = False, n1 = nodeID, n2 = 0)
 		#resultPose2, lastCost2 = gen_icp.globalOverlapTransformICP([u1, u2, angGuess], orientedGlobalPath, hull1, medial1,  plotIter = True, n1 = nodeID, n2 = 0)
+
+		uSet = [i*0.01 for i in range(100)]
+		globalSpline = SplineFit(orientedGlobalPath, smooth=0.1)
+		medialSpline = SplineFit(medial1, smooth=0.1)
+	
+		poses_1 = globalSpline.getUVecSet(uSet)
+		poses_2 = medialSpline.getUVecSet(uSet)
+
+
+		#resultPose, lastCost = gen_icp.globalOverlapICP([u1,u2,angGuess], orientedGlobalPath, medial1, poses_1, poses_2)
+		
+		resultPose, lastCost = gen_icp.globalOverlapICP_GPU2([u1,u2,angGuess], orientedGlobalPath, medial1, poses_1, poses_2)
 
 
 		print "estimating branch pose", nodeID, "at",  resultPose[0], resultPose[1], resultPose[2]
@@ -5789,6 +5801,7 @@ class PoseGraph:
 					
 					#result, hist = gen_icp.overlapICP(estPose1, diffOffset, [u1, u2, angGuess], hull1, hull2, orientedMedial1, medial2, [0.0,0.0], [0.0,0.0], inPlace = inPlace, plotIter = False, n1 = (i,k), n2 = (j,l), uRange = uRange)
 					result, hist = gen_icp.overlapICP(estPose1, gndOffset, [u1, u2, angGuess], hull1, hull2, medial1, orientedMedial2, [0.0,0.0], [0.0,0.0], inPlace = inPlace, plotIter = False, n1 = (nodeID1,k), n2 = (nodeID2,l), uRange = uRange)
+					
 					
 					transform = matrix([[result[0]], [result[1]], [result[2]]])
 					covE =  self.E_overlap
@@ -6097,6 +6110,7 @@ class PoseGraph:
 		gndOffset = currProfile.convertGlobalPoseToLocal(gndGPAC2Pose)
 		
 		#supportLine = self.getTopology(nodes = range(self.numNodes-2))
+
 
 		#result = gen_icp.overlapICP(estPose1, [u1, u2, angGuess], hull1, hull2, medial1, medial2, node1.rootPose, node2.rootPose, plotIter = True, n1 = i, n2 = j)
 		result, hist = gen_icp.overlapICP(estPose1, gndOffset, [u1, u2, angGuess], hull1, hull2, medial1, medial2, [0.0,0.0], [0.0,0.0], inPlace = inPlace, plotIter = False, n1 = i, n2 = j, uRange = uRange)

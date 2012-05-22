@@ -1812,7 +1812,7 @@ class LocalNode:
 			
 			self.longPaths[k] = realPath
 					
-		if True:
+		if False:
 			pylab.clf()
 	
 			for path in self.longPaths:
@@ -2036,61 +2036,62 @@ class LocalNode:
 			tPoints = medialSpline2.getTransformCurve()
 
 			
-			pylab.clf()
-			
-			#fig1.clf()
-			fig1 = pylab.figure(2)
-			#fig1 = pylab.gcf()
-			axes2 = fig1.add_subplot(122)
-			#fig1.subplot(122)
-			xP = []
-			yP = []
-			for p in mPoints:
-				xP.append(p[0])
-				yP.append(p[1])
-			axes2.plot(xP,yP, color='r')
-
-			xP = []
-			yP = []
-			for p in hull:
-				xP.append(p[0])
-				yP.append(p[1])
-			axes2.plot(xP,yP, color='g')
-
-			xP = []
-			yP = []
-			for p in medial2:
-				xP.append(p[0])
-				yP.append(p[1])
-			axes2.plot(xP,yP, color='b')
-
-			#pylab.scatter(xP,yP, color='k')
-			
-			#pylab.scatter([linePoint[0]], [linePoint[1]])
-			
-			axes2.set_xlim(-4,4)
-			axes2.set_ylim(-4,4)		
-			
-			axes2.set_title("%d" % self.nodeID)
-
-			axes1 = fig1.add_subplot(121)
-			axes1.grid(True)
-			xP = []
-			yP = []
-			for p in tPoints:
-				xP.append(p[0])
-				yP.append(p[1])
-			axes1.plot(xP,yP, color='k')
-			axes1.set_xlabel("distance")
-			axes1.set_ylabel("angle (radians)")
-			axes1.set_xlim(0,10)
-			axes1.set_ylim(-4,4)		
-			
-			fig1.set_size_inches(12,6)
-			fig1.savefig("spline_%06u.png" % splineCount)
-			pylab.clf()			
-			pylab.figure(1)
-			splineCount += 1
+			if False:
+				pylab.clf()
+				
+				#fig1.clf()
+				fig1 = pylab.figure(2)
+				#fig1 = pylab.gcf()
+				axes2 = fig1.add_subplot(122)
+				#fig1.subplot(122)
+				xP = []
+				yP = []
+				for p in mPoints:
+					xP.append(p[0])
+					yP.append(p[1])
+				axes2.plot(xP,yP, color='r')
+	
+				xP = []
+				yP = []
+				for p in hull:
+					xP.append(p[0])
+					yP.append(p[1])
+				axes2.plot(xP,yP, color='g')
+	
+				xP = []
+				yP = []
+				for p in medial2:
+					xP.append(p[0])
+					yP.append(p[1])
+				axes2.plot(xP,yP, color='b')
+	
+				#pylab.scatter(xP,yP, color='k')
+				
+				#pylab.scatter([linePoint[0]], [linePoint[1]])
+				
+				axes2.set_xlim(-4,4)
+				axes2.set_ylim(-4,4)		
+				
+				axes2.set_title("%d" % self.nodeID)
+	
+				axes1 = fig1.add_subplot(121)
+				axes1.grid(True)
+				xP = []
+				yP = []
+				for p in tPoints:
+					xP.append(p[0])
+					yP.append(p[1])
+				axes1.plot(xP,yP, color='k')
+				axes1.set_xlabel("distance")
+				axes1.set_ylabel("angle (radians)")
+				axes1.set_xlim(0,10)
+				axes1.set_ylim(-4,4)		
+				
+				fig1.set_size_inches(12,6)
+				fig1.savefig("spline_%06u.png" % splineCount)
+				pylab.clf()			
+				pylab.figure(1)
+				splineCount += 1
 				
 			initU = 0.0
 			currU = initU
@@ -2257,7 +2258,7 @@ class LocalNode:
 		medialSpline2 = SplineFit(medial2, smooth=0.1)
 
 
-		if True:
+		if False:
 			pylab.clf()
 	
 			xP = []
@@ -2395,7 +2396,7 @@ class LocalNode:
 
 
 
-		if True:
+		if False:
 			pylab.clf()
 	
 			xP = []

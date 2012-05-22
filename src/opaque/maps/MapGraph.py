@@ -797,6 +797,51 @@ class MapGraph:
 
 		path = self.navRoadMap.computePath(currPose, frontierPoint)
 		return path
+	
+	
+	def getPathLength(self, startPose, endPose, path):
+		
+		
+		
+		minI1 = 0
+		minDist1 = 1e100
+		minI2 = 0
+		minDist2 = 1e100
+		for i in range(len(path)):
+
+			p0 = path[i]
+			dist = sqrt((startPose[0]-p0[0])**2 + (startPose[1]-p0[1])**2)
+			
+			if dist < minDist1:
+				minDist1 = dist
+				minI1 = i
+
+			dist = sqrt((endPose[0]-p0[0])**2 + (endPose[1]-p0[1])**2)
+
+			if dist < minDist2:
+				minDist2 = dist
+				minI2 = i
+		
+		" find distance between minI1 and minI2 "
+		if minI1 < minI2:
+			lowIndex = minI1
+			highIndex = minI2+1
+		else:
+			lowIndex = minI2
+			highIndex = minI1+1
+		
+		totalDist = 0.0		
+		for i in range(lowIndex, highIndex-1):
+			p1 = path[i]
+			p2 = path[i+1]
+			
+			dist = sqrt((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2)
+			
+			totalDist += dist
+
+		
+		return totalDist + minDist1 + minDist2
+
 		
 	def computeHeadPath(self, currPose, frontierPoint, exploreRoot):
 		if self.isDirty:

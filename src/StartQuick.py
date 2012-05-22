@@ -35,10 +35,10 @@ if __name__ == '__main__':
 		" add control program "		
 		probe = createTest()
 
-		#runTest(probe)
+		runTest(probe)
 		
 		" while loop "		
-		cProfile.run('runTest(probe)', 'test_prof')
+		#cProfile.run('runTest(probe)', 'test_prof')
 	
 	except ControlError as inst:
 		print inst.value
