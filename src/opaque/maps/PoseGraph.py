@@ -5598,6 +5598,7 @@ class PoseGraph:
 
 
 		#resultPose, lastCost = gen_icp.globalOverlapICP([u1,u2,angGuess], orientedGlobalPath, medial1, poses_1, poses_2)
+
 		
 		resultPose, lastCost = gen_icp.globalOverlapICP_GPU2([u1,u2,angGuess], orientedGlobalPath, medial1)
 

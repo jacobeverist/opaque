@@ -82,6 +82,7 @@ def matchPairs(points, points_offset, globalPoints, minMatchDist):
 
 	cdef double p_1[2]
 
+	cdef int i
 	for i in range(numPoints1):
 		c_pointsOffset[2*i] = points_offset[i][0]
 		c_pointsOffset[2*i+1] = points_offset[i][1]
@@ -94,7 +95,6 @@ def matchPairs(points, points_offset, globalPoints, minMatchDist):
 
 	cdef double c_minDist
 	cdef int numPoints2 = len(globalPoints)
-	cdef int i
 	cdef int i_2
 
 	match_pairs = []
