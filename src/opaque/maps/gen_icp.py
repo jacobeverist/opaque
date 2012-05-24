@@ -79,120 +79,124 @@ import nelminICP
 
 
 " pyCUDA imports "
-import pycuda.driver as drv
-import pycuda.tools
-import pycuda.autoinit
-import pycuda.gpuarray as gpuarray
-from pycuda.compiler import SourceModule
-import cProfile
-
-threadsPerBlock = 256
-matchStr = """
-#define THREAD_COUNT %d
-
-__global__ void computeMatchErrorG(const float* A, const float* offset, float *sumVal, int N)
-{
-
-    __shared__ float cacheVal[THREAD_COUNT];
-
-    int tid = threadIdx.x + blockIdx.x * blockDim.x;
-    int cacheIndex = threadIdx.x;
-
-    float xd, yd, theta = 0.0;
-    float ax = 0.0;
-    float ay = 0.0;
-    float bx = 0.0;
-    float by1 = 0.0;
-    float tx, ty, dx, dy = 0.0;
-    float r11, r12, r21, r22 = 0.0;
-    float c11, c12, c21, c22 = 0.0;
-    float b11, b12, b21, b22 = 0.0;
-    float res11, res12, res21, res22, resDet = 0.0;
-    float q11, q12, q21, q22 = 0.0;
-    float errVal = 0.0;
-
-
-    float tempVal = 0.0;
-
-    while (tid < N) {
-
-        xd = offset[0];
-        yd = offset[1];
-        theta = offset[2];
-
-        ax = A[tid*12];
-        ay = A[tid*12 + 1];
-        bx = A[tid*12 + 2];
-        by1 = A[tid*12 + 3];
-        c11 = A[tid*12 + 4];
-        c12 = A[tid*12 + 5];
-        c21 = A[tid*12 + 6];
-        c22 = A[tid*12 + 7];
-        b11 = A[tid*12 + 8];
-        b12 = A[tid*12 + 9];
-        b21 = A[tid*12 + 10];
-        b22 = A[tid*12 + 11];
+try:
+    import pycuda.driver as drv
+    import pycuda.tools
+    import pycuda.autoinit
+    import pycuda.gpuarray as gpuarray
+    from pycuda.compiler import SourceModule
+    import cProfile
     
-        tx = ax*cos(theta) - ay*sin(theta) + xd;
-        ty = ax*sin(theta) + ay*cos(theta) + yd;
-        dx = bx - tx;
-        dy = by1 - ty;
+    threadsPerBlock = 256
+    matchStr = """
+    #define THREAD_COUNT %d
     
-        r11 = cos(theta);
-        r12 = -sin(theta);
-        r21 = sin(theta);
-        r22 = r11;
+    __global__ void computeMatchErrorG(const float* A, const float* offset, float *sumVal, int N)
+    {
     
-        res11 = b11 + r11*(c11*r11 + c12*r12) + r12*(c21*r11 + c22*r12);
-        res12 = b12 + r11*(c11*r21 + c12*r22) + r12*(c21*r21 + c22*r22);
-        res21 = b21 + r21*(c11*r11 + c12*r12) + r22*(c21*r11 + c22*r12);
-        res22 = b22 + r21*(c11*r21 + c12*r22) + r22*(c21*r21 + c22*r22);
+        __shared__ float cacheVal[THREAD_COUNT];
+    
+        int tid = threadIdx.x + blockIdx.x * blockDim.x;
+        int cacheIndex = threadIdx.x;
+    
+        float xd, yd, theta = 0.0;
+        float ax = 0.0;
+        float ay = 0.0;
+        float bx = 0.0;
+        float by1 = 0.0;
+        float tx, ty, dx, dy = 0.0;
+        float r11, r12, r21, r22 = 0.0;
+        float c11, c12, c21, c22 = 0.0;
+        float b11, b12, b21, b22 = 0.0;
+        float res11, res12, res21, res22, resDet = 0.0;
+        float q11, q12, q21, q22 = 0.0;
+        float errVal = 0.0;
+    
+    
+        float tempVal = 0.0;
+    
+        while (tid < N) {
+    
+            xd = offset[0];
+            yd = offset[1];
+            theta = offset[2];
+    
+            ax = A[tid*12];
+            ay = A[tid*12 + 1];
+            bx = A[tid*12 + 2];
+            by1 = A[tid*12 + 3];
+            c11 = A[tid*12 + 4];
+            c12 = A[tid*12 + 5];
+            c21 = A[tid*12 + 6];
+            c22 = A[tid*12 + 7];
+            b11 = A[tid*12 + 8];
+            b12 = A[tid*12 + 9];
+            b21 = A[tid*12 + 10];
+            b22 = A[tid*12 + 11];
         
-        resDet = res22*res11 - res12*res21;
+            tx = ax*cos(theta) - ay*sin(theta) + xd;
+            ty = ax*sin(theta) + ay*cos(theta) + yd;
+            dx = bx - tx;
+            dy = by1 - ty;
         
-        q11 = res22/resDet;
-        q12 = -res12/resDet;
-        q21 = -res21/resDet;
-        q22 = res11/resDet;
-    
-        errVal = dx*(dx*q11 + dy*q12) + dy*(dx*q21 + dy*q22);
-    
+            r11 = cos(theta);
+            r12 = -sin(theta);
+            r21 = sin(theta);
+            r22 = r11;
         
-        //return errVal;
-        tempVal += errVal;
-
-        tid += blockDim.x * gridDim.x;
-    }
-
-    cacheVal[cacheIndex] = tempVal;
-
-    __syncthreads();
-
-
-
-    int i = blockDim.x/2;
-    while (i != 0) {
-        if (cacheIndex < i) {
-            cacheVal[cacheIndex] += cacheVal[cacheIndex + i];
+            res11 = b11 + r11*(c11*r11 + c12*r12) + r12*(c21*r11 + c22*r12);
+            res12 = b12 + r11*(c11*r21 + c12*r22) + r12*(c21*r21 + c22*r22);
+            res21 = b21 + r21*(c11*r11 + c12*r12) + r22*(c21*r11 + c22*r12);
+            res22 = b22 + r21*(c11*r21 + c12*r22) + r22*(c21*r21 + c22*r22);
+            
+            resDet = res22*res11 - res12*res21;
+            
+            q11 = res22/resDet;
+            q12 = -res12/resDet;
+            q21 = -res21/resDet;
+            q22 = res11/resDet;
+        
+            errVal = dx*(dx*q11 + dy*q12) + dy*(dx*q21 + dy*q22);
+        
+            
+            //return errVal;
+            tempVal += errVal;
+    
+            tid += blockDim.x * gridDim.x;
         }
-
+    
+        cacheVal[cacheIndex] = tempVal;
+    
         __syncthreads();
-        i /= 2;
+    
+    
+    
+        int i = blockDim.x/2;
+        while (i != 0) {
+            if (cacheIndex < i) {
+                cacheVal[cacheIndex] += cacheVal[cacheIndex + i];
+            }
+    
+            __syncthreads();
+            i /= 2;
+        }
+    
+        // thread 0 returns the value 
+        if (cacheIndex == 0) {
+            sumVal[blockIdx.x] = cacheVal[0];
+        }
+        //tid = threadIdx.x + blockIdx.x * blockDim.x;
+        //sumVal[tid] = cacheVal[threadIdx.x];
     }
-
-    // thread 0 returns the value 
-    if (cacheIndex == 0) {
-        sumVal[blockIdx.x] = cacheVal[0];
-    }
-    //tid = threadIdx.x + blockIdx.x * blockDim.x;
-    //sumVal[tid] = cacheVal[threadIdx.x];
-}
-
-""" % threadsPerBlock
-
-mod3 = SourceModule(matchStr)
-match_them = mod3.get_function("computeMatchErrorG")
-
+    
+    """ % threadsPerBlock
+    
+    mod3 = SourceModule(matchStr)
+    match_them = mod3.get_function("computeMatchErrorG")
+except:
+    isGPU = False
+else:
+    isGPU = True
 
 def matchPairs2(points, points_offset, globalPoints, minMatchDist):
     
@@ -4249,6 +4253,27 @@ def overlapICP(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1, medi
     medialSpline1 = SplineFit(medialPoints1, smooth=0.1)
     medialSpline2 = SplineFit(medialPoints2, smooth=0.1)
 
+    uSet = [i*0.01 for i in range(100)]
+    poses_1 = medialSpline1.getUVecSet(uSet)
+    poses_2 = medialSpline2.getUVecSet(uSet)
+
+
+
+    if u1 >= 1.0:
+        pose1 = poses_1[-1]
+    elif u1 < 0.0:
+        pose1 = poses_1[0]
+    else:
+        pose1 = poses_1[int(u1*100)]
+
+    if currU >= 1.0:
+        pose2 = poses_2[-1]
+    elif currU < 0.0:
+        pose2 = poses_2[0]
+    else:
+        pose2 = poses_2[int(currU*100)]
+
+    
     uHigh = medialSpline2.getUOfDist(u2, uRange, distIter = 0.001)
     uLow = medialSpline2.getUOfDist(u2, -uRange, distIter = 0.001)
 
@@ -4257,19 +4282,19 @@ def overlapICP(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1, medi
         uLow = u2 - 0.08
 
 
-    if u1+0.02 > 1.0:
-        pose1 = medialSpline1.getUVecSet([0.98, 1.0])[0]
-    elif u1 < 0.0:
-        pose1 = medialSpline1.getUVecSet([0.0, 0.02])[0]
-    else:
-        pose1 = medialSpline1.getUVecSet([u1, u1+0.02])[0]
+    #if u1+0.02 > 1.0:
+    #    pose1 = medialSpline1.getUVecSet([0.98, 1.0])[0]
+    #elif u1 < 0.0:
+    #    pose1 = medialSpline1.getUVecSet([0.0, 0.02])[0]
+    #else:
+    #    pose1 = medialSpline1.getUVecSet([u1, u1+0.02])[0]
 
-    if currU+0.02 > 1.0:
-        pose2 = medialSpline2.getUVecSet([0.98, 1.0])[0]
-    elif currU < 0.0:
-        pose2 = medialSpline2.getUVecSet([0.0, 0.02])[0]
-    else:
-        pose2 = medialSpline2.getUVecSet([currU, currU + 0.02])[0]
+    #if currU+0.02 > 1.0:
+    #    pose2 = medialSpline2.getUVecSet([0.98, 1.0])[0]
+    #elif currU < 0.0:
+    #    pose2 = medialSpline2.getUVecSet([0.0, 0.02])[0]
+    #else:
+    #    pose2 = medialSpline2.getUVecSet([currU, currU + 0.02])[0]
 
     point1 = [pose1[0],pose1[1]]
     point2 = [pose2[0],pose2[1]]
@@ -4751,7 +4776,10 @@ def overlapICP(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1, medi
         #    newAng = newParam[0]
         #else:
         #    pass
-        newParam = scipy.optimize.fmin(medialOverlapCostFunc, [currU,currAng], [match_pairs, medialSpline1, medialSpline2, uHigh, uLow, u1], disp = 0)
+        
+        
+        newParam = scipy.optimize.fmin(medialOverlapCostFunc, [currU,currAng], [match_pairs, poses_1, poses_2, uHigh, uLow, u1], disp = 0)
+        #newParam = scipy.optimize.fmin(medialOverlapCostFunc, [currU,currAng], [match_pairs, medialSpline1, medialSpline2, uHigh, uLow, u1], disp = 0)
         newU = newParam[0]
         newAng = newParam[1]
         
@@ -4759,7 +4787,7 @@ def overlapICP(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1, medi
         #if inPlace:
         #    newCost = medialOverlapInPlaceCostFunc([newAng], match_pairs, medialSpline1, medialSpline2, newU, u1)
         #else:
-        newCost = medialOverlapCostFunc([newU, newAng], match_pairs, medialSpline1, medialSpline2, uHigh, uLow, u1)
+        newCost = medialOverlapCostFunc([newU, newAng], match_pairs, poses_1, poses_2, uHigh, uLow, u1)
         
         " set the current parameters "
         currAng = functions.normalizeAngle(newAng)

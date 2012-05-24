@@ -5598,8 +5598,9 @@ class PoseGraph:
 
 
 		#resultPose, lastCost = gen_icp.globalOverlapICP([u1,u2,angGuess], orientedGlobalPath, medial1, poses_1, poses_2)
+
 		
-		resultPose, lastCost = gen_icp.globalOverlapICP_GPU2([u1,u2,angGuess], orientedGlobalPath, medial1, poses_1, poses_2)
+		resultPose, lastCost = gen_icp.globalOverlapICP_GPU2([u1,u2,angGuess], orientedGlobalPath, medial1)
 
 
 		print "estimating branch pose", nodeID, "at",  resultPose[0], resultPose[1], resultPose[2]
