@@ -9,6 +9,7 @@ import math
 from LocalNode import getLongestPath
 from StableCurve import StableCurve
 from SplineFit import SplineFit
+from ParticleFilter import ParticleFilter
 from Pose import Pose
 import gen_icp
 from functions import *
@@ -16,6 +17,8 @@ import toro
 import scsgp
 import bayes
 from operator import itemgetter
+import cProfile
+
 
 import pylab
 import Image
@@ -37,6 +40,9 @@ MOTION_PRIORITY = 0
 INPLACE_PRIORITY2 = -1
 INPLACE_PRIORITY3 = -2
 
+
+globalFunc = 0
+globalArg = 0
 
 def computeBareHull(node1, sweep = False, static = False):
 	
@@ -905,7 +911,7 @@ class PoseGraph:
 		hull2, medial2 = computeHullAxis(nodeID2, node2, tailCutOff = False)
 		
 		estPose1 = node1.getGlobalGPACPose()		
-			
+		
 		#minMatchDist2 = 0.5
 		minMatchDist2 = 2.0
 			
@@ -3167,6 +3173,9 @@ class PoseGraph:
 
 	def integrateNode(self, newNode, nodeID):
 
+		global globalFunc
+		global globalArg
+
 		" DIRECTION OF TRAVEL FROM PREVIOUS POSE PAIR "
 		direction = newNode.travelDir
 
@@ -3325,11 +3334,11 @@ class PoseGraph:
 			for k in range(len(self.nodeSets)):
 				print "computing path for node set", k, ":", self.nodeSets[k]
 				self.paths[k], self.hulls[k] = self.getTopology(self.nodeSets[k])
-					
-			self.drawPathAndHull()
 			
+				
+			self.drawPathAndHull()
 
-		
+
 			" IF THIS IS THE FIRST NODES IN THE FIRST PATH, JUST ADD THEM AS DEFAULT, DO NOTHING "
 			if len(self.paths[0]) == 0:
 				" first nodes in path 0 "					
@@ -3759,6 +3768,45 @@ class PoseGraph:
 
 			self.drawPathAndHull()
 			
+			try:
+				self.particleFilter
+			except:
+				self.particleFilter = ParticleFilter(self.paths[0], self.nodeHash)
+			else:
+				#globalFunc = self.particleFilter.update
+				#globalArg = self.paths[0]
+				#cProfile.run('globalFunc(globalArg)', 'prof_sim')
+				#cProfile.runctx('self.particleFilter.update(self.paths[0],nodeID1)', None, locals(), 'icp_prof')
+				#exit()
+				self.particleFilter.update(self.paths[0], nodeID1)
+
+			if nodeID1 >= 2:
+				newPath = deepcopy(self.paths[0])
+				p0 = newPath[0]
+				pN = newPath[-1]
+				
+				rootPose = [-2.0,0.0]
+				
+				dist0 = sqrt((rootPose[0]-p0[0])*(rootPose[0]-p0[0]) + (rootPose[1]-p0[1])*(rootPose[1]-p0[1]))
+				distN = sqrt((rootPose[0]-pN[0])*(rootPose[0]-pN[0]) + (rootPose[1]-pN[1])*(rootPose[1]-pN[1]))
+		
+				if dist0 > distN:
+					newPath.reverse()
+							
+				" new path "
+				newSpline = SplineFit(newPath, smooth = 0.1)
+	
+	
+				posNew = self.nodeHash[nodeID1].getGlobalGPACPose()
+				posOld = self.nodeHash[nodeID1-2].getGlobalGPACPose()
+				minDist, minU, closestPoint = newSpline.findClosestPoint(posNew)
+				arcDistNew = newSpline.dist(0.0, minU)
+	
+				minDist, minU, closestPoint = newSpline.findClosestPoint(posOld)
+				arcDistOld = newSpline.dist(0.0, minU)
+	
+				print "arcDistNew, arcDistOld, diff =", arcDistNew, arcDistOld, arcDistNew-arcDistOld
+					
 			return
 
 

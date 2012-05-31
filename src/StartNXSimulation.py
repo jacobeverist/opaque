@@ -449,8 +449,8 @@ if __name__ == '__main__':
 		#print "targetMapFile =", targetMapFile
 
 		application = SnakeApp()
-		cProfile.run('application.go()', 'prof_sim')
-		
+		#cProfile.run('application.go()', 'prof_sim')
+		application.go()	
 		
 		#prof.runcall(application.go)
 		#prof.dump_stats("profile_info2") 

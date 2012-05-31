@@ -49,7 +49,8 @@ import pca_module
 import functions
 from subprocess import *
 import traceback
-from math import cos, sin, pi
+from math import cos, sin, pi, ceil
+import cProfile
 
 from matplotlib.patches import Circle
 
@@ -70,6 +71,9 @@ from icp import matchPairs
 
 import time
 
+import multiprocessing as processing
+import ctypes, os
+
 numIterations = 0
 globalPlotCount = 0
 
@@ -80,12 +84,12 @@ import nelminICP
 
 " pyCUDA imports "
 try:
-    import pycuda.driver as drv
-    import pycuda.tools
-    import pycuda.autoinit
-    import pycuda.gpuarray as gpuarray
-    from pycuda.compiler import SourceModule
-    import cProfile
+    #import pycuda.driver as drv
+    #import pycuda.tools
+    #import pycuda.autoinit
+    #import pycuda.gpuarray as gpuarray
+    #from pycuda.compiler import SourceModule
+    #import cProfile
     
     threadsPerBlock = 256
     matchStr = """
@@ -189,14 +193,171 @@ try:
         //sumVal[tid] = cacheVal[threadIdx.x];
     }
     
-    """ % threadsPerBlock
-    
-    mod3 = SourceModule(matchStr)
-    match_them = mod3.get_function("computeMatchErrorG")
+    """ # % threadsPerBlock
+
+    #mod3 = SourceModule(matchStr)
+    #match_them = mod3.get_function("computeMatchErrorG")
 except:
     isGPU = False
 else:
     isGPU = True
+
+def __num_processors():
+    if os.name == 'nt': # Windows
+        return int(os.getenv('NUMBER_OF_PROCESSORS'))
+    else: # glibc (Linux, *BSD, Apple)
+        get_nprocs = ctypes.cdll.libc.get_nprocs
+        get_nprocs.restype = ctypes.c_int
+        get_nprocs.argtypes = []
+        return get_nprocs()
+
+def __do_nothing(data, someArg1, someArg2, someArg3):
+    
+    knn = [someArg1]
+    
+    for p in data:
+        for p2 in data:
+            pass
+    
+    return copy(data)
+
+def __remote_process(rank, qin, qout, someArg1, someArg2, someArg3):
+
+    while 1:
+        # read input queue (block until data arrives)
+        nc, data = qin.get()
+        # process data
+        knn = __do_nothing(data, nc, someArg2, someArg3)
+        # write to output queue
+        qout.put((nc,knn))
+
+def __remote_ICP(rank, qin, qout, globalPath, medial):
+
+    while 1:
+        # read input queue (block until data arrives)
+        nc, args = qin.get()
+        #print rank, "received", nc, args
+        # process data
+        #knn = __do_nothing(data, nc, someArg2, someArg3)
+        results = []
+        for arg in args:
+            resultPose, lastCost = globalOverlapICP_GPU2(arg, globalPath, medial)
+            results.append([resultPose, lastCost])
+        # write to output queue
+        qout.put((nc,results))
+
+
+def batchGlobalICP(globalPath, medial, args):
+
+ 
+
+    ndata = len(args)
+    nproc = __num_processors()
+    
+    print "nproc =", nproc
+    
+    # compute chunk size
+    #chunk_size = ceil(float(ndata) / float(nproc))
+    #chunk_size = int(chunk_size)
+    chunk_size = ndata / nproc
+    chunk_size = 2 if chunk_size < 2 else chunk_size
+    
+    print "chunk_size =", chunk_size
+    print "max_size =", ndata/chunk_size
+    
+    # set up a pool of processes
+    qin = processing.Queue(maxsize=ndata/chunk_size)
+    qout = processing.Queue(maxsize=ndata/chunk_size)
+    pool = [processing.Process(target=__remote_ICP,
+                args=(rank, qin, qout, globalPath, medial))
+                    for rank in range(nproc)]
+    for p in pool: p.start()
+    
+    # put data chunks in input queue
+    cur, nc = 0, 0
+    while 1:
+        #_data = data[:,cur:cur+chunk_size]
+        _data = args[cur:cur+chunk_size]
+        if len(_data) == 0: break
+        print "put(", (nc,_data), ")"
+        qin.put((nc,_data))
+        print "DONE"
+        cur += chunk_size
+        nc += 1
+    
+    # read output queue
+    knn = []
+    while len(knn) < nc:
+        knn += [qout.get()]
+    # avoid race condition
+    _knn = [n for i,n in sorted(knn)]
+    knn = []
+    for tmp in _knn:
+        knn += tmp
+    # terminate workers
+    for p in pool: p.terminate()
+    return knn
+
+
+def knn_search():
+
+    """ find the K nearest neighbours for data points in data,
+        using an O(n log n) kd-tree, exploiting all logical
+        processors on the computer """
+
+    #param = data.shape[0]
+    # build kdtree
+    #tree = kdtree(data.copy(), leafsize=leafsize)
+
+    
+    dataFoo = range(0,101)
+    
+    data = dataFoo
+    ndata = len(data)
+    nproc = __num_processors()
+    
+    print "nproc =", nproc
+    
+    # compute chunk size
+    chunk_size = len(data) / nproc
+    chunk_size = 100 if chunk_size < 100 else chunk_size
+    
+    someArg1 = 5
+    someArg2 = range(20)
+    someArg3 = "foobar maybe"
+    
+    
+    # set up a pool of processes
+    qin = processing.Queue(maxsize=ndata/chunk_size)
+    qout = processing.Queue(maxsize=ndata/chunk_size)
+    pool = [processing.Process(target=__remote_process,
+                args=(rank, qin, qout, someArg1, someArg2, someArg3))
+                    for rank in range(nproc)]
+    for p in pool: p.start()
+    
+    # put data chunks in input queue
+    cur, nc = 0, 0
+    while 1:
+        #_data = data[:,cur:cur+chunk_size]
+        _data = data[cur:cur+chunk_size]
+        if len(_data) == 0: break
+        qin.put((nc,_data))
+        cur += chunk_size
+        nc += 1
+    
+    # read output queue
+    knn = []
+    while len(knn) < nc:
+        knn += [qout.get()]
+    # avoid race condition
+    _knn = [n for i,n in sorted(knn)]
+    knn = []
+    for tmp in _knn:
+        knn += tmp
+    # terminate workers
+    for p in pool: p.terminate()
+    return knn
+
 
 def matchPairs2(points, points_offset, globalPoints, minMatchDist):
     
@@ -6511,6 +6672,9 @@ def globalOverlapICP_GPU2(initGuess, globalPath, medialPoints,plotIter = False, 
 
         #print points_offset
 
+        #cProfile.run('match_pairs = matchPairs(points, points_offset, globalPoints, minMatchDist)', 'match_prof')
+        #cProfile.runctx('match_pairs = matchPairs(points, points_offset, globalPoints, minMatchDist)', globals(), locals(), 'match_prof')
+
         match_pairs = matchPairs(points, points_offset, globalPoints, minMatchDist)       
         
         """
@@ -8997,11 +9161,11 @@ def doTest():
 
     uSet = [i*0.01 for i in range(100)]
 
-    globalSpline = SplineFit(globalPath, smooth=0.1)
-    medialSpline = SplineFit(medialPoints, smooth=0.1)
+    #globalSpline = SplineFit(globalPath, smooth=0.1)
+    #medialSpline = SplineFit(medialPoints, smooth=0.1)
 
-    poses_1 = globalSpline.getUVecSet(uSet)
-    poses_2 = medialSpline.getUVecSet(uSet)
+    #poses_1 = globalSpline.getUVecSet(uSet)
+    #poses_2 = medialSpline.getUVecSet(uSet)
 
     
     """
@@ -9022,6 +9186,19 @@ def doTest():
     #param, cost = nelminICP.ICPmin(matchPairs, numPairs, initGuess, poses_1, poses_2, numPoses)
 
     #uSet = uSet[:20]
+    
+    args = []
+    for i in range(len(uSet)):
+
+        u1 = uSet[i]
+        #print "doing u1 =", u1
+        initGuess[0] = u1
+        initGuess[1] = 0.5
+        args.append(copy(initGuess))
+        
+    results = batchGlobalICP(globalPath, medialPoints, args)
+    
+    return
     
     print "initGuess:", initGuess
         
@@ -9108,6 +9285,11 @@ if __name__ == '__main__':
 
     numpy.set_printoptions(threshold=numpy.nan)
 
+    #print knn_search()
+
+    #print __num_processors()
+    
+    #exit()
 
     try:
         time1 = time.time()

@@ -3,7 +3,7 @@ from math import sqrt
 import scipy.interpolate
 from random import gauss
 from copy import copy
-from math import floor, asin, acos
+from math import floor, asin, acos, cos, sin
 from time import time
 from functions import closestAngle
 
@@ -39,6 +39,11 @@ class SplineFit:
 				
 		" performing spline fit "
 		self.tck, self.u = scipy.interpolate.splprep(intArray, s = self.smoothNess, k=self.kp)
+
+
+		" precomputed points "
+		self.densePoints = []
+		self.distPoints = []
 
 
 	def findU(self, point):
@@ -215,35 +220,77 @@ class SplineFit:
 		# return a point of dist distance along the spline from the origin
 
 		# if spline not long enough!
-		totalLen = self.length()
+		
+		totalLen = self.dist_u(1.0)
+		
+		#totalLen = self.length()
 		if dist > totalLen:
-			raise
+			#point = self.getU(1.0)
+			
+			point = self.densePoints[-1]
+			
+			extraLen = dist - totalLen
+			
+			angle = point[2]
+			
+			xd = point[0] + extraLen*cos(angle)
+			yd = point[1] + extraLen*sin(angle)
+			
+			return [xd,yd]
+			#raise
 
 		if dist == totalLen:
-			point = self.getU(1.0)
+			point = self.densePoints[-1]
+			#point = self.getU(1.0)
+			#print "returning 1.0", point
 			return point
 
 		# spline distance should not be negative
 		if dist < 0:
-			raise
+			point = self.densePoints[0]
+			#point = self.getU(0.0)
+			
+			extraLen = dist
+			
+			angle = point[2]
+			
+			xd = point[0] + extraLen*cos(angle)
+			yd = point[1] + extraLen*sin(angle)
+			
+			return [xd,yd]
+			#raise
 
 		if dist == 0.0:
-			point = self.getU(0.0)
+			point = self.densePoints[0]
+			#point = self.getU(0.0)
+			#print "returning 0.0", point
 			return point
+
+
+		uInd = self.dist_search(dist)		
+		return copy(self.densePoints[uInd])
 
 		estU = 0.5
 		jumpVal = 0.5
 
 		count = 0
 
+		#print "target =", dist
+
 		while True:
 
 			count += 1
-			if count > 10:
+			if count > 20:
+				#"returning empty"
 				return []
 
-			estDist = self.dist(0.0, estU)
+			if count < 4:
+				estDist = self.dist(0.0, estU, iter = 0.005)
+			else:
+				estDist = self.dist(0.0, estU, iter = 0.001)
+				
 			jumpVal /= 2.0
+			#print "estU, estDist, jumpVal, count =", estU, estDist, jumpVal, count
 
 			#print estDist, dist
 
@@ -259,18 +306,116 @@ class SplineFit:
 			if estDist > dist:
 				estU -= jumpVal
 
+	def dist_search(self, x):
+		if len(self.distPoints) == 0:
+			self.precompute()
+
+		lo = 0
+		hi = len(self.distPoints)
+		
+		while lo < hi:
+			mid = (lo+hi)//2
+			midval = self.distPoints[mid]
+			if midval <= x:
+				lo = mid+1
+			elif midval > x: 
+				hi = mid
+			else:
+				return mid
+		
+			
+		return mid
+
+
+	def dist_u(self, u):
+		if len(self.distPoints) == 0:
+			self.precompute()
+
+		if u <= 0.0:
+			#print "dist_u(", u, ") = 0"
+			return self.distPoints[0]
+		
+		if u >= 1.0:
+			#print "dist_u(", u, ") = -1"
+			return self.distPoints[-1]
+		
+		ind = u * 1000.
+		indInt = int(ind)
+		#print "dist_u(", u, ") =", indInt
+		
+		#print "returning", self.distPoints[indInt]
+		return self.distPoints[indInt]
+
+
+	def precompute(self):
+		
+		iter = 0.001
+		unew = scipy.arange(0.0, 1.0 + iter, iter)
+		out = scipy.interpolate.splev(unew,self.tck)
+
+		" 1001 points "
+		self.densePoints = []
+		for i in range(len(out[0])):
+
+			if i == len(out[0])-1:
+				newPoint1 = [out[0][i-1],out[1][i-1]]
+				newPoint2 = [out[0][i],out[1][i]]
+			else:
+				newPoint1 = [out[0][i],out[1][i]]
+				newPoint2 = [out[0][i+1],out[1][i+1]]
+				
+			" tangent vector "
+			vec = [newPoint2[0] - newPoint1[0], newPoint2[1] - newPoint1[1]]
+	
+			" normalize "
+			mag = sqrt(vec[0]**2 + vec[1]**2)
+			vec = [vec[0]/mag, vec[1]/mag]
+			
+			angle = acos(vec[0])
+			if asin(vec[1]) < 0:
+				angle = -angle
+			
+			self.densePoints.append([out[0][i],out[1][i], angle])
+
+		#print "self.densePoints:", self.densePoints
+		
+		" 1000 distances "
+		totalDist = 0.0
+		self.distPoints = [0.0]
+		for i in range(len(self.densePoints)-1):
+
+			pnt0 = self.densePoints[i]
+			pnt1 = self.densePoints[i+1]
+			currDist = sqrt( (pnt1[0]-pnt0[0])**2 + (pnt1[1]-pnt0[1])**2 )
+			
+			totalDist += currDist
+			
+			self.distPoints.append(totalDist)
+		
+		#print "self.distPoints:", self.distPoints
+
 	# compute the distance along the curve between the points parameterized by u1 and u2
 	def dist(self, u1, u2, iter = 0.005):
+
+		if len(self.distPoints) == 0:
+			self.precompute()
+
+		
+		
 		totalDist = 0.0
 
 		if u1 >= u2:
 			tempU = u1
 			u1 = u2
 			u2 = tempU
-			
-		#if u1 >= u2:
-		#	raise
+		
+		
+		dist1 = self.dist_u(u1)
+		dist2 = self.dist_u(u2)
 
+		#print "return dist2-dist1=", dist2, dist1, dist2-dist1
+		return dist2-dist1
+	
 
 		unew = scipy.arange(u1, u2 + iter, iter)
 		out = scipy.interpolate.splev(unew,self.tck)
@@ -556,9 +701,16 @@ class SplineFit:
 		# we do this in three nested searches,
 		# sampling 10 uniformly distributed points at each level	
 
-		sample = scipy.arange(0.0,1.01,0.01)
-		points = self.getUSet(sample)
-		min, min_i = self.findMinDistancePoint(points, pos)
+		#sample = scipy.arange(0.0,1.01,0.01)
+		#points = self.getUSet(sample)
+
+		if len(self.distPoints) == 0:
+			self.precompute()
+
+		
+		min, min_i = self.findMinDistancePoint(self.densePoints, pos)
+
+		return min, min_i/1000.0, self.densePoints[min_i]
 
 		#print min, min_i
 
@@ -569,8 +721,8 @@ class SplineFit:
 
 		elif min_i == len(sample)-1:
 			# sample below index zero 
-			high_u = sample[9]
-			low_u = sample[8]
+			high_u = sample[-1]
+			low_u = sample[-2]
 
 		else:
 			# sample above and below min index

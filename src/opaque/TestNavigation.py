@@ -500,6 +500,16 @@ class TestNavigation(SnakeControl):
 			#frontierPoint = self.mapGraph.selectNextFrontier()
 			frontierPoint = self.mapGraph.selectNextDestination()
 			
+			
+			self.currPose1 = self.contacts.getAverageSegPose(0)
+			self.currPose2 = self.contacts.getAverageSegPose(39)
+			dest = self.localWayPoints[0]			
+			self.lastDist1 = self.mapGraph.getPathLength(self.currPose1, dest, self.localWayPaths[0])
+			self.lastDist2 = self.mapGraph.getPathLength(self.currPose2, dest, self.localWayPaths[0])
+			
+			" pop the next way point if we are already close to the first one "
+			if self.lastDist1 < 0.5:
+			
 			#frontierPoint = [1.07-0.4, 0.0]
 			#649, 358
 			#frontierPoint = [6.0, -1.5]
