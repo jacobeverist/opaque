@@ -352,7 +352,7 @@ class SplineFit:
 		iter = 0.001
 		unew = scipy.arange(0.0, 1.0 + iter, iter)
 		out = scipy.interpolate.splev(unew,self.tck)
-
+		
 		" 1001 points "
 		self.densePoints = []
 		for i in range(len(out[0])):
@@ -376,14 +376,14 @@ class SplineFit:
 				angle = -angle
 			
 			self.densePoints.append([out[0][i],out[1][i], angle])
-
+		
 		#print "self.densePoints:", self.densePoints
 		
 		" 1000 distances "
 		totalDist = 0.0
 		self.distPoints = [0.0]
 		for i in range(len(self.densePoints)-1):
-
+			
 			pnt0 = self.densePoints[i]
 			pnt1 = self.densePoints[i+1]
 			currDist = sqrt( (pnt1[0]-pnt0[0])**2 + (pnt1[1]-pnt0[1])**2 )
@@ -391,7 +391,8 @@ class SplineFit:
 			totalDist += currDist
 			
 			self.distPoints.append(totalDist)
-		
+			
+			
 		#print "self.distPoints:", self.distPoints
 
 	# compute the distance along the curve between the points parameterized by u1 and u2

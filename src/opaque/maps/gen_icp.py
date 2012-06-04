@@ -241,8 +241,8 @@ def __remote_ICP(rank, qin, qout, globalPath, medial):
         #knn = __do_nothing(data, nc, someArg2, someArg3)
         results = []
         for arg in args:
-            resultPose, lastCost = globalOverlapICP_GPU2(arg, globalPath, medial)
-            results.append([resultPose, lastCost])
+            resultPose, lastCost, matchCount = globalOverlapICP_GPU2(arg, globalPath, medial)
+            results.append([resultPose, lastCost, matchCount])
         # write to output queue
         qout.put((nc,results))
 
@@ -6870,7 +6870,7 @@ def globalOverlapICP_GPU2(initGuess, globalPath, medialPoints,plotIter = False, 
         #numIterations += 1
 
 
-    return currPose, newCost
+    return currPose, newCost, len(match_pairs)
 
 
 def globalOverlapTransformICP(initGuess, globalPath, hull, medialPoints,  plotIter = False, n1 = 0, n2 = 0):

@@ -1,6 +1,7 @@
 import sys
 
 import scipy.linalg
+from scipy.sparse.linalg import eigsh
 import random
 
 import numpy
@@ -329,6 +330,11 @@ class PoseGraph:
 		self.E_sensor = matrix([[0.1,0.0,0.0],
 							[0.0,0.05,0.0],
 							[0.0,0.0,0.02]])
+
+
+		self.allPathConstraints = []
+
+
 
 	def saveState(self):
 		
@@ -3778,7 +3784,7 @@ class PoseGraph:
 				#cProfile.run('globalFunc(globalArg)', 'prof_sim')
 				#cProfile.runctx('self.particleFilter.update(self.paths[0],nodeID1)', None, locals(), 'icp_prof')
 				#exit()
-				self.particleFilter.update(self.paths[0], nodeID1)
+				self.particleFilter.update(self.paths[0], nodeID1, isForward = direction)
 
 			if nodeID1 >= 2:
 				newPath = deepcopy(self.paths[0])
@@ -5648,7 +5654,7 @@ class PoseGraph:
 		#resultPose, lastCost = gen_icp.globalOverlapICP([u1,u2,angGuess], orientedGlobalPath, medial1, poses_1, poses_2)
 
 		
-		resultPose, lastCost = gen_icp.globalOverlapICP_GPU2([u1,u2,angGuess], orientedGlobalPath, medial1)
+		resultPose, lastCost, matchCount = gen_icp.globalOverlapICP_GPU2([u1,u2,angGuess], orientedGlobalPath, medial1)
 
 
 		print "estimating branch pose", nodeID, "at",  resultPose[0], resultPose[1], resultPose[2]
@@ -6592,6 +6598,7 @@ class PoseGraph:
 		#if len(constraintResults) > 0:
 		#	print constraintResults[0]	
 
+		self.allPathConstraints += constraintResults
 
 		if len(constraintResults) > 0 and insertNode:
 			const = constraintResults[0]
@@ -6687,7 +6694,16 @@ class PoseGraph:
 			w = []
 			e = []
 			for i in range(100):
+				#if 2 < len(totalHypotheses):
+				#	lmbda2, e2 = eigsh(A, k=2)
+				#else:
+				#	lmbda2, e2 = eigsh(A, k=1)
+					
 				e, lmbda = scsgp.dominantEigenvectors(A)
+
+				#print "lmbda:", lmbda, lmbda2
+				#print "eigen:", e, e2
+				
 				w = scsgp.getIndicatorVector(e[0])
 				w2 = scsgp.getIndicatorVector(e[1])
 				if len(e) <= 1:

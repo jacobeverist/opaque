@@ -6,8 +6,16 @@ from math import sqrt
 from Pose import Pose
 import gen_icp
 from math import acos, asin
+from numpy import array
+
 
 from scipy.spatial import KDTree, cKDTree
+from scipy.cluster.hierarchy import fclusterdata, fcluster
+
+from matplotlib.pyplot import show, savefig, clf
+from scipy.spatial.distance import pdist
+from scipy.cluster.hierarchy import linkage, dendrogram
+from numpy.random import rand
 
 """
 def mysum(lvals):
@@ -36,7 +44,7 @@ class ParticleFilter:
         self.numParticles = 20
 
         " pathID, distMean "
-        self.initPose = [0, 0.1]
+        self.initPose = [0, 2.0]
         
         self.rootPose = [-2.0,0.0]
  
@@ -72,10 +80,32 @@ class ParticleFilter:
         self.particleSnapshots = {}
         self.particleSnapshots[self.updateCount] = particles
 
-        self.drawState()
-       
+        self.mostLikely = 0
+
+        self.mostLikely1 = 0
+        self.mostLikely2 = 0
+
+        self.lossCount = 0
+        self.moveForward = 0
+        self.moveBackward = 0
+        self.avgDist = 0.0
+
+        #self.drawState()
         
+        self.resultVector = []
+        
+        #self.updateCount += 1
+        self.colors = []
+        for i in range(1000):
+            self.colors.append((random.random(),random.random(),random.random()))
+                    
     def update(self, newPath0, nodeID, isForward = True):
+
+        self.lossCount = 0
+        self.moveForward = 0
+        self.moveBackward = 0
+        self.avgDist = 0.0
+
 
         " old path + old positions => x,y "
         " x,y => new path + old positions "
@@ -137,17 +167,30 @@ class ParticleFilter:
             part = xyParticles[k]
             newPart = [part[0], arcDist]
 
-            " move forw0ard or backward "        
+            " move forward or backward "
+            moveChance = random.random()
+            " 80% chance we move forward, 20% we move backward "    
             if isForward:
-                newPart[1] += self.distMove
+                if moveChance >= 0.2:
+                    newPart[1] += self.distMove
+                    self.moveForward += 1
+                else:
+                    newPart[1] += -self.distMove
+                    self.moveBackward += 1
             else:
-                newPart[1] += -self.distMove
+                if moveChance >= 0.2:
+                    newPart[1] += -self.distMove
+                    self.moveBackward += 1
+                else:
+                    newPart[1] += self.distMove
+                    self.moveForward += 1
 
             newPart[1] = random.gauss(newPart[1],self.distVar)
 
             if newPart[1] <= newSpline.dist_u(1.0) and newPart[1] >= newSpline.dist_u(0.0):  
                 newParticles.append(newPart)
             else:
+                self.lossCount += 1
                 pass
                 " add in random sample "
 
@@ -167,16 +210,33 @@ class ParticleFilter:
         
         estPose1 = node1.getGlobalGPACPose()        
         poseOrigin = Pose(estPose1)
+ 
+
+        medialSpline2 = SplineFit(medial1, smooth=0.1)
+        totalMedialDist = medialSpline2.dist_u(1.0)
+                
+        minDist, uVal, minPiont = medialSpline2.findClosestPoint([0.0,0.0])
+        midMedialDist = medialSpline2.dist_u(uVal)
         
+        print "node medial dist:", totalMedialDist, midMedialDist, totalMedialDist-midMedialDist, uVal, minDist
+        
+                
         globalMedial = []
         for p in medial1:
             globalMedial.append(poseOrigin.convertLocalToGlobal(p))
+        
+        
+
+        
         
         medialSpline1 = SplineFit(globalMedial, smooth=0.1)
         globalSpline = SplineFit(globalPath, smooth=0.1)
         globalSplineReverse = SplineFit(globalPathReverse, smooth=0.1)
         medialReverse = deepcopy(medial1)
         medialReverse.reverse()
+
+
+
 
         overlapMatch = []
         angleSum1 = 0.0
@@ -296,7 +356,7 @@ class ParticleFilter:
 
                 
         
-        " measurement adjustment with ICP "       
+        " move adjustment with ICP "       
         measResults = []
         queryPoints = []
 
@@ -309,7 +369,6 @@ class ParticleFilter:
 
             if isReverse:
                 dist = totalDist - dist
-
             
             uVal = orientedSpline.dist_search(dist) / 1000.
             #print dist, uVal2
@@ -322,7 +381,7 @@ class ParticleFilter:
         
                 
         results = gen_icp.batchGlobalICP(orientedGlobalPath, medial1, args)
-        print "len(results) =", len(results), "len(newParticles) =", len(newParticles)
+        #print "len(results) =", len(results), "len(newParticles) =", len(newParticles)
         
         
         for k in range(len(newParticles)):
@@ -330,17 +389,20 @@ class ParticleFilter:
             #resultPose, lastCost = gen_icp.globalOverlapICP_GPU2(args[k], orientedGlobalPath, medial1)
             #print "estimating branch pose", nodeID, "at",  resultPose[0], resultPose[1], resultPose[2]
             
-            resultPose, lastCost = results[k]
+            resultPose, lastCost, matchCount = results[k]
+
             
-            measResults.append([resultPose,lastCost])
+            measResults.append([resultPose,lastCost, matchCount])
             queryPoints.append(resultPose[:2])
         
 
         qResults2 = treeO.query(queryPoints)
         distances2 = qResults2[0]
         indices2 = qResults2[1]
-            
+        
+        hypParticles = []
         measParticles = []
+        maxCost = 0.0
         for k in range(len(newParticles)):
             newPart = newParticles[k]
             #arcDist = newSpline.distPoints[indices2[k]]
@@ -349,11 +411,129 @@ class ParticleFilter:
             if isReverse:
                 arcDist = totalDist - arcDist
 
-            print queryPoints[k], arcDist, newPart[1], measResults[k][1]
 
-            if measResults[k][1] < 500:
-                measParticles.append([newPart[0],arcDist])
+            #print queryPoints[k], arcDist, newPart[1], measResults[k][1]
+            
+            hypParticles.append([measResults[k][1], measResults[k][2], distances2[k], newPart[0], arcDist])
+
+            if measResults[k][1] > maxCost:
+                maxCost = measResults[k][1]
+            #if measResults[k][1] < 500:
+            #    measParticles.append([newPart[0],arcDist])
         
+        totalSum = 0.0
+        for hyp in hypParticles:
+            hyp[0] = (maxCost-hyp[0])/maxCost
+            #hyp[0] = 1.0/hyp[0]
+            totalSum += hyp[0]
+         
+        for hyp in hypParticles:
+            hyp[0] = hyp[0] / totalSum
+        
+        hypParticles.sort(reverse=True)
+        
+        print "HYP particles"
+        for hyp in hypParticles:
+            print hyp
+        
+        
+        measParticles = []
+        weights = []
+        for k in range(self.numParticles):
+            
+            roll = random.random()
+            probTotal = 0.0
+            
+            partFound = False
+            
+            for hyp in hypParticles:
+                probTotal += hyp[0]
+                
+                if probTotal > roll:
+                    measParticles.append([hyp[3],hyp[4]])
+                    weights.append(hyp[0])
+                    partFound = True
+                
+                if partFound:
+                    break
+            if not partFound:
+                measParticles.append([hypParticles[-1][3],hypParticles[-1][4]])
+                weights.append(hyp[0])
+                
+
+        distances = []
+        for hyp in measParticles:
+            distances.append(hyp[1])
+
+
+        #X = rand( 5, 3 )
+        #X[0:5, :] *= 2
+
+        features  = array(distances)
+        features = features.reshape(len(distances),1)
+        
+        X = features
+        Y = pdist( X )
+        Z = linkage( Y )
+        clf()
+        labels = ['' for i in range(len(distances))]
+        #labels[0] = 'label1'
+        #labels[1] = 'label2'
+        
+        dendrogram( Z, labels=labels )
+        savefig("part_dendro_%04u.png" % (self.updateCount+1))
+
+        #resultVector = fcluster(Z,t=2, criterion='maxclust')
+        self.resultVector = fcluster(Z,t=0.5, criterion='distance')
+        
+        #show()
+
+        
+        features = features.reshape(len(distances),1)
+        #resultVector = fclusterdata(features,t=2, criterion='maxclust')
+  
+        print "resultCluster:", self.resultVector
+ 
+        blueVals = []
+        redVals = []
+        blueAvg = 0.0
+        redAvg = 0.0
+        blueWAvg = 0.0
+        redWAvg = 0.0
+        blueTotal = 0.0
+        redTotal = 0.0
+        for k in range(len(distances)):
+            val = features[k,0]
+            clustID = self.resultVector[k]
+            if clustID == 1:
+                blueVals.append(val)
+                blueTotal += weights[k]
+                blueAvg += val
+                blueWAvg += val * weights[k]
+            if clustID == 2:
+                redVals.append(val)
+                redTotal += weights[k]
+                redAvg += val
+                redWAvg += val * weights[k]
+
+        if len(redVals) > 0:
+            redAvg /= len(redVals)
+            redWAvg /= redTotal
+            
+        if len(blueVals) > 0:
+            blueAvg /= len(blueVals)
+            blueWAvg /= blueTotal
+
+        " most likely "
+        if len(blueVals) > len(redVals):
+            self.mostLikely = [0,blueWAvg]
+        else:
+            self.mostLikely = [0,redWAvg]
+            
+        self.mostLikely1 = [0,blueWAvg]
+        self.mostLikely2 = [0,redWAvg]
+ 
+        self.avgDist = self.mostLikely[1]
         
         " generate random particles with weighted probabilities around existing particles "
         numGenParticles = self.numParticles - len(measParticles)
@@ -435,15 +615,57 @@ class ParticleFilter:
         
         xP = []
         yP = []
-        for p in particles:
+        clusters = {}
+        for k in range(len(particles)):
+            p = particles[k]
             distVal = p[1]
             
             splinePoint = currSpline.getPointOfDist(distVal)
-            xP.append(splinePoint[0])
-            yP.append(splinePoint[1])
             
-        pylab.scatter(xP,yP, color='b')
+            if k < len(self.resultVector):
+                try:
+                    clusters[self.resultVector[k]]
+                except:
+                    clusters[self.resultVector[k]] = []
+                
+                clusters[self.resultVector[k]].append(splinePoint)
+            else:
+                xP.append(splinePoint[0])
+                yP.append(splinePoint[1])
+         
+        if len(xP) > 0:       
+            pylab.scatter(xP,yP, color='k')
         
+        for k, v in clusters.iteritems():
+            
+            xP = []
+            yP = []
+            for p in v:
+                xP.append(p[0])
+                yP.append(p[1])
+                
+            pylab.scatter(xP,yP, color=self.colors[k], linewidth=1, zorder=10)    
+ 
+
+
+        if False and self.mostLikely1 != 0:
+            likelyPoint = currSpline.getPointOfDist(self.mostLikely1[1])
+            xP = [likelyPoint[0]]
+            yP = [likelyPoint[1]]
+            pylab.scatter(xP,yP, color='k')
+
+        if False and self.mostLikely2 != 0:
+            likelyPoint = currSpline.getPointOfDist(self.mostLikely2[1])
+            xP = [likelyPoint[0]]
+            yP = [likelyPoint[1]]
+            pylab.scatter(xP,yP, color='k')
+
+        #if self.mostLikely != 0:
+        #    likelyPoint = currSpline.getPointOfDist(self.mostLikely[1])
+        #    xP = [likelyPoint[0]]
+        #    yP = [likelyPoint[1]]
+        #    pylab.scatter(xP,yP, color='k')
+
         
         originPoint = currSpline.getPointOfDist(0.0)
         pylab.scatter([originPoint[0]], [originPoint[1]], color='g')
@@ -451,7 +673,7 @@ class ParticleFilter:
         
         node = self.nodeHash[nodeID]
         
-        gndPose1 = node.getGndGlobalGPACPose()
+        gndPose1 = node.getGlobalGPACPose()
         medial1 = node.getBestMedialAxis()
         
         " set the origin of pose 1 "
@@ -473,6 +695,9 @@ class ParticleFilter:
         
         pylab.xlim(-5,10)
         pylab.ylim(-8,8)
+        
+        pylab.title("%d %d %d %3.2f" % (self.lossCount, self.moveForward, self.moveBackward, self.avgDist))
+        
         
         pylab.savefig("particles_%04u.png" % self.updateCount)
     
