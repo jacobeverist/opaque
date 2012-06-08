@@ -12,6 +12,15 @@ import traceback
 import cProfile
 import sys
 
+" sub process cleanup code "
+import opaque.maps.gen_icp as gen_icp
+import atexit
+def cleanup():
+	for p in gen_icp.overlapPool:
+		p.terminate()
+atexit.register(cleanup)
+
+
 def createTest():
 	probe = QuickProbe(40,0.15,0.05,30.0*2.5)
 	

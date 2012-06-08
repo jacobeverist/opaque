@@ -1,7 +1,7 @@
 import sys
 
 import scipy.linalg
-from scipy.sparse.linalg import eigsh
+from scipy.sparse.linalg import eigsh, eigs
 import random
 
 import numpy
@@ -19,7 +19,7 @@ import scsgp
 import bayes
 from operator import itemgetter
 import cProfile
-
+import time
 
 import pylab
 import Image
@@ -282,6 +282,8 @@ class PoseGraph:
 		self.pathPlotCount = 0
 		self.overlapPlotCount = 0
 		self.pathDrawCount = 0
+		self.candidateCount = 0
+
 		self.numPaths = 1
 		self.paths = {0 : []}
 		self.hulls = {0 : []}
@@ -294,11 +296,11 @@ class PoseGraph:
 		self.spliceCount = 0
 		self.orderCount = 0		
 		
-		#self.colors = []
-		#for i in range(1000):
-		#	self.colors.append((random.random(),random.random(),random.random()))
+		self.colors = []
+		for i in range(1000):
+			self.colors.append((random.random(),random.random(),random.random()))
 
-		self.colors = ['b','r','g','k','y']
+		#self.colors = ['b','r','g','k','y']
 
 		self.E_gnd = matrix([[ 0.00001, 0.0, 0.0 ],
 							[ 0.0, 0.00001, 0.0],
@@ -333,7 +335,7 @@ class PoseGraph:
 
 
 		self.allPathConstraints = []
-
+		self.hypPlotCount = 0
 
 
 	def saveState(self):
@@ -3190,6 +3192,9 @@ class PoseGraph:
 		
 		
 		if nodeID > 0:
+		
+			#self.addBatchConstraints(nodeID)
+
 			
 			" ESTIMATE TRAVEL WITH MEDIAL OVERLAP CONSTRAINT OF EVEN NUMBER POSE "
 			if nodeID % 2 == 0:
@@ -3774,6 +3779,7 @@ class PoseGraph:
 
 			self.drawPathAndHull()
 			
+			"""
 			try:
 				self.particleFilter
 			except:
@@ -3785,7 +3791,7 @@ class PoseGraph:
 				#cProfile.runctx('self.particleFilter.update(self.paths[0],nodeID1)', None, locals(), 'icp_prof')
 				#exit()
 				self.particleFilter.update(self.paths[0], nodeID1, isForward = direction)
-
+			"""
 			if nodeID1 >= 2:
 				newPath = deepcopy(self.paths[0])
 				p0 = newPath[0]
@@ -3878,7 +3884,7 @@ class PoseGraph:
 
 				" make path constraint "
 				print "pathID: addPathConstraints(", pathID, nodeID
-				self.addPathConstraints(self.nodeSets[pathID], nodeID, insertNode = insertNode)
+				self.addPathConstraints2(self.nodeSets[pathID], nodeID, insertNode = insertNode)
 			
 		else:
 			" in at least one junction "
@@ -3972,7 +3978,7 @@ class PoseGraph:
 
 					" make path constraint "
 					print "minPathID: addPathConstraints(", minPathID, nodeID
-					self.addPathConstraints(self.nodeSets[minPathID], nodeID, insertNode = insertNode)
+					self.addPathConstraints2(self.nodeSets[minPathID], nodeID, insertNode = insertNode)
 
 
 
@@ -4073,7 +4079,7 @@ class PoseGraph:
 
 					" make path constraint "
 					print "childPath: addPathConstraints(", childPath, nodeID
-					self.addPathConstraints(self.nodeSets[childPath], nodeID, insertNode = insertNode)
+					self.addPathConstraints2(self.nodeSets[childPath], nodeID, insertNode = insertNode)
 
 				
 				elif isDepExists2:
@@ -4096,7 +4102,7 @@ class PoseGraph:
 
 					" make path constraint "
 					print "childPath: addPathConstraints(", childPath, nodeID
-					self.addPathConstraints(self.nodeSets[childPath], nodeID, insertNode = insertNode)
+					self.addPathConstraints2(self.nodeSets[childPath], nodeID, insertNode = insertNode)
 
 				
 				else:
@@ -4174,7 +4180,7 @@ class PoseGraph:
 
 				" make path constraint "
 				print "childPath: addPathConstraints(", childPath, nodeID
-				self.addPathConstraints(self.nodeSets[childPath], nodeID, insertNode = insertNode)
+				self.addPathConstraints2(self.nodeSets[childPath], nodeID, insertNode = insertNode)
 
 	def determineBranch(self, nodeID1, nodeID2, frontExist1, frontExist2, frontInterior1, frontInterior2, depAngle1, depAngle2, depPoint1, depPoint2, parentPathID1, parentPathID2):
 		
@@ -6389,6 +6395,698 @@ class PoseGraph:
 			path.reverse()
 			return path
 		
+	def addBatchConstraints(self, targetNodeID):
+
+		allNodes = range(targetNodeID)
+
+		paths = []
+		for i in range(self.numNodes):
+			paths.append(bayes.dijkstra_proj(i, self.numNodes, self.edgeHash))
+
+		constraintPairs = []
+		for nodeID in allNodes:
+			constraintPairs.append([targetNodeID,nodeID])
+
+
+		medials = []
+		splines = []
+		originUs = []
+		originForeUs = []
+		originBackUs = []
+		for k in range(targetNodeID+1):
+	
+			node1 = self.nodeHash[k]
+			hull1, medial1 = computeHullAxis(i, node1, tailCutOff = False)
+			medials.append(medial1)
+			#estPose1 = node1.getGlobalGPACPose()		
+			medialSpline1 = SplineFit(medial1, smooth=0.1)
+			splines.append(medialSpline1)
+			
+			originU1 = medialSpline1.findU([0.0,0.0])	
+			originUs.append(originU1)
+			originForeUs.append(splines[k].getUOfDist(originUs[k], 1.0, distIter = 0.001))
+			originBackUs.append(splines[k].getUOfDist(originUs[k], -1.0, distIter = 0.001))
+
+
+		targetNode = self.nodeHash[targetNodeID]
+		targetPose = targetNode.getGlobalGPACPose()
+		
+		isTargFeatureless = targetNode.getIsFeatureless()
+				
+		candidates = []
+		
+		u2_1 = splines[targetNodeID].getUOfDist(originUs[targetNodeID], 0.0, distIter = 0.001)
+		u2_2 = splines[targetNodeID].getUOfDist(originUs[targetNodeID], 1.0, distIter = 0.001)
+		u2_3 = splines[targetNodeID].getUOfDist(originUs[targetNodeID], -1.0, distIter = 0.001)
+		for k in range(targetNodeID-1):
+
+			candNode = self.nodeHash[k]
+			candPose = candNode.getGlobalGPACPose()
+			
+			cartDist1 = sqrt((candPose[0]-targetPose[0])**2 + (candPose[1]-targetPose[1])**2)
+			angDiff1 = diffAngle(candPose[2],targetPose[2])
+			
+			isFeatureless = candNode.getIsFeatureless()
+			
+			if k == targetNodeID-1 or k == targetNodeID-2:
+				isNeigh = True
+			else:
+				isNeigh = False
+			
+			pathIDs = []
+			for j in range(self.numPaths):
+				if self.nodeSets[j].count(k) > 0:
+					pathIDs.append(j)
+			
+			args = [k, targetNodeID, medials[k], medials[targetNodeID], originUs[k], u2_1, 0.0]
+			candidates.append({ "nodeID1" : k, "nodeID2" : targetNodeID,
+							"medial1": medials[k], "medial2": medials[targetNodeID],
+							"u1": args[4], "u2": args[5], "initAng": args[6],
+							"isFeatureless1": isFeatureless, "isFeatureless2": isTargFeatureless,
+							"isNeigh": isNeigh, "cartDist1": cartDist1, "angDiff1": angDiff1,
+							"pathIDs": pathIDs})
+
+			#args = [k, targetNodeID, medials[k], medials[targetNodeID], originUs[k], u2_2, 0.0]
+			args = [k, targetNodeID, medials[k], medials[targetNodeID], originForeUs[k], u2_1, 0.0]
+			candidates.append({ "nodeID1" : k, "nodeID2" : targetNodeID,
+							"medial1": medials[k], "medial2": medials[targetNodeID],
+							"u1": args[4], "u2": args[5], "initAng": args[6],
+							"isFeatureless1": isFeatureless, "isFeatureless2": isTargFeatureless,
+							"isNeigh": isNeigh, "cartDist1": cartDist1, "angDiff1": angDiff1,
+							"pathIDs": pathIDs})
+			
+			#args = [k, targetNodeID, medials[k], medials[targetNodeID], originUs[k], u2_3, 0.0]
+			args = [k, targetNodeID, medials[k], medials[targetNodeID], originBackUs[k], u2_1, 0.0]
+			candidates.append({ "nodeID1" : k, "nodeID2" : targetNodeID,
+							"medial1": medials[k], "medial2": medials[targetNodeID],
+							"u1": args[4], "u2": args[5], "initAng": args[6],
+							"isFeatureless1": isFeatureless, "isFeatureless2": isTargFeatureless,
+							"isNeigh": isNeigh, "cartDist1": cartDist1, "angDiff1": angDiff1,
+							"pathIDs": pathIDs})
+			
+			args = [k, targetNodeID, medials[k], medials[targetNodeID], originUs[k], u2_1, pi]
+			candidates.append({ "nodeID1" : k, "nodeID2" : targetNodeID,
+							"medial1": medials[k], "medial2": medials[targetNodeID],
+							"u1": args[4], "u2": args[5], "initAng": args[6],
+							"isFeatureless1": isFeatureless, "isFeatureless2": isTargFeatureless,
+							"isNeigh": isNeigh, "cartDist1": cartDist1, "angDiff1": angDiff1,
+							"pathIDs": pathIDs})
+			
+			#args = [k, targetNodeID, medials[k], medials[targetNodeID], originUs[k], u2_2, pi]
+			args = [k, targetNodeID, medials[k], medials[targetNodeID], originForeUs[k], u2_1, pi]
+			candidates.append({ "nodeID1" : k, "nodeID2" : targetNodeID,
+							"medial1": medials[k], "medial2": medials[targetNodeID],
+							"u1": args[4], "u2": args[5], "initAng": args[6],
+							"isFeatureless1": isFeatureless, "isFeatureless2": isTargFeatureless,
+							"isNeigh": isNeigh, "cartDist1": cartDist1, "angDiff1": angDiff1,
+							"pathIDs": pathIDs})
+			
+			#args = [k, targetNodeID, medials[k], medials[targetNodeID], originUs[k], u2_3, pi]
+			args = [k, targetNodeID, medials[k], medials[targetNodeID], originBackUs[k], u2_1, pi]
+			candidates.append({ "nodeID1" : k, "nodeID2" : targetNodeID,
+							"medial1": medials[k], "medial2": medials[targetNodeID],
+							"u1": args[4], "u2": args[5], "initAng": args[6],
+							"isFeatureless1": isFeatureless, "isFeatureless2": isTargFeatureless,
+							"isNeigh": isNeigh, "cartDist1": cartDist1, "angDiff1": angDiff1,
+							"pathIDs": pathIDs})
+
+
+		PATH_MATCH_DIST = 1.0
+		PAIR_ANG_DELTA = 0.3
+
+
+		candidates2 = []
+		argSets = []
+		print
+		print "CANDIDATES:"
+		for cand in candidates:
+			nodeID1 = cand['nodeID1']
+			nodeID2 = cand['nodeID2']
+			medial1 = cand['medial1']
+			medial2 = cand['medial2']
+			u1 = cand['u1']
+			u2 = cand['u2']
+			initAng = cand['initAng']
+			#transform = cand[2]
+			#covE = cand[3]
+			angDiff1 = cand['angDiff1']
+			#angDiff2 = cand[5]
+			cartDist1 = cand['cartDist1']
+			#cartDist2 = cand[7]
+			isFeatureless = cand['isFeatureless1']
+			isNeigh = cand['isNeigh']
+			pathIDs = cand['pathIDs']
+			#histogram = cand[11]
+			
+			print nodeID1, nodeID2, u1, u2, initAng
+			
+			
+			if False and not isNeigh:
+				if cartDist1 < PATH_MATCH_DIST and fabs(diffAngle(angDiff1,initAng)) < PAIR_ANG_DELTA:
+					if (isTargFeatureless and isFeatureless) or (not isTargFeatureless and not isFeatureless):
+						
+						
+						args = [nodeID1, nodeID2, medial1, medial2, u1, u2, initAng]
+						argSets.append(args)
+						candidates2.append(cand)
+			if True:
+				args = [nodeID1, nodeID2, medial1, medial2, u1, u2, initAng]
+				argSets.append(args)
+				candidates2.append(cand)
+
+
+		print "FILTERED:"
+		for cand in candidates2:
+			nodeID1 = cand['nodeID1']
+			nodeID2 = cand['nodeID2']
+			u1 = cand['u1']
+			u2 = cand['u2']
+			initAng = cand['initAng']
+			print nodeID1, nodeID2, u1, u2, initAng
+
+		t1 = time.time()
+		results = gen_icp.batchOverlapICP(argSets)
+		t2 = time.time()
+		print "batchOverlapICP:", t2-t1, "seconds", len(argSets), "pairs"
+
+		"""
+		METRICS:
+		
+		1) initial angle difference
+		2) constraint angle difference
+		3) initial cartesian difference
+		4) constraint cartestian difference
+		5) featurelessness state
+		6) paired inplace or not status
+		7) path classification
+		8) ICP histogram
+		"""
+
+
+		#print "PATH RESULT:"		
+		for k in range(len(candidates2)):
+			cand = candidates2[k]
+			nodeID1 = cand['nodeID1']
+			nodeID2 = cand['nodeID2']
+			medial1 = cand['medial1']
+			medial2 = cand['medial2']
+			u1 = cand['u1']
+			u2 = cand['u2']
+			initAng = cand['initAng']
+			#transform = cand[2]
+			#covE = cand[3]
+			angDiff1 = cand['angDiff1']
+			#angDiff2 = cand[5]
+			cartDist1 = cand['cartDist1']
+			#cartDist2 = cand[7]
+			isFeatureless = cand['isFeatureless1']
+			isNeigh = cand['isNeigh']
+			pathIDs = cand['pathIDs']
+						
+			
+			res = results[k]
+			offset = res[0]
+			histogram = res[1]
+						
+			transform = matrix([[offset[0]], [offset[1]], [offset[2]]])
+			covE =  self.E_overlap
+			
+			candNode = self.nodeHash[nodeID1]
+			candPose = candNode.getGlobalGPACPose()
+			
+			cartDist2 = sqrt((candPose[0]-targetPose[0]-offset[0])**2 + (candPose[0]-targetPose[0]-offset[0])**2)
+			#cartDist2 = sqrt(offset[0]**2 + offset[1]**2)
+			angDiff2 = diffAngle(offset[2], angDiff1)
+
+			print "cartDist:", candPose[0]-targetPose[0], offset[0], candPose[1]-targetPose[1], offset[1], angDiff1, angDiff2
+
+			cand["offset"] = offset
+			cand["transform"] = transform
+			cand["covE"] = deepcopy(self.E_junction)
+			cand["histogram"] = histogram
+			cand["angDiff2"] = angDiff2
+			cand["cartDist2"] = cartDist2
+		
+			#candidates.append([nodeID1, nodeID2, transform, deepcopy(self.E_junction), angDiff1, angDiff2, cartDist1, cartDist2, isFeatureless, isNeigh, pathIDs, histogram])
+
+
+		print "RESULTS:"
+		for cand in candidates2:
+			nodeID1 = cand["nodeID1"]
+			nodeID2 = cand["nodeID2"]
+			transform = cand["transform"]
+			covE = cand["covE"]
+			offset = cand["offset"]
+
+			angDiff2 = cand["angDiff2"]
+			cartDist2 = cand["cartDist2"]
+						
+			print nodeID1, nodeID2, offset, cartDist2, angDiff2
+			
+			self.allPathConstraints.append([nodeID1,nodeID2,transform,covE])
+
+		print
+
+		" draw new hypotheses "
+		for cand in candidates2:
+			self.drawCandidate(cand)
+		
+		
+		"""
+		METRICS:
+		
+		1) initial angle difference
+		2) constraint angle difference
+		3) initial cartesian difference
+		4) constraint cartestian difference
+		5) featurelessness state
+		6) paired inplace or not status
+		7) path classification
+		8) ICP histogram
+		"""
+			
+
+		"""
+		cart_distances = []
+		angle_diffs = []
+		targetNode = self.nodeHash[targetNodeID]
+		targetPose = targetNode.getGlobalGPACPose()
+		for i in range(len(pathNodes)):
+			
+			candNode = self.nodeHash[pathNodes[i]]
+			candPose = candNode.getGlobalGPACPose()
+			
+			dist = sqrt((candPose[0]-targetPose[0])**2 + (candPose[1]-targetPose[1])**2)
+			angDelta = diffAngle(candPose[2],targetPose[2])
+			print pathNodes[i], dist, angDelta, targetPose, candPose
+			cart_distances.append(dist)
+
+			angle_diffs.append(angDelta)
+		"""
+
+
+		#return transform, covE, hist		
+
+		# result, hist = gen_icp.overlapICP_GPU2(estPose1, gndOffset, [u1, u2, angGuess], hull1, hull2, medial1, medial2, [0.0,0.0], [0.0,0.0], inPlace = inPlace, plotIter = False, n1 = i, n2 = j, uRange = uRange)
+		
+
+		#for pair in constraintPairs:
+		#	n1 = pair[0]
+		#	n2 = pair[1]
+		#	transform, covE, hist = self.makeMedialOverlapConstraint(n1, n2, isMove = False, uRange = 3.0)				
+
+
+		
+
+	def addPathConstraints2(self, pathNodes, targetNodeID, insertNode = False):
+
+		print "addPathConstraints:"
+		print "pathNodes:", pathNodes
+		print "targetNodeID:", targetNodeID
+
+		pathNodes = []
+		for k in range(self.numPaths):
+			pathNodes += self.nodeSets[k]
+
+		print "pathNodes:", pathNodes
+		
+		" delete old edges "
+		self.deleteAllPriority(CORNER_PRIORITY)
+				
+		self.addBatchConstraints(targetNodeID)
+
+		" analyze over all possible constraints "
+		totalHypotheses = self.allPathConstraints
+
+		" delete old edges "
+		self.deleteAllPriority(CORNER_PRIORITY)
+		
+		self.mergePriorityConstraints()
+		
+		" recompute dijkstra projection "
+		paths = []
+		for i in range(self.numNodes):
+			paths.append(bayes.dijkstra_proj(i, self.numNodes, self.edgeHash))
+		
+		
+		
+		#totalHypotheses = constraintResults
+		
+		estPaths = []
+		
+		results = []
+		for i in range(len(totalHypotheses)):
+			for j in range(i+1, len(totalHypotheses)):
+				
+				hyp1 = totalHypotheses[i]
+				hyp2 = totalHypotheses[j]
+				
+				m1 = hyp1[0]
+				m2 = hyp1[1]
+				
+				n1 = hyp2[0]
+				n2 = hyp2[1]
+				
+				Tp1 = paths[m2][n1][0]
+				Ep1 = paths[m2][n1][1]
+				
+				Tp2 = paths[n2][m1][0]
+				Ep2 = paths[n2][m1][1]
+
+				#Th1 = paths[m1][m2][0]
+				#Ch1 = paths[m1][m2][1]
+				
+				#Th2 = paths[n1][n2][0]
+				#Ch2 = paths[n1][n2][1]
+				
+				poseOrigin = Pose(self.nodeHash[m1].getGlobalGPACPose())
+				offset = poseOrigin.convertGlobalPoseToLocal(self.nodeHash[m2].getGlobalGPACPose())
+				Th1 = matrix([[offset[0]],[offset[1]],[offset[2]]])
+				Ch1 = matrix([[0.2, 0.0, 0.0],
+								[0.0, 0.2, 0.0],
+								[0.0, 0.0, 0.04]])
+
+				poseOrigin = Pose(self.nodeHash[n1].getGlobalGPACPose())
+				offset = poseOrigin.convertGlobalPoseToLocal(self.nodeHash[n2].getGlobalGPACPose())
+				Th2 = matrix([[offset[0]],[offset[1]],[offset[2]]])
+				Ch2 = matrix([[0.2, 0.0, 0.0],
+								[0.0, 0.2, 0.0],
+								[0.0, 0.0, 0.04]])
+				
+				#Th1 = hyp1[2]
+				#Th2 = hyp2[2]
+				
+				#Ch1 = hyp1[3]
+				#Ch2 = hyp2[3]
+				
+				" m1->m2, m2->n1, n1->n2, n2->m1 "
+				" Th1, Tp1, Th2, Tp2 "
+
+				print
+				print "pairwise hypotheses:", m1, m2, n1, n2
+				print "Th1,Ch1:", Th1, Ch1
+				print "Tp1,Ep1:", Tp1, Ep1
+				print "Th2, Ch2:", Th2, Ch2
+				print "Tp2, Ep2:", Tp2, Ep2
+				
+				covE = Ch1
+				result1 = Th1
+				result2, cov2 = doTransform(result1, Tp1, covE, Ep1)
+				result3, cov3 = doTransform(result2, Th2, cov2, Ch2)
+				result4, cov4 = doTransform(result3, Tp2, cov3, Ep2)
+				print "results:"
+				print "result1, covE:", result1, covE
+				print "result2, cov2:", result2, cov2
+				print "result3, cov3:", result3, cov3
+				print "result4, cov4:", result4, cov4
+				
+				
+				invMat = scipy.linalg.inv(cov4)
+				err = sqrt(numpy.transpose(result4) * invMat * result4)
+				print "invMat:", invMat
+				print "err:", err
+				results.append([err, i, j])
+
+					
+		results.sort()
+		selected = []	
+		selected2 = []
+		selected3 = []
+		selected4 = []
+		selected5 = []
+		selected6 = []
+		
+		print "len(totalHypotheses) =", len(totalHypotheses)
+				
+		if len(totalHypotheses) == 0:
+			print "no hypotheses!  returning "
+			newConstraints = []
+			#return
+		
+			#elif len(totalHypotheses) == 1:
+		elif len(totalHypotheses) <= 2:
+			newConstraints = totalHypotheses
+
+		else: 
+					
+			" set all proscribed hypothesis sets to maximum error "	
+			maxError = 0.0
+			for result in results:
+				if result[0] != None and result[0] > maxError:
+					maxError = result[0]
+	
+			maxError = maxError*2
+	
+			for result in results:
+				if result[0] == None:
+					result[0] = maxError
+		
+			" create the consistency matrix "
+			A = matrix(len(totalHypotheses)*len(totalHypotheses)*[0.0], dtype=float)
+			A.resize(len(totalHypotheses), len(totalHypotheses))
+			
+			" populate consistency matrix "					
+			for result in results:
+				i = result[1]
+				j = result[2]
+				A[i,j] = (maxError - result[0])/(2*maxError)
+				A[j,i] = (maxError - result[0])/(2*maxError)
+	
+			#print A
+			print "A:"
+			for i in range(len(totalHypotheses)):
+				printStr = ""
+				for j in range(len(totalHypotheses)):
+					printStr += "%1.2f" % (A[i,j]) + " "
+				
+				print printStr
+	
+			" do graph clustering of consistency matrix "
+			w = []
+			e = []
+			for i in range(100):
+
+				#print "A:", A
+
+				e, lmbda = scsgp.dominantEigenvectors2(A)
+				#print "e:", e
+				"""
+				if len(totalHypotheses) > 3:
+					kVal = 3
+					lmbda2, e2 = eigsh(A, k=kVal)
+				elif len(totalHypotheses) > 2:
+					kVal = 2
+					lmbda2, e2 = eigsh(A, k=kVal)
+				else:
+					kVal = 1
+					lmbda2, e2 = eigsh(A, k=kVal)
+				kVal = min(3, len(totalHypotheses)-1)
+					
+				eNew = [matrix([[e2[i,j]] for i in range(len(totalHypotheses))], dtype=float) for j in range(kVal)]
+				"""
+				#print "eNew:", eNew
+
+				#print "lmbda:", lmbda, lmbda2
+				#print "eigen:", e, eNew
+				
+				
+				#exit()
+				print "lambda:", lmbda
+				eigVec0 = [e[0][i,0] for i in range(len(totalHypotheses))]
+				eigVec1 = [e[1][i,0] for i in range(len(totalHypotheses))]
+				print "eigVec0:", eigVec0
+				print "eigVec1:", eigVec1
+
+
+				w1 = scsgp.getIndicatorVector(e[0])
+				w2 = scsgp.getIndicatorVector(e[1])
+				#w3 = scsgp.getIndicatorVector(e[2])
+				if len(e) <= 1:
+					break
+	
+				" threshold test l1 / l2"
+				ratio = fabs(lmbda[0][0,0]) / fabs(lmbda[1][0,0])
+				if ratio >= 2.0:
+					break
+
+			#if len(totalHypotheses) >= 2:
+			#	kVal = max(3, len(totalHypotheses)-2)			
+			#	lmbda2, e2 = eigs(A, k=kVal)
+			#	print "eigenvalues:"
+			#	print lmbda2
+			#	print e2[0]
+			#	print e2[1]
+			
+
+			if False and 3 < len(totalHypotheses):
+
+				#print "A:", A
+				
+				kVal = min(3, len(totalHypotheses)-1)
+				#print "kVal:", kVal
+				
+				lmbda2, e2 = eigsh(A, k=kVal)
+				#print "e2:", e2
+
+				eNew = [matrix([[e2[i,j]] for i in range(len(totalHypotheses))], dtype=float) for j in range(kVal)]
+				#print "eNew:", eNew
+				
+				w1_2 = scsgp.getIndicatorVector(eNew[0])
+				w2_2 = scsgp.getIndicatorVector(eNew[1])
+				w3_2 = scsgp.getIndicatorVector(eNew[2])				
+
+				#print "w1_2:", w1_2
+
+				selected4 = []	
+				for i in range(len(totalHypotheses)):
+					if w1_2[i,0] >= 1.0:
+						selected4.append(totalHypotheses[i])
+		
+				selected5 = []	
+				for i in range(len(totalHypotheses)):
+					if w2_2[i,0] >= 1.0:
+						selected5.append(totalHypotheses[i])
+	
+				selected6 = []	
+				for i in range(len(totalHypotheses)):
+					if w3_2[i,0] >= 1.0:
+						selected6.append(totalHypotheses[i])
+		
+			selected = []	
+			for i in range(len(totalHypotheses)):
+				if w1[i,0] >= 1.0:
+					selected.append(totalHypotheses[i])
+	
+			selected2 = []	
+			for i in range(len(totalHypotheses)):
+				if w2[i,0] >= 1.0:
+					selected2.append(totalHypotheses[i])
+
+			#selected3 = []	
+			#for i in range(len(totalHypotheses)):
+			#	if w3[i,0] >= 1.0:
+			#		selected3.append(totalHypotheses[i])
+
+
+			newConstraints = selected
+
+			#newConstraints = totalHypotheses
+
+
+		print "total:", len(totalHypotheses), " = ", len(selected), "vs.", len(selected2), "hypotheses"
+			
+		print "adding", len(selected2), "medial overlap constraints on path"
+
+		self.deleteAllPriority(CORNER_PRIORITY)
+		self.mergePriorityConstraints()
+		self.drawHyp(tit = "Empty")
+
+
+		for const in newConstraints:
+			n1 = const[0]
+			n2 = const[1]
+			transform = const[2]
+			covE = const[3]
+
+			self.addPriorityEdge([n1,n2,transform,covE], CORNER_PRIORITY)
+
+		" merge the constraints "
+		self.mergePriorityConstraints()
+		self.drawHyp(tit = "Power eig 0")
+
+		
+		newConstraints = selected2
+		" delete old edges "
+		self.deleteAllPriority(CORNER_PRIORITY)
+				
+		for const in newConstraints:
+			n1 = const[0]
+			n2 = const[1]
+			transform = const[2]
+			covE = const[3]
+
+			self.addPriorityEdge([n1,n2,transform,covE], CORNER_PRIORITY)
+
+		" merge the constraints "
+		self.mergePriorityConstraints()
+		self.drawHyp(tit = "Power eig 1")
+
+		if False and len(totalHypotheses) > 3:
+			newConstraints = selected4
+			" delete old edges "
+			self.deleteAllPriority(CORNER_PRIORITY)
+					
+			for const in newConstraints:
+				n1 = const[0]
+				n2 = const[1]
+				transform = const[2]
+				covE = const[3]
+	
+				self.addPriorityEdge([n1,n2,transform,covE], CORNER_PRIORITY)
+	
+			" merge the constraints "
+			self.mergePriorityConstraints()
+			self.drawHyp(tit = "PCA 0")
+	
+	
+			newConstraints = selected5
+			" delete old edges "
+			self.deleteAllPriority(CORNER_PRIORITY)
+					
+			for const in newConstraints:
+				n1 = const[0]
+				n2 = const[1]
+				transform = const[2]
+				covE = const[3]
+	
+				self.addPriorityEdge([n1,n2,transform,covE], CORNER_PRIORITY)
+	
+			" merge the constraints "
+			self.mergePriorityConstraints()
+			self.drawHyp(tit = "PCA 1" )
+	
+			newConstraints = selected6
+			" delete old edges "
+			self.deleteAllPriority(CORNER_PRIORITY)
+					
+			for const in newConstraints:
+				n1 = const[0]
+				n2 = const[1]
+				transform = const[2]
+				covE = const[3]
+	
+				self.addPriorityEdge([n1,n2,transform,covE], CORNER_PRIORITY)
+	
+			" merge the constraints "
+			self.mergePriorityConstraints()
+			self.drawHyp(tit = "PCA 2")
+
+		"""
+		newConstraints = selected2
+		" delete old edges "
+		self.deleteAllPriority(CORNER_PRIORITY)
+				
+		for const in newConstraints:
+			n1 = const[0]
+			n2 = const[1]
+			transform = const[2]
+			covE = const[3]
+
+			self.addPriorityEdge([n1,n2,transform,covE], CORNER_PRIORITY)
+
+		" merge the constraints "
+		self.mergePriorityConstraints()
+		self.drawHyp(tit = "Power eig 1")
+		"""
+		
+		
+		#return selected, selected2
+		#exit()
+
+		return
+		
+
+		
 
 	def addPathConstraints(self, pathNodes, targetNodeID, insertNode = False):
 
@@ -6396,6 +7094,12 @@ class PoseGraph:
 		print "pathNodes:", pathNodes
 		print "targetNodeID:", targetNodeID
 
+		#pathNodes = []
+		#for k in range(self.numPaths):
+		#	pathNodes += self.nodeSets[k]
+
+		print "pathNodes:", pathNodes
+			
 		paths = []
 		for i in range(self.numNodes):
 			paths.append(bayes.dijkstra_proj(i, self.numNodes, self.edgeHash))
@@ -6525,9 +7229,9 @@ class PoseGraph:
 		"FIXED:  Sorting on targetNodeID instead of nodeID "
 		#constraintPairs.sort()
 		constraintPairs = sorted(constraintPairs, key = itemgetter(1))
-		if len(constraintPairs) > 3:
-			constraintPairs = constraintPairs[:3]
-			print "reducing to only", len(constraintPairs)
+		#if len(constraintPairs) > 3:
+		#	constraintPairs = constraintPairs[:3]
+		#	print "reducing to only", len(constraintPairs)
 
 		PAIR_ANG_DELTA = 0.3
 
@@ -6612,7 +7316,20 @@ class PoseGraph:
 			return
 
 
-		totalHypotheses = constraintResults
+		" analyze over all possible constraints "
+		totalHypotheses = self.allPathConstraints
+
+		" delete old edges "
+		self.deleteAllPriority(CORNER_PRIORITY)
+		
+		" recompute dijkstra projection "
+		paths = []
+		for i in range(self.numNodes):
+			paths.append(bayes.dijkstra_proj(i, self.numNodes, self.edgeHash))
+		
+		
+		
+		#totalHypotheses = constraintResults
 		
 		results = []
 		for i in range(len(totalHypotheses)):
@@ -6652,8 +7369,14 @@ class PoseGraph:
 				err = sqrt(numpy.transpose(result4) * invMat * result4)
 				results.append([err, i, j])
 
-					
+		
 		results.sort()
+		selected = []	
+		selected2 = []
+		selected3 = []
+		selected4 = []
+		selected5 = []
+		selected6 = []
 		
 		print "len(totalHypotheses) =", len(totalHypotheses)
 				
@@ -6662,11 +7385,12 @@ class PoseGraph:
 			newConstraints = []
 			#return
 		
-		elif len(totalHypotheses) == 1:
+			#elif len(totalHypotheses) == 1:
+		elif len(totalHypotheses) <= 2:
 			newConstraints = totalHypotheses
 
 		else: 
-					
+			
 			" set all proscribed hypothesis sets to maximum error "	
 			maxError = 0.0
 			for result in results:
@@ -6694,18 +7418,35 @@ class PoseGraph:
 			w = []
 			e = []
 			for i in range(100):
-				#if 2 < len(totalHypotheses):
-				#	lmbda2, e2 = eigsh(A, k=2)
-				#else:
-				#	lmbda2, e2 = eigsh(A, k=1)
-					
+
+				#print "A:", A
+
 				e, lmbda = scsgp.dominantEigenvectors(A)
+				#print "e:", e
+				"""
+				if len(totalHypotheses) > 3:
+					kVal = 3
+					lmbda2, e2 = eigsh(A, k=kVal)
+				elif len(totalHypotheses) > 2:
+					kVal = 2
+					lmbda2, e2 = eigsh(A, k=kVal)
+				else:
+					kVal = 1
+					lmbda2, e2 = eigsh(A, k=kVal)
+				kVal = min(3, len(totalHypotheses)-1)
+					
+				eNew = [matrix([[e2[i,j]] for i in range(len(totalHypotheses))], dtype=float) for j in range(kVal)]
+				"""
+				#print "eNew:", eNew
 
 				#print "lmbda:", lmbda, lmbda2
-				#print "eigen:", e, e2
+				#print "eigen:", e, eNew
 				
-				w = scsgp.getIndicatorVector(e[0])
+				
+				#exit()
+				w1 = scsgp.getIndicatorVector(e[0])
 				w2 = scsgp.getIndicatorVector(e[1])
+				w3 = scsgp.getIndicatorVector(e[2])
 				if len(e) <= 1:
 					break
 	
@@ -6713,21 +7454,70 @@ class PoseGraph:
 				ratio = lmbda[0][0,0] / lmbda[1][0,0]
 				if ratio >= 2.0:
 					break
+
+			if False and 3 < len(totalHypotheses):
+
+				print "A:", A
+				
+				kVal = min(3, len(totalHypotheses)-1)
+				print "kVal:", kVal
+				
+				lmbda2, e2 = eigsh(A, k=kVal)
+				print "e2:", e2
+
+				eNew = [matrix([[e2[i,j]] for i in range(len(totalHypotheses))], dtype=float) for j in range(kVal)]
+				print "eNew:", eNew
+				
+				w1_2 = scsgp.getIndicatorVector(eNew[0])
+				w2_2 = scsgp.getIndicatorVector(eNew[1])
+				w3_2 = scsgp.getIndicatorVector(eNew[2])				
+
+				print "w1_2:", w1_2
+
+				selected4 = []	
+				for i in range(len(totalHypotheses)):
+					if w1_2[i,0] >= 1.0:
+						selected4.append(totalHypotheses[i])
+		
+				selected5 = []	
+				for i in range(len(totalHypotheses)):
+					if w2_2[i,0] >= 1.0:
+						selected5.append(totalHypotheses[i])
 	
+				selected6 = []	
+				for i in range(len(totalHypotheses)):
+					if w3_2[i,0] >= 1.0:
+						selected6.append(totalHypotheses[i])
+		
 			selected = []	
 			for i in range(len(totalHypotheses)):
-				if w[i,0] >= 1.0:
+				if w1[i,0] >= 1.0:
 					selected.append(totalHypotheses[i])
 	
 			selected2 = []	
 			for i in range(len(totalHypotheses)):
 				if w2[i,0] >= 1.0:
 					selected2.append(totalHypotheses[i])
-	
-			newConstraints = selected2
 
-			newConstraints = totalHypotheses
-		print "adding", len(newConstraints), "medial overlap constraints on path"
+			selected3 = []	
+			for i in range(len(totalHypotheses)):
+				if w3[i,0] >= 1.0:
+					selected3.append(totalHypotheses[i])
+
+
+			newConstraints = selected
+
+			#newConstraints = totalHypotheses
+
+
+		print "total:", len(totalHypotheses), " = ", len(selected), "vs.", len(selected2), "vs.", len(selected3), "hypotheses"
+			
+		print "adding", len(selected2), "medial overlap constraints on path"
+
+		self.deleteAllPriority(CORNER_PRIORITY)
+		self.mergePriorityConstraints()
+		self.drawHyp(tit = "Empty")
+
 
 		for const in newConstraints:
 			n1 = const[0]
@@ -6738,7 +7528,93 @@ class PoseGraph:
 			self.addPriorityEdge([n1,n2,transform,covE], CORNER_PRIORITY)
 
 		" merge the constraints "
-		#self.mergePriorityConstraints()
+		self.mergePriorityConstraints()
+		self.drawHyp(tit = "Power eig 0")
+
+		newConstraints = selected3
+		" delete old edges "
+		self.deleteAllPriority(CORNER_PRIORITY)
+				
+		for const in newConstraints:
+			n1 = const[0]
+			n2 = const[1]
+			transform = const[2]
+			covE = const[3]
+
+			self.addPriorityEdge([n1,n2,transform,covE], CORNER_PRIORITY)
+
+		" merge the constraints "
+		self.mergePriorityConstraints()
+		self.drawHyp(tit = "Power eig 2")
+
+		if False and len(totalHypotheses) > 3:
+			newConstraints = selected4
+			" delete old edges "
+			self.deleteAllPriority(CORNER_PRIORITY)
+					
+			for const in newConstraints:
+				n1 = const[0]
+				n2 = const[1]
+				transform = const[2]
+				covE = const[3]
+	
+				self.addPriorityEdge([n1,n2,transform,covE], CORNER_PRIORITY)
+	
+			" merge the constraints "
+			self.mergePriorityConstraints()
+			self.drawHyp(tit = "PCA 0")
+	
+	
+			newConstraints = selected5
+			" delete old edges "
+			self.deleteAllPriority(CORNER_PRIORITY)
+					
+			for const in newConstraints:
+				n1 = const[0]
+				n2 = const[1]
+				transform = const[2]
+				covE = const[3]
+	
+				self.addPriorityEdge([n1,n2,transform,covE], CORNER_PRIORITY)
+	
+			" merge the constraints "
+			self.mergePriorityConstraints()
+			self.drawHyp(tit = "PCA 1" )
+	
+			newConstraints = selected6
+			" delete old edges "
+			self.deleteAllPriority(CORNER_PRIORITY)
+					
+			for const in newConstraints:
+				n1 = const[0]
+				n2 = const[1]
+				transform = const[2]
+				covE = const[3]
+	
+				self.addPriorityEdge([n1,n2,transform,covE], CORNER_PRIORITY)
+	
+			" merge the constraints "
+			self.mergePriorityConstraints()
+			self.drawHyp(tit = "PCA 2")
+
+
+		newConstraints = selected2
+		" delete old edges "
+		self.deleteAllPriority(CORNER_PRIORITY)
+				
+		for const in newConstraints:
+			n1 = const[0]
+			n2 = const[1]
+			transform = const[2]
+			covE = const[3]
+
+			self.addPriorityEdge([n1,n2,transform,covE], CORNER_PRIORITY)
+
+		" merge the constraints "
+		self.mergePriorityConstraints()
+		self.drawHyp(tit = "Power eig 1")
+
+		
 		
 		#return selected, selected2
 
@@ -6829,7 +7705,213 @@ class PoseGraph:
 			pylab.plot(xP,yP, linewidth=2, color = 'g')
 			
 
+	def drawHyp(self, tit = ""):
+		
+		poses = []
+		for i in range(self.numNodes):
+			poses.append(self.nodeHash[i].getGlobalGPACPose())
 
+		pylab.clf()
+		for i in range(self.numNodes):
+
+			hull = computeBareHull(self.nodeHash[i], sweep = False)
+			hull.append(hull[0])
+
+			node1 = self.nodeHash[i]
+			currPose = currPose = node1.getGlobalGPACPose()
+			currProfile = Pose(currPose)
+			posture1 = node1.getStableGPACPosture()
+			posture_trans = []
+			for p in posture1:
+				posture_trans.append(gen_icp.dispOffset(p, currPose))	
+
+			hull_trans = []
+			for p in hull:
+				hull_trans.append(gen_icp.dispOffset(p, currPose))	
+			
+			xP = []
+			yP = []
+			for p in posture_trans:
+				xP.append(p[0])
+				yP.append(p[1])
+			pylab.plot(xP,yP, color=(255/256.,182/256.,193/256.))	
+
+			xP = []
+			yP = []
+			for p in hull_trans:
+				xP.append(p[0])
+				yP.append(p[1])
+			pylab.plot(xP,yP, color=(112/256.,147/256.,219/256.))	
+
+		for k, v in self.edgeHash.items():	
+			node1 = self.nodeHash[k[0]]
+			node2 = self.nodeHash[k[1]]
+			pose1 = node1.getGlobalGPACPose()
+			pose2 = node2.getGlobalGPACPose()
+
+			xP = [pose1[0], pose2[0]]
+			yP = [pose1[1], pose2[1]]
+
+			#age = self.edgeAgeHash[k]
+			age = 0
+
+			fval = float(age) / 20.0
+			if fval > 0.4:
+				fval = 0.4
+			color = (fval, fval, fval)
+			pylab.plot(xP, yP, color=color, linewidth=1)
+
+
+		xP = []
+		yP = []
+		for pose in poses:
+			xP.append(pose[0])
+			yP.append(pose[1])		
+		pylab.scatter(xP,yP, color='k', linewidth=1)
+
+		#pylab.title("Corner Constraint %d ---> %d" % (id1, id2))
+		#pylab.xlim(-4,4)
+		#pylab.ylim(-4,4)
+
+		
+		pylab.title(tit + " %d Poses" % self.numNodes)
+		pylab.xlim(-5,10)
+		pylab.ylim(-8,8)
+
+			
+		pylab.savefig("plotHypotheses%04u.png" % self.hypPlotCount)
+		self.hypPlotCount += 1
+
+	def drawCandidate(self, cand):
+
+
+		const_count = 0
+		nodeID1 = cand["nodeID1"]
+		nodeID2 = cand["nodeID2"]
+		transform = cand["transform"]
+		covE = cand["covE"]
+		offset = cand["offset"]
+		medial1 = cand["medial1"]
+		medial2 = cand["medial2"]
+
+		angDiff1 = cand["angDiff1"]
+		cartDist1 = cand["cartDist1"]
+		angDiff2 = cand["angDiff2"]
+		cartDist2 = cand["cartDist2"]
+		histogram = cand["histogram"]
+
+		u1 = cand["u1"]
+		u2 = cand["u2"]
+		initAng = cand["initAng"]
+		
+		estPose1 = self.nodeHash[nodeID1].getGlobalGPACPose()		
+		
+		hull1 = computeBareHull(self.nodeHash[nodeID1], sweep = False)
+		hull1.append(hull1[0])
+
+		hull2 = computeBareHull(self.nodeHash[nodeID2], sweep = False)
+		hull2.append(hull2[0])
+
+		#offset = [transform[0,0], transform[1,0], transform[2,0]]
+
+		#hull2_trans = []
+		#for p in hull2:
+		#	hull2_trans.append(gen_icp.dispOffset(p, offset))	
+
+		" set the origin of pose 1 "
+		poseOrigin = Pose(estPose1)
+
+		pylab.clf()
+		pylab.axes()
+		
+		xP = []
+		yP = []
+		for b in hull1:
+			p1 = poseOrigin.convertLocalToGlobal(b)
+
+			xP.append(p1[0])	
+			yP.append(p1[1])
+
+		pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+
+
+		xP = []
+		yP = []
+		for p in hull2:
+			p1 = gen_icp.dispOffset(p,offset)
+			
+			p2 = poseOrigin.convertLocalToGlobal(p1)
+			xP.append(p2[0])	
+			yP.append(p2[1])
+
+		pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
+
+
+		" create the ground constraints "
+		gndGPAC1Pose = self.nodeHash[nodeID1].getGndGlobalGPACPose()
+		currProfile = Pose(gndGPAC1Pose)
+		gndGPAC2Pose = self.nodeHash[nodeID2].getGndGlobalGPACPose()
+		gndOffset = currProfile.convertGlobalPoseToLocal(gndGPAC2Pose)
+
+		xP = []
+		yP = []
+		for p in hull2:
+			p1 = gen_icp.dispOffset(p,gndOffset)
+			
+			p2 = poseOrigin.convertLocalToGlobal(p1)
+			xP.append(p2[0])	
+			yP.append(p2[1])
+
+		pylab.plot(xP,yP,linewidth=1, color=(1.0,0.5,0.5))
+
+
+		medialPath1 = medial1
+		medialPath2 = medial2
+		medial_trans = []
+		for p in medialPath2:
+			medial_trans.append(gen_icp.dispOffset(p, offset))	
+
+		xP = []
+		yP = []
+		for p in medialPath1:
+			p1 = poseOrigin.convertLocalToGlobal(p)
+			xP.append(p1[0])
+			yP.append(p1[1])
+		pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+
+		xP = []
+		yP = []
+		for p in medial_trans:
+			p1 = poseOrigin.convertLocalToGlobal(p)
+			xP.append(p1[0])
+			yP.append(p1[1])
+		pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
+
+		xP = []
+		yP = []
+		for p in medialPath2:
+			p1 = gen_icp.dispOffset(p, gndOffset)
+			p2 = poseOrigin.convertLocalToGlobal(p1)
+			xP.append(p2[0])
+			yP.append(p2[1])
+		pylab.plot(xP,yP,linewidth=1, color=(1.0,0.5,0.5))
+
+		self.drawWalls()
+
+		pylab.title("%u -> %u, [%1.1f %1.1f %1.1f] %1.2f %1.2f %1.2f %1.2f %d %d %d" % (nodeID1, nodeID2, u1,u2,initAng, angDiff1, cartDist1, cartDist2, angDiff2, histogram[0], histogram[1], histogram[2]))
+
+
+		pylab.xlim(estPose1[0]-4, estPose1[0]+4)					
+		pylab.ylim(estPose1[1]-3, estPose1[1]+3)
+
+		pylab.savefig("candidate_%04u.png" % self.candidateCount)
+			
+		#pylab.savefig("constraints_%04u.png" % const_count)
+		pylab.clf()			
+
+		self.candidateCount += 1
+
+	
 	def drawConstraints(self, id = []):
 		
 		poses = []

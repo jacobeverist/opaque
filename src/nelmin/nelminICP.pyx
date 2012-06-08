@@ -2,8 +2,9 @@ from libc.stdlib cimport malloc, free
 
 cdef extern from "runNelmin.h":
 	void doTest(double *matchPairs, int numPairs, double *initGuess, double *poses_1, double *poses_2, int numPoses, double *resultParam, double *resultSum)	
-	void doCost(double *matchPairs, int numPairs, double *initGuess, double *poses_1, double *poses_2, int numPoses, double *resultParam, double *resultSum, double *resultOffset)	
+	#void doCost(double *matchPairs, int numPairs, double *initGuess, double *poses_1, double *poses_2, int numPoses, double *resultParam, double *resultSum, double *resultOffset)	
 
+"""
 def ICPcost(matchPairs, int numPairs, initGuess, poses_1, poses_2, int numPoses):
 
 	#cdef double c_matchPairs[12*numPairs]
@@ -35,7 +36,7 @@ def ICPcost(matchPairs, int numPairs, initGuess, poses_1, poses_2, int numPoses)
 	free(c_poses_1)
 	free(c_poses_2)
 	return resultSum[0], [resultParam[0],resultParam[1]], [resultOffset[0], resultOffset[1], resultOffset[2]]
-
+"""
 
 
 def ICPmin(matchPairs, int numPairs, initGuess, poses_1, poses_2, int numPoses):

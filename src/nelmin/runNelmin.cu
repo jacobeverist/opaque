@@ -874,7 +874,7 @@ void doTest(double *h_matchPairs, int numPairs, double *initGuess, double *poses
 	if (h_sum)
 		free(h_sum);
 
-	cudaDeviceReset();
+	//cudaDeviceReset();
 }
 
 

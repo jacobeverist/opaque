@@ -16,11 +16,10 @@ double objFunc(double *params, double *d_matchPairs, double *d_offset, double *d
 
 void icpError(const double* A, const double* offset, double *sumVal, int N);
 
-
-inline double normalizeAngle(double angle);
-inline void dotProduct(double *R, double *vec, double *result);
-inline void buildMatrix(double *R, double ang, int isForward);
-inline void transposeMatrix(double *R, double *Rt);
+__inline double normalizeAngle(double angle);
+__inline void dotProduct(double *R, double *vec, double *result);
+__inline void buildMatrix(double *R, double ang, int isForward);
+__inline void transposeMatrix(double *R, double *Rt);
 
 
 void icpError(const double* A, const double* offset, double *sumVal, int N) {
@@ -92,7 +91,7 @@ void icpError(const double* A, const double* offset, double *sumVal, int N) {
 	sumVal[0] = tempVal;
 }
 
-inline double normalizeAngle(double angle) {
+__inline double normalizeAngle(double angle) {
 
 	while (angle>M_PI)
 		angle=angle-2*M_PI;
@@ -103,12 +102,12 @@ inline double normalizeAngle(double angle) {
 	return angle;
 }
 
-inline void dotProduct(double *R, double *vec, double *result) {
+__inline void dotProduct(double *R, double *vec, double *result) {
 	result[0] = R[0]*vec[0] + R[1]*vec[1];
 	result[1] = R[2]*vec[0] + R[3]*vec[1];
 }
 
-inline void transposeMatrix(double *R, double *Rt) {
+__inline void transposeMatrix(double *R, double *Rt) {
 	Rt[0] = R[0];
 	Rt[3] = R[3];
 
@@ -117,7 +116,7 @@ inline void transposeMatrix(double *R, double *Rt) {
 
 }
 
-inline void buildMatrix(double *R, double ang, int isForward) {
+__inline void buildMatrix(double *R, double ang, int isForward) {
 
 	if ( isForward ) {
 		R[0] = cos(ang); 
@@ -142,6 +141,40 @@ double objFunc(double *params, double *d_matchPairs, double *d_offset, double *d
 
 	double pose1[3] = {0.0,0.0,0.0};
 	double pose2[3] = {0.0,0.0,0.0};
+	double point1[2];
+	double point2[2];
+	double ang1;
+	double ang2;
+	double ang2_off;
+	double overlapPoint1Pose[3];
+	double overlapPoint2Pose[3];
+	double estPose1[3] = {0.0,0.0,0.0};
+	double dist1;
+	double vecAng1 = 0.0;
+	double backR1[4];
+	double foreR1[4];
+	double R1[4];
+	double estPose2[3];
+	double dist2;
+	double vecAng2 = 0.0;
+	double backR2[4];
+	double foreR2[4];
+	double R2[4];
+	double negCurve2Pose[3] = {0.0,0.0,0.0};
+	double offsetR2[4];
+	double finalVec2[2] = {0.0,0.0};
+	double transVec2[2] = {0.0,0.0};
+	double resPose2[3] = {0.0,0.0,0.0};
+	double finalVec[2] = {0.0,0.0};
+	double R2t[4];
+	double tempVec1[2] = {0.0,0.0};
+	double resVec[2] = {0.0,0.0};
+	double tempVec2[2] = {0.0,0.0};
+	double globalVec[2] = {0.0,0.0};
+	double localVec[2] = {0.0,0.0};
+	double localOffset[3] = {0.0,0.0,0.0};
+	double h_offset[3] = {0.0,0.0,0.0};
+	double totalSum;
 
 	//printf("%f %f :", currU, currAng);
 
@@ -203,27 +236,30 @@ double objFunc(double *params, double *d_matchPairs, double *d_offset, double *d
 	}
 
 
-	double point1[2];
+	//double point1[2];
 	point1[0] = pose1[0];
 	point1[1] = pose1[1];
 
-	double point2[2];
+	//double point2[2];
 	point2[0] = pose2[0];
 	point2[1] = pose2[1];
 
-	double ang1 = pose1[2];
-	double ang2 = pose2[2];
-	double ang2_off = ang2 + currAng;
+	//double ang1 = pose1[2];
+	//double ang2 = pose2[2];
+	//double ang2_off = ang2 + currAng;
+	ang1 = pose1[2];
+	ang2 = pose2[2];
+	ang2_off = ang2 + currAng;
 
 	//offset = computeOffset(point1, point2, ang1, ang2 + currAng)
 
 	//" corner points and orientations "
-	double overlapPoint1Pose[3];
+	//double overlapPoint1Pose[3];
        	overlapPoint1Pose[0] = point1[0];
        	overlapPoint1Pose[1] = point1[1];
        	overlapPoint1Pose[2] = ang1;
 
-	double overlapPoint2Pose[3];
+	//double overlapPoint2Pose[3];
        	overlapPoint2Pose[0] = point2[0];
        	overlapPoint2Pose[1] = point2[1];
        	overlapPoint2Pose[2] = ang2_off;
@@ -233,9 +269,11 @@ double objFunc(double *params, double *d_matchPairs, double *d_offset, double *d
 	//" convert the desired intersection point on curve 1 into global coordinates "
 	//poseProfile1 = Pose([0.0,0.0,0.0])
 	
-	double estPose1[3] = {0.0,0.0,0.0};
-	double dist1 = sqrt(estPose1[0]*estPose1[0] + estPose1[1]*estPose1[1]);
-	double vecAng1 = 0.0;
+	//double estPose1[3] = {0.0,0.0,0.0};
+	//double dist1 = sqrt(estPose1[0]*estPose1[0] + estPose1[1]*estPose1[1]);
+	//double vecAng1 = 0.0;
+	dist1 = sqrt(estPose1[0]*estPose1[0] + estPose1[1]*estPose1[1]);
+	vecAng1 = 0.0;
 
 	if (dist1 > 0.0) {
 		vecAng1 = acos(estPose1[0]/dist1);
@@ -247,24 +285,25 @@ double objFunc(double *params, double *d_matchPairs, double *d_offset, double *d
 		vecAng1 = 0.0;
 	}
 	
-	double backR1[4];
+	//double backR1[4];
 	buildMatrix(backR1, vecAng1, 0);
 
-	double foreR1[4];
+	//double foreR1[4];
 	buildMatrix(foreR1, vecAng1, 1);
 
-	double R1[4];
+	//double R1[4];
 	buildMatrix(R1, estPose1[2], 0);
 
 	// now convert this point into a pose, and perform the inverse transform using corner2Pose 
 
 	//desGlobalPose2 = Pose(overlapPoint1Pose)
-	double estPose2[3];
+	//double estPose2[3];
        	estPose2[0] = overlapPoint1Pose[0];
        	estPose2[1] = overlapPoint1Pose[1];
        	estPose2[2] = overlapPoint1Pose[2];
-	double dist2 = sqrt(estPose2[0]*estPose2[0] + estPose2[1]*estPose2[1]);
-	double vecAng2 = 0.0;
+	//double dist2 = sqrt(estPose2[0]*estPose2[0] + estPose2[1]*estPose2[1]);
+	//double vecAng2 = 0.0;
+	dist2 = sqrt(estPose2[0]*estPose2[0] + estPose2[1]*estPose2[1]);
 
 	if (dist2 > 0.0) {
 		vecAng2 = acos(estPose2[0]/dist2);
@@ -276,30 +315,30 @@ double objFunc(double *params, double *d_matchPairs, double *d_offset, double *d
 		vecAng2 = 0.0;
 	}
 
-	double backR2[4];
+	//double backR2[4];
 	buildMatrix(backR2, vecAng2, 0);
 
-	double foreR2[4];
+	//double foreR2[4];
 	buildMatrix(foreR2, vecAng2, 1);
 
-	double R2[4];
+	//double R2[4];
 	buildMatrix(R2, estPose2[2], 0);
 
 	// CHECK2
 
 	//" perform inverse offset from the destination pose "
 	//negCurve2Pose = desGlobalPose2.doInverse(overlapPoint2Pose)
-	double negCurve2Pose[3] = {0.0,0.0,0.0};
+	//double negCurve2Pose[3] = {0.0,0.0,0.0};
 
-	double offsetR2[4];
+	//double offsetR2[4];
 	buildMatrix(offsetR2, overlapPoint2Pose[2], 0);
 
-	double finalVec2[2] = {0.0,0.0};
+	//double finalVec2[2] = {0.0,0.0};
 	finalVec2[0] = overlapPoint2Pose[0];
 	finalVec2[1] = overlapPoint2Pose[1];
 
 	// transVec = dot(offsetR2, finalVec2)
-	double transVec2[2] = {0.0,0.0};
+	//double transVec2[2] = {0.0,0.0};
 	//transVec2[0] = offsetR2[0]*finalVec2[0] + offsetR2[1]*finalVec2[1];
 	//transVec2[1] = offsetR2[2]*finalVec2[0] + offsetR2[3]*finalVec2[1];
 	dotProduct(offsetR2, finalVec2, transVec2);
@@ -312,34 +351,34 @@ double objFunc(double *params, double *d_matchPairs, double *d_offset, double *d
 	
 	//" relative pose between pose 1 and pose 2 to make corners coincide and same angle "
 	//resPose2 = desGlobalPose2.convertLocalOffsetToGlobal(negCurve2Pose)
-	double resPose2[3] = {0.0,0.0,0.0};
+	//double resPose2[3] = {0.0,0.0,0.0};
 
 	// pss
-	double finalVec[2] = {0.0,0.0};
+	//double finalVec[2] = {0.0,0.0};
 	finalVec[0] = negCurve2Pose[0];
 	finalVec[1] = negCurve2Pose[1];
 
 	//finalVec = array([[negCurve2Pose[0]], [negCurve2Pose[1]]])
 
 	//transVec = dot(transpose(self.R), finalVec)
-	double R2t[4];
+	//double R2t[4];
 	transposeMatrix(R2, R2t);
 
-	double tempVec1[2] = {0.0,0.0};
+	//double tempVec1[2] = {0.0,0.0};
 	dotProduct(R2t, finalVec, tempVec1);
 
 	//double tempVec1[2] = {0.0,0.0};
 	//dotProduct(R2, finalVec, tempVec1);
 
 	//resVec = dot(self.backR, transVec)
-	double resVec[2] = {0.0,0.0};
+	//double resVec[2] = {0.0,0.0};
 	dotProduct(backR2, tempVec1, resVec);
 
 	//resVec[0, 0] += self.dist
 	resVec[0] += dist2;
 
 	//tempVec = dot(self.foreR, resVec)
-	double tempVec2[2] = {0.0,0.0};
+	//double tempVec2[2] = {0.0,0.0};
 	dotProduct(foreR2, resVec, tempVec2);
 
 	resPose2[0] = tempVec2[0];
@@ -351,7 +390,7 @@ double objFunc(double *params, double *d_matchPairs, double *d_offset, double *d
 	//def convertGlobalPoseToLocal(self, pose):
 
 	//" transform pnt to local coordinates"
-	double globalVec[2] = {0.0,0.0};
+	//double globalVec[2] = {0.0,0.0};
 	globalVec[0] = resPose2[0];
 	globalVec[1] = resPose2[1];
 
@@ -365,17 +404,17 @@ double objFunc(double *params, double *d_matchPairs, double *d_offset, double *d
 
 	//" now, apply rotation correction with respect to origin "
 	//localVec = dot(self.R, transVec)
-	double localVec[2] = {0.0,0.0};
+	//double localVec[2] = {0.0,0.0};
 	dotProduct(R1, tempVec2, localVec);
 
 	//localPose = [localVec[0,0], localVec[1,0], normalizeAngle(resPose2[2] - self.estPose[2])]
 	//return localPose
-	double localOffset[3] = {0.0,0.0,0.0};
+	//double localOffset[3] = {0.0,0.0,0.0};
 	localOffset[0] = localVec[0];
 	localOffset[1] = localVec[1];
 	localOffset[2] = normalizeAngle(resPose2[2]-estPose1[2]);
 
-	double h_offset[3] = {0.0,0.0,0.0};
+	//double h_offset[3] = {0.0,0.0,0.0};
 	h_offset[0] = localOffset[0];
 	h_offset[1] = localOffset[1];
 	h_offset[2] = localOffset[2];
@@ -393,12 +432,14 @@ double objFunc(double *params, double *d_matchPairs, double *d_offset, double *d
 	// Copy result from device memory to host memory
 	// h_sum contains the result in host memory
 
-	double totalSum = d_sum[0];
+	//double totalSum = d_sum[0];
+	totalSum = d_sum[0];
 
 	return totalSum;
 
 }
 
+/*
 double objFunc2(double *params, double *d_matchPairs, double *d_offset, double *d_sum, int N, double *poses_1, double *poses_2, int numPoses, double uHigh, double uLow, double u1, double *resultOffset) {
 
 	// def medialOverlapCostFunc_GPU(params, input_GPU, N, medialSpline1, medialSpline2, uHigh, uLow, u1):
@@ -684,6 +725,7 @@ double objFunc2(double *params, double *d_matchPairs, double *d_offset, double *
 	return totalSum;
 
 }
+*/
 
 void doTest(double *h_matchPairs, int numPairs, double *initGuess, double *poses_1, double *poses_2, int numPoses, double *resultParam, double *resultSum) {
 
@@ -775,7 +817,7 @@ void doTest(double *h_matchPairs, int numPairs, double *initGuess, double *poses
 }
 
 
-
+/*
 void doCost(double *h_matchPairs, int numPairs, double *initGuess, double *poses_1, double *poses_2, int numPoses, double *resultParam, double *resultSum, double *resultOffset) {
 
 	double* d_matchPairs;
@@ -800,6 +842,7 @@ void doCost(double *h_matchPairs, int numPairs, double *initGuess, double *poses
 	int i;
 
 	double u1, u2, uHigh, uLow, currU, currAng;
+	double offset[3];
 
 	size = 3 * sizeof(double);
 	size2 = numPairs * 12 * sizeof(double);
@@ -839,9 +882,10 @@ void doCost(double *h_matchPairs, int numPairs, double *initGuess, double *poses
 	//	numPoses, numPairs, d_matchPairs, d_offset, d_sum, poses_1, poses_2,
 	//	uHigh, uLow, u1);
 
-	double offset[3];
+	//double offset[3];
 
-	double newSum = objFunc2(&start[0], d_matchPairs, d_offset, d_sum, numPairs, poses_1, poses_2, numPoses, uHigh, uLow, u1, offset);
+	//double newSum = objFunc2(&start[0], d_matchPairs, d_offset, d_sum, numPairs, poses_1, poses_2, numPoses, uHigh, uLow, u1, offset);
+	newSum = objFunc2(&start[0], d_matchPairs, d_offset, d_sum, numPairs, poses_1, poses_2, numPoses, uHigh, uLow, u1, offset);
 
 	resultSum[0] = newSum;
 	resultParam[0] = currU;
@@ -870,3 +914,4 @@ void doCost(double *h_matchPairs, int numPairs, double *initGuess, double *poses
 		free(h_sum);
 
 }
+*/
