@@ -304,7 +304,7 @@ def doTransform(T1, T2, E1, E2):
 
 	newT = matrix([[x1 + x2*cos(p1) - y2*sin(p1)],
 		[y1 + x2*sin(p1) + y2*cos(p1)],
-		[p1+p2]],dtype=float)
+		[normalizeAngle(p1+p2)]],dtype=float)
 
 	J1 = matrix([[1,0,-x2*sin(p1) - y2*cos(p1)],[0,1,x2*cos(p1) - y2*sin(p1)],[0,0,1]],dtype=float)
 	J2 = matrix([[cos(p1), -sin(p1), 0], [sin(p1), cos(p1), 0], [0, 0, 1]],dtype=float)
