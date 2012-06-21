@@ -35,7 +35,7 @@ def runTest(probe):
 
 	while True:
 		probe.frameStarted()
-	
+
 if __name__ == '__main__':
 
 	try:

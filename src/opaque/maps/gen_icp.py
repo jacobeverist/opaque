@@ -7121,7 +7121,7 @@ def globalOverlapICP_GPU2(initGuess, globalPath, medialPoints,plotIter = False, 
             break
 
     " draw final position "
-    if False:
+    if plotIter:
         
         " set the origin of pose 1 "
         poseOrigin = Pose(currPose)
@@ -7170,7 +7170,328 @@ def globalOverlapICP_GPU2(initGuess, globalPath, medialPoints,plotIter = False, 
 
 
         plotEnv()        
-        pylab.title("Cy: %u, u1 = %1.3f, u2 = %1.3f, ang = %1.3f, cost = %f" % (n1, u1, currU, currAng, newCost))
+        pylab.title("(%u,%u) u1 = %1.3f, u2 = %1.3f, ang = %1.3f, cost = %f" % (n1, n2, u1, currU, currAng, newCost))
+
+        pylab.xlim(currPose[0]-4, currPose[0]+4)                    
+        pylab.ylim(currPose[1]-3, currPose[1]+3)
+        pylab.savefig("ICP_plot_%04u.png" % globalPlotCount)
+        pylab.clf()
+        
+        " save inputs "
+        saveFile = ""
+        saveFile += "initGuess = " + repr(initGuess) + "\n"
+        saveFile += "globalPath = " + repr(globalPath) + "\n"
+        #saveFile += "hull = " + repr(hull) + "\n"
+        saveFile += "medialPoints = " + repr(medialPoints) + "\n"
+
+        f = open("icpInputSave_%04u.txt" % globalPlotCount, 'w')
+        globalPlotCount += 1
+        f.write(saveFile)
+        f.close()        
+            
+        #numIterations += 1
+
+
+    return currPose, newCost, len(match_pairs)
+
+
+def pathOverlapICP(initGuess, globalPath, medialPoints,plotIter = False, n1 = 0, n2 = 0):
+
+    global numIterations
+    global globalPlotCount
+    
+    def computeOffset(point1, point2, ang1, ang2):
+    
+        " corner points and orientations "
+        corner1Pose = [point1[0], point1[1], ang1]
+        corner2Pose = [point2[0], point2[1], ang2]
+        
+        " convert the desired intersection point on curve 1 into global coordinates "
+        poseProfile1 = Pose([0.0,0.0,0.0])
+            
+        " now convert this point into a pose, and perform the inverse transform using corner2Pose "
+        desGlobalPose2 = Pose(corner1Pose)
+        
+        " perform inverse offset from the destination pose "
+        negCurve2Pose = desGlobalPose2.doInverse(corner2Pose)
+        
+        " relative pose between pose 1 and pose 2 to make corners coincide and same angle "
+        resPose2 = desGlobalPose2.convertLocalOffsetToGlobal(negCurve2Pose)
+        localOffset = poseProfile1.convertGlobalPoseToLocal(resPose2)
+        
+        return [localOffset[0], localOffset[1], localOffset[2]]
+
+    
+    u1 = initGuess[0]
+    u2 = initGuess[1]
+
+    uHigh = u2 + 0.2
+    uLow = u2 - 0.2
+
+    currU = u2
+    currAng = initGuess[2]
+    
+    globalSpline = SplineFit(globalPath, smooth=0.1)
+    medialSpline = SplineFit(medialPoints, smooth=0.1)
+    
+
+    uSet = [i*0.01 for i in range(100)]
+    poses_1 = globalSpline.getUVecSet(uSet)
+    poses_2 = medialSpline.getUVecSet(uSet)
+    
+    #globalSpline = SplineFit(globalPath, smooth=0.1)
+    #medialSpline = SplineFit(medialPoints, smooth=0.1)
+
+    if u1 >= 1.0:
+        pose1 = poses_1[-1]
+    elif u1 < 0.0:
+        pose1 = poses_1[0]
+    else:
+        pose1 = poses_1[int(u1*100)]
+
+    if currU >= 1.0:
+        pose2 = poses_2[-1]
+    elif currU < 0.0:
+        pose2 = poses_2[0]
+    else:
+        pose2 = poses_2[int(currU*100)]
+    
+    point1 = [pose1[0],pose1[1]]
+    point2 = [pose2[0],pose2[1]]
+    ang1 = pose1[2]
+    ang2 = pose2[2]
+
+    currPose = computeOffset(point1, point2, ang1, ang2 + currAng)
+
+    " transform the new pose "
+    poseOrigin = Pose(currPose)
+    
+    costThresh = 0.004
+    minMatchDist = 2.0
+    lastCost = 1e100
+    
+    startIteration = numIterations
+
+    " set the initial guess "
+    poseOrigin = Pose(currPose)
+    
+    " sample a series of points from the medial curves "
+    " augment points with point-to-line covariances "
+    " treat the points with the point-to-line constraint "
+    globalPoints = addGPACVectorCovariance(globalSpline.getUniformSamples(),high_var=0.05, low_var = 0.001)
+    #globalPoints = addGPACVectorCovariance(globalSpline.getUniformSamples(),high_var=0.05, low_var = 0.05)
+    #localPoints = addGPACVectorCovariance(localSpline.getUniformSamples(),high_var=0.05, low_var = 0.001)
+    points = addGPACVectorCovariance(medialSpline.getUniformSamples(),high_var=0.05, low_var = 0.001)
+    #points = addGPACVectorCovariance(medialSpline.getUniformSamples(),high_var=0.05, low_var = 0.05)
+    
+    " transform pose 2 by initial offset guess "    
+    " transform the new pose "
+    points_offset = []
+    
+    globalPoly = []        
+    for p in globalPoints:
+        globalPoly.append([p[0],p[1]])    
+    
+    
+    while True:
+        
+        " find the matching pairs "
+        match_pairs = []
+
+        " transform the target Hull with the latest offset "
+        points_offset = []
+        for p in points:
+            result = dispPoint(p, currPose)        
+            points_offset.append(result)
+        
+        " transformed points without associated covariance "
+        #posePoly = []
+        #for p in points_offset:
+        #    posePoly.append([p[0],p[1]])
+        
+        #match_pairs = matchPairs2(points, points_offset, globalPoints, minMatchDist)
+
+        #print points_offset
+
+        #cProfile.run('match_pairs = matchPairs(points, points_offset, globalPoints, minMatchDist)', 'match_prof')
+        #cProfile.runctx('match_pairs = matchPairs(points, points_offset, globalPoints, minMatchDist)', globals(), locals(), 'match_prof')
+
+        #match_pairs = matchPairs(points, points_offset, globalPoints, minMatchDist)       
+        
+        
+        " get the circles and radii "
+        match_pairs = []
+        radius2, center2 = computeEnclosingCircle(points_offset)
+
+        for i in range(len(globalPoints)):
+            p_1 = globalPoly[i]
+            #p_1 = localPoly[i]
+    
+            #if isInCircle(p_1, radius2, center2):
+            if True:
+        
+                " for every point of B, find it's closest neighbor in transformed A "
+                p_2, i_2, minDist = findClosestPointInA(points_offset, p_1)
+    
+                if minDist <= minMatchDist:
+        
+                    " add to the list of match pairs less than 1.0 distance apart "
+                    " keep A points and covariances untransformed "
+                    C2 = points[i_2][2]
+                    
+                    C1 = globalPoints[i][2]
+    
+                    " we store the untransformed point, but the transformed covariance of the A point "
+                    match_pairs.append([points[i_2],globalPoints[i],C1,C2])
+        
+        #input_GPU = convertToGPU(match_pairs)
+
+        #oldCost = medialOverlapCostFunc([currU, currAng], match_pairs, globalSpline, medialSpline, uHigh, uLow, u1)
+        #oldCost = medialOverlapCostFunc_GPU([currU, currAng], input_GPU, len(match_pairs), globalSpline, medialSpline, uHigh, uLow, u1)
+        
+
+        #newParam = scipy.optimize.fmin(medialOverlapCostFunc_GPU, [currU,currAng], [input_GPU, len(match_pairs), globalSpline, medialSpline, uHigh, uLow, u1], disp = 0)
+        
+        flatMatchPairs = []
+        for pair in match_pairs:
+            p1 = pair[0]
+            p2 = pair[1]
+            C1 = pair[2]
+            C2 = pair[3]
+
+            flatMatchPairs.append(p1[0])
+            flatMatchPairs.append(p1[1])
+            flatMatchPairs.append(C1[0][0])
+            flatMatchPairs.append(C1[0][1])
+            flatMatchPairs.append(C1[1][0])
+            flatMatchPairs.append(C1[1][1])
+            flatMatchPairs.append(p2[0])
+            flatMatchPairs.append(p2[1])
+            flatMatchPairs.append(C2[0][0])
+            flatMatchPairs.append(C2[0][1])
+            flatMatchPairs.append(C2[1][0])
+            flatMatchPairs.append(C2[1][1])
+        c_poses_1 = [item for sublist in poses_1 for item in sublist]
+        c_poses_2 = [item for sublist in poses_2 for item in sublist]
+        newParam, newCost = nelminICP.ICPmin(flatMatchPairs, len(match_pairs), initGuess, c_poses_1, c_poses_2, len(poses_1))
+
+        newU = newParam[0]
+        newAng = newParam[1]
+        
+        #newCost = medialOverlapCostFunc([newU, newAng], match_pairs, globalSpline, medialSpline, uHigh, uLow, u1)
+        #newCost = medialOverlapCostFunc_GPU([newU, newAng], input_GPU, len(match_pairs), globalSpline, medialSpline, uHigh, uLow, u1)
+
+
+        #saveStr = ""
+        #saveStr += "initGuess = " + repr(initGuess) + '\n'
+        #saveStr += "match_pairs = " + repr(match_pairs) + '\n'
+        #saveStr += "numPairs = " + repr(len(match_pairs)) + '\n'
+        #saveStr += "poses_1 = " + repr(poses_1) + '\n'
+        #saveStr += "poses_2 = " + repr(poses_2) + '\n'
+
+        #f = open("costTest.txt", 'w')
+        #f.write(saveStr)
+        #f.close()
+
+        #exit()
+        " set the current parameters "
+        currAng = functions.normalizeAngle(newAng)
+        currU = newU
+
+
+        #if currU+0.02 > 1.0:
+        #    pose2 = medialSpline.getUVecSet([0.98, 1.0])[0]
+        #elif currU < 0.0:
+        #    pose2 = medialSpline.getUVecSet([0.0, 0.02])[0]
+        #else:
+        #    pose2 = medialSpline.getUVecSet([currU, currU + 0.02])[0]
+            
+        if currU >= 1.0:
+            pose2 = poses_2[-1]
+        elif currU < 0.0:
+            pose2 = poses_2[0]
+        else:
+            pose2 = poses_2[int(currU*100)]
+
+
+        point1 = [pose1[0],pose1[1]]
+        point2 = [pose2[0],pose2[1]]
+        ang1 = pose1[2]
+        ang2 = pose2[2]
+    
+        currPose = computeOffset(point1, point2, ang1, ang2 + currAng)
+
+        # check for convergence condition, different between last and current cost is below threshold
+        
+        isTerminate = False
+        if abs(lastCost - newCost) < costThresh or (numIterations - startIteration) > 10:
+            isTerminate = True
+            print "terminating globalOverlap_GPU2:", lastCost, newCost, costThresh, numIterations-startIteration
+        
+        #if abs(lastCost - newCost) < costThresh or (numIterations - startIteration) > 10:
+        #    break
+
+
+
+        " update after check for termination condition "
+        lastCost = newCost
+
+        numIterations += 1
+        
+        if isTerminate:
+            break
+
+    " draw final position "
+    if plotIter:
+        
+        " set the origin of pose 1 "
+        poseOrigin = Pose(currPose)
+        
+        pylab.clf()
+        pylab.axes()
+        match_global = []
+        
+        for pair in match_pairs:
+            p1 = pair[0]
+            p2 = pair[1]
+            
+            p1_o = dispOffset(p1, currPose)
+            
+            p1_g = p1_o
+            p2_g = p2
+            match_global.append([p1_g,p2_g])
+
+        draw_matches(match_global, [0.0,0.0,0.0])
+
+        
+        xP = []
+        yP = []
+        for b in globalPoly:
+            p1 = b
+            xP.append(p1[0])    
+            yP.append(p1[1])
+
+        pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+
+        pylab.scatter([pose1[0]],[pose1[1]],color=(0.0,0.0,1.0))
+
+        xP = []
+        yP = []
+        for b in points:
+            p = [b[0],b[1]]
+            p1 = dispOffset(p,currPose)
+            
+            #p1 = poseOrigin.convertLocalToGlobal(p)
+            xP.append(p1[0])    
+            yP.append(p1[1])
+
+        pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
+
+        #pylab.scatter([pose2[0]],[pose2[1]],color=(1.0,0.0,0.0))
+
+
+        plotEnv()        
+        pylab.title("(%u,%u) u1 = %1.3f, u2 = %1.3f, ang = %1.3f, cost = %f" % (n1, n2, u1, currU, currAng, newCost))
 
         pylab.xlim(currPose[0]-4, currPose[0]+4)                    
         pylab.ylim(currPose[1]-3, currPose[1]+3)
@@ -7403,7 +7724,7 @@ def globalOverlapTransformICP(initGuess, globalPath, hull, medialPoints,  plotIt
 
 
 
-        if plotIter:
+        if False:
 
             fig1 = pylab.figure(2)
             fig1.clf()
@@ -7601,7 +7922,7 @@ def globalOverlapTransformICP(initGuess, globalPath, hull, medialPoints,  plotIt
         lastCost = newCost
 
         " optionally draw the position of the points in current transform "
-        if plotIter:
+        if False:
 
 
             fig1 = pylab.figure(2)
@@ -9231,7 +9552,7 @@ def plotEnv(axes = 0):
     #wall6.reverse()
     #walls = [wall1, wall2, wall3, wall6]
         
-        
+    """
     # triple-Y - multi-junction, test 1                 
     WLEN = 2.0
     WWID = 0.4
@@ -9263,6 +9584,41 @@ def plotEnv(axes = 0):
     wall6 = [[-11.0, WWID/2.0],[-11.0, -WWID/2.0]]
     
     walls = [wall1, wall2, wall3, wall4, wall5, wall6]
+    """
+
+    # triple-Y - multi-junction, test 1                 
+    WLEN = 5.0
+    WLEN2 = 1.0
+    WWID = 0.4
+    wall1 = [[-11.0, -WWID/2.0], [-4.0, -WWID/2.0], [-4.0 + WLEN2*cos(-pi/3), -WWID/2.0 + WLEN2*sin(-pi/3)]]
+    wall2 = [[-11.0, WWID/2.0], [-4.0, WWID/2.0], [-4.0 + WLEN2*cos(pi/3), WWID/2.0 + WLEN2*sin(pi/3)]]
+    #wall2 = [[-4.0 + WLEN2*cos(pi/3), 0.2 + WLEN2*sin(pi/3)], [-4.0, 0.2] ,[-14.0, 0.2]]
+    w1 = wall1[2]
+    w2 = wall2[2]
+
+    wall3 = [[w1[0] + WWID*cos(pi/6), w1[1] + WWID*sin(pi/6)], [WWID*cos(pi/6) - 4, 0.0], [w2[0] + WWID*cos(pi/6), w2[1] - 0.4*sin(pi/6)]]
+
+    wall4 = [w1, [w1[0] + WLEN*cos(-2*pi/3), w1[1] + WLEN*sin(-2*pi/3)]]            
+    wall5 = [w2, [w2[0] + WLEN*cos(2*pi/3), w2[1] + WLEN*sin(2*pi/3)]]
+    
+    wall4.append([wall4[-1][0] + WWID*cos(-2*pi/3 + pi/2), wall4[-1][1] + WWID*sin(-2*pi/3 + pi/2)])
+    wall4.append([wall4[-1][0] + WLEN*cos(-2*pi/3 + pi), wall4[-1][1] + WLEN*sin(-2*pi/3 + pi)])
+    wall4.append([wall4[-1][0] + WLEN*cos(-2*pi/3 + pi - pi/3), wall4[-1][1] + WLEN*sin(-2*pi/3 + pi - pi/3)])
+    wall4.append([wall4[-1][0] + WWID*cos(-2*pi/3 + pi - pi/3 + pi/2.), wall4[-1][1] + WWID*sin(-2*pi/3 + pi - pi/3 + pi/2.)])
+    wall4.append([wall4[-1][0] + WLEN*cos(-2*pi/3 + pi - pi/3 + pi), wall4[-1][1] + WLEN*sin(-2*pi/3 + pi - pi/3 + pi)])
+
+    wall5.append([wall5[-1][0] + WWID*cos(2*pi/3 - pi/2), wall5[-1][1] + WWID*sin(2*pi/3 - pi/2)])
+    wall5.append([wall5[-1][0] + WLEN*cos(2*pi/3 - pi), wall5[-1][1] + WLEN*sin(2*pi/3 - pi)])
+    wall5.append([wall5[-1][0] + WLEN*cos(2*pi/3 - pi + pi/3), wall5[-1][1] + WLEN*sin(2*pi/3 - pi + pi/3)])
+    wall5.append([wall5[-1][0] + WWID*cos(2*pi/3 - pi + pi/3 - pi/2.), wall5[-1][1] + WWID*sin(2*pi/3 - pi + pi/3 - pi/2.)])
+    wall5.append([wall5[-1][0] + WLEN*cos(2*pi/3 - pi + pi/3 - pi), wall5[-1][1] + WLEN*sin(2*pi/3 - pi + pi/3 - pi)])
+    
+    wall5.reverse()
+    
+    wall6 = [[-11.0, WWID/2.0],[-11.0, -WWID/2.0]]
+    
+    walls = [wall1, wall2, wall3, wall4, wall5, wall6]
+
         
     for wall in walls:
         for i in range(len(wall)):

@@ -173,6 +173,7 @@ class TestProcess(SnakeControl):
 			#wall6.reverse()
 			#walls = [wall1, wall2, wall3, wall6]
 
+			"""
 			# triple-Y - multi-junction, test 1 				
 			WLEN = 2.0
 			WWID = 0.4
@@ -204,8 +205,39 @@ class TestProcess(SnakeControl):
 			wall6 = [[-11.0, WWID/2.0],[-11.0, -WWID/2.0]]
 			
 			walls = [wall1, wall2, wall3, wall4, wall5, wall6]
+			"""
+			# triple-Y - multi-junction, test 1				 
+			WLEN = 5.0
+			WLEN2 = 1.0
+			WWID = 0.4
+			wall1 = [[-11.0, -WWID/2.0], [-4.0, -WWID/2.0], [-4.0 + WLEN2*cos(-pi/3), -WWID/2.0 + WLEN2*sin(-pi/3)]]
+			wall2 = [[-11.0, WWID/2.0], [-4.0, WWID/2.0], [-4.0 + WLEN2*cos(pi/3), WWID/2.0 + WLEN2*sin(pi/3)]]
+			#wall2 = [[-4.0 + WLEN2*cos(pi/3), 0.2 + WLEN2*sin(pi/3)], [-4.0, 0.2] ,[-14.0, 0.2]]
+			w1 = wall1[2]
+			w2 = wall2[2]
+		
+			wall3 = [[w1[0] + WWID*cos(pi/6), w1[1] + WWID*sin(pi/6)], [WWID*cos(pi/6) - 4, 0.0], [w2[0] + WWID*cos(pi/6), w2[1] - 0.4*sin(pi/6)]]
+		
+			wall4 = [w1, [w1[0] + WLEN*cos(-2*pi/3), w1[1] + WLEN*sin(-2*pi/3)]]			
+			wall5 = [w2, [w2[0] + WLEN*cos(2*pi/3), w2[1] + WLEN*sin(2*pi/3)]]
 			
+			wall4.append([wall4[-1][0] + WWID*cos(-2*pi/3 + pi/2), wall4[-1][1] + WWID*sin(-2*pi/3 + pi/2)])
+			wall4.append([wall4[-1][0] + WLEN*cos(-2*pi/3 + pi), wall4[-1][1] + WLEN*sin(-2*pi/3 + pi)])
+			wall4.append([wall4[-1][0] + WLEN*cos(-2*pi/3 + pi - pi/3), wall4[-1][1] + WLEN*sin(-2*pi/3 + pi - pi/3)])
+			wall4.append([wall4[-1][0] + WWID*cos(-2*pi/3 + pi - pi/3 + pi/2.), wall4[-1][1] + WWID*sin(-2*pi/3 + pi - pi/3 + pi/2.)])
+			wall4.append([wall4[-1][0] + WLEN*cos(-2*pi/3 + pi - pi/3 + pi), wall4[-1][1] + WLEN*sin(-2*pi/3 + pi - pi/3 + pi)])
+		
+			wall5.append([wall5[-1][0] + WWID*cos(2*pi/3 - pi/2), wall5[-1][1] + WWID*sin(2*pi/3 - pi/2)])
+			wall5.append([wall5[-1][0] + WLEN*cos(2*pi/3 - pi), wall5[-1][1] + WLEN*sin(2*pi/3 - pi)])
+			wall5.append([wall5[-1][0] + WLEN*cos(2*pi/3 - pi + pi/3), wall5[-1][1] + WLEN*sin(2*pi/3 - pi + pi/3)])
+			wall5.append([wall5[-1][0] + WWID*cos(2*pi/3 - pi + pi/3 - pi/2.), wall5[-1][1] + WWID*sin(2*pi/3 - pi + pi/3 - pi/2.)])
+			wall5.append([wall5[-1][0] + WLEN*cos(2*pi/3 - pi + pi/3 - pi), wall5[-1][1] + WLEN*sin(2*pi/3 - pi + pi/3 - pi)])
+			
+			wall5.reverse()
+			
+			wall6 = [[-11.0, WWID/2.0],[-11.0, -WWID/2.0]]			
 
+			walls = [wall1, wall2, wall3, wall4, wall5, wall6]
 
 			
 			for wall in walls:
