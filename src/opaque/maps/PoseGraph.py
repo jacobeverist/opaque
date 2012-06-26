@@ -274,8 +274,6 @@ class PoseGraph:
 		self.numNodes = 0
 		self.currNode = 0
 		
-		self.merged_constraints = []
-				
 		self.edgePriorityHash = {}
 		self.cornerBins = []
 
@@ -290,7 +288,9 @@ class PoseGraph:
 		#self.paths = {0 : []}
 		#self.hulls = {0 : []}
 		#self.nodeSets = {0 : []}
-				
+		
+		
+		" FIXME:  self.currPath is used but never modified  "
 		self.currPath = 0
 		#self.pathParents = [[None,None,None,None]]
 		#self.pathTermsVisited = {0: False}
@@ -356,12 +356,25 @@ class PoseGraph:
 		#saveFile += "self.nodeSets = " + repr(self.nodeSets) + "\n"
 		saveFile += "self.currPath = " + repr(self.currPath) + "\n"
 		#saveFile += "self.pathParents = " + repr(self.pathParents) + "\n"
-	
+		saveFile += "self.allPathConstraints = " + repr(self.allPathConstraints) + "\n"
 
 		f = open("stateSave_%04u.txt" % (self.numNodes-1), 'w')
 		f.write(saveFile)
 		f.close()		
+
+		" SAVE STATE "
+		self.paths.saveState(self.numNodes-1)
+		#self.paths = Paths(self.nodeHash)
+		self.currPath = 0
 		
+		
+		#self.currNode = 0
+					
+
+
+
+
+
 		
 				
 		#self.pathPlotCount = 0
@@ -392,6 +405,8 @@ class PoseGraph:
 		
 		print self.numNodes
 		print self.edgePriorityHash
+		
+		self.paths.restoreState(dirName, numNodes)
 
 	def pairLastTwo(self):
 	
@@ -967,7 +982,7 @@ class PoseGraph:
 				frontInterior1 = interiors1[0][0]
 		
 				frontExist2 = departures2[0][0]
-				frontInterior1 = interiors2[0][0]
+				frontInterior2 = interiors2[0][0]
 				
 				depAngle1 = depAngles1[0][0]
 				depAngle2 = depAngles2[0][0]
@@ -1008,7 +1023,7 @@ class PoseGraph:
 				backInterior1 = interiors1[-1][1]
 		
 				backExist2 = departures2[-1][1]
-				backInterior1 = interiors2[-1][1]
+				backInterior2 = interiors2[-1][1]
 				
 				depAngle1 = depAngles1[-1][1]
 				depAngle2 = depAngles2[-1][1]
@@ -1432,7 +1447,7 @@ class PoseGraph:
 
 				print "pass1:", frontExist1, backExist1, frontInterior1, backInterior1, foreTerm1, backTerm1, discForeTerm1, discBackTerm1, foreAngle1, backAngle1
 				print "pass1:", frontExist2, backExist2, frontInterior2, backInterior2, foreTerm2, backTerm2, discForeTerm2, discBackTerm2, foreAngle2, backAngle2
-
+				
 				" check for the cases that internal departure may have a departure point discrepancy, "
 				" then we should perform a pose adjustment and recompute departures "
 				print "checking discrepancy in departure:", nodeID1, nodeID2, foreTerm1, discForeTerm1, backTerm1, discBackTerm1, foreTerm2, discForeTerm2, backTerm2, discBackTerm2
@@ -1587,7 +1602,7 @@ class PoseGraph:
 				frontInterior1 = interiors1[0][0]
 		
 				frontExist2 = departures2[0][0]
-				frontInterior1 = interiors2[0][0]
+				frontInterior2 = interiors2[0][0]
 				
 				depAngle1 = depAngles1[0][0]
 				depAngle2 = depAngles2[0][0]
@@ -1628,7 +1643,7 @@ class PoseGraph:
 				backInterior1 = interiors1[-1][1]
 		
 				backExist2 = departures2[-1][1]
-				backInterior1 = interiors2[-1][1]
+				backInterior2 = interiors2[-1][1]
 				
 				depAngle1 = depAngles1[-1][1]
 				depAngle2 = depAngles2[-1][1]
@@ -2454,7 +2469,7 @@ class PoseGraph:
 			frontInterior1 = interiors1[0][0]
 	
 			frontExist2 = departures2[0][0]
-			frontInterior1 = interiors2[0][0]
+			frontInterior2 = interiors2[0][0]
 			
 			depAngle1 = depAngles1[0][0]
 			depAngle2 = depAngles2[0][0]
@@ -2495,7 +2510,7 @@ class PoseGraph:
 			backInterior1 = interiors1[-1][1]
 	
 			backExist2 = departures2[-1][1]
-			backInterior1 = interiors2[-1][1]
+			backInterior2 = interiors2[-1][1]
 			
 			depAngle1 = depAngles1[-1][1]
 			depAngle2 = depAngles2[-1][1]
@@ -2644,13 +2659,13 @@ class PoseGraph:
 						totalConstraints.append([id1,id2,transform,covE])	
 		
 		#print "merging totalConstraints:", totalConstraints
-		v_list, self.merged_constraints = self.doToro(totalConstraints, fileName = "probe_init")
+		v_list, merged_constraints = self.doToro(totalConstraints, fileName = "probe_init")
 		
 		self.edgeHash = {}
-		for i in range(len(self.merged_constraints)):
-			node1 = self.merged_constraints[i][0]
-			node2 = self.merged_constraints[i][1]
-			self.edgeHash[(node1, node2)] = [self.merged_constraints[i][2], self.merged_constraints[i][3]]
+		for i in range(len(merged_constraints)):
+			node1 = merged_constraints[i][0]
+			node2 = merged_constraints[i][1]
+			self.edgeHash[(node1, node2)] = [merged_constraints[i][2], merged_constraints[i][3]]
 		
 		for v in v_list:
 			node = self.nodeHash[v[0]]

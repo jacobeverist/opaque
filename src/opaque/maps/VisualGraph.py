@@ -57,39 +57,53 @@ class VisualGraph:
 		self.poseGraph.mergePriorityConstraints()
 
 		self.drawConstraints()
+		
 
-		return
+		#return
 
-		for i in range(num_poses, num_poses+10):
+		for i in range(num_poses, num_poses+30):
 
 			print "loading node", self.numNodes			
 			currNode = LocalNode(self.probe, self.contacts, i, 19, PIXELSIZE)
 
-			if i > 0 and i % 2 == 0:
-				
-				" since estimated poses are modified from the original motion estimation, we need to restore them "
-
-				f = open(dirName + "/motion_constraints_%04u.txt" % (i+1), 'r')
-				#motion_constraints = eval(f.read().rstrip())
-				motion_constraints = eval(f.read().replace('\r\n','\n'))
-				f.close()				
-				transform = motion_constraints[-1][2]
-				offset = [transform[0,0], transform[1,0], transform[2,0]]
-				
-				estPose1 = self.poseGraph.nodeHash[i-1].getEstPose()
-				profile1 = Pose(estPose1)
-				estPose2 = profile1.convertLocalOffsetToGlobal(offset)
-				
-				currNode.readFromFile(dirName, i, forcedPose = estPose2)
-			else:
-				currNode.readFromFile(dirName, i)
+			currNode.readFromFile2(dirName, i)
 
 			self.localNodes.append(currNode)
 			
-
 			self.poseGraph.loadNewNode(currNode)
 			self.poseGraph.mergePriorityConstraints()
 			self.drawConstraints(i)
+			self.poseGraph.saveState()
+
+		self.poseGraph.paths.generatePaths()
+		self.poseGraph.paths.trimPaths(self.poseGraph.paths.paths)  		
+		
+		splices = self.poseGraph.paths.getAllSplices()
+
+		spliceCount = 0
+		for splicedPath in splices:    
+			pylab.clf()
+			
+			self.drawWalls()
+			
+			print "spliced path has", len(splicedPath), "points"
+			xP = []
+			yP = []
+			for p in splicedPath:
+				xP.append(p[0])
+				yP.append(p[1])
+			
+			pylab.plot(xP,yP)
+			
+			pylab.xlim(-5,10)
+			pylab.ylim(-8,8)			
+			pylab.title("Spliced Paths %d " % spliceCount)
+			pylab.savefig("splicedPath_%04u.png" % spliceCount)
+			spliceCount += 1
+		print "len(splices) =", len(splices)
+
+		self.poseGraph.drawPathAndHull()
+
 		
 		return
 
@@ -143,7 +157,7 @@ class VisualGraph:
 			
 			#self.drawShapeConstraints(i)
 
-			#self.poseGraph.saveState()
+			self.poseGraph.saveState()
 		
 
 		self.drawMap()
@@ -2027,8 +2041,8 @@ class VisualGraph:
 			return self.poseGraph.inplace_constraints
 		if name == "gnd_constraints":
 			return self.poseGraph.gnd_constraints
-		if name == "merged_constraints":
-			return self.poseGraph.merged_constraints
+		#if name == "merged_constraints":
+		#	return self.poseGraph.merged_constraints
 
 	def loadFile(self, dirName, num_poses):
 		

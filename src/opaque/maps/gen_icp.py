@@ -7267,7 +7267,7 @@ def pathOverlapICP(initGuess, globalPath, medialPoints,plotIter = False, n1 = 0,
     poseOrigin = Pose(currPose)
     
     costThresh = 0.004
-    minMatchDist = 2.0
+    minMatchDist = 1.0
     lastCost = 1e100
     
     startIteration = numIterations
@@ -7278,10 +7278,12 @@ def pathOverlapICP(initGuess, globalPath, medialPoints,plotIter = False, n1 = 0,
     " sample a series of points from the medial curves "
     " augment points with point-to-line covariances "
     " treat the points with the point-to-line constraint "
-    globalPoints = addGPACVectorCovariance(globalSpline.getUniformSamples(),high_var=0.05, low_var = 0.001)
+    globalVecPoints = globalSpline.getUniformSamples()
+    globalPoints = addGPACVectorCovariance(globalVecPoints,high_var=0.05, low_var = 0.001)
     #globalPoints = addGPACVectorCovariance(globalSpline.getUniformSamples(),high_var=0.05, low_var = 0.05)
     #localPoints = addGPACVectorCovariance(localSpline.getUniformSamples(),high_var=0.05, low_var = 0.001)
-    points = addGPACVectorCovariance(medialSpline.getUniformSamples(),high_var=0.05, low_var = 0.001)
+    medialVecPoints = medialSpline.getUniformSamples()
+    points = addGPACVectorCovariance(medialVecPoints,high_var=0.05, low_var = 0.001)
     #points = addGPACVectorCovariance(medialSpline.getUniformSamples(),high_var=0.05, low_var = 0.05)
     
     " transform pose 2 by initial offset guess "    
@@ -7303,6 +7305,13 @@ def pathOverlapICP(initGuess, globalPath, medialPoints,plotIter = False, n1 = 0,
         for p in points:
             result = dispPoint(p, currPose)        
             points_offset.append(result)
+
+        poseOrigin = Pose(currPose)
+        vecPoints_offset = []
+        for p in medialVecPoints:
+            result = poseOrigin.convertLocalOffsetToGlobal(p)
+            #result = dispPoint(p, currPose)        
+            vecPoints_offset.append(result)
         
         " transformed points without associated covariance "
         #posePoly = []
@@ -7324,27 +7333,60 @@ def pathOverlapICP(initGuess, globalPath, medialPoints,plotIter = False, n1 = 0,
         radius2, center2 = computeEnclosingCircle(points_offset)
 
         for i in range(len(globalPoints)):
-            p_1 = globalPoly[i]
-            #p_1 = localPoly[i]
+            #p_1 = globalPoly[i]
+            p_1 = globalVecPoints[i]
     
             #if isInCircle(p_1, radius2, center2):
             if True:
         
                 " for every point of B, find it's closest neighbor in transformed A "
-                p_2, i_2, minDist = findClosestPointInA(points_offset, p_1)
+                #p_2, i_2, minDist = findClosestPointInA(points_offset, p_1)
+                try:
+                    p_2, i_2, minDist = findClosestPointWithAngle(vecPoints_offset, p_1, math.pi/8.0)
+        
+                    if minDist <= minMatchDist:
+            
+                        " add to the list of match pairs less than 1.0 distance apart "
+                        " keep A points and covariances untransformed "
+                        C2 = points[i_2][2]
+                        
+                        C1 = globalPoints[i][2]
+        
+                        " we store the untransformed point, but the transformed covariance of the A point "
+                        match_pairs.append([points[i_2],globalPoints[i],C2,C1])
+                except:
+                    pass
+
+            p_1 = globalVecPoints[i]
+
+        for i in range(len(vecPoints_offset)):
+            p_1 = vecPoints_offset[i]
+
+            #p_1 = globalVecPoints[i]
+
+            try:
+                " for every transformed point of A, find it's closest neighbor in B "
+                #p_1, minDist = findClosestPointInB(points1, p_2)
+                p_2, i_2, minDist = findClosestPointWithAngle(globalVecPoints, p_1, math.pi/8.0)
     
                 if minDist <= minMatchDist:
         
                     " add to the list of match pairs less than 1.0 distance apart "
                     " keep A points and covariances untransformed "
-                    C2 = points[i_2][2]
-                    
-                    C1 = globalPoints[i][2]
-    
+
+                    C2 = points[i][2]                        
+                    C1 = globalPoints[i_2][2]    
                     " we store the untransformed point, but the transformed covariance of the A point "
-                    match_pairs.append([points[i_2],globalPoints[i],C1,C2])
+                    #match_pairs.append([points2[i],p_1,C2,C1])
+                    match_pairs.append([points[i],globalPoints[i_2],C2,C1])
+            except:
+                pass
+        
         
         #input_GPU = convertToGPU(match_pairs)
+        
+        
+        
 
         #oldCost = medialOverlapCostFunc([currU, currAng], match_pairs, globalSpline, medialSpline, uHigh, uLow, u1)
         #oldCost = medialOverlapCostFunc_GPU([currU, currAng], input_GPU, len(match_pairs), globalSpline, medialSpline, uHigh, uLow, u1)
@@ -7493,8 +7535,8 @@ def pathOverlapICP(initGuess, globalPath, medialPoints,plotIter = False, n1 = 0,
         plotEnv()        
         pylab.title("(%u,%u) u1 = %1.3f, u2 = %1.3f, ang = %1.3f, cost = %f" % (n1, n2, u1, currU, currAng, newCost))
 
-        pylab.xlim(currPose[0]-4, currPose[0]+4)                    
-        pylab.ylim(currPose[1]-3, currPose[1]+3)
+        pylab.xlim(-6, 10)                    
+        pylab.ylim(-8, 8)
         pylab.savefig("ICP_plot_%04u.png" % globalPlotCount)
         pylab.clf()
         

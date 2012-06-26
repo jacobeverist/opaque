@@ -143,7 +143,7 @@ class Paths:
         self.paths = {0 : []}
         self.hulls = {0 : []}
         self.pathTermsVisited = {0: False}
-                
+        self.trimmedPaths  = []
         self.pathClasses = {}
         self.pathClasses[0] = {"parentID" : None, "branchNodeID" : None, "localJunctionPose" : None, 
                             "sameProb" : {}, "nodeSet" : []}
@@ -151,9 +151,43 @@ class Paths:
         self.consistency = {}
         
         
+        self.spliceCount = 0
         self.pathPlotCount = 0
         self.pathIDs += 1
     
+    def saveState(self, id):
+        
+        saveFile = ""
+        
+        saveFile += "self.pathClasses = " + repr(self.pathClasses) + "\n"
+        saveFile += "self.consistency = " + repr(self.consistency) + "\n"
+        
+        saveFile += "self.pathTermsVisited = " + repr(self.pathTermsVisited) + "\n"
+        saveFile += "self.pathIDs = " + repr(self.pathIDs) + "\n"        
+    
+        saveFile += "self.paths = " + repr(self.paths) + "\n"        
+        saveFile += "self.hulls = " + repr(self.hulls) + "\n"        
+        saveFile += "self.trimmedPaths = " + repr(self.trimmedPaths) + "\n"        
+
+        f = open("pathStateSave_%04u.txt" % id, 'w')
+        f.write(saveFile)
+        f.close()
+        
+    def restoreState(self, dirName, numNodes):
+        
+        print "loading" + dirName + "/pathStateSave_%04u.txt" % (numNodes-1)
+        f = open(dirName + "/pathStateSave_%04u.txt" % (numNodes-1), 'r')        
+        saveStr = f.read()
+        print saveStr
+        f.close()
+        
+        saveStr = saveStr.replace('\r\n','\n')
+        
+        exec(saveStr)
+        
+        #print self.numNodes
+        #print self.edgePriorityHash
+            
     def generatePaths(self):
         
         " COMPUTE MEDIAL AXIS FROM UNION OF PATH-CLASSIFIED NODES "
@@ -175,6 +209,114 @@ class Paths:
     def getPath(self, pathID):
         return self.pathClasses[pathID]
     
+    def getAllSplices(self):
+
+        " determine which paths are leaves "
+
+                
+        
+        pathIDs = self.getPathIDs()
+        isAParent = {}
+        pathGraph = graph.graph()
+
+        for pathID in pathIDs:
+            isAParent[pathID] = False
+            pathGraph.add_node(pathID, [])
+        
+        for pathID in pathIDs:    
+            parentPathID = self.getPath(pathID)["parentID"]
+            if parentPathID != None:
+                isAParent[parentPathID] = True
+                pathGraph.add_edge(pathID, parentPathID)
+        
+        leafCount = 0
+        for pathID in pathIDs:
+            if not isAParent[pathID]:
+                leafCount += 1
+
+        if leafCount == 0:
+            " only root path "
+            
+        elif leafCount == 1:
+            " only root and one leaf "
+            " 2 paths "
+            rootPathID = 0
+            terminalID = -1
+            
+            for pathID in pathIDs:
+                if not isAParent[pathID]:
+                    terminalID = pathID
+
+            startPathID = rootPathID
+            endPathID = terminalID
+
+            shortestPathSpanTree, shortestDist = pathGraph.shortest_path(endPathID)
+            nextPathID = shortestPathSpanTree[startPathID]
+    
+            orderedPathIDs = [startPathID, nextPathID]
+            while nextPathID != endPathID:
+                nextPathID = shortestPathSpanTree[nextPathID]
+
+                orderedPathIDs.append(nextPathID)            
+            
+            splicedPaths = self.splicePathIDs(orderedPathIDs)
+            print "returned", len(splicedPaths), "spliced paths for", orderedPathIDs
+
+        else:
+            " 2 root points, leafCount terminators "
+            rootPathID = 0
+            terminalPathIDs = []
+            for id1 in pathIDs:
+                if not isAParent[id1]:
+                    terminalPathIDs.append(id1)
+
+            orderedSets = []
+
+            for id1 in terminalPathIDs:
+
+                startPathID = rootPathID
+                endPathID = id1
+    
+                shortestPathSpanTree, shortestDist = pathGraph.shortest_path(endPathID)
+                nextPathID = shortestPathSpanTree[startPathID]
+        
+                orderedPathIDs = [startPathID, nextPathID]
+                while nextPathID != endPathID:
+                    nextPathID = shortestPathSpanTree[nextPathID]
+                    orderedPathIDs.append(nextPathID)            
+
+                orderedSets.append(orderedPathIDs)
+
+            for i in range(len(terminalPathIDs)):
+                for j in range(i+1,len(terminalPathIDs)):
+                    
+                    id1 = terminalPathIDs[i]
+                    id2 = terminalPathIDs[j]
+
+                    startPathID = id1
+                    endPathID = id2
+        
+                    shortestPathSpanTree, shortestDist = pathGraph.shortest_path(endPathID)
+                    nextPathID = shortestPathSpanTree[startPathID]
+            
+                    orderedPathIDs = [startPathID, nextPathID]
+                    while nextPathID != endPathID:
+                        nextPathID = shortestPathSpanTree[nextPathID]
+                        orderedPathIDs.append(nextPathID)            
+
+                    orderedSets.append(orderedPathIDs)
+
+            splicedPaths = []
+            for orderedIDs in orderedSets:
+                paths = self.splicePathIDs(orderedIDs)
+                print "returned", len(paths), "spliced paths for", orderedIDs
+                for path in paths:
+                    splicedPaths.append(path)
+
+
+        return splicedPaths
+
+    
     def isNodeExist(self, nodeID, pathID):
         return nodeID in self.pathClasses[pathID]["nodeSet"]
     
@@ -192,6 +334,9 @@ class Paths:
             
             " Only consider case when two paths share the same parent "
             
+            print
+            
+            
             " TODO: when one path is the parent of the other , checking for false branches "
             if parentID1 == pathID2:
                 splices1 = self.splicePathIDs([pathID1,parentID1])
@@ -200,14 +345,27 @@ class Paths:
                 resultPose0, lastCost0, matchCount0 = self.makePathCompare(splices1[0], self.trimmedPaths[pathID2], pathID1, pathID2)
                 resultPose1, lastCost1, matchCount1 = self.makePathCompare(splices1[1], self.trimmedPaths[pathID2], pathID1, pathID2)
 
-
-                print "parent-child compare1", pathID1, pathID2, ":", resultPose0, resultPose1, lastCost0, lastCost1, matchCount0, matchCount1
+                print "parent-child compare1", pathID1, pathID2, ":"
+                print lastCost0, matchCount0, resultPose0
+                print lastCost1, matchCount1, resultPose1
                 self.consistency[pathPair] = 0.5     
 
-                departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2 = self.getPathDeparture(self.trimmedPaths[pathID2], splices1[0])
-                print departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2
-                departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2 = self.getPathDeparture(self.trimmedPaths[pathID2], splices1[1])
-                print departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2
+                #departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2
+                
+                result0 = self.getPathDeparture(self.trimmedPaths[pathID2], splices1[0])
+                result1 = self.getPathDeparture(splices1[0], self.trimmedPaths[pathID2])
+                result2 = self.getPathDeparture(self.trimmedPaths[pathID2], splices1[1])
+                result3 = self.getPathDeparture(splices1[1], self.trimmedPaths[pathID2])
+
+                print result0[2], result0[3], result0[7], result0[8]
+                print result1[2], result1[3], result1[7], result1[8]
+                print result2[2], result2[3], result2[7], result2[8]
+                print result3[2], result3[3], result3[7], result3[8]
+
+                #departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2 = self.getPathDeparture(self.trimmedPaths[pathID2], splices1[0])
+                #print isInterior1, isExist1, isInterior2, isExist2, departurePoint1, depAngle1, discDist1, departurePoint2, depAngle2, discDist2
+                #departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2 = self.getPathDeparture(self.trimmedPaths[pathID2], splices1[1])
+                #print isInterior1, isExist1, isInterior2, isExist2, departurePoint1, depAngle1, discDist1, departurePoint2, depAngle2, discDist2
 
                 
             elif parentID2 == pathID1:
@@ -216,13 +374,25 @@ class Paths:
                 resultPose0, lastCost0, matchCount0 = self.makePathCompare(self.trimmedPaths[pathID1], splices2[0], pathID1, pathID2)
                 resultPose1, lastCost1, matchCount1 = self.makePathCompare(self.trimmedPaths[pathID1], splices2[1], pathID1, pathID2)
 
-                print "parent-child compare2", pathID1, pathID2, ":", resultPose0, resultPose1, lastCost0, lastCost1, matchCount0, matchCount1
+                print "parent-child compare2", pathID1, pathID2, ":"
+                print lastCost0, matchCount0, resultPose0
+                print lastCost1, matchCount1, resultPose1
                 self.consistency[pathPair] = 0.5     
 
-                departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2 = self.getPathDeparture(self.trimmedPaths[pathID1], splices2[0])
-                print departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2
-                departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2 = self.getPathDeparture(self.trimmedPaths[pathID1], splices2[1])
-                print departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2
+                #departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2 = self.getPathDeparture(self.trimmedPaths[pathID1], splices2[0])
+                #print isInterior1, isExist1, isInterior2, isExist2, departurePoint1, depAngle1, discDist1, departurePoint2, depAngle2, discDist2
+                #departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2 = self.getPathDeparture(self.trimmedPaths[pathID1], splices2[1])
+                #print isInterior1, isExist1, isInterior2, isExist2, departurePoint1, depAngle1, discDist1, departurePoint2, depAngle2, discDist2
+
+                result0 = self.getPathDeparture(self.trimmedPaths[pathID1], splices2[0])
+                result1 = self.getPathDeparture(splices2[0], self.trimmedPaths[pathID1])
+                result2 = self.getPathDeparture(self.trimmedPaths[pathID1], splices2[1])
+                result3 = self.getPathDeparture(splices2[1], self.trimmedPaths[pathID2])
+
+                print result0[2], result0[3], result0[7], result0[8]
+                print result1[2], result1[3], result1[7], result1[8]
+                print result2[2], result2[3], result2[7], result2[8]
+                print result3[2], result3[3], result3[7], result3[8]
 
                 
             elif parentID1 == parentID2:
@@ -238,18 +408,31 @@ class Paths:
                 resultPose0, lastCost0, matchCount0 = self.makePathCompare(splices1[0], splices2[0], pathID1, pathID2)
                 resultPose1, lastCost1, matchCount1 = self.makePathCompare(splices1[1], splices2[1], pathID1, pathID2)
                 
-                print "sibling compare", pathID1, pathID2, ":", resultPose0, resultPose1, lastCost0, lastCost1, matchCount0, matchCount1
+                print "sibling compare", pathID1, pathID2, ":"
+                print lastCost0, matchCount0, resultPose0
+                print lastCost1, matchCount1, resultPose1
                 
                 self.consistency[pathPair] = 0.5        
 
-                departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2 = self.getPathDeparture(splices1[0], splices2[0])
-                print departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2
-                departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2 = self.getPathDeparture(splices1[1], splices2[1])
-                print departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2
+                #departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2 = self.getPathDeparture(splices1[0], splices2[0])
+                #print isInterior1, isExist1, isInterior2, isExist2, departurePoint1, depAngle1, discDist1, departurePoint2, depAngle2, discDist2
+                #departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2 = self.getPathDeparture(splices1[1], splices2[1])
+                #print isInterior1, isExist1, isInterior2, isExist2, departurePoint1, depAngle1, discDist1, departurePoint2, depAngle2, discDist2
+
+
+                result0 = self.getPathDeparture(splices1[0], splices2[0])
+                result1 = self.getPathDeparture(splices2[0], splices1[0])
+                result2 = self.getPathDeparture(splices1[0], splices2[0])
+                result3 = self.getPathDeparture(splices2[0], splices1[0])
+
+                print result0[2], result0[3], result0[7], result0[8]
+                print result1[2], result1[3], result1[7], result1[8]
+                print result2[2], result2[3], result2[7], result2[8]
+                print result3[2], result3[3], result3[7], result3[8]
 
             else:
                 self.consistency[pathPair] = 0.0
-        
+            print
         pass
     
 
@@ -2557,7 +2740,9 @@ class Paths:
     def checkUniqueBranch(self, parentPathID, nodeID1, depAngle, depPoint):
 
 
-        return True
+        #return True
+
+        print "checkUniqueBranch(", parentPathID, ",", nodeID1, ",", depAngle, ",", depPoint, ")"
 
         " check cartesian distance to similar junction points from parent path "
 
@@ -2588,7 +2773,7 @@ class Paths:
                 " check difference of tangential angle "
                 angDiff = diffAngle(depAngle, junctionPoint[2])
 
-                print "checkUniqueBranch(", parentPathID, ",", nodeID1, ",", depAngle, ",", depPoint, ") = ", junctionNodeID, dist, angDiff
+                print "result = ", junctionNodeID, dist, angDiff
         
                 if dist < DISC_THRESH:
                     if fabs(angDiff) < ANG_THRESH:
@@ -2618,7 +2803,7 @@ class Paths:
         Now, we have the departing angles, but we need to compare them with each other.    
         """
 
-        
+        print "determineBranch(", nodeID1, ",", nodeID2, ",", frontExist1, ",", frontExist2, ",", frontInterior1, ",", frontInterior2, ",", depAngle1, ",", depAngle2, ",", depPoint1, ",", depPoint2, ",", parentPathID1, ",", parentPathID2, ")"
         
         foreTerm1 = frontInterior1 and frontExist1
         foreTerm2 = frontInterior2 and frontExist2
@@ -2801,7 +2986,7 @@ class Paths:
         currPathID = pathIDs[0]
         
         while True:
-            print "currPathID =", currPathID
+            #print "currPathID =", currPathID
             parent = self.getPath(currPathID)
             thisParentID = parent["parentID"]
             
@@ -2866,7 +3051,7 @@ class Paths:
             
             joins.append([(pathID, minI1),(parentPathID, minI2), junctionPoint])
 
-        print "joins:", joins
+        #print "joins:", joins
 
         " create a tree with the node IDs and then stitch them together with joins "
         pathGraph = graph.graph()
@@ -2949,7 +3134,7 @@ class Paths:
             "find entire path from rightPathID to leftPathID "
             " start from point farthest from child's junction point "
 
-            print "both paths are childs,  make 1 resultant spliced paths"
+            #print "both paths are childs,  make 1 resultant spliced paths"
 
             rightPath = self.trimmedPaths[rightPathID]
             leftPath = self.trimmedPaths[leftPathID]
@@ -2983,36 +3168,18 @@ class Paths:
 
             splicedPath = []
             while currNode != (rightPathID, rightTermI):
-                print currNode, "!=", (rightPathID, rightTermI)
+                #print currNode, "!=", (rightPathID, rightTermI)
                 splicedPath.append(pathGraph.get_node_attributes(currNode))
                 currNode = shortestPathSpanTree[currNode]
             splicedPath.append(pathGraph.get_node_attributes(currNode))
 
-            print "len(shortestPathSpanTree) =", len(shortestPathSpanTree)
+            #print "len(shortestPathSpanTree) =", len(shortestPathSpanTree)
             #print "splicedPath:", splicedPath
             #print "shorestPathSpanTree:", shortestPathSpanTree
 
             newPaths.append(splicedPath)
 
 
-    
-            pylab.clf()
-    
-            print "spliced path has", len(splicedPath), "points"
-            xP = []
-            yP = []
-            for p in splicedPath:
-                xP.append(p[0])
-                yP.append(p[1])
-
-            pylab.plot(xP,yP)
-    
-            pylab.xlim(-4,4)
-            pylab.ylim(-4,4)
-    
-            pylab.title("Spliced Paths 1, numNodes = %d" % self.numNodes)
-            pylab.savefig("splicedPath_%04u.png" % self.spliceCount)
-            self.spliceCount += 1
 
 
 
