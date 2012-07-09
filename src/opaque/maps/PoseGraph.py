@@ -283,6 +283,7 @@ class PoseGraph:
 		self.overlapPlotCount = 0
 		self.pathDrawCount = 0
 		self.candidateCount = 0
+		self.statePlotCount = 0
 
 		#self.numPaths = 1
 		#self.paths = {0 : []}
@@ -1808,6 +1809,86 @@ class PoseGraph:
 				print "arcDistNew, arcDistOld, diff =", arcDistNew, arcDistOld, arcDistNew-arcDistOld
 					
 			return
+
+	def mergePaths(self):
+
+		toBeMerged = self.paths.comparePaths()
+							
+		for mergeThis in toBeMerged:
+
+			pathID1 = mergeThis[0]
+			pathID2 = mergeThis[1]
+			offset = mergeThis[2]
+
+				
+			" capture transform between pathID1 and pathID2 under correction "
+			if pathID1 < pathID2:
+				cOffset = offset
+				rootID = pathID1
+				lessID = pathID2
+				
+			else:
+				" inverse of offset "
+				invPose = Pose([0.0,0.0,0.0])
+				cOffset = invPose.doInverse(offset)
+				rootID = pathID2
+				lessID = pathID1
+			
+			mergeNodes = self.paths.getNodes(lessID)
+			
+			
+			" capture transform between pathID2 and member nodes "
+			" add compute new node locations under corrected transform "
+			poseOrigin = Pose(cOffset)
+			for nodeID in mergeNodes:
+				nodePose = self.nodeHash[nodeID].getGlobalGPACPose()			
+				guessPose = poseOrigin.convertLocalOffsetToGlobal(nodePose)
+				self.drawConstraints(self.statePlotCount)
+				self.statePlotCount += 1
+				self.drawPathAndHull()
+				self.nodeHash[nodeID].setGPACPose(guessPose)
+				self.drawConstraints(self.statePlotCount)
+				self.statePlotCount += 1
+				self.drawPathAndHull()
+				
+				pathNodes = self.paths.getNodes(rootID)
+				targetNodeID = nodeID
+				
+				print "addPathConstraints:"
+				print "pathNodes:", pathNodes
+				print "targetNodeID:", targetNodeID
+				
+				#newConstraints = self.addBatchConstraints(targetNodeID)
+				newConstraints = self.addTargetBatchConstraints(targetNodeID, pathNodes)
+								
+				for const in newConstraints:
+					n1 = const[0]
+					n2 = const[1]
+					transform = const[2]
+					covE = const[3]
+		
+					self.addPriorityEdge([n1,n2,transform,covE], CORNER_PRIORITY)
+		
+				" merge the constraints "
+				self.mergePriorityConstraints()
+
+				self.drawConstraints(self.statePlotCount)
+				self.statePlotCount += 1
+				self.drawPathAndHull()
+			
+			" constrain nodes to merge to pathID1 "
+			
+			" move nodes to pathID1, delete pathID2 "
+			
+			" move nodes from lessID into rootID and delete pathID "
+			for nodeID in mergeNodes:
+				self.paths.addNode(nodeID, rootID)
+
+			self.paths.delPath(lessID)
+
+			self.paths.generatePaths()
+			
+
 
 	def constrainToPaths(self, nodeID, orderedPathIDs, departures, interiors, depPoints, insertNode = False):
 			
@@ -3686,6 +3767,316 @@ class PoseGraph:
 
 	def computeNavigationPath(self, startPose, endPose):
 		return self.paths.computeNavigationPath(startPose, endPose)
+
+	def addTargetBatchConstraints(self, targetNodeID, pathNodes):
+
+		allNodes = pathNodes
+		
+		paths = []
+		for i in range(self.numNodes):
+			paths.append(bayes.dijkstra_proj(i, self.numNodes, self.edgeHash))
+			#print "paths", i, ":", paths[i]
+
+
+
+
+		constraintPairs = []
+		for nodeID in allNodes:
+			constraintPairs.append([targetNodeID,nodeID])
+
+
+		medials = {}
+		splines = {}
+		originUs = {}
+		originForeUs = {}
+		originBackUs = {}
+		for k in allNodes + [targetNodeID]:
+	
+			node1 = self.nodeHash[k]
+			hull1, medial1 = computeHullAxis(i, node1, tailCutOff = False)
+			medials[k] = medial1
+			#estPose1 = node1.getGlobalGPACPose()		
+			medialSpline1 = SplineFit(medial1, smooth=0.1)
+			splines[k] = medialSpline1
+			
+			originU1 = medialSpline1.findU([0.0,0.0])	
+			originUs[k] = originU1
+			originForeUs[k] = splines[k].getUOfDist(originUs[k], 1.0, distIter = 0.001)
+			originBackUs[k] = splines[k].getUOfDist(originUs[k], -1.0, distIter = 0.001)
+
+
+		targetNode = self.nodeHash[targetNodeID]
+		targetPose = targetNode.getGlobalGPACPose()
+		
+		isTargFeatureless = targetNode.getIsFeatureless()
+		
+		candidates = []
+		
+		u2_1 = splines[targetNodeID].getUOfDist(originUs[targetNodeID], 0.0, distIter = 0.001)
+		u2_2 = splines[targetNodeID].getUOfDist(originUs[targetNodeID], 1.0, distIter = 0.001)
+		u2_3 = splines[targetNodeID].getUOfDist(originUs[targetNodeID], -1.0, distIter = 0.001)
+		for k in allNodes:
+
+			candNode = self.nodeHash[k]
+			candPose = candNode.getGlobalGPACPose()
+			
+			cartDist1 = sqrt((candPose[0]-targetPose[0])**2 + (candPose[1]-targetPose[1])**2)
+			angDiff1 = diffAngle(candPose[2],targetPose[2])
+			
+			isFeatureless = candNode.getIsFeatureless()
+			
+			if k == targetNodeID-1 or k == targetNodeID-2:
+				isNeigh = True
+			else:
+				isNeigh = False
+			
+			pathIDs = []
+			allPaths = self.paths.getPathIDs()
+			for j in allPaths:
+				if self.paths.isNodeExist(k,j):
+					pathIDs.append(j)
+
+
+			"  select closest point to origin of candidate pose as u2 "
+			estPose1 = candPose
+			estPose2 = targetPose
+			poseOrigin = Pose(estPose1)
+			offset = poseOrigin.convertGlobalPoseToLocal(estPose2)
+			
+			points2 = splines[k].getUniformSamples()
+			p_1 = splines[targetNodeID].getU(originUs[targetNodeID])
+			
+			points2_offset = []
+			for p in points2:
+				result = gen_icp.dispOffset(p, offset)		
+				points2_offset.append(result)
+	
+			p_2, i_2, minDist = gen_icp.findClosestPointInA(points2_offset, p_1)
+	
+			u2 = splines[k].findU(points2[i_2])	
+			
+			args = [k, targetNodeID, medials[k], medials[targetNodeID], originUs[k], u2, 0.0]
+			candidates.append({ "nodeID1" : k, "nodeID2" : targetNodeID,
+							"medial1": medials[k], "medial2": medials[targetNodeID],
+							"u1": args[4], "u2": args[5], "initAng": args[6],
+							"isFeatureless1": isFeatureless, "isFeatureless2": isTargFeatureless,
+							"isNeigh": isNeigh, "cartDist1": cartDist1, "angDiff1": angDiff1,
+							"pathIDs": pathIDs})
+
+		PATH_MATCH_DIST = 1.0
+		PAIR_ANG_DELTA = 0.3
+
+
+		candidates2 = []
+		argSets = []
+		print
+		print "CANDIDATES:"
+		for cand in candidates:
+			nodeID1 = cand['nodeID1']
+			nodeID2 = cand['nodeID2']
+			medial1 = cand['medial1']
+			medial2 = cand['medial2']
+			u1 = cand['u1']
+			u2 = cand['u2']
+			initAng = cand['initAng']
+			angDiff1 = cand['angDiff1']
+			cartDist1 = cand['cartDist1']
+			isFeatureless = cand['isFeatureless1']
+			isNeigh = cand['isNeigh']
+			pathIDs = cand['pathIDs']
+
+			isInPath = False
+			for j in pathIDs:
+				if self.paths.isNodeExist(nodeID2,j):
+					isInPath = True
+
+
+
+			oldConstraints = self.getEdges(nodeID1, nodeID2)
+			isExist = False
+			for constraint in oldConstraints:
+				isExist = True
+
+			print nodeID1, nodeID2, u1, u2, initAng, pathIDs
+			
+			
+			if True and not isNeigh:
+				if cartDist1 < PATH_MATCH_DIST and fabs(diffAngle(angDiff1,initAng)) < PAIR_ANG_DELTA:
+					if (isTargFeatureless and isFeatureless) or (not isTargFeatureless and not isFeatureless):
+						#if isInPath and not isExist:
+						if not isExist:
+							args = [nodeID1, nodeID2, medial1, medial2, u1, u2, initAng]
+							argSets.append(args)
+							candidates2.append(cand)
+			if False and fabs(diffAngle(angDiff1,initAng)) < PAIR_ANG_DELTA:
+				args = [nodeID1, nodeID2, medial1, medial2, u1, u2, initAng]
+				argSets.append(args)
+				candidates2.append(cand)
+
+
+		print "FILTERED:"
+		for cand in candidates2:
+			nodeID1 = cand['nodeID1']
+			nodeID2 = cand['nodeID2']
+			u1 = cand['u1']
+			u2 = cand['u2']
+			initAng = cand['initAng']
+			print nodeID1, nodeID2, u1, u2, initAng
+
+		t1 = time.time()
+		results = gen_icp.batchOverlapICP(argSets)
+		t2 = time.time()
+		print "batchOverlapICP:", t2-t1, "seconds", len(argSets), "pairs"
+
+		"""
+		METRICS:
+		
+		1) initial angle difference
+		2) constraint angle difference
+		3) initial cartesian difference
+		4) constraint cartestian difference
+		5) featurelessness state
+		6) paired inplace or not status
+		7) path classification
+		8) ICP histogram
+		"""
+
+		for k in range(len(candidates2)):
+			cand = candidates2[k]
+			nodeID1 = cand['nodeID1']
+			nodeID2 = cand['nodeID2']
+			medial1 = cand['medial1']
+			medial2 = cand['medial2']
+			u1 = cand['u1']
+			u2 = cand['u2']
+			initAng = cand['initAng']
+			angDiff1 = cand['angDiff1']
+			cartDist1 = cand['cartDist1']
+			isFeatureless = cand['isFeatureless1']
+			isNeigh = cand['isNeigh']
+			pathIDs = cand['pathIDs']
+						
+			
+			res = results[k]
+			offset = res[0]
+			histogram = res[1]
+						
+			transform = matrix([[offset[0]], [offset[1]], [offset[2]]])
+			covE =  self.E_overlap
+			
+			candNode = self.nodeHash[nodeID1]
+			candPose = candNode.getGlobalGPACPose()
+			
+			cartDist2 = sqrt((candPose[0]-targetPose[0]-offset[0])**2 + (candPose[0]-targetPose[0]-offset[0])**2)
+			angDiff2 = diffAngle(offset[2], angDiff1)
+
+			print "cartDist:", candPose[0]-targetPose[0], offset[0], candPose[1]-targetPose[1], offset[1], angDiff1, angDiff2
+
+			cand["offset"] = offset
+			cand["transform"] = transform
+			cand["histogram"] = histogram
+			cand["angDiff2"] = angDiff2
+			cand["cartDist2"] = cartDist2
+
+			if not isFeatureless:
+				cand["covE"] = deepcopy(self.E_junction)
+			else:
+				cand["covE"] = deepcopy(self.E_overlap)
+
+			cand["xiError"] = 0.0
+			cand["xiErrorBase"] = 0.0
+
+
+		candidates2.sort(key=lambda cand: cand["xiError"])
+
+		candidates3 = []
+		isPicked = {}
+		for cand in candidates2:
+			
+			nodeID1 = cand["nodeID1"]
+			nodeID2 = cand["nodeID2"]
+			try:
+				isPicked[(nodeID1,nodeID2)]
+			except:
+				isPicked[(nodeID1,nodeID2)] = True
+				candidates3.append(cand)
+			else:
+				pass
+				
+
+
+		print "RESULTS:"
+		finalCandidates = []
+		for cand in candidates3:
+			nodeID1 = cand["nodeID1"]
+			nodeID2 = cand["nodeID2"]
+			transform = cand["transform"]
+			covE = cand["covE"]
+			offset = cand["offset"]
+
+			angDiff2 = cand["angDiff2"]
+			cartDist2 = cand["cartDist2"]
+			
+			xiError = cand["xiError"]
+			xiBaseError = cand["xiErrorBase"]
+						
+			#print nodeID1, nodeID2, offset, cartDist2, angDiff2, xiError, xiError-xiBaseError
+			print nodeID1, nodeID2, cartDist2, angDiff2, xiError, xiError-xiBaseError
+			
+			self.allPathConstraints.append([nodeID1,nodeID2,transform,covE])
+			finalCandidates.append([nodeID1,nodeID2,transform,covE])
+
+		print
+
+		" draw new hypotheses "
+		for cand in candidates3:
+			self.drawCandidate(cand)
+		
+		return finalCandidates
+		
+		
+		"""
+		METRICS:
+		
+		1) initial angle difference
+		2) constraint angle difference
+		3) initial cartesian difference
+		4) constraint cartestian difference
+		5) featurelessness state
+		6) paired inplace or not status
+		7) path classification
+		8) ICP histogram
+		"""
+			
+
+		"""
+		cart_distances = []
+		angle_diffs = []
+		targetNode = self.nodeHash[targetNodeID]
+		targetPose = targetNode.getGlobalGPACPose()
+		for i in range(len(pathNodes)):
+			
+			candNode = self.nodeHash[pathNodes[i]]
+			candPose = candNode.getGlobalGPACPose()
+			
+			dist = sqrt((candPose[0]-targetPose[0])**2 + (candPose[1]-targetPose[1])**2)
+			angDelta = diffAngle(candPose[2],targetPose[2])
+			print pathNodes[i], dist, angDelta, targetPose, candPose
+			cart_distances.append(dist)
+
+			angle_diffs.append(angDelta)
+		"""
+
+
+		#return transform, covE, hist		
+
+		# result, hist = gen_icp.overlapICP_GPU2(estPose1, gndOffset, [u1, u2, angGuess], hull1, hull2, medial1, medial2, [0.0,0.0], [0.0,0.0], inPlace = inPlace, plotIter = False, n1 = i, n2 = j, uRange = uRange)
+		
+
+		#for pair in constraintPairs:
+		#	n1 = pair[0]
+		#	n2 = pair[1]
+		#	transform, covE, hist = self.makeMedialOverlapConstraint(n1, n2, isMove = False, uRange = 3.0)				
 	
 	
 	def addBatchConstraints(self, targetNodeID):

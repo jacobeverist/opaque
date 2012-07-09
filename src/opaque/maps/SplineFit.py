@@ -64,7 +64,7 @@ class SplineFit:
 
 	def getUniformSamples(self, spacing = 0.04):
 		
-		samples = scipy.arange(0.0,1.0,0.05)
+		samples = scipy.arange(0.0,1.05,0.05)
 		sample_points = self.getUVecSet(samples)
 		sample_points = self.makePointsUniform(sample_points, max_spacing = spacing)
 		return sample_points

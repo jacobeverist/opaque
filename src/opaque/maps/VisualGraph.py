@@ -51,17 +51,19 @@ class VisualGraph:
 			self.localNodes.append(currNode)
 			
 			self.poseGraph.nodeHash[i] = currNode
+			#self.drawConstraints()
+			#self.poseGraph.mergePriorityConstraints()
 
 			#self.poseGraph.restoreNode(dirName, currNode)		
 		
 		self.poseGraph.mergePriorityConstraints()
 
-		self.drawConstraints()
+		#self.drawConstraints()
 		
 
 		#return
 
-		for i in range(num_poses, num_poses+30):
+		for i in range(num_poses, num_poses+0):
 
 			print "loading node", self.numNodes			
 			currNode = LocalNode(self.probe, self.contacts, i, 19, PIXELSIZE)
@@ -76,30 +78,64 @@ class VisualGraph:
 			self.poseGraph.saveState()
 
 		self.poseGraph.paths.generatePaths()
-		self.poseGraph.paths.trimPaths(self.poseGraph.paths.paths)  		
-		
-		splices = self.poseGraph.paths.getAllSplices()
+		trimPaths = self.poseGraph.paths.trimPaths(self.poseGraph.paths.paths)  		
+		self.poseGraph.drawTrimmedPaths(trimPaths)		
 
+		splices, terminals, junctions = self.poseGraph.paths.getAllSplices()
+
+		self.poseGraph.mergePaths()
+		#self.drawConstraints()
+		
+		#self.poseGraph.paths.comparePaths()
+
+
+		print "consistency:"
+		print self.poseGraph.paths.consistency
+
+		xP1 = []
+		yP1 = []
+		xP2 = []
+		yP2 = []
+		
+		for k, v in terminals.iteritems():
+			pnt = v[1]
+			xP1.append(pnt[0])
+			yP1.append(pnt[1])
+
+
+		for k, v in junctions.iteritems():
+			pnt = v[1]
+			xP2.append(pnt[0])
+			yP2.append(pnt[1])
+		
 		spliceCount = 0
-		for splicedPath in splices:    
-			pylab.clf()
+		for k, v in splices.iteritems():
 			
-			self.drawWalls()
-			
-			print "spliced path has", len(splicedPath), "points"
-			xP = []
-			yP = []
-			for p in splicedPath:
-				xP.append(p[0])
-				yP.append(p[1])
-			
-			pylab.plot(xP,yP)
-			
-			pylab.xlim(-5,10)
-			pylab.ylim(-8,8)			
-			pylab.title("Spliced Paths %d " % spliceCount)
-			pylab.savefig("splicedPath_%04u.png" % spliceCount)
-			spliceCount += 1
+			for sPath in v:
+				
+				splicedPath = sPath['path']   
+				pylab.clf()
+				
+				self.drawWalls()
+				
+				print "spliced path has", len(splicedPath), "points", sPath['orderedPathIDs']
+				xP = []
+				yP = []
+				for p in splicedPath:
+					xP.append(p[0])
+					yP.append(p[1])
+				
+				pylab.plot(xP,yP)
+				
+				pylab.scatter(xP1,yP1, color='k')
+				pylab.scatter(xP2,yP2, color='r')
+				
+				
+				pylab.xlim(-5,10)
+				pylab.ylim(-8,8)			
+				pylab.title("Spliced Paths %d " % spliceCount)
+				pylab.savefig("splicedPath_%04u.png" % spliceCount)
+				spliceCount += 1
 		print "len(splices) =", len(splices)
 
 		self.poseGraph.drawPathAndHull()

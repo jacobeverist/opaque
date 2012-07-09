@@ -208,6 +208,9 @@ else:
     isGPU = True
 
 def __num_processors():
+    
+    return 4
+    
     if os.name == 'nt': # Windows
         return int(os.getenv('NUMBER_OF_PROCESSORS'))
     else: # glibc (Linux, *BSD, Apple)
@@ -7052,7 +7055,11 @@ def globalOverlapICP_GPU2(initGuess, globalPath, medialPoints,plotIter = False, 
             flatMatchPairs.append(C2[1][1])
         c_poses_1 = [item for sublist in poses_1 for item in sublist]
         c_poses_2 = [item for sublist in poses_2 for item in sublist]
-        newParam, newCost = nelminICP.ICPmin(flatMatchPairs, len(match_pairs), initGuess, c_poses_1, c_poses_2, len(poses_1))
+        
+
+        
+        newParam, newCost = nelminICP.ICPmin(flatMatchPairs, len(match_pairs), [u1,currU,currAng], c_poses_1, c_poses_2, len(poses_1))
+        #newParam, newCost = nelminICP.ICPmin(flatMatchPairs, len(match_pairs), initGuess, c_poses_1, c_poses_2, len(poses_1))
 
         newU = newParam[0]
         newAng = newParam[1]
@@ -7268,6 +7275,7 @@ def pathOverlapICP(initGuess, globalPath, medialPoints,plotIter = False, n1 = 0,
     
     costThresh = 0.004
     minMatchDist = 1.0
+    minMatchDist2 = 1.0
     lastCost = 1e100
     
     startIteration = numIterations
@@ -7342,7 +7350,8 @@ def pathOverlapICP(initGuess, globalPath, medialPoints,plotIter = False, n1 = 0,
                 " for every point of B, find it's closest neighbor in transformed A "
                 #p_2, i_2, minDist = findClosestPointInA(points_offset, p_1)
                 try:
-                    p_2, i_2, minDist = findClosestPointWithAngle(vecPoints_offset, p_1, math.pi/8.0)
+                    #p_2, i_2, minDist = findClosestPointWithAngle(vecPoints_offset, p_1, math.pi/8.0)
+                    p_2, i_2, minDist = findClosestPointInA(vecPoints_offset, p_1)
         
                     if minDist <= minMatchDist:
             
@@ -7367,9 +7376,10 @@ def pathOverlapICP(initGuess, globalPath, medialPoints,plotIter = False, n1 = 0,
             try:
                 " for every transformed point of A, find it's closest neighbor in B "
                 #p_1, minDist = findClosestPointInB(points1, p_2)
-                p_2, i_2, minDist = findClosestPointWithAngle(globalVecPoints, p_1, math.pi/8.0)
+                #p_2, i_2, minDist = findClosestPointWithAngle(globalVecPoints, p_1, math.pi/8.0)
+                p_2, i_2, minDist = findClosestPointInA(globalVecPoints, p_1)
     
-                if minDist <= minMatchDist:
+                if minDist <= minMatchDist2:
         
                     " add to the list of match pairs less than 1.0 distance apart "
                     " keep A points and covariances untransformed "
@@ -7381,7 +7391,8 @@ def pathOverlapICP(initGuess, globalPath, medialPoints,plotIter = False, n1 = 0,
                     match_pairs.append([points[i],globalPoints[i_2],C2,C1])
             except:
                 pass
-        
+
+
         
         #input_GPU = convertToGPU(match_pairs)
         
@@ -7415,7 +7426,88 @@ def pathOverlapICP(initGuess, globalPath, medialPoints,plotIter = False, n1 = 0,
             flatMatchPairs.append(C2[1][1])
         c_poses_1 = [item for sublist in poses_1 for item in sublist]
         c_poses_2 = [item for sublist in poses_2 for item in sublist]
-        newParam, newCost = nelminICP.ICPmin(flatMatchPairs, len(match_pairs), initGuess, c_poses_1, c_poses_2, len(poses_1))
+        
+        
+        
+        
+        resultSum, resultParam, resultOffset = nelminICP.ICPcost(flatMatchPairs, len(match_pairs), [u1,currU,currAng], c_poses_1, c_poses_2, len(poses_1))
+        " draw final position "
+        if plotIter:
+            
+            " set the origin of pose 1 "
+            poseOrigin = Pose(currPose)
+            
+            pylab.clf()
+            pylab.axes()
+            match_global = []
+            
+            for pair in match_pairs:
+                p1 = pair[0]
+                p2 = pair[1]
+                
+                p1_o = dispOffset(p1, currPose)
+                
+                p1_g = p1_o
+                p2_g = p2
+                match_global.append([p1_g,p2_g])
+    
+            draw_matches(match_global, [0.0,0.0,0.0])
+    
+            
+            xP = []
+            yP = []
+            for b in globalPoly:
+                p1 = b
+                xP.append(p1[0])    
+                yP.append(p1[1])
+    
+            pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+    
+            pylab.scatter([pose1[0]],[pose1[1]],color=(0.0,0.0,1.0))
+    
+            xP = []
+            yP = []
+            for b in points:
+                p = [b[0],b[1]]
+                p1 = dispOffset(p,currPose)
+                
+                #p1 = poseOrigin.convertLocalToGlobal(p)
+                xP.append(p1[0])    
+                yP.append(p1[1])
+    
+            pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
+    
+            #pylab.scatter([pose2[0]],[pose2[1]],color=(1.0,0.0,0.0))
+    
+    
+            plotEnv()        
+            pylab.title("%u -- %s u1 = %1.3f, u2 = %1.3f, ang = %1.3f, %.1f,%d" % (n1, repr(n2), u1, currU, currAng, resultSum, len(match_pairs)))
+    
+            pylab.xlim(-6, 10)                    
+            pylab.ylim(-8, 8)
+            pylab.savefig("ICP_plot_%04u.png" % globalPlotCount)
+            pylab.clf()
+            
+            " save inputs "
+            saveFile = ""
+            saveFile += "initGuess = " + repr(initGuess) + "\n"
+            saveFile += "globalPath = " + repr(globalPath) + "\n"
+            #saveFile += "hull = " + repr(hull) + "\n"
+            saveFile += "medialPoints = " + repr(medialPoints) + "\n"
+    
+            f = open("icpInputSave_%04u.txt" % globalPlotCount, 'w')
+            globalPlotCount += 1
+            f.write(saveFile)
+            f.close()        
+                
+        
+        
+        
+        #newParam, newCost = nelminICP.ICPmin(flatMatchPairs, len(match_pairs), initGuess, c_poses_1, c_poses_2, len(poses_1))
+        newParam, newCost = nelminICP.ICPmin(flatMatchPairs, len(match_pairs), [u1,currU,currAng], c_poses_1, c_poses_2, len(poses_1))
+        
+
+
 
         newU = newParam[0]
         newAng = newParam[1]
@@ -7468,7 +7560,7 @@ def pathOverlapICP(initGuess, globalPath, medialPoints,plotIter = False, n1 = 0,
         isTerminate = False
         if abs(lastCost - newCost) < costThresh or (numIterations - startIteration) > 10:
             isTerminate = True
-            print "terminating globalOverlap_GPU2:", lastCost, newCost, costThresh, numIterations-startIteration
+            #print "terminating globalOverlap_GPU2:", lastCost, newCost, costThresh, numIterations-startIteration
         
         #if abs(lastCost - newCost) < costThresh or (numIterations - startIteration) > 10:
         #    break
@@ -7482,6 +7574,76 @@ def pathOverlapICP(initGuess, globalPath, medialPoints,plotIter = False, n1 = 0,
         
         if isTerminate:
             break
+        
+        " draw final position "
+        if plotIter:
+            
+            " set the origin of pose 1 "
+            poseOrigin = Pose(currPose)
+            
+            pylab.clf()
+            pylab.axes()
+            match_global = []
+            
+            for pair in match_pairs:
+                p1 = pair[0]
+                p2 = pair[1]
+                
+                p1_o = dispOffset(p1, currPose)
+                
+                p1_g = p1_o
+                p2_g = p2
+                match_global.append([p1_g,p2_g])
+    
+            draw_matches(match_global, [0.0,0.0,0.0])
+    
+            
+            xP = []
+            yP = []
+            for b in globalPoly:
+                p1 = b
+                xP.append(p1[0])    
+                yP.append(p1[1])
+    
+            pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+    
+            pylab.scatter([pose1[0]],[pose1[1]],color=(0.0,0.0,1.0))
+    
+            xP = []
+            yP = []
+            for b in points:
+                p = [b[0],b[1]]
+                p1 = dispOffset(p,currPose)
+                
+                #p1 = poseOrigin.convertLocalToGlobal(p)
+                xP.append(p1[0])    
+                yP.append(p1[1])
+    
+            pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
+    
+            #pylab.scatter([pose2[0]],[pose2[1]],color=(1.0,0.0,0.0))
+    
+    
+            plotEnv()        
+            pylab.title("%u -- %s u1 = %1.3f, u2 = %1.3f, ang = %1.3f, %.1f,%d" % (n1, repr(n2), u1, currU, currAng, newCost, len(match_pairs)))
+    
+            pylab.xlim(-6, 10)                    
+            pylab.ylim(-8, 8)
+            pylab.savefig("ICP_plot_%04u.png" % globalPlotCount)
+            pylab.clf()
+            
+            " save inputs "
+            saveFile = ""
+            saveFile += "initGuess = " + repr(initGuess) + "\n"
+            saveFile += "globalPath = " + repr(globalPath) + "\n"
+            #saveFile += "hull = " + repr(hull) + "\n"
+            saveFile += "medialPoints = " + repr(medialPoints) + "\n"
+    
+            f = open("icpInputSave_%04u.txt" % globalPlotCount, 'w')
+            globalPlotCount += 1
+            f.write(saveFile)
+            f.close()        
+     
 
     " draw final position "
     if plotIter:
@@ -7533,7 +7695,7 @@ def pathOverlapICP(initGuess, globalPath, medialPoints,plotIter = False, n1 = 0,
 
 
         plotEnv()        
-        pylab.title("(%u,%u) u1 = %1.3f, u2 = %1.3f, ang = %1.3f, cost = %f" % (n1, n2, u1, currU, currAng, newCost))
+        pylab.title("%u -- %s u1 = %1.3f, u2 = %1.3f, ang = %1.3f, %.1f, %d F" % (n1, repr(n2), u1, currU, currAng, newCost, len(match_pairs)))
 
         pylab.xlim(-6, 10)                    
         pylab.ylim(-8, 8)
@@ -9702,14 +9864,14 @@ def draw_matches(match_pairs, offset, axes = 0):
             a_off = dispOffset(pair[0], offset)
             b = pair[1]
     
-            pylab.plot([a_off[0],b[0]], [a_off[1],b[1]])
+            pylab.plot([a_off[0],b[0]], [a_off[1],b[1]],color='k')
 
     else:
         for pair in match_pairs:
             a_off = dispOffset(pair[0], offset)
             b = pair[1]
     
-            axes.plot([a_off[0],b[0]], [a_off[1],b[1]])
+            axes.plot([a_off[0],b[0]], [a_off[1],b[1]],color='k')
 
 def draw(a_pnts, b_pnts, filename, fileWrite = True):
 

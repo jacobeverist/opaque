@@ -150,9 +150,12 @@ class Paths:
         
         self.consistency = {}
         
+        self.pathGraph = graph.graph()
+        self.joins = []
         
         self.spliceCount = 0
         self.pathPlotCount = 0
+        self.overlapPlotCount = 0
         self.pathIDs += 1
     
     def saveState(self, id):
@@ -193,10 +196,105 @@ class Paths:
         " COMPUTE MEDIAL AXIS FROM UNION OF PATH-CLASSIFIED NODES "
         self.paths = {}
         self.hulls = {}
+        
         pathIDs = self.getPathIDs()
         for k in pathIDs:
             print "computing path for node set", k, ":", self.getNodes(k)
             self.paths[k], self.hulls[k] = self.getTopology(self.getNodes(k))
+
+        " for each path, attempt to join with its parent path "
+        self.joins = []
+        self.junctions = {}
+        for pathID in pathIDs:
+
+            cPath = self.getPath(pathID)
+            
+            parentPathID = cPath["parentID"]
+            
+            " parent does not concern us "
+            if parentPathID == None:
+                continue
+            
+            junctionNodeID = cPath["branchNodeID"]
+            localJunctionPoint = cPath["localJunctionPose"]
+            poseOrigin = Pose(self.nodeHash[junctionNodeID].getEstPose())
+            junctionPoint = poseOrigin.convertLocalToGlobal(localJunctionPoint)
+
+            path1 = self.trimmedPaths[pathID]
+            path2 = self.trimmedPaths[parentPathID]
+            
+            minDist1 = 1e100
+            minI1 = 0        
+            for i in range(len(path1)):
+                pnt = path1[i]
+                dist = sqrt((pnt[0]-junctionPoint[0])**2 + (pnt[1]-junctionPoint[1])**2)
+            
+                if dist < minDist1:
+                    minDist1 = dist
+                    minI1 = i
+    
+            minDist2 = 1e100
+            minI2 = 0        
+            for i in range(len(path2)):
+                pnt = path2[i]
+                dist = sqrt((pnt[0]-junctionPoint[0])**2 + (pnt[1]-junctionPoint[1])**2)
+            
+                if dist < minDist2:
+                    minDist2 = dist
+                    minI2 = i
+            
+            self.joins.append([(pathID, minI1),(parentPathID, minI2), junctionPoint])
+
+
+            " get junctions " 
+            localPose = cPath["localJunctionPose"]
+            branchNodeID = cPath["branchNodeID"]
+            
+            poseOrigin = Pose(self.nodeHash[branchNodeID].getEstPose())
+            junctionPoint = poseOrigin.convertLocalToGlobal(localPose)
+            
+            #globalPose = self.nodeHash[branchNodeID].getGlobalGPACPose()
+            self.junctions[pathID] = [branchNodeID, junctionPoint, (parentPathID,minI2), path2[minI2]]
+            #junctions[pathID] = [cPath["branchNodeID"], cPath["localJunctionPose"]]
+            
+
+
+        " create a tree with the node IDs and then stitch them together with joins "
+        self.pathGraph = graph.graph()
+        for pathID in pathIDs:
+            path = self.trimmedPaths[pathID]
+            for k in range(len(path)):
+                self.pathGraph.add_node((pathID, k), path[k])
+            for k in range(len(path)-1):
+                self.pathGraph.add_edge((pathID, k), (pathID, k+1))
+
+        " join with the junction in between the join points "
+        for k in range(len(self.joins)):
+            join = self.joins[k]
+            #pathGraph.add_node(k, join[2])
+            #pathGraph.add_edge(join[0], k)
+            #pathGraph.add_edge(k, join[1])
+            self.pathGraph.add_edge(join[0], join[1])
+
+        self.topDict = {}
+        
+        
+        " get terminals "
+        self.terminals = {}
+        for pathID in pathIDs:
+            path = self.trimmedPaths[pathID]
+            if pathID == 0:
+                self.terminals[0] = [(pathID,0), path[0]]
+                self.terminals[1] = [(pathID,len(path)-1), path[len(path)-1]]
+
+                self.topDict["t%u" % 0] = (pathID,0)
+                self.topDict["t%u" % 1] = (pathID,len(path)-1)
+                
+            else:
+                self.terminals[pathID+1] = [(pathID,len(path)-1), path[len(path)-1]]
+                self.topDict["t%u" % (pathID+1)] = (pathID,len(path)-1)
+                self.topDict["j%u" % pathID] = self.junctions[pathID][2]
+
             
     def getNodes(self, pathID):
         
@@ -211,46 +309,307 @@ class Paths:
     
     def getAllSplices(self):
 
-        " determine which paths are leaves "
+        print "junctions:", self.junctions
+        print "terminals:", self.terminals
 
-                
+        " determine which paths are leaves "
         
         pathIDs = self.getPathIDs()
         isAParent = {}
-        pathGraph = graph.graph()
+        parents = {}
+        pathIDGraph = graph.graph()
 
         for pathID in pathIDs:
             isAParent[pathID] = False
-            pathGraph.add_node(pathID, [])
+            pathIDGraph.add_node(pathID, [])
         
         for pathID in pathIDs:    
             parentPathID = self.getPath(pathID)["parentID"]
+            parents[pathID] = parentPathID
             if parentPathID != None:
                 isAParent[parentPathID] = True
-                pathGraph.add_edge(pathID, parentPathID)
+                pathIDGraph.add_edge(pathID, parentPathID)
         
         leafCount = 0
         for pathID in pathIDs:
             if not isAParent[pathID]:
                 leafCount += 1
 
+        #self.pathClasses[0] = {"parentID" : None, "branchNodeID" : None, "localJunctionPose" : None, 
+        
+
+        " build topological graph "
+        topGraph = graph.graph()
+        
+        topNodes = []
+                       
+        for k, term in self.terminals.iteritems():
+            topGraph.add_node(term[0], term[1])
+            print "add_node", term[0], term[1]
+            topNodes.append(term[0])
+        for k, junc in self.junctions.iteritems():
+            topGraph.add_node(junc[2], junc[3])
+            print "add_node", junc[2], junc[3]
+            topNodes.append(junc[2])
+            
+        
+        for pathID in pathIDs:
+            pathIndex = []
+            if pathID == 0:
+                term = self.terminals[0]
+                graphNodeKey = term[0]
+                pathIndex.append(graphNodeKey[1])
+                
+                term = self.terminals[1]
+                graphNodeKey = term[0]
+                pathIndex.append(graphNodeKey[1])
+            else:
+                term = self.terminals[pathID+1]
+                graphNodeKey = term[0]
+                pathIndex.append(graphNodeKey[1])
+                
+            for k, junc in self.junctions.iteritems():
+                graphNodeKey = junc[2]
+                if graphNodeKey[0] == pathID:
+                    pathIndex.append(graphNodeKey[1])
+                        
+            pathIndex.sort()
+            
+            print "pathIndex:", pathIndex
+            
+            for k in range(len(pathIndex)-1):
+                print "add_edge", (pathID,pathIndex[k]),(pathID,pathIndex[k+1])
+                topGraph.add_edge((pathID,pathIndex[k]),(pathID,pathIndex[k+1]))
+
+            if pathID != 0:
+                graphNodeKey = self.junctions[pathID][2]
+                print "add_edge", graphNodeKey,(pathID,pathIndex[0])
+                topGraph.add_edge(graphNodeKey,(pathID,pathIndex[0]))
+                
+
+        results = {}
+        for i in range(len(pathIDs)):
+            pathID1 = pathIDs[i]
+            for j in range(i,len(pathIDs)):
+                
+                pathID2 = pathIDs[j]
+                
+                if pathID1 == pathID2:
+                    "term1 to term 2"
+
+                    termPaths = []
+                    if pathID1 == 0:
+                        termIDs = [self.topDict["t%u" % (pathID1)], self.topDict["t%u" % (pathID1+1)]]
+                    else:
+                        termIDs = [self.topDict["j%u" % (pathID1)], self.topDict["t%u" % (pathID1+1)]]
+                    termPaths.append(termIDs)  
+
+                    orderedPathIDs = [pathID1]
+                else:
+                    
+                    startPathID = pathID1
+                    endPathID = pathID2
+        
+                    shortestPathSpanTree, shortestDist = pathIDGraph.shortest_path(endPathID)
+                    nextPathID = shortestPathSpanTree[startPathID]
+            
+                    orderedPathIDs = [startPathID, nextPathID]
+                    while nextPathID != endPathID:
+                        nextPathID = shortestPathSpanTree[nextPathID]
+                        orderedPathIDs.append(nextPathID)            
+
+                    
+                    " start at first path ID "
+                    termPaths = []
+                    if parents[orderedPathIDs[0]] == orderedPathIDs[1]:
+                        " going to parent "
+                        termIDs = [self.topDict["t%u" % (orderedPathIDs[0]+1)]]
+                        termPaths.append(termIDs)
+                    
+                    elif parents[orderedPathIDs[1]] == orderedPathIDs[0]:
+                        " going to child "
+                        termIDs = [self.topDict["t%u" % (orderedPathIDs[0]+1)]]
+                        termPaths.append(termIDs)
+
+                        if orderedPathIDs[0] == 0:
+                            termIDs = [self.topDict["t%u" % 0]]
+                            termPaths.append(termIDs)
+                        else:
+                            termIDs = [self.topDict["j%u" % orderedPathIDs[k]]]
+                            termPaths.append(termIDs)
+                    else:
+                        print parents
+                        print orderedPathIDs
+                        print termPaths
+                        raise
+                        
+                    " transitions between middle path IDs "
+                    for k in range(len(orderedPathIDs)-1):
+                        if parents[orderedPathIDs[k]] == orderedPathIDs[k+1]:
+                            " child -> parent:  prev -> junction "
+                            for ids in termPaths:
+                                ids.append(self.topDict["j%u" % orderedPathIDs[k]])
+
+                        elif parents[orderedPathIDs[k+1]] == orderedPathIDs[k]:
+                            " parent -> child: prev -> junction "
+                            for ids in termPaths:
+                                ids.append(self.topDict["j%u" % orderedPathIDs[k+1]])
+
+                        else:
+                            print parents
+                            print orderedPathIDs
+                            print termPaths
+                            print k
+                            raise
+                            
+                    " last path ID "
+                    if parents[orderedPathIDs[-2]] == orderedPathIDs[-1]:
+                        " child -> parent:  prev -> junction "
+                        oldTermPaths = termPaths
+                        termPaths = []
+                        " split into 2 possibilities into parent path ID "
+                        for ids in oldTermPaths:
+                            ids1 = deepcopy(ids)
+                            ids2 = deepcopy(ids)
+                            if orderedPathIDs[-1] == 0:
+                                ids1.append(self.topDict["t%u" % orderedPathIDs[-1]])
+                                ids2.append(self.topDict["t%u" % (orderedPathIDs[-1]+1) ])                                
+                            else:
+                                ids1.append(self.topDict["j%u" % orderedPathIDs[-1]])
+                                ids2.append(self.topDict["t%u" % (orderedPathIDs[-1]+1) ])
+                            
+                            termPaths.append(ids1)
+                            termPaths.append(ids2)
+
+                    elif parents[orderedPathIDs[-1]] == orderedPathIDs[-2]:
+                        " parent -> child: prev -> junction "
+                        for ids in termPaths:
+                            ids.append(self.topDict["t%u" % (orderedPathIDs[-1]+1) ])
+                                        
+                    else:
+                        print parents
+                        print orderedPathIDs
+                        print termPaths
+                        raise
+                
+                finalResults = []
+                
+                for termPath in termPaths:
+
+                    startKey = termPath[0]
+                    endKey = termPath[-1]
+
+                    shortestPathSpanTree, shortestDist = self.pathGraph.shortest_path(endKey)
+                    currNode = shortestPathSpanTree[startKey]                    
+                    splicedPath = []
+                    while currNode != endKey:
+                        splicedPath.append(self.pathGraph.get_node_attributes(currNode))
+                        currNode = shortestPathSpanTree[currNode]
+                    splicedPath.append(self.pathGraph.get_node_attributes(currNode))
+
+                    sPath = {}
+                    sPath['orderedPathIDs'] = orderedPathIDs
+                    sPath['path'] = splicedPath
+                    sPath['termPath'] = termPath
+                    
+                    finalResults.append(sPath)
+                    #finalResults.append([termPath,splicedPath])
+                    
+                results[(pathID1,pathID2)] = finalResults
+                #results.append(termPaths)
+        
+        print "results:"
+        for k, result in results.iteritems():
+            print k, ":"
+            for sPath in result:
+                print sPath['orderedPathIDs'], sPath['termPath'], len(sPath['path'])
+
+        return results, self.terminals, self.junctions
+
+        
+        """
+        for i in range(len(topNodes)):
+            for j in range(i+1, len(topNodes)):
+                #topNodes[i], topNodes[j]
+                
+                startPathID = topNodes[i]
+                endPathID = topNodes[j]
+
+                shortestPathSpanTree, shortestDist = topGraph.shortest_path(endPathID)
+                nextPathID = shortestPathSpanTree[startPathID]
+        
+                orderedPathIDs = [startPathID, nextPathID]
+                while nextPathID != endPathID:
+                    nextPathID = shortestPathSpanTree[nextPathID]
+    
+                    orderedPathIDs.append(nextPathID)            
+                
+                print startPathID, endPathID, orderedPathIDs
+        """    
+        
+                    
+        #self.terminals[0] = [(pathID,0), path[0]]
+        #self.junctions[pathID] = [branchNodeID, junctionPoint, (parentPathID,minI2)]
+        
+        " get terminals "
+        """
+        for pathID in pathIDs:
+            path = self.trimmedPaths[pathID]
+            if pathID == 0:
+                topGraph.add_node("t%u" % 0, path[0])
+                topGraph.add_node("t%u" % 1, path[-1])
+            else:
+                topGraph.add_node("t%u" % (pathID+1), path[-1])
+                topGraph.add_node("j%u" % pathID, path[0])
+        
+        for pathID in pathIDs:
+            cPath = self.getPath(pathID)
+            parentID = cPath["parentID"]
+            if parentID != None:
+
+                if parentID == 0:
+                    topGraph.add_edge("t%u" % 0, "j%u" % pathID)
+                    topGraph.add_edge("j%u" % pathID, "t%u" % 1)
+                else:
+                    pass
+                    
+
+                
+                localPose = cPath["localJunctionPose"]
+                branchNodeID = cPath["branchNodeID"]
+        """
+
+        
+        
+        
+        #splicedPaths =[self.trimmedPaths[0]]
+        
+        sPath = {}
+        sPath['orderedPathIDs'] = [0]
+        sPath['path'] = self.trimmedPaths[0]
+
+        splicedPaths =[sPath]
+        
+        
         if leafCount == 0:
             " only root path "
             
         elif leafCount == 1:
+            
             " only root and one leaf "
             " 2 paths "
             rootPathID = 0
             terminalID = -1
             
             for pathID in pathIDs:
-                if not isAParent[pathID]:
+                #if not isAParent[pathID]:
+                if pathID != 0:
                     terminalID = pathID
 
             startPathID = rootPathID
             endPathID = terminalID
 
-            shortestPathSpanTree, shortestDist = pathGraph.shortest_path(endPathID)
+            shortestPathSpanTree, shortestDist = pathIDGraph.shortest_path(endPathID)
             nextPathID = shortestPathSpanTree[startPathID]
     
             orderedPathIDs = [startPathID, nextPathID]
@@ -258,16 +617,25 @@ class Paths:
                 nextPathID = shortestPathSpanTree[nextPathID]
 
                 orderedPathIDs.append(nextPathID)            
-            
-            splicedPaths = self.splicePathIDs(orderedPathIDs)
-            print "returned", len(splicedPaths), "spliced paths for", orderedPathIDs
+
+            paths = self.splicePathIDs(orderedPathIDs)
+            print "returned", len(paths), "spliced paths for", orderedPathIDs
+            for path in paths:
+
+                sPath = {}
+                sPath['orderedPathIDs'] = orderedPathIDs
+                sPath['path'] = path
+                
+                splicedPaths.append(sPath)
+
 
         else:
             " 2 root points, leafCount terminators "
             rootPathID = 0
             terminalPathIDs = []
             for id1 in pathIDs:
-                if not isAParent[id1]:
+                #if not isAParent[id1]:
+                if id1 != 0:                    
                     terminalPathIDs.append(id1)
 
             orderedSets = []
@@ -277,15 +645,17 @@ class Paths:
                 startPathID = rootPathID
                 endPathID = id1
     
-                shortestPathSpanTree, shortestDist = pathGraph.shortest_path(endPathID)
+                shortestPathSpanTree, shortestDist = pathIDGraph.shortest_path(endPathID)
                 nextPathID = shortestPathSpanTree[startPathID]
         
                 orderedPathIDs = [startPathID, nextPathID]
                 while nextPathID != endPathID:
                     nextPathID = shortestPathSpanTree[nextPathID]
                     orderedPathIDs.append(nextPathID)            
-
+                
                 orderedSets.append(orderedPathIDs)
+                
+                
 
             for i in range(len(terminalPathIDs)):
                 for j in range(i+1,len(terminalPathIDs)):
@@ -296,7 +666,7 @@ class Paths:
                     startPathID = id1
                     endPathID = id2
         
-                    shortestPathSpanTree, shortestDist = pathGraph.shortest_path(endPathID)
+                    shortestPathSpanTree, shortestDist = pathIDGraph.shortest_path(endPathID)
                     nextPathID = shortestPathSpanTree[startPathID]
             
                     orderedPathIDs = [startPathID, nextPathID]
@@ -306,22 +676,31 @@ class Paths:
 
                     orderedSets.append(orderedPathIDs)
 
-            splicedPaths = []
             for orderedIDs in orderedSets:
                 paths = self.splicePathIDs(orderedIDs)
                 print "returned", len(paths), "spliced paths for", orderedIDs
                 for path in paths:
-                    splicedPaths.append(path)
 
+                    sPath = {}
+                    sPath['orderedPathIDs'] = orderedIDs
+                    sPath['path'] = path
+                    
+                    splicedPaths.append(sPath)
 
-        return splicedPaths
+        return splicedPaths, self.terminals, self.junctions
 
     
     def isNodeExist(self, nodeID, pathID):
         return nodeID in self.pathClasses[pathID]["nodeSet"]
     
     def comparePaths(self):
-                
+ 
+        #allSplices = self.getAllSplices()
+        allSplices, terminals, junctions = self.getAllSplices()
+        
+        toBeMerged = []
+        print "consistency:", self.consistency
+        
         for pathPair,value in self.consistency.iteritems():
             pathID1 = pathPair[0]
             pathID2 = pathPair[1]
@@ -332,11 +711,330 @@ class Paths:
             parentID1 = path1["parentID"]
             parentID2 = path2["parentID"]
             
+            self.consistency[pathPair] = 0.0     
+
+            
             " Only consider case when two paths share the same parent "
+            pathPairs = []
+
+            if True:
+                #if pathID1 == 0 and pathID2 == 3 or pathID1 == 3 and pathID2 == 0:
+    
+                print pathID1, pathID2, parentID1, parentID2
+                
+                
+                if parentID1 == pathID2:                
+                    for k, v in allSplices.iteritems():
+                        if k[0] != k[1]:
+                            #print k
+                            for sPath in v:
+                                orderedIDs = sPath['orderedPathIDs']
+                                #print "orderedIDs", orderedIDs
+                                if len(orderedIDs) == 2 and orderedIDs[0] == pathID1 and orderedIDs[1] == pathID2:
+    
+                                    termPath1 = sPath['termPath']
+                                    #termPath2 = sPath['termPath'][1:]
+                                    termPath2 = allSplices[(pathID2,pathID2)][0]['termPath']
+                                    
+                                    print "termPath1:", termPath1
+                                    print "termPath2:", termPath2
+    
+                                    startKey = termPath1[0]
+                                    endKey = termPath1[-1]
+                
+                                    shortestPathSpanTree, shortestDist = self.pathGraph.shortest_path(endKey)
+                                    currNode = shortestPathSpanTree[startKey]                    
+                                    path1 = []
+                                    while currNode != endKey:
+                                        path1.append(self.pathGraph.get_node_attributes(currNode))
+                                        currNode = shortestPathSpanTree[currNode]
+                                    path1.append(self.pathGraph.get_node_attributes(currNode))
+    
+                                    startKey = termPath2[0]
+                                    endKey = termPath2[-1]
+                
+                                    shortestPathSpanTree, shortestDist = self.pathGraph.shortest_path(endKey)
+                                    currNode = shortestPathSpanTree[startKey]                    
+                                    path2 = []
+                                    while currNode != endKey:
+                                        path2.append(self.pathGraph.get_node_attributes(currNode))
+                                        currNode = shortestPathSpanTree[currNode]
+                                    path2.append(self.pathGraph.get_node_attributes(currNode))
+    
+                                    pathPairs.append((path1,path2,pathID1,pathID2))
+    
+                                
+                                elif len(orderedIDs) == 2 and orderedIDs[-1] == pathID1 and orderedIDs[-2] == pathID2:
+    
+                                    termPath1 = sPath['termPath']
+                                    #termPath2 = sPath['termPath'][:-1]
+                                    termPath2 = allSplices[(pathID2,pathID2)][0]['termPath']
+                                   
+                                    print "termPath1:", termPath1
+                                    print "termPath2:", termPath2
+    
+                                    startKey = termPath1[0]
+                                    endKey = termPath1[-1]
+                
+                                    shortestPathSpanTree, shortestDist = self.pathGraph.shortest_path(endKey)
+                                    currNode = shortestPathSpanTree[startKey]                    
+                                    path1 = []
+                                    while currNode != endKey:
+                                        path1.append(self.pathGraph.get_node_attributes(currNode))
+                                        currNode = shortestPathSpanTree[currNode]
+                                    path1.append(self.pathGraph.get_node_attributes(currNode))
+    
+                                    startKey = termPath2[0]
+                                    endKey = termPath2[-1]
+                
+                                    shortestPathSpanTree, shortestDist = self.pathGraph.shortest_path(endKey)
+                                    currNode = shortestPathSpanTree[startKey]                    
+                                    path2 = []
+                                    while currNode != endKey:
+                                        path2.append(self.pathGraph.get_node_attributes(currNode))
+                                        currNode = shortestPathSpanTree[currNode]
+                                    path2.append(self.pathGraph.get_node_attributes(currNode))
+    
+                                    pathPairs.append((path1,path2,pathID1,pathID2))
+    
+    
+                    
+                
+                elif parentID2 == pathID1:
+                    for k, v in allSplices.iteritems():
+                        if k[0] != k[1]:
+                            #print k
+                            for sPath in v:
+                                orderedIDs = sPath['orderedPathIDs']
+                                #print "orderedIDs", orderedIDs
+                                if len(orderedIDs) == 2 and orderedIDs[0] == pathID2 and orderedIDs[1] == pathID1:
+                                    termPath1 = sPath['termPath']
+                                    #termPath2 = sPath['termPath'][1:]
+                                    termPath2 = allSplices[(pathID1,pathID1)][0]['termPath']
+                                    
+                                    print "termPath1:", termPath1
+                                    print "termPath2:", termPath2
+    
+                                    startKey = termPath1[0]
+                                    endKey = termPath1[-1]
+                
+                                    shortestPathSpanTree, shortestDist = self.pathGraph.shortest_path(endKey)
+                                    currNode = shortestPathSpanTree[startKey]                    
+                                    path1 = []
+                                    while currNode != endKey:
+                                        path1.append(self.pathGraph.get_node_attributes(currNode))
+                                        currNode = shortestPathSpanTree[currNode]
+                                    path1.append(self.pathGraph.get_node_attributes(currNode))
+    
+                                    startKey = termPath2[0]
+                                    endKey = termPath2[-1]
+                
+                                    shortestPathSpanTree, shortestDist = self.pathGraph.shortest_path(endKey)
+                                    currNode = shortestPathSpanTree[startKey]                    
+                                    path2 = []
+                                    while currNode != endKey:
+                                        path2.append(self.pathGraph.get_node_attributes(currNode))
+                                        currNode = shortestPathSpanTree[currNode]
+                                    path2.append(self.pathGraph.get_node_attributes(currNode))
+    
+                                    pathPairs.append((path1,path2,pathID2,pathID1))
+    
+    
+                                
+                                elif len(orderedIDs) == 2 and orderedIDs[-1] == pathID2 and orderedIDs[-2] == pathID1:
+                                    termPath1 = sPath['termPath']
+                                    #termPath2 = sPath['termPath'][:-1]
+                                    termPath2 = allSplices[(pathID1,pathID1)][0]['termPath']
+                                   
+                                    print "termPath1:", termPath1
+                                    print "termPath2:", termPath2
+    
+                                    startKey = termPath1[0]
+                                    endKey = termPath1[-1]
+                
+                                    shortestPathSpanTree, shortestDist = self.pathGraph.shortest_path(endKey)
+                                    currNode = shortestPathSpanTree[startKey]                    
+                                    path1 = []
+                                    while currNode != endKey:
+                                        path1.append(self.pathGraph.get_node_attributes(currNode))
+                                        currNode = shortestPathSpanTree[currNode]
+                                    path1.append(self.pathGraph.get_node_attributes(currNode))
+    
+                                    startKey = termPath2[0]
+                                    endKey = termPath2[-1]
+                
+                                    shortestPathSpanTree, shortestDist = self.pathGraph.shortest_path(endKey)
+                                    currNode = shortestPathSpanTree[startKey]                    
+                                    path2 = []
+                                    while currNode != endKey:
+                                        path2.append(self.pathGraph.get_node_attributes(currNode))
+                                        currNode = shortestPathSpanTree[currNode]
+                                    path2.append(self.pathGraph.get_node_attributes(currNode))
+    
+                                    pathPairs.append((path1,path2,pathID2,pathID1))
+    
+    
+    
+                elif parentID1 == parentID2:
+                    
+                    values1 = allSplices[(parentID1,pathID1)]
+                    values2 = allSplices[(parentID2,pathID2)]
+                    
+                    print "sib:", pathID1, pathID2
+                    
+                    terms1 = []
+                    for sPath in values1:
+                        orderedIDs = sPath['orderedPathIDs']
+                        if len(orderedIDs) == 2:
+                            termPath1 = sPath['termPath']
+                            terms1.append(termPath1)
+                            print termPath1
+                            
+                    terms2 = []
+                    for sPath in values2:
+                        orderedIDs = sPath['orderedPathIDs']
+                        if len(orderedIDs) == 2:
+                            termPath2 = sPath['termPath']
+                            terms2.append(termPath2)
+                            print termPath2
+
+                    for k in range(len(terms1)):
+                        
+                        termPath1 = terms1[k]
+                        termPath2 = terms2[k]                        
+                        
+                        startKey = termPath1[0]
+                        endKey = termPath1[-1]
+    
+                        shortestPathSpanTree, shortestDist = self.pathGraph.shortest_path(endKey)
+                        currNode = shortestPathSpanTree[startKey]                    
+                        path1 = []
+                        while currNode != endKey:
+                            path1.append(self.pathGraph.get_node_attributes(currNode))
+                            currNode = shortestPathSpanTree[currNode]
+                        path1.append(self.pathGraph.get_node_attributes(currNode))
+
+                        startKey = termPath2[0]
+                        endKey = termPath2[-1]
+    
+                        shortestPathSpanTree, shortestDist = self.pathGraph.shortest_path(endKey)
+                        currNode = shortestPathSpanTree[startKey]                    
+                        path2 = []
+                        while currNode != endKey:
+                            path2.append(self.pathGraph.get_node_attributes(currNode))
+                            currNode = shortestPathSpanTree[currNode]
+                        path2.append(self.pathGraph.get_node_attributes(currNode))
+
+                        pathPairs.append((path1,path2,pathID1,pathID2))                        
             
             print
             
+            for pair in pathPairs:
+                pathID1 = pair[2]
+                pathID2 = pair[3]
+
+                #if pathID1 == 3 or pathID2 == 3:
+                if True:
+                    print "comparing paths", pathID2, pathID1
+                    print pair[1][0], pair[0][0]
+                    print pair[1][-1], pair[0][-1]
+                    resultPose0, lastCost0, matchCount0 = self.makePathCompare(pair[1], pair[0], pathID2, pathID1)
+
+                    poseOrigin = Pose(resultPose0)
+                    path1 = pair[1]
+                    path1_offset = []
+                    for p in path1:
+                        result = poseOrigin.convertLocalToGlobal(p)
+                        path1_offset.append(result)                    
+                    
+                    result0 = self.getPathDeparture(path1_offset, pair[0])
+
+
+                    isInterior1 = result0[2]
+                    isInterior2 = result0[7]
+
+                    if not isInterior1 and not isInterior2:
+    
+                        vals = allSplices[(pathID1,pathID1)]
+                        sPath = vals[0]
+                        termPath0 = sPath['termPath']
+    
+                        startKey = termPath0[0]
+                        endKey = termPath0[-1]
+        
+                        shortestPathSpanTree, shortestDist = self.pathGraph.shortest_path(endKey)
+                        currNode = shortestPathSpanTree[startKey]
+                        path0 = []
+                        while currNode != endKey:
+                            path0.append(self.pathGraph.get_node_attributes(currNode))
+                            currNode = shortestPathSpanTree[currNode]
+                        path0.append(self.pathGraph.get_node_attributes(currNode))
+                        
+                        #cost = self.getPathOverlapCondition(self.trimmedPaths[pathID1], path1_offset, pathID1, pathID2)
+                        cost = self.getPathOverlapCondition(path0, path1_offset, pathID1, pathID2)                
+                        #cost = self.getPathOverlapCondition(path2_offset, self.trimmedPaths[pathID1])
+
+                        if cost < 1e10:
+                            print pathID1, "and", pathID2, "are similar!"
+                            toBeMerged.append((pathID1, pathID2,resultPose0))
+                            if pathID1 < pathID2:
+                                self.consistency[(pathID1,pathID2)] = 1.0
+                            else:
+                                self.consistency[(pathID2,pathID1)] = 1.0
+                            print self.consistency
+        
+        return toBeMerged
+                        
+        for mergeThis in toBeMerged:
+
+            pathID1 = mergeThis[0]
+            pathID2 = mergeThis[1]
+            offset = mergeThis[2]
+
+            self.mergePaths(pathID1, pathID2, offset)            
+        
             
+            """
+            for k, v in allSplices.iteritems():
+                for sPath in v:
+                    splice = sPath['path']
+                    orderedIDs = sPath['orderedPathIDs']
+    
+                    if parentID1 == pathID2:
+    
+                        if orderedIDs[0] == pathID2 or orderedIDs[-1] == pathID2:
+                            resultPose0, lastCost0, matchCount0 = self.makePathCompare(self.trimmedPaths[pathID1], splice, pathID1, orderedIDs)
+                            print "parent2:", pathID1, pathID2, orderedIDs, lastCost0, matchCount0, resultPose0
+                            result0 = self.getPathDeparture(splice,self.trimmedPaths[pathID1])
+                            print result0[2], result0[3], result0[7], result0[8]
+                        
+                    elif parentID2 == pathID1:
+                
+                        if orderedIDs[0] == pathID1 or orderedIDs[-1] == pathID1:
+                            resultPose0, lastCost0, matchCount0 = self.makePathCompare(self.trimmedPaths[pathID2], splice, pathID2, orderedIDs)
+                            print "parent1:", pathID1, pathID2, orderedIDs, lastCost0, matchCount0, resultPose0
+                            result0 = self.getPathDeparture(splice,self.trimmedPaths[pathID2])
+                            print result0[2], result0[3], result0[7], result0[8]
+     
+                    elif parentID1 == parentID2:
+                        
+                        if pathID1 > pathID2:
+                            oldestID = pathID2
+                            newestID = pathID1
+                        else:
+                            oldestID = pathID1
+                            newestID = pathID2
+                            
+                        if orderedIDs[0] == oldestID or orderedIDs[-1] == oldestID:
+                            resultPose0, lastCost0, matchCount0 = self.makePathCompare(self.trimmedPaths[newestID], splice, newestID, orderedIDs)
+                            print "sib:", pathID1, pathID2, orderedIDs, lastCost0, matchCount0, resultPose0
+                            result0 = self.getPathDeparture(splice,self.trimmedPaths[newestID])
+                            print result0[2], result0[3], result0[7], result0[8]
+                            
+            
+            """                            
+            
+            """
             " TODO: when one path is the parent of the other , checking for false branches "
             if parentID1 == pathID2:
                 splices1 = self.splicePathIDs([pathID1,parentID1])
@@ -349,7 +1047,9 @@ class Paths:
                 print lastCost0, matchCount0, resultPose0
                 print lastCost1, matchCount1, resultPose1
                 self.consistency[pathPair] = 0.5     
-
+                
+                
+                
                 #departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2
                 
                 result0 = self.getPathDeparture(self.trimmedPaths[pathID2], splices1[0])
@@ -384,7 +1084,6 @@ class Paths:
                 #departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2 = self.getPathDeparture(self.trimmedPaths[pathID1], splices2[1])
                 #print isInterior1, isExist1, isInterior2, isExist2, departurePoint1, depAngle1, discDist1, departurePoint2, depAngle2, discDist2
 
-                result0 = self.getPathDeparture(self.trimmedPaths[pathID1], splices2[0])
                 result1 = self.getPathDeparture(splices2[0], self.trimmedPaths[pathID1])
                 result2 = self.getPathDeparture(self.trimmedPaths[pathID1], splices2[1])
                 result3 = self.getPathDeparture(splices2[1], self.trimmedPaths[pathID2])
@@ -432,6 +1131,7 @@ class Paths:
 
             else:
                 self.consistency[pathPair] = 0.0
+            """
             print
         pass
     
@@ -497,7 +1197,7 @@ class Paths:
                 angleSum2 += ang2
         
         " select global path orientation based on which has the smallest angle between tangent vectors "
-        print i, "angleSum1 =", angleSum1, "angleSum2 =", angleSum2
+        #print i, "angleSum1 =", angleSum1, "angleSum2 =", angleSum2
         if angleSum1 > angleSum2:
             orientedGlobalPath = globalPath2Reverse
         else:
@@ -615,12 +1315,12 @@ class Paths:
         #closestPairs = list(closestPairs)
         
         " sort by lowest angular variance"
-        closestPairs = sorted(closestPairs, key=itemgetter(5,6))
+        closestPairs = sorted(closestPairs, key=itemgetter(2,5,6))
         #s = sorted(student_objects, key=attrgetter('age'))     # sort on secondary key
         #sorted(s, key=attrgetter('grade'), reverse=True)  
         #closestPairs.sort()
 
-        print len(closestPairs), "closest pairs"
+        #print len(closestPairs), "closest pairs"
         #for val in closestPairs:
         #    print val
 
@@ -632,12 +1332,54 @@ class Paths:
         u1 = originU1
         angGuess = 0.0
         
-        resultPose, lastCost, matchCount = gen_icp.pathOverlapICP([u1,u2,angGuess], orientedGlobalPath, globalPath1, plotIter = True, n1 = pathID1, n2 = pathID2)
+        resultPose1, lastCost1, matchCount1 = gen_icp.pathOverlapICP([u1,u2,angGuess], orientedGlobalPath, globalPath1, plotIter = False, n1 = pathID1, n2 = pathID2)
+        resultPose2, lastCost2, matchCount2 = gen_icp.pathOverlapICP([u1,u2+0.1,angGuess], orientedGlobalPath, globalPath1, plotIter = False, n1 = pathID1, n2 = pathID2)
+        resultPose3, lastCost3, matchCount3 = gen_icp.pathOverlapICP([u1,u2-0.1,angGuess], orientedGlobalPath, globalPath1, plotIter = False, n1 = pathID1, n2 = pathID2)
+        #resultPose1, lastCost1, matchCount1 = gen_icp.pathOverlapICP([u1,u2,angGuess], orientedGlobalPath, globalPath1, plotIter = False, n1 = pathID1, n2 = pathID2)
+        #resultPose2, lastCost2, matchCount2 = gen_icp.pathOverlapICP([u1,u2+0.1,angGuess], orientedGlobalPath, globalPath1, plotIter = False, n1 = pathID1, n2 = pathID2)
+        #resultPose3, lastCost3, matchCount3 = gen_icp.pathOverlapICP([u1,u2-0.1,angGuess], orientedGlobalPath, globalPath1, plotIter = False, n1 = pathID1, n2 = pathID2)
 
-        return resultPose, lastCost, matchCount
+        #print "matchCount,cost,result:", matchCount1, lastCost1, resultPose1
+
+        print "matchCounts:", matchCount1, matchCount2, matchCount3
+        print "costs:", lastCost1, lastCost2, lastCost3
+        print "results:", resultPose1, resultPose2, resultPose3
+
+
+        return resultPose1, lastCost1, matchCount1
 
     
-    def mergePaths(self, pathID1, pathID2):
+    def mergePaths(self, pathID1, pathID2, offset):
+
+
+        " capture transform between pathID1 and pathID2 under correction "
+        if pathID1 < pathID2:
+            cOffset = offset
+            rootID = pathID1
+            lessID = pathID2
+            
+        else:
+            " inverse of offset "
+            invPose = Pose([0.0,0.0,0.0])
+            cOffset = invPose.doInverse(offset)
+            rootID = pathID2
+            lessID = pathID1
+        
+        mergeNodes = self.getNodes(lessID)
+        
+        
+        " capture transform between pathID2 and member nodes "
+        " add compute new node locations under corrected transform "
+        poseOrigin = Pose(cOffset)
+        for nodeID in mergeNodes:
+            nodePose = self.nodeHash[nodeID].getGlobalGPACPose()            
+            guessPose = poseOrigin.convertLocalOffsetToGlobal(nodePose)
+            self.nodeHash[nodeID].setGPACPose(guessPose)
+       
+        
+        " constrain nodes to merge to pathID1 "
+        
+        " move nodes to pathID1, delete pathID2 "
         
         pass
     
@@ -666,6 +1408,10 @@ class Paths:
         
         self.pathProbs[nodeID] = probDist
         """
+        
+    def delPath(self, pathID):
+        
+        del self.pathClasses[pathID]
         
     def addPath(self, parentID, branchNodeID, localJunctionPose):
         
@@ -1084,7 +1830,7 @@ class Paths:
                         juncI = i
                  
                  
-                 
+                
                 print "len(path1):", len(path1)
                 print "len(path2):", len(path2)
                 print "juncI:", juncI
@@ -1100,6 +1846,7 @@ class Paths:
                 if minI == 0:
                     "secP1 is terminal 0"
                     index = juncI-10
+                    #index = juncI
                     if index < 1:
                         index = 1
                     #newPath2 = path2[:index+1] + [junctionPoint]
@@ -1109,6 +1856,7 @@ class Paths:
                 elif minI == 1:
                     "secP1 is terminal N"
                     index = juncI+10
+                    #index = juncI
                     if index >= len(path2)-1:
                         
                         " ensure at least 2 elements in path "
@@ -1119,6 +1867,7 @@ class Paths:
                 elif minI == 2:
                     "secP2 is terminal 0"
                     index = juncI-10
+                    #index = juncI
                     if index < 1:
                         index = 1
                     #newPath2 = path2[:index+1] + [junctionPoint]
@@ -1128,6 +1877,7 @@ class Paths:
                 elif minI == 3:
                     "secP2 is terminal N"
                     index = juncI+10
+                    #index = juncI
                     if index >= len(path2)-1:
                         " ensure at least 2 elements in path "
                         index = len(path2)-2
@@ -1214,7 +1964,7 @@ class Paths:
         
         return trimmedPaths
 
-        
+
     " get the trimmed version of child and parent paths that are overlapping in some fashion "
     def getOverlapDeparture(self, parentPathID, childPathID, paths):
 
@@ -2036,7 +2786,7 @@ class Paths:
         
         return orderedPaths
 
-    def getPathDeparture(self, path1, path2):
+    def getPathDeparture(self, path1, path2, termPathIDs1 = [], termPathIDs2 = []):
         
         isExist1 = False
         isInterior1 = False
@@ -2059,11 +2809,14 @@ class Paths:
         "Assumption:  one section of the medial axis is closely aligned with the path "
         #poseOrigin = Pose(estPose2)
         
+        
         pathSpline2 = SplineFit(path2, smooth=0.1)
         pathPoints2 = pathSpline2.getUniformSamples()
+        print "path2:", path2[0], pathPoints2[0], path2[-1], pathPoints2[-1]
 
         pathSpline1 = SplineFit(path1, smooth=0.1)
         pathPoints1 = pathSpline1.getUniformSamples()
+        print "path1:", path1[0], pathPoints1[0], path1[-1], pathPoints1[-1]
 
 
         " tip angles "
@@ -2201,6 +2954,7 @@ class Paths:
 
 
         DEP_THRESH = 0.1
+        #DEP_THRESH = 0.3
 
         if maxFront > DEP_THRESH:
             departurePoint1 = pathPoints1[max1]
@@ -2293,6 +3047,8 @@ class Paths:
             pylab.ylim(-8,8)
             #pylab.title("nodeID %d: %d %d" % (nodeID, isInterior, isExist))
             pylab.title("%1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, [%d,%d] [%d,%d]" % (maxFront, maxBack, dist1, dist2, matchVar1, matchVar2, angle1, angle2, isExist1, isExist2, isInterior1, isInterior2))
+            #pylab.title("%s,%s,%s,%s" % (repr(pathPoints1[0]),repr(pathPoints1[-1]),repr(pathPoints2[0]),repr(pathPoints2[-1])))
+            #pylab.title("(%1.2f,%1.2f),(%1.2f,%1.2f),(%1.2f,%1.2f),(%1.2f,%1.2f)" % (pathPoints1[0][0],pathPoints1[0][1],pathPoints1[-1][0],pathPoints1[-1][1],pathPoints2[0][0],pathPoints2[0][1],pathPoints2[-1][0],pathPoints2[-1][1]))
             pylab.savefig("pathDeparture_%04u.png" % self.pathPlotCount)
             
             self.pathPlotCount += 1
@@ -2598,6 +3354,132 @@ class Paths:
         
 
     " returns the endpoints of a subpath of path 2 that does not overlap path 1 "
+
+    def getPathOverlapCondition(self, path1, path2, pathID1, pathID2):
+
+        plotIter = True
+
+        if len(path1) == 0:
+            return 1e100
+    
+        medial2 = path2
+               
+        minMatchDist2 = 0.2
+        #minMatchDist2 = 0.5
+        #minMatchDist2 = 1.0
+        #minMatchDist2 = 2.0
+                    
+    
+        supportSpline = SplineFit(path1, smooth=0.1)        
+        vecPoints1 = supportSpline.getUniformSamples()
+        supportPoints = gen_icp.addGPACVectorCovariance(vecPoints1,high_var=0.05, low_var = 0.001)
+            
+        medialSpline2 = SplineFit(medial2, smooth=0.1)
+        vecPoints2 = medialSpline2.getUniformSamples()
+        points2 = gen_icp.addGPACVectorCovariance(vecPoints2,high_var=0.05, low_var = 0.001)
+
+        " transformed points without associated covariance "
+        poly2 = []
+        for p in points2:
+            poly2.append([p[0],p[1]])            
+        
+        " get the circles and radii "
+        #radius2, center2 = gen_icp.computeEnclosingCircle(points2)
+                
+        support_pairs = []
+        #for i in range(len(poly2)):
+        for i in range(len(vecPoints2)):
+            
+            p_2 = vecPoints2[i]
+    
+            " for every transformed point of A, find it's closest neighbor in B "
+            #_1, minDist = gen_icp.findClosestPointInB(supportPoints, p_2, [0.0,0.0,0.0])
+
+            try:
+                p_1, minI, minDist = gen_icp.findClosestPointWithAngle(vecPoints1, p_2, math.pi/8.0)
+    
+                #if gen_icp.isInCircle(p_1, radius2, center2):
+    
+                if minDist <= minMatchDist2:
+                    C2 = points2[i][2]
+                    C1 = supportPoints[minI][2]
+                    #C1 = p_1[2]
+    
+                    " we store the untransformed point, but the transformed covariance of the A point "
+                    #support_pairs.append([points2[i],p_1,C2,C1])
+                    support_pairs.append([points2[i],supportPoints[minI],C2,C1])
+            except:
+                pass
+
+        cost = 0.0
+        if len(support_pairs) == 0:
+            cost = 1e100
+        else:
+            vals = []
+            sum1 = 0.0
+            for pair in support_pairs:
+        
+                a = pair[0]
+                b = pair[1]
+                Ca = pair[2]
+                Cb = pair[3]
+        
+                ax = a[0]
+                ay = a[1]        
+                bx = b[0]
+                by = b[1]
+        
+                c11 = Ca[0][0]
+                c12 = Ca[0][1]
+                c21 = Ca[1][0]
+                c22 = Ca[1][1]
+                        
+                b11 = Cb[0][0]
+                b12 = Cb[0][1]
+                b21 = Cb[1][0]
+                b22 = Cb[1][1]    
+            
+                val = gen_icp.computeMatchErrorP([0.0,0.0,0.0], [ax,ay], [bx,by], [c11,c12,c21,c22], [b11,b12,b21,b22])
+                
+                vals.append(val)
+                sum1 += val
+                
+            cost = sum1 / len(support_pairs)
+            
+
+        if plotIter:
+            pylab.clf()
+            xP = []
+            yP = []
+            for p in supportPoints:
+                xP.append(p[0])
+                yP.append(p[1])
+            pylab.plot(xP,yP, color='b')
+    
+            xP = []
+            yP = []
+            for p in poly2:
+                xP.append(p[0])
+                yP.append(p[1])
+            pylab.plot(xP,yP, color='r')
+            
+            for pair in support_pairs:
+                p1 = pair[0]
+                p2 = pair[1]
+                xP = [p1[0],p2[0]]
+                yP = [p1[1],p2[1]]
+                pylab.plot(xP,yP)
+                    
+            pylab.xlim(-5,10)
+            pylab.ylim(-8,8)
+            pylab.title("%d %d cost = %f, count = %d" % (pathID1, pathID2, cost, len(support_pairs)))
+            pylab.savefig("pathOverlapCost_%04u.png" % self.overlapPlotCount)
+            self.overlapPlotCount += 1
+        
+        if len(support_pairs) == 0:
+            return 1e100
+
+        return cost
 
 
     def getOverlapCondition(self, supportLine, nodeID):
@@ -3001,73 +3883,6 @@ class Paths:
         " currPathID is the root path "
         rootPathID = currPathID
         
-        " for each path, attempt to join with its parent path "
-        joins = []
-        for pathID in pathIDs:
-
-            #if self.pathParents[pathID] == None:
-            #    continue
-            
-            cPath = self.getPath(pathID)
-            
-            parentPathID = cPath["parentID"]
-            
-            " parent does not concern us "
-            if pathIDs.count(parentPathID) < 1:
-                continue
-            
-            junctionNodeID = cPath["branchNodeID"]
-            localJunctionPoint = cPath["localJunctionPose"]
-            poseOrigin = Pose(self.nodeHash[junctionNodeID].getEstPose())
-            junctionPoint = poseOrigin.convertLocalToGlobal(localJunctionPoint)
-
-            path1 = self.trimmedPaths[pathID]
-            path2 = self.trimmedPaths[parentPathID]
-
-            
-            #print "junctionPoint =", junctionPoint
-            #print "path1:", self.paths[0]
-            #print "path2:", self.paths[1]
-            
-            minDist1 = 1e100
-            minI1 = 0        
-            for i in range(len(path1)):
-                pnt = path1[i]
-                dist = sqrt((pnt[0]-junctionPoint[0])**2 + (pnt[1]-junctionPoint[1])**2)
-            
-                if dist < minDist1:
-                    minDist1 = dist
-                    minI1 = i
-    
-            minDist2 = 1e100
-            minI2 = 0        
-            for i in range(len(path2)):
-                pnt = path2[i]
-                dist = sqrt((pnt[0]-junctionPoint[0])**2 + (pnt[1]-junctionPoint[1])**2)
-            
-                if dist < minDist2:
-                    minDist2 = dist
-                    minI2 = i
-            
-            joins.append([(pathID, minI1),(parentPathID, minI2), junctionPoint])
-
-        #print "joins:", joins
-
-        " create a tree with the node IDs and then stitch them together with joins "
-        pathGraph = graph.graph()
-        for pathID in pathIDs:
-            path = self.trimmedPaths[pathID]
-            for k in range(len(path)):
-                pathGraph.add_node((pathID, k), path[k])
-            for k in range(len(path)-1):
-                pathGraph.add_edge((pathID, k), (pathID, k+1))
-
-        " join with the junction in between the join points "
-        for k in range(len(joins)):
-            join = joins[k]
-            pathGraph.add_node(k, join[2])
-            pathGraph.add_edge(join[0], k)
-            pathGraph.add_edge(k, join[1])
             
         " if both terminal paths are child paths, 1 resultant spliced path "
         " if one terminal path is the root, then 2 resultant spliced paths "
@@ -3090,7 +3905,7 @@ class Paths:
             childPath = self.trimmedPaths[childPathID]
 
 
-            for join in joins:
+            for join in self.joins:
                 if join[0][0] == childPathID:
                     childJunctionPoint = join[2]
                     childI = join[0][1]
@@ -3101,7 +3916,7 @@ class Paths:
                 childTermI = 0
 
             "find path between: (childPathID, childTermI) to (rootPathID, 0) and (rootPathID, len(rootPath)-1)"
-            shortestPathSpanTree, shortestDist = pathGraph.shortest_path((childPathID, childTermI))
+            shortestPathSpanTree, shortestDist = self.pathGraph.shortest_path((childPathID, childTermI))
             startNode1 = shortestPathSpanTree[(rootPathID, 0)]
             startNode2 = shortestPathSpanTree[(rootPathID, len(rootPath)-1)]
             
@@ -3112,17 +3927,17 @@ class Paths:
             splicedPath1 = []
             while currNode != (childPathID, childTermI):
                 #print currNode, "!=", (childPathID, childTermI)
-                splicedPath1.append(pathGraph.get_node_attributes(currNode))
+                splicedPath1.append(self.pathGraph.get_node_attributes(currNode))
                 currNode = shortestPathSpanTree[currNode]
-            splicedPath1.append(pathGraph.get_node_attributes(currNode))
+            splicedPath1.append(self.pathGraph.get_node_attributes(currNode))
 
             currNode = startNode2
             splicedPath2 = []
             while currNode != (childPathID, childTermI):
                 #print currNode, "!=", (childPathID, childTermI)
-                splicedPath2.append(pathGraph.get_node_attributes(currNode))
+                splicedPath2.append(self.pathGraph.get_node_attributes(currNode))
                 currNode = shortestPathSpanTree[currNode]
-            splicedPath2.append(pathGraph.get_node_attributes(currNode))
+            splicedPath2.append(self.pathGraph.get_node_attributes(currNode))
 
             #print "splicedPath1:", splicedPath1
             #print "splicedPath2:", splicedPath2
@@ -3142,7 +3957,7 @@ class Paths:
             " find the junction of this child's to its parent "    
             #joins.append([(pathID, minI1),(parentPathID, minI2), junctionPoint])
             
-            for join in joins:
+            for join in self.joins:
                 if join[0][0] == rightPathID:
                     rightJunctionPoint = join[2]
                     rightI = join[0][1]
@@ -3163,15 +3978,15 @@ class Paths:
                 rightTermI = 0
                 
             "find path between: (rightPathID, rightTermI) to (leftPathID, rightTermI) "
-            shortestPathSpanTree, shortestDist = pathGraph.shortest_path((rightPathID, rightTermI))
+            shortestPathSpanTree, shortestDist = self.pathGraph.shortest_path((rightPathID, rightTermI))
             currNode = shortestPathSpanTree[(leftPathID, leftTermI)]
 
             splicedPath = []
             while currNode != (rightPathID, rightTermI):
                 #print currNode, "!=", (rightPathID, rightTermI)
-                splicedPath.append(pathGraph.get_node_attributes(currNode))
+                splicedPath.append(self.pathGraph.get_node_attributes(currNode))
                 currNode = shortestPathSpanTree[currNode]
-            splicedPath.append(pathGraph.get_node_attributes(currNode))
+            splicedPath.append(self.pathGraph.get_node_attributes(currNode))
 
             #print "len(shortestPathSpanTree) =", len(shortestPathSpanTree)
             #print "splicedPath:", splicedPath

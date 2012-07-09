@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include "runNelmin.h"
 
-double objFunc(double *params, double *d_matchPairs, double *d_offset, double *d_sum, int N, double *poses_1, double *poses_2, int numPoses, double uHigh, double uLow, double u1);
+double objFunc(double *params, double *d_matchPairs, double *d_offset, double *d_sum, int N, double *poses_1, double *poses_2, int numPoses, double uHigh, double uLow, double u1, double *resultOffset);
 
 #include "nelmin.h"
 
@@ -133,7 +133,7 @@ __inline void buildMatrix(double *R, double ang, int isForward) {
 
 }
 
-double objFunc(double *params, double *d_matchPairs, double *d_offset, double *d_sum, int N, double *poses_1, double *poses_2, int numPoses, double uHigh, double uLow, double u1) {
+double objFunc(double *params, double *d_matchPairs, double *d_offset, double *d_sum, int N, double *poses_1, double *poses_2, int numPoses, double uHigh, double uLow, double u1, double *resultOffset) {
 
 
 	double currU = params[0];
@@ -422,6 +422,10 @@ double objFunc(double *params, double *d_matchPairs, double *d_offset, double *d
 
 	//printf("offset = %f %f %f\n", h_offset[0], h_offset[1], h_offset[2]);
 	
+	resultOffset[0] = h_offset[0];
+	resultOffset[1] = h_offset[1];
+	resultOffset[2] = h_offset[2];
+
 	d_offset[0] = h_offset[0];
 	d_offset[1] = h_offset[1];
 	d_offset[2] = h_offset[2];
@@ -817,7 +821,6 @@ void doTest(double *h_matchPairs, int numPairs, double *initGuess, double *poses
 }
 
 
-/*
 void doCost(double *h_matchPairs, int numPairs, double *initGuess, double *poses_1, double *poses_2, int numPoses, double *resultParam, double *resultSum, double *resultOffset) {
 
 	double* d_matchPairs;
@@ -843,6 +846,7 @@ void doCost(double *h_matchPairs, int numPairs, double *initGuess, double *poses
 
 	double u1, u2, uHigh, uLow, currU, currAng;
 	double offset[3];
+	double newSum;
 
 	size = 3 * sizeof(double);
 	size2 = numPairs * 12 * sizeof(double);
@@ -885,7 +889,7 @@ void doCost(double *h_matchPairs, int numPairs, double *initGuess, double *poses
 	//double offset[3];
 
 	//double newSum = objFunc2(&start[0], d_matchPairs, d_offset, d_sum, numPairs, poses_1, poses_2, numPoses, uHigh, uLow, u1, offset);
-	newSum = objFunc2(&start[0], d_matchPairs, d_offset, d_sum, numPairs, poses_1, poses_2, numPoses, uHigh, uLow, u1, offset);
+	newSum = objFunc(&start[0], d_matchPairs, d_offset, d_sum, numPairs, poses_1, poses_2, numPoses, uHigh, uLow, u1, offset);
 
 	resultSum[0] = newSum;
 	resultParam[0] = currU;
@@ -914,4 +918,3 @@ void doCost(double *h_matchPairs, int numPairs, double *initGuess, double *poses
 		free(h_sum);
 
 }
-*/
