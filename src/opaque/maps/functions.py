@@ -39,6 +39,8 @@ def diffAngle(angle1, angle2):
 	
 	tempAngle1 = 0.0
 	tempAngle2 = normalizeAngle(angle2 - midPhi)
+	#tempAngle1 = normalizeAngle(angle1)
+	#tempAngle2 = normalizeAngle(angle2 - midPhi)
 
 	return tempAngle1-tempAngle2
 

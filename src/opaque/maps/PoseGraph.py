@@ -1721,10 +1721,41 @@ class PoseGraph:
 
 				self.paths.generatePaths()
 				self.trimmedPaths = self.paths.trimPaths(self.paths.paths)		
-				self.paths.comparePaths()
+				#self.paths.comparePaths()
+				self.mergePaths()
 
 				paths = {}
 				pathIDs = self.paths.getPathIDs()
+
+				" remove pathIDs that have been merged "
+				toBeRemoved = []
+				for k in range(len(orderedPathIDs1)):
+					currID = orderedPathIDs1[k]
+					if not currID in pathIDs:
+						toBeRemoved.append(k)
+
+				" reverse so we don't change the indexing when deleting entries "
+				toBeRemoved.reverse()	
+				for k in toBeRemoved:
+					del orderedPathIDs1[k]
+					del departures1[k]
+					del interiors1[k]
+					del depPoints1[k]
+
+				toBeRemoved = []
+				for k in range(len(orderedPathIDs2)):
+					currID = orderedPathIDs2[k]
+					if not currID in pathIDs:
+						toBeRemoved.append(k)
+
+				" reverse so we don't change the indexing when deleting entries "
+				toBeRemoved.reverse()	
+				for k in toBeRemoved:
+					del orderedPathIDs2[k]
+					del departures2[k]
+					del interiors2[k]
+					del depPoints2[k]
+
 
 				for k in pathIDs:
 					path = self.paths.paths[k]
@@ -1820,74 +1851,79 @@ class PoseGraph:
 			pathID2 = mergeThis[1]
 			offset = mergeThis[2]
 
+			" verify that this path still exists before we try to merge it "
+			allPathIDs = self.paths.getPathIDs()
+			if pathID1 in allPathIDs and pathID2 in allPathIDs:
+	
+					
+				" capture transform between pathID1 and pathID2 under correction "
+				if pathID1 < pathID2:
+					cOffset = offset
+					rootID = pathID1
+					lessID = pathID2
+					
+				else:
+					" inverse of offset "
+					invPose = Pose([0.0,0.0,0.0])
+					cOffset = invPose.doInverse(offset)
+					rootID = pathID2
+					lessID = pathID1
 				
-			" capture transform between pathID1 and pathID2 under correction "
-			if pathID1 < pathID2:
-				cOffset = offset
-				rootID = pathID1
-				lessID = pathID2
+				mergeNodes = self.paths.getNodes(lessID)
 				
-			else:
-				" inverse of offset "
-				invPose = Pose([0.0,0.0,0.0])
-				cOffset = invPose.doInverse(offset)
-				rootID = pathID2
-				lessID = pathID1
-			
-			mergeNodes = self.paths.getNodes(lessID)
-			
-			
-			" capture transform between pathID2 and member nodes "
-			" add compute new node locations under corrected transform "
-			poseOrigin = Pose(cOffset)
-			for nodeID in mergeNodes:
-				nodePose = self.nodeHash[nodeID].getGlobalGPACPose()			
-				guessPose = poseOrigin.convertLocalOffsetToGlobal(nodePose)
+				
+				" capture transform between pathID2 and member nodes "
+				" add compute new node locations under corrected transform "
 				self.drawConstraints(self.statePlotCount)
 				self.statePlotCount += 1
 				self.drawPathAndHull()
-				self.nodeHash[nodeID].setGPACPose(guessPose)
-				self.drawConstraints(self.statePlotCount)
-				self.statePlotCount += 1
-				self.drawPathAndHull()
-				
-				pathNodes = self.paths.getNodes(rootID)
-				targetNodeID = nodeID
-				
-				print "addPathConstraints:"
-				print "pathNodes:", pathNodes
-				print "targetNodeID:", targetNodeID
-				
-				#newConstraints = self.addBatchConstraints(targetNodeID)
-				newConstraints = self.addTargetBatchConstraints(targetNodeID, pathNodes)
-								
-				for const in newConstraints:
-					n1 = const[0]
-					n2 = const[1]
-					transform = const[2]
-					covE = const[3]
-		
-					self.addPriorityEdge([n1,n2,transform,covE], CORNER_PRIORITY)
-		
+
+				poseOrigin = Pose(cOffset)
+				for nodeID in mergeNodes:
+					nodePose = self.nodeHash[nodeID].getGlobalGPACPose()			
+					guessPose = poseOrigin.convertLocalOffsetToGlobal(nodePose)
+					self.nodeHash[nodeID].setGPACPose(guessPose)
+					self.drawConstraints(self.statePlotCount)
+					self.statePlotCount += 1
+					self.drawPathAndHull()
+					
+					pathNodes = self.paths.getNodes(rootID)
+					targetNodeID = nodeID
+					
+					print "addPathConstraints:"
+					print "pathNodes:", pathNodes
+					print "targetNodeID:", targetNodeID
+					
+					#newConstraints = self.addBatchConstraints(targetNodeID)
+					newConstraints = self.addTargetBatchConstraints(targetNodeID, pathNodes)
+									
+					for const in newConstraints:
+						n1 = const[0]
+						n2 = const[1]
+						transform = const[2]
+						covE = const[3]
+			
+						self.addPriorityEdge([n1,n2,transform,covE], CORNER_PRIORITY)
+			
 				" merge the constraints "
 				self.mergePriorityConstraints()
-
+	
 				self.drawConstraints(self.statePlotCount)
 				self.statePlotCount += 1
 				self.drawPathAndHull()
-			
-			" constrain nodes to merge to pathID1 "
-			
-			" move nodes to pathID1, delete pathID2 "
-			
-			" move nodes from lessID into rootID and delete pathID "
-			for nodeID in mergeNodes:
-				self.paths.addNode(nodeID, rootID)
-
-			self.paths.delPath(lessID)
-
-			self.paths.generatePaths()
-			
+				
+				" constrain nodes to merge to pathID1 "
+				
+				" move nodes to pathID1, delete pathID2 "
+				
+				" move nodes from lessID into rootID and delete pathID "
+				for nodeID in mergeNodes:
+					self.paths.addNode(nodeID, rootID)
+	
+				self.paths.delPath(lessID)
+	
+				self.paths.generatePaths()
+				
 
 
 	def constrainToPaths(self, nodeID, orderedPathIDs, departures, interiors, depPoints, insertNode = False):
@@ -5824,8 +5860,9 @@ class PoseGraph:
 		
 		pylab.clf()
 		
-		for k in range(len(trimmedPaths)):
-			path = trimmedPaths[k]
+		#for k in range(len(trimmedPaths)):
+		for k,path in trimmedPaths.iteritems():
+			#path = trimmedPaths[k]
 			print "path has", len(path), "points"
 			xP = []
 			yP = []
@@ -5907,7 +5944,7 @@ class PoseGraph:
 			pylab.plot(xP,yP, '--', color=self.colors[k], linewidth=4)
 			
 		print "pathAndHull:", self.pathDrawCount
-		pylab.title("%s" % repr(self.paths.pathClasses))
+		pylab.title("%s" % repr(self.paths.getPathIDs()))
 		pylab.savefig("pathAndHull_%04u.png" % self.pathDrawCount)
 
 		self.pathDrawCount += 1

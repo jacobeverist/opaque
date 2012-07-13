@@ -202,6 +202,8 @@ class Paths:
             print "computing path for node set", k, ":", self.getNodes(k)
             self.paths[k], self.hulls[k] = self.getTopology(self.getNodes(k))
 
+        self.trimmedPaths = self.trimPaths(self.paths)
+
         " for each path, attempt to join with its parent path "
         self.joins = []
         self.junctions = {}
@@ -254,7 +256,7 @@ class Paths:
             junctionPoint = poseOrigin.convertLocalToGlobal(localPose)
             
             #globalPose = self.nodeHash[branchNodeID].getGlobalGPACPose()
-            self.junctions[pathID] = [branchNodeID, junctionPoint, (parentPathID,minI2), path2[minI2]]
+            self.junctions[pathID] = [branchNodeID, junctionPoint, (parentPathID,minI2), path2[minI2], minI1]
             #junctions[pathID] = [cPath["branchNodeID"], cPath["localJunctionPose"]]
             
 
@@ -283,17 +285,29 @@ class Paths:
         self.terminals = {}
         for pathID in pathIDs:
             path = self.trimmedPaths[pathID]
-            if pathID == 0:
-                self.terminals[0] = [(pathID,0), path[0]]
-                self.terminals[1] = [(pathID,len(path)-1), path[len(path)-1]]
+            
+            if len(path) > 0:
+                if pathID == 0:
+                    self.terminals[0] = [(pathID,0), path[0]]
+                    self.terminals[1] = [(pathID,len(path)-1), path[len(path)-1]]
 
-                self.topDict["t%u" % 0] = (pathID,0)
-                self.topDict["t%u" % 1] = (pathID,len(path)-1)
-                
-            else:
-                self.terminals[pathID+1] = [(pathID,len(path)-1), path[len(path)-1]]
-                self.topDict["t%u" % (pathID+1)] = (pathID,len(path)-1)
-                self.topDict["j%u" % pathID] = self.junctions[pathID][2]
+                    self.topDict["t%u" % 0] = (pathID,0)
+                    self.topDict["t%u" % 1] = (pathID,len(path)-1)
+                    
+                else:
+                    
+                    self.topDict["j%u" % pathID] = self.junctions[pathID][2]
+                    minI1 = self.junctions[pathID][4]
+                    
+                    " determine which side is junction and which side is terminal"
+                    if minI1 > len(path)-1 - minI1:    
+                        self.terminals[pathID+1] = [(pathID,0), path[0]]
+                        self.topDict["t%u" % (pathID+1)] = (pathID,0)
+                    else:
+                        self.terminals[pathID+1] = [(pathID,len(path)-1), path[len(path)-1]]
+                        self.topDict["t%u" % (pathID+1)] = (pathID,len(path)-1)
+                    #self.terminals[pathID+1] = [(pathID,len(path)-1), path[len(path)-1]]
+                    #self.topDict["t%u" % (pathID+1)] = (pathID,len(path)-1)
 
             
     def getNodes(self, pathID):
@@ -435,7 +449,7 @@ class Paths:
                             termIDs = [self.topDict["t%u" % 0]]
                             termPaths.append(termIDs)
                         else:
-                            termIDs = [self.topDict["j%u" % orderedPathIDs[k]]]
+                            termIDs = [self.topDict["j%u" % orderedPathIDs[0]]]
                             termPaths.append(termIDs)
                     else:
                         print parents
@@ -461,7 +475,7 @@ class Paths:
                             print termPaths
                             print k
                             raise
-                            
+                    
                     " last path ID "
                     if parents[orderedPathIDs[-2]] == orderedPathIDs[-1]:
                         " child -> parent:  prev -> junction "
@@ -1332,18 +1346,18 @@ class Paths:
         u1 = originU1
         angGuess = 0.0
         
-        resultPose1, lastCost1, matchCount1 = gen_icp.pathOverlapICP([u1,u2,angGuess], orientedGlobalPath, globalPath1, plotIter = False, n1 = pathID1, n2 = pathID2)
-        resultPose2, lastCost2, matchCount2 = gen_icp.pathOverlapICP([u1,u2+0.1,angGuess], orientedGlobalPath, globalPath1, plotIter = False, n1 = pathID1, n2 = pathID2)
-        resultPose3, lastCost3, matchCount3 = gen_icp.pathOverlapICP([u1,u2-0.1,angGuess], orientedGlobalPath, globalPath1, plotIter = False, n1 = pathID1, n2 = pathID2)
+        resultPose1, lastCost1, matchCount1 = gen_icp.pathOverlapICP([u1,u2,angGuess], orientedGlobalPath, globalPath1, plotIter = True, n1 = pathID1, n2 = pathID2)
+        #resultPose2, lastCost2, matchCount2 = gen_icp.pathOverlapICP([u1,u2+0.1,angGuess], orientedGlobalPath, globalPath1, plotIter = True, n1 = pathID1, n2 = pathID2)
+        #resultPose3, lastCost3, matchCount3 = gen_icp.pathOverlapICP([u1,u2-0.1,angGuess], orientedGlobalPath, globalPath1, plotIter = True, n1 = pathID1, n2 = pathID2)
         #resultPose1, lastCost1, matchCount1 = gen_icp.pathOverlapICP([u1,u2,angGuess], orientedGlobalPath, globalPath1, plotIter = False, n1 = pathID1, n2 = pathID2)
         #resultPose2, lastCost2, matchCount2 = gen_icp.pathOverlapICP([u1,u2+0.1,angGuess], orientedGlobalPath, globalPath1, plotIter = False, n1 = pathID1, n2 = pathID2)
         #resultPose3, lastCost3, matchCount3 = gen_icp.pathOverlapICP([u1,u2-0.1,angGuess], orientedGlobalPath, globalPath1, plotIter = False, n1 = pathID1, n2 = pathID2)
 
-        #print "matchCount,cost,result:", matchCount1, lastCost1, resultPose1
+        print "matchCount,cost,result:", matchCount1, lastCost1, resultPose1
 
-        print "matchCounts:", matchCount1, matchCount2, matchCount3
-        print "costs:", lastCost1, lastCost2, lastCost3
-        print "results:", resultPose1, resultPose2, resultPose3
+        #print "matchCounts:", matchCount1, matchCount2, matchCount3
+        #print "costs:", lastCost1, lastCost2, lastCost3
+        #print "results:", resultPose1, resultPose2, resultPose3
 
 
         return resultPose1, lastCost1, matchCount1
@@ -1412,6 +1426,16 @@ class Paths:
     def delPath(self, pathID):
         
         del self.pathClasses[pathID]
+        
+        keys = []
+        
+        for key, val in self.consistency.iteritems():
+            
+            if key[0] == pathID or key[1] == pathID:
+                keys.append(key)
+        
+        for key in keys:        
+            del self.consistency[key]
         
     def addPath(self, parentID, branchNodeID, localJunctionPose):
         
@@ -3495,9 +3519,9 @@ class Paths:
     
         estPose2 = node2.getGlobalGPACPose()        
             
-        #minMatchDist2 = 0.2
+        minMatchDist2 = 0.2
         #minMatchDist2 = 0.5
-        minMatchDist2 = 1.0
+        #minMatchDist2 = 1.0
         #minMatchDist2 = 2.0
             
         " set the initial guess "
@@ -3628,12 +3652,16 @@ class Paths:
 
         " check cartesian distance to similar junction points from parent path "
 
+        " BEING MORE PERMISSIVE IN CREATING NEW BRANCHES BECAUSE WE CAN MERGE LATER "
+
         " cartesian distance "
-        DISC_THRESH = 1.0
+        #DISC_THRESH = 1.0
+        DISC_THRESH = 0.5
 
         " 60 degree threshold "
-        ANG_THRESH = 1.047
+        #ANG_THRESH = 1.047
         #ANG_THRESH = 0.7
+        ANG_THRESH = 0.523 # pi/6
         
         pathIDs = self.getPathIDs()
         

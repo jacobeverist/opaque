@@ -7432,7 +7432,7 @@ def pathOverlapICP(initGuess, globalPath, medialPoints,plotIter = False, n1 = 0,
         
         resultSum, resultParam, resultOffset = nelminICP.ICPcost(flatMatchPairs, len(match_pairs), [u1,currU,currAng], c_poses_1, c_poses_2, len(poses_1))
         " draw final position "
-        if plotIter:
+        if False:
             
             " set the origin of pose 1 "
             poseOrigin = Pose(currPose)
@@ -7576,7 +7576,7 @@ def pathOverlapICP(initGuess, globalPath, medialPoints,plotIter = False, n1 = 0,
             break
         
         " draw final position "
-        if plotIter:
+        if False:
             
             " set the origin of pose 1 "
             poseOrigin = Pose(currPose)
