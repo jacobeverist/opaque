@@ -1425,7 +1425,8 @@ class Paths:
 
         " now lets find closest points and save their local variances "            
         closestPairs = []
-        TERM_DIST = 0
+        #TERM_DIST = 0
+        TERM_DIST = 20
         
         for i in range(TERM_DIST, len(globalSamples2)-TERM_DIST):
             pG = globalSamples2[i]
@@ -3960,6 +3961,38 @@ class Paths:
                         isNew[1] = True
 
                         print "foreA"
+
+                    if isUnique1 and not isUnique2:
+                        if dirFlag == 0:
+                            " foreTerm1 has unique departure "    
+                            pathID = parentPathID1
+                            branchNodeID = nodeID1
+                            globalJunctionPoint = depPoint1
+                            depAng = depAngle1
+                            junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
+    
+                            poseOrigin = Pose(self.nodeHash[branchNodeID].getEstPose())
+                            #newPathID = self.addNewPath(pathID, branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
+                            newPathID = self.addPath(pathID, branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
+                            pathBranchIDs[0] = newPathID
+                            isBranch[0] = True
+                            isNew[0] = True
+
+                    if not isUnique1 and isUnique2:
+                        if dirFlag == 1:
+                            " foreTerm2 has unique departure "    
+                            pathID = parentPathID2
+                            branchNodeID = nodeID2
+                            globalJunctionPoint = depPoint2
+                            depAng = depAngle2
+                            junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
+    
+                            poseOrigin = Pose(self.nodeHash[branchNodeID].getEstPose())
+                            #newPathID = self.addNewPath(pathID, branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
+                            newPathID = self.addPath(pathID, branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
+                            pathBranchIDs[1] = newPathID
+                            isBranch[1] = True
+                            isNew[1] = True
                         
                     
                     if duplicatePathID1 != -1:
@@ -4010,6 +4043,38 @@ class Paths:
                             isNew[1] = True
 
                         print "foreB"
+
+                    if isUnique1 and not isUnique2:
+                        if dirFlag == 0:
+                            " foreTerm1 has unique departure "    
+                            pathID = parentPathID1
+                            branchNodeID = nodeID1
+                            globalJunctionPoint = depPoint1
+                            depAng = depAngle1
+                            junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
+    
+                            poseOrigin = Pose(self.nodeHash[branchNodeID].getEstPose())
+                            #newPathID = self.addNewPath(pathID, branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
+                            newPathID = self.addPath(pathID, branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
+                            pathBranchIDs[0] = newPathID
+                            isBranch[0] = True
+                            isNew[0] = True
+
+                    if not isUnique1 and isUnique2:
+                        if dirFlag == 1:
+                            " foreTerm2 has unique departure "    
+                            pathID = parentPathID2
+                            branchNodeID = nodeID2
+                            globalJunctionPoint = depPoint2
+                            depAng = depAngle2
+                            junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
+    
+                            poseOrigin = Pose(self.nodeHash[branchNodeID].getEstPose())
+                            #newPathID = self.addNewPath(pathID, branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
+                            newPathID = self.addPath(pathID, branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
+                            pathBranchIDs[1] = newPathID
+                            isBranch[1] = True
+                            isNew[1] = True
 
                     if duplicatePathID1 != -1:
                         pathBranchIDs[0] = duplicatePathID1
