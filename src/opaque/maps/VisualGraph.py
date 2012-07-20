@@ -58,10 +58,36 @@ class VisualGraph:
 		
 		self.poseGraph.mergePriorityConstraints()
 
-		#self.drawConstraints()
+		self.drawConstraints()
 		
 
 		#return
+		#self.mapGraph.insertPose(self.probe.getActualJointPose(19), self.travelDir)
+
+
+		foreNode = LocalNode(self.probe, self.contacts, num_poses, 19, PIXELSIZE)
+		foreNode.readFromFile2(dirName, num_poses)
+		backNode = LocalNode(self.probe, self.contacts, num_poses+1, 19, PIXELSIZE)
+		backNode.readFromFile2(dirName, num_poses+1)
+		self.poseGraph.insertPose(foreNode, backNode, initLocation = foreNode.getEstPose())
+			
+
+		for i in range(num_poses+2, num_poses+70):
+
+			print "loading node", i		
+			currNode = LocalNode(self.probe, self.contacts, i, 19, PIXELSIZE)
+			currNode.readFromFile2(dirName, i)
+			self.localNodes.append(currNode)
+			self.poseGraph.loadNewNode(currNode)
+			self.poseGraph.mergePriorityConstraints()
+			self.drawConstraints(i)
+			self.poseGraph.saveState()
+		
+
+		self.drawMap()
+		self.drawConstraints(num_poses)
+
+		return
 
 		for i in range(num_poses, num_poses+0):
 

@@ -1880,6 +1880,13 @@ class LocalNode:
 			#newP1 = (longPath[0][0] + frontVec[0]*500, longPath[0][1] + frontVec[1]*500)
 			#newP2 = (longPath[-1][0] + backVec[0]*500, longPath[-1][1] + backVec[1]*500)
 
+		
+			leafPath.insert(0,newP1)
+			leafPath.append(newP2)
+			
+			
+
+
 			" convert path points to real "
 			#realPath = []
 			#for p in longPath:
@@ -1906,13 +1913,10 @@ class LocalNode:
 			splineCount += 1
 			"""
 		
-			leafPath.insert(0,newP1)
-			leafPath.append(newP2)
-		
 		
 			" convert path points to real "
 			realPath = []
-			for p in longPath:
+			for p in leafPath:
 				realPath.append(p)
 				#realPath.append(gridToReal(p))
 
@@ -1953,7 +1957,7 @@ class LocalNode:
 					
 			TAILDIST = 0.5
 	
-			" take the long length segments at tips of medial axis"
+			" take the last segments at tips of medial axis"
 			edge1 = medial2[0:2]
 			edge2 = medial2[-2:]
 			
@@ -1967,7 +1971,7 @@ class LocalNode:
 			backVec[0] /= backMag
 			backVec[1] /= backMag
 			
-			" make a smaller version of these edges "
+			" make a longer version of these edges "
 			newP1 = (edge1[1][0] + frontVec[0]*2, edge1[1][1] + frontVec[1]*2)
 			newP2 = (edge2[0][0] + backVec[0]*2, edge2[0][1] + backVec[1]*2)
 	
@@ -2336,7 +2340,7 @@ class LocalNode:
 		raise
 
 
-	def getMedialAxisdfadfd(self, sweep = False):
+	def getMedialAxis(self, sweep = False):
 		
 		global splineCount
 		

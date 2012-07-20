@@ -622,73 +622,7 @@ class PoseGraph:
 
 	def insertPose(self, foreNode, backNode, initLocation = [0.0,0.0,0.0]):
 
-		self.currNode = foreNode
-		self.currNode.setEstPose(initLocation)
-		nodeID = self.numNodes
-		self.nodeHash[nodeID] = self.currNode
-		self.currNode.nodeID = nodeID
-		self.numNodes += 1
-	
-		#self.insertNode(nodeFore, nodeID, initLocation)
 
-		self.currNode = backNode
-		self.currNode.setEstPose(initLocation)
-		nodeID = self.numNodes
-		self.nodeHash[nodeID] = self.currNode
-		self.currNode.nodeID = nodeID
-		self.numNodes += 1
-
-		foreNode.setPartnerNodeID(backNode.nodeID)
-		backNode.setPartnerNodeID(foreNode.nodeID)
-
-		" DIRECTION OF TRAVEL FROM PREVIOUS POSE PAIR "
-		direction = foreNode.travelDir
-
-		nodeID1 = foreNode.nodeID
-		nodeID2 = backNode.nodeID
-
-		" ensure the axes are computed before this check "
-		computeHullAxis(nodeID1, foreNode, tailCutOff = False)
-		computeHullAxis(nodeID2, backNode, tailCutOff = False)
-
-		" COMPUTE MEDIAL AXIS FROM UNION OF PATH-CLASSIFIED NODES "
-		self.paths.generatePaths()
-
-		" PERFORM INPLACE CONSTRAINT BETWEEN PAIR "
-		supportLine = self.paths.paths[self.currPath]
-		
-		transform, covE = self.makeInPlaceConstraint(nodeID1, nodeID2)
-		transform1 = transform
-		offset1 = [transform[0,0], transform[1,0], transform[2,0]]			
-		covE1 = covE
-		
-		if len(supportLine) == 0:
-			resultSum1 = 1e100
-		else:
-			resultSum1 = self.checkSupport(nodeID1, nodeID2, offset1, supportLine)
-		
-		if self.nodeHash[nodeID1].getNumLeafs() > 2 or self.nodeHash[nodeID2].getNumLeafs() > 2:
-			transform, covE, overHist = self.makeMultiJunctionMedialOverlapConstraint(nodeID1, nodeID2, isMove = False, inPlace = False, isForward = direction )
-		else:
-			transform, covE, overHist = self.makeMedialOverlapConstraint(nodeID1, nodeID2, isMove = False, inPlace = True, isForward = direction)
-		
-		
-		transform3 = transform
-		offset3 = [transform[0,0], transform[1,0], transform[2,0]]			
-		covE3 = covE
-		if len(supportLine) == 0:
-			resultSum3 = 1e100
-		else:
-			resultSum3 = self.checkSupport(nodeID1, nodeID2, offset3, supportLine)
-
-		print "INPLACE sums:", resultSum1, resultSum3
-
-		if len(supportLine) > 0 and resultSum1 < resultSum3 and resultSum3 - resultSum1 > 100.0:
-			self.addPriorityEdge([nodeID1,nodeID2,transform1,covE1], INPLACE_PRIORITY)
-		else:
-			self.addPriorityEdge([nodeID1,nodeID2,transform3,covE3], INPLACE_PRIORITY)
-		
-		
 		
 		" CHECK FOR A BRANCHING EVENT "
 
@@ -697,9 +631,76 @@ class PoseGraph:
 		for abc in range(0,2):
 			
 			if abc == 0:
-				nodeID1 = self.numNodes-4
-				nodeID2 = self.numNodes-3
+				nodeID1 = self.numNodes-2
+				nodeID2 = self.numNodes-1
 			else:
+				self.currNode = foreNode
+				self.currNode.setEstPose(initLocation)
+				nodeID = self.numNodes
+				self.nodeHash[nodeID] = self.currNode
+				self.currNode.nodeID = nodeID
+				self.numNodes += 1
+			
+				#self.insertNode(nodeFore, nodeID, initLocation)
+		
+				self.currNode = backNode
+				self.currNode.setEstPose(initLocation)
+				nodeID = self.numNodes
+				self.nodeHash[nodeID] = self.currNode
+				self.currNode.nodeID = nodeID
+				self.numNodes += 1
+		
+				foreNode.setPartnerNodeID(backNode.nodeID)
+				backNode.setPartnerNodeID(foreNode.nodeID)
+		
+				" DIRECTION OF TRAVEL FROM PREVIOUS POSE PAIR "
+				direction = foreNode.travelDir
+		
+				nodeID1 = foreNode.nodeID
+				nodeID2 = backNode.nodeID
+		
+				" ensure the axes are computed before this check "
+				computeHullAxis(nodeID1, foreNode, tailCutOff = False)
+				computeHullAxis(nodeID2, backNode, tailCutOff = False)
+		
+				" COMPUTE MEDIAL AXIS FROM UNION OF PATH-CLASSIFIED NODES "
+				self.paths.generatePaths()
+		
+				" PERFORM INPLACE CONSTRAINT BETWEEN PAIR "
+				supportLine = self.paths.paths[self.currPath]
+				
+				transform, covE = self.makeInPlaceConstraint(nodeID1, nodeID2)
+				transform1 = transform
+				offset1 = [transform[0,0], transform[1,0], transform[2,0]]			
+				covE1 = covE
+				
+				if len(supportLine) == 0:
+					resultSum1 = 1e100
+				else:
+					resultSum1 = self.checkSupport(nodeID1, nodeID2, offset1, supportLine)
+				
+				if self.nodeHash[nodeID1].getNumLeafs() > 2 or self.nodeHash[nodeID2].getNumLeafs() > 2:
+					transform, covE, overHist = self.makeMultiJunctionMedialOverlapConstraint(nodeID1, nodeID2, isMove = False, inPlace = False, isForward = direction )
+				else:
+					transform, covE, overHist = self.makeMedialOverlapConstraint(nodeID1, nodeID2, isMove = False, inPlace = True, isForward = direction)
+				
+				
+				transform3 = transform
+				offset3 = [transform[0,0], transform[1,0], transform[2,0]]			
+				covE3 = covE
+				if len(supportLine) == 0:
+					resultSum3 = 1e100
+				else:
+					resultSum3 = self.checkSupport(nodeID1, nodeID2, offset3, supportLine)
+		
+				print "INPLACE sums:", resultSum1, resultSum3
+		
+				if len(supportLine) > 0 and resultSum1 < resultSum3 and resultSum3 - resultSum1 > 100.0:
+					self.addPriorityEdge([nodeID1,nodeID2,transform1,covE1], INPLACE_PRIORITY)
+				else:
+					self.addPriorityEdge([nodeID1,nodeID2,transform3,covE3], INPLACE_PRIORITY)
+				
+				
 				nodeID1 = foreNode.nodeID
 				nodeID2 = backNode.nodeID
 			
@@ -994,13 +995,26 @@ class PoseGraph:
 				parentPathID1 = orderedPathIDs1[0]
 				parentPathID2 = orderedPathIDs2[0]
 	
-	
-				isBranch, pathBranchIDs = self.paths.determineBranch(nodeID1, nodeID2, frontExist1, frontExist2, frontInterior1, frontInterior2, depAngle1, depAngle2, depPoint1, depPoint2, parentPathID1, parentPathID2)
+
+				isFront1 = self.nodeHash[nodeID1].faceDir
+				isFront2 = self.nodeHash[nodeID2].faceDir
+				if isFront1 and not isFront2:
+					dirFlag = 0
+				elif not isFront1 and isFront2:
+					dirFlag = 1
+				else:
+					print isFront1, isFront2
+					raise
+				
+				isBranch, pathBranchIDs, isNew = self.paths.determineBranch(nodeID1, nodeID2, frontExist1, frontExist2, frontInterior1, frontInterior2, depAngle1, depAngle2, depPoint1, depPoint2, parentPathID1, parentPathID2, dirFlag)
 	
 				print "determineBranch:"
 				print isBranch
 				print pathBranchIDs
 	
+				isNew1 = isNew[0]
+				isNew2 = isNew[1]
+
 				if isBranch[0]:
 					orderedPathIDs1.insert(0,pathBranchIDs[0])
 					departures1.insert(0, [False, False])
@@ -1013,9 +1027,9 @@ class PoseGraph:
 					interiors2.insert(0, [False, False])
 					depPoints2.insert(0, [None, None])
 					
-				for pathID in pathBranchIDs:
-					if pathID != -1 and newPaths.count(pathID) == 0:
-						newPaths.append(pathID)
+				#for pathID in pathBranchIDs:
+				#	if pathID != -1 and newPaths.count(pathID) == 0:
+				#		newPaths.append(pathID)
 	
 	
 	
@@ -1036,14 +1050,28 @@ class PoseGraph:
 				parentPathID2 = orderedPathIDs2[-1]
 				#print "self.pathParents:", self.pathParents
 				#print "self.nodeSets:", self.nodeSets
-				print "newPaths:", newPaths
+				#print "newPaths:", newPaths
 				#print "self.numPaths:", self.numPaths
 	
-	
-				isBranch, pathBranchIDs = self.paths.determineBranch(nodeID1, nodeID2, backExist1, backExist2, backInterior1, backInterior2, depAngle1, depAngle2, depPoint1, depPoint2, parentPathID1, parentPathID2)
+
+				isFront1 = self.nodeHash[nodeID1].faceDir
+				isFront2 = self.nodeHash[nodeID2].faceDir
+				if isFront1 and not isFront2:
+					dirFlag = 1
+				elif not isFront1 and isFront2:
+					dirFlag = 0
+				else:
+					print isFront1, isFront2
+					raise
+				
+				isBranch, pathBranchIDs, isNew = self.paths.determineBranch(nodeID1, nodeID2, backExist1, backExist2, backInterior1, backInterior2, depAngle1, depAngle2, depPoint1, depPoint2, parentPathID1, parentPathID2, dirFlag)
 				print "determineBranch:"
 				print isBranch
 				print pathBranchIDs
+
+
+				isNew1 = isNew1 or isNew[0]
+				isNew2 = isNew2 or isNew[1]
 	
 				if isBranch[0]:
 					orderedPathIDs1.append(pathBranchIDs[0])
@@ -1057,12 +1085,12 @@ class PoseGraph:
 					interiors2.append([False, False])
 					depPoints2.append([None, None])
 	
-				for pathID in pathBranchIDs:
-					if pathID != -1 and newPaths.count(pathID) == 0:
-						newPaths.append(pathID)
+				#for pathID in pathBranchIDs:
+				#	if pathID != -1 and newPaths.count(pathID) == 0:
+				#		newPaths.append(pathID)
 				#print "self.pathParents:", self.pathParents
 				#print "self.nodeSets:", self.nodeSets
-				print "newPaths:", newPaths
+				#print "newPaths:", newPaths
 				#print "self.numPaths:", self.numPaths
 				
 	
@@ -1108,13 +1136,13 @@ class PoseGraph:
 				self.trimmedPaths = self.paths.trimPaths(paths)
 	
 				" perform path constraints only if we have not created a new path "
-				isNew1 = False
-				isNew2 = False
-				for pathID in newPaths:
-					if orderedPathIDs1.count(pathID) > 0:
-						isNew1 = True
-					if orderedPathIDs2.count(pathID) > 0:
-						isNew2 = True
+				#isNew1 = False
+				#isNew2 = False
+				#for pathID in newPaths:
+				#	if orderedPathIDs1.count(pathID) > 0:
+				#		isNew1 = True
+				#	if orderedPathIDs2.count(pathID) > 0:
+				#		isNew2 = True
 				
 	
 				
@@ -1613,13 +1641,25 @@ class PoseGraph:
 				
 				parentPathID1 = orderedPathIDs1[0]
 				parentPathID2 = orderedPathIDs2[0]
+
+				isFront1 = self.nodeHash[nodeID1].faceDir
+				isFront2 = self.nodeHash[nodeID2].faceDir
+				if isFront1 and not isFront2:
+					dirFlag = 0
+				elif not isFront1 and isFront2:
+					dirFlag = 1
+				else:
+					print isFront1, isFront2
+					raise	
 	
-	
-				isBranch, pathBranchIDs = self.paths.determineBranch(nodeID1, nodeID2, frontExist1, frontExist2, frontInterior1, frontInterior2, depAngle1, depAngle2, depPoint1, depPoint2, parentPathID1, parentPathID2)
+				isBranch, pathBranchIDs, isNew = self.paths.determineBranch(nodeID1, nodeID2, frontExist1, frontExist2, frontInterior1, frontInterior2, depAngle1, depAngle2, depPoint1, depPoint2, parentPathID1, parentPathID2, dirFlag)
 
 				print "determineBranch:"
 				print isBranch
 				print pathBranchIDs
+
+				isNew1 = isNew[0]
+				isNew2 = isNew[1]
 	
 				if isBranch[0]:
 					orderedPathIDs1.insert(0,pathBranchIDs[0])
@@ -1633,9 +1673,9 @@ class PoseGraph:
 					interiors2.insert(0, [False, False])
 					depPoints2.insert(0, [None, None])
 					
-				for pathID in pathBranchIDs:
-					if pathID != -1 and newPaths.count(pathID) == 0:
-						newPaths.append(pathID)
+				#for pathID in pathBranchIDs:
+				#	if pathID != -1 and newPaths.count(pathID) == 0:
+				#		newPaths.append(pathID)
 
 
 
@@ -1655,14 +1695,26 @@ class PoseGraph:
 				parentPathID1 = orderedPathIDs1[-1]
 				parentPathID2 = orderedPathIDs2[-1]
 				#print "self.nodeSets:", self.nodeSets
-				print "newPaths:", newPaths
+				#print "newPaths:", newPaths
 				#print "self.numPaths:", self.numPaths
+
+				isFront1 = self.nodeHash[nodeID1].faceDir
+				isFront2 = self.nodeHash[nodeID2].faceDir
+				if isFront1 and not isFront2:
+					dirFlag = 1
+				elif not isFront1 and isFront2:
+					dirFlag = 0
+				else:
+					print isFront1, isFront2
+					raise	
 	
-	
-				isBranch, pathBranchIDs = self.paths.determineBranch(nodeID1, nodeID2, backExist1, backExist2, backInterior1, backInterior2, depAngle1, depAngle2, depPoint1, depPoint2, parentPathID1, parentPathID2)
+				isBranch, pathBranchIDs, isNew = self.paths.determineBranch(nodeID1, nodeID2, backExist1, backExist2, backInterior1, backInterior2, depAngle1, depAngle2, depPoint1, depPoint2, parentPathID1, parentPathID2, dirFlag)
 				print "determineBranch:"
 				print isBranch
 				print pathBranchIDs
+
+				isNew1 = isNew1 or isNew[0]
+				isNew2 = isNew2 or isNew[1]
 	
 				if isBranch[0]:
 					orderedPathIDs1.append(pathBranchIDs[0])
@@ -1676,11 +1728,11 @@ class PoseGraph:
 					interiors2.append([False, False])
 					depPoints2.append([None, None])
 	
-				for pathID in pathBranchIDs:
-					if pathID != -1 and newPaths.count(pathID) == 0:
-						newPaths.append(pathID)
+				#for pathID in pathBranchIDs:
+				#	if pathID != -1 and newPaths.count(pathID) == 0:
+				#		newPaths.append(pathID)
 				#print "self.nodeSets:", self.nodeSets
-				print "newPaths:", newPaths
+				#print "newPaths:", newPaths
 				#print "self.numPaths:", self.numPaths
 				
 
@@ -1764,13 +1816,11 @@ class PoseGraph:
 				self.trimmedPaths = self.paths.trimPaths(paths)
 
 				" perform path constraints only if we have not created a new path "
-				isNew1 = False
-				isNew2 = False
-				for pathID in newPaths:
-					if orderedPathIDs1.count(pathID) > 0:
-						isNew1 = True
-					if orderedPathIDs2.count(pathID) > 0:
-						isNew2 = True
+				#for pathID in newPaths:
+				#	if orderedPathIDs1.count(pathID) > 0:
+				#		isNew1 = True
+				#	if orderedPathIDs2.count(pathID) > 0:
+				#		isNew2 = True
 				
 	
 				
@@ -2597,8 +2647,18 @@ class PoseGraph:
 			parentPathID1 = orderedPathIDs1[0]
 			parentPathID2 = orderedPathIDs2[0]
 
+			
+			isFront1 = self.nodeHash[nodeID1].faceDir
+			isFront2 = self.nodeHash[nodeID2].faceDir
+			if isFront1 and not isFront2:
+				dirFlag = 0
+			elif not isFront1 and isFront2:
+				dirFlag = 1
+			else:
+				print isFront1, isFront2
+				raise
 
-			isBranch, pathBranchIDs = self.paths.determineBranch(nodeID1, nodeID2, frontExist1, frontExist2, frontInterior1, frontInterior2, depAngle1, depAngle2, depPoint1, depPoint2, parentPathID1, parentPathID2)
+			isBranch, pathBranchIDs, isNew = self.paths.determineBranch(nodeID1, nodeID2, frontExist1, frontExist2, frontInterior1, frontInterior2, depAngle1, depAngle2, depPoint1, depPoint2, parentPathID1, parentPathID2, dirFlag)
 
 			if isBranch[0]:
 				orderedPathIDs1.insert(0,pathBranchIDs[0])
@@ -2638,8 +2698,17 @@ class PoseGraph:
 			parentPathID1 = orderedPathIDs1[-1]
 			parentPathID2 = orderedPathIDs2[-1]
 
+			isFront1 = self.nodeHash[nodeID1].faceDir
+			isFront2 = self.nodeHash[nodeID2].faceDir
+			if isFront1 and not isFront2:
+				dirFlag = 1
+			elif not isFront1 and isFront2:
+				dirFlag = 0
+			else:
+				print isFront1, isFront2
+				raise
 
-			isBranch, pathBranchIDs = self.paths.determineBranch(nodeID1, nodeID2, backExist1, backExist2, backInterior1, backInterior2, depAngle1, depAngle2, depPoint1, depPoint2, parentPathID1, parentPathID2)
+			isBranch, pathBranchIDs, isNew = self.paths.determineBranch(nodeID1, nodeID2, backExist1, backExist2, backInterior1, backInterior2, depAngle1, depAngle2, depPoint1, depPoint2, parentPathID1, parentPathID2, dirFlag)
 
 			if isBranch[0]:
 				orderedPathIDs1.append(0,pathBranchIDs[0])
@@ -3159,7 +3228,7 @@ class PoseGraph:
 		#resultPose, lastCost = gen_icp.globalOverlapICP([u1,u2,angGuess], orientedGlobalPath, medial1, poses_1, poses_2)
 
 		
-		resultPose, lastCost, matchCount = gen_icp.globalOverlapICP_GPU2([u1,u2,angGuess], orientedGlobalPath, medial1)
+		resultPose, lastCost, matchCount = gen_icp.globalOverlapICP_GPU2([u1,u2,angGuess], orientedGlobalPath, medial1, plotIter = True, n1 = nodeID, n2 = -1)
 
 
 		print "estimating branch pose", nodeID, "at",  resultPose[0], resultPose[1], resultPose[2]

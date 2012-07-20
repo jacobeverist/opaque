@@ -510,11 +510,11 @@ class TestNavigation(SnakeControl):
 			" pop the next way point if we are already close to the first one "
 			if self.lastDist1 < 0.5:
 			
-			#frontierPoint = [1.07-0.4, 0.0]
-			#649, 358
-			#frontierPoint = [6.0, -1.5]
-			
-			" generate the path "
+				#frontierPoint = [1.07-0.4, 0.0]
+				#649, 358
+				#frontierPoint = [6.0, -1.5]
+				
+				" generate the path "
 			#originPath, goalPath, breakPoint = self.mapGraph.computeHeadPath(self.currPose, frontierPoint, self.exploreRoot)
 			#self.wayPoints = [breakPoint, goalPath[-1]]
 			#self.wayPaths = [originPath, goalPath]

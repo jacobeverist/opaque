@@ -266,8 +266,10 @@ class TestProcess(SnakeControl):
 			#self.mapGraph.loadSeries("resultProcess_2012_05_03", 6)
 
 			#self.mapGraph.loadSeries("resultProcess_2012_05_04", 49)
+
 			
-			self.mapGraph.loadSeries("resultProcess_2012_05_10", 49)
+			self.mapGraph.restoreSeries("resultProcess_2012_05_10", 12)
+
 
 			" parent-child consistency check "
 			#self.mapGraph.restoreSeries("resultProcess_2012_05_04", 49)

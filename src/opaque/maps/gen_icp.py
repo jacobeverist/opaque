@@ -6951,7 +6951,8 @@ def globalOverlapICP_GPU2(initGuess, globalPath, medialPoints,plotIter = False, 
     poseOrigin = Pose(currPose)
     
     costThresh = 0.004
-    minMatchDist = 2.0
+    #minMatchDist = 2.0
+    minMatchDist = 1.0
     lastCost = 1e100
     
     startIteration = numIterations
