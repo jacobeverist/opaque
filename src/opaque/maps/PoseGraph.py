@@ -640,9 +640,9 @@ class PoseGraph:
 				self.nodeHash[nodeID] = self.currNode
 				self.currNode.nodeID = nodeID
 				self.numNodes += 1
-			
+				
 				#self.insertNode(nodeFore, nodeID, initLocation)
-		
+				
 				self.currNode = backNode
 				self.currNode.setEstPose(initLocation)
 				nodeID = self.numNodes
@@ -978,7 +978,7 @@ class PoseGraph:
 	
 	
 	
-				newPaths = []
+				#newPaths = []
 	
 				frontExist1 = departures1[0][0]
 				frontInterior1 = interiors1[0][0]
@@ -1126,9 +1126,47 @@ class PoseGraph:
 				for pathID in orderedPathIDs2:
 					if not isAParent[pathID]:				
 						self.paths.addNode(nodeID2, pathID)
-	
+
+
+				self.paths.generatePaths()
+				self.trimmedPaths = self.paths.trimPaths(self.paths.paths)		
+				#self.paths.comparePaths()
+				self.mergePaths()
+
 				paths = {}
 				pathIDs = self.paths.getPathIDs()
+
+				" remove pathIDs that have been merged "
+				toBeRemoved = []
+				for k in range(len(orderedPathIDs1)):
+					currID = orderedPathIDs1[k]
+					if not currID in pathIDs:
+						toBeRemoved.append(k)
+
+				" reverse so we don't change the indexing when deleting entries "
+				toBeRemoved.reverse()	
+				for k in toBeRemoved:
+					del orderedPathIDs1[k]
+					del departures1[k]
+					del interiors1[k]
+					del depPoints1[k]
+
+				toBeRemoved = []
+				for k in range(len(orderedPathIDs2)):
+					currID = orderedPathIDs2[k]
+					if not currID in pathIDs:
+						toBeRemoved.append(k)
+
+				" reverse so we don't change the indexing when deleting entries "
+				toBeRemoved.reverse()	
+				for k in toBeRemoved:
+					del orderedPathIDs2[k]
+					del departures2[k]
+					del interiors2[k]
+					del depPoints2[k]
+	
+				#paths = {}
+				#pathIDs = self.paths.getPathIDs()
 				for k in pathIDs:
 					path = self.paths.paths[k]
 					if len(path) > 0:
@@ -1970,7 +2008,7 @@ class PoseGraph:
 				for nodeID in mergeNodes:
 					self.paths.addNode(nodeID, rootID)
 	
-				self.paths.delPath(lessID)
+				self.paths.delPath(lessID, rootID)
 	
 				self.paths.generatePaths()
 				

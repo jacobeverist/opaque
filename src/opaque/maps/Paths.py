@@ -143,7 +143,7 @@ class Paths:
         self.paths = {0 : []}
         self.hulls = {0 : []}
         self.pathTermsVisited = {0: False}
-        self.trimmedPaths  = []
+        self.trimmedPaths  = {}
         self.pathClasses = {}
         self.pathClasses[0] = {"parentID" : None, "branchNodeID" : None, "localJunctionPose" : None, 
                             "sameProb" : {}, "nodeSet" : []}
@@ -1524,9 +1524,10 @@ class Paths:
         self.pathProbs[nodeID] = probDist
         """
         
-    def delPath(self, pathID):
+    def delPath(self, pathID, mergeTargetID):
         
         del self.pathClasses[pathID]
+        del self.pathTermsVisited[pathID]
         
         keys = []
         
@@ -1537,6 +1538,13 @@ class Paths:
         
         for key in keys:        
             del self.consistency[key]
+            
+        
+        for k, pathClass in self.pathClasses.iteritems():
+            
+            if pathClass["parentID"] == pathID:
+                pathClass["parentID"] = mergeTargetID
+            
         
     def addPath(self, parentID, branchNodeID, localJunctionPose):
         
@@ -2597,7 +2605,7 @@ class Paths:
 
     def getPathTerms(self):
 
-        terms = []
+        terms = {}
 
         pathIDs = self.getPathIDs()
 
@@ -2617,9 +2625,9 @@ class Paths:
                 dist2 = sqrt((path[-1][0]-originPoint[0])**2 + (path[-1][1]-originPoint[1])**2)
 
                 if dist1 > dist2:
-                    terms.append([path[0][0],path[0][1], 0.0])
+                    terms[pathID] = [path[0][0],path[0][1], 0.0]
                 else:
-                    terms.append([path[-1][0],path[-1][1], 0.0])
+                    terms[pathID] = [path[-1][0],path[-1][1], 0.0]
                 
 
             else:
@@ -2642,12 +2650,12 @@ class Paths:
                     termI = len(path)-1
                     pathSpline = SplineFit(path, smooth=0.1)
                     vecPoints = pathSpline.getUniformSamples()
-                    terms.append([vecPoints[termI][0],vecPoints[termI][1], vecPoints[termI][2]])
+                    terms[pathID] = [vecPoints[termI][0],vecPoints[termI][1], vecPoints[termI][2]]
                 else:
                     termI = 0
                     pathSpline = SplineFit(path, smooth=0.1)
                     vecPoints = pathSpline.getUniformSamples()
-                    terms.append([vecPoints[termI][0],vecPoints[termI][1], vecPoints[termI][2]])
+                    terms[pathID] = [vecPoints[termI][0],vecPoints[termI][1], vecPoints[termI][2]]
             
             
             #angleSum = 0.0
@@ -4357,22 +4365,25 @@ class Paths:
         minI2 = 0
         minJ2 = 0
         minDist2 = 1e100
-        for i in range(len(self.trimmedPaths)):
-            path = self.trimmedPaths[i]
+        
+        pathIDs = self.getPathIDs()    
+        for pathID in pathIDs:
+            #for i in range(len(self.trimmedPaths)):
+            path = self.trimmedPaths[pathID]
             for j in range(len(path)):
                 p0 = path[j]
                 dist = sqrt((startPose[0]-p0[0])**2 + (startPose[1]-p0[1])**2)
                 
                 if dist < minDist1:
                     minDist1 = dist
-                    minI1 = i
+                    minI1 = pathID
                     minJ1 = j
 
                 dist = sqrt((endPose[0]-p0[0])**2 + (endPose[1]-p0[1])**2)
 
                 if dist < minDist2:
                     minDist2 = dist
-                    minI2 = i
+                    minI2 = pathID
                     minJ2 = j
         
         " select shortest one "

@@ -96,6 +96,8 @@ class TestNavigation(SnakeControl):
 		self.isInitialized = False
 
 		self.globalTimer = 1
+
+		self.termPathID = -1
 		
 		
 	def updateMaps(self):
@@ -332,8 +334,8 @@ class TestNavigation(SnakeControl):
 			self.restState = deepcopy(probeState)
 			
 			#self.globalState = 6
-			self.globalState = 4
-			#self.globalState = 10
+			#self.globalState = 4
+			self.globalState = 10
 
 			#self.restState = deepcopy(probeState)
 			#self.mapGraph.newNode(self.stepDist, self.travelDir)
@@ -482,8 +484,14 @@ class TestNavigation(SnakeControl):
 				#foreAvg = 0.0
 				if foreAvg >= 1.4:
 					self.globalState = 10
+					if self.termPathID != -1:
+						self.mapGraph.poseGraph.paths.pathTermVisited(self.termPathID)
+						self.termPathID = -1
+				
 				else:
 					self.globalState = 4
+
+				#self.globalState = 10
 					
 				#if self.mapGraph.numNodes > 26:
 				#	self.travelDir = False	
@@ -498,9 +506,9 @@ class TestNavigation(SnakeControl):
 			" select the point to go to "
 			#frontierPoint = self.mapGraph.selectNextFrontier()
 			#frontierPoint = self.mapGraph.selectNextFrontier()
-			frontierPoint = self.mapGraph.selectNextDestination()
+			frontierPoint, self.termPathID = self.mapGraph.selectNextDestination()
 			
-			
+			"""
 			self.currPose1 = self.contacts.getAverageSegPose(0)
 			self.currPose2 = self.contacts.getAverageSegPose(39)
 			dest = self.localWayPoints[0]			
@@ -515,6 +523,8 @@ class TestNavigation(SnakeControl):
 				#frontierPoint = [6.0, -1.5]
 				
 				" generate the path "
+			"""
+
 			#originPath, goalPath, breakPoint = self.mapGraph.computeHeadPath(self.currPose, frontierPoint, self.exploreRoot)
 			#self.wayPoints = [breakPoint, goalPath[-1]]
 			#self.wayPaths = [originPath, goalPath]
@@ -564,6 +574,7 @@ class TestNavigation(SnakeControl):
 			if isDone:
 				self.restState = deepcopy(probeState)
 
+					
 				" make sure that at least one blind adaptive step is performed "
 				self.lastPose1 = [-100.0, -100.0]
 				self.lastPose2 = [-100.0, -100.0]

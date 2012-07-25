@@ -860,22 +860,21 @@ class MapGraph:
 	def selectNextDestination(self):
 		if self.isDirty:
 			self.synch()
-			
+		
 		" get the termination point and orientation of each path "
-		terms = self.poseGraph.getPathTerms()
-		termsVisited = self.poseGraph.getPathTermsVisited()
+		terms = self.poseGraph.paths.getPathTerms()
+		termsVisited = self.poseGraph.paths.getPathTermsVisited()
 		
 		print "Terms:", terms
 		print "TermsVisited:", termsVisited
 		
-		
-		for k in range(len(terms)):
-			term = terms[k]
+		for k, term in terms.iteritems():
+			#term = terms[k]
 			
 			if not termsVisited[k]:
-				self.poseGraph.pathTermVisited(k)
+				#self.poseGraph.paths.pathTermVisited(k)
 				print "selecting term", k
-				return term
+				return term,k
 		
 		#for term in terms:
 		#	
@@ -883,7 +882,7 @@ class MapGraph:
 		#		return term
 		
 		print "all terms reached, selecting frontier point"
-		return self.frontierMap.selectNextFrontier()
+		return self.frontierMap.selectNextFrontier(), -1
 
 	def isFrontier(self):
 		if self.isDirty:

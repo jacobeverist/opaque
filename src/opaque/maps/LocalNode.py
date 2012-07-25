@@ -1286,7 +1286,7 @@ class LocalNode:
 
 	def readFromFile2(self, dirName, nodeID, forcedPose = []):
 
-		print "loading" + dirName + "/localStateSave_%04u.txt" % nodeID
+		print "loading " + dirName + "/localStateSave_%04u.txt" % nodeID
 
 		self.nodeID = nodeID
 
