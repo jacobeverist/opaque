@@ -1639,31 +1639,31 @@ class LocalNode:
 				minY = p[1]
 
 		" FIND INTERIOR POINTS OF GRID HULL "
-		xRange = range(minX, maxX + 1)
-		yRange = range(minY, maxY + 1)	
+		#xRange = range(minX, maxX + 1)
+		#yRange = range(minY, maxY + 1)	
 
-		interior = []
+		#interior = []
 			
-		for i in xRange:
-			for j in yRange:
-				if point_inside_polygon(i, j, gridHull):
-					interior.append((i,j))
+		#for i in xRange:
+		#	for j in yRange:
+		#		if point_inside_polygon(i, j, gridHull):
+		#			interior.append((i,j))
 		
 		" POPULATE AN IMAGE WITH GRID HULL AND INTERIOR "
-		inputImg = Image.new('L', (numPixel,numPixel), 0)
-		imga = inputImg.load()
+		#inputImg = Image.new('L', (numPixel,numPixel), 0)
+		#imga = inputImg.load()
 		
-		for i in range(len(gridHull)):
-			p = gridHull[i]
-			imga[p[0],p[1]] = 255
+		#for i in range(len(gridHull)):
+		#	p = gridHull[i]
+		#	imga[p[0],p[1]] = 255
 		
-		for p in interior:
-			imga[p[0],p[1]] = 255
+		#for p in interior:
+		#	imga[p[0],p[1]] = 255
 
 
-		" COMPUTE MEDIAL AXIS OF IMAGE "
+		" COMPUTE MEDIAL AXIS OF HULL "
 		resultImg = Image.new('L', (numPixel,numPixel))
-		resultImg = computeMedialAxis(self.nodeID, numPixel,numPixel, resultImg, len(gridHull[:-2]), gridHull[:-2])
+		resultImg = computeMedialAxis(self.nodeID, numPixel,numPixel, 0, resultImg, len(gridHull[:-2]), gridHull[:-2])
 		#resultImg.save("medialOut_%04u.png" % self.nodeID)
 		
 		
@@ -1844,7 +1844,9 @@ class LocalNode:
 		#longMedialWidths = []
 		#medialLongPaths = []
 		#medialTailCuts = []
+		print len(self.longPaths), "long paths"
 		for longPath in self.longPaths:
+			print "longPath:", len(longPath)
 			
 			leafPath = deepcopy(longPath)
 			
@@ -2752,8 +2754,8 @@ class LocalNode:
 	
 		resultImg = Image.new('L', (numPixel,numPixel))
 		resultImg2 = Image.new('L', (numPixel,numPixel))
-		resultImg = computeMedialAxis(self.nodeID, numPixel,numPixel, resultImg, len(gridHull[:-2]), gridHull[:-2])
-		resultImg2 = computeMedialAxis(self.nodeID, numPixel,numPixel, resultImg2, len(gridSweep[:-2]), gridSweep[:-2])
+		resultImg = computeMedialAxis(self.nodeID, numPixel,numPixel, 0, resultImg, len(gridHull[:-2]), gridHull[:-2])
+		resultImg2 = computeMedialAxis(self.nodeID, numPixel,numPixel, 0, resultImg2, len(gridSweep[:-2]), gridSweep[:-2])
 
 
 		occImg = Image.new('L', (numPixel,numPixel), 0)
@@ -3390,7 +3392,7 @@ class LocalNode:
 				minY = p[1]
 
 		resultImg = Image.new('L', (numPixel,numPixel))
-		resultImg = computeMedialAxis(self.nodeID, numPixel,numPixel, resultImg, len(gridHull[:-2]), gridHull[:-2])
+		resultImg = computeMedialAxis(self.nodeID, numPixel,numPixel, 0, resultImg, len(gridHull[:-2]), gridHull[:-2])
 		
 		
 		#resultImg.save("medialOut_%04u.png" % self.nodeID)

@@ -2,7 +2,7 @@ cdef extern from "skeletonizeCV.h":
 	#int runAlg(int, int, char*, char*)
 	#int runAlg(int, int, int, int, double*, double*, char*, char*)
 	#int runAlg(int, int, int, double*, double*, char*, char*)
-	int runAlg(int, int, int, int, double*, double*, char*)
+	int runAlg(int, int, int, int, int, double*, double*, char*)
 
 cdef extern from "stdlib.h":
 	void free(void* ptr)
@@ -11,7 +11,7 @@ cdef extern from "stdlib.h":
 
 
 #def computeMedialAxis(index, sizeX, sizeY, inputImg, resultImg, numPoints, points):
-def computeMedialAxis(index, sizeX, sizeY, resultImg, numPoints, points):
+def computeMedialAxis(index, sizeX, sizeY, thickSize, resultImg, numPoints, points):
 	
 	#sizeX, sizeY = inputImg.size 
 	#inputStr = inputImg.tostring()
@@ -40,7 +40,7 @@ def computeMedialAxis(index, sizeX, sizeY, resultImg, numPoints, points):
 	#		cInputStr[i*sizeX + j] = charData
 
 
-	runAlg(index, sizeX, sizeY, nPoints, cPolyX, cPolyY, cResultStr)
+	runAlg(index, sizeX, sizeY, nPoints, thickSize, cPolyX, cPolyY, cResultStr)
 	#runAlg(index, sizeX, sizeY, nPoints, cPolyX, cPolyY, cInputStr, cResultStr)
 	
 

@@ -7288,11 +7288,13 @@ def pathOverlapICP(initGuess, globalPath, medialPoints,plotIter = False, n1 = 0,
     " augment points with point-to-line covariances "
     " treat the points with the point-to-line constraint "
     globalVecPoints = globalSpline.getUniformSamples()
-    globalPoints = addGPACVectorCovariance(globalVecPoints,high_var=0.05, low_var = 0.001)
+    globalPoints = addGPACVectorCovariance(globalVecPoints,high_var=0.05, low_var = 0.01)
+    #globalPoints = addGPACVectorCovariance(globalVecPoints,high_var=0.05, low_var = 0.001)
     #globalPoints = addGPACVectorCovariance(globalSpline.getUniformSamples(),high_var=0.05, low_var = 0.05)
     #localPoints = addGPACVectorCovariance(localSpline.getUniformSamples(),high_var=0.05, low_var = 0.001)
     medialVecPoints = medialSpline.getUniformSamples()
-    points = addGPACVectorCovariance(medialVecPoints,high_var=0.05, low_var = 0.001)
+    points = addGPACVectorCovariance(medialVecPoints,high_var=0.05, low_var = 0.01)
+    #points = addGPACVectorCovariance(medialVecPoints,high_var=0.05, low_var = 0.001)
     #points = addGPACVectorCovariance(medialSpline.getUniformSamples(),high_var=0.05, low_var = 0.05)
     
     " transform pose 2 by initial offset guess "    
@@ -7433,7 +7435,7 @@ def pathOverlapICP(initGuess, globalPath, medialPoints,plotIter = False, n1 = 0,
         
         resultSum, resultParam, resultOffset = nelminICP.ICPcost(flatMatchPairs, len(match_pairs), [u1,currU,currAng], c_poses_1, c_poses_2, len(poses_1))
         " draw final position "
-        if False:
+        if True:
             
             " set the origin of pose 1 "
             poseOrigin = Pose(currPose)
@@ -7577,7 +7579,7 @@ def pathOverlapICP(initGuess, globalPath, medialPoints,plotIter = False, n1 = 0,
             break
         
         " draw final position "
-        if False:
+        if True:
             
             " set the origin of pose 1 "
             poseOrigin = Pose(currPose)

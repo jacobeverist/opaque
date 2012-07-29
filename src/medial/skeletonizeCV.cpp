@@ -14,10 +14,11 @@
 #define SOUTH 3
 
 //int runAlg(int index, int sizeX, int sizeY, int numPoints, double *polyX, double *polyY, char *input, char *result) {
-int runAlg(int index, int sizeX, int sizeY, int numPoints, double *polyX, double *polyY, char *result) {
+int runAlg(int index, int sizeX, int sizeY, int numPoints, int thickSize, double *polyX, double *polyY, char *result) {
 
 	IplImage *image = 0, *srcCopy = 0;
-	int w, h, i, j, b;
+	IplImage *thick1 = 0, *thick2 = 0;
+	int w, h, i, j, b, k, l, n;
 	CvScalar pixel, pixOut;
 
 	srand(0);
@@ -28,6 +29,8 @@ int runAlg(int index, int sizeX, int sizeY, int numPoints, double *polyX, double
 	h = image->height;
 	//srcCopy = cvCreateImage(cvGetSize(image), IPL_DEPTH_8U, 1);
 	srcCopy = cvCreateImage(cvSize(sizeX,sizeY), IPL_DEPTH_8U, 1);
+	thick1 = cvCreateImage(cvSize(sizeX,sizeY), IPL_DEPTH_8U, 1);
+	thick2 = cvCreateImage(cvSize(sizeX,sizeY), IPL_DEPTH_8U, 1);
 
 	/*
 	for (i = 0; i < h; i++) {
@@ -121,9 +124,11 @@ int runAlg(int index, int sizeX, int sizeY, int numPoints, double *polyX, double
 	}
 
 	//cvSaveImage("filledPolygon.png", image);
-	//sprintf(buff, "medial_%02d_2.png", index);
+	//sprintf(buff, "medial_%02d_3.png", index);
 	//cvSaveImage(buff, image);
 
+
+	int doFill = 0;
 
 
 	for (i = 0; i < h; i++) {
@@ -138,7 +143,119 @@ int runAlg(int index, int sizeX, int sizeY, int numPoints, double *polyX, double
 		}
 	}
 
+	for (i = 0; i < h; i++) {
+		for (j = 0; j < w; j++) { 
+			pixel = cvGet2D(srcCopy, i, j);
+			pixOut.val[0] = pixel.val[0];
+			cvSet2D(thick1, i, j, pixOut);
+		}
+	}
+
+	sprintf(buff, "medial_%02d_0.png", index);
+	cvSaveImage(buff, srcCopy);
+
+	// thicken
+	for ( n = 0 ; n < thickSize ; n++ ) {
+		/*
+		for (i = 0; i < h; i++) {
+			for (j = 0; j < w; j++) { 
+				pixOut.val[0] = 255;
+				cvSet2D(image, i, j, pixOut);
+			}
+		}
+		*/
+	
+
+		for (i = 0; i < h; i++) {
+			for (j = 0; j < w; j++) { 
+				pixel = cvGet2D(thick1, i, j);
+				b = pixel.val[0];
+				if (b < 50)
+					pixOut.val[0] = 0; 
+				else {
+					doFill = 0;
+					if ( i > 0 && i < h-1 && j > 0 && j < w-1 ) {
+						for ( k = -1 ; k <= 1 ; k++ ) {
+							for ( l = -1 ; l <= 1 ; l++ ) {
+								pixel = cvGet2D(thick1, i+k, j+l);
+								if (pixel.val[0] < 50) {
+									doFill = 1;
+								}
+							}
+						}
+
+					}
+					if (doFill) {
+						pixOut.val[0] = 0;
+					}
+					else {
+						pixOut.val[0] = 255;
+					}
+				}
+				cvSet2D(thick2, i, j, pixOut);
+			}
+		}
+
+		for (i = 0; i < h; i++) {
+			for (j = 0; j < w; j++) { 
+				pixel = cvGet2D(thick2, i, j);
+				pixOut.val[0] = pixel.val[0];
+				cvSet2D(thick1, i, j, pixOut);
+			}
+		}
+
+	}
+	sprintf(buff, "medial_%02d_1.png", index);
+	cvSaveImage(buff, thick1);
+
+	/*
+	for (i = 0; i < h; i++) {
+		for (j = 0; j < w; j++) { 
+			pixel = cvGet2D(thick2, i, j);
+			b = pixel.val[0];
+			if (b > 50)
+				pixOut.val[0] = 255;
+			else {
+				doFill = 0;
+				if ( i > 0 && i < h-1 && j > 0 && j < w-1 ) {
+					for ( k = -1 ; k <= 1 ; k++ ) {
+						for ( l = -1 ; l <= 1 ; l++ ) {
+							pixel = cvGet2D(thick2, i+k, j+l);
+							if (pixel.val[0] > 50) {
+								doFill = 1;
+							}
+						}
+					}
+
+				}
+				if (doFill) {
+					pixOut.val[0] = 255;
+				}
+				else {
+					pixOut.val[0] = 0;
+				}
+			}
+			cvSet2D(srcCopy, i, j, pixOut);
+		}
+	}
+	*/
+
+	for (i = 0; i < h; i++) {
+		for (j = 0; j < w; j++) { 
+			pixel = cvGet2D(thick1, i, j);
+			b = pixel.val[0];
+			if (b > 50)
+				pixOut.val[0] = 255;
+			else
+				pixOut.val[0] = 0;
+			cvSet2D(srcCopy, i, j, pixOut);
+		}
+	}
+
 	skeletonize(srcCopy);
+
+	sprintf(buff, "medial_%02d_2.png", index);
+	cvSaveImage(buff, srcCopy);
 
 	//sprintf(buff, "medial_%02d_3.png", index);
 	//cvSaveImage(buff, srcCopy);
@@ -361,7 +478,7 @@ void skeletonize(IplImage *im) {
 	h = im->height;
 	tmp = cvCreateImage(cvGetSize(im), IPL_DEPTH_8U, 1);
 	
-  for (i = 0; i < h; i++) {
+	for (i = 0; i < h; i++) {
 		for (j = 0; j < w; j++) { 
 			pixel = cvGet2D(im, i, j);
 			blue = pixel.val[0];
@@ -377,7 +494,7 @@ void skeletonize(IplImage *im) {
 
 	while (again) {
 		again = 0;
-  	for (i = 1; i < h-1; i++) 
+		for (i = 1; i < h-1; i++) 
 			for (j = 1; j < w-1; j++) { 
 				pixel = cvGet2D(im, i, j);
 				blue = pixel.val[0];

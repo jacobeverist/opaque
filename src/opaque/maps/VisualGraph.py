@@ -982,7 +982,7 @@ class VisualGraph:
 					minY = p[1]
 
 			resultImg = Image.new('L', (numPixel,numPixel))
-			resultImg = computeMedialAxis(nodeID, numPixel,numPixel, resultImg, len(gridHull[:-2]), gridHull[:-2])
+			resultImg = computeMedialAxis(nodeID, numPixel,numPixel, 0, resultImg, len(gridHull[:-2]), gridHull[:-2])
 
 			imgA = resultImg.load()
 		

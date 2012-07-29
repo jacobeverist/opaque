@@ -3,7 +3,8 @@
 #include <OpenCV/cv.h>
 #include <OpenCV/highgui.h>
 
-int runAlg(int index, int sizeX, int sizeY, int numPoints, double *polyX, double *polyY, char *result);
+int runAlg(int index, int sizeX, int sizeY, int numPoints, int thickSize, double *polyX, double *polyY, char *result);
+//int runAlg(int index, int sizeX, int sizeY, int numPoints, double *polyX, double *polyY, char *result);
 //int runAlg(int index, int sizeX, int sizeY, int numPoints, double *polyX, double *polyY, char *input, char *result);
 
 int nays8(IplImage *im, int r, int c);

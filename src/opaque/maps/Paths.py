@@ -150,12 +150,15 @@ class Paths:
         
         self.consistency = {}
         
+        
         self.pathGraph = graph.graph()
         self.joins = []
         
+        self.medialCount = 1000
         self.spliceCount = 0
         self.pathPlotCount = 0
         self.overlapPlotCount = 0
+        self.topCount = 0
         self.pathIDs += 1
     
     def saveState(self, id):
@@ -200,7 +203,7 @@ class Paths:
         pathIDs = self.getPathIDs()
         for k in pathIDs:
             print "computing path for node set", k, ":", self.getNodes(k)
-            self.paths[k], self.hulls[k] = self.getTopology(self.getNodes(k))
+            self.paths[k], self.hulls[k] = self.getTopology(k)
 
         self.trimmedPaths = self.trimPaths(self.paths)
 
@@ -1578,8 +1581,23 @@ class Paths:
         
         return newPathID
  
-    def getTopology(self, nodes):
-        global topCount
+    def getTopology(self, pathID):
+        
+        nodes = self.getNodes(pathID)
+
+        junctionNodeID = self.pathClasses[pathID]["branchNodeID"]
+        globalJunctionPoint = None
+
+        if junctionNodeID != None:
+        
+            localJunctionPoint = self.pathClasses[pathID]["localJunctionPose"]
+            
+            print "junctionNodeID:", junctionNodeID
+            print "nodes:", self.nodeHash.keys()
+            
+            poseOrigin = Pose(self.nodeHash[junctionNodeID].getEstPose())
+            globalJunctionPoint = poseOrigin.convertLocalOffsetToGlobal(localJunctionPoint)
+                        
         
         def convertAlphaUniform(a_vert, max_spacing = 0.04):
             
@@ -1650,6 +1668,7 @@ class Paths:
 
         #nodeID = self.numNodes - 1
             
+        #radius = 0.2
         radius = 0.2
 
         numPoints = len(medialPointSoup)
@@ -1735,6 +1754,7 @@ class Paths:
                 minY = p[1]
     
     
+        " SPECIFY SIZE OF GRID AND CONVERSION PARAMETERS "
         PIXELSIZE = 0.05
         mapSize = 2*max(max(maxX,math.fabs(minX)),max(maxY,math.fabs(minY))) + 1
         pixelSize = PIXELSIZE
@@ -1752,11 +1772,13 @@ class Paths:
             point = [(i - numPixel/2 - 1)*(pixelSize/2.0) + pixelSize/2.0, (j - numPixel/2 - 1)*(pixelSize/2.0) + pixelSize/2.0]
             return point
     
+        " CONVERT HULL TO GRID COORDINATES "
         gridHull = []
         for i in range(len(vertices)):
             p = vertices[i]
             gridHull.append(realToGrid(p))
-    
+
+        " BOUNDING BOX OF GRID HULL "    
         minX = 1e100
         maxX = -1e100
         minY = 1e100
@@ -1771,21 +1793,25 @@ class Paths:
             if p[1] < minY:
                 minY = p[1]
 
+        " COMPUTE MEDIAL AXIS OF HULL "
         resultImg = Image.new('L', (numPixel,numPixel))
-        resultImg = computeMedialAxis(0, numPixel,numPixel, resultImg, len(gridHull[:-2]), gridHull[:-2])
+        resultImg = computeMedialAxis(self.medialCount, numPixel,numPixel, 5, resultImg, len(gridHull[:-2]), gridHull[:-2])
+        self.medialCount += 1
 
-        imgA = resultImg.load()
-    
+        " EXTRACT POINTS FROM GRID TO LIST "
+        imgA = resultImg.load()    
         points = []
         for i in range(1, numPixel-1):
             for j in range(1, numPixel-1):
                 if imgA[i,j] == 0:
                     points.append((i,j))
     
+        " CREATE GRAPH NODES FOR EACH POINT "
         medialGraph = graph.graph()
         for p in points:
             medialGraph.add_node(p, [])
     
+        " ADD EDGES BETWEEN NEIGHBORS "
         builtGraph = {}
         for i in range(2, numPixel-2):
             for j in range(2, numPixel-2):
@@ -1793,12 +1819,39 @@ class Paths:
                     builtGraph[(i,j)] = []
                     for k in range(i-1, i+2):
                         for l in range(j-1, j+2):
-                            if imgA[k,l] == 0:
+                            if imgA[k,l] == 0 and not (k == i and l == j):
                                 builtGraph[(i,j)].append((k,l))
                                 medialGraph.add_edge((i,j), (k,l))
                                 
+        " COMPUTE MINIMUM SPANNING TREE "
         mst = medialGraph.minimal_spanning_tree()
         
+        " INITIALIZE DATA DICTS FOR UNIDIRECTIONAL MST"
+        uni_mst = {}
+        for k, v in mst.items():
+            uni_mst[k] = []
+
+        
+        " ADD EDGES TO DICT TREE REPRESENTATION "
+        for k, v in mst.items():
+            if v != None:
+                uni_mst[k].append(v)
+                uni_mst[v].append(k)
+
+        " LOCATE ALL LEAVES "
+        leaves = []
+        for k, v in uni_mst.items():
+            if len(v) == 1:
+                leaves.append(k)
+        
+        " DELETE ALL NODES THAT ARE LEAVES, TO REMOVE SINGLE NODE BRANCHES "
+        for leaf in leaves:
+            medialGraph.del_node(leaf)    
+            
+        " RECOMPUTE MST "
+        mst = medialGraph.minimal_spanning_tree()
+
+        " AGAIN, CREATE OUR DATA STRUCTURES AND IDENTIFY LEAVES "
         uni_mst = {}
         isVisited = {}
         nodeSum = {}
@@ -1811,13 +1864,328 @@ class Paths:
             if v != None:
                 uni_mst[k].append(v)
                 uni_mst[v].append(k)
-        
+                        
+        " RECORD THE LEAVES AND JUNCTIONS "
         leaves = []
+        junctions = []
         for k, v in uni_mst.items():
             if len(v) == 1:
                 leaves.append(k)
+
+            if len(v) > 2:
+                junctions.append(k)
+
+        " SAVE FOR LATER, IDENTIFIED BY THEIR INDEX NOW "
+        numLeafs = len(leaves)
+        allLeafs = []
+        allJunctions = []
+        for leaf in leaves:
+            allLeafs.append(gridToReal(leaf))
+
+        if junctionNodeID != None:
+            for junc in junctions:
+                gJunc = gridToReal(junc)
+                juncDist = sqrt((globalJunctionPoint[0]-gJunc[0])**2 + (globalJunctionPoint[1]-gJunc[1])**2)
+                allJunctions.append((junc, gJunc,juncDist))
+                
+        
+
+        " FIND ALL THE PATHS BETWEEN LEAVES "        
+        nodePaths = {}
+        for leaf in leaves:
+            
+            " INITIALIZE DATA DICTS FOR VISITED, PATH SO FAR, AND NODE HOP COUNT"
+            isVisited = {}
+            nodeSum = {}
+            nodePath = {}
+            for k, v in uni_mst.items():
+                isVisited[k] = 0
+                nodeSum[k] = 0
+                nodePath[k] = []
     
+            " PERFORM DFS FOR THIS LEAF "
+            getLongestPath(leaf, 0, [], uni_mst, isVisited, nodePath, nodeSum)
     
+            " SAVE THE RESULTING PATH DATA STRUCTURE "
+            nodePaths[leaf] = nodePath
+                
+
+        " FOR EVERY PAIR OF LEAVES, SAVE ITS PATH IF ITS LONG ENOUGH "
+        " should have X choose 2 combinations"
+        longPaths = []
+        
+        MAX_LEN = 2
+        for leaf1 in leaves:
+            for leaf2 in leaves:
+                if leaf1 < leaf2:
+                    if len(nodePaths[leaf1][leaf2]) > MAX_LEN:
+                        nPath = deepcopy(nodePaths[leaf1][leaf2])
+                        juncIndices = []
+                        for junc in allJunctions:
+                            try:
+                                index = nPath.index(junc[0])
+                            except:
+                                juncIndices.append(None)
+                            else:
+                                juncIndices.append(index)
+                                
+                        longPaths.append((len(nPath),nPath, juncIndices))
+        
+        " SORT FOR THE LONGEST TO SHORTEST "
+        longPaths.sort(reverse=True)
+        
+        " REMOVE SIZE FROM TUPLE  "
+        juncIndices = []
+        for k in range(len(longPaths)):
+            juncIndices.append(longPaths[k][2])
+            longPaths[k] = longPaths[k][1]
+            
+
+        " GET THE LEAF INDEXES TO EACH PATH "
+        leafPairs = []
+        for path in longPaths:
+            leaf1 = path[0]
+            leaf2 = path[-1]    
+            
+            leafID1 = leaves.index(leaf1)
+            leafID2 = leaves.index(leaf2)
+
+            leafPairs.append((leafID1,leafID2))
+        
+        print "leafPairs:", leafPairs
+
+        for k in range(len(longPaths)):
+            path = longPaths[k]
+            realPath = []
+            for p in path:
+                realPath.append(gridToReal(p))
+            
+            longPaths[k] = realPath
+                    
+
+        #longMedialWidths = []
+        medialLongPaths = []
+        juncAngSet = []
+        #medialTailCuts = []
+        #for longPath in longPaths:
+            
+        print len(longPaths), "long paths"
+        for n in range(len(longPaths)):
+            
+            longPath = longPaths[n]
+            print "longPath:", len(longPath)
+            
+            leafPath = deepcopy(longPath)
+            
+            frontVec = [0.,0.]
+            backVec = [0.,0.]
+            indic = range(3)
+            indic.reverse()
+            
+            for i in indic:
+                p1 = leafPath[i+2]
+                p2 = leafPath[i]
+                vec = [p2[0]-p1[0], p2[1]-p1[1]]
+                frontVec[0] += vec[0]
+                frontVec[1] += vec[1]
+        
+                p1 = leafPath[-i-3]
+                p2 = leafPath[-i-1]
+                vec = [p2[0]-p1[0], p2[1]-p1[1]]
+                backVec[0] += vec[0]
+                backVec[1] += vec[1]
+        
+            frontMag = math.sqrt(frontVec[0]*frontVec[0] + frontVec[1]*frontVec[1])
+            backMag = math.sqrt(backVec[0]*backVec[0] + backVec[1]*backVec[1])
+        
+            frontVec[0] /= frontMag
+            frontVec[1] /= frontMag
+            backVec[0] /= backMag
+            backVec[1] /= backMag
+        
+            newP1 = (leafPath[0][0] + frontVec[0]*10, leafPath[0][1] + frontVec[1]*10)
+            newP2 = (leafPath[-1][0] + backVec[0]*10, leafPath[-1][1] + backVec[1]*10)
+        
+            leafPath.insert(0,newP1)
+            leafPath.append(newP2)
+            
+            medial2 = deepcopy(leafPath)
+    
+            " take the long length segments at tips of medial axis"
+            edge1 = medial2[0:2]
+            edge2 = medial2[-2:]
+            
+            frontVec = [edge1[0][0]-edge1[1][0], edge1[0][1]-edge1[1][1]]
+            backVec = [edge2[1][0]-edge2[0][0], edge2[1][1]-edge2[0][1]]
+            frontMag = math.sqrt(frontVec[0]*frontVec[0] + frontVec[1]*frontVec[1])
+            backMag = math.sqrt(backVec[0]*backVec[0] + backVec[1]*backVec[1])
+            
+            frontVec[0] /= frontMag
+            frontVec[1] /= frontMag
+            backVec[0] /= backMag
+            backVec[1] /= backMag
+            
+            " make a smaller version of these edges "
+            newP1 = (edge1[1][0] + frontVec[0]*2, edge1[1][1] + frontVec[1]*2)
+            newP2 = (edge2[0][0] + backVec[0]*2, edge2[0][1] + backVec[1]*2)
+    
+            edge1 = [newP1, edge1[1]]
+            edge2 = [edge2[0], newP2]
+
+            " find the intersection points with the hull "
+            hull = vertices
+            interPoints = []
+            for k in range(len(hull)-1):
+                hullEdge = [hull[k],hull[k+1]]
+                isIntersect1, point1 = Intersect(edge1, hullEdge)
+                if isIntersect1:
+                    interPoints.append(point1)
+                    break
+    
+            for k in range(len(hull)-1):
+                hullEdge = [hull[k],hull[k+1]]
+                isIntersect2, point2 = Intersect(edge2, hullEdge)
+                if isIntersect2:
+                    interPoints.append(point2)
+                    break
+            
+            " replace the extended edges with a termination point at the hull edge "            
+            medial2 = medial2[1:-2]
+            
+            if isIntersect1:
+                medial2.insert(0, point1)
+            if isIntersect2:
+                medial2.append(point2)
+
+            medialLongPaths.append(deepcopy(medial2))
+
+            juncAngs = []
+            if globalJunctionPoint != None:
+                for juncInd in juncIndices[n]:
+                    if juncInd != None:
+                        frontVec = [0.,0.]
+                        backVec = [0.,0.]
+                        indic = range(3)
+                        indic.reverse()
+
+                        highIndex = 2+juncInd+2
+                        highMod = 0
+                        if highIndex >= len(longPath):
+                            highMod = len(longPath) - highIndex - 1
+                            
+                        lowIndex = -3-juncInd-3
+                        lowMod = 0
+                        if -lowIndex > len(longPath):
+                            lowMod = -len(longPath) - lowIndex
+                        
+                        for i in indic:
+                            p1 = longPath[i+juncInd+2+highMod]
+                            p2 = longPath[i+juncInd+highMod]
+                            vec = [p2[0]-p1[0], p2[1]-p1[1]]
+                            frontVec[0] += vec[0]
+                            frontVec[1] += vec[1]
+                    
+                            p1 = longPath[-i-juncInd-3+lowMod]
+                            p2 = longPath[-i-juncInd-1+lowMod]
+                            vec = [p2[0]-p1[0], p2[1]-p1[1]]
+                            backVec[0] += vec[0]
+                            backVec[1] += vec[1]
+                    
+                        frontMag = math.sqrt(frontVec[0]*frontVec[0] + frontVec[1]*frontVec[1])
+                        backMag = math.sqrt(backVec[0]*backVec[0] + backVec[1]*backVec[1])
+                    
+                        frontVec[0] /= frontMag
+                        frontVec[1] /= frontMag
+                        backVec[0] /= backMag
+                        backVec[1] /= backMag
+        
+                        foreAng = acos(frontVec[0])
+                        if frontVec[1] < 0.0:
+                            foreAng = -foreAng
+        
+                        backAng = acos(backVec[0])
+                        if backVec[1] < 0.0:
+                            backAng = -backAng
+        
+                        frontError = normalizeAngle(globalJunctionPoint[2]-foreAng)
+                        backError = normalizeAngle(globalJunctionPoint[2]-backAng)
+                        juncAngs.append((frontError,backError))
+                    else:
+                        juncAngs.append(None)
+            juncAngSet.append(juncAngs)
+            
+        juncDists = []
+        for junc in allJunctions:
+            juncDists.append(junc[2])
+        
+        if True:
+            pylab.clf()
+    
+            for path in medialLongPaths:
+                xP = []
+                yP = []
+                for p in path:
+                    #p2 = gridToReal(p)
+                    xP.append(p[0])
+                    yP.append(p[1])
+    
+                pylab.plot(xP,yP)
+            #pylab.scatter(xP,yP, color='b')
+            
+            xP = []
+            yP = []
+            for p in vertices:
+                xP.append(p[0])
+                yP.append(p[1])
+            pylab.plot(xP,yP, color='r')
+            
+            sizes = []
+            for path in longPaths:
+                sizes.append(len(path))
+            
+            bufStr1 = ""
+            for dist in juncDists:
+                if dist != None:
+                    bufStr1 += "%1.2f " % dist
+
+
+            bufStr2 = ""
+            for juncAngs in juncAngSet:
+                for angs in juncAngs:
+                    if angs != None:
+                        bufStr2 += "%1.2f %1.2f " % (angs[0],angs[1])
+            
+            pylab.title("Path %d %s %s %s" % (pathID, sizes,bufStr1,bufStr2))
+            pylab.savefig("medialOut2_%04u.png" % self.topCount)
+            self.topCount += 1
+
+
+        
+        if globalJunctionPoint != None:
+            bestFit = -1
+            minDiff = 1e100
+            for k in range(len(juncAngSet)):
+                juncAngs = juncAngSet[k]
+                
+                for angs in juncAngs:
+
+                    if angs != None:
+                        angDiff1 = angs[0]
+                        angDiff2 = angs[1]
+                        
+                        if fabs(angDiff1) < minDiff:
+                            minDiff = fabs(angDiff1)
+                            bestFit = k
+    
+                        if fabs(angDiff2) < minDiff:
+                            minDiff = fabs(angDiff2)
+                            bestFit = k
+
+            if bestFit != -1:
+                return medialLongPaths[bestFit], vertices
+
+                
+
         " find the longest path from each leaf"
         maxPairDist = 0
         maxPair = None
@@ -1938,8 +2306,7 @@ class Paths:
             medial2.append(point2)
 
 
-
-        
+       
         return medial2, vertices
         #return realPath, vertices
 
@@ -1973,6 +2340,12 @@ class Paths:
         pathIDs = self.getPathIDs()
 
         for pathID in pathIDs:
+            
+            #junctionPose = self.pathClasses[pathID]["localJunctionPose"]
+            #poseOrigin2 = Pose(self.nodeHash[branchNodeID].getEstPose())
+            #globalJunctionPoint = poseOrigin2.convertLocalToGlobal(localJunctionPoint)            
+
+           
             
             if self.pathClasses[pathID]["parentID"] == None:
                 trimmedPaths[pathID] = deepcopy(paths[pathID])

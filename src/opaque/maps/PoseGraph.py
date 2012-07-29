@@ -4576,8 +4576,8 @@ class PoseGraph:
 		print
 
 		" draw new hypotheses "
-		for cand in candidates3:
-			self.drawCandidate(cand)
+		#for cand in candidates3:
+		#	self.drawCandidate(cand)
 		
 		return finalCandidates
 		
