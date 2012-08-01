@@ -1661,9 +1661,6 @@ class PoseGraph:
 				print "frontAngDiff:", frontAngDiff
 				print "backAngDiff:", backAngDiff
 
-
-
-				newPaths = []
 	
 				frontExist1 = departures1[0][0]
 				frontInterior1 = interiors1[0][0]
