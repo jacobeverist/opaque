@@ -340,6 +340,7 @@ class SnakeApp(sf.Application):
 			#walls = [wall1, wall2]
 			
 
+			"""
 			# triple-Y - multi-junction, test 1 				
 			WLEN = 5.0
 			WLEN2 = 1.0
@@ -372,7 +373,21 @@ class SnakeApp(sf.Application):
 			wall6 = [[-11.0, WWID/2.0],[-11.0, -WWID/2.0]]
 			
 			walls = [wall1, wall2, wall3, wall4, wall5, wall6]
-			
+			"""
+
+			# Y - junction, test 1 				
+			WLEN2 = 7.0
+			wall1 = [[-14.0, -0.2], [-4.0, -0.2], [-4.0 + WLEN2*cos(pi/3), -0.2 - WLEN2*sin(pi/3)]]
+			wall2 = [[-4.0 + WLEN2*cos(pi/3), 0.2 + WLEN2*sin(pi/3)], [-4.0, 0.2] ,[-14.0, 0.2]]
+			wall5 = [wall2[2],wall1[0]]
+			w1 = wall1[2]
+			w2 = wall2[0]
+
+			wall3 = [[w1[0] + 0.4*cos(pi/6), w1[1] + 0.4*sin(pi/6)], [0.4*cos(pi/6) - 4, 0.0], [w2[0] + 0.4*cos(pi/6), w2[1] - 0.4*sin(pi/6)], w2]
+			wall4 = [w1, [w1[0] + 0.4*cos(pi/3-pi/2), w1[1] - 0.4*sin(pi/3-pi/2)]]
+
+			walls = [wall1, wall2, wall3, wall4, wall5]
+
 
 			
 			#walls = [wall1]

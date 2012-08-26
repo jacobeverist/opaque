@@ -23,7 +23,7 @@ TODO
 
 class AdaptiveStep(Behavior):
 
-	def __init__(self, robotParam, probeState, contacts, mapGraph, direction = True):
+	def __init__(self, robotParam, probeState, contacts, mapGraph, direction = True, inversion = 1):
 		Behavior.__init__(self, robotParam)
 
 		self.probeState = probeState
@@ -105,6 +105,8 @@ class AdaptiveStep(Behavior):
 		self.frontExtending = True
 		self.frontExtendDone = False
 		self.backExtendDone = False
+		
+		self.inversion = inversion
 
 		self.computeCurve()
 		
@@ -155,7 +157,7 @@ class AdaptiveStep(Behavior):
 		
 	def computeCurve(self):
 		
-		self.frontCurve = AdaptiveAnchorCurve(4*pi, self.segLength)				
+		self.frontCurve = AdaptiveAnchorCurve(4*pi, self.segLength, self.inversion)				
 
 		if self.frontAnchorFit == 0:
 			self.frontAnchorFit = FrontAnchorFit(self.robotParam, self.direction, self.spliceJoint)
@@ -167,7 +169,7 @@ class AdaptiveStep(Behavior):
 			self.frontAnchorFit.setSpliceJoint(self.spliceJoint)
 
 
-		self.adaptiveCurve = BackConcertinaCurve(4*pi)
+		self.adaptiveCurve = BackConcertinaCurve(4*pi, self.inversion)
 		#self.adaptiveCurve.setTailLength(2.0)
 
 		if self.concertinaFit == 0:

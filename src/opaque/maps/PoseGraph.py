@@ -622,7 +622,6 @@ class PoseGraph:
 
 	def insertPose(self, foreNode, backNode, initLocation = [0.0,0.0,0.0]):
 
-
 		
 		" CHECK FOR A BRANCHING EVENT "
 
@@ -703,8 +702,23 @@ class PoseGraph:
 				
 				nodeID1 = foreNode.nodeID
 				nodeID2 = backNode.nodeID
+
 			
-	
+			" if these nodes are already path-classified, return"
+			isContained1 = False
+			isContained2 = False
+			
+			pathIDs = self.paths.getPathIDs()
+			for k in pathIDs:
+				if self.paths.getNodes(k).count(nodeID1) > 0:
+					isContained1 = True
+				if self.paths.getNodes(k).count(nodeID2) > 0:
+					isContained2 = True
+					
+					
+			if isContained1 or isContained2:
+				return
+			
 			" COMPUTE MEDIAL AXIS FROM UNION OF PATH-CLASSIFIED NODES "
 			self.paths.generatePaths()
 
@@ -743,7 +757,7 @@ class PoseGraph:
 						paths[k] = path
 	
 				print "paths:", len(paths)
-				for k in range(len(paths)):
+				for k in pathIDs:
 					print k, len(paths[k])
 	
 	
@@ -1928,6 +1942,24 @@ class PoseGraph:
 
 	def mergePaths(self):
 
+
+		def dispOffset(p, offset):
+			xd = offset[0]
+			yd = offset[1]
+			theta = offset[2]
+		
+			px = p[0]
+			py = p[1]
+			pa = p[2]
+			
+			newAngle = normalizeAngle(pa + theta)
+			
+			p_off = [px*math.cos(theta) - py*math.sin(theta) + xd, px*math.sin(theta) + py*math.cos(theta) + yd, newAngle]
+			
+			return p_off
+
+		
+
 		toBeMerged = self.paths.comparePaths()
 							
 		for mergeThis in toBeMerged:
@@ -1940,19 +1972,13 @@ class PoseGraph:
 			allPathIDs = self.paths.getPathIDs()
 			if pathID1 in allPathIDs and pathID2 in allPathIDs:
 	
-					
+				
 				" capture transform between pathID1 and pathID2 under correction "
-				if pathID1 < pathID2:
-					cOffset = offset
-					rootID = pathID1
-					lessID = pathID2
-					
-				else:
-					" inverse of offset "
-					invPose = Pose([0.0,0.0,0.0])
-					cOffset = invPose.doInverse(offset)
-					rootID = pathID2
-					lessID = pathID1
+
+				cOffset = offset
+				rootID = pathID1
+				lessID = pathID2
+
 				
 				mergeNodes = self.paths.getNodes(lessID)
 				
@@ -1965,7 +1991,13 @@ class PoseGraph:
 
 				poseOrigin = Pose(cOffset)
 				for nodeID in mergeNodes:
-					nodePose = self.nodeHash[nodeID].getGlobalGPACPose()			
+					nodePose = self.nodeHash[nodeID].getGlobalGPACPose()
+
+					#poseOrigin1 = Pose(cOffset)
+					#guessPose = poseOrigin1.convertLocalOffsetToGlobal(nodePose)
+					
+					
+							
 					guessPose = poseOrigin.convertLocalOffsetToGlobal(nodePose)
 					self.nodeHash[nodeID].setGPACPose(guessPose)
 					self.drawConstraints(self.statePlotCount)
@@ -3364,15 +3396,6 @@ class PoseGraph:
 					points2R_offset = deepcopy(points2_offset)
 					points2R_offset.reverse()
 							
-					#orientedMedial2 = deepcopy(medial2_offset)
-
-					#medial2Reverse = deepcopy(medial2_offset)
-					#medial2Reverse.reverse()
-											
-					#medialSpline1 = SplineFit(medial1, smooth=0.1)
-					#medialSpline2 = SplineFit(medial2_offset, smooth=0.1)
-					#medialSplineReverse2 = SplineFit(medial2Reverse, smooth=0.1)
-
 					overlapMatch = []
 					angleSum1 = 0.0
 					angleSum2 = 0.0
@@ -3380,33 +3403,7 @@ class PoseGraph:
 						p_1 = points1[i]
 						p_2, j, minDist = gen_icp.findClosestPointInA(points2_offset, p_1)
 						if minDist < 0.5:
-							overlapMatch.append((i,j,minDist))
-
 							p_2R, j, minDist = gen_icp.findClosestPointInA(points2R_offset, p_2)
-			
-							"""
-							pathU1 = medialSpline1.findU(p_1)	
-							pathU2 = medialSpline2.findU(p_2)	
-							pathU2_R = medialSplineReverse2.findU(p_2)	
-			
-							pathVec1 = medialSpline1.getUVector(pathU1)
-							pathVec2 = medialSpline2.getUVector(pathU2)
-							pathVec2_R = medialSplineReverse2.getUVector(pathU2_R)
-							
-							val1 = pathVec1[0]*pathVec2[0] + pathVec1[1]*pathVec2[1]
-							if val1 > 1.0:
-								val1 = 1.0
-							elif val1 < -1.0:
-								val1 = -1.0
-							ang1 = acos(val1)
-							
-							val2 = pathVec1[0]*pathVec2_R[0] + pathVec1[1]*pathVec2_R[1]
-							if val2 > 1.0:
-								val2 = 1.0
-							elif val2 < -1.0:
-								val2 = -1.0
-							ang2 = acos(val2)
-							"""
 							
 							ang1 = abs(diffAngle(p_1[2], p_2[2]))
 							ang2 = abs(diffAngle(p_1[2], p_2R[2]))
@@ -3518,110 +3515,161 @@ class PoseGraph:
 					results.append((hist[0], angleSum, medialError, matchCount, angDiff, k, l, transform, covE, hist, matchCount, overlapSum, angleSum))
 
 
-
-
-
 				else:
-					for medialDir in [True, False]:
+					
+					medialSpline1 = SplineFit(medial1, smooth=0.1)
+					medialSpline2 = SplineFit(medial2, smooth=0.1)
 
+					pose1 = medialSpline1.getUVecSet([0.5, 0.5+0.02])[0]	
+					pose2 = medialSpline2.getUVecSet([0.5, 0.5+0.02])[0]
+				
+					point1 = [pose1[0],pose1[1]]
+					point2 = [pose2[0],pose2[1]]
+					ang1 = pose1[2]
+					ang2 = pose2[2]
+				
+					offset = computeOffset(point1, point2, ang1, ang2)
+
+					points1 = medialSpline1.getUniformSamples()
+					points2 = medialSpline2.getUniformSamples()
+				
+				
+					" transform the past poses "
+					points2_offset = []
+					medialProfile = Pose(offset)
+					for p in points2:
+						result = medialProfile.convertLocalOffsetToGlobal(p)
+						points2_offset.append(result)
+
+					" transform the past poses "
+					medial2_offset = []
+					for p in medial2:
+						result = medialProfile.convertLocalToGlobal(p)
+						medial2_offset.append(result)
+
+				
+					" if isMove is True, then we align medial2 with medial1 "
+					points2R_offset = deepcopy(points2_offset)
+					points2R_offset.reverse()
+							
+					overlapMatch = []
+					angleSum1 = 0.0
+					angleSum2 = 0.0
+					for i in range(0,len(points1)):
+						p_1 = points1[i]
+						p_2, j, minDist = gen_icp.findClosestPointInA(points2_offset, p_1)
+						if minDist < 0.5:
+							p_2R, j, minDist = gen_icp.findClosestPointInA(points2R_offset, p_2)
+							
+							ang1 = abs(diffAngle(p_1[2], p_2[2]))
+							ang2 = abs(diffAngle(p_1[2], p_2R[2]))
+							
+							angleSum1 += ang1
+							angleSum2 += ang2
+					
+					" select global path orientation based on which has the smallest angle between tangent vectors "
+					print i, "angleSum1 =", angleSum1, "angleSum2 =", angleSum2
+					if angleSum1 > angleSum2:
+						#orientedMedial2 = deepcopy(medial2Reverse)
+						medial2Reverse = deepcopy(medial2)
+						medial2Reverse.reverse()
+					else:
 						orientedMedial2 = deepcopy(medial2)
-		
-						if medialDir:
-							orientedMedial2.reverse()
-		
-						medialSpline1 = SplineFit(medial1, smooth=0.1)
-						medialSpline2 = SplineFit(orientedMedial2, smooth=0.1)
-				
-						originU1 = medialSpline1.findU([0.0,0.0])	
-						originU2 = medialSpline2.findU([0.0,0.0])	
-				
-						if inPlace:
-							originU1 = 0.6
-							originU2 = 0.4
-							u2 = originU2
-							print "computed u2 =", u2, "from originU2 =", originU2
 
-						else:
-							poseOrigin = Pose(estPose1)
-							offset = poseOrigin.convertGlobalPoseToLocal(estPose2)
-							
-							points2 = medialSpline2.getUniformSamples()
-							p_1 = medialSpline1.getU(0.5)
-							
-							points2_offset = []
-							for p in points2:
-								result = gen_icp.dispOffset(p, offset)		
-								points2_offset.append(result)
-					
-							p_2, i_2, minDist = gen_icp.findClosestPointInA(points2_offset, p_1)
-					
-							u2 = medialSpline2.findU(points2[i_2])	
-							
-							#if u2 > 0.9 or u2 < 0.1:
-							#	raise
-				
-						u1 = originU1
-						angGuess = 0.0
-					
-						" create the ground constraints "
-						gndGPAC1Pose = node1.getGndGlobalGPACPose()
-						currProfile = Pose(gndGPAC1Pose)
-						gndGPAC2Pose = node2.getGndGlobalGPACPose()
-						gndOffset = currProfile.convertGlobalPoseToLocal(gndGPAC2Pose)
-		
+	
+					#medialSpline1 = SplineFit(medial1, smooth=0.1)
+					medialSpline2 = SplineFit(orientedMedial2, smooth=0.1)
+			
+					originU1 = medialSpline1.findU([0.0,0.0])	
+					originU2 = medialSpline2.findU([0.0,0.0])	
+			
+					if inPlace:
+						originU1 = 0.6
+						originU2 = 0.4
+						u2 = originU2
+						print "computed u2 =", u2, "from originU2 =", originU2
+
+					else:
+						poseOrigin = Pose(estPose1)
+						offset = poseOrigin.convertGlobalPoseToLocal(estPose2)
 						
-						#result, hist = gen_icp.overlapICP(estPose1, diffOffset, [u1, u2, angGuess], hull1, hull2, orientedMedial1, medial2, [0.0,0.0], [0.0,0.0], inPlace = inPlace, plotIter = False, n1 = (i,k), n2 = (j,l), uRange = uRange)
-						result, hist = gen_icp.overlapICP(estPose1, gndOffset, [u1, u2, angGuess], hull1, hull2, medial1, orientedMedial2, [0.0,0.0], [0.0,0.0], inPlace = inPlace, plotIter = False, n1 = (nodeID1,k), n2 = (nodeID2,l), uRange = uRange)
-						
-						transform = matrix([[result[0]], [result[1]], [result[2]]])
-						covE =  self.E_overlap
-						
-						print "making overlap constraint:", result[0], result[1], result[2]
-						
-						angDiff = abs(diffAngle(diffOffset[2], transform[2,0]))			
-						#totalGuesses.append((angDiff, result[2], result[3], result[4]))
-		
-						points1 = medialSpline1.getUniformSamples()
 						points2 = medialSpline2.getUniformSamples()
 						p_1 = medialSpline1.getU(0.5)
 						
-						
-						offset = [transform[0,0], transform[1,0], transform[2,0]]
-						fitProfile = Pose(offset)
-						
 						points2_offset = []
 						for p in points2:
-							result = fitProfile.convertLocalOffsetToGlobal(p)
-							points2_offset.append(result)		
+							result = gen_icp.dispOffset(p, offset)		
+							points2_offset.append(result)
+				
+						p_2, i_2, minDist = gen_icp.findClosestPointInA(points2_offset, p_1)
+				
+						u2 = medialSpline2.findU(points2[i_2])	
 						
-						overlapMatch = []
-						matchCount = 0
-						overlapSum = 0.0
-						angleSum = 0.0
-						for m in range(0,len(points2_offset)):
-							p_2 = points2_offset[m]
-							p_1, n, minDist = gen_icp.findClosestPointInA(points1, p_2)
+						#if u2 > 0.9 or u2 < 0.1:
+						#	raise
 			
-							if minDist < 0.1:
-								overlapMatch.append((m,n,minDist))
-								matchCount += 1
-								
-								overlapSum += minDist
-								
-								ang1 = p_1[2]
-								ang2 = p_2[2]
+					u1 = originU1
+					angGuess = 0.0
+				
+					" create the ground constraints "
+					gndGPAC1Pose = node1.getGndGlobalGPACPose()
+					currProfile = Pose(gndGPAC1Pose)
+					gndGPAC2Pose = node2.getGndGlobalGPACPose()
+					gndOffset = currProfile.convertGlobalPoseToLocal(gndGPAC2Pose)
+	
+					
+					#result, hist = gen_icp.overlapICP(estPose1, diffOffset, [u1, u2, angGuess], hull1, hull2, orientedMedial1, medial2, [0.0,0.0], [0.0,0.0], inPlace = inPlace, plotIter = False, n1 = (i,k), n2 = (j,l), uRange = uRange)
+					result, hist = gen_icp.overlapICP(estPose1, gndOffset, [u1, u2, angGuess], hull1, hull2, medial1, orientedMedial2, [0.0,0.0], [0.0,0.0], inPlace = inPlace, plotIter = False, n1 = (nodeID1,k), n2 = (nodeID2,l), uRange = uRange)
+					
+					transform = matrix([[result[0]], [result[1]], [result[2]]])
+					covE =  self.E_overlap
+					
+					print "making overlap constraint:", result[0], result[1], result[2]
+					
+					angDiff = abs(diffAngle(diffOffset[2], transform[2,0]))			
+					#totalGuesses.append((angDiff, result[2], result[3], result[4]))
+	
+					points1 = medialSpline1.getUniformSamples()
+					points2 = medialSpline2.getUniformSamples()
+					p_1 = medialSpline1.getU(0.5)
+					
+					
+					offset = [transform[0,0], transform[1,0], transform[2,0]]
+					fitProfile = Pose(offset)
+					
+					points2_offset = []
+					for p in points2:
+						result = fitProfile.convertLocalOffsetToGlobal(p)
+						points2_offset.append(result)		
+					
+					overlapMatch = []
+					matchCount = 0
+					overlapSum = 0.0
+					angleSum = 0.0
+					for m in range(0,len(points2_offset)):
+						p_2 = points2_offset[m]
+						p_1, n, minDist = gen_icp.findClosestPointInA(points1, p_2)
 		
-								angleSum += abs(diffAngle(ang1,ang2))
-									
-						if matchCount > 0:
-							angleSum /= matchCount
-							overlapSum /= matchCount
-				
-				
-						medialError, matchCount = self.computeMedialError(nodeID1, nodeID2, offset, minMatchDist = 0.5, tail1=k, tail2=l)
-		
-				
-						results.append((hist[0], angleSum, medialError, matchCount, angDiff, k, l, transform, covE, hist, matchCount, overlapSum, angleSum))
+						if minDist < 0.1:
+							overlapMatch.append((m,n,minDist))
+							matchCount += 1
+							
+							overlapSum += minDist
+							
+							ang1 = p_1[2]
+							ang2 = p_2[2]
+	
+							angleSum += abs(diffAngle(ang1,ang2))
+								
+					if matchCount > 0:
+						angleSum /= matchCount
+						overlapSum /= matchCount
+			
+			
+					medialError, matchCount = self.computeMedialError(nodeID1, nodeID2, offset, minMatchDist = 0.5, tail1=k, tail2=l)
+	
+			
+					results.append((hist[0], angleSum, medialError, matchCount, angDiff, k, l, transform, covE, hist, matchCount, overlapSum, angleSum))
 		
 		results.sort(reverse=True)
 		#results.sort(reverse=False)
@@ -3904,6 +3952,11 @@ class PoseGraph:
 		
 		return transform, covE
 
+	def getNearestPathPoint(self, originPoint):
+
+		newPoint = self.paths.getNearestPathPoint(originPoint)
+
+		return newPoint
 
 	def computeNavigationPath(self, startPose, endPose):
 		return self.paths.computeNavigationPath(startPose, endPose)
@@ -4169,8 +4222,8 @@ class PoseGraph:
 		print
 
 		" draw new hypotheses "
-		for cand in candidates3:
-			self.drawCandidate(cand)
+		#for cand in candidates3:
+		#	self.drawCandidate(cand)
 		
 		return finalCandidates
 		
@@ -4499,7 +4552,7 @@ class PoseGraph:
 			#cartDist2 = sqrt(offset[0]**2 + offset[1]**2)
 			angDiff2 = diffAngle(offset[2], angDiff1)
 
-			print "cartDist:", candPose[0]-targetPose[0], offset[0], candPose[1]-targetPose[1], offset[1], angDiff1, angDiff2
+			print "cartDist:", cartDist2, angDiff2, candPose[0]-targetPose[0], offset[0], candPose[1]-targetPose[1], offset[1], angDiff1
 
 			cand["offset"] = offset
 			cand["transform"] = transform
@@ -4563,12 +4616,15 @@ class PoseGraph:
 			
 			xiError = cand["xiError"]
 			xiBaseError = cand["xiErrorBase"]
-						
-			#print nodeID1, nodeID2, offset, cartDist2, angDiff2, xiError, xiError-xiBaseError
-			print nodeID1, nodeID2, cartDist2, angDiff2, xiError, xiError-xiBaseError
 			
-			self.allPathConstraints.append([nodeID1,nodeID2,transform,covE])
-			finalCandidates.append([nodeID1,nodeID2,transform,covE])
+			if cartDist2 < 1.0:
+	
+				#print nodeID1, nodeID2, offset, cartDist2, angDiff2, xiError, xiError-xiBaseError
+				print nodeID1, nodeID2, cartDist2, angDiff2, xiError, xiError-xiBaseError
+				
+				
+				self.allPathConstraints.append([nodeID1,nodeID2,transform,covE])
+				finalCandidates.append([nodeID1,nodeID2,transform,covE])
 
 		print
 

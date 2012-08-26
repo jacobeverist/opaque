@@ -970,8 +970,17 @@ class LocalNode:
 	
 	def setEstPose(self, newPose):
 
+			
 		self.estPose = copy(newPose)
 		self.dist = sqrt(self.estPose[0]**2 + self.estPose[1]**2)
+
+		" avoid numerical errors "
+		if fabs(self.estPose[0]) > self.dist:
+			self.dist = fabs(self.estPose[0])
+		elif fabs(self.estPose[1]) > self.dist:
+			self.dist = fabs(self.estPose[1])
+
+		
 		self.vecAng = acos(self.estPose[0]/self.dist)
 		if asin(self.estPose[1]/self.dist) < 0:
 			self.vecAng = -self.vecAng
@@ -988,6 +997,14 @@ class LocalNode:
 		
 		self.gndPose = copy(newPose)
 		self.gndDist = sqrt(self.gndPose[0]**2 + self.gndPose[1]**2)
+
+		" avoid numerical errors "
+		if fabs(self.gndPose[0]) > self.gndDist:
+			self.gndDist = fabs(self.gndPose[0])
+		elif fabs(self.gndPose[1]) > self.gndDist:
+			self.gndDist = fabs(self.gndPose[1])		
+		
+		
 		self.gndVecAng = acos(self.gndPose[0]/self.gndDist)
 		if asin(self.gndPose[1]/self.gndDist) < 0:
 			self.gndVecAng = -self.gndVecAng
@@ -1456,8 +1473,10 @@ class LocalNode:
 		self.dirty = True
 		self.hullAComputed = False
 		self.hullBComputed = False
+		self.hullCComputed = False
 		self.medialAComputed = False
 		self.medialBComputed = False		
+		self.medialCComputed = False		
 
 		self.longPaths = []
 		self.medialLongPaths = []
@@ -2209,7 +2228,7 @@ class LocalNode:
 		
 		global splineCount
 		
-		print "getBestMedialAxis():", self.isBowtie, self.medialAComputed, self.medialCComputed
+		print "getBestMedialAxis(", self.nodeID, "):", self.isBowtie, self.medialAComputed, self.medialCComputed
 		
 		
 		if not self.isBowtie and self.medialAComputed:

@@ -23,7 +23,7 @@ from math import pi, cos, sin, fabs, sqrt
 
 class PathStep(Behavior):
 
-	def __init__(self, robotParam, probeState, contacts, mapGraph, path = []):
+	def __init__(self, robotParam, probeState, contacts, mapGraph, inversion = 1):
 		Behavior.__init__(self, robotParam)
 
 		print "creating PathStep"
@@ -38,6 +38,8 @@ class PathStep(Behavior):
 		self.contacts = contacts
 		self.frontAnchorFit = 0
 		self.concertinaFit = 0
+
+		self.inversion = inversion
 
 		#self.compliantTorque = 0.005
 		self.compliantTorque = 0.1
@@ -188,7 +190,7 @@ class PathStep(Behavior):
 	def computeCurve(self):
 
 				
-		self.frontCurve = AdaptiveAnchorCurve(4*pi, self.robotParam['segLength'])				
+		self.frontCurve = AdaptiveAnchorCurve(4*pi, self.robotParam['segLength'], self.inversion)				
 
 		if self.frontAnchorFit == 0:
 			self.frontAnchorFit = FrontAnchorFit(self.robotParam, self.direction, self.spliceJoint)
@@ -200,7 +202,7 @@ class PathStep(Behavior):
 			self.frontAnchorFit.setSpliceJoint(self.spliceJoint)
 
 
-		self.adaptiveCurve = BackConcertinaCurve(4*pi)
+		self.adaptiveCurve = BackConcertinaCurve(4*pi, self.inversion)
 		self.adaptiveCurve.setTailLength(2.0)
 		
 		if self.concertinaFit == 0:
@@ -756,7 +758,7 @@ class PathStep(Behavior):
 		#print "setting amp = " , nextVal		
 		self.frontCurve.setPeakAmp(nextVal)
 		
-			
+		
 		if self.isJerking:
 			
 			anchorJoints = self.frontAnchorFit.getPeakJoints() 

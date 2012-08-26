@@ -151,8 +151,8 @@ int runAlg(int index, int sizeX, int sizeY, int numPoints, int thickSize, double
 		}
 	}
 
-	sprintf(buff, "medial_%02d_0.png", index);
-	cvSaveImage(buff, srcCopy);
+	//sprintf(buff, "medial_%02d_0.png", index);
+	//cvSaveImage(buff, srcCopy);
 
 	// thicken
 	for ( n = 0 ; n < thickSize ; n++ ) {
@@ -205,8 +205,8 @@ int runAlg(int index, int sizeX, int sizeY, int numPoints, int thickSize, double
 		}
 
 	}
-	sprintf(buff, "medial_%02d_1.png", index);
-	cvSaveImage(buff, thick1);
+	//sprintf(buff, "medial_%02d_1.png", index);
+	//cvSaveImage(buff, thick1);
 
 	/*
 	for (i = 0; i < h; i++) {
@@ -254,8 +254,8 @@ int runAlg(int index, int sizeX, int sizeY, int numPoints, int thickSize, double
 
 	skeletonize(srcCopy);
 
-	sprintf(buff, "medial_%02d_2.png", index);
-	cvSaveImage(buff, srcCopy);
+	//sprintf(buff, "medial_%02d_2.png", index);
+	//cvSaveImage(buff, srcCopy);
 
 	//sprintf(buff, "medial_%02d_3.png", index);
 	//cvSaveImage(buff, srcCopy);

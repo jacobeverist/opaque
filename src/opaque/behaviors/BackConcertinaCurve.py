@@ -30,9 +30,9 @@ Stage 3
 2.  The first peak includes 1.5*pi of a curve
 3.  Subsequent peaks contain only pi
 4.  peak 1:  starts at cos(0.0)
-    even peaks:  starts at sin(0.0)
-    odd peaks:  starts at sin(pi)
-    
+	even peaks:  starts at sin(0.0)
+	odd peaks:  starts at sin(pi)
+	
 5.  frequency changes to fit the prescribed width
 		freq = 2*pi / peakWidth / 2.0
 
@@ -40,7 +40,7 @@ Stage 3
 
 class BackConcertinaCurve:
 
-	def __init__(self, freq):
+	def __init__(self, freq, inversion = 1):
 
 		# cosine x length for one cycle
 		self.initFreq = freq
@@ -49,6 +49,8 @@ class BackConcertinaCurve:
 		self.oVec = [1.0,0.0]
 		self.sampleResolution = 0.01
 		self.head_len = 0.0
+
+		self.inversion = inversion
 
 
 		self.peakAmp = [0.0 for i in range(40)]
@@ -310,7 +312,7 @@ class BackConcertinaCurve:
 		if ampIndex >= self.numPeaks:
 			varZ = 0.0
 		else:
-			varZ = adapAmp * sin(self.initFreq*x_samp)
+			varZ = self.inversion * adapAmp * sin(self.initFreq*x_samp)
 		
 		dist = sqrt((point[0]-(x_samp))**2 + (point[1]-varZ)**2)
 		curvePoint1 = [x_samp,varZ]
@@ -372,7 +374,7 @@ class BackConcertinaCurve:
 			if ampIndex >= self.numPeaks:
 				varZ = 0.0
 			else:
-				varZ = adapAmp * sin(self.initFreq*x_samp)
+				varZ = self.inversion * adapAmp * sin(self.initFreq*x_samp)
 
 			
 			dist = sqrt((point[0]-(x_samp))**2 + (point[1]-varZ)**2)
@@ -486,13 +488,13 @@ class BackConcertinaCurve:
 			if ampIndex >= self.numPeaks:
 				varZ = 0.0
 			else:
-				varZ = adapAmp * sin(self.initFreq*x_samp)
+				varZ = self.version * adapAmp * sin(self.initFreq*x_samp)
 
 			"""		
 			4.  peak 1:  starts at cos(0.0)
-			    even peaks:  starts at sin(0.0)
-			    odd peaks:  starts at sin(pi)
-			    
+				even peaks:  starts at sin(0.0)
+				odd peaks:  starts at sin(pi)
+				
 			5.  frequency changes to fit the prescribed width
 				freq = 2*pi / peakWidth / 2.0
 			"""
@@ -508,4 +510,3 @@ class BackConcertinaCurve:
 		
 		
 		return points
-

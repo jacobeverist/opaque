@@ -6,7 +6,7 @@ import pylab
 
 class AdaptiveAnchorCurve:
 
-	def __init__(self, freq, segLength = 0.15):
+	def __init__(self, freq, segLength = 0.15, inversion = 1):
 
 		" the curve is a cosine curve centered at the peak and "
 		" straight lines to positive and negative infinity "
@@ -17,6 +17,9 @@ class AdaptiveAnchorCurve:
 		self.amp = 1.0
 		self.origin = [0.0,0.0]
 		self.sampleResolution = 0.01
+
+
+		self.inversion = inversion
 
 		self.infLength = 5.0
 
@@ -29,7 +32,7 @@ class AdaptiveAnchorCurve:
 		dispZ = self.peakAmp[0]			
 
 		pO = self.origin
-		p1 = [pO[0] + self.ampSpacing, pO[1] + dispZ]		
+		p1 = [pO[0] + self.ampSpacing, pO[1] + self.inversion * dispZ]		
 		p2 = [p1[0] + self.infLength, p1[1]]		
 
 		self.controlA = {'pO':pO, 'p1':p1, 'p2':p2}
@@ -45,7 +48,7 @@ class AdaptiveAnchorCurve:
 		
 		dispZ = self.peakAmp[0]			
 
-		p1 = [pO[0] + self.ampSpacing, pO[1] + dispZ]		
+		p1 = [pO[0] + self.ampSpacing, pO[1] + self.inversion * dispZ]		
 		p2 = [p1[0] + self.infLength, p1[1]]		
 
 		self.controlA['p1'] = p1
@@ -90,7 +93,7 @@ class AdaptiveAnchorCurve:
 		" anchor section "
 		samples1 = arange(pO[0], p1[0] + self.sampleResolution, self.sampleResolution)
 		for x_samp in samples1:
-			varZ = self.peakAmp[0] * sin(self.initFreq*x_samp)
+			varZ = self.inversion * self.peakAmp[0] * sin(self.initFreq*x_samp)
 			points.append([x_samp,varZ])
 
 		" infinite follow "
@@ -118,7 +121,7 @@ class AdaptiveAnchorCurve:
 
 		" point is on the anchor curve "
 		adapAmp = self.peakAmp[0]
-		varZ = adapAmp * sin(self.initFreq*x_samp)
+		varZ = self.inversion * adapAmp * sin(self.initFreq*x_samp)
 		curvePoint1 = [x_samp,varZ]
 		
 		return curvePoint1
@@ -158,7 +161,7 @@ class AdaptiveAnchorCurve:
 						
 			adapAmp = self.peakAmp[0]
 						
-			varZ = adapAmp * sin(self.initFreq*x_samp)
+			varZ = self.inversion * adapAmp * sin(self.initFreq*x_samp)
 			
 			dist = sqrt((point[0]-(x_samp))**2 + (point[1]-varZ)**2)
 

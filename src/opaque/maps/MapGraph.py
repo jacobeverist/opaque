@@ -785,6 +785,13 @@ class MapGraph:
 		else:
 			pass
 	
+	def getNearestPathPoint(self, originPoint):
+		
+		newPoint = self.poseGraph.getNearestPathPoint(originPoint)
+		
+		return newPoint
+	
+	
 	def computeGraphPath(self, startPose, endPose):
 		
 		path = self.poseGraph.computeNavigationPath(startPose, endPose)
@@ -875,6 +882,11 @@ class MapGraph:
 				#self.poseGraph.paths.pathTermVisited(k)
 				print "selecting term", k
 				return term,k
+		
+		" if all terms visited, reset and go to root "
+		self.poseGraph.paths.resetTerms()
+		
+		return self.poseGraph.paths.rootPoint, -1
 		
 		#for term in terms:
 		#	

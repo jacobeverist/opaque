@@ -5554,6 +5554,7 @@ def minICP_GPU2(initGuess, medialPoints1, medialPoints2):
 def overlapICP_GPU2(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1, medialPoints2, rootPose1, rootPose2, inPlace = False, plotIter = False, n1 = 0, n2 = 0, uRange = 1.5):
 
     global numIterations
+    global globalPlotCount
 
     def computeOffset(point1, point2, ang1, ang2):
     
@@ -5818,7 +5819,7 @@ def overlapICP_GPU2(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1,
         #if minMatchDist < 0.25:
         #    minMatchDist = 0.25
     
-    if False:
+    if True:
 
         " set the origin of pose 1 "
         poseOrigin = Pose(estPose1)
@@ -5920,7 +5921,8 @@ def overlapICP_GPU2(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1,
         axes2.set_title("%s %s, ang = %1.3f" % (repr(n1), repr(n2), currAng))
         axes2.set_xlim(estPose1[0]-4, estPose1[0]+4)                    
         axes2.set_ylim(estPose1[1]-3, estPose1[1]+3)
-        fig1.savefig("ICP_plot_%04u_0.png" % numIterations)
+        fig1.savefig("ICP_plot_%04u_0.png" % globalPlotCount)
+        globalPlotCount += 1
         pylab.clf()            
         pylab.figure(1)
 
@@ -6561,14 +6563,14 @@ def globalOverlapICP(initGuess, globalPath, medialPoints,  plotIter = False, n1 
         pylab.savefig("ICP_plot_%04u_1.png" % globalPlotCount)
         pylab.clf()
         " save inputs "
-        saveFile = ""
-        saveFile += "initGuess = " + repr(initGuess) + "\n"
-        saveFile += "globalPath = " + repr(globalPath) + "\n"
-        saveFile += "medialPoints = " + repr(medialPoints) + "\n"
+        #saveFile = ""
+        #saveFile += "initGuess = " + repr(initGuess) + "\n"
+        #saveFile += "globalPath = " + repr(globalPath) + "\n"
+        #saveFile += "medialPoints = " + repr(medialPoints) + "\n"
 
-        f = open("icpInputSave_%04u.txt" % globalPlotCount, 'w')
-        f.write(saveFile)
-        f.close()        
+        #f = open("icpInputSave_%04u.txt" % globalPlotCount, 'w')
+        #f.write(saveFile)
+        #f.close()        
             
         globalPlotCount += 1
         
@@ -6805,7 +6807,7 @@ def globalOverlapICP_GPU(initGuess, globalPath, medialPoints, poses_1, poses_2, 
             break
 
     " draw final position "
-    if True:
+    if False:
         
         " set the origin of pose 1 "
         poseOrigin = Pose(currPose)
@@ -6862,16 +6864,15 @@ def globalOverlapICP_GPU(initGuess, globalPath, medialPoints, poses_1, poses_2, 
         pylab.clf()
         
         " save inputs "
-        saveFile = ""
-        saveFile += "initGuess = " + repr(initGuess) + "\n"
-        saveFile += "globalPath = " + repr(globalPath) + "\n"
-        #saveFile += "hull = " + repr(hull) + "\n"
-        saveFile += "medialPoints = " + repr(medialPoints) + "\n"
+        #saveFile = ""
+        #saveFile += "initGuess = " + repr(initGuess) + "\n"
+        #saveFile += "globalPath = " + repr(globalPath) + "\n"
+        #saveFile += "medialPoints = " + repr(medialPoints) + "\n"
 
-        f = open("icpInputSave_%04u.txt" % globalPlotCount, 'w')
+        #f = open("icpInputSave_%04u.txt" % globalPlotCount, 'w')
         globalPlotCount += 1
-        f.write(saveFile)
-        f.close()        
+        #f.write(saveFile)
+        #f.close()        
             
         #numIterations += 1
 
@@ -7186,16 +7187,15 @@ def globalOverlapICP_GPU2(initGuess, globalPath, medialPoints,plotIter = False, 
         pylab.clf()
         
         " save inputs "
-        saveFile = ""
-        saveFile += "initGuess = " + repr(initGuess) + "\n"
-        saveFile += "globalPath = " + repr(globalPath) + "\n"
-        #saveFile += "hull = " + repr(hull) + "\n"
-        saveFile += "medialPoints = " + repr(medialPoints) + "\n"
+        #saveFile = ""
+        #saveFile += "initGuess = " + repr(initGuess) + "\n"
+        #saveFile += "globalPath = " + repr(globalPath) + "\n"
+        #saveFile += "medialPoints = " + repr(medialPoints) + "\n"
 
-        f = open("icpInputSave_%04u.txt" % globalPlotCount, 'w')
+        #f = open("icpInputSave_%04u.txt" % globalPlotCount, 'w')
         globalPlotCount += 1
-        f.write(saveFile)
-        f.close()        
+        #f.write(saveFile)
+        #f.close()        
             
         #numIterations += 1
 
@@ -7271,9 +7271,6 @@ def pathOverlapICP(initGuess, globalPath, medialPoints,plotIter = False, n1 = 0,
 
     currPose = computeOffset(point1, point2, ang1, ang2 + currAng)
 
-    " transform the new pose "
-    poseOrigin = Pose(currPose)
-    
     costThresh = 0.004
     minMatchDist = 1.0
     minMatchDist2 = 1.0
@@ -7299,7 +7296,7 @@ def pathOverlapICP(initGuess, globalPath, medialPoints,plotIter = False, n1 = 0,
     
     " transform pose 2 by initial offset guess "    
     " transform the new pose "
-    points_offset = []
+    #points_offset = []
     
     globalPoly = []        
     for p in globalPoints:
@@ -7312,10 +7309,10 @@ def pathOverlapICP(initGuess, globalPath, medialPoints,plotIter = False, n1 = 0,
         match_pairs = []
 
         " transform the target Hull with the latest offset "
-        points_offset = []
-        for p in points:
-            result = dispPoint(p, currPose)        
-            points_offset.append(result)
+        #points_offset = []
+        #for p in points:
+        #    result = dispPoint(p, currPose)        
+        #    points_offset.append(result)
 
         poseOrigin = Pose(currPose)
         vecPoints_offset = []
@@ -7341,7 +7338,7 @@ def pathOverlapICP(initGuess, globalPath, medialPoints,plotIter = False, n1 = 0,
         
         " get the circles and radii "
         match_pairs = []
-        radius2, center2 = computeEnclosingCircle(points_offset)
+        #radius2, center2 = computeEnclosingCircle(points_offset)
 
         for i in range(len(globalPoints)):
             #p_1 = globalPoly[i]
@@ -7435,7 +7432,7 @@ def pathOverlapICP(initGuess, globalPath, medialPoints,plotIter = False, n1 = 0,
         
         resultSum, resultParam, resultOffset = nelminICP.ICPcost(flatMatchPairs, len(match_pairs), [u1,currU,currAng], c_poses_1, c_poses_2, len(poses_1))
         " draw final position "
-        if True:
+        if False:
             
             " set the origin of pose 1 "
             poseOrigin = Pose(currPose)
@@ -7492,16 +7489,15 @@ def pathOverlapICP(initGuess, globalPath, medialPoints,plotIter = False, n1 = 0,
             pylab.clf()
             
             " save inputs "
-            saveFile = ""
-            saveFile += "initGuess = " + repr(initGuess) + "\n"
-            saveFile += "globalPath = " + repr(globalPath) + "\n"
-            #saveFile += "hull = " + repr(hull) + "\n"
-            saveFile += "medialPoints = " + repr(medialPoints) + "\n"
+            #saveFile = ""
+            #saveFile += "initGuess = " + repr(initGuess) + "\n"
+            #saveFile += "globalPath = " + repr(globalPath) + "\n"
+            #saveFile += "medialPoints = " + repr(medialPoints) + "\n"
     
-            f = open("icpInputSave_%04u.txt" % globalPlotCount, 'w')
+            #f = open("icpInputSave_%04u.txt" % globalPlotCount, 'w')
             globalPlotCount += 1
-            f.write(saveFile)
-            f.close()        
+            #f.write(saveFile)
+            #f.close()        
                 
         
         
@@ -7579,7 +7575,7 @@ def pathOverlapICP(initGuess, globalPath, medialPoints,plotIter = False, n1 = 0,
             break
         
         " draw final position "
-        if True:
+        if False:
             
             " set the origin of pose 1 "
             poseOrigin = Pose(currPose)
@@ -7636,16 +7632,15 @@ def pathOverlapICP(initGuess, globalPath, medialPoints,plotIter = False, n1 = 0,
             pylab.clf()
             
             " save inputs "
-            saveFile = ""
-            saveFile += "initGuess = " + repr(initGuess) + "\n"
-            saveFile += "globalPath = " + repr(globalPath) + "\n"
-            #saveFile += "hull = " + repr(hull) + "\n"
-            saveFile += "medialPoints = " + repr(medialPoints) + "\n"
+            #saveFile = ""
+            #saveFile += "initGuess = " + repr(initGuess) + "\n"
+            #saveFile += "globalPath = " + repr(globalPath) + "\n"
+            #saveFile += "medialPoints = " + repr(medialPoints) + "\n"
     
-            f = open("icpInputSave_%04u.txt" % globalPlotCount, 'w')
+            #f = open("icpInputSave_%04u.txt" % globalPlotCount, 'w')
             globalPlotCount += 1
-            f.write(saveFile)
-            f.close()        
+            #f.write(saveFile)
+            #f.close()        
      
 
     " draw final position "
@@ -7706,16 +7701,15 @@ def pathOverlapICP(initGuess, globalPath, medialPoints,plotIter = False, n1 = 0,
         pylab.clf()
         
         " save inputs "
-        saveFile = ""
-        saveFile += "initGuess = " + repr(initGuess) + "\n"
-        saveFile += "globalPath = " + repr(globalPath) + "\n"
-        #saveFile += "hull = " + repr(hull) + "\n"
-        saveFile += "medialPoints = " + repr(medialPoints) + "\n"
+        #saveFile = ""
+        #saveFile += "initGuess = " + repr(initGuess) + "\n"
+        #saveFile += "globalPath = " + repr(globalPath) + "\n"
+        #saveFile += "medialPoints = " + repr(medialPoints) + "\n"
 
-        f = open("icpInputSave_%04u.txt" % globalPlotCount, 'w')
+        #f = open("icpInputSave_%04u.txt" % globalPlotCount, 'w')
         globalPlotCount += 1
-        f.write(saveFile)
-        f.close()        
+        #f.write(saveFile)
+        #f.close()        
             
         #numIterations += 1
 

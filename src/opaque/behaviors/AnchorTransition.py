@@ -6,7 +6,7 @@ from copy import copy
 
 class AnchorTransition(Behavior):
 	
-	def __init__(self, robotParam):
+	def __init__(self, robotParam, inversion = 1):
 		Behavior.__init__(self, robotParam)
 
 		# angle increment per segment
@@ -14,6 +14,8 @@ class AnchorTransition(Behavior):
 		self.transition = Transition(self.robotParam)
 		self.isTransitioning = False
 		self.hasTransitioned = False
+
+		self.inversion = inversion
 
 		self.isDone = False
 		self.count = 0
@@ -45,7 +47,7 @@ class AnchorTransition(Behavior):
 		for i in range(self.robotParam['numJoints']):
 
 			# joint value
-			val = 70.0*cos(i*self.per_seg)
+			val = self.inversion * 70.0*cos(i*self.per_seg)
 			self.setJoint(i, val)
 			
 		if not self.hasTransitioned:

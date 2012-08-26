@@ -44,7 +44,7 @@ class TestNavigation(SnakeControl):
 		
 		self.setTimerAliasing(1)
 		
-		self.travelDir = True
+		self.travelDir = False
 		
 		" pose estimation "
 		self.contacts = AverageContacts(self.probe)
@@ -66,6 +66,9 @@ class TestNavigation(SnakeControl):
 
 		self.torques = [torques[i] for i in range(self.numJoints)]
 		
+
+		#self.targetPoint = [3.0, -1.0]
+		self.targetPoint = []
 		
 		self.exploreRoot = [0.5,0.0]
 		self.exploreRoot = [-3.5,0.0]
@@ -85,6 +88,8 @@ class TestNavigation(SnakeControl):
 		self.lastDist2 = 1e100
 		self.distCount = 0
 		self.targetReached = False
+		self.isCollided = False
+		
 		
 		self.isAnchored = False
 
@@ -98,6 +103,8 @@ class TestNavigation(SnakeControl):
 		self.globalTimer = 1
 
 		self.termPathID = -1
+		
+		self.inversion = 1
 		
 		
 	def updateMaps(self):
@@ -305,11 +312,14 @@ class TestNavigation(SnakeControl):
 			#self.mapGraph.restoreSeries("resultProcess_2012_05_03",10)
 			#self.mapGraph.restoreSeries("resultProcess_2012_05_04", 30)
 			#self.mapGraph.restoreSeries("resultProcess_2012_05_04", 32)
-			self.mapGraph.restoreSeries("resultProcess_2012_05_04", 10)
-			#exit()
-			self.mapGraph.insertPose(self.probe.getActualJointPose(19), self.travelDir)
+
 			
-			#self.mapGraph.insertPose([0.0,0.0,pi], self.travelDir)
+			#self.mapGraph.restoreSeries("resultProcess_2012_05_04", 10)
+			#self.mapGraph.insertPose(self.probe.getActualJointPose(19), self.travelDir)
+
+			#self.mapGraph.restoreSeries("result_2012_08_22", 50)
+			#self.mapGraph.insertPose(self.probe.getActualJointPose(19), self.travelDir)
+			
 			
 			#exit()
 			#E = self.computeCovar()
@@ -334,8 +344,8 @@ class TestNavigation(SnakeControl):
 			self.restState = deepcopy(probeState)
 			
 			#self.globalState = 6
-			#self.globalState = 4
-			self.globalState = 10
+			self.globalState = 4
+			#self.globalState = 10
 
 			#self.restState = deepcopy(probeState)
 			#self.mapGraph.newNode(self.stepDist, self.travelDir)
@@ -477,19 +487,40 @@ class TestNavigation(SnakeControl):
 					frontSum += n
 				foreAvg = frontSum / len(frontProbeError)
 				
-				
+
+				backSum = 0.0
+				backProbeError = self.mapGraph.nodeHash[self.mapGraph.numNodes-1].backProbeError
+				for n in backProbeError:
+					backSum += n
+				backAvg = backSum / len(backProbeError)
+
+				print "frameStarted: foreAvg =", foreAvg
+				print "frameStarted: backAvg =", backAvg
+				print "travelDir =", self.travelDir
+								
 				#print "foreAvg =", foreAvg
 				#if self.mapGraph.numNodes >=6:
 				#	foreAvg = 2.0
 				#foreAvg = 0.0
-				if foreAvg >= 1.4:
-					self.globalState = 10
-					if self.termPathID != -1:
-						self.mapGraph.poseGraph.paths.pathTermVisited(self.termPathID)
-						self.termPathID = -1
 				
+				if self.travelDir:
+					
+					#if foreAvg >= 1.4:
+					if foreAvg >= 1.1:
+						self.globalState = 10
+						self.isCollided = True
+					else:
+						self.globalState = 4
+
 				else:
-					self.globalState = 4
+
+					#if backAvg >= 1.4:
+					if backAvg >= 1.1:
+						self.globalState = 10
+						self.isCollided = True
+					else:
+						self.globalState = 4
+					
 
 				#self.globalState = 10
 					
@@ -506,8 +537,15 @@ class TestNavigation(SnakeControl):
 			" select the point to go to "
 			#frontierPoint = self.mapGraph.selectNextFrontier()
 			#frontierPoint = self.mapGraph.selectNextFrontier()
-			frontierPoint, self.termPathID = self.mapGraph.selectNextDestination()
 			
+			if self.targetPoint == []:
+				frontierPoint, self.termPathID = self.mapGraph.selectNextDestination()
+			
+			else:
+				frontierPoint = self.targetPoint
+				self.termPathID = -1
+				
+							
 			"""
 			self.currPose1 = self.contacts.getAverageSegPose(0)
 			self.currPose2 = self.contacts.getAverageSegPose(39)
@@ -532,18 +570,27 @@ class TestNavigation(SnakeControl):
 			frontPose = self.contacts.getAverageSegPose(0)
 			backPose = self.contacts.getAverageSegPose(39)
 
+			frontPathPoint = self.mapGraph.getNearestPathPoint(frontPose)
+			backPathPoint = self.mapGraph.getNearestPathPoint(backPose)
+			frontierPathPoint = self.mapGraph.getNearestPathPoint(frontierPoint)
 			
-			goalPath1 = self.mapGraph.computeGraphPath(frontPose, frontierPoint)
-			goalPath2 = self.mapGraph.computeGraphPath(backPose, frontierPoint)
+			#goalPath1 = self.mapGraph.computeGraphPath(frontPose, frontierPoint)
+			#goalPath2 = self.mapGraph.computeGraphPath(backPose, frontierPoint)
+			goalPath1 = self.mapGraph.computeGraphPath(frontPathPoint, frontierPathPoint)
+			goalPath2 = self.mapGraph.computeGraphPath(backPathPoint, frontierPathPoint)
 
-			len1 = self.mapGraph.getPathLength(frontPose, frontierPoint, goalPath1)
-			len2 = self.mapGraph.getPathLength(backPose, frontierPoint, goalPath2)
+			#len1 = self.mapGraph.getPathLength(frontPose, frontierPoint, goalPath1)
+			#len2 = self.mapGraph.getPathLength(backPose, frontierPoint, goalPath2)
+			len1 = self.mapGraph.getPathLength(frontPathPoint, frontierPathPoint, goalPath1)
+			len2 = self.mapGraph.getPathLength(backPathPoint, frontierPathPoint, goalPath2)
 
 			if len1 > len2:
-				self.wayPoints = [frontierPoint]
+				#self.wayPoints = [frontierPoint]
+				self.wayPoints = [frontierPathPoint]
 				self.wayPaths = [goalPath1]
 			else:
-				self.wayPoints = [frontierPoint]
+				#self.wayPoints = [frontierPoint]
+				self.wayPoints = [frontierPathPoint]
 				self.wayPaths = [goalPath2]
 				
 			
@@ -572,15 +619,35 @@ class TestNavigation(SnakeControl):
 			isDone = self.doPathFollow(self.wayPoints, self.wayPaths)
 			
 			if isDone:
+				if self.termPathID != -1:
+					self.mapGraph.poseGraph.paths.pathTermVisited(self.termPathID)
+					self.termPathID = -1
+				else:
+					" invert our pose so we can hit other junctions "
+					self.inversion *= -1
+
 				self.restState = deepcopy(probeState)
 
-					
-				" make sure that at least one blind adaptive step is performed "
-				self.lastPose1 = [-100.0, -100.0]
-				self.lastPose2 = [-100.0, -100.0]
+				if self.isCollided:
+					self.travelDir = not self.travelDir
+					self.isCollided = False
+
+
+				self.currPose = self.contacts.getAverageSegPose(0)
+				deltaDist = sqrt((self.currPose[0]-self.lastPose1[0])**2 + (self.currPose[1]-self.lastPose1[1])**2)
+				print "deltaDist =", deltaDist
+				faceDir = True
+				self.mapGraph.newNode(faceDir, self.travelDir)
+				self.mapGraph.forceUpdate(faceDir)
+				self.contacts.resetPose(self.mapGraph.currNode.getEstPose())
+				self.lastPose1 = self.contacts.getAverageSegPose(0)
+				self.lastPose2 = self.contacts.getAverageSegPose(39)
+				self.globalState = 6
+				self.isCapture = True
 				
 				self.globalState = 6
 				self.contacts.setCautious(False)			
+
 		
 		elif self.globalState == 12:
 			pass
@@ -641,7 +708,7 @@ class TestNavigation(SnakeControl):
 			
 			print "START:  doInitAnchor()"
 			
-			self.behavior = AnchorTransition(self.robotParam)
+			self.behavior = AnchorTransition(self.robotParam, self.inversion)
 			
 			self.localState = 1
 
@@ -723,7 +790,7 @@ class TestNavigation(SnakeControl):
 		if self.localState == 0:
 			print "START:  doAdaptiveStep()"
 			
-			self.behavior = AdaptiveStep(self.robotParam, probeState, self.contacts, self.mapGraph, self.travelDir)
+			self.behavior = AdaptiveStep(self.robotParam, probeState, self.contacts, self.mapGraph, self.travelDir, self.inversion)
 			self.behavior.reset(probeState)
 			self.behavior.setTopJoint(self.topJoint)
 			
@@ -860,7 +927,7 @@ class TestNavigation(SnakeControl):
 			print "START:  doPathStep()", direction
 
 			" instantiate the behavior "
-			self.behavior = PathStep(self.robotParam, probeState, self.contacts, self.mapGraph)
+			self.behavior = PathStep(self.robotParam, probeState, self.contacts, self.mapGraph, self.inversion)
 
 			newPaths = deepcopy(wayPaths)
 			if not direction:
@@ -942,26 +1009,50 @@ class TestNavigation(SnakeControl):
 
 			" determine distance to the next way point "
 			dest = self.localWayPoints[0]			
+
+			frontPathPoint = self.mapGraph.getNearestPathPoint(self.currPose1)
+			backPathPoint = self.mapGraph.getNearestPathPoint(self.currPose2)
 			
-			self.lastDist1 = self.mapGraph.getPathLength(self.currPose1, dest, self.localWayPaths[0])
-			self.lastDist2 = self.mapGraph.getPathLength(self.currPose2, dest, self.localWayPaths[0])
+			self.lastDist1 = self.mapGraph.getPathLength(frontPathPoint, dest, self.localWayPaths[0])
+			self.lastDist2 = self.mapGraph.getPathLength(backPathPoint, dest, self.localWayPaths[0])
 
 			
 			" pop the next way point if we are already close to the first one "
-			if self.lastDist1 < 0.5:
+			#if self.lastDist1 < 0.5:
+			if self.lastDist1 < 0.3:
 				self.localWayPoints = self.localWayPoints[1:]
 				self.localWayPaths = self.localWayPaths[1:]
 
-				self.drawThings.drawPath(self.localWayPaths[0])
-				self.drawThings.drawPoints(self.localWayPoints)
+				if len(self.localWayPoints) > 0:
+	
+					self.drawThings.drawPath(self.localWayPaths[0])
+					self.drawThings.drawPoints(self.localWayPoints)
+					
+					" determine distance to the next way point "
+					dest = self.localWayPoints[0]			
+					#self.lastDist1 = sqrt((dest[0]-self.currPose1[0])**2 + (dest[1]-self.currPose1[1])**2)
+					#self.lastDist2 = sqrt((dest[0]-self.currPose2[0])**2 + (dest[1]-self.currPose2[1])**2)
+					self.lastDist1 = self.mapGraph.getPathLength(frontPathPoint, dest, self.localWayPaths[0])
+					self.lastDist2 = self.mapGraph.getPathLength(backPathPoint, dest, self.localWayPaths[0])
+
+					print "lastDist1: ", self.lastDist1
+					print "lastDist2: ", self.lastDist2
 				
-				" determine distance to the next way point "
-				dest = self.localWayPoints[0]			
-				self.lastDist1 = sqrt((dest[0]-self.currPose1[0])**2 + (dest[1]-self.currPose1[1])**2)
-				self.lastDist2 = sqrt((dest[0]-self.currPose2[0])**2 + (dest[1]-self.currPose2[1])**2)
-				print "lastDist1: ", self.lastDist1
-				print "lastDist2: ", self.lastDist2
-				
+				else:
+					self.targetReached = True
+					self.drawThings.drawPath([])
+					self.drawThings.drawPoints([])
+					
+					#if self.localDirection:
+					#	self.travelDir = self.localPathDirection
+					#else:
+					#	self.travelDir = not self.localPathDirection
+					
+					return True
+
+			" we are not already there, so turn off the collision flag since we are moving "
+			self.isCollided = False				
+			
 			self.distCount = 0
 			self.localPathState = 1
 			
@@ -974,13 +1065,18 @@ class TestNavigation(SnakeControl):
 			if self.globalTimer % 10 == 0:
 				self.currPose1 = self.contacts.getAverageSegPose(0)
 				self.currPose2 = self.contacts.getAverageSegPose(39)
+				frontPathPoint = self.mapGraph.getNearestPathPoint(self.currPose1)
+				backPathPoint = self.mapGraph.getNearestPathPoint(self.currPose2)
+			
 
 				dest = self.localWayPoints[0]
-				dist1 = sqrt((dest[0]-self.currPose1[0])**2 + (dest[1]-self.currPose1[1])**2)
-				dist2 = sqrt((dest[0]-self.currPose2[0])**2 + (dest[1]-self.currPose2[1])**2)
+				#dist1 = sqrt((dest[0]-self.currPose1[0])**2 + (dest[1]-self.currPose1[1])**2)
+				#dist2 = sqrt((dest[0]-self.currPose2[0])**2 + (dest[1]-self.currPose2[1])**2)
+				dist1 = self.mapGraph.getPathLength(frontPathPoint, dest, self.localWayPaths[0])
+				dist2 = self.mapGraph.getPathLength(backPathPoint, dest, self.localWayPaths[0])
 				
 				" check if we've crossed the destination "
-				if dist1 < 0.1 or dist2 < 0.1:
+				if dist1 < 0.5 or dist2 < 0.5:
 					if not self.targetReached:
 						print "target reached at wayPoint:", dest, "with dist1,dist2 =", dist1, dist2
 					self.targetReached = True
@@ -990,29 +1086,42 @@ class TestNavigation(SnakeControl):
 				self.restState = deepcopy(probeState)
 
 
+
+
+
+
 				self.currPose1 = self.contacts.getAverageSegPose(0)
 				self.currPose2 = self.contacts.getAverageSegPose(39)
-				deltaDist1 = sqrt((self.currPose1[0]-self.lastPose1[0])**2 + (self.currPose1[1]-self.lastPose1[1])**2)
-				deltaDist2 = sqrt((self.currPose2[0]-self.lastPose2[0])**2 + (self.currPose2[1]-self.lastPose2[1])**2)
+				frontPathPoint = self.mapGraph.getNearestPathPoint(self.currPose1)
+				backPathPoint = self.mapGraph.getNearestPathPoint(self.currPose2)
+
+				lastFrontPathPoint = self.mapGraph.getNearestPathPoint(self.lastPose1)
+				lastBackPathPoint = self.mapGraph.getNearestPathPoint(self.lastPose2)
+
+				deltaDist1 = self.mapGraph.getPathLength(frontPathPoint, lastFrontPathPoint, self.localWayPaths[0])
+				deltaDist2 = self.mapGraph.getPathLength(backPathPoint, lastBackPathPoint, self.localWayPaths[0])
+
+				#deltaDist1 = sqrt((self.currPose1[0]-self.lastPose1[0])**2 + (self.currPose1[1]-self.lastPose1[1])**2)
+				#deltaDist2 = sqrt((self.currPose2[0]-self.lastPose2[0])**2 + (self.currPose2[1]-self.lastPose2[1])**2)
 				print "deltaDist1,deltaDist2 =", deltaDist1, deltaDist2
 
 
 				self.localPathState = 2
 
-				self.mapGraph.newNode(True, self.localPathDirection)
+				#self.mapGraph.newNode(True, self.localPathDirection)
 				#self.mapGraph.newNode(self.stepDist, self.localDirection)
-				self.mapGraph.forceUpdate(True)
+				#self.mapGraph.forceUpdate(True)
 
 				#self.mapGraph.localizeCurrentNode()
 	
-				self.contacts.resetPose(self.mapGraph.currNode.getEstPose())
+				#self.contacts.resetPose(self.mapGraph.currNode.getEstPose())
 				self.lastPose1 = self.contacts.getAverageSegPose(0)
 				self.lastPose2 = self.contacts.getAverageSegPose(39)
 				
 				self.currPose1 = copy(self.lastPose1)
 				self.currPose2 = copy(self.lastPose2)
-	
-						
+
+
 				if len(self.localWayPoints) > 0:
 					
 
@@ -1022,12 +1131,15 @@ class TestNavigation(SnakeControl):
 
 					self.drawThings.drawPath(path)
 					self.drawThings.drawPoints(self.localWayPoints)
+
+					frontPathPoint = self.mapGraph.getNearestPathPoint(self.currPose1)
+					backPathPoint = self.mapGraph.getNearestPathPoint(self.currPose2)
 					
-					totalDist1 = self.mapGraph.getPathLength(self.currPose1, dest, path)
-					totalDist2 = self.mapGraph.getPathLength(self.currPose2, dest, path)
+					totalDist1 = self.mapGraph.getPathLength(frontPathPoint, dest, path)
+					totalDist2 = self.mapGraph.getPathLength(backPathPoint, dest, path)
 					
-					print "distance from", dest, "to", self.currPose1, "=", totalDist1
-					print "distance from", dest, "to", self.currPose2, "=", totalDist2
+					print "distance from", dest, "to", frontPathPoint, "=", totalDist1
+					print "distance from", dest, "to", backPathPoint, "=", totalDist2
 					
 					" better directional detection when more complicated maps "
 					" check if we're going away from our target "
@@ -1060,6 +1172,10 @@ class TestNavigation(SnakeControl):
 							self.drawThings.drawPath([])
 							self.drawThings.drawPoints([])
 
+							if self.localDirection:
+								self.travelDir = self.localPathDirection
+							else:
+								self.travelDir = not self.localPathDirection
 							return True
 							
 						#elif self.distCount >= 2:
@@ -1070,6 +1186,11 @@ class TestNavigation(SnakeControl):
 						self.lastDist1 = 1e100
 						self.lastDist2 = 1e100
 						self.distCount = 0				
+
+				faceDir = True
+				self.mapGraph.newNode(faceDir, self.localPathDirection)
+				self.mapGraph.forceUpdate(faceDir)
+				self.contacts.resetPose(self.mapGraph.currNode.getEstPose())
 
 		elif self.localPathState == 2:
 
@@ -1085,41 +1206,16 @@ class TestNavigation(SnakeControl):
 			isDone = self.doReturnToRest()
 			
 			if isDone:
-				#self.mapGraph.update()
-
-
-				#self.mapGraph.correctPosture()
-				#self.mapGraph.localizeCurrentNode()
-				#self.contacts.resetPose(self.mapGraph.currNode.getEstPose())
-				#self.lastPose = self.contacts.getAverageSegPose(0)
-
-				#self.mapGraph.synch()
-				#self.mapGraph.saveMap()
-				#self.mapGraph.saveLocalMap()
-				#self.mapGraph.drawConstraints()
-				
-				#faceDir = False		
-				#self.mapGraph.newNode(faceDir, self.travelDir)
-				#self.mapGraph.forceUpdate(faceDir)
-
 				
 				self.mapGraph.correctPosture()
-				#self.mapGraph.localizeCurrentNode()
 				self.contacts.resetPose(self.mapGraph.currNode.getEstPose())
 				self.lastPose1 = self.contacts.getAverageSegPose(0)
 				self.lastPose2 = self.contacts.getAverageSegPose(39)
-
-				#self.mapGraph.synch()
-				#self.mapGraph.saveMap()
-				self.mapGraph.saveLocalMap()
-				self.mapGraph.saveState()
 				self.mapGraph.drawConstraints()				
-				
 				faceDir = False
 				self.mapGraph.newNode(faceDir, self.localPathDirection)
 				self.mapGraph.forceUpdate(faceDir)
-				#self.mapGraph.newNode(self.stepDist, False, self.travelDir)
-				#self.mapGraph.currNode.resetPosture()		
+				
 				self.localPathState = 4			
 				
 		elif self.localPathState == 4:
@@ -1137,22 +1233,18 @@ class TestNavigation(SnakeControl):
 
 			if isDone:
 
-				#self.mapGraph.update()
+
+
 				self.mapGraph.correctPosture()
-				#self.mapGraph.localizeCurrentNode()
 				self.mapGraph.pairDone()
 				self.mapGraph.localizePose()
-				#self.mapGraph.relaxCorrect()
 				self.contacts.resetPose(self.mapGraph.currNode.getEstPose())
 				self.lastPose1 = self.contacts.getAverageSegPose(0)
 				self.lastPose2 = self.contacts.getAverageSegPose(39)
 
-				#self.mapGraph.synch()
-				#self.mapGraph.saveMap()
 				self.mapGraph.saveLocalMap()
 				self.mapGraph.saveState()
 				self.mapGraph.drawConstraints()				
-
 
 
 				self.localPathState = 1
@@ -1163,8 +1255,15 @@ class TestNavigation(SnakeControl):
 				for n in frontProbeError:
 					frontSum += n
 				foreAvg = frontSum / len(frontProbeError)
+
+				backSum = 0.0
+				backProbeError = self.mapGraph.nodeHash[self.mapGraph.numNodes-1].backProbeError
+				for n in backProbeError:
+					backSum += n
+				backAvg = backSum / len(backProbeError)
 							
 				print "PathFollow: foreAvg =", foreAvg
+				print "PathFollow: backAvg =", backAvg
 															
 		return False				
 

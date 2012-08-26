@@ -16,8 +16,9 @@ import sys
 import opaque.maps.gen_icp as gen_icp
 import atexit
 def cleanup():
-	for p in gen_icp.overlapPool:
-		p.terminate()
+	if gen_icp.overlapPool != None:
+		for p in gen_icp.overlapPool:
+			p.terminate()
 atexit.register(cleanup)
 
 
