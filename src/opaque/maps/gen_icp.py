@@ -248,14 +248,38 @@ def __remoteOverlap_ICP(rank, qin, qout):
             initGuess = [arg[4], arg[5], arg[6]]
             medialPoints1 = arg[2]
             medialPoints2 = arg[3]
+            foreI1 = arg[7]
+            backI1 = arg[8]
+            foreI2 = arg[9]
+            backI2 = arg[10]
+            #arg = [nodeID1, nodeID2, medial1, medial2, u1, u2, initAng, frontDepI1, backDepI1, frontDepI2, backDepI2]
+
             #args = [k, targetNodeID, medials[k], medials[targetNodeID], 0.0, u2_3, 0.0]
 
-            offset, histogram = minICP_GPU2(initGuess, medialPoints1, medialPoints2)        
+            #print "GPU2:", foreI1, backI1, foreI2, backI2
+            offset, histogram = minICP_GPU2(initGuess, medialPoints1, medialPoints2, foreI1, backI1, foreI2, backI2)        
+            #offset, histogram = minICP_GPU2(initGuess, medialPoints1, medialPoints2)        
             #print "DID:", arg[0], arg[1]
 
             results.append([offset, histogram])
         # write to output queue
         qout.put((nc,results))
+
+def serialOverlapICP(argSets):
+
+    results = []
+    for arg in argSets:
+        initGuess = [arg[4], arg[5], arg[6]]
+        medialPoints1 = arg[2]
+        medialPoints2 = arg[3]
+        foreI1 = arg[7]
+        backI1 = arg[8]
+        foreI2 = arg[9]
+        backI2 = arg[10]
+        offset, histogram = minICP_GPU2(initGuess, medialPoints1, medialPoints2, foreI1, backI1, foreI2, backI2)        
+        results.append([offset, histogram])
+
+    return results
 
 
 def batchOverlapICP(argums):
@@ -5239,7 +5263,7 @@ def overlapICP(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1, medi
     return offset, histogram
 
 
-def minICP_GPU2(initGuess, medialPoints1, medialPoints2):
+def minICP_GPU2(initGuess, medialPoints1, medialPoints2, foreI1, backI1, foreI2, backI2):
 
     global numIterations
 
@@ -5272,8 +5296,10 @@ def minICP_GPU2(initGuess, medialPoints1, medialPoints2):
     
     currU = u2
     currAng = initGuess[2]
-    medialSpline1 = SplineFit(medialPoints1, smooth=0.1)
-    medialSpline2 = SplineFit(medialPoints2, smooth=0.1)
+    #print "foreI1, backI1:", foreI1, backI1
+    medialSpline1 = SplineFit(medialPoints1[foreI1:backI1+1], smooth=0.1)
+    #print "foreI2, backI2:", foreI2, backI2
+    medialSpline2 = SplineFit(medialPoints2[foreI2:backI2+1], smooth=0.1)
 
 
     uSet = [i*0.01 for i in range(100)]
@@ -5336,7 +5362,7 @@ def minICP_GPU2(initGuess, medialPoints1, medialPoints2):
         pylab.clf()
         
 
-
+ 
         medialPath1 = points1
         medialPath2 = points2
         medial_trans = []
@@ -5540,6 +5566,54 @@ def minICP_GPU2(initGuess, medialPoints1, medialPoints2):
         #if minMatchDist < 0.25:
         #    minMatchDist = 0.25
 
+
+    if True:
+        pylab.clf()
+        
+
+ 
+        medialPath1 = points1
+        medialPath2 = points2
+        medial_trans = []
+        for p in medialPath2:
+            medial_trans.append(dispOffset(p, offset))    
+
+        xP = []
+        yP = []
+        for p in medialPath1:
+            xP.append(p[0])
+            yP.append(p[1])
+        pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+
+        xP = []
+        yP = []
+        for p in medial_trans:
+            xP.append(p[0])
+            yP.append(p[1])
+            
+        pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
+
+        #xP = []
+        #yP = []
+        #for p in medialPath2:
+        #    p1 = gen_icp.dispOffset(p, gndOffset)
+        #    xP.append(p1[0])
+        #    yP.append(p1[1])
+        #pylab.plot(xP,yP,linewidth=1, color=(1.0,0.5,0.5))
+
+        pylab.title("u1: %1.2f u2: %1.2f currAng: %1.2f" % (u1, currU, currAng))
+
+
+        pylab.xlim(-4, 4)                    
+        pylab.ylim(-3, 3)
+
+        pylab.savefig("ICP_plot_%04u.png" % numIterations)
+        #pylab.savefig("constraints_%04u.png" % const_count)
+        pylab.clf()            
+
+        #icpCount += 1
+        
+  
         
     histogram = overlapHistogram([currU,currAng], match_pairs, medialSpline1, medialSpline2, u1)            
 

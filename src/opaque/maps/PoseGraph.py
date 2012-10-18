@@ -1453,7 +1453,7 @@ class PoseGraph:
 	
 				
 				" GET THE ORDERED LIST OF OVERLAPPING PATHS FOR EACH NODE "
-					
+				
 				" the overlapping paths are computed from the initial guess of position "
 				orderedPathIDs1 = self.paths.getOrderedOverlappingPaths(nodeID1)
 				orderedPathIDs2 = self.paths.getOrderedOverlappingPaths(nodeID2)
@@ -1978,7 +1978,7 @@ class PoseGraph:
 				cOffset = offset
 				rootID = pathID1
 				lessID = pathID2
-
+				
 				
 				mergeNodes = self.paths.getNodes(lessID)
 				
@@ -1988,18 +1988,16 @@ class PoseGraph:
 				self.drawConstraints(self.statePlotCount)
 				self.statePlotCount += 1
 				self.drawPathAndHull()
-
+				
+				" offset between paths "
 				poseOrigin = Pose(cOffset)
 				for nodeID in mergeNodes:
-					nodePose = self.nodeHash[nodeID].getGlobalGPACPose()
 
-					#poseOrigin1 = Pose(cOffset)
-					#guessPose = poseOrigin1.convertLocalOffsetToGlobal(nodePose)
-					
-					
-							
+					" adjust node poses to relative path positions "
+					nodePose = self.nodeHash[nodeID].getGlobalGPACPose()
 					guessPose = poseOrigin.convertLocalOffsetToGlobal(nodePose)
 					self.nodeHash[nodeID].setGPACPose(guessPose)
+					
 					self.drawConstraints(self.statePlotCount)
 					self.statePlotCount += 1
 					self.drawPathAndHull()
@@ -4079,11 +4077,11 @@ class PoseGraph:
 			pathIDs = cand['pathIDs']
 
 			isInPath = False
+			commonPathID = -1
 			for j in pathIDs:
 				if self.paths.isNodeExist(nodeID2,j):
 					isInPath = True
-
-
+					commonPathID = j
 
 			oldConstraints = self.getEdges(nodeID1, nodeID2)
 			isExist = False
@@ -4098,9 +4096,20 @@ class PoseGraph:
 					if (isTargFeatureless and isFeatureless) or (not isTargFeatureless and not isFeatureless):
 						#if isInPath and not isExist:
 						if not isExist:
-							args = [nodeID1, nodeID2, medial1, medial2, u1, u2, initAng]
+
+							points1 = splines[nodeID1].getUniformSamples()
+							points2 = splines[nodeID2].getUniformSamples()
+
+							frontDepI1 = 0
+							backDepI1 = len(points1)-1
+							frontDepI2 = 0
+							backDepI2 = len(points2)-1
+							args = [nodeID1, nodeID2, medial1, medial2, u1, u2, initAng, frontDepI1, backDepI1, frontDepI2, backDepI2]
 							argSets.append(args)
-							candidates2.append(cand)
+							candidates2.append(cand)							
+							
+							
+							
 			if False and fabs(diffAngle(angDiff1,initAng)) < PAIR_ANG_DELTA:
 				args = [nodeID1, nodeID2, medial1, medial2, u1, u2, initAng]
 				argSets.append(args)
@@ -4117,7 +4126,8 @@ class PoseGraph:
 			print nodeID1, nodeID2, u1, u2, initAng
 
 		t1 = time.time()
-		results = gen_icp.batchOverlapICP(argSets)
+		results = gen_icp.serialOverlapICP(argSets)
+		#results = gen_icp.batchOverlapICP(argSets)
 		t2 = time.time()
 		print "batchOverlapICP:", t2-t1, "seconds", len(argSets), "pairs"
 
@@ -4279,15 +4289,10 @@ class PoseGraph:
 		paths = []
 		for i in range(self.numNodes):
 			paths.append(bayes.dijkstra_proj(i, self.numNodes, self.edgeHash))
-			#print "paths", i, ":", paths[i]
-
-
-
 
 		constraintPairs = []
 		for nodeID in allNodes:
 			constraintPairs.append([targetNodeID,nodeID])
-
 
 		medials = []
 		splines = []
@@ -4359,6 +4364,10 @@ class PoseGraph:
 	
 			u2 = splines[k].findU(points2[i_2])	
 			
+			
+
+			
+			
 			args = [k, targetNodeID, medials[k], medials[targetNodeID], originUs[k], u2, 0.0]
 			candidates.append({ "nodeID1" : k, "nodeID2" : targetNodeID,
 							"medial1": medials[k], "medial2": medials[targetNodeID],
@@ -4366,61 +4375,10 @@ class PoseGraph:
 							"isFeatureless1": isFeatureless, "isFeatureless2": isTargFeatureless,
 							"isNeigh": isNeigh, "cartDist1": cartDist1, "angDiff1": angDiff1,
 							"pathIDs": pathIDs})
-			
-			"""
-			args = [k, targetNodeID, medials[k], medials[targetNodeID], originUs[k], u2_1, 0.0]
-			candidates.append({ "nodeID1" : k, "nodeID2" : targetNodeID,
-							"medial1": medials[k], "medial2": medials[targetNodeID],
-							"u1": args[4], "u2": args[5], "initAng": args[6],
-							"isFeatureless1": isFeatureless, "isFeatureless2": isTargFeatureless,
-							"isNeigh": isNeigh, "cartDist1": cartDist1, "angDiff1": angDiff1,
-							"pathIDs": pathIDs})
 
-			#args = [k, targetNodeID, medials[k], medials[targetNodeID], originUs[k], u2_2, 0.0]
-			args = [k, targetNodeID, medials[k], medials[targetNodeID], originForeUs[k], u2_1, 0.0]
-			candidates.append({ "nodeID1" : k, "nodeID2" : targetNodeID,
-							"medial1": medials[k], "medial2": medials[targetNodeID],
-							"u1": args[4], "u2": args[5], "initAng": args[6],
-							"isFeatureless1": isFeatureless, "isFeatureless2": isTargFeatureless,
-							"isNeigh": isNeigh, "cartDist1": cartDist1, "angDiff1": angDiff1,
-							"pathIDs": pathIDs})
-			
-			#args = [k, targetNodeID, medials[k], medials[targetNodeID], originUs[k], u2_3, 0.0]
-			args = [k, targetNodeID, medials[k], medials[targetNodeID], originBackUs[k], u2_1, 0.0]
-			candidates.append({ "nodeID1" : k, "nodeID2" : targetNodeID,
-							"medial1": medials[k], "medial2": medials[targetNodeID],
-							"u1": args[4], "u2": args[5], "initAng": args[6],
-							"isFeatureless1": isFeatureless, "isFeatureless2": isTargFeatureless,
-							"isNeigh": isNeigh, "cartDist1": cartDist1, "angDiff1": angDiff1,
-							"pathIDs": pathIDs})
-			
-			args = [k, targetNodeID, medials[k], medials[targetNodeID], originUs[k], u2_1, pi]
-			candidates.append({ "nodeID1" : k, "nodeID2" : targetNodeID,
-							"medial1": medials[k], "medial2": medials[targetNodeID],
-							"u1": args[4], "u2": args[5], "initAng": args[6],
-							"isFeatureless1": isFeatureless, "isFeatureless2": isTargFeatureless,
-							"isNeigh": isNeigh, "cartDist1": cartDist1, "angDiff1": angDiff1,
-							"pathIDs": pathIDs})
-			
-			#args = [k, targetNodeID, medials[k], medials[targetNodeID], originUs[k], u2_2, pi]
-			args = [k, targetNodeID, medials[k], medials[targetNodeID], originForeUs[k], u2_1, pi]
-			candidates.append({ "nodeID1" : k, "nodeID2" : targetNodeID,
-							"medial1": medials[k], "medial2": medials[targetNodeID],
-							"u1": args[4], "u2": args[5], "initAng": args[6],
-							"isFeatureless1": isFeatureless, "isFeatureless2": isTargFeatureless,
-							"isNeigh": isNeigh, "cartDist1": cartDist1, "angDiff1": angDiff1,
-							"pathIDs": pathIDs})
-			
-			#args = [k, targetNodeID, medials[k], medials[targetNodeID], originUs[k], u2_3, pi]
-			args = [k, targetNodeID, medials[k], medials[targetNodeID], originBackUs[k], u2_1, pi]
-			candidates.append({ "nodeID1" : k, "nodeID2" : targetNodeID,
-							"medial1": medials[k], "medial2": medials[targetNodeID],
-							"u1": args[4], "u2": args[5], "initAng": args[6],
-							"isFeatureless1": isFeatureless, "isFeatureless2": isTargFeatureless,
-							"isNeigh": isNeigh, "cartDist1": cartDist1, "angDiff1": angDiff1,
-							"pathIDs": pathIDs})
-			"""
-			
+		allSplices, terminals, junctions = self.paths.getAllSplices()
+
+
 
 		PATH_MATCH_DIST = 1.0
 		PAIR_ANG_DELTA = 0.3
@@ -4456,10 +4414,76 @@ class PoseGraph:
 
 			isInPath = False
 			#allPaths = self.paths.getPathIDs()
+			commonPathID = -1
 			for j in pathIDs:
 				if self.paths.isNodeExist(nodeID2,j):
 					isInPath = True
+					commonPathID = j
 
+			"  ----------------------- "
+			if isInPath:
+				path1 = self.paths.getPath(commonPathID)
+				parentID1 = path1["parentID"]
+				if parentID1 != None:
+				
+					sPaths = allSplices[(parentID1, commonPathID)]
+					termPath1 = sPaths[0]['termPath']
+					termPath2 = sPaths[1]['termPath']
+					
+					startKey = termPath1[0]
+					endKey = termPath1[-1]
+		
+					shortestPathSpanTree, shortestDist = self.paths.pathGraph.shortest_path(endKey)
+					currNode = shortestPathSpanTree[startKey]					
+					path1 = []
+					while currNode != endKey:
+						path1.append(self.paths.pathGraph.get_node_attributes(currNode))
+						currNode = shortestPathSpanTree[currNode]
+					path1.append(self.paths.pathGraph.get_node_attributes(currNode))
+		
+					startKey = termPath2[0]
+					endKey = termPath2[-1]
+		
+					shortestPathSpanTree, shortestDist = self.paths.pathGraph.shortest_path(endKey)
+					currNode = shortestPathSpanTree[startKey]					
+					path2 = []
+					while currNode != endKey:
+						path2.append(self.paths.pathGraph.get_node_attributes(currNode))
+						currNode = shortestPathSpanTree[currNode]
+					path2.append(self.paths.pathGraph.get_node_attributes(currNode))
+					
+					resultSum1_1 = self.paths.getOverlapCondition2(path1, nodeID1)
+					resultSum1_2 = self.paths.getOverlapCondition2(path2, nodeID1)
+					resultSum2_1 = self.paths.getOverlapCondition2(path1, nodeID2)
+					resultSum2_2 = self.paths.getOverlapCondition2(path2, nodeID2)
+					
+					print "intra-path overlaps:[", parentID1, ",", commonPathID, "]"
+					print nodeID1, resultSum1_1, resultSum1_2
+					print nodeID2, resultSum2_1, resultSum2_2
+				else:
+					sPaths = allSplices[(commonPathID, commonPathID)]
+					termPath1 = sPaths[0]['termPath']
+					
+					startKey = termPath1[0]
+					endKey = termPath1[-1]
+		
+					shortestPathSpanTree, shortestDist = self.paths.pathGraph.shortest_path(endKey)
+					currNode = shortestPathSpanTree[startKey]					
+					path1 = []
+					while currNode != endKey:
+						path1.append(self.paths.pathGraph.get_node_attributes(currNode))
+						currNode = shortestPathSpanTree[currNode]
+					path1.append(self.paths.pathGraph.get_node_attributes(currNode))
+							
+					resultSum1_1 = self.paths.getOverlapCondition2(path1, nodeID1)
+					resultSum2_1 = self.paths.getOverlapCondition2(path1, nodeID2)
+					
+					print "intra-path overlaps:[", commonPathID, ",", commonPathID, "]"
+					print nodeID1, resultSum1_1
+					print nodeID2, resultSum2_1
+
+		
+			"  ----------------------- "
 
 
 			oldConstraints = self.getEdges(nodeID1, nodeID2)
@@ -4467,14 +4491,96 @@ class PoseGraph:
 			for constraint in oldConstraints:
 				isExist = True
 
-			print nodeID1, nodeID2, u1, u2, initAng, pathIDs
+			print nodeID1, nodeID2, u1, u2, initAng, cartDist1, angDiff1, pathIDs
+			
+
+			#sum1 = self.paths.getOverlapCondition(self.trimmedPaths[pathID], nodeID)
+			
+			
 			
 			
 			if True and not isNeigh:
 				if cartDist1 < PATH_MATCH_DIST and fabs(diffAngle(angDiff1,initAng)) < PAIR_ANG_DELTA:
 					if (isTargFeatureless and isFeatureless) or (not isTargFeatureless and not isFeatureless):
 						if isInPath and not isExist:
-							args = [nodeID1, nodeID2, medial1, medial2, u1, u2, initAng]
+
+
+							
+							resultArgs1 = self.paths.getDeparturePoint(self.trimmedPaths[commonPathID], nodeID1)
+							resultArgs2 = self.paths.getDeparturePoint(self.trimmedPaths[commonPathID], nodeID2)
+							
+							"""
+							#p_1, depI1, pDist1 = gen_icp.findClosestPointInA(points2_offset, pathPoints[max1])
+							#p_2, depI2, pDist2 = gen_icp.findClosestPointInA(points2_offset, pathPoints[max2])
+					
+							#p_1, depI1, pDist1 = gen_icp.findClosestPointInA(medial2, points2[depI1])
+							#p_2, depI2, pDist2 = gen_icp.findClosestPointInA(medial2, points2[depI2])
+							"""
+							
+							#departurePoint1, angle1, isInterior1, isExist1, dist1, departurePoint2, angle2, isInterior2, isExist2, dist2
+			
+							frontDeparturePoint1 = resultArgs1[0]
+							backDeparturePoint1 = resultArgs1[5]
+							frontDeparturePoint2 = resultArgs2[0]
+							backDeparturePoint2 = resultArgs2[5]
+
+							frontDeparturePoint1 = 0
+							backDeparturePoint1 = 0
+							frontDeparturePoint2 = 0
+							backDeparturePoint2 = 0
+
+							node1 = self.nodeHash[nodeID1]
+							estPose1 = node1.getGlobalGPACPose()
+							node2 = self.nodeHash[nodeID2]
+							estPose2 = node2.getGlobalGPACPose()
+
+							points1 = splines[nodeID1].getUniformSamples()
+							points2 = splines[nodeID2].getUniformSamples()
+
+							points1_offset = []
+							for p in points1:
+								result = gen_icp.dispOffset(p, estPose1)		
+								points1_offset.append(result)
+
+							points2_offset = []
+							for p in points2:
+								result = gen_icp.dispOffset(p, estPose2)		
+								points2_offset.append(result)
+								
+
+
+							if frontDeparturePoint1 != 0:
+								p_1, depI, pDist1 = gen_icp.findClosestPointInA(points1_offset, frontDeparturePoint1)
+								p_1, frontDepI1, pDist1 = gen_icp.findClosestPointInA(medial2, points1[depI])
+							else:
+								frontDepI1 = 0
+
+							if backDeparturePoint1 != 0:
+								p_1, depI, pDist1 = gen_icp.findClosestPointInA(points1_offset, backDeparturePoint1)
+								p_1, backDepI1, pDist1 = gen_icp.findClosestPointInA(medial2, points1[depI])
+							else:
+								backDepI1 = len(points1)-1
+
+							if frontDeparturePoint2 != 0:
+								p_2, depI, pDist2 = gen_icp.findClosestPointInA(points2_offset, frontDeparturePoint2)
+								p_2, frontDepI2, pDist2 = gen_icp.findClosestPointInA(medial2, points2[depI])
+							else:
+								frontDepI2 = 0
+
+							if backDeparturePoint2 != 0:
+								p_2, depI, pDist2 = gen_icp.findClosestPointInA(points2_offset, backDeparturePoint2)
+								p_2, backDepI2, pDist2 = gen_icp.findClosestPointInA(medial2, points2[depI])
+							else:
+								backDepI2 = len(points2)-1
+										
+							#frontDepI1 = resultArgs1[5]
+							#backDepI1 = resultArgs1[11]
+							#frontDepI2 = resultArgs2[5]
+							#backDepI2 = resultArgs2[11]
+							#departurePoint1, depAngle1, isInterior1, isExist1, discDist1, depI1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, depI2 = self.paths.getDeparturePoint(self.trimmedPaths[commonPathID], nodeID1)
+
+							
+							args = [nodeID1, nodeID2, medial1, medial2, u1, u2, initAng, frontDepI1, backDepI1, frontDepI2, backDepI2]
 							argSets.append(args)
 							candidates2.append(cand)
 			if False and fabs(diffAngle(angDiff1,initAng)) < PAIR_ANG_DELTA:
@@ -4493,7 +4599,8 @@ class PoseGraph:
 			print nodeID1, nodeID2, u1, u2, initAng
 
 		t1 = time.time()
-		results = gen_icp.batchOverlapICP(argSets)
+		results = gen_icp.serialOverlapICP(argSets)
+		#results = gen_icp.batchOverlapICP(argSets)
 		t2 = time.time()
 		print "batchOverlapICP:", t2-t1, "seconds", len(argSets), "pairs"
 
@@ -6104,7 +6211,7 @@ class PoseGraph:
 			pylab.plot(xP,yP, '--', color=self.colors[k], linewidth=4)
 			
 		print "pathAndHull:", self.pathDrawCount
-		pylab.title("%s" % repr(self.paths.getPathIDs()))
+		pylab.title("paths: %s numNodes: %d" % (repr(self.paths.getPathIDs()), self.numNodes))
 		pylab.savefig("pathAndHull_%04u.png" % self.pathDrawCount)
 
 		self.pathDrawCount += 1

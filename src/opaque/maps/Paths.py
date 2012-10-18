@@ -1077,18 +1077,7 @@ class Paths:
                                 print self.consistency
         
         return toBeMerged
-                        
-        for mergeThis in toBeMerged:
-
-            pathID1 = mergeThis[0]
-            pathID2 = mergeThis[1]
-            offset = mergeThis[2]
-
-            self.mergePaths(pathID1, pathID2, offset)            
-        
-  
-            print
-        pass
+                    
     
 
     #def makePathCompare(self, nodeID, globalPath, globalJunctionPoint, globalDeparturePoint):
@@ -1747,8 +1736,7 @@ class Paths:
         for k in range(len(longPaths)):
             juncIndices.append(longPaths[k][2])
             longPaths[k] = longPaths[k][1]
-            
-
+        
         " GET THE LEAF INDEXES TO EACH PATH "
         leafPairs = []
         for path in longPaths:
@@ -1868,6 +1856,9 @@ class Paths:
 
             medialLongPaths.append(deepcopy(medial2))
 
+            print "globalJunctionPoint:", globalJunctionPoint
+            print "juncIndices:", juncIndices
+
             juncAngs = []
             if globalJunctionPoint != None:
                 for juncInd in juncIndices[n]:
@@ -1876,6 +1867,8 @@ class Paths:
                         backVec = [0.,0.]
                         indic = range(3)
                         indic.reverse()
+                        
+                        print "juncInd:", juncInd
 
                         highIndex = 2+juncInd+2
                         highMod = 0
@@ -1887,19 +1880,23 @@ class Paths:
                         if -lowIndex > len(longPath):
                             lowMod = -len(longPath) - lowIndex
                         
+                        print "highIndex, highMod:", highIndex, highMod
+                        print "lowIndex, lowMod:", lowIndex, lowMod
+                        
+                        
                         for i in indic:
-                            p1 = longPath[i+juncInd+2+highMod]
-                            p2 = longPath[i+juncInd+highMod]
+                            p1 = longPath[i+juncInd+highMod]
+                            p2 = longPath[i+juncInd+2+highMod]
                             vec = [p2[0]-p1[0], p2[1]-p1[1]]
                             frontVec[0] += vec[0]
                             frontVec[1] += vec[1]
                     
-                            p1 = longPath[-i-juncInd-3+lowMod]
-                            p2 = longPath[-i-juncInd-1+lowMod]
+                            p1 = longPath[-i-juncInd-1+lowMod]
+                            p2 = longPath[-i-juncInd-3+lowMod]
                             vec = [p2[0]-p1[0], p2[1]-p1[1]]
                             backVec[0] += vec[0]
                             backVec[1] += vec[1]
-                    
+                        
                         frontMag = math.sqrt(frontVec[0]*frontVec[0] + frontVec[1]*frontVec[1])
                         backMag = math.sqrt(backVec[0]*backVec[0] + backVec[1]*backVec[1])
                     
@@ -1907,7 +1904,10 @@ class Paths:
                         frontVec[1] /= frontMag
                         backVec[0] /= backMag
                         backVec[1] /= backMag
-        
+                        
+                        print "frontVec:", frontVec
+                        print "backVec:", backVec
+                        
                         foreAng = acos(frontVec[0])
                         if frontVec[1] < 0.0:
                             foreAng = -foreAng
@@ -1915,6 +1915,9 @@ class Paths:
                         backAng = acos(backVec[0])
                         if backVec[1] < 0.0:
                             backAng = -backAng
+        
+                        print "foreAng:", foreAng
+                        print "backAng:", backAng
         
                         frontError = normalizeAngle(globalJunctionPoint[2]-foreAng)
                         backError = normalizeAngle(globalJunctionPoint[2]-backAng)
@@ -1927,7 +1930,7 @@ class Paths:
         for junc in allJunctions:
             juncDists.append(junc[2])
         
-        if False:
+        if True:
             pylab.clf()
     
             for path in medialLongPaths:
@@ -1969,6 +1972,8 @@ class Paths:
             self.topCount += 1
 
 
+        print "juncAngSet:", juncAngSet
+
         
         if globalJunctionPoint != None:
             bestFit = -1
@@ -1991,7 +1996,10 @@ class Paths:
                             bestFit = k
 
             if bestFit != -1:
+                print "returning bestFit:", bestFit, minDiff
                 return medialLongPaths[bestFit], vertices
+            else:
+                print "not returning bestFit"
 
                 
 
@@ -3706,7 +3714,7 @@ class Paths:
             return departurePoint1, angle1, isInterior1, isExist1, 0.0, departurePoint2, angle2, isInterior2, isExist2, 0.0
         
         node2 = self.nodeHash[nodeID]
-
+        
         hull2, medial2 = computeHullAxis(nodeID, node2, tailCutOff = False)
         
         estPose2 = node2.getGlobalGPACPose()        
@@ -3867,30 +3875,27 @@ class Paths:
             departurePoint1 = pathPoints[max1]
             isExist1 = True
 
-
-
             if max1 == 0 or max1 == len(pathPoints)-1:
                 isInterior1 = False
             else:
                 isInterior1 = True
 
-            # Test purposes only
-            #if nodeID == 4 or nodeID == 5:
-            #    isInterior1 = True
-
-
         if maxBack > DEP_THRESH:
             departurePoint2 = pathPoints[max2]
             isExist2 = True
-
-
+            
             if max2 == 0 or max2 == len(pathPoints)-1:
                 isInterior2 = False
             else:
                 isInterior2 = True
 
+        """
+        #p_1, depI1, pDist1 = gen_icp.findClosestPointInA(points2_offset, pathPoints[max1])
+        #p_2, depI2, pDist2 = gen_icp.findClosestPointInA(points2_offset, pathPoints[max2])
 
-
+        #p_1, depI1, pDist1 = gen_icp.findClosestPointInA(medial2, points2[depI1])
+        #p_2, depI2, pDist2 = gen_icp.findClosestPointInA(medial2, points2[depI2])
+        """
             
         """
         if maxFront > 0.5 and maxFront > maxBack:
@@ -3981,13 +3986,246 @@ class Paths:
             
             self.pathPlotCount += 1
         
-        print "departure %d: %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, [%d,%d] [%d,%d]" % (nodeID, maxFront, maxBack, dist1, dist2, matchVar1, matchVar2, angle1, angle2, isExist1, isExist2, isInterior1, isInterior2)
+        print "departure %d: %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, [%d,%d] [%d,%d], [%d,%d]" % (nodeID, maxFront, maxBack, dist1, dist2, matchVar1, matchVar2, angle1, angle2, isExist1, isExist2, isInterior1, isInterior2, frontDepI, backDepI)
         
         #return departurePoint, isInterior, isExist
+        #return departurePoint1, angle1, isInterior1, isExist1, dist1, departurePoint2, angle2, isInterior2, isExist2, dist2
         return departurePoint1, angle1, isInterior1, isExist1, dist1, departurePoint2, angle2, isInterior2, isExist2, dist2
         
 
-    " returns the endpoints of a subpath of path 2 that does not overlap path 1 "
+    " returns the endpoints of a node medial axis overlap path "
+    def getOverlapBoundaries(self, currPath, nodeID):
+        
+        isExist1 = False
+        isInterior1 = False
+        departurePoint1 = 0
+        angle1 = 0.0
+        isExist2 = False
+        isInterior2 = False
+        departurePoint2 = 0
+        angle2 = 0.0
+        
+        if len(currPath) == 0:
+            return departurePoint1, angle1, isInterior1, isExist1, 0.0, departurePoint2, angle2, isInterior2, isExist2, 0.0
+        
+        node2 = self.nodeHash[nodeID]
+        
+        hull2, medial2 = computeHullAxis(nodeID, node2, tailCutOff = False)
+        
+        estPose2 = node2.getGlobalGPACPose()        
+        
+        "Assumption:  one section of the medial axis is closely aligned with the path "
+        poseOrigin = Pose(estPose2)
+        
+        medialSpline2 = SplineFit(medial2, smooth=0.1)
+        points2 = medialSpline2.getUniformSamples()
+
+        pathSpline = SplineFit(currPath, smooth=0.1)
+        pathPoints = pathSpline.getUniformSamples()
+
+        
+        points2_offset = []
+        for p in points2:
+            result = poseOrigin.convertLocalOffsetToGlobal(p)
+            points2_offset.append(result)
+
+
+        " tip angles "
+        angSum1 = 0.0
+        angSum2 = 0.0
+        angs1 = []
+        angs2 = []
+        phi1 = normalizeAngle(points2_offset[0][2])
+        phi2 = normalizeAngle(points2_offset[-1][2])
+        for i in range(10):
+            ang1 = normalizeAngle(points2_offset[i][2]-phi1)
+            ang2 = normalizeAngle(points2_offset[-i-1][2]-phi2)
+            angSum1 += ang1
+            angSum2 += ang2
+            
+            angs1.append(ang1+phi1)
+            angs2.append(ang2+phi2)
+
+        angle1 = angSum1 / 10.0 + phi1
+        angle2 = angSum2 / 10.0 + phi2
+
+        " invert one angle so opposite tips have opposite angles "
+        angle1 = normalizeAngle(angle1 + pi)
+
+        print "ang1:", angle1, angs1
+        print "ang2:", angle2, angs2
+        print "diff:", diffAngle(angle1, angle2)
+
+        distances = []
+        indices = []
+        for i in range(0,len(points2_offset)):
+            p_2 = points2_offset[i]
+            #p_1, minDist = gen_icp.findClosestPointInB(pathPoints, p_2, [0.0,0.0,0.0])
+            p_1, i_1, minDist = gen_icp.findClosestPointInA(pathPoints, p_2)
+            distances.append(minDist)
+            indices.append(i_1)
+        
+        
+        " Compute the front and back departure points by finding the inflection point on the distance curve "
+        " these indices become frontDepI and backDepI respectively "
+        maxFront = distances[0]
+        maxBack = distances[-1]
+
+        currI = 1
+        try:
+            while distances[currI+3] < maxFront:
+                maxFront = distances[currI]
+                currI += 1
+        except:
+            pass
+        
+        frontDepI = currI
+        frontPoint = [frontDepI, distances[frontDepI]]
+
+        " FIXME:  index out of bounds case "
+        currI = 2
+        try:
+            while distances[-currI-3] < maxBack:
+                maxBack = distances[-currI]
+                currI += 1
+        except:
+            pass
+
+        backDepI = len(distances) - currI
+        backPoint = [backDepI, distances[backDepI]]
+
+        "reset to the maximum distances "
+        maxFront = distances[0]
+        maxBack = distances[-1]
+        
+        " for all the points matched from the local curve to the path curve "
+        " count the number of times they are matched "
+        foo = indices[0:frontDepI+1]
+        d1 = {}
+        for i in set(foo):
+            d1[i] = foo.count(i)
+
+        foo = indices[backDepI:]
+        d2 = {}
+        for i in set(foo):
+            d2[i] = foo.count(i)
+
+        " find the point that has the most matches "
+        max1 = max(d1, key=d1.get)
+        max2 = max(d2, key=d2.get)
+
+        arr1 = numpy.array(deepcopy(indices[0:frontDepI+1]))
+        arr2 = numpy.array(deepcopy(indices[backDepI:]))
+        matchVar1 = arr1.var()
+        matchVar2 = arr2.var()
+
+
+        tipMatch1 = pathPoints[indices[0]]
+
+        " discrepancy distance between tip closest point and average departure point "
+        dist1 = sqrt((tipMatch1[0]-pathPoints[max1][0])**2 + (tipMatch1[1] - pathPoints[max1][1])**2)
+
+        tipMatch2 = pathPoints[indices[-1]]
+
+        " discrepancy distance between tip closest point and average departure point "
+        dist2 = sqrt((tipMatch2[0]-pathPoints[max2][0])**2 + (tipMatch2[1] - pathPoints[max2][1])**2)
+
+
+        DEP_THRESH = 0.3
+
+        if maxFront > DEP_THRESH:
+            departurePoint1 = pathPoints[max1]
+            isExist1 = True
+
+            if max1 == 0 or max1 == len(pathPoints)-1:
+                isInterior1 = False
+            else:
+                isInterior1 = True
+
+        if maxBack > DEP_THRESH:
+            departurePoint2 = pathPoints[max2]
+            isExist2 = True
+
+
+            if max2 == 0 or max2 == len(pathPoints)-1:
+                isInterior2 = False
+            else:
+                isInterior2 = True
+        
+        " sum of closest points on front and back "
+        " select the one with minimal cost "
+        
+        if False:
+            pylab.clf()
+            xP = range(len(points2_offset))
+            yP = distances
+            pylab.plot(xP,yP, color ='b')
+            
+            if maxFront > 0.5:
+                xP = [frontPoint[0]]
+                yP = [frontPoint[1]]
+                pylab.scatter(xP,yP, color='b')
+    
+            if maxBack > 0.5:
+                xP = [backPoint[0]]
+                yP = [backPoint[1]]
+                pylab.scatter(xP,yP, color='b')
+            
+            pylab.xlim(0,200)
+            pylab.ylim(0,2)
+            #pylab.title("%1.2f,%1.2f,%1.2f,%1.2f,%1.2f,%1.2f,%d,%d,%d,%d" % (frontSum,backSum,frontAvg,backAvg,frontI,backI,max1,max2,d1[max1],d2[max2]))
+            pylab.title("nodeID %d: %1.2f %1.2f %d %d %d" % (nodeID, maxFront, maxBack, len(pathPoints), max1, max2))
+            pylab.savefig("distances_%04u.png" % self.pathPlotCount)
+
+        if False:
+            pylab.clf()
+            xP = []
+            yP = []
+            for p in points2_offset:
+                xP.append(p[0])
+                yP.append(p[1])
+            pylab.plot(xP,yP, color='b')
+    
+            if True:    
+                xP = [pathPoints[max1][0]]
+                yP = [pathPoints[max1][1]]
+                pylab.scatter(xP,yP, color='b')        
+    
+                xP = [tipMatch1[0]]
+                yP = [tipMatch1[1]]
+                pylab.scatter(xP,yP, color='r')        
+    
+    
+            if True:
+                xP = [pathPoints[max2][0]]
+                yP = [pathPoints[max2][1]]
+                pylab.scatter(xP,yP, color='b')        
+    
+                xP = [tipMatch2[0]]
+                yP = [tipMatch2[1]]
+                pylab.scatter(xP,yP, color='r')        
+    
+    
+            xP = []
+            yP = []
+            for p in currPath:
+                xP.append(p[0])
+                yP.append(p[1])
+            pylab.plot(xP,yP, color='r')
+            
+            pylab.xlim(-5,10)
+            pylab.ylim(-8,8)
+            #pylab.title("nodeID %d: %d %d" % (nodeID, isInterior, isExist))
+            pylab.title("%d: %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, [%d,%d] [%d,%d]" % (nodeID, maxFront, maxBack, dist1, dist2, matchVar1, matchVar2, angle1, angle2, isExist1, isExist2, isInterior1, isInterior2))
+            pylab.savefig("departure_%04u.png" % self.pathPlotCount)
+            
+            self.pathPlotCount += 1
+        
+        print "departure %d: %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, [%d,%d] [%d,%d]" % (nodeID, maxFront, maxBack, dist1, dist2, matchVar1, matchVar2, angle1, angle2, isExist1, isExist2, isInterior1, isInterior2)
+        
+        #return departurePoint, isInterior, isExist
+        return departurePoint1, angle1, isInterior1, isExist1, dist1, frontDepI, departurePoint2, angle2, isInterior2, isExist2, dist2, backDepI
+        
 
     def getPathOverlapCondition2(self, path1, path2, pathID1, pathID2):
 
@@ -4109,9 +4347,7 @@ class Paths:
             pylab.title("%d %d cost = %f, count = %d" % (pathID1, pathID2, cost, len(support_pairs)))
             pylab.savefig("pathOverlapCost2_%04u.png" % self.overlapPlotCount2)
             self.overlapPlotCount2 += 1
-        
-        if len(support_pairs) == 0:
-            return 0
+
 
         return len(support_pairs)
 
@@ -4379,6 +4615,141 @@ class Paths:
             return 1e100
 
         return cost
+
+
+    def getOverlapCondition2(self, supportLine, nodeID):
+
+        plotIter = False
+
+        if len(supportLine) <= 5:
+            return 0
+
+        node2 = self.nodeHash[nodeID]
+  
+        hull2, medial2 = computeHullAxis(nodeID, node2, tailCutOff = False)
+        #hull2, medial2 = computeHullAxis(nodeID, node2, tailCutOff = True)
+    
+        estPose2 = node2.getGlobalGPACPose()        
+        
+        #minMatchDist2 = 0.2
+        minMatchDist2 = 0.5
+        #minMatchDist2 = 1.0
+        #minMatchDist2 = 2.0
+            
+        " set the initial guess "
+        poseOrigin = Pose(estPose2)
+        
+        localSupport = []
+        for pnt in supportLine:
+            localSupport.append(poseOrigin.convertGlobalToLocal(pnt))
+    
+        supportSpline = SplineFit(localSupport, smooth=0.1)        
+        vecPoints1 = supportSpline.getUniformSamples()
+        supportPoints = gen_icp.addGPACVectorCovariance(vecPoints1,high_var=0.05, low_var = 0.001)
+            
+        medialSpline2 = SplineFit(medial2, smooth=0.1)
+        vecPoints2 = medialSpline2.getUniformSamples()
+        points2 = gen_icp.addGPACVectorCovariance(vecPoints2,high_var=0.05, low_var = 0.001)
+
+        " transformed points without associated covariance "
+        poly2 = []
+        for p in points2:
+            poly2.append([p[0],p[1]])            
+        
+        " get the circles and radii "
+        radius2, center2 = gen_icp.computeEnclosingCircle(points2)
+                
+        support_pairs = []
+        #for i in range(len(poly2)):
+        for i in range(len(vecPoints2)):
+            
+            p_2 = vecPoints2[i]
+    
+            " for every transformed point of A, find it's closest neighbor in B "
+            #_1, minDist = gen_icp.findClosestPointInB(supportPoints, p_2, [0.0,0.0,0.0])
+
+            try:
+                p_1, minI, minDist = gen_icp.findClosestPointWithAngle(vecPoints1, p_2, math.pi/8.0)
+    
+                #if gen_icp.isInCircle(p_1, radius2, center2):
+    
+                if minDist <= minMatchDist2:
+                    C2 = points2[i][2]
+                    C1 = supportPoints[minI][2]
+                    #C1 = p_1[2]
+    
+                    " we store the untransformed point, but the transformed covariance of the A point "
+                    #support_pairs.append([points2[i],p_1,C2,C1])
+                    support_pairs.append([points2[i],supportPoints[minI],C2,C1])
+            except:
+                pass
+
+        cost = 0.0
+        if len(support_pairs) == 0:
+            cost = 1e100
+        else:
+            vals = []
+            sum1 = 0.0
+            for pair in support_pairs:
+        
+                a = pair[0]
+                b = pair[1]
+                Ca = pair[2]
+                Cb = pair[3]
+        
+                ax = a[0]
+                ay = a[1]        
+                bx = b[0]
+                by = b[1]
+        
+                c11 = Ca[0][0]
+                c12 = Ca[0][1]
+                c21 = Ca[1][0]
+                c22 = Ca[1][1]
+                        
+                b11 = Cb[0][0]
+                b12 = Cb[0][1]
+                b21 = Cb[1][0]
+                b22 = Cb[1][1]    
+            
+                val = gen_icp.computeMatchErrorP([0.0,0.0,0.0], [ax,ay], [bx,by], [c11,c12,c21,c22], [b11,b12,b21,b22])
+                
+                vals.append(val)
+                sum1 += val
+                
+            cost = sum1 / len(support_pairs)
+            
+
+        if plotIter:
+            pylab.clf()
+            xP = []
+            yP = []
+            for p in supportPoints:
+                xP.append(p[0])
+                yP.append(p[1])
+            pylab.plot(xP,yP, color='b')
+    
+            xP = []
+            yP = []
+            for p in poly2:
+                xP.append(p[0])
+                yP.append(p[1])
+            pylab.plot(xP,yP, color='r')
+            
+            for pair in support_pairs:
+                p1 = pair[0]
+                p2 = pair[1]
+                xP = [p1[0],p2[0]]
+                yP = [p1[1],p2[1]]
+                pylab.plot(xP,yP)
+                    
+            pylab.xlim(-5,10)
+            pylab.ylim(-8,8)
+            pylab.title("nodeID %d, cost = %f, count = %d" % (nodeID, cost, len(support_pairs)))
+            pylab.savefig("overlapCost_%04u.png" % self.overlapPlotCount)
+            self.overlapPlotCount += 1
+        
+        return len(support_pairs)
 
         
     def checkUniqueBranch(self, parentPathID, nodeID1, depAngle, depPoint):

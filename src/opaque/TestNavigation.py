@@ -27,7 +27,7 @@ class TestNavigation(SnakeControl):
 
 	def __init__(self, probe, drawThings):
 		SnakeControl.__init__(self)
-	
+		
 		self.drawThings = drawThings
 		self.probe = probe
 		
@@ -44,7 +44,7 @@ class TestNavigation(SnakeControl):
 		
 		self.setTimerAliasing(1)
 		
-		self.travelDir = False
+		self.travelDir = True
 		
 		" pose estimation "
 		self.contacts = AverageContacts(self.probe)
