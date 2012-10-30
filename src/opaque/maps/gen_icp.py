@@ -276,7 +276,8 @@ def serialOverlapICP(argSets):
         backI1 = arg[8]
         foreI2 = arg[9]
         backI2 = arg[10]
-        offset, histogram = minICP_GPU2(initGuess, medialPoints1, medialPoints2, foreI1, backI1, foreI2, backI2)        
+        isAlternate = arg[11]
+        offset, histogram = minICP_GPU2(initGuess, medialPoints1, medialPoints2, foreI1, backI1, foreI2, backI2, plotIter = isAlternate)        
         results.append([offset, histogram])
 
     return results
@@ -5263,7 +5264,7 @@ def overlapICP(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1, medi
     return offset, histogram
 
 
-def minICP_GPU2(initGuess, medialPoints1, medialPoints2, foreI1, backI1, foreI2, backI2):
+def minICP_GPU2(initGuess, medialPoints1, medialPoints2, foreI1, backI1, foreI2, backI2, plotIter = False):
 
     global numIterations
 
@@ -5567,7 +5568,7 @@ def minICP_GPU2(initGuess, medialPoints1, medialPoints2, foreI1, backI1, foreI2,
         #    minMatchDist = 0.25
 
 
-    if True:
+    if plotIter:
         pylab.clf()
         
 
@@ -5601,7 +5602,7 @@ def minICP_GPU2(initGuess, medialPoints1, medialPoints2, foreI1, backI1, foreI2,
         #    yP.append(p1[1])
         #pylab.plot(xP,yP,linewidth=1, color=(1.0,0.5,0.5))
 
-        pylab.title("u1: %1.2f u2: %1.2f currAng: %1.2f" % (u1, currU, currAng))
+        pylab.title("Alt u1: %1.2f u2: %1.2f currAng: %1.2f" % (u1, currU, currAng))
 
 
         pylab.xlim(-4, 4)                    

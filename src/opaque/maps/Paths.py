@@ -4619,7 +4619,7 @@ class Paths:
 
     def getOverlapCondition2(self, supportLine, nodeID):
 
-        plotIter = False
+        plotIter = True
 
         if len(supportLine) <= 5:
             return 0

@@ -5,6 +5,7 @@ random.seed(0)
 
 from opaque.robot.QuickProbe import QuickProbe
 from opaque.TestProcess import TestProcess
+from opaque.TestUnit import TestUnit
 from opaque.ControlError import *
 from CmdDrawThings import CmdDrawThings
 
@@ -26,7 +27,8 @@ def createTest():
 	probe = QuickProbe(40,0.15,0.05,30.0*2.5)
 	
 	drawThings = CmdDrawThings(probe.robotParam)
-	currControl = TestProcess(probe, drawThings)
+	#currControl = TestProcess(probe, drawThings)
+	currControl = TestUnit(probe, drawThings)
 	
 	probe.addControl(currControl)
 

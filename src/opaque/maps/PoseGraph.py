@@ -570,7 +570,7 @@ class PoseGraph:
 					id1 = k[0]
 					id2 = k[1]
 					
-					" take the highest priority constraints only "
+					" take the target priority constraints only "
 					priorityEdges[k] = []
 					for const in v:
 						if priorityLevel == const[2]:
@@ -2019,22 +2019,54 @@ class PoseGraph:
 						covE = const[3]
 			
 						self.addPriorityEdge([n1,n2,transform,covE], CORNER_PRIORITY)
-			
+
 				" merge the constraints "
 				self.mergePriorityConstraints()
-	
+
 				self.drawConstraints(self.statePlotCount)
 				self.statePlotCount += 1
 				self.drawPathAndHull()
+
+
+				" relax non-path constraints so that rest of graph can adjust smoothly "
+				inplace_edges = self.getPriorityEdges(INPLACE_PRIORITY)
+				overlap_edges = self.getPriorityEdges(OVERLAP_PRIORITY)
+
+				" k = (nodeID1,nodeID2)  v = [transform1,covE1]"
+				for nodeID in mergeNodes:
+					for k, v in inplace_edges.items():
+						if len(v) > 0:
+							print "edges:", v
+							covE = v[0][1]
+							if k[0] == nodeID or k[1] == nodeID:
+								covE[0,0] *= 100
+								covE[1,1] *= 100
+
+					for k, v in overlap_edges.items():
+						if len(v) > 0:
+							print "edges:", v
+							covE = v[0][1]
+							if k[0] == nodeID or k[1] == nodeID:
+								covE[0,0] *= 100
+								covE[1,1] *= 100
+
+				" re-evaluate constraints with relaxed overlap and inplace priorities"
+				self.mergePriorityConstraints()
+
+				print "relaxed constraints",  self.statePlotCount
+				self.drawConstraints(self.statePlotCount)
+				self.statePlotCount += 1
+				self.drawPathAndHull()
+
 				
 				" constrain nodes to merge to pathID1 "
 				
-				" move nodes to pathID1, delete pathID2 "
 				
 				" move nodes from lessID into rootID and delete pathID "
 				for nodeID in mergeNodes:
 					self.paths.addNode(nodeID, rootID)
 	
+				" move nodes to pathID1, delete pathID2 "
 				self.paths.delPath(lessID, rootID)
 	
 				self.paths.generatePaths()
@@ -4052,7 +4084,7 @@ class PoseGraph:
 							"u1": args[4], "u2": args[5], "initAng": args[6],
 							"isFeatureless1": isFeatureless, "isFeatureless2": isTargFeatureless,
 							"isNeigh": isNeigh, "cartDist1": cartDist1, "angDiff1": angDiff1,
-							"pathIDs": pathIDs})
+							"pathIDs": pathIDs, "isAlternate": False})
 
 		PATH_MATCH_DIST = 1.0
 		PAIR_ANG_DELTA = 0.3
@@ -4104,7 +4136,7 @@ class PoseGraph:
 							backDepI1 = len(points1)-1
 							frontDepI2 = 0
 							backDepI2 = len(points2)-1
-							args = [nodeID1, nodeID2, medial1, medial2, u1, u2, initAng, frontDepI1, backDepI1, frontDepI2, backDepI2]
+							args = [nodeID1, nodeID2, medial1, medial2, u1, u2, initAng, frontDepI1, backDepI1, frontDepI2, backDepI2, False]
 							argSets.append(args)
 							candidates2.append(cand)							
 							
@@ -4207,7 +4239,7 @@ class PoseGraph:
 				pass
 				
 
-
+ 
 		print "RESULTS:"
 		finalCandidates = []
 		for cand in candidates3:
@@ -4378,6 +4410,9 @@ class PoseGraph:
 
 		allSplices, terminals, junctions = self.paths.getAllSplices()
 
+		if False:
+			print "foo"
+			print "foo"
 
 
 		PATH_MATCH_DIST = 1.0
@@ -4413,6 +4448,7 @@ class PoseGraph:
 			#		isInPath = True
 
 			isInPath = False
+			isAlternate = False
 			#allPaths = self.paths.getPathIDs()
 			commonPathID = -1
 			for j in pathIDs:
@@ -4460,7 +4496,36 @@ class PoseGraph:
 					print "intra-path overlaps:[", parentID1, ",", commonPathID, "]"
 					print nodeID1, resultSum1_1, resultSum1_2
 					print nodeID2, resultSum2_1, resultSum2_2
-				else:
+					
+					if resultSum1_2 == 0:
+						ratio1 = 1e100
+					else:
+						ratio1 = float(resultSum1_1) / resultSum1_2
+					
+					if resultSum2_1 == 0:
+						ratio2 = 1e100
+					else:
+						ratio2 = float(resultSum2_2) / resultSum2_1
+
+					if ratio1 > 2.0 and ratio2 > 2.0:
+						print "alternate junction state!"
+						isAlternate = True
+
+					if resultSum1_1 == 0:
+						ratio1 = 1e100
+					else:
+						ratio1 = float(resultSum1_2) / resultSum1_1
+					
+					if resultSum2_2 == 0:
+						ratio2 = 1e100
+					else:
+						ratio2 = float(resultSum2_1) / resultSum2_2
+					
+					if ratio1 > 2.0 and ratio2 > 2.0:
+						print "alternate junction state!"
+						isAlternate = True
+						
+				elif False:
 					sPaths = allSplices[(commonPathID, commonPathID)]
 					termPath1 = sPaths[0]['termPath']
 					
@@ -4486,12 +4551,14 @@ class PoseGraph:
 			"  ----------------------- "
 
 
+			cand['isAlternate'] = isAlternate
+
 			oldConstraints = self.getEdges(nodeID1, nodeID2)
 			isExist = False
 			for constraint in oldConstraints:
 				isExist = True
 
-			print nodeID1, nodeID2, u1, u2, initAng, cartDist1, angDiff1, pathIDs
+			print nodeID1, nodeID2, u1, u2, initAng, cartDist1, angDiff1, pathIDs, isAlternate
 			
 
 			#sum1 = self.paths.getOverlapCondition(self.trimmedPaths[pathID], nodeID)
@@ -4500,87 +4567,85 @@ class PoseGraph:
 			
 			
 			if True and not isNeigh:
-				if cartDist1 < PATH_MATCH_DIST and fabs(diffAngle(angDiff1,initAng)) < PAIR_ANG_DELTA:
+				if cartDist1 < PATH_MATCH_DIST and fabs(diffAngle(angDiff1,initAng)) < PAIR_ANG_DELTA or isAlternate:
 					if (isTargFeatureless and isFeatureless) or (not isTargFeatureless and not isFeatureless):
 						if isInPath and not isExist:
 
-
-							
-							resultArgs1 = self.paths.getDeparturePoint(self.trimmedPaths[commonPathID], nodeID1)
-							resultArgs2 = self.paths.getDeparturePoint(self.trimmedPaths[commonPathID], nodeID2)
-							
-							"""
-							#p_1, depI1, pDist1 = gen_icp.findClosestPointInA(points2_offset, pathPoints[max1])
-							#p_2, depI2, pDist2 = gen_icp.findClosestPointInA(points2_offset, pathPoints[max2])
-					
-							#p_1, depI1, pDist1 = gen_icp.findClosestPointInA(medial2, points2[depI1])
-							#p_2, depI2, pDist2 = gen_icp.findClosestPointInA(medial2, points2[depI2])
-							"""
-							
-							#departurePoint1, angle1, isInterior1, isExist1, dist1, departurePoint2, angle2, isInterior2, isExist2, dist2
-			
-							frontDeparturePoint1 = resultArgs1[0]
-							backDeparturePoint1 = resultArgs1[5]
-							frontDeparturePoint2 = resultArgs2[0]
-							backDeparturePoint2 = resultArgs2[5]
-
-							frontDeparturePoint1 = 0
-							backDeparturePoint1 = 0
-							frontDeparturePoint2 = 0
-							backDeparturePoint2 = 0
-
-							node1 = self.nodeHash[nodeID1]
-							estPose1 = node1.getGlobalGPACPose()
-							node2 = self.nodeHash[nodeID2]
-							estPose2 = node2.getGlobalGPACPose()
-
-							points1 = splines[nodeID1].getUniformSamples()
-							points2 = splines[nodeID2].getUniformSamples()
-
-							points1_offset = []
-							for p in points1:
-								result = gen_icp.dispOffset(p, estPose1)		
-								points1_offset.append(result)
-
-							points2_offset = []
-							for p in points2:
-								result = gen_icp.dispOffset(p, estPose2)		
-								points2_offset.append(result)
+							if isAlternate:
+								resultArgs1 = self.paths.getDeparturePoint(self.trimmedPaths[commonPathID], nodeID1)
+								resultArgs2 = self.paths.getDeparturePoint(self.trimmedPaths[commonPathID], nodeID2)							
+				
+								frontDeparturePoint1 = resultArgs1[0]
+								backDeparturePoint1 = resultArgs1[5]
+								frontDeparturePoint2 = resultArgs2[0]
+								backDeparturePoint2 = resultArgs2[5]
+	
+								#frontDeparturePoint1 = 0
+								#backDeparturePoint1 = 0
+								#frontDeparturePoint2 = 0
+								#backDeparturePoint2 = 0
+	
+								node1 = self.nodeHash[nodeID1]
+								estPose1 = node1.getGlobalGPACPose()
+								node2 = self.nodeHash[nodeID2]
+								estPose2 = node2.getGlobalGPACPose()
+	
+								points1 = splines[nodeID1].getUniformSamples()
+								points2 = splines[nodeID2].getUniformSamples()
+	
+								points1_offset = []
+								for p in points1:
+									result = gen_icp.dispOffset(p, estPose1)		
+									points1_offset.append(result)
+	
+								points2_offset = []
+								for p in points2:
+									result = gen_icp.dispOffset(p, estPose2)		
+									points2_offset.append(result)
+									
+	
+	
+								if frontDeparturePoint1 != 0:
+									p_1, depI, pDist1 = gen_icp.findClosestPointInA(points1_offset, frontDeparturePoint1)
+									p_1, frontDepI1, pDist1 = gen_icp.findClosestPointInA(medial1, points1[depI])
+								else:
+									frontDepI1 = 0
+	
+								if backDeparturePoint1 != 0:
+									p_1, depI, pDist1 = gen_icp.findClosestPointInA(points1_offset, backDeparturePoint1)
+									p_1, backDepI1, pDist1 = gen_icp.findClosestPointInA(medial1, points1[depI])
+								else:
+									backDepI1 = len(points1)-1
+	
+								if frontDeparturePoint2 != 0:
+									p_2, depI, pDist2 = gen_icp.findClosestPointInA(points2_offset, frontDeparturePoint2)
+									p_2, frontDepI2, pDist2 = gen_icp.findClosestPointInA(medial2, points2[depI])
+								else:
+									frontDepI2 = 0
+	
+								if backDeparturePoint2 != 0:
+									p_2, depI, pDist2 = gen_icp.findClosestPointInA(points2_offset, backDeparturePoint2)
+									p_2, backDepI2, pDist2 = gen_icp.findClosestPointInA(medial2, points2[depI])
+								else:
+									backDepI2 = len(points2)-1
 								
-
-
-							if frontDeparturePoint1 != 0:
-								p_1, depI, pDist1 = gen_icp.findClosestPointInA(points1_offset, frontDeparturePoint1)
-								p_1, frontDepI1, pDist1 = gen_icp.findClosestPointInA(medial2, points1[depI])
-							else:
-								frontDepI1 = 0
-
-							if backDeparturePoint1 != 0:
-								p_1, depI, pDist1 = gen_icp.findClosestPointInA(points1_offset, backDeparturePoint1)
-								p_1, backDepI1, pDist1 = gen_icp.findClosestPointInA(medial2, points1[depI])
-							else:
-								backDepI1 = len(points1)-1
-
-							if frontDeparturePoint2 != 0:
-								p_2, depI, pDist2 = gen_icp.findClosestPointInA(points2_offset, frontDeparturePoint2)
-								p_2, frontDepI2, pDist2 = gen_icp.findClosestPointInA(medial2, points2[depI])
-							else:
-								frontDepI2 = 0
-
-							if backDeparturePoint2 != 0:
-								p_2, depI, pDist2 = gen_icp.findClosestPointInA(points2_offset, backDeparturePoint2)
-								p_2, backDepI2, pDist2 = gen_icp.findClosestPointInA(medial2, points2[depI])
-							else:
-								backDepI2 = len(points2)-1
-										
-							#frontDepI1 = resultArgs1[5]
-							#backDepI1 = resultArgs1[11]
-							#frontDepI2 = resultArgs2[5]
-							#backDepI2 = resultArgs2[11]
-							#departurePoint1, depAngle1, isInterior1, isExist1, discDist1, depI1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, depI2 = self.paths.getDeparturePoint(self.trimmedPaths[commonPathID], nodeID1)
-
+								print nodeID1, nodeID2, "indices:", frontDepI1, backDepI1, frontDepI2, backDepI2
+								
+								" prevent case where little or no overlap of parent path prevents constraining "
+								if abs(frontDepI1-backDepI1) > 5 and abs(frontDepI2-backDepI2) > 5:
+									args = [nodeID1, nodeID2, medial1, medial2, u1, u2, initAng, frontDepI1, backDepI1, frontDepI2, backDepI2, isAlternate]
 							
-							args = [nodeID1, nodeID2, medial1, medial2, u1, u2, initAng, frontDepI1, backDepI1, frontDepI2, backDepI2]
+							else:
+								points1 = splines[nodeID1].getUniformSamples()
+								points2 = splines[nodeID2].getUniformSamples()
+
+								frontDepI1 = 0
+								backDepI1 = len(points1)-1
+								frontDepI2 = 0
+								backDepI2 = len(points2)-1
+
+								args = [nodeID1, nodeID2, medial1, medial2, u1, u2, initAng, frontDepI1, backDepI1, frontDepI2, backDepI2, isAlternate]
+							
 							argSets.append(args)
 							candidates2.append(cand)
 			if False and fabs(diffAngle(angDiff1,initAng)) < PAIR_ANG_DELTA:
@@ -4723,8 +4788,10 @@ class PoseGraph:
 			
 			xiError = cand["xiError"]
 			xiBaseError = cand["xiErrorBase"]
+
+			isAlternate = cand['isAlternate']
 			
-			if cartDist2 < 1.0:
+			if cartDist2 < 1.0 or isAlternate:
 	
 				#print nodeID1, nodeID2, offset, cartDist2, angDiff2, xiError, xiError-xiBaseError
 				print nodeID1, nodeID2, cartDist2, angDiff2, xiError, xiError-xiBaseError
