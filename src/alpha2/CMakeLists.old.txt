@@ -1,0 +1,88 @@
+# This is the CMake script for compiling a CGAL application.
+
+project( alpha2 ) 
+
+CMAKE_MINIMUM_REQUIRED(VERSION 2.6.2)
+
+if("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" VERSION_GREATER 2.6)
+  if("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}" VERSION_GREATER 2.8.3)
+    cmake_policy(VERSION 2.8.4)
+  else()
+    cmake_policy(VERSION 2.6)
+  endif()
+endif()
+
+set(CGAL_DIR C:/Users/everist/workspace/opaque/src/alpha2/CGAL-4.1)
+
+find_package(CGAL)
+#find_package(CGAL QUIET COMPONENTS Core )
+
+if ( CGAL_FOUND )
+
+  include( ${CGAL_USE_FILE} )
+
+  #include( CGAL_CreateSingleSourceCGALProgram )
+
+  #include_directories (BEFORE "../../include")
+
+  #create_single_source_cgal_program( "Example.cpp" )
+  #create_single_source_cgal_program( "Polygon.cpp" )
+  #create_single_source_cgal_program( "polygon_algorithms.cpp" )
+  #create_single_source_cgal_program( "projected_polygon.cpp" )
+
+  # The executable itself.
+  add_executable  ( alpha2
+                    alpha2.cpp )
+
+  add_executable  ( poly_union
+                    poly_union.cpp )
+
+  add_to_cached_list( CGAL_EXECUTABLE_TARGETS alpha2 poly_union)
+
+  target_link_libraries( alpha2 ${CGAL_LIBRARIES}  ${CGAL_3RD_PARTY_LIBRARIES})
+  target_link_libraries( poly_union ${CGAL_LIBRARIES}  ${CGAL_3RD_PARTY_LIBRARIES})
+
+else()
+  
+    message(STATUS "This program requires the CGAL library, and will not be compiled.")
+  
+endif()
+
+
+
+#set(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS true)
+#
+#set(ZLIB_LIBRARY zlib_127/lib)
+#set(ZLIB_INCLUDE_DIR zlib_127/include)
+#
+#if ( COMMAND cmake_policy )
+#  cmake_policy( SET CMP0003 NEW )  
+#endif()
+#
+#find_package(CGAL COMPONENTS Qt3 )
+#include( ${CGAL_USE_FILE} )
+#
+#find_package(Qt3-patched)
+# FindQt3-patched.cmake is FindQt3.cmake patched by CGAL developers, so
+# that it can be used together with FindQt4: all its variables are prefixed
+# by "QT3_" instead of "QT_".
+#
+#if ( CGAL_FOUND )
+#
+#  # The executable itself.
+#  add_executable  ( alpha2
+#                    alpha2.cpp )
+#
+#  add_executable  ( poly_union
+#                    poly_union.cpp )
+#
+#  add_to_cached_list( CGAL_EXECUTABLE_TARGETS alpha2 poly_union)
+#
+#  target_link_libraries( alpha2 ${CGAL_LIBRARIES}  ${CGAL_3RD_PARTY_LIBRARIES})
+#  target_link_libraries( poly_union ${CGAL_LIBRARIES}  ${CGAL_3RD_PARTY_LIBRARIES})
+#
+#else()
+#
+#  message(STATUS "NOTICE: This demo requires CGAL, and will not be compiled.")
+#
+#endif()

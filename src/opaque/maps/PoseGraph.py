@@ -1,5 +1,6 @@
 import sys
 
+import hashlib
 import scipy.linalg
 from scipy.sparse.linalg import eigsh, eigs
 import random
@@ -21,7 +22,7 @@ import bayes
 from operator import itemgetter
 import cProfile
 import time
-
+import traceback
 
 import pylab
 #import Image
@@ -53,6 +54,11 @@ def computeBareHull(node1, sweep = False, static = False):
 		node1.computeStaticAlphaBoundary()
 
 		a_data = node1.getAlphaBoundary(static=True)
+		
+		m = hashlib.md5()
+		m.update(repr(a_data))
+		#print "PoseGraph: computeBareHull():", int(m.digest().encode('hex'),16)   
+				
 		a_data = decimatePoints(a_data)
 
 		" convert hull points to GPAC coordinates before adding covariances "
@@ -68,6 +74,11 @@ def computeBareHull(node1, sweep = False, static = False):
 		" Read in data of Alpha-Shapes without their associated covariances "
 		node1.computeAlphaBoundary(sweep = sweep)
 		a_data = node1.getAlphaBoundary(sweep = sweep)
+
+		m = hashlib.md5()
+		m.update(repr(a_data))
+		#print "PoseGraph: computeBareHull():", int(m.digest().encode('hex'),16)   
+
 		a_data = decimatePoints(a_data)
 		
 		" convert hull points to GPAC coordinates "
@@ -258,6 +269,18 @@ def computeHullAxis(nodeID, node2, tailCutOff = False):
 			
 	return hull2, medial2
 
+def printStack():
+
+	#traceback.print_stack()
+	flist = traceback.format_stack()
+	flist = flist[:-1]
+	
+	printStr = ""
+	for line in flist:
+		printStr += line
+		
+	print printStr
+
 class PoseGraph:
 
 	def __init__(self, probe, contacts):
@@ -336,11 +359,24 @@ class PoseGraph:
 		self.E_sensor = matrix([[0.1,0.0,0.0],
 							[0.0,0.05,0.0],
 							[0.0,0.0,0.02]])
+		
+		self.E_relaxed = matrix([[ 1.0, 0.0, 0.0],
+							[ 0.0, 0.1, 0.0],
+							[0.0, 0.0, pi/8.0]])
 
 
 		self.allPathConstraints = []
 		self.hypPlotCount = 0
 
+	def doNothing1(self):
+		pass
+	
+	def doNothing2(self):
+		
+		pass
+	
+	def doNothing3(self):
+		pass
 
 	def saveState(self):
 		
@@ -389,8 +425,7 @@ class PoseGraph:
 		#self.trimCount = 0
 		#self.spliceCount = 0
 		#self.orderCount = 0		
-		
-		
+	
 		
 	def restoreState(self, dirName, numNodes):
 		
@@ -534,6 +569,41 @@ class PoseGraph:
 				
 		return resultEdges
 
+	def relaxPriorityEdge(self, nodeID1, nodeID2, priorityLevel = -1):
+
+		# self.addPriorityEdge([nodeID1,nodeID2,transform1,covE1], INPLACE_PRIORITY)
+		# self.edgePriorityHash[(edge[0],edge[1])].append([edge[2], edge[3], priority])
+		
+		for k, v in self.edgePriorityHash.items():
+
+			if k[0] == nodeID1 and k[1] == nodeID2 or k[0] == nodeID2 and k[1] == nodeID1:
+
+				for const in v:
+					if priorityLevel == -1:
+						const[1] = self.E_relaxed
+					elif const[2] == priorityLevel:
+						const[1] = self.E_relaxed
+				
+		return
+
+	def delPriorityEdge(self, nodeID1, nodeID2, priorityLevel = -1):
+		
+		for k, v in self.edgePriorityHash.items():
+
+			if k[0] == nodeID1 and k[1] == nodeID2 or k[0] == nodeID2 and k[1] == nodeID1:
+				
+				if priorityLevel == -1:
+					self.edgePriorityHash[k] = []
+
+				else:							
+					keepList = []
+					for const in v:
+						if const[2] != priorityLevel:
+							keepList.append(const)
+					
+					self.edgePriorityHash[k] = keepList
+		return
+				
 	def getPriorityEdges(self, priorityLevel = -1):
 
 		priorityEdges = {}
@@ -595,6 +665,8 @@ class PoseGraph:
 
 		self.edgePriorityHash = {}
 
+	" functions added to change the code size but not impact function "
+	" testing for variation in function "
 
 
 	def addNode(self, newNode):
@@ -610,7 +682,7 @@ class PoseGraph:
 
 		return self.integrateNode(newNode, nodeID)
 
-						
+
 	def loadNewNode(self, newNode):
 
 		self.currNode = newNode
@@ -621,7 +693,6 @@ class PoseGraph:
 
 
 	def insertPose(self, foreNode, backNode, initLocation = [0.0,0.0,0.0]):
-
 		
 		" CHECK FOR A BRANCHING EVENT "
 
@@ -739,6 +810,7 @@ class PoseGraph:
 				depPoints1 = []
 				distances1 = []
 				depAngles1 = []
+				contig1 = []
 	
 				" departure events for node 2 "
 				departures2 = []
@@ -746,6 +818,7 @@ class PoseGraph:
 				depPoints2 = []
 				distances2 = []
 				depAngles2 = []
+				contig2 = []
 	
 				
 				" raw medial axis of union of path nodes "
@@ -773,33 +846,37 @@ class PoseGraph:
 				orderedPathIDs1 = self.paths.getOrderedOverlappingPaths(nodeID1)
 				orderedPathIDs2 = self.paths.getOrderedOverlappingPaths(nodeID2)
 				
-				print "orderedPathIDs1:", orderedPathIDs1
-				print "orderedPathIDs2:", orderedPathIDs2
+				print nodeID1, "orderedPathIDs1:", orderedPathIDs1
+				print nodeID2, "orderedPathIDs2:", orderedPathIDs2
 				
 				
 				" COMPUTE DEPARTURE EVENTS FOR EACH OVERLAPPING PATH SECTION "
 				for pathID in orderedPathIDs1:
-					departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2 = self.paths.getDeparturePoint(self.trimmedPaths[pathID], nodeID1)
+					departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = self.paths.getDeparturePoint(self.trimmedPaths[pathID], nodeID1)
 					departures1.append([isExist1,isExist2])
 					interiors1.append([isInterior1, isInterior2])
 					depPoints1.append([departurePoint1, departurePoint2])
 					distances1.append([discDist1, discDist2])
 					depAngles1.append([depAngle1, depAngle2])
+					contig1.append((contigFrac, overlapSum))
 				
 				for pathID in orderedPathIDs2:
-					departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2 = self.paths.getDeparturePoint(self.trimmedPaths[pathID], nodeID2)
+					departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = self.paths.getDeparturePoint(self.trimmedPaths[pathID], nodeID2)
 					departures2.append([isExist1,isExist2])
 					interiors2.append([isInterior1, isInterior2])
 					depPoints2.append([departurePoint1, departurePoint2])
 					distances2.append([discDist1, discDist2])
 					depAngles2.append([depAngle1, depAngle2])
+					contig2.append((contigFrac, overlapSum))
 					
 				print "node departures", nodeID1, ":", departures1
 				print "node  interiors", nodeID1, ":", interiors1
 				print "node departures", nodeID2, ":", departures2
 				print "node  interiors", nodeID2, ":", interiors2
 	
-	
+				print "node contiguity", nodeID1, ":", contig1
+				print "node contiguity", nodeID2, ":", contig2
+					
 				" new junction finding logic "
 				" if terminal departures for each medial axis are None or exterior, than we stay on existing paths "
 				" if a terminal departure exists that is internal, than we have a new junction "
@@ -840,24 +917,36 @@ class PoseGraph:
 				frontAngDiff = diffAngle(foreAngle1, foreAngle2)
 				backAngDiff = diffAngle(backAngle1, backAngle2)
 	
-	
-				print "pass1:", frontExist1, backExist1, frontInterior1, backInterior1, foreTerm1, backTerm1, discForeTerm1, discBackTerm1, foreAngle1, backAngle1
-				print "pass1:", frontExist2, backExist2, frontInterior2, backInterior2, foreTerm2, backTerm2, discForeTerm2, discBackTerm2, foreAngle2, backAngle2
-	
+				if contig1[0][0] < 0.4 or contig1[-1][0] < 0.4:
+					adjustPose1 = True
+				else:
+					adjustPose1 = False
+
+				if contig2[0][0] < 0.4 or contig2[-1][0] < 0.4:
+					adjustPose2 = True
+				else:
+					adjustPose2 = False
+						
+				#print "pass1:", frontExist1, backExist1, frontInterior1, backInterior1, foreTerm1, backTerm1, discForeTerm1, discBackTerm1, foreAngle1, backAngle1
+				#print "pass1:", frontExist2, backExist2, frontInterior2, backInterior2, foreTerm2, backTerm2, discForeTerm2, discBackTerm2, foreAngle2, backAngle2
+				print "insert pass1:", frontExist1, backExist1, frontInterior1, backInterior1, foreTerm1, backTerm1, discForeTerm1, discBackTerm1, foreAngle1, backAngle1, contig1[0][0], contig1[-1][0]
+				print "insert pass1:", frontExist2, backExist2, frontInterior2, backInterior2, foreTerm2, backTerm2, discForeTerm2, discBackTerm2, foreAngle2, backAngle2, contig2[0][0], contig2[-1][0]
+					
 				" check for the cases that internal departure may have a departure point discrepancy, "
 				" then we should perform a pose adjustment and recompute departures "
 				print "checking discrepancy in departure:", nodeID1, nodeID2, foreTerm1, discForeTerm1, backTerm1, discBackTerm1, foreTerm2, discForeTerm2, backTerm2, discBackTerm2
 	
-				if foreTerm1 and discForeTerm1 or backTerm1 and discBackTerm1 or foreTerm2 and discForeTerm2 or backTerm2 and discBackTerm2:
+				if foreTerm1 and discForeTerm1 or backTerm1 and discBackTerm1 or foreTerm2 and discForeTerm2 or backTerm2 and discBackTerm2 or adjustPose1 or adjustPose2:
 	
 					print "adjusting pose guess of node because of discrepancy:", nodeID1, nodeID2
 	
 					#if discForeTerm1 or discBackTerm1:
-					if foreTerm1 and discForeTerm1 or backTerm1 and discBackTerm1:
+					if foreTerm1 and discForeTerm1 or backTerm1 and discBackTerm1 or adjustPose1:
 	
 	
 						" control point nearest the GPAC origin "
 						globalPoint1 = self.nodeHash[nodeID1].getGlobalGPACPose()[:2]
+						print "adjusting pose", nodeID1, "from", self.nodeHash[nodeID1].getGlobalGPACPose()
 	
 						splicedPaths1 = self.paths.splicePathIDs(orderedPathIDs1)
 	
@@ -874,12 +963,14 @@ class PoseGraph:
 						totalGuesses.sort()
 						guessPose = totalGuesses[0][2]
 						self.nodeHash[nodeID1].setGPACPose(guessPose)
+						print "set to pose", nodeID1, "to", guessPose
 	
-					elif foreTerm2 and discForeTerm2 or backTerm2 and discBackTerm2:
+					if foreTerm2 and discForeTerm2 or backTerm2 and discBackTerm2 or adjustPose2:
 	
 						" control point nearest the GPAC origin "
 						globalPoint1 = self.nodeHash[nodeID2].getGlobalGPACPose()[:2]
 	
+						print "adjusting pose", nodeID2, "from", self.nodeHash[nodeID2].getGlobalGPACPose()
 	
 						splicedPaths2 = self.paths.splicePathIDs(orderedPathIDs2)
 	
@@ -896,6 +987,8 @@ class PoseGraph:
 						totalGuesses.sort()
 						guessPose = totalGuesses[0][2]
 						self.nodeHash[nodeID2].setGPACPose(guessPose)
+
+						print "set to pose", nodeID2, "to", guessPose
 	
 						#if foreTerm2 and discForeTerm2:
 						#	pathID = orderedPathIDs2[0]
@@ -910,37 +1003,41 @@ class PoseGraph:
 					depPoints1 = []
 					distances1 = []
 					depAngles1 = []
+					contig1 = []
 		
 					departures2 = []
 					interiors2 = []
 					depPoints2 = []
 					distances2 = []
 					depAngles2 = []
+					contig2 = []
 					
 					" the overlapping paths are computed from the initial guess of position "
 					orderedPathIDs1 = self.paths.getOrderedOverlappingPaths(nodeID1)
 					orderedPathIDs2 = self.paths.getOrderedOverlappingPaths(nodeID2)
 					
-					print "orderedPathIDs1:", orderedPathIDs1
-					print "orderedPathIDs2:", orderedPathIDs2
+					print nodeID1, "orderedPathIDs1:", orderedPathIDs1
+					print nodeID2, "orderedPathIDs2:", orderedPathIDs2
 					
 					" now compute whether there are departure points after we have guessed a better position in synch with the paths "
 					for pathID in orderedPathIDs1:
-						departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2 = self.paths.getDeparturePoint(self.trimmedPaths[pathID], nodeID1)
+						departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = self.paths.getDeparturePoint(self.trimmedPaths[pathID], nodeID1)
 						departures1.append([isExist1,isExist2])
 						interiors1.append([isInterior1, isInterior2])
 						depPoints1.append([departurePoint1, departurePoint2])
 						distances1.append([discDist1, discDist2])
 						depAngles1.append([depAngle1, depAngle2])
+						contig1.append((contigFrac, overlapSum))
 					
 					for pathID in orderedPathIDs2:
-						departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2 = self.paths.getDeparturePoint(self.trimmedPaths[pathID], nodeID2)
+						departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = self.paths.getDeparturePoint(self.trimmedPaths[pathID], nodeID2)
 						departures2.append([isExist1,isExist2])
 						interiors2.append([isInterior1, isInterior2])
 						depPoints2.append([departurePoint1, departurePoint2])
 						distances2.append([discDist1, discDist2])
 						depAngles2.append([depAngle1, depAngle2])
-						
+						contig2.append((contigFrac, overlapSum))
+					
 					print "node", nodeID1, ":", departures1, interiors1
 					print "node", nodeID2, ":", departures2, interiors2
 		
@@ -1241,6 +1338,8 @@ class PoseGraph:
 		global globalFunc
 		global globalArg
 
+
+
 		" DIRECTION OF TRAVEL FROM PREVIOUS POSE PAIR "
 		direction = newNode.travelDir
 
@@ -1285,8 +1384,8 @@ class PoseGraph:
 				self.addPriorityEdge([nodeID-2,nodeID,transform,covE], OVERLAP_PRIORITY)
 	
 				" merge constraints by priority and updated estimated poses "
-				self.mergePriorityConstraints()
-
+				#self.mergePriorityConstraints()
+								
 				" ODD NUMBER POSES RECEIVE INPLACE CONSTRAINT WITH EVEN PAIR "
 				" PERFORM MEDIAL OVERLAP WITH PREVIOUS ODD NUMBER POSE "
 			else:
@@ -1337,6 +1436,20 @@ class PoseGraph:
 					resultSum3 = self.checkSupport(nodeID-1, nodeID, offset3, supportLine)
 				#self.addPriorityEdge([nodeID-1,nodeID,transform,covE], INPLACE_PRIORITY)
 
+				
+				m = hashlib.md5()
+				m.update(repr(self.nodeHash[nodeID-1].medialPathA))
+				print nodeID-1, "medialPathA", int(m.digest().encode('hex'),16)
+
+				m = hashlib.md5()
+				m.update(repr(self.nodeHash[nodeID].medialPathA))
+				print nodeID, "medialPathA", int(m.digest().encode('hex'),16)
+
+				m = hashlib.md5()
+				m.update(repr(supportLine))
+				print "supportLine", int(m.digest().encode('hex'),16)
+
+
 				print "INPLACE sums:", resultSum1, resultSum3
 
 				if len(supportLine) > 0 and resultSum1 < resultSum3 and resultSum3 - resultSum1 > 100.0:
@@ -1374,7 +1487,9 @@ class PoseGraph:
 
 	
 				" merge constraints by priority and updated estimated poses "
-				self.mergePriorityConstraints()
+				#self.mergePriorityConstraints()
+		
+		self.updateLastNode(nodeID)
 
 
 		" CHECK FOR A BRANCHING EVENT "
@@ -1423,6 +1538,7 @@ class PoseGraph:
 				depPoints1 = []
 				distances1 = []
 				depAngles1 = []
+				contig1 = []
 	
 				" departure events for node 2 "
 				departures2 = []
@@ -1430,6 +1546,7 @@ class PoseGraph:
 				depPoints2 = []
 				distances2 = []
 				depAngles2 = []
+				contig2 = []
 
 				
 				" raw medial axis of union of path nodes "
@@ -1458,32 +1575,36 @@ class PoseGraph:
 				orderedPathIDs1 = self.paths.getOrderedOverlappingPaths(nodeID1)
 				orderedPathIDs2 = self.paths.getOrderedOverlappingPaths(nodeID2)
 				
-				print "orderedPathIDs1:", orderedPathIDs1
-				print "orderedPathIDs2:", orderedPathIDs2
+				print nodeID1, "orderedPathIDs1:", orderedPathIDs1
+				print nodeID2, "orderedPathIDs2:", orderedPathIDs2
 				
 				
 				" COMPUTE DEPARTURE EVENTS FOR EACH OVERLAPPING PATH SECTION "
 				for pathID in orderedPathIDs1:
-					departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2 = self.paths.getDeparturePoint(self.trimmedPaths[pathID], nodeID1)
+					departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = self.paths.getDeparturePoint(self.trimmedPaths[pathID], nodeID1)
 					departures1.append([isExist1,isExist2])
 					interiors1.append([isInterior1, isInterior2])
 					depPoints1.append([departurePoint1, departurePoint2])
 					distances1.append([discDist1, discDist2])
 					depAngles1.append([depAngle1, depAngle2])
-				
+					contig1.append((contigFrac, overlapSum))
+			
 				for pathID in orderedPathIDs2:
-					departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2 = self.paths.getDeparturePoint(self.trimmedPaths[pathID], nodeID2)
+					departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = self.paths.getDeparturePoint(self.trimmedPaths[pathID], nodeID2)
 					departures2.append([isExist1,isExist2])
 					interiors2.append([isInterior1, isInterior2])
 					depPoints2.append([departurePoint1, departurePoint2])
 					distances2.append([discDist1, discDist2])
 					depAngles2.append([depAngle1, depAngle2])
+					contig2.append((contigFrac, overlapSum))
 					
 				print "node departures", nodeID1, ":", departures1
 				print "node  interiors", nodeID1, ":", interiors1
 				print "node departures", nodeID2, ":", departures2
 				print "node  interiors", nodeID2, ":", interiors2
-	
+
+				print "node contiguity", nodeID1, ":", contig1
+				print "node contiguity", nodeID2, ":", contig2
 	
 				" new junction finding logic "
 				" if terminal departures for each medial axis are None or exterior, than we stay on existing paths "
@@ -1525,24 +1646,35 @@ class PoseGraph:
 				frontAngDiff = diffAngle(foreAngle1, foreAngle2)
 				backAngDiff = diffAngle(backAngle1, backAngle2)
 
+				if contig1[0][0] < 0.4 or contig1[-1][0] < 0.4:
+					adjustPose1 = True
+				else:
+					adjustPose1 = False
 
-				print "pass1:", frontExist1, backExist1, frontInterior1, backInterior1, foreTerm1, backTerm1, discForeTerm1, discBackTerm1, foreAngle1, backAngle1
-				print "pass1:", frontExist2, backExist2, frontInterior2, backInterior2, foreTerm2, backTerm2, discForeTerm2, discBackTerm2, foreAngle2, backAngle2
+				if contig2[0][0] < 0.4 or contig2[-1][0] < 0.4:
+					adjustPose2 = True
+				else:
+					adjustPose2 = False
+					
+				print "integrate pass1:", frontExist1, backExist1, frontInterior1, backInterior1, foreTerm1, backTerm1, discForeTerm1, discBackTerm1, foreAngle1, backAngle1, contig1[0][0], contig1[-1][0]
+				print "integrate pass1:", frontExist2, backExist2, frontInterior2, backInterior2, foreTerm2, backTerm2, discForeTerm2, discBackTerm2, foreAngle2, backAngle2, contig2[0][0], contig2[-1][0]
 				
 				" check for the cases that internal departure may have a departure point discrepancy, "
 				" then we should perform a pose adjustment and recompute departures "
 				print "checking discrepancy in departure:", nodeID1, nodeID2, foreTerm1, discForeTerm1, backTerm1, discBackTerm1, foreTerm2, discForeTerm2, backTerm2, discBackTerm2
 
-				if foreTerm1 and discForeTerm1 or backTerm1 and discBackTerm1 or foreTerm2 and discForeTerm2 or backTerm2 and discBackTerm2:
+				if foreTerm1 and discForeTerm1 or backTerm1 and discBackTerm1 or foreTerm2 and discForeTerm2 or backTerm2 and discBackTerm2 or adjustPose1 or adjustPose2:
 
 					print "adjusting pose guess of node because of discrepancy:", nodeID1, nodeID2
 
 					#if discForeTerm1 or discBackTerm1:
-					if foreTerm1 and discForeTerm1 or backTerm1 and discBackTerm1:
+					if foreTerm1 and discForeTerm1 or backTerm1 and discBackTerm1 or adjustPose1:
 
 
 						" control point nearest the GPAC origin "
 						globalPoint1 = self.nodeHash[nodeID1].getGlobalGPACPose()[:2]
+						
+						print "adjusting pose", nodeID1, "from", self.nodeHash[nodeID1].getGlobalGPACPose()
 
 						splicedPaths1 = self.paths.splicePathIDs(orderedPathIDs1)
 
@@ -1559,13 +1691,16 @@ class PoseGraph:
 						totalGuesses.sort()
 						guessPose = totalGuesses[0][2]
 						self.nodeHash[nodeID1].setGPACPose(guessPose)
+						print "set to pose", nodeID1, "to", guessPose
 
-					elif foreTerm2 and discForeTerm2 or backTerm2 and discBackTerm2:
+					if foreTerm2 and discForeTerm2 or backTerm2 and discBackTerm2 or adjustPose2:
+
 
 						" control point nearest the GPAC origin "
 						globalPoint1 = self.nodeHash[nodeID2].getGlobalGPACPose()[:2]
 
-
+						print "adjusting pose", nodeID2, "from", self.nodeHash[nodeID2].getGlobalGPACPose()
+						
 						splicedPaths2 = self.paths.splicePathIDs(orderedPathIDs2)
 
 						totalGuesses = []
@@ -1582,6 +1717,7 @@ class PoseGraph:
 						guessPose = totalGuesses[0][2]
 						self.nodeHash[nodeID2].setGPACPose(guessPose)
 
+						print "set to pose", nodeID2, "to", guessPose
 						#if foreTerm2 and discForeTerm2:
 						#	pathID = orderedPathIDs2[0]
 						#elif backTerm2 and discBackTerm2:
@@ -1595,36 +1731,42 @@ class PoseGraph:
 					depPoints1 = []
 					distances1 = []
 					depAngles1 = []
+					contig1 = []
+					
 		
 					departures2 = []
 					interiors2 = []
 					depPoints2 = []
 					distances2 = []
 					depAngles2 = []
+					contig2 = []
 					
 					" the overlapping paths are computed from the initial guess of position "
 					orderedPathIDs1 = self.paths.getOrderedOverlappingPaths(nodeID1)
 					orderedPathIDs2 = self.paths.getOrderedOverlappingPaths(nodeID2)
 					
-					print "orderedPathIDs1:", orderedPathIDs1
-					print "orderedPathIDs2:", orderedPathIDs2
+					print nodeID1, "orderedPathIDs1:", orderedPathIDs1
+					print nodeID2, "orderedPathIDs2:", orderedPathIDs2
 					
 					" now compute whether there are departure points after we have guessed a better position in synch with the paths "
 					for pathID in orderedPathIDs1:
-						departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2 = self.paths.getDeparturePoint(self.trimmedPaths[pathID], nodeID1)
+						departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = self.paths.getDeparturePoint(self.trimmedPaths[pathID], nodeID1)
 						departures1.append([isExist1,isExist2])
 						interiors1.append([isInterior1, isInterior2])
 						depPoints1.append([departurePoint1, departurePoint2])
 						distances1.append([discDist1, discDist2])
 						depAngles1.append([depAngle1, depAngle2])
+						contig1.append((contigFrac, overlapSum))
+	
 					
 					for pathID in orderedPathIDs2:
-						departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2 = self.paths.getDeparturePoint(self.trimmedPaths[pathID], nodeID2)
+						departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = self.paths.getDeparturePoint(self.trimmedPaths[pathID], nodeID2)
 						departures2.append([isExist1,isExist2])
 						interiors2.append([isInterior1, isInterior2])
 						depPoints2.append([departurePoint1, departurePoint2])
 						distances2.append([discDist1, discDist2])
 						depAngles2.append([depAngle1, depAngle2])
+						contig2.append((contigFrac, overlapSum))
 						
 					print "node", nodeID1, ":", departures1, interiors1
 					print "node", nodeID2, ":", departures2, interiors2
@@ -1822,6 +1964,7 @@ class PoseGraph:
 
 				self.paths.generatePaths()
 				self.trimmedPaths = self.paths.trimPaths(self.paths.paths)		
+				self.drawTrimmedPaths(self.trimmedPaths)
 				#self.paths.comparePaths()
 				self.mergePaths()
 
@@ -1894,9 +2037,18 @@ class PoseGraph:
 
 				self.mergePriorityConstraints()
 
+				self.paths.generatePaths()
+				self.drawPathAndHull()
+	
+				self.updatePathNode(nodeID1, orderedPathIDs1)
+				self.updatePathNode(nodeID2, orderedPathIDs2)
+	
+				self.updateLastNode(nodeID1+2)
+				self.updateLastNode(nodeID2+2)
+				
 			self.paths.generatePaths()
-
 			self.drawPathAndHull()
+
 			
 			"""
 			try:
@@ -1989,6 +2141,8 @@ class PoseGraph:
 				self.statePlotCount += 1
 				self.drawPathAndHull()
 				
+				nodeHasMerged = {}
+				
 				" offset between paths "
 				poseOrigin = Pose(cOffset)
 				for nodeID in mergeNodes:
@@ -2011,7 +2165,7 @@ class PoseGraph:
 					
 					#newConstraints = self.addBatchConstraints(targetNodeID)
 					newConstraints = self.addTargetBatchConstraints(targetNodeID, pathNodes)
-									
+					
 					for const in newConstraints:
 						n1 = const[0]
 						n2 = const[1]
@@ -2019,6 +2173,37 @@ class PoseGraph:
 						covE = const[3]
 			
 						self.addPriorityEdge([n1,n2,transform,covE], CORNER_PRIORITY)
+
+					if len(newConstraints) > 0:
+						nodeHasMerged[nodeID] = True
+					else:
+						nodeHasMerged[nodeID] = False
+						
+
+					" control point nearest the GPAC origin "
+					globalPoint1 = self.nodeHash[nodeID].getGlobalGPACPose()[:2]					
+					print "adjusting pose", nodeID, "from", self.nodeHash[nodeID].getGlobalGPACPose()
+					splicedPaths1 = self.paths.splicePathIDs([rootID])
+					totalGuesses = []
+					for path in splicedPaths1:
+	
+						" make the path constraints "								
+						guessPose1, cost1 = self.makeGlobalMedialOverlapConstraint(nodeID, path, globalPoint1, globalPoint1)
+						
+						estPose = self.nodeHash[nodeID].getGlobalGPACPose()
+						angDiff = abs(estPose[2]-guessPose1[2])
+						totalGuesses.append((angDiff, cost1, guessPose1))
+					
+					totalGuesses.sort()
+					guessPose = totalGuesses[0][2]
+					self.nodeHash[nodeID].setGPACPose(guessPose)
+					print "set to pose", nodeID, "to", guessPose
+
+
+				if self.numNodes-4 in mergeNodes:
+					self.updateLastNode(self.numNodes-2)
+				if self.numNodes-3 in mergeNodes:
+					self.updateLastNode(self.numNodes-1)
 
 				" merge the constraints "
 				self.mergePriorityConstraints()
@@ -2032,7 +2217,31 @@ class PoseGraph:
 				inplace_edges = self.getPriorityEdges(INPLACE_PRIORITY)
 				overlap_edges = self.getPriorityEdges(OVERLAP_PRIORITY)
 
+				" between mergedNodes and their constrained partners, "
+				" loosen the coaxial covariance all along the chain "
+				" Only disconnect edges if a connection has been made during the merge "
+				
+				for nodeID in mergeNodes:
+					
+					if nodeHasMerged[nodeID]:
+						for k, v in overlap_edges.items():
+							if len(v) > 0:
+								#print "edges:", v
+								covE = v[0][1]
+								if k[0] == nodeID or k[1] == nodeID:
+									self.relaxPriorityEdge(k[0],k[1],priorityLevel = OVERLAP_PRIORITY)
+									#covE[0,0] *= 100
+									#covE[1,1] *= 100
+						for k, v in inplace_edges.items():
+							if len(v) > 0:
+								#print "edges:", v
+								covE = v[0][1]
+								if k[0] == nodeID or k[1] == nodeID:
+									self.relaxPriorityEdge(k[0],k[1],priorityLevel = INPLACE_PRIORITY)
+
+
 				" k = (nodeID1,nodeID2)  v = [transform1,covE1]"
+				"""
 				for nodeID in mergeNodes:
 					for k, v in inplace_edges.items():
 						if len(v) > 0:
@@ -2049,7 +2258,8 @@ class PoseGraph:
 							if k[0] == nodeID or k[1] == nodeID:
 								covE[0,0] *= 100
 								covE[1,1] *= 100
-
+				"""
+				
 				" re-evaluate constraints with relaxed overlap and inplace priorities"
 				self.mergePriorityConstraints()
 
@@ -2071,7 +2281,10 @@ class PoseGraph:
 	
 				self.paths.generatePaths()
 				
-
+				self.drawConstraints(self.statePlotCount)
+				self.statePlotCount += 1
+				self.drawPathAndHull()
+				
 
 	def constrainToPaths(self, nodeID, orderedPathIDs, departures, interiors, depPoints, insertNode = False):
 			
@@ -2124,8 +2337,7 @@ class PoseGraph:
 
 				" make path constraint "
 				print "pathID: addPathConstraints3(", pathID, nodeID
-				#self.addPathConstraints3(self.nodeSets[pathID], nodeID, insertNode = insertNode)
-				self.addPathConstraints3(self.paths.getNodes(pathID), nodeID, insertNode = insertNode)
+				#self.addPathConstraints3(self.paths.getNodes(pathID), nodeID, insertNode = insertNode, orderedPathIDs = orderedPathIDs)
 			
 		else:
 			" in at least one junction "
@@ -2233,7 +2445,7 @@ class PoseGraph:
 
 					" make path constraint "
 					print "minPathID: addPathConstraints3(", minPathID, nodeID
-					self.addPathConstraints3(self.paths.getNodes(minPathID), nodeID, insertNode = insertNode)
+					#self.addPathConstraints3(self.paths.getNodes(minPathID), nodeID, insertNode = insertNode)
 
 
 
@@ -2275,6 +2487,7 @@ class PoseGraph:
 						parentPath = pathID1
 						childPath = pathID2
 					else:
+						print "child-parent status not established for paths:", orderedPathIDs
 						raise
 
 				" global path point "
@@ -2336,7 +2549,7 @@ class PoseGraph:
 
 					" make path constraint "
 					print "childPath: addPathConstraints3(", childPath, nodeID
-					self.addPathConstraints3(self.paths.getNodes(childPath), nodeID, insertNode = insertNode)
+					#self.addPathConstraints3(self.paths.getNodes(childPath), nodeID, insertNode = insertNode)
 
 				
 				elif isDepExists2:
@@ -2359,7 +2572,7 @@ class PoseGraph:
 
 					" make path constraint "
 					print "childPath: addPathConstraints3(", childPath, nodeID
-					self.addPathConstraints3(self.paths.getNodes(childPath), nodeID, insertNode = insertNode)
+					#self.addPathConstraints3(self.paths.getNodes(childPath), nodeID, insertNode = insertNode)
 
 				
 				else:
@@ -2440,7 +2653,7 @@ class PoseGraph:
 
 				" make path constraint "
 				print "childPath: addPathConstraints3(", childPath, nodeID
-				self.addPathConstraints3(self.paths.getNodes(childPath), nodeID, insertNode = insertNode)
+				#self.addPathConstraints3(self.paths.getNodes(childPath), nodeID, insertNode = insertNode)
 
 
 
@@ -2463,6 +2676,7 @@ class PoseGraph:
 			depPoints1 = []
 			distances1 = []
 			depAngles1 = []
+			contig1 = []
 
 			" departure events for node 2 "
 			departures2 = []
@@ -2470,6 +2684,7 @@ class PoseGraph:
 			depPoints2 = []
 			distances2 = []
 			depAngles2 = []
+			contig2 = []
 
 			
 			" raw medial axis of union of path nodes "
@@ -2503,20 +2718,22 @@ class PoseGraph:
 			
 			" COMPUTE DEPARTURE EVENTS FOR EACH OVERLAPPING PATH SECTION "
 			for pathID in orderedPathIDs1:
-				departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2 = self.paths.getDeparturePoint(self.trimmedPaths[pathID], nodeID1)
+				departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = self.paths.getDeparturePoint(self.trimmedPaths[pathID], nodeID1)
 				departures1.append([isExist1,isExist2])
 				interiors1.append([isInterior1, isInterior2])
 				depPoints1.append([departurePoint1, departurePoint2])
 				distances1.append([discDist1, discDist2])
 				depAngles1.append([depAngle1, depAngle2])
+				contig1.append((contigFrac, overlapSum))
 			
 			for pathID in orderedPathIDs2:
-				departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2 = self.paths.getDeparturePoint(self.trimmedPaths[pathID], nodeID2)
+				departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = self.paths.getDeparturePoint(self.trimmedPaths[pathID], nodeID2)
 				departures2.append([isExist1,isExist2])
 				interiors2.append([isInterior1, isInterior2])
 				depPoints2.append([departurePoint1, departurePoint2])
 				distances2.append([discDist1, discDist2])
 				depAngles2.append([depAngle1, depAngle2])
+				contig2.append((contigFrac, overlapSum))
 				
 			print "node departures", nodeID1, ":", departures1
 			print "node  interiors", nodeID1, ":", interiors1
@@ -2565,9 +2782,10 @@ class PoseGraph:
 			backAngDiff = diffAngle(backAngle1, backAngle2)
 
 
-			print "pass1:", frontExist1, backExist1, frontInterior1, backInterior1, foreTerm1, backTerm1, discForeTerm1, discBackTerm1, foreAngle1, backAngle1
-			print "pass1:", frontExist2, backExist2, frontInterior2, backInterior2, foreTerm2, backTerm2, discForeTerm2, discBackTerm2, foreAngle2, backAngle2
+			print "branchCheck:", frontExist1, backExist1, frontInterior1, backInterior1, foreTerm1, backTerm1, discForeTerm1, discBackTerm1, foreAngle1, backAngle1, contig1[0][0], contig1[-1][0]
+			print "branchCheck:", frontExist2, backExist2, frontInterior2, backInterior2, foreTerm2, backTerm2, discForeTerm2, discBackTerm2, foreAngle2, backAngle2, contig2[0][0], contig2[-1][0]
 
+			
 			" check for the cases that internal departure may have a departure point discrepancy, "
 			" then we should perform a pose adjustment and recompute departures "
 			print "checking discrepancy in departure:", nodeID1, nodeID2, foreTerm1, discForeTerm1, backTerm1, discBackTerm1, foreTerm2, discForeTerm2, backTerm2, discBackTerm2
@@ -2646,12 +2864,14 @@ class PoseGraph:
 				depPoints1 = []
 				distances1 = []
 				depAngles1 = []
+				contig1 = []
 	
 				departures2 = []
 				interiors2 = []
 				depPoints2 = []
 				distances2 = []
 				depAngles2 = []
+				contig2 = []
 				
 				" the overlapping paths are computed from the initial guess of position "
 				orderedPathIDs1 = self.paths.getOrderedOverlappingPaths(nodeID1)
@@ -2662,20 +2882,22 @@ class PoseGraph:
 				
 				" now compute whether there are departure points after we have guessed a better position in synch with the paths "
 				for pathID in orderedPathIDs1:
-					departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2 = self.paths.getDeparturePoint(self.trimmedPaths[pathID], nodeID1)
+					departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = self.paths.getDeparturePoint(self.trimmedPaths[pathID], nodeID1)
 					departures1.append([isExist1,isExist2])
 					interiors1.append([isInterior1, isInterior2])
 					depPoints1.append([departurePoint1, departurePoint2])
 					distances1.append([discDist1, discDist2])
 					depAngles1.append([depAngle1, depAngle2])
+					contig1.append((contigFrac, overlapSum))
 				
 				for pathID in orderedPathIDs2:
-					departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2 = self.paths.getDeparturePoint(self.trimmedPaths[pathID], nodeID2)
+					departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = self.paths.getDeparturePoint(self.trimmedPaths[pathID], nodeID2)
 					departures2.append([isExist1,isExist2])
 					interiors2.append([isInterior1, isInterior2])
 					depPoints2.append([departurePoint1, departurePoint2])
 					distances2.append([discDist1, discDist2])
 					depAngles2.append([depAngle1, depAngle2])
+					contig2.append((contigFrac, overlapSum))
 					
 				print "node", nodeID1, ":", departures1, interiors1
 				print "node", nodeID2, ":", departures2, interiors2
@@ -2905,16 +3127,66 @@ class PoseGraph:
 		
 		return
 	
+	
+	def updateLastNode(self, nodeID):
 		
-
-
+		" find constraints of nodeID and update it according to constraint from nodeID-2"
+		
+		print "update position of node", nodeID
+		
+		if nodeID >= 2:
 			
+			resultEdges = self.getEdges(nodeID, nodeID-2)
+			
+			resultEdges.sort(key=itemgetter(2), reverse=True)
+
+			edge = resultEdges[0]
+			
+			transform = edge[0]
+			offset = [transform[0,0],transform[1,0],transform[2,0]]
+
+			"compute pose nodeID wrt node-2 given offset "
+			
+			originPose = Pose(self.nodeHash[nodeID-2].getGlobalGPACPose())
+			nodePose = originPose.convertLocalOffsetToGlobal(offset)
+			
+			self.nodeHash[nodeID].setGPACPose(nodePose)
+
+	def updatePathNode(self, nodeID, orderedPathIDs):
+
+		print "update position of path node", nodeID
+	
+		" control point nearest the GPAC origin "
+		globalPoint1 = self.nodeHash[nodeID].getGlobalGPACPose()[:2]
+		
+		print "adjusting pose", nodeID, "from", self.nodeHash[nodeID].getGlobalGPACPose()
+
+		splicedPaths1 = self.paths.splicePathIDs(orderedPathIDs)
+
+		totalGuesses = []
+		for path in splicedPaths1:
+
+			" make the path constraints "								
+			guessPose1, cost1 = self.makeGlobalMedialOverlapConstraint(nodeID, path, globalPoint1, globalPoint1)
+			
+			estPose = self.nodeHash[nodeID].getGlobalGPACPose()
+			angDiff = abs(estPose[2]-guessPose1[2])
+			totalGuesses.append((angDiff, cost1, guessPose1))
+		
+		totalGuesses.sort()
+		guessPose = totalGuesses[0][2]
+		self.nodeHash[nodeID].setGPACPose(guessPose)
+		print "set to pose", nodeID, "to", guessPose
+
+
 
 	def mergePriorityConstraints(self):
 		
 		totalConstraints = []
 		
-		#print "merging:"
+		print "merging: do nothing"
+
+		return
 		
 		" merge the constraint "
 		for k, v in self.edgePriorityHash.items():
@@ -2943,12 +3215,12 @@ class PoseGraph:
 		
 		#print "merging totalConstraints:", totalConstraints
 		v_list, merged_constraints = self.doToro(totalConstraints, fileName = "probe_init")
-		
-		self.edgeHash = {}
-		for i in range(len(merged_constraints)):
-			node1 = merged_constraints[i][0]
-			node2 = merged_constraints[i][1]
-			self.edgeHash[(node1, node2)] = [merged_constraints[i][2], merged_constraints[i][3]]
+
+		#self.edgeHash = {}
+		#for i in range(len(merged_constraints)):
+		#	node1 = merged_constraints[i][0]
+		#	node2 = merged_constraints[i][1]
+		#	self.edgeHash[(node1, node2)] = [merged_constraints[i][2], merged_constraints[i][3]]
 		
 		for v in v_list:
 			node = self.nodeHash[v[0]]
@@ -3076,7 +3348,7 @@ class PoseGraph:
 		return sum1, matchCount
 
 
-	def makeGlobalMedialOverlapConstraint(self, nodeID, globalPath, globalJunctionPoint, globalDeparturePoint):
+	def makeGlobalMedialOverlapConstraint(self, nodeID, globalPath, globalJunctionPoint, globalDeparturePoint, fullOverlap = False ):
 
 		" compute the medial axis for each pose "
 		
@@ -3325,7 +3597,11 @@ class PoseGraph:
 		#resultPose, lastCost = gen_icp.globalOverlapICP([u1,u2,angGuess], orientedGlobalPath, medial1, poses_1, poses_2)
 
 		
-		resultPose, lastCost, matchCount = gen_icp.globalOverlapICP_GPU2([u1,u2,angGuess], orientedGlobalPath, medial1, plotIter = True, n1 = nodeID, n2 = -1)
+		if fullOverlap:
+			resultPose, lastCost, matchCount = gen_icp.globalOverlapICP_GPU2([u1,u2,angGuess], orientedGlobalPath, medial1, plotIter = True, n1 = nodeID, n2 = -1, minMatchDist = 2.0)
+		else:
+			resultPose, lastCost, matchCount = gen_icp.globalOverlapICP_GPU2([u1,u2,angGuess], orientedGlobalPath, medial1, plotIter = True, n1 = nodeID, n2 = -1)
+		
 
 
 		print "estimating branch pose", nodeID, "at",  resultPose[0], resultPose[1], resultPose[2]
@@ -3333,7 +3609,7 @@ class PoseGraph:
 		return resultPose, lastCost
 
 
-	def makeMultiJunctionMedialOverlapConstraint(self, nodeID1, nodeID2, isMove = True, isForward = True, inPlace = False, uRange = 1.5 ):
+	def makeMultiJunctionMedialOverlapConstraint(self, nodeID1, nodeID2, isMove = True, isForward = True, inPlace = False, uRange = 1.5):
 
 		#isMove = False
 		#inPlace = True
@@ -3491,8 +3767,10 @@ class PoseGraph:
 					gndOffset = currProfile.convertGlobalPoseToLocal(gndGPAC2Pose)
 					
 					#result, hist = gen_icp.overlapICP(estPose1, diffOffset, [u1, u2, angGuess], hull1, hull2, orientedMedial1, medial2, [0.0,0.0], [0.0,0.0], inPlace = inPlace, plotIter = False, n1 = (i,k), n2 = (j,l), uRange = uRange)
-					result, hist = gen_icp.overlapICP(estPose1, gndOffset, [u1, u2, angGuess], hull1, hull2, medial1, orientedMedial2, [0.0,0.0], [0.0,0.0], inPlace = inPlace, plotIter = False, n1 = (nodeID1,k), n2 = (nodeID2,l), uRange = uRange)
+					#result, hist = gen_icp.overlapICP(estPose1, gndOffset, [u1, u2, angGuess], hull1, hull2, medial1, orientedMedial2, [0.0,0.0], [0.0,0.0], inPlace = inPlace, plotIter = False, n1 = (nodeID1,k), n2 = (nodeID2,l), uRange = uRange)
 					
+					result, hist = gen_icp.overlapICP(estPose1, gndOffset, [u1, u2, angGuess], hull1, hull2, medial1, orientedMedial2, [0.0,0.0], [0.0,0.0], inPlace = inPlace, plotIter = False, n1 = (nodeID1,k), n2 = (nodeID2,l), uRange = uRange)
+						
 					
 					transform = matrix([[result[0]], [result[1]], [result[2]]])
 					covE =  self.E_overlap
@@ -3995,9 +4273,9 @@ class PoseGraph:
 
 		allNodes = pathNodes
 		
-		paths = []
-		for i in range(self.numNodes):
-			paths.append(bayes.dijkstra_proj(i, self.numNodes, self.edgeHash))
+		#paths = []
+		#for i in range(self.numNodes):
+		#	paths.append(bayes.dijkstra_proj(i, self.numNodes, self.edgeHash))
 			#print "paths", i, ":", paths[i]
 
 
@@ -4016,7 +4294,7 @@ class PoseGraph:
 		for k in allNodes + [targetNodeID]:
 	
 			node1 = self.nodeHash[k]
-			hull1, medial1 = computeHullAxis(i, node1, tailCutOff = False)
+			hull1, medial1 = computeHullAxis(k, node1, tailCutOff = False)
 			medials[k] = medial1
 			#estPose1 = node1.getGlobalGPACPose()		
 			medialSpline1 = SplineFit(medial1, smooth=0.1)
@@ -4222,7 +4500,7 @@ class PoseGraph:
 			cand["xiErrorBase"] = 0.0
 
 
-		candidates2.sort(key=lambda cand: cand["xiError"])
+		candidates2.sort(key=lambda cand: cand["cartDist2"])
 
 		candidates3 = []
 		isPicked = {}
@@ -4267,7 +4545,7 @@ class PoseGraph:
 		#for cand in candidates3:
 		#	self.drawCandidate(cand)
 		
-		return finalCandidates
+		return finalCandidates[:1]
 		
 		
 		"""
@@ -4318,9 +4596,9 @@ class PoseGraph:
 
 		allNodes = range(targetNodeID)
 
-		paths = []
-		for i in range(self.numNodes):
-			paths.append(bayes.dijkstra_proj(i, self.numNodes, self.edgeHash))
+		#paths = []
+		#for i in range(self.numNodes):
+		#	paths.append(bayes.dijkstra_proj(i, self.numNodes, self.edgeHash))
 
 		constraintPairs = []
 		for nodeID in allNodes:
@@ -4334,7 +4612,7 @@ class PoseGraph:
 		for k in range(targetNodeID+1):
 	
 			node1 = self.nodeHash[k]
-			hull1, medial1 = computeHullAxis(i, node1, tailCutOff = False)
+			hull1, medial1 = computeHullAxis(k, node1, tailCutOff = False)
 			medials.append(medial1)
 			#estPose1 = node1.getGlobalGPACPose()		
 			medialSpline1 = SplineFit(medial1, smooth=0.1)
@@ -4421,6 +4699,7 @@ class PoseGraph:
 
 		candidates2 = []
 		argSets = []
+		icpArgs = []
 		print
 		print "CANDIDATES:"
 		for cand in candidates:
@@ -4633,7 +4912,7 @@ class PoseGraph:
 								
 								" prevent case where little or no overlap of parent path prevents constraining "
 								if abs(frontDepI1-backDepI1) > 5 and abs(frontDepI2-backDepI2) > 5:
-									args = [nodeID1, nodeID2, medial1, medial2, u1, u2, initAng, frontDepI1, backDepI1, frontDepI2, backDepI2, isAlternate]
+									icpArgs = [nodeID1, nodeID2, medial1, medial2, u1, u2, initAng, frontDepI1, backDepI1, frontDepI2, backDepI2, isAlternate]
 							
 							else:
 								points1 = splines[nodeID1].getUniformSamples()
@@ -4644,13 +4923,16 @@ class PoseGraph:
 								frontDepI2 = 0
 								backDepI2 = len(points2)-1
 
-								args = [nodeID1, nodeID2, medial1, medial2, u1, u2, initAng, frontDepI1, backDepI1, frontDepI2, backDepI2, isAlternate]
+								icpArgs = [nodeID1, nodeID2, medial1, medial2, u1, u2, initAng, frontDepI1, backDepI1, frontDepI2, backDepI2, isAlternate]
 							
-							argSets.append(args)
-							candidates2.append(cand)
+							if len(icpArgs) > 0:
+								argSets.append(icpArgs)
+								candidates2.append(cand)
+								icpArgs = []
+								
 			if False and fabs(diffAngle(angDiff1,initAng)) < PAIR_ANG_DELTA:
-				args = [nodeID1, nodeID2, medial1, medial2, u1, u2, initAng]
-				argSets.append(args)
+				icpArgs = [nodeID1, nodeID2, medial1, medial2, u1, u2, initAng]
+				argSets.append(icpArgs)
 				candidates2.append(cand)
 
 
@@ -4662,6 +4944,10 @@ class PoseGraph:
 			u2 = cand['u2']
 			initAng = cand['initAng']
 			print nodeID1, nodeID2, u1, u2, initAng
+			
+		print "ARGS:"
+		for icpArgs in argSets:
+			print icpArgs
 
 		t1 = time.time()
 		results = gen_icp.serialOverlapICP(argSets)
@@ -4854,11 +5140,57 @@ class PoseGraph:
 
 
 
-	def addPathConstraints3(self, pathNodes, targetNodeID, insertNode = False):
+	def computePathConsistency(self, pathID):
+	
+		nodeSet = self.paths.getNodes(pathID)
+		nodeSet.sort()
+
+		departures1 = []
+		interiors1 = []
+		depPoints1 = []
+		distances1 = []
+		depAngles1 = []
+		isDep = []
+		contig1 = []
+		sums = []
+		counts = []
+			
+		for nodeID in nodeSet:
+
+			departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = self.paths.getDeparturePoint(self.trimmedPaths[pathID], nodeID, plotIter = False)
+			departures1.append([isExist1,isExist2])
+			interiors1.append([isInterior1, isInterior2])
+			depPoints1.append([departurePoint1, departurePoint2])
+			distances1.append([discDist1, discDist2])
+			depAngles1.append([depAngle1, depAngle2])
+			contig1.append((contigFrac, overlapSum))
+			isDep.append(isExist1 and isInterior1 or isExist2 and isInterior2)
+
+			sum1 = self.paths.getOverlapCondition(self.trimmedPaths[pathID], nodeID, plotIter = False)
+			sums.append(sum1)
+		
+			count = self.paths.getOverlapCondition2(self.trimmedPaths[pathID], nodeID, plotIter = False)
+			counts.append(count)
+
+		print "pathID", pathID, "consistencyCheck for nodeSet:", nodeSet
+		print "nodeID, foreDep, backDep, foreDist, backDist, contigFrac, overlapSum, overlapSum, matchCount"
+		for k in range(len(nodeSet)):
+			print nodeSet[k], isDep[k], departures1[k][0] and interiors1[k][0], departures1[k][1] and interiors1[k][1], distances1[k][0], distances1[k][1], contig1[k][0], contig1[k][1], sums[k], counts[k]
+		
+		if isDep.count(True) == 0:
+			return True
+		else:
+			return False
+		#print pathID, "nodeSet:", nodeSet
+		#print "overlapMatchCounts:", overlapSums
+
+
+	def addPathConstraints3(self, pathNodes, targetNodeID, insertNode = False, orderedPathIDs = []):
 
 		print "addPathConstraints:"
 		print "pathNodes:", pathNodes
 		print "targetNodeID:", targetNodeID
+		print "orderedPathIDs:", orderedPathIDs
 		
 		newConstraints = self.addBatchConstraints(targetNodeID)
 						
@@ -4873,6 +5205,91 @@ class PoseGraph:
 		" merge the constraints "
 		self.mergePriorityConstraints()
 
+		isConsistent = True
+		for pathID in orderedPathIDs:
+			resultVal = self.computePathConsistency(pathID)
+			isConsistent &= resultVal
+
+		if not isConsistent:
+			for const in newConstraints:
+				n1 = const[0]
+				n2 = const[1]
+				transform = const[2]
+				covE = const[3]
+	
+				self.delPriorityEdge( n1, n2, CORNER_PRIORITY)					
+				
+		"""
+		" do the new constraints cause a branching?  Then they suck!  Revert. "
+		if len(orderedPathIDs) == 1:
+			print "checking new constraint on-path consistency"
+			departures1 = []
+			interiors1 = []
+			depPoints1 = []
+			distances1 = []
+			depAngles1 = []
+			contig1 = []
+			
+			sums = []
+			for pathID in orderedPathIDs:
+				departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = self.paths.getDeparturePoint(self.trimmedPaths[pathID], targetNodeID)
+				departures1.append([isExist1,isExist2])
+				interiors1.append([isInterior1, isInterior2])
+				depPoints1.append([departurePoint1, departurePoint2])
+				distances1.append([discDist1, discDist2])
+				depAngles1.append([depAngle1, depAngle2])
+				contig1.append((contigFrac, overlapSum))
+
+				sum1 = self.paths.getOverlapCondition(self.trimmedPaths[pathID], targetNodeID, plotIter = True)
+				sums.append(sum1)
+
+			
+			print "node departures", targetNodeID, ":", departures1
+			print "node  interiors", targetNodeID, ":", interiors1
+			print "node contiguity", targetNodeID, ":", contig1
+			print "node overlap sums", targetNodeID, ":", sums
+
+			" new junction finding logic "
+			" if terminal departures for each medial axis are None or exterior, than we stay on existing paths "
+			" if a terminal departure exists that is internal, than we have a new junction "
+			DISC_THRESH = 0.2
+
+			" NODE1: CHECK FRONT AND BACK FOR BRANCHING EVENTS "
+			frontExist1 = departures1[0][0]
+			backExist1 =  departures1[-1][1]
+			frontInterior1 = interiors1[0][0]
+			backInterior1 = interiors1[-1][1]
+
+			foreTerm1 = frontInterior1 and frontExist1
+			backTerm1 = backInterior1 and backExist1
+			
+			" DISCREPANCY BETWEEN TIP-CLOSEST and DEPARTURE-CLOSEST POINT ON PATH "				
+			discForeTerm1 = distances1[0][0] > DISC_THRESH
+			discBackTerm1 = distances1[-1][1] > DISC_THRESH
+			
+			foreAngle1 = depAngles1[0][0]
+			backAngle1 = depAngles1[-1][1]
+			
+			if contig1[0][0] < 0.4 or contig1[-1][0] < 0.4:
+				adjustPose1 = True
+			else:
+				adjustPose1 = False
+				
+			print "mergeTest results:", frontExist1, backExist1, frontInterior1, backInterior1, foreTerm1, backTerm1, discForeTerm1, discBackTerm1, foreAngle1, backAngle1, contig1[0][0], contig1[-1][0], sums[0], sums[-1]
+			
+
+			if foreTerm1 and discForeTerm1 or backTerm1 and discBackTerm1 or adjustPose1:
+				for const in newConstraints:
+					n1 = const[0]
+					n2 = const[1]
+					transform = const[2]
+					covE = const[3]
+		
+					self.delPriorityEdge( n1, n2, CORNER_PRIORITY)			
+		"""
+		" merge the constraints "
+		self.mergePriorityConstraints()
+		
 		return
 		
 
@@ -5851,15 +6268,30 @@ class PoseGraph:
 		#print "Running TORO with", len(e_list), "constraints"
 		" add hypotheses to the TORO file "
 		
-		#print "e_list:", e_list
-		#print "v_list:", v_list
+		v_list.sort()
+		e_list.sort()
+		
+		
+		
+		for mn in range(10):
+			print "v_list:", repr(v_list)
+			print "e_list:", repr(e_list)
 
-		toro.writeConstrainedToroGraph(".", fileName + ".graph", v_list, e_list)
-		toro.executeToro("./" + fileName + ".graph")
+		#toro.writeConstrainedToroGraph(".", fileName + ".graph", v_list, e_list)
+		#toro.executeToro("./" + fileName + ".graph")
 	
-		finalFileName = fileName + "-treeopt-final.graph"
-		v_list2, e_list2 = toro.readToroGraph("./" + finalFileName)		
-	
+		#finalFileName = fileName + "-treeopt-final.graph"
+		
+		v_list2, e_list2 = toro.runTORO(v_list,e_list)
+		
+		#v_list2, e_list2 = toro.readToroGraph("./" + finalFileName)		
+
+		v_list2.sort()
+		e_list2.sort()
+		
+		print "v_list2:", repr(v_list2)
+		print "e_list2:", repr(e_list2)
+			
 		final_constraints = []
 		
 		#print "TORO RESULTS:"
@@ -6233,6 +6665,20 @@ class PoseGraph:
 		
 		pylab.clf()
 		pathIDs = self.paths.getPathIDs()
+
+		allNodes = []
+		for k in pathIDs:
+			nodeSet = self.paths.getNodes(k)
+			allNodes += copy(nodeSet)
+		
+		allNodes.sort()	
+		
+		if len(allNodes) > 0:
+			highestNodeID = allNodes[-1]
+		else:
+			highestNodeID = 1e100		
+			
+			
 		for k in pathIDs:
 			xP = []
 			yP = []
@@ -6242,8 +6688,10 @@ class PoseGraph:
 				yP.append(p[1])
 			pylab.plot(xP,yP, color=self.colors[k], linewidth=4)
 
+
 			nodeSet = self.paths.getNodes(k)
 
+			print "drawing pathID", k, "for nodes:", nodeSet
 			for nodeID in nodeSet:
 				xP = []
 				yP = []
@@ -6266,9 +6714,13 @@ class PoseGraph:
 				for p in points:
 					xP.append(p[0])
 					yP.append(p[1])
+				
+				if nodeID == highestNodeID:
+					pylab.plot(xP,yP, color=(0,0,0))
+				else:
+					pylab.plot(xP,yP, color=self.colors[k])
 					
-				pylab.plot(xP,yP, color=self.colors[k])
-
+			
 			xP = []
 			yP = []
 			for p in self.paths.hulls[k]:
@@ -6278,6 +6730,8 @@ class PoseGraph:
 			pylab.plot(xP,yP, '--', color=self.colors[k], linewidth=4)
 			
 		print "pathAndHull:", self.pathDrawCount
+		printStack()
+
 		pylab.title("paths: %s numNodes: %d" % (repr(self.paths.getPathIDs()), self.numNodes))
 		pylab.savefig("pathAndHull_%04u.png" % self.pathDrawCount)
 

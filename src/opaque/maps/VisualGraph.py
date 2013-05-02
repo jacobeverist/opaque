@@ -15,6 +15,7 @@ from subprocess import Popen, PIPE
 from medialaxis import computeMedialAxis
 import Image
 import sys
+import alphamod
 
 class VisualGraph:
 
@@ -73,6 +74,7 @@ class VisualGraph:
 			
 		#for i in range(num_poses+2, num_poses+70):
 		for i in range(num_poses+2, num_poses+26):
+			#for i in range(num_poses+2, num_poses+8):
 
 			print "loading node", i		
 			currNode = LocalNode(self.probe, self.contacts, i, 19, PIXELSIZE)
@@ -775,6 +777,8 @@ class VisualGraph:
 
 	def drawTopology(self):
 
+		random.seed(0)
+		
 		def convertAlphaUniform(a_vert, max_spacing = 0.04):
 			
 			" make the vertices uniformly distributed "
@@ -839,6 +843,39 @@ class VisualGraph:
 			radius = 0.2
 
 			numPoints = len(medialPointSoup)
+			isDone = False
+			
+			while not isDone:
+		
+				perturbPoints = []
+				
+				for p in medialPointSoup:
+					p2 = copy(p)
+					" add a little bit of noise to avoid degenerate conditions in CGAL "
+					p2[0] += random.gauss(0.0,0.000001)
+					p2[1] += random.gauss(0.0,0.000001)
+		
+					perturbPoints.append(p2)
+			
+				try:			
+		
+					vertices = alphamod.doAlpha(radius,perturbPoints)
+					numVert = len(vertices)
+					
+					if numVert <= 2:
+						print "Failed, hull had only", numVert, "vertices"
+						raise
+					
+					isDone = True
+				except:
+					print "hull has holes!  retrying..."
+					#print sArr	
+	
+			return vertices
+
+
+			"""
+			numPoints = len(medialPointSoup)
 			inputStr = str(numPoints) + " "
 	
 			" alpha shape circle radius "
@@ -896,7 +933,7 @@ class VisualGraph:
 				except:
 					print "hull has holes!  retrying..."
 					#print sArr	
-			
+			"""
 			"""
 			vertices = []
 			try:			

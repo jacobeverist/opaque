@@ -6,6 +6,8 @@ from math import *
 class Pose:
 
 	def __init__(self, pose = [0.0,0.0,0.0]):
+		
+		#print "pose:", repr(pose)
 		self.setEstPose(pose)
 
 	def setEstPose(self, newPose):
@@ -30,10 +32,14 @@ class Pose:
 			print "Pose angle fail, dist =", self.dist, "estPose =", self.estPose
 			self.vecAng = 0.0
 
+		#print "vecAng:", repr(self.vecAng)
+
 		self.backR = array([[cos(self.vecAng), sin(self.vecAng)],[-sin(self.vecAng),cos(self.vecAng)]])
 		self.foreR = array([[cos(self.vecAng), -sin(self.vecAng)],[sin(self.vecAng),cos(self.vecAng)]])
 
 		self.R = array([[cos(self.estPose[2]), sin(self.estPose[2])],[-sin(self.estPose[2]),cos(self.estPose[2])]])
+
+		#print "R:", repr(self.R)
 
 	def doInverse(self, offset):
 		
@@ -92,13 +98,24 @@ class Pose:
 
 	def convertLocalToGlobal(self, pnt):
 		
+		#print "pnt:", repr(pnt)
 		finalVec = array([[pnt[0]], [pnt[1]]])
+		#print "finalVec:", repr(finalVec)
+		#print "self.R:", repr(self.R)
 		transVec = dot(transpose(self.R), finalVec)
+		#print "transVec:", repr(transVec)
+		
 		resVec = dot(self.backR, transVec)
+		#print "resVec:", repr(resVec)
+		
 		resVec[0, 0] += self.dist
+		#print "resVec0:", repr(resVec)
+		
 		tempVec = dot(self.foreR, resVec)
+		#print "tempVec:", repr(tempVec)
 		
 		newPoint = [tempVec[0,0],tempVec[1,0]]
+		#print "newPoint:", repr(newPoint)
 		
 		return newPoint
 

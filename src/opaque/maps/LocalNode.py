@@ -15,6 +15,7 @@ from StableCurve import StableCurve
 from medialaxis import computeMedialAxis
 
 import graph
+import alphamod
 
 import random
 import functions
@@ -25,7 +26,6 @@ from numpy import array, dot, transpose
 estPlotCount = 0
 alphaCount = 0
 splineCount = 0
-
 
 def computeBareHull(node1, sweep = False, static = False):
 	
@@ -438,6 +438,8 @@ class LocalNode:
 			yP.append(p[1])
 		
 		(ar1,br1)= scipy.polyfit(xP,yP,1)
+		ar1 = round(ar1,5)
+		br1 = round(br1,5)
 		
 		print "(ar1,br1) =", (ar1,br1)
 		
@@ -3808,7 +3810,38 @@ class LocalNode:
 	def computeAlpha2(self, points, radius = 0.2):
 		
 		global alphaCount
+		random.seed(0)		
 		
+		isDone = False
+		
+		while not isDone:
+	
+			perturbPoints = []
+			
+			for p in points:
+				p2 = copy(p)
+				" add a little bit of noise to avoid degenerate conditions in CGAL "
+				p2[0] += random.gauss(0.0,0.000001)
+				p2[1] += random.gauss(0.0,0.000001)
+	
+				perturbPoints.append(p2)
+		
+			try:			
+	
+				vertices = alphamod.doAlpha(radius,perturbPoints)
+				numVert = len(vertices)
+				
+				if numVert <= 2:
+					print "Failed, hull had only", numVert, "vertices"
+					raise
+				
+				isDone = True
+			except:
+				print "hull has holes!  retrying..."
+				#print sArr	
+
+		return vertices
+			
 		plotIter = False
 		
 		numPoints = len(points)

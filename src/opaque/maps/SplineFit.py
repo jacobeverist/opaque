@@ -1,6 +1,7 @@
 
 from math import sqrt
 import scipy.interpolate
+import random
 from random import gauss
 from copy import copy
 from math import floor, asin, acos, cos, sin
@@ -10,6 +11,9 @@ from functions import closestAngle
 class SplineFit:
 
 	def __init__ (self, points, smooth = 0.1, kp = 5):
+		
+		random.seed(0)		
+
 		self.pointSet = points
 		self.smoothNess = smooth
 		self.kp = kp

@@ -3,7 +3,7 @@
 	ProjectType="Visual C++"
 	Version="9.00"
 	Name="ALL_BUILD"
-	ProjectGUID="{2C91E360-F574-4CB7-A95A-5BE500D8FEF3}"
+	ProjectGUID="{0A598A37-A743-4CFE-9505-35A13CB07F23}"
 	Keyword="Win32Proj">
 	<Platforms>
 		<Platform
@@ -20,10 +20,9 @@
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="&quot;C:\Documents and Settings\Jacob\Desktop\workspace3\opaque_conf\src\alpha2&quot;;&quot;C:\Program Files\CGAL-3.4\auxiliary\gmp\include&quot;;&quot;C:\Program Files\boost\boost_1_38&quot;;&quot;C:\Program Files\CGAL-3.4\include&quot;;"
+				AdditionalIncludeDirectories="C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\auxiliary\gmp\include;C:\Users\everist\workspace\opaque\src\alpha2;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\include;c:\Users\everist\workspace\opaque\src\alpha2\boost_1_53_0;"
 				ExceptionHandling="0"
-				SuppressStartupBanner="FALSE"
-				PreprocessorDefinitions="CMAKE_INTDIR=\&quot;Debug\&quot;"
+				PreprocessorDefinitions="CGAL_USE_MPFR;CGAL_USE_GMP;CMAKE_INTDIR=\&quot;Debug\&quot;"
 				AssemblerListingLocation="Debug"
 				ObjectFile="$(IntDir)\"
 />
@@ -31,11 +30,11 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				AdditionalIncludeDirectories="&quot;C:\Documents and Settings\Jacob\Desktop\workspace3\opaque_conf\src\alpha2&quot;;&quot;C:\Program Files\CGAL-3.4\auxiliary\gmp\include&quot;;&quot;C:\Program Files\boost\boost_1_38&quot;;&quot;C:\Program Files\CGAL-3.4\include&quot;;"
-				PreprocessorDefinitions="CMAKE_INTDIR=\&quot;Debug\&quot;"/>
+				AdditionalIncludeDirectories="C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\auxiliary\gmp\include;C:\Users\everist\workspace\opaque\src\alpha2;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\include;c:\Users\everist\workspace\opaque\src\alpha2\boost_1_53_0;"
+				PreprocessorDefinitions="CGAL_USE_MPFR;CGAL_USE_GMP;CMAKE_INTDIR=\&quot;Debug\&quot;"/>
 			<Tool
 				Name="VCMIDLTool"
-				PreprocessorDefinitions="CMAKE_INTDIR=\&quot;Debug\&quot;"
+				AdditionalIncludeDirectories="C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\auxiliary\gmp\include;C:\Users\everist\workspace\opaque\src\alpha2;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\include;c:\Users\everist\workspace\opaque\src\alpha2\boost_1_53_0;"
 				MkTypLibCompatible="FALSE"
 				TargetEnvironment="1"
 				GenerateStublessProxies="TRUE"
@@ -62,10 +61,9 @@
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="&quot;C:\Documents and Settings\Jacob\Desktop\workspace3\opaque_conf\src\alpha2&quot;;&quot;C:\Program Files\CGAL-3.4\auxiliary\gmp\include&quot;;&quot;C:\Program Files\boost\boost_1_38&quot;;&quot;C:\Program Files\CGAL-3.4\include&quot;;"
+				AdditionalIncludeDirectories="C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\auxiliary\gmp\include;C:\Users\everist\workspace\opaque\src\alpha2;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\include;c:\Users\everist\workspace\opaque\src\alpha2\boost_1_53_0;"
 				ExceptionHandling="0"
-				SuppressStartupBanner="FALSE"
-				PreprocessorDefinitions="CMAKE_INTDIR=\&quot;Release\&quot;"
+				PreprocessorDefinitions="CGAL_USE_MPFR;CGAL_USE_GMP;CMAKE_INTDIR=\&quot;Release\&quot;"
 				AssemblerListingLocation="Release"
 				ObjectFile="$(IntDir)\"
 />
@@ -73,11 +71,11 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				AdditionalIncludeDirectories="&quot;C:\Documents and Settings\Jacob\Desktop\workspace3\opaque_conf\src\alpha2&quot;;&quot;C:\Program Files\CGAL-3.4\auxiliary\gmp\include&quot;;&quot;C:\Program Files\boost\boost_1_38&quot;;&quot;C:\Program Files\CGAL-3.4\include&quot;;"
-				PreprocessorDefinitions="CMAKE_INTDIR=\&quot;Release\&quot;"/>
+				AdditionalIncludeDirectories="C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\auxiliary\gmp\include;C:\Users\everist\workspace\opaque\src\alpha2;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\include;c:\Users\everist\workspace\opaque\src\alpha2\boost_1_53_0;"
+				PreprocessorDefinitions="CGAL_USE_MPFR;CGAL_USE_GMP;CMAKE_INTDIR=\&quot;Release\&quot;"/>
 			<Tool
 				Name="VCMIDLTool"
-				PreprocessorDefinitions="CMAKE_INTDIR=\&quot;Release\&quot;"
+				AdditionalIncludeDirectories="C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\auxiliary\gmp\include;C:\Users\everist\workspace\opaque\src\alpha2;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\include;c:\Users\everist\workspace\opaque\src\alpha2\boost_1_53_0;"
 				MkTypLibCompatible="FALSE"
 				TargetEnvironment="1"
 				GenerateStublessProxies="TRUE"
@@ -104,10 +102,9 @@
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="&quot;C:\Documents and Settings\Jacob\Desktop\workspace3\opaque_conf\src\alpha2&quot;;&quot;C:\Program Files\CGAL-3.4\auxiliary\gmp\include&quot;;&quot;C:\Program Files\boost\boost_1_38&quot;;&quot;C:\Program Files\CGAL-3.4\include&quot;;"
+				AdditionalIncludeDirectories="C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\auxiliary\gmp\include;C:\Users\everist\workspace\opaque\src\alpha2;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\include;c:\Users\everist\workspace\opaque\src\alpha2\boost_1_53_0;"
 				ExceptionHandling="0"
-				SuppressStartupBanner="FALSE"
-				PreprocessorDefinitions="CMAKE_INTDIR=\&quot;MinSizeRel\&quot;"
+				PreprocessorDefinitions="CGAL_USE_MPFR;CGAL_USE_GMP;CMAKE_INTDIR=\&quot;MinSizeRel\&quot;"
 				AssemblerListingLocation="MinSizeRel"
 				ObjectFile="$(IntDir)\"
 />
@@ -115,11 +112,11 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				AdditionalIncludeDirectories="&quot;C:\Documents and Settings\Jacob\Desktop\workspace3\opaque_conf\src\alpha2&quot;;&quot;C:\Program Files\CGAL-3.4\auxiliary\gmp\include&quot;;&quot;C:\Program Files\boost\boost_1_38&quot;;&quot;C:\Program Files\CGAL-3.4\include&quot;;"
-				PreprocessorDefinitions="CMAKE_INTDIR=\&quot;MinSizeRel\&quot;"/>
+				AdditionalIncludeDirectories="C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\auxiliary\gmp\include;C:\Users\everist\workspace\opaque\src\alpha2;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\include;c:\Users\everist\workspace\opaque\src\alpha2\boost_1_53_0;"
+				PreprocessorDefinitions="CGAL_USE_MPFR;CGAL_USE_GMP;CMAKE_INTDIR=\&quot;MinSizeRel\&quot;"/>
 			<Tool
 				Name="VCMIDLTool"
-				PreprocessorDefinitions="CMAKE_INTDIR=\&quot;MinSizeRel\&quot;"
+				AdditionalIncludeDirectories="C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\auxiliary\gmp\include;C:\Users\everist\workspace\opaque\src\alpha2;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\include;c:\Users\everist\workspace\opaque\src\alpha2\boost_1_53_0;"
 				MkTypLibCompatible="FALSE"
 				TargetEnvironment="1"
 				GenerateStublessProxies="TRUE"
@@ -146,10 +143,9 @@
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="&quot;C:\Documents and Settings\Jacob\Desktop\workspace3\opaque_conf\src\alpha2&quot;;&quot;C:\Program Files\CGAL-3.4\auxiliary\gmp\include&quot;;&quot;C:\Program Files\boost\boost_1_38&quot;;&quot;C:\Program Files\CGAL-3.4\include&quot;;"
+				AdditionalIncludeDirectories="C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\auxiliary\gmp\include;C:\Users\everist\workspace\opaque\src\alpha2;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\include;c:\Users\everist\workspace\opaque\src\alpha2\boost_1_53_0;"
 				ExceptionHandling="0"
-				SuppressStartupBanner="FALSE"
-				PreprocessorDefinitions="CMAKE_INTDIR=\&quot;RelWithDebInfo\&quot;"
+				PreprocessorDefinitions="CGAL_USE_MPFR;CGAL_USE_GMP;CMAKE_INTDIR=\&quot;RelWithDebInfo\&quot;"
 				AssemblerListingLocation="RelWithDebInfo"
 				ObjectFile="$(IntDir)\"
 />
@@ -157,11 +153,11 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				AdditionalIncludeDirectories="&quot;C:\Documents and Settings\Jacob\Desktop\workspace3\opaque_conf\src\alpha2&quot;;&quot;C:\Program Files\CGAL-3.4\auxiliary\gmp\include&quot;;&quot;C:\Program Files\boost\boost_1_38&quot;;&quot;C:\Program Files\CGAL-3.4\include&quot;;"
-				PreprocessorDefinitions="CMAKE_INTDIR=\&quot;RelWithDebInfo\&quot;"/>
+				AdditionalIncludeDirectories="C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\auxiliary\gmp\include;C:\Users\everist\workspace\opaque\src\alpha2;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\include;c:\Users\everist\workspace\opaque\src\alpha2\boost_1_53_0;"
+				PreprocessorDefinitions="CGAL_USE_MPFR;CGAL_USE_GMP;CMAKE_INTDIR=\&quot;RelWithDebInfo\&quot;"/>
 			<Tool
 				Name="VCMIDLTool"
-				PreprocessorDefinitions="CMAKE_INTDIR=\&quot;RelWithDebInfo\&quot;"
+				AdditionalIncludeDirectories="C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\auxiliary\gmp\include;C:\Users\everist\workspace\opaque\src\alpha2;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\include;c:\Users\everist\workspace\opaque\src\alpha2\boost_1_53_0;"
 				MkTypLibCompatible="FALSE"
 				TargetEnvironment="1"
 				GenerateStublessProxies="TRUE"
@@ -181,60 +177,60 @@
 	</Configurations>
 	<Files>
 			<File
-				RelativePath="C:\Documents and Settings\Jacob\Desktop\workspace3\opaque_conf\src\alpha2\CMakeFiles\ALL_BUILD">
+				RelativePath="C:\Users\everist\workspace\opaque\src\alpha2\CMakeFiles\ALL_BUILD">
 			</File>
 			<File
-				RelativePath="C:\Documents and Settings\Jacob\Desktop\workspace3\opaque_conf\src\alpha2\CMakeLists.txt">
+				RelativePath="C:\Users\everist\workspace\opaque\src\alpha2\CMakeLists.txt">
 				<FileConfiguration
 					Name="Debug|Win32">
 					<Tool
 					Name="VCCustomBuildTool"
-					Description="Building Custom Rule C:/Documents and Settings/Jacob/Desktop/workspace3/opaque_conf/src/alpha2/CMakeLists.txt"
-					CommandLine="&quot;C:\Program Files\CMake 2.6\bin\cmake.exe&quot; &quot;-HC:/Documents and Settings/Jacob/Desktop/workspace3/opaque_conf/src/alpha2&quot; &quot;-BC:/Documents and Settings/Jacob/Desktop/workspace3/opaque_conf/src/alpha2&quot; --check-stamp-file CMakeFiles/generate.stamp"
-					AdditionalDependencies="&quot;C:\Documents and Settings\Jacob\Desktop\workspace3\opaque_conf\src\alpha2\CMakeLists.txt&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeVS9FindMake.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeDetermineSystem.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeSystem.cmake.in&quot;;&quot;C:\Documents and Settings\Jacob\Desktop\workspace3\opaque_conf\src\alpha2\CMakeFiles\CMakeSystem.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeDetermineCCompiler.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeFindBinUtils.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeCCompiler.cmake.in&quot;;&quot;C:\Documents and Settings\Jacob\Desktop\workspace3\opaque_conf\src\alpha2\CMakeFiles\CMakeCCompiler.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeDetermineCXXCompiler.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeFindBinUtils.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeCXXCompiler.cmake.in&quot;;&quot;C:\Documents and Settings\Jacob\Desktop\workspace3\opaque_conf\src\alpha2\CMakeFiles\CMakeCXXCompiler.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeSystemSpecificInformation.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeGenericSystem.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\Platform\gcc.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\Platform\Windows.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\Platform\WindowsPaths.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeCInformation.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\Platform\Windows-cl.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\Platform\cl.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeDetermineRCCompiler.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeRCCompiler.cmake.in&quot;;&quot;C:\Documents and Settings\Jacob\Desktop\workspace3\opaque_conf\src\alpha2\CMakeFiles\CMakeRCCompiler.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeRCInformation.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeTestRCCompiler.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\Platform\Windows-cl.cmake.in&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\Platform\Windows-cl.cmake.in&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeCommonLanguageInclude.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeTestCCompiler.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeDetermineCompilerABI.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeCCompilerABI.c&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeCCompiler.cmake.in&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeCXXInformation.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeCommonLanguageInclude.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeTestCXXCompiler.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeDetermineCompilerABI.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeCXXCompilerABI.cpp&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeCXXCompiler.cmake.in&quot;;&quot;C:\Program Files\CGAL-3.4\CGALConfig.cmake&quot;;&quot;C:\Program Files\CGAL-3.4\cmake\modules\UseCGAL.cmake&quot;;&quot;C:\Program Files\CGAL-3.4\cmake\modules\CGAL_Common.cmake&quot;;&quot;C:\Program Files\CGAL-3.4\cmake\modules\CGAL_Macros.cmake&quot;;&quot;C:\Program Files\CGAL-3.4\cmake\modules\CGAL_SetupFlags.cmake&quot;;&quot;C:\Program Files\CGAL-3.4\cmake\modules\CGAL_GeneratorSpecificSettings.cmake&quot;;&quot;C:\Program Files\CGAL-3.4\cmake\modules\FindQt3-patched.cmake&quot;;&quot;C:\Documents and Settings\Jacob\Desktop\workspace3\opaque_conf\src\alpha2\CMakeLists.txt&quot;;"
-					Outputs="CMakeFiles\generate.stamp"/>
+					Description="Building Custom Rule C:/Users/everist/workspace/opaque/src/alpha2/CMakeLists.txt"
+					CommandLine="&quot;C:\pf\CMake 2.8\bin\cmake.exe&quot; -HC:/Users/everist/workspace/opaque/src/alpha2 -BC:/Users/everist/workspace/opaque/src/alpha2 --check-stamp-file C:\Users\everist\workspace\opaque\src\alpha2\CMakeFiles\generate.stamp&#x0D;&#x0A;if errorlevel 1 goto :VCReportError"
+					AdditionalDependencies="C:\Users\everist\workspace\opaque\src\alpha2\CMakeLists.txt;C:\Users\everist\workspace\opaque\src\alpha2\CMakeFiles\2.8.10.2\CMakeSystem.cmake;C:\Users\everist\workspace\opaque\src\alpha2\CMakeFiles\2.8.10.2\CMakeCCompiler.cmake;C:\Users\everist\workspace\opaque\src\alpha2\CMakeFiles\2.8.10.2\CMakeCXXCompiler.cmake;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\CMakeSystemSpecificInformation.cmake&quot;;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\CMakeGenericSystem.cmake&quot;;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\Platform\Windows.cmake&quot;;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\Platform\WindowsPaths.cmake&quot;;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\CMakeCInformation.cmake&quot;;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\Platform\Windows-MSVC-C.cmake&quot;;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\Platform\Windows-MSVC.cmake&quot;;C:\Users\everist\workspace\opaque\src\alpha2\CMakeFiles\2.8.10.2\CMakeRCCompiler.cmake;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\CMakeRCInformation.cmake&quot;;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\CMakeCommonLanguageInclude.cmake&quot;;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\CMakeCXXInformation.cmake&quot;;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\Platform\Windows-MSVC-CXX.cmake&quot;;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\Platform\Windows-MSVC.cmake&quot;;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\CMakeCommonLanguageInclude.cmake&quot;;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\CGALConfig.cmake;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\cmake\modules\UseCGAL.cmake;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\cmake\modules\CGAL_Macros.cmake;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\cmake\modules\CGAL_VersionUtils.cmake;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\cmake\modules\CGAL_Common.cmake;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\cmake\modules\CGAL_Macros.cmake;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\cmake\modules\CGAL_SetupFlags.cmake;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\cmake\modules\CGAL_GeneratorSpecificSettings.cmake;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\cmake\modules\CGAL_TweakFindBoost.cmake;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\FindBoost.cmake&quot;;C:\Users\everist\workspace\opaque\src\alpha2\CMakeLists.txt;"
+					Outputs="C:\Users\everist\workspace\opaque\src\alpha2\CMakeFiles\generate.stamp"/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Release|Win32">
 					<Tool
 					Name="VCCustomBuildTool"
-					Description="Building Custom Rule C:/Documents and Settings/Jacob/Desktop/workspace3/opaque_conf/src/alpha2/CMakeLists.txt"
-					CommandLine="&quot;C:\Program Files\CMake 2.6\bin\cmake.exe&quot; &quot;-HC:/Documents and Settings/Jacob/Desktop/workspace3/opaque_conf/src/alpha2&quot; &quot;-BC:/Documents and Settings/Jacob/Desktop/workspace3/opaque_conf/src/alpha2&quot; --check-stamp-file CMakeFiles/generate.stamp"
-					AdditionalDependencies="&quot;C:\Documents and Settings\Jacob\Desktop\workspace3\opaque_conf\src\alpha2\CMakeLists.txt&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeVS9FindMake.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeDetermineSystem.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeSystem.cmake.in&quot;;&quot;C:\Documents and Settings\Jacob\Desktop\workspace3\opaque_conf\src\alpha2\CMakeFiles\CMakeSystem.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeDetermineCCompiler.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeFindBinUtils.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeCCompiler.cmake.in&quot;;&quot;C:\Documents and Settings\Jacob\Desktop\workspace3\opaque_conf\src\alpha2\CMakeFiles\CMakeCCompiler.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeDetermineCXXCompiler.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeFindBinUtils.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeCXXCompiler.cmake.in&quot;;&quot;C:\Documents and Settings\Jacob\Desktop\workspace3\opaque_conf\src\alpha2\CMakeFiles\CMakeCXXCompiler.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeSystemSpecificInformation.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeGenericSystem.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\Platform\gcc.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\Platform\Windows.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\Platform\WindowsPaths.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeCInformation.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\Platform\Windows-cl.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\Platform\cl.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeDetermineRCCompiler.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeRCCompiler.cmake.in&quot;;&quot;C:\Documents and Settings\Jacob\Desktop\workspace3\opaque_conf\src\alpha2\CMakeFiles\CMakeRCCompiler.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeRCInformation.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeTestRCCompiler.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\Platform\Windows-cl.cmake.in&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\Platform\Windows-cl.cmake.in&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeCommonLanguageInclude.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeTestCCompiler.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeDetermineCompilerABI.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeCCompilerABI.c&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeCCompiler.cmake.in&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeCXXInformation.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeCommonLanguageInclude.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeTestCXXCompiler.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeDetermineCompilerABI.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeCXXCompilerABI.cpp&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeCXXCompiler.cmake.in&quot;;&quot;C:\Program Files\CGAL-3.4\CGALConfig.cmake&quot;;&quot;C:\Program Files\CGAL-3.4\cmake\modules\UseCGAL.cmake&quot;;&quot;C:\Program Files\CGAL-3.4\cmake\modules\CGAL_Common.cmake&quot;;&quot;C:\Program Files\CGAL-3.4\cmake\modules\CGAL_Macros.cmake&quot;;&quot;C:\Program Files\CGAL-3.4\cmake\modules\CGAL_SetupFlags.cmake&quot;;&quot;C:\Program Files\CGAL-3.4\cmake\modules\CGAL_GeneratorSpecificSettings.cmake&quot;;&quot;C:\Program Files\CGAL-3.4\cmake\modules\FindQt3-patched.cmake&quot;;&quot;C:\Documents and Settings\Jacob\Desktop\workspace3\opaque_conf\src\alpha2\CMakeLists.txt&quot;;"
-					Outputs="CMakeFiles\generate.stamp"/>
+					Description="Building Custom Rule C:/Users/everist/workspace/opaque/src/alpha2/CMakeLists.txt"
+					CommandLine="&quot;C:\pf\CMake 2.8\bin\cmake.exe&quot; -HC:/Users/everist/workspace/opaque/src/alpha2 -BC:/Users/everist/workspace/opaque/src/alpha2 --check-stamp-file C:\Users\everist\workspace\opaque\src\alpha2\CMakeFiles\generate.stamp&#x0D;&#x0A;if errorlevel 1 goto :VCReportError"
+					AdditionalDependencies="C:\Users\everist\workspace\opaque\src\alpha2\CMakeLists.txt;C:\Users\everist\workspace\opaque\src\alpha2\CMakeFiles\2.8.10.2\CMakeSystem.cmake;C:\Users\everist\workspace\opaque\src\alpha2\CMakeFiles\2.8.10.2\CMakeCCompiler.cmake;C:\Users\everist\workspace\opaque\src\alpha2\CMakeFiles\2.8.10.2\CMakeCXXCompiler.cmake;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\CMakeSystemSpecificInformation.cmake&quot;;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\CMakeGenericSystem.cmake&quot;;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\Platform\Windows.cmake&quot;;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\Platform\WindowsPaths.cmake&quot;;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\CMakeCInformation.cmake&quot;;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\Platform\Windows-MSVC-C.cmake&quot;;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\Platform\Windows-MSVC.cmake&quot;;C:\Users\everist\workspace\opaque\src\alpha2\CMakeFiles\2.8.10.2\CMakeRCCompiler.cmake;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\CMakeRCInformation.cmake&quot;;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\CMakeCommonLanguageInclude.cmake&quot;;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\CMakeCXXInformation.cmake&quot;;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\Platform\Windows-MSVC-CXX.cmake&quot;;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\Platform\Windows-MSVC.cmake&quot;;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\CMakeCommonLanguageInclude.cmake&quot;;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\CGALConfig.cmake;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\cmake\modules\UseCGAL.cmake;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\cmake\modules\CGAL_Macros.cmake;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\cmake\modules\CGAL_VersionUtils.cmake;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\cmake\modules\CGAL_Common.cmake;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\cmake\modules\CGAL_Macros.cmake;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\cmake\modules\CGAL_SetupFlags.cmake;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\cmake\modules\CGAL_GeneratorSpecificSettings.cmake;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\cmake\modules\CGAL_TweakFindBoost.cmake;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\FindBoost.cmake&quot;;C:\Users\everist\workspace\opaque\src\alpha2\CMakeLists.txt;"
+					Outputs="C:\Users\everist\workspace\opaque\src\alpha2\CMakeFiles\generate.stamp"/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="MinSizeRel|Win32">
 					<Tool
 					Name="VCCustomBuildTool"
-					Description="Building Custom Rule C:/Documents and Settings/Jacob/Desktop/workspace3/opaque_conf/src/alpha2/CMakeLists.txt"
-					CommandLine="&quot;C:\Program Files\CMake 2.6\bin\cmake.exe&quot; &quot;-HC:/Documents and Settings/Jacob/Desktop/workspace3/opaque_conf/src/alpha2&quot; &quot;-BC:/Documents and Settings/Jacob/Desktop/workspace3/opaque_conf/src/alpha2&quot; --check-stamp-file CMakeFiles/generate.stamp"
-					AdditionalDependencies="&quot;C:\Documents and Settings\Jacob\Desktop\workspace3\opaque_conf\src\alpha2\CMakeLists.txt&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeVS9FindMake.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeDetermineSystem.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeSystem.cmake.in&quot;;&quot;C:\Documents and Settings\Jacob\Desktop\workspace3\opaque_conf\src\alpha2\CMakeFiles\CMakeSystem.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeDetermineCCompiler.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeFindBinUtils.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeCCompiler.cmake.in&quot;;&quot;C:\Documents and Settings\Jacob\Desktop\workspace3\opaque_conf\src\alpha2\CMakeFiles\CMakeCCompiler.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeDetermineCXXCompiler.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeFindBinUtils.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeCXXCompiler.cmake.in&quot;;&quot;C:\Documents and Settings\Jacob\Desktop\workspace3\opaque_conf\src\alpha2\CMakeFiles\CMakeCXXCompiler.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeSystemSpecificInformation.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeGenericSystem.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\Platform\gcc.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\Platform\Windows.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\Platform\WindowsPaths.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeCInformation.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\Platform\Windows-cl.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\Platform\cl.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeDetermineRCCompiler.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeRCCompiler.cmake.in&quot;;&quot;C:\Documents and Settings\Jacob\Desktop\workspace3\opaque_conf\src\alpha2\CMakeFiles\CMakeRCCompiler.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeRCInformation.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeTestRCCompiler.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\Platform\Windows-cl.cmake.in&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\Platform\Windows-cl.cmake.in&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeCommonLanguageInclude.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeTestCCompiler.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeDetermineCompilerABI.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeCCompilerABI.c&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeCCompiler.cmake.in&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeCXXInformation.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeCommonLanguageInclude.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeTestCXXCompiler.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeDetermineCompilerABI.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeCXXCompilerABI.cpp&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeCXXCompiler.cmake.in&quot;;&quot;C:\Program Files\CGAL-3.4\CGALConfig.cmake&quot;;&quot;C:\Program Files\CGAL-3.4\cmake\modules\UseCGAL.cmake&quot;;&quot;C:\Program Files\CGAL-3.4\cmake\modules\CGAL_Common.cmake&quot;;&quot;C:\Program Files\CGAL-3.4\cmake\modules\CGAL_Macros.cmake&quot;;&quot;C:\Program Files\CGAL-3.4\cmake\modules\CGAL_SetupFlags.cmake&quot;;&quot;C:\Program Files\CGAL-3.4\cmake\modules\CGAL_GeneratorSpecificSettings.cmake&quot;;&quot;C:\Program Files\CGAL-3.4\cmake\modules\FindQt3-patched.cmake&quot;;&quot;C:\Documents and Settings\Jacob\Desktop\workspace3\opaque_conf\src\alpha2\CMakeLists.txt&quot;;"
-					Outputs="CMakeFiles\generate.stamp"/>
+					Description="Building Custom Rule C:/Users/everist/workspace/opaque/src/alpha2/CMakeLists.txt"
+					CommandLine="&quot;C:\pf\CMake 2.8\bin\cmake.exe&quot; -HC:/Users/everist/workspace/opaque/src/alpha2 -BC:/Users/everist/workspace/opaque/src/alpha2 --check-stamp-file C:\Users\everist\workspace\opaque\src\alpha2\CMakeFiles\generate.stamp&#x0D;&#x0A;if errorlevel 1 goto :VCReportError"
+					AdditionalDependencies="C:\Users\everist\workspace\opaque\src\alpha2\CMakeLists.txt;C:\Users\everist\workspace\opaque\src\alpha2\CMakeFiles\2.8.10.2\CMakeSystem.cmake;C:\Users\everist\workspace\opaque\src\alpha2\CMakeFiles\2.8.10.2\CMakeCCompiler.cmake;C:\Users\everist\workspace\opaque\src\alpha2\CMakeFiles\2.8.10.2\CMakeCXXCompiler.cmake;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\CMakeSystemSpecificInformation.cmake&quot;;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\CMakeGenericSystem.cmake&quot;;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\Platform\Windows.cmake&quot;;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\Platform\WindowsPaths.cmake&quot;;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\CMakeCInformation.cmake&quot;;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\Platform\Windows-MSVC-C.cmake&quot;;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\Platform\Windows-MSVC.cmake&quot;;C:\Users\everist\workspace\opaque\src\alpha2\CMakeFiles\2.8.10.2\CMakeRCCompiler.cmake;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\CMakeRCInformation.cmake&quot;;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\CMakeCommonLanguageInclude.cmake&quot;;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\CMakeCXXInformation.cmake&quot;;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\Platform\Windows-MSVC-CXX.cmake&quot;;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\Platform\Windows-MSVC.cmake&quot;;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\CMakeCommonLanguageInclude.cmake&quot;;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\CGALConfig.cmake;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\cmake\modules\UseCGAL.cmake;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\cmake\modules\CGAL_Macros.cmake;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\cmake\modules\CGAL_VersionUtils.cmake;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\cmake\modules\CGAL_Common.cmake;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\cmake\modules\CGAL_Macros.cmake;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\cmake\modules\CGAL_SetupFlags.cmake;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\cmake\modules\CGAL_GeneratorSpecificSettings.cmake;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\cmake\modules\CGAL_TweakFindBoost.cmake;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\FindBoost.cmake&quot;;C:\Users\everist\workspace\opaque\src\alpha2\CMakeLists.txt;"
+					Outputs="C:\Users\everist\workspace\opaque\src\alpha2\CMakeFiles\generate.stamp"/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="RelWithDebInfo|Win32">
 					<Tool
 					Name="VCCustomBuildTool"
-					Description="Building Custom Rule C:/Documents and Settings/Jacob/Desktop/workspace3/opaque_conf/src/alpha2/CMakeLists.txt"
-					CommandLine="&quot;C:\Program Files\CMake 2.6\bin\cmake.exe&quot; &quot;-HC:/Documents and Settings/Jacob/Desktop/workspace3/opaque_conf/src/alpha2&quot; &quot;-BC:/Documents and Settings/Jacob/Desktop/workspace3/opaque_conf/src/alpha2&quot; --check-stamp-file CMakeFiles/generate.stamp"
-					AdditionalDependencies="&quot;C:\Documents and Settings\Jacob\Desktop\workspace3\opaque_conf\src\alpha2\CMakeLists.txt&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeVS9FindMake.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeDetermineSystem.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeSystem.cmake.in&quot;;&quot;C:\Documents and Settings\Jacob\Desktop\workspace3\opaque_conf\src\alpha2\CMakeFiles\CMakeSystem.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeDetermineCCompiler.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeFindBinUtils.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeCCompiler.cmake.in&quot;;&quot;C:\Documents and Settings\Jacob\Desktop\workspace3\opaque_conf\src\alpha2\CMakeFiles\CMakeCCompiler.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeDetermineCXXCompiler.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeFindBinUtils.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeCXXCompiler.cmake.in&quot;;&quot;C:\Documents and Settings\Jacob\Desktop\workspace3\opaque_conf\src\alpha2\CMakeFiles\CMakeCXXCompiler.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeSystemSpecificInformation.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeGenericSystem.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\Platform\gcc.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\Platform\Windows.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\Platform\WindowsPaths.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeCInformation.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\Platform\Windows-cl.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\Platform\cl.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeDetermineRCCompiler.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeRCCompiler.cmake.in&quot;;&quot;C:\Documents and Settings\Jacob\Desktop\workspace3\opaque_conf\src\alpha2\CMakeFiles\CMakeRCCompiler.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeRCInformation.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeTestRCCompiler.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\Platform\Windows-cl.cmake.in&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\Platform\Windows-cl.cmake.in&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeCommonLanguageInclude.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeTestCCompiler.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeDetermineCompilerABI.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeCCompilerABI.c&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeCCompiler.cmake.in&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeCXXInformation.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeCommonLanguageInclude.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeTestCXXCompiler.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeDetermineCompilerABI.cmake&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeCXXCompilerABI.cpp&quot;;&quot;C:\Program Files\CMake 2.6\share\cmake-2.6\Modules\CMakeCXXCompiler.cmake.in&quot;;&quot;C:\Program Files\CGAL-3.4\CGALConfig.cmake&quot;;&quot;C:\Program Files\CGAL-3.4\cmake\modules\UseCGAL.cmake&quot;;&quot;C:\Program Files\CGAL-3.4\cmake\modules\CGAL_Common.cmake&quot;;&quot;C:\Program Files\CGAL-3.4\cmake\modules\CGAL_Macros.cmake&quot;;&quot;C:\Program Files\CGAL-3.4\cmake\modules\CGAL_SetupFlags.cmake&quot;;&quot;C:\Program Files\CGAL-3.4\cmake\modules\CGAL_GeneratorSpecificSettings.cmake&quot;;&quot;C:\Program Files\CGAL-3.4\cmake\modules\FindQt3-patched.cmake&quot;;&quot;C:\Documents and Settings\Jacob\Desktop\workspace3\opaque_conf\src\alpha2\CMakeLists.txt&quot;;"
-					Outputs="CMakeFiles\generate.stamp"/>
+					Description="Building Custom Rule C:/Users/everist/workspace/opaque/src/alpha2/CMakeLists.txt"
+					CommandLine="&quot;C:\pf\CMake 2.8\bin\cmake.exe&quot; -HC:/Users/everist/workspace/opaque/src/alpha2 -BC:/Users/everist/workspace/opaque/src/alpha2 --check-stamp-file C:\Users\everist\workspace\opaque\src\alpha2\CMakeFiles\generate.stamp&#x0D;&#x0A;if errorlevel 1 goto :VCReportError"
+					AdditionalDependencies="C:\Users\everist\workspace\opaque\src\alpha2\CMakeLists.txt;C:\Users\everist\workspace\opaque\src\alpha2\CMakeFiles\2.8.10.2\CMakeSystem.cmake;C:\Users\everist\workspace\opaque\src\alpha2\CMakeFiles\2.8.10.2\CMakeCCompiler.cmake;C:\Users\everist\workspace\opaque\src\alpha2\CMakeFiles\2.8.10.2\CMakeCXXCompiler.cmake;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\CMakeSystemSpecificInformation.cmake&quot;;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\CMakeGenericSystem.cmake&quot;;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\Platform\Windows.cmake&quot;;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\Platform\WindowsPaths.cmake&quot;;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\CMakeCInformation.cmake&quot;;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\Platform\Windows-MSVC-C.cmake&quot;;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\Platform\Windows-MSVC.cmake&quot;;C:\Users\everist\workspace\opaque\src\alpha2\CMakeFiles\2.8.10.2\CMakeRCCompiler.cmake;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\CMakeRCInformation.cmake&quot;;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\CMakeCommonLanguageInclude.cmake&quot;;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\CMakeCXXInformation.cmake&quot;;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\Platform\Windows-MSVC-CXX.cmake&quot;;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\Platform\Windows-MSVC.cmake&quot;;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\CMakeCommonLanguageInclude.cmake&quot;;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\CGALConfig.cmake;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\cmake\modules\UseCGAL.cmake;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\cmake\modules\CGAL_Macros.cmake;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\cmake\modules\CGAL_VersionUtils.cmake;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\cmake\modules\CGAL_Common.cmake;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\cmake\modules\CGAL_Macros.cmake;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\cmake\modules\CGAL_SetupFlags.cmake;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\cmake\modules\CGAL_GeneratorSpecificSettings.cmake;C:\Users\everist\workspace\opaque\src\alpha2\CGAL-4.1\cmake\modules\CGAL_TweakFindBoost.cmake;&quot;C:\pf\CMake 2.8\share\cmake-2.8\Modules\FindBoost.cmake&quot;;C:\Users\everist\workspace\opaque\src\alpha2\CMakeLists.txt;"
+					Outputs="C:\Users\everist\workspace\opaque\src\alpha2\CMakeFiles\generate.stamp"/>
 				</FileConfiguration>
 			</File>
 		<Filter
 			Name="CMake Rules"
 			Filter="">
 			<File
-				RelativePath="C:\Documents and Settings\Jacob\Desktop\workspace3\opaque_conf\src\alpha2\CMakeFiles\ALL_BUILD.rule">
+				RelativePath="C:\Users\everist\workspace\opaque\src\alpha2\CMakeFiles\ALL_BUILD.rule">
 				<FileConfiguration
 					Name="Debug|Win32">
 					<Tool
 					Name="VCCustomBuildTool"
 					Description="Build all projects"
 					CommandLine=""
-					AdditionalDependencies="&quot;C:\Documents and Settings\Jacob\Desktop\workspace3\opaque_conf\src\alpha2\CMakeFiles\ALL_BUILD.rule&quot;"
-					Outputs="C:\Documents and Settings\Jacob\Desktop\workspace3\opaque_conf\src\alpha2\CMakeFiles\ALL_BUILD"/>
+					AdditionalDependencies="C:\Users\everist\workspace\opaque\src\alpha2\CMakeFiles\ALL_BUILD.rule"
+					Outputs="C:\Users\everist\workspace\opaque\src\alpha2\CMakeFiles\ALL_BUILD"/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Release|Win32">
@@ -242,8 +238,8 @@
 					Name="VCCustomBuildTool"
 					Description="Build all projects"
 					CommandLine=""
-					AdditionalDependencies="&quot;C:\Documents and Settings\Jacob\Desktop\workspace3\opaque_conf\src\alpha2\CMakeFiles\ALL_BUILD.rule&quot;"
-					Outputs="C:\Documents and Settings\Jacob\Desktop\workspace3\opaque_conf\src\alpha2\CMakeFiles\ALL_BUILD"/>
+					AdditionalDependencies="C:\Users\everist\workspace\opaque\src\alpha2\CMakeFiles\ALL_BUILD.rule"
+					Outputs="C:\Users\everist\workspace\opaque\src\alpha2\CMakeFiles\ALL_BUILD"/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="MinSizeRel|Win32">
@@ -251,8 +247,8 @@
 					Name="VCCustomBuildTool"
 					Description="Build all projects"
 					CommandLine=""
-					AdditionalDependencies="&quot;C:\Documents and Settings\Jacob\Desktop\workspace3\opaque_conf\src\alpha2\CMakeFiles\ALL_BUILD.rule&quot;"
-					Outputs="C:\Documents and Settings\Jacob\Desktop\workspace3\opaque_conf\src\alpha2\CMakeFiles\ALL_BUILD"/>
+					AdditionalDependencies="C:\Users\everist\workspace\opaque\src\alpha2\CMakeFiles\ALL_BUILD.rule"
+					Outputs="C:\Users\everist\workspace\opaque\src\alpha2\CMakeFiles\ALL_BUILD"/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="RelWithDebInfo|Win32">
@@ -260,8 +256,8 @@
 					Name="VCCustomBuildTool"
 					Description="Build all projects"
 					CommandLine=""
-					AdditionalDependencies="&quot;C:\Documents and Settings\Jacob\Desktop\workspace3\opaque_conf\src\alpha2\CMakeFiles\ALL_BUILD.rule&quot;"
-					Outputs="C:\Documents and Settings\Jacob\Desktop\workspace3\opaque_conf\src\alpha2\CMakeFiles\ALL_BUILD"/>
+					AdditionalDependencies="C:\Users\everist\workspace\opaque\src\alpha2\CMakeFiles\ALL_BUILD.rule"
+					Outputs="C:\Users\everist\workspace\opaque\src\alpha2\CMakeFiles\ALL_BUILD"/>
 				</FileConfiguration>
 			</File>
 		</Filter>

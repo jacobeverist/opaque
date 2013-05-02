@@ -6955,7 +6955,7 @@ def globalOverlapICP_GPU(initGuess, globalPath, medialPoints, poses_1, poses_2, 
     return currPose, newCost
 
 
-def globalOverlapICP_GPU2(initGuess, globalPath, medialPoints,plotIter = False, n1 = 0, n2 = 0):
+def globalOverlapICP_GPU2(initGuess, globalPath, medialPoints,plotIter = False, n1 = 0, n2 = 0, minMatchDist = 1.0):
 
     global numIterations
     global globalPlotCount
@@ -7028,7 +7028,7 @@ def globalOverlapICP_GPU2(initGuess, globalPath, medialPoints,plotIter = False, 
     
     costThresh = 0.004
     #minMatchDist = 2.0
-    minMatchDist = 1.0
+    #minMatchDist = 1.0
     lastCost = 1e100
     
     startIteration = numIterations
@@ -7507,7 +7507,7 @@ def pathOverlapICP(initGuess, globalPath, medialPoints,plotIter = False, n1 = 0,
         
         resultSum, resultParam, resultOffset = nelminICP.ICPcost(flatMatchPairs, len(match_pairs), [u1,currU,currAng], c_poses_1, c_poses_2, len(poses_1))
         " draw final position "
-        if False:
+        if plotIter:
             
             " set the origin of pose 1 "
             poseOrigin = Pose(currPose)
@@ -7650,7 +7650,7 @@ def pathOverlapICP(initGuess, globalPath, medialPoints,plotIter = False, n1 = 0,
             break
         
         " draw final position "
-        if False:
+        if plotIter:
             
             " set the origin of pose 1 "
             poseOrigin = Pose(currPose)

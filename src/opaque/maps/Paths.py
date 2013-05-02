@@ -15,6 +15,9 @@ from SplineFit import SplineFit
 import pylab
 import numpy
 from operator import itemgetter
+import hashlib
+
+import alphamod
 
 " 1) probability that a path is the same as another path "
 " 2) new ID for each new path "
@@ -81,6 +84,11 @@ def computeBareHull(node1, sweep = False, static = False):
         node1.computeStaticAlphaBoundary()
 
         a_data = node1.getAlphaBoundary(static=True)
+        m = hashlib.md5()
+        m.update(repr(a_data))
+        #print "Paths: computeBareHull():", int(m.digest().encode('hex'),16)        
+        
+        
         a_data = decimatePoints(a_data)
 
         " convert hull points to GPAC coordinates before adding covariances "
@@ -96,6 +104,10 @@ def computeBareHull(node1, sweep = False, static = False):
         " Read in data of Alpha-Shapes without their associated covariances "
         node1.computeAlphaBoundary(sweep = sweep)
         a_data = node1.getAlphaBoundary(sweep = sweep)
+        m = hashlib.md5()
+        m.update(repr(a_data))
+        #print "Paths: computeBareHull():", int(m.digest().encode('hex'),16)     
+        
         a_data = decimatePoints(a_data)
         
         " convert hull points to GPAC coordinates "
@@ -274,7 +286,7 @@ class Paths:
 
 
         " create a tree with the node IDs and then stitch them together with joins "
-        pylab.clf()
+        #pylab.clf()
         
         
         self.pathGraph = graph.graph()
@@ -286,14 +298,15 @@ class Paths:
             xP = []
             yP = []            
             if len(path) > 0:
-                xP = [path[0][0]]
-                yP = [path[0][1]]
+                pass
+                #xP = [path[0][0]]
+                #yP = [path[0][1]]
             for k in range(len(path)-1):
                 self.pathGraph.add_edge((pathID, k), (pathID, k+1))
-                xP.append(path[k+1][0])
-                yP.append(path[k+1][1])
+                #xP.append(path[k+1][0])
+                #yP.append(path[k+1][1])
             
-            pylab.plot(xP,yP, color='k')
+            #pylab.plot(xP,yP, color='k')
             
             cPath = self.getPath(pathID)            
             parentPathID = cPath["parentID"]
@@ -306,9 +319,9 @@ class Paths:
                 poseOrigin = Pose(self.nodeHash[junctionNodeID].getEstPose())
                 junctionPoint = poseOrigin.convertLocalToGlobal(localJunctionPoint)
 
-                xP = [junctionPoint[0]]
-                yP = [junctionPoint[1]]
-                pylab.scatter(xP,yP, color='r')
+                #xP = [junctionPoint[0]]
+                #yP = [junctionPoint[1]]
+                #pylab.scatter(xP,yP, color='r')
             
         " join with the junction in between the join points "
         for k in range(len(self.joins)):
@@ -321,12 +334,12 @@ class Paths:
             pID1, k1 = join[0]
             pID2, k2 = join[1]
 
-            xP = [self.trimmedPaths[pID1][k1][0], self.trimmedPaths[pID2][k2][0]]
-            yP = [self.trimmedPaths[pID1][k1][1], self.trimmedPaths[pID2][k2][1]]
-            pylab.plot(xP,yP, color='k')
+            #xP = [self.trimmedPaths[pID1][k1][0], self.trimmedPaths[pID2][k2][0]]
+            #yP = [self.trimmedPaths[pID1][k1][1], self.trimmedPaths[pID2][k2][1]]
+            #pylab.plot(xP,yP, color='k')
 
-        pylab.title("%s" % repr(pathIDs))
-        pylab.savefig("splices_%04d.png" % self.graphCount)
+        #pylab.title("%s" % repr(pathIDs))
+        #pylab.savefig("splices_%04d.png" % self.graphCount)
         self.graphCount += 1
 
         self.topDict = {}
@@ -1277,7 +1290,7 @@ class Paths:
         u1 = originU1
         angGuess = 0.0
         
-        resultPose1, lastCost1, matchCount1 = gen_icp.pathOverlapICP([u1,u2,angGuess], orientedGlobalPath, globalPath1, plotIter = True, n1 = pathID1, n2 = pathID2)
+        resultPose1, lastCost1, matchCount1 = gen_icp.pathOverlapICP([u1,u2,angGuess], orientedGlobalPath, globalPath1, plotIter = False, n1 = pathID1, n2 = pathID2)
         #resultPose2, lastCost2, matchCount2 = gen_icp.pathOverlapICP([u1,u2+0.1,angGuess], orientedGlobalPath, globalPath1, plotIter = True, n1 = pathID1, n2 = pathID2)
         #resultPose3, lastCost3, matchCount3 = gen_icp.pathOverlapICP([u1,u2-0.1,angGuess], orientedGlobalPath, globalPath1, plotIter = True, n1 = pathID1, n2 = pathID2)
         #resultPose1, lastCost1, matchCount1 = gen_icp.pathOverlapICP([u1,u2,angGuess], orientedGlobalPath, globalPath1, plotIter = False, n1 = pathID1, n2 = pathID2)
@@ -1295,6 +1308,7 @@ class Paths:
      
     def addNode(self, nodeID, pathID):
         
+        print "adding node", nodeID, "to path", pathID
         self.pathClasses[pathID]["nodeSet"].append(nodeID)
 
         #self.generatePaths()
@@ -1320,6 +1334,8 @@ class Paths:
         """
         
     def delPath(self, pathID, mergeTargetID):
+        
+        print "deleting path", pathID, "merging to path", mergeTargetID
         
         del self.pathClasses[pathID]
         del self.pathTermsVisited[pathID]
@@ -1375,6 +1391,8 @@ class Paths:
  
     def getTopology(self, pathID):
         
+        random.seed(0)        
+ 
         nodes = self.getNodes(pathID)
 
         junctionNodeID = self.pathClasses[pathID]["branchNodeID"]
@@ -1430,42 +1448,134 @@ class Paths:
             return [], []
 
 
-        pylab.clf()    
-
-        for nodeID in nodes:
-            estPose1 = self.nodeHash[nodeID].getGlobalGPACPose()        
-    
-            if self.nodeHash[nodeID].isBowtie:            
-                hull1 = computeBareHull(self.nodeHash[nodeID], sweep = False, static = True)
-            else:
-                hull1 = computeBareHull(self.nodeHash[nodeID], sweep = False)
-    
-            " set the origin of pose 1 "
-            poseOrigin = Pose(estPose1)
-    
-            xP = []
-            yP = []    
-            for p in hull1:
-                p1 = poseOrigin.convertLocalToGlobal(p)
-                medialPointSoup.append(p1)
-                #xP.append(p1[0])
-                #yP.append(p1[1])
-
-            #pylab.scatter(xP,yP)
-
-        #pylab.xlim(-4,4)
-        #pylab.ylim(-4,4)
-        #pylab.savefig("plotMedialSoup_%04u.png" % (self.medialSoupCount ))
-        #self.medialSoupCount  += 1
+        if True:    
+            for nodeID in nodes:
+                estPose1 = self.nodeHash[nodeID].getGlobalGPACPose()        
         
+                if self.nodeHash[nodeID].isBowtie:            
+                    hull1 = computeBareHull(self.nodeHash[nodeID], sweep = False, static = True)
+                else:
+                    hull1 = computeBareHull(self.nodeHash[nodeID], sweep = False)
+        
+        
+                m = hashlib.md5()
+                m.update(repr(hull1))
+                print nodeID, "hull1 =", int(m.digest().encode('hex'),16)
+        
+                " set the origin of pose 1 "
+                poseOrigin = Pose(estPose1)
+        
+                xP = []
+                yP = []    
+                for k in range(len(hull1)):
+     
+                    p = hull1[k]
+                    
+                    m = hashlib.md5()
+                    m.update(repr(p))
+                    #print nodeID, "p =", int(m.digest().encode('hex'),16)               
+                    
+                    p1 = poseOrigin.convertLocalToGlobal(p)
+                    
+                    m = hashlib.md5()
+                    m.update(repr(p1))
+                    #print nodeID, "p1 =", int(m.digest().encode('hex'),16)
+                    
+                    medialPointSoup.append(p1)
 
+        if False:
+            pylab.clf()    
+    
+            for nodeID in nodes:
+                estPose1 = self.nodeHash[nodeID].getGlobalGPACPose()        
+        
+                if self.nodeHash[nodeID].isBowtie:            
+                    hull1 = computeBareHull(self.nodeHash[nodeID], sweep = False, static = True)
+                else:
+                    hull1 = computeBareHull(self.nodeHash[nodeID], sweep = False)
+        
+        
+                m = hashlib.md5()
+                m.update(repr(hull1))
+                print nodeID, "hull1 =", int(m.digest().encode('hex'),16)
+        
+                " set the origin of pose 1 "
+                poseOrigin = Pose(estPose1)
+        
+                xP = []
+                yP = []    
+                for k in range(len(hull1)):
+     
+                    p = hull1[k]
+                    
+                    m = hashlib.md5()
+                    m.update(repr(p))
+                    #print nodeID, "p =", int(m.digest().encode('hex'),16)               
+                    
+                    p1 = poseOrigin.convertLocalToGlobal(p)
+                    
+                    m = hashlib.md5()
+                    m.update(repr(p1))
+                    #print nodeID, "p1 =", int(m.digest().encode('hex'),16)
+                    
+                    medialPointSoup.append(p1)
+                    xP.append(p1[0])
+                    yP.append(p1[1])
+    
+                pylab.scatter(xP,yP)
+    
+            #pylab.xlim(-4,4)
+            #pylab.ylim(-4,4)
+            pylab.title("%d: %s" % (pathID, repr(nodes)))
+            pylab.savefig("plotMedialSoup_%04u.png" % (self.medialSoupCount ))
 
+        saveFile = "medialPointSoup = ["
+        for k in range(len(medialPointSoup)):
+            saveFile += repr(medialPointSoup[k]) + "\n"
+        saveFile += "]\n"
+
+        f = open("medialSoupSave_%04u.txt" % self.medialSoupCount, 'w')
+        f.write(saveFile)
+        f.close()
+        self.medialSoupCount  += 1
+        
         #nodeID = self.numNodes - 1
             
         #radius = 0.2
         radius = 0.2
 
         numPoints = len(medialPointSoup)
+
+        isDone = False
+        
+        while not isDone:
+    
+            perturbPoints = []
+            
+            for p in medialPointSoup:
+                p2 = copy(p)
+                " add a little bit of noise to avoid degenerate conditions in CGAL "
+                p2[0] += random.gauss(0.0,0.000001)
+                p2[1] += random.gauss(0.0,0.000001)
+    
+                perturbPoints.append(p2)
+        
+            try:            
+    
+                vertices = alphamod.doAlpha(radius,perturbPoints)
+                numVert = len(vertices)
+                
+                if numVert <= 2:
+                    print "Failed, hull had only", numVert, "vertices"
+                    raise
+                
+                isDone = True
+            except:
+                print "hull has holes!  retrying..."
+                #print sArr     
+        
+        """       
+        
         inputStr = str(numPoints) + " "
 
         " alpha shape circle radius "
@@ -1528,6 +1638,7 @@ class Paths:
                 print "hull has holes!  retrying..."
                 #print sArr    
 
+        """
         
         " cut out the repeat vertex "
         vertices = vertices[:-1]
@@ -1672,6 +1783,8 @@ class Paths:
             if len(v) > 2:
                 junctions.append(k)
 
+        print "junctions:", junctions
+        
         " SAVE FOR LATER, IDENTIFIED BY THEIR INDEX NOW "
         numLeafs = len(leaves)
         allLeafs = []
@@ -1686,7 +1799,8 @@ class Paths:
                 allJunctions.append((junc, gJunc,juncDist))
                 
         
-
+        print "allJunctions:", allJunctions
+        
         " FIND ALL THE PATHS BETWEEN LEAVES "        
         nodePaths = {}
         for leaf in leaves:
@@ -1728,6 +1842,10 @@ class Paths:
                                 
                         longPaths.append((len(nPath),nPath, juncIndices))
         
+        print "longPaths:"
+        for longPath in longPaths:
+            print longPath[2]
+        
         " SORT FOR THE LONGEST TO SHORTEST "
         longPaths.sort(reverse=True)
         
@@ -1736,6 +1854,8 @@ class Paths:
         for k in range(len(longPaths)):
             juncIndices.append(longPaths[k][2])
             longPaths[k] = longPaths[k][1]
+        
+        print "juncIndices:", juncIndices
         
         " GET THE LEAF INDEXES TO EACH PATH "
         leafPairs = []
@@ -1857,7 +1977,7 @@ class Paths:
             medialLongPaths.append(deepcopy(medial2))
 
             print "globalJunctionPoint:", globalJunctionPoint
-            print "juncIndices:", juncIndices
+            print "juncIndices:", juncIndices[n]
 
             juncAngs = []
             if globalJunctionPoint != None:
@@ -1868,31 +1988,48 @@ class Paths:
                         indic = range(3)
                         indic.reverse()
                         
+                        print "len(longPath):", len(longPath)
                         print "juncInd:", juncInd
 
-                        highIndex = 2+juncInd+2
-                        highMod = 0
-                        if highIndex >= len(longPath):
-                            highMod = len(longPath) - highIndex - 1
-                            
-                        lowIndex = -3-juncInd-3
-                        lowMod = 0
-                        if -lowIndex > len(longPath):
-                            lowMod = -len(longPath) - lowIndex
+                        #highIndex = 2+juncInd+2
+                        #highMod = 0
+                        #if highIndex >= len(longPath):
+                        #    highMod = len(longPath) - highIndex - 1
+
+                        highIndex = juncInd+4
+                        highMod = highIndex
+                        if highIndex+4 >= len(longPath):
+                            highMod = len(longPath) - 5
+                        
+                        # FOOBAR
+                         
+                        #lowIndex = -3-juncInd-3
+                        #lowMod = 0
+                        #if -lowIndex > len(longPath):
+                        #    lowMod = -len(longPath) - lowIndex
+
+                        lowIndex = juncInd-4
+                        lowMod = lowIndex
+                        if lowIndex-4 < 0:
+                            lowMod = 4
                         
                         print "highIndex, highMod:", highIndex, highMod
                         print "lowIndex, lowMod:", lowIndex, lowMod
                         
                         
                         for i in indic:
-                            p1 = longPath[i+juncInd+highMod]
-                            p2 = longPath[i+juncInd+2+highMod]
+                            p1 = longPath[i+highMod]
+                            p2 = longPath[i+2+highMod]
+                            #p1 = longPath[i+juncInd+highMod]
+                            #p2 = longPath[i+juncInd+2+highMod]
                             vec = [p2[0]-p1[0], p2[1]-p1[1]]
                             frontVec[0] += vec[0]
                             frontVec[1] += vec[1]
                     
-                            p1 = longPath[-i-juncInd-1+lowMod]
-                            p2 = longPath[-i-juncInd-3+lowMod]
+                            p1 = longPath[-i+lowMod]
+                            p2 = longPath[-i+lowMod-2]
+                            #p1 = longPath[-i-juncInd-1+lowMod]
+                            #p2 = longPath[-i-juncInd-3+lowMod]
                             vec = [p2[0]-p1[0], p2[1]-p1[1]]
                             backVec[0] += vec[0]
                             backVec[1] += vec[1]
@@ -1925,12 +2062,12 @@ class Paths:
                     else:
                         juncAngs.append(None)
             juncAngSet.append(juncAngs)
-            
+        
         juncDists = []
         for junc in allJunctions:
             juncDists.append(junc[2])
         
-        if True:
+        if False:
             pylab.clf()
     
             for path in medialLongPaths:
@@ -1972,13 +2109,31 @@ class Paths:
             self.topCount += 1
 
 
+        
         print "juncAngSet:", juncAngSet
 
         
+        " searches for the branch from the parent junction "
+        " selects splice of topology that has aligning junction "
+        " does not select for distance or best medial axis representation of path "
+        
+
+        " sort by longest first "
+        pathCands = []
+        for k in range(len(longPaths)):
+            pathCands.append((len(longPaths[k]), k))
+
+        pathCands.sort(reverse=True)
+        
+        print "pathCands:", pathCands
+        
+        " select longest path that has the best angle fit "
         if globalJunctionPoint != None:
             bestFit = -1
             minDiff = 1e100
-            for k in range(len(juncAngSet)):
+            for cand in pathCands:
+                #for k in range(len(juncAngSet)):
+                k = cand[1]
                 juncAngs = juncAngSet[k]
                 
                 for angs in juncAngs:
@@ -1986,6 +2141,8 @@ class Paths:
                     if angs != None:
                         angDiff1 = angs[0]
                         angDiff2 = angs[1]
+                        
+                        print "minDiff:", minDiff, angDiff1, angDiff2 
                         
                         if fabs(angDiff1) < minDiff:
                             minDiff = fabs(angDiff1)
@@ -2843,13 +3000,15 @@ class Paths:
         departures = []
         interiors = []
         depPoints = []
+        contig = []
 
         for pathID in orderedPathIDs:
-            departurePoint1, depAngle2, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2 = self.getDeparturePoint(self.trimmedPaths[pathID], nodeID)
+            departurePoint1, depAngle2, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = self.getDeparturePoint(self.trimmedPaths[pathID], nodeID)
             departures.append([isExist1,isExist2])
             interiors.append([isInterior1, isInterior2])
             depPoints.append([departurePoint1, departurePoint2])
-        
+            contig.append((contigFrac, overlapSum))
+       
         print "departures:", departures
         print "interiors:", interiors
             
@@ -3377,7 +3536,7 @@ class Paths:
             pylab.title("%1.2f %1.2f %d %d %d" % ( maxFront, maxBack, len(pathPoints1), max1, max2))
             pylab.savefig("distances_%04u.png" % self.pathPlotCount)
 
-        if True:
+        if False:
             pylab.clf()
             xP = []
             yP = []
@@ -3648,7 +3807,7 @@ class Paths:
             pylab.title("%1.2f %1.2f %d %d %d" % ( maxFront, maxBack, len(pathPoints1), max1, max2))
             pylab.savefig("distances_%04u.png" % self.pathPlotCount)
 
-        if True:
+        if False:
             pylab.clf()
             xP = []
             yP = []
@@ -3699,7 +3858,7 @@ class Paths:
         return departurePoint1, angle1, isInterior1, isExist1, dist1, departurePoint2, angle2, isInterior2, isExist2, dist2
 
 
-    def getDeparturePoint(self, currPath, nodeID):
+    def getDeparturePoint(self, currPath, nodeID, plotIter = False):
         
         isExist1 = False
         isInterior1 = False
@@ -3761,6 +3920,9 @@ class Paths:
         print "ang2:", angle2, angs2
         print "diff:", diffAngle(angle1, angle2)
 
+        distSum = 0.0
+        contigCount = 0
+        maxContig = 0
         distances = []
         indices = []
         for i in range(0,len(points2_offset)):
@@ -3769,7 +3931,18 @@ class Paths:
             p_1, i_1, minDist = gen_icp.findClosestPointInA(pathPoints, p_2)
             distances.append(minDist)
             indices.append(i_1)
+            distSum += minDist
+            
+            if minDist < 0.2:
+                contigCount += 1
+                if contigCount > maxContig:
+                    maxContig = contigCount
+            else:
+                contigCount = 0
         
+        overlapSum = distSum / float(len(points2_offset))
+        
+        print "maxContig,overlapSum:", maxContig, overlapSum
         
         " Compute the front and back departure points by finding the inflection point on the distance curve "
         " these indices become frontDepI and backDepI respectively "
@@ -3920,7 +4093,7 @@ class Paths:
         " sum of closest points on front and back "
         " select the one with minimal cost "
         
-        if False:
+        if plotIter:
             pylab.clf()
             xP = range(len(points2_offset))
             yP = distances
@@ -3939,10 +4112,10 @@ class Paths:
             pylab.xlim(0,200)
             pylab.ylim(0,2)
             #pylab.title("%1.2f,%1.2f,%1.2f,%1.2f,%1.2f,%1.2f,%d,%d,%d,%d" % (frontSum,backSum,frontAvg,backAvg,frontI,backI,max1,max2,d1[max1],d2[max2]))
-            pylab.title("nodeID %d: %1.2f %1.2f %d %d %d" % (nodeID, maxFront, maxBack, len(pathPoints), max1, max2))
+            pylab.title("nodeID %d: %1.2f %1.2f %d %d %d %d %1.2f" % (nodeID, maxFront, maxBack, len(pathPoints), max1, max2, maxContig, overlapSum))
             pylab.savefig("distances_%04u.png" % self.pathPlotCount)
 
-        if False:
+        if plotIter:
             pylab.clf()
             xP = []
             yP = []
@@ -3988,9 +4161,18 @@ class Paths:
         
         print "departure %d: %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, [%d,%d] [%d,%d], [%d,%d]" % (nodeID, maxFront, maxBack, dist1, dist2, matchVar1, matchVar2, angle1, angle2, isExist1, isExist2, isInterior1, isInterior2, frontDepI, backDepI)
         
+        
+        " if the medial axis does not overlap the path contiguously enough, mark a high discrepancy "
+        #if float(maxContig)/float(len(points2_offset)) < 0.4:
+        #    dist1 = 1e100
+        #    dist2 = 1e100
+        
+        maxContig, overlapSum
+        contigFrac = float(maxContig)/float(len(points2_offset))
+        print "returning:", contigFrac, overlapSum
         #return departurePoint, isInterior, isExist
         #return departurePoint1, angle1, isInterior1, isExist1, dist1, departurePoint2, angle2, isInterior2, isExist2, dist2
-        return departurePoint1, angle1, isInterior1, isExist1, dist1, departurePoint2, angle2, isInterior2, isExist2, dist2
+        return departurePoint1, angle1, isInterior1, isExist1, dist1, departurePoint2, angle2, isInterior2, isExist2, dist2, contigFrac, overlapSum
         
 
     " returns the endpoints of a node medial axis overlap path "
@@ -4479,9 +4661,9 @@ class Paths:
         return cost
 
 
-    def getOverlapCondition(self, supportLine, nodeID):
+    def getOverlapCondition(self, supportLine, nodeID, plotIter = False):
 
-        plotIter = False
+        #plotIter = False
 
         if len(supportLine) == 0:
             return 1e100
@@ -4617,9 +4799,9 @@ class Paths:
         return cost
 
 
-    def getOverlapCondition2(self, supportLine, nodeID):
+    def getOverlapCondition2(self, supportLine, nodeID, plotIter = False):
 
-        plotIter = True
+        #plotIter = True
 
         if len(supportLine) <= 5:
             return 0
@@ -4756,7 +4938,6 @@ class Paths:
 
 
         #return True
-
         print "checkUniqueBranch(", parentPathID, ",", nodeID1, ",", depAngle, ",", depPoint, ")"
 
         " check cartesian distance to similar junction points from parent path "
@@ -4803,6 +4984,7 @@ class Paths:
                         print "DUPLICATE junction of", junctionPoint, "rejecting with differences of", dist, angDiff
                         return False, pathID
                 
+                " Explicit limitation that we wont be able to detect a T-Junction coming from left or right"
                 if isNodeFeatureless:
                     print "REJECT new branch because the branching node is featureless"
                     return False, -1
@@ -4826,7 +5008,9 @@ class Paths:
             - is a false departure  ( falseness happens if bad map data, ignore )
             - are both departing ( should have at least external departure on both, compare departure angle )
         
-        Now, we have the departing angles, but we need to compare them with each other.    
+        Now, we have the departing angles, but we need to compare them with each other. 
+        
+        dirFlag specifies which node we want to check branches on.  We do not want to branch with the anchored end of a probe sweep   
         """
 
         print "determineBranch(", nodeID1, ",", nodeID2, ",", frontExist1, ",", frontExist2, ",", frontInterior1, ",", frontInterior2, ",", depAngle1, ",", depAngle2, ",", depPoint1, ",", depPoint2, ",", parentPathID1, ",", parentPathID2, ",", dirFlag, ")"

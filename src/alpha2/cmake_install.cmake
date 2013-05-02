@@ -1,8 +1,8 @@
-# Install script for directory: C:/Documents and Settings/Jacob/Desktop/workspace3/opaque_conf/src/alpha2
+# Install script for directory: C:/Users/everist/workspace/opaque/src/alpha2
 
 # Set the install prefix
 IF(NOT DEFINED CMAKE_INSTALL_PREFIX)
-  SET(CMAKE_INSTALL_PREFIX "C:/Program Files/alpha2")
+  SET(CMAKE_INSTALL_PREFIX "C:/Program Files (x86)/alpha2")
 ENDIF(NOT DEFINED CMAKE_INSTALL_PREFIX)
 STRING(REGEX REPLACE "/$" "" CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
 
@@ -33,7 +33,7 @@ ELSE(CMAKE_INSTALL_COMPONENT)
   SET(CMAKE_INSTALL_MANIFEST "install_manifest.txt")
 ENDIF(CMAKE_INSTALL_COMPONENT)
 
-FILE(WRITE "C:/Documents and Settings/Jacob/Desktop/workspace3/opaque_conf/src/alpha2/${CMAKE_INSTALL_MANIFEST}" "")
+FILE(WRITE "C:/Users/everist/workspace/opaque/src/alpha2/${CMAKE_INSTALL_MANIFEST}" "")
 FOREACH(file ${CMAKE_INSTALL_MANIFEST_FILES})
-  FILE(APPEND "C:/Documents and Settings/Jacob/Desktop/workspace3/opaque_conf/src/alpha2/${CMAKE_INSTALL_MANIFEST}" "${file}\n")
+  FILE(APPEND "C:/Users/everist/workspace/opaque/src/alpha2/${CMAKE_INSTALL_MANIFEST}" "${file}\n")
 ENDFOREACH(file)

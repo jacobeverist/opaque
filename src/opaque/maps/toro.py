@@ -6,6 +6,7 @@ from math import *
 from copy import *
 import gen_icp
 
+import toromod
 
 def writeConstrainedToroGraph(testDir, filename, v_list, e_list):
 
@@ -297,7 +298,13 @@ def plotToro(vertexList, edgeList = [], hulls = [], drawedge=False, clr='0.8'):
 	#ylim(-2,7)
 	xlim(-8,8)
 	ylim(-5,10)
-	
+
+def runTORO(v_list, e_list):
+
+	v_list2, e_list2 = toromod.doToro(v_list,e_list)
+
+	return v_list2, e_list2
+
 
 def executeToro(fileName):
 	

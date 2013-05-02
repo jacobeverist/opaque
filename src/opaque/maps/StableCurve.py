@@ -1,6 +1,7 @@
 
 from math import sqrt
 import scipy.interpolate
+import random
 from random import gauss
 from copy import copy
 from math import floor, asin, acos
@@ -16,6 +17,9 @@ import scipy
 class StableCurve:
 
     def __init__ (self, points, rotated = True, smooth = 0.5, kp = 2):
+        
+        random.seed(0)        
+
         self.pointSet = points
         self.smoothNess = smooth
         self.kp = kp
