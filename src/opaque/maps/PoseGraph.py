@@ -379,7 +379,11 @@ class PoseGraph:
 		pass
 
 	def saveState(self):
-		
+
+		self.nodePoses = []
+		for k in range(self.numNodes):
+			self.nodePoses.append(self.nodeHash[k].getGlobalGPACPose())
+					
 		saveFile = ""
 
 		saveFile += "self.walls = " + repr(self.walls) + "\n"
@@ -394,6 +398,10 @@ class PoseGraph:
 		saveFile += "self.currPath = " + repr(self.currPath) + "\n"
 		#saveFile += "self.pathParents = " + repr(self.pathParents) + "\n"
 		saveFile += "self.allPathConstraints = " + repr(self.allPathConstraints) + "\n"
+
+		saveFile += "self.nodePoses = " + repr(self.nodePoses) + "\n"
+
+
 
 		f = open("stateSave_%04u.txt" % (self.numNodes-1), 'w')
 		f.write(saveFile)
@@ -562,7 +570,8 @@ class PoseGraph:
 		
 		for k, v in self.edgePriorityHash.items():
 
-			if k[0] == nodeID1 and k[1] == nodeID2 or k[0] == nodeID2 and k[1] == nodeID1:
+			#if k[0] == nodeID1 and k[1] == nodeID2 or k[0] == nodeID2 and k[1] == nodeID1:
+			if k[0] == nodeID1 and k[1] == nodeID2:
 				
 				for edge in v:
 					resultEdges.append(edge)
@@ -957,7 +966,7 @@ class PoseGraph:
 							guessPose1, cost1 = self.makeGlobalMedialOverlapConstraint(nodeID1, path, globalPoint1, globalPoint1)
 							
 							estPose = self.nodeHash[nodeID1].getGlobalGPACPose()
-							angDiff = abs(estPose[2]-guessPose1[2])
+							angDiff = abs(diffAngle(estPose[2], guessPose1[2]))
 							totalGuesses.append((angDiff, cost1, guessPose1))
 						
 						totalGuesses.sort()
@@ -981,7 +990,8 @@ class PoseGraph:
 							guessPose1, cost1 = self.makeGlobalMedialOverlapConstraint(nodeID2, path, globalPoint1, globalPoint1)
 							
 							estPose = self.nodeHash[nodeID2].getGlobalGPACPose()
-							angDiff = abs(estPose[2]-guessPose1[2])
+							angDiff = abs(diffAngle(estPose[2], guessPose1[2]))
+							
 							totalGuesses.append((angDiff, cost1, guessPose1))
 						
 						totalGuesses.sort()
@@ -1512,7 +1522,7 @@ class PoseGraph:
 				if self.paths.getNodes(k).count(nodeID2) > 0:
 					isContained2 = True
 					
-					
+				
 			if isContained1 or isContained2:
 				return
 
@@ -1685,7 +1695,7 @@ class PoseGraph:
 							guessPose1, cost1 = self.makeGlobalMedialOverlapConstraint(nodeID1, path, globalPoint1, globalPoint1)
 							
 							estPose = self.nodeHash[nodeID1].getGlobalGPACPose()
-							angDiff = abs(estPose[2]-guessPose1[2])
+							angDiff = abs(diffAngle(estPose[2], guessPose1[2]))
 							totalGuesses.append((angDiff, cost1, guessPose1))
 						
 						totalGuesses.sort()
@@ -1710,7 +1720,7 @@ class PoseGraph:
 							guessPose1, cost1 = self.makeGlobalMedialOverlapConstraint(nodeID2, path, globalPoint1, globalPoint1)
 							
 							estPose = self.nodeHash[nodeID2].getGlobalGPACPose()
-							angDiff = abs(estPose[2]-guessPose1[2])
+							angDiff = abs(diffAngle(estPose[2], guessPose1[2]))
 							totalGuesses.append((angDiff, cost1, guessPose1))
 						
 						totalGuesses.sort()
@@ -2040,8 +2050,7 @@ class PoseGraph:
 				self.paths.generatePaths()
 				self.drawPathAndHull()
 	
-				self.updatePathNode(nodeID1, orderedPathIDs1)
-				self.updatePathNode(nodeID2, orderedPathIDs2)
+				self.updatePathNode(nodeID1, nodeID2, orderedPathIDs1, orderedPathIDs2)
 	
 				self.updateLastNode(nodeID1+2)
 				self.updateLastNode(nodeID2+2)
@@ -2191,7 +2200,7 @@ class PoseGraph:
 						guessPose1, cost1 = self.makeGlobalMedialOverlapConstraint(nodeID, path, globalPoint1, globalPoint1)
 						
 						estPose = self.nodeHash[nodeID].getGlobalGPACPose()
-						angDiff = abs(estPose[2]-guessPose1[2])
+						angDiff = abs(diffAngle(estPose[2], guessPose1[2]))
 						totalGuesses.append((angDiff, cost1, guessPose1))
 					
 					totalGuesses.sort()
@@ -2335,6 +2344,8 @@ class PoseGraph:
 				guessPose1, cost1 = self.makeGlobalMedialOverlapConstraint(nodeID, self.trimmedPaths[pathID], globalPoint1, globalPoint1)
 				self.nodeHash[nodeID].setGPACPose(guessPose1)
 
+				print "set to pose", nodeID, "to", guessPose1
+				
 				" make path constraint "
 				print "pathID: addPathConstraints3(", pathID, nodeID
 				#self.addPathConstraints3(self.paths.getNodes(pathID), nodeID, insertNode = insertNode, orderedPathIDs = orderedPathIDs)
@@ -2432,16 +2443,20 @@ class PoseGraph:
 						guessPose1, cost1 = self.makeGlobalMedialOverlapConstraint(nodeID, path, globalPoint1, globalPoint1)
 						
 						estPose = self.nodeHash[nodeID].getGlobalGPACPose()
-						angDiff = abs(estPose[2]-guessPose1[2])
+						angDiff = abs(diffAngle(estPose[2], guessPose1[2]))
 						totalGuesses.append((angDiff, cost1, guessPose1))
 					
 					totalGuesses.sort()
+					
+					print "totalGuesses:", totalGuesses
 					
 					guessPose1 = totalGuesses[0][2]
 					
 						
 					#guessPose1, cost1 = self.makeGlobalMedialOverlapConstraint(nodeID, self.trimmedPaths[minPathID], localPoint1, localPoint1)
 					self.nodeHash[nodeID].setGPACPose(guessPose1)
+					
+					print "set to pose", nodeID, "to", guessPose1
 
 					" make path constraint "
 					print "minPathID: addPathConstraints3(", minPathID, nodeID
@@ -2500,7 +2515,7 @@ class PoseGraph:
 			
 				print departures, interiors
 				print pathID1, childPath, parentPath
-			
+				
 				" new node departure point "
 				" try childPath first "
 				if childPath == pathID1:
@@ -2538,14 +2553,18 @@ class PoseGraph:
 						guessPose1, cost1 = self.makeGlobalMedialOverlapConstraint(nodeID, path, globalPathJunctionPoint, globalPathJunctionPoint)
 						
 						estPose = self.nodeHash[nodeID].getGlobalGPACPose()
-						angDiff = abs(estPose[2]-guessPose1[2])
+						angDiff = abs(diffAngle(estPose[2], guessPose1[2]))
 						totalGuesses.append((angDiff, cost1, guessPose1))
 					
 					totalGuesses.sort()
+
+					print "totalGuesses:", totalGuesses
 					
 					guessPose = totalGuesses[0][2]
 					
 					self.nodeHash[nodeID].setGPACPose(guessPose)
+
+					print "set to pose", nodeID, "to", guessPose
 
 					" make path constraint "
 					print "childPath: addPathConstraints3(", childPath, nodeID
@@ -2561,14 +2580,16 @@ class PoseGraph:
 						guessPose1, cost1 = self.makeGlobalMedialOverlapConstraint(nodeID, path, globalPathJunctionPoint, depPoint2)
 
 						estPose = self.nodeHash[nodeID].getGlobalGPACPose()
-						angDiff = abs(estPose[2]-guessPose1[2])
+						angDiff = abs(diffAngle(estPose[2], guessPose1[2]))
 						totalGuesses.append((angDiff, cost1, guessPose1))
 					
 					totalGuesses.sort()
+					print "totalGuesses:", totalGuesses
 					
 					guessPose = totalGuesses[0][2]
 
 					self.nodeHash[nodeID].setGPACPose(guessPose)
+					print "set to pose", nodeID, "to", guessPose
 
 					" make path constraint "
 					print "childPath: addPathConstraints3(", childPath, nodeID
@@ -2642,14 +2663,16 @@ class PoseGraph:
 					" make the path constraints "								
 					guessPose1, cost1 = self.makeGlobalMedialOverlapConstraint(nodeID, path, globalPathJunctionPoint, globalPathJunctionPoint)
 					estPose = self.nodeHash[nodeID].getGlobalGPACPose()
-					angDiff = abs(estPose[2]-guessPose1[2])
+					angDiff = abs(diffAngle(estPose[2], guessPose1[2]))
 					totalGuesses.append((angDiff, cost1, guessPose1))
 				
 				totalGuesses.sort()
+				print "totalGuesses:", totalGuesses
 				
 				guessPose = totalGuesses[0][2]
 				
 				self.nodeHash[nodeID].setGPACPose(guessPose)
+				print "set to pose", nodeID, "to", guessPose
 
 				" make path constraint "
 				print "childPath: addPathConstraints3(", childPath, nodeID
@@ -2811,7 +2834,7 @@ class PoseGraph:
 						guessPose1, cost1 = self.makeGlobalMedialOverlapConstraint(nodeID1, path, globalPoint1, globalPoint1)
 						
 						estPose = self.nodeHash[nodeID1].getGlobalGPACPose()
-						angDiff = abs(estPose[2]-guessPose1[2])
+						angDiff = abs(diffAngle(estPose[2], guessPose1[2]))
 						totalGuesses.append((angDiff, cost1, guessPose1))
 					
 					totalGuesses.sort()
@@ -2844,7 +2867,7 @@ class PoseGraph:
 						guessPose1, cost1 = self.makeGlobalMedialOverlapConstraint(nodeID2, path, globalPoint1, globalPoint1)
 						
 						estPose = self.nodeHash[nodeID2].getGlobalGPACPose()
-						angDiff = abs(estPose[2]-guessPose1[2])
+						angDiff = abs(diffAngle(estPose[2], guessPose1[2]))
 						totalGuesses.append((angDiff, cost1, guessPose1))
 					
 					totalGuesses.sort()
@@ -3132,11 +3155,10 @@ class PoseGraph:
 		
 		" find constraints of nodeID and update it according to constraint from nodeID-2"
 		
-		print "update position of node", nodeID
 		
 		if nodeID >= 2:
 			
-			resultEdges = self.getEdges(nodeID, nodeID-2)
+			resultEdges = self.getEdges(nodeID-2, nodeID) 
 			
 			resultEdges.sort(key=itemgetter(2), reverse=True)
 
@@ -3147,36 +3169,233 @@ class PoseGraph:
 
 			"compute pose nodeID wrt node-2 given offset "
 			
-			originPose = Pose(self.nodeHash[nodeID-2].getGlobalGPACPose())
+			origPose = self.nodeHash[nodeID-2].getGlobalGPACPose()
+			
+			originPose = Pose(origPose)
 			nodePose = originPose.convertLocalOffsetToGlobal(offset)
 			
 			self.nodeHash[nodeID].setGPACPose(nodePose)
 
-	def updatePathNode(self, nodeID, orderedPathIDs):
+			print "update position of node", nodeID, "from", origPose, "to", nodePose
 
-		print "update position of path node", nodeID
+	def updatePathNode(self, nodeID1, nodeID2, orderedPathIDs1, orderedPathIDs2):
+
+		"""
+		GOALS:
+		
+		1) node medial axes should be 100% contiguously overlapping path
+		2) pair nodes should be approximately in the same location and orientation
+		
+		"""
+		
+		print "updatePathNode(", nodeID1, nodeID2, orderedPathIDs1, orderedPathIDs2, ")"
+
+
+		"""
+		departures1 = []
+		interiors1 = []
+		depPoints1 = []
+		distances1 = []
+		depAngles1 = []
+		isDep = []
+		contig1 = []
+		sums = []
+		counts = []
+			
+		for nodeID in nodeSet:
+
+			departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = self.paths.getDeparturePoint(self.trimmedPaths[pathID], nodeID1, plotIter = False)
+			departures1.append([isExist1,isExist2])
+			interiors1.append([isInterior1, isInterior2])
+			depPoints1.append([departurePoint1, departurePoint2])
+			distances1.append([discDist1, discDist2])
+			depAngles1.append([depAngle1, depAngle2])
+			contig1.append((contigFrac, overlapSum))
+			isDep.append(isExist1 and isInterior1 or isExist2 and isInterior2)
+
+			sum1 = self.paths.getOverlapCondition(self.trimmedPaths[pathID], nodeID, plotIter = False)
+			sums.append(sum1)
+		
+			count = self.paths.getOverlapCondition2(self.trimmedPaths[pathID], nodeID, plotIter = False)
+			counts.append(count)
+		"""
+
+
+		if nodeID1 > nodeID2:
+			print "nodes called out of order", nodeID1, nodeID2
+			raise
+
+	
+
+		" INPLACE CONSTRAINT BETWEEN PAIRED NODES "
+		resultEdges = self.getEdges(nodeID1, nodeID2)
+		resultEdges.sort(key=itemgetter(2), reverse=True)
+		edge = resultEdges[0]
+		
+		transform = edge[0]
+		offset = [transform[0,0],transform[1,0],transform[2,0]]
+		
+		nomAngDiff = offset[2]
+
+		origPose1 = self.nodeHash[nodeID1].getGlobalGPACPose()
+		origPose2 = self.nodeHash[nodeID2].getGlobalGPACPose()
+
+
+		#if edge[0] == nodeID1 and edge[1] == nodeID2:
+		if True:
+			offset12 = offset
+			offsetPose12 = Pose(offset12)
+						
+			offset21 = offsetPose12.convertGlobalPoseToLocal([0.0,0.0,0.0])
+			
+		#elif edge[0] == nodeID2 and edge[1] == nodeID1:
+		elif False:
+			offset21 = offset
+			offsetPose21 = Pose(offset21)
+						
+			offset12 = offsetPose21.convertGlobalPoseToLocal([0.0,0.0,0.0])
+
+		else:
+			print "using edge:", edge
+			print "all edges:"
+			print resultEdges
+			raise
+
+
+		print "update position of path node", nodeID1, nodeID2
 	
 		" control point nearest the GPAC origin "
-		globalPoint1 = self.nodeHash[nodeID].getGlobalGPACPose()[:2]
-		
-		print "adjusting pose", nodeID, "from", self.nodeHash[nodeID].getGlobalGPACPose()
+		globalPoint1 = self.nodeHash[nodeID1].getGlobalGPACPose()[:2]
 
-		splicedPaths1 = self.paths.splicePathIDs(orderedPathIDs)
+		print "adjusting pose", nodeID1, "from", origPose1
 
-		totalGuesses = []
+		splicedPaths1 = self.paths.splicePathIDs(orderedPathIDs1)
+		print "received", len(splicedPaths1), "spliced paths from path IDs", orderedPathIDs1
+
+		totalGuesses1 = []
 		for path in splicedPaths1:
 
 			" make the path constraints "								
-			guessPose1, cost1 = self.makeGlobalMedialOverlapConstraint(nodeID, path, globalPoint1, globalPoint1)
-			
-			estPose = self.nodeHash[nodeID].getGlobalGPACPose()
-			angDiff = abs(estPose[2]-guessPose1[2])
-			totalGuesses.append((angDiff, cost1, guessPose1))
+			guessPose1, cost1 = self.makeGlobalMedialOverlapConstraint(nodeID1, path, globalPoint1, globalPoint1)
+
+			self.nodeHash[nodeID1].setGPACPose(guessPose1)
+			departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = self.paths.getDeparturePoint(path, nodeID1, plotIter = True)
+
+			resultArgs = self.paths.getDeparturePoint(path, nodeID1, plotIter = True)
+
+			angDiff1 = abs(diffAngle(origPose1[2], guessPose1[2]))
+			totalGuesses1.append((angDiff1, cost1, guessPose1, resultArgs, path))
 		
-		totalGuesses.sort()
-		guessPose = totalGuesses[0][2]
-		self.nodeHash[nodeID].setGPACPose(guessPose)
-		print "set to pose", nodeID, "to", guessPose
+		totalGuesses1.sort()
+
+		print "totalGuesses1:", totalGuesses1
+
+
+		globalPoint2 = self.nodeHash[nodeID2].getGlobalGPACPose()[:2]
+		
+		print "adjusting pose", nodeID2, "from", origPose2
+
+		splicedPaths2 = self.paths.splicePathIDs(orderedPathIDs2)
+		print "received", len(splicedPaths2), "spliced paths from path IDs", orderedPathIDs2
+
+		totalGuesses2 = []
+		for path in splicedPaths2:
+
+			" make the path constraints "								
+			guessPose2, cost2 = self.makeGlobalMedialOverlapConstraint(nodeID2, path, globalPoint2, globalPoint2)
+
+			self.nodeHash[nodeID2].setGPACPose(guessPose2)
+			resultArgs = self.paths.getDeparturePoint(path, nodeID2, plotIter = True)
+			
+			angDiff2 = abs(diffAngle(origPose2[2], guessPose2[2]))
+			totalGuesses2.append((angDiff2, cost2, guessPose2, resultArgs, path))
+		
+		totalGuesses2.sort()
+		print "totalGuesses2:", totalGuesses2
+		
+		
+		originPose1 = Pose(origPose1)
+		originPose2 = Pose(origPose2)
+
+		angDiff1 = totalGuesses1[0][0]
+		angDiff2 = totalGuesses2[0][0]
+
+		resultArgs1 = totalGuesses1[0][3]
+		resultArgs2 = totalGuesses2[0][3]
+
+		path1 = totalGuesses1[0][4]
+		path2 = totalGuesses2[0][4]
+
+		guessPose1 = totalGuesses1[0][2]
+		guessPose2 = totalGuesses2[0][2]
+
+		if angDiff1 < angDiff2:
+			
+			nodePose2 = originPose1.convertLocalOffsetToGlobal(offset12)	
+					
+			inPlaceDiff2 = abs(guessPose2[2]-nodePose2[2])
+			
+			if inPlaceDiff2 > pi/4.0:
+				self.nodeHash[nodeID2].setGPACPose(nodePose2)
+				print "set to pose", nodeID2, "to", nodePose2
+				
+			else:
+				self.nodeHash[nodeID2].setGPACPose(guessPose2)
+				print "set to pose", nodeID2, "to", guessPose2
+						
+
+			self.nodeHash[nodeID1].setGPACPose(guessPose1)
+			print "set to pose", nodeID1, "to", guessPose1
+
+		
+		else:
+			
+			nodePose1 = originPose2.convertLocalOffsetToGlobal(offset21)			
+
+			inPlaceDiff1 = abs(guessPose1[2]-nodePose1[2])
+			
+			if inPlaceDiff1 > pi/4.0:
+				self.nodeHash[nodeID1].setGPACPose(nodePose1)
+				print "set to pose", nodeID1, "to", nodePose1
+				
+			else:
+				self.nodeHash[nodeID1].setGPACPose(guessPose1)
+				print "set to pose", nodeID1, "to", guessPose1
+
+			self.nodeHash[nodeID2].setGPACPose(guessPose2)
+			print "set to pose", nodeID2, "to", guessPose2
+		
+
+		"""
+		departurePoint1 = resultArgs[0]
+		depAngle1 = resultArgs[1]
+		isInterior1 = resultArgs[2]
+		isExist1 = resultArgs[3]
+		discDist1 = resultArgs[4]
+		departurePoint2 = resultArgs[5]
+		depAngle2 = resultArgs[6]
+		isInterior2 = resultArgs[7]
+		isExist2 = resultArgs[8]
+		discDist2 = resultArgs[9]
+		contigFrac = resultArgs[10]
+		overlapSum = resultArgs[11]
+		"""
+
+		contigFrac1 = resultArgs1[10]
+		contigFrac2 = resultArgs2[10]
+		
+		if contigFrac1 < 0.98:
+			self.findPathLocation(nodeID1, path1)
+		if contigFrac2 < 0.98:
+			self.findPathLocation(nodeID2, path2)
+		
+
+
+	def findPathLocation(self, nodeID, path):
+
+
+		
+	
 
 
 
@@ -4393,7 +4612,7 @@ class PoseGraph:
 					isInPath = True
 					commonPathID = j
 
-			oldConstraints = self.getEdges(nodeID1, nodeID2)
+			oldConstraints = self.getEdges(nodeID1, nodeID2) + self.getEdges(nodeID2, nodeID1)
 			isExist = False
 			for constraint in oldConstraints:
 				isExist = True
@@ -4832,7 +5051,7 @@ class PoseGraph:
 
 			cand['isAlternate'] = isAlternate
 
-			oldConstraints = self.getEdges(nodeID1, nodeID2)
+			oldConstraints = self.getEdges(nodeID1, nodeID2) + self.getEdges(nodeID2, nodeID1)
 			isExist = False
 			for constraint in oldConstraints:
 				isExist = True
@@ -5821,7 +6040,7 @@ class PoseGraph:
 					print targetNodeID, "and", nodeID, "have same departure state", state1, state2
 					
 					" check if a constraint already exists between these two nodes "
-					oldConstraints = self.getEdges(targetNodeID, nodeID)
+					oldConstraints = self.getEdges(targetNodeID, nodeID) + self.getEdges(nodeID, targetNodeID)
 					isExist = False
 					for constraint in oldConstraints:
 						isExist = True
