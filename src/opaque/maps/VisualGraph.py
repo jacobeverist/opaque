@@ -32,6 +32,19 @@ class VisualGraph:
 		self.sensorHypotheses = []
 		
 		self.colors = []
+		self.colors.append([215, 48, 39])
+		self.colors.append([252, 141, 89])
+		self.colors.append([254, 224, 144])
+		self.colors.append([224, 243, 248])
+		self.colors.append([145, 191, 219])
+		self.colors.append([69, 117, 180])
+
+
+		for color in self.colors:
+			color[0] = float(color[0])/256.0
+			color[1] = float(color[1])/256.0
+			color[2] = float(color[2])/256.0
+
 		for i in range(100):
 			self.colors.append((random(),random(),random()))
 
@@ -51,12 +64,16 @@ class VisualGraph:
 
 			self.localNodes.append(currNode)
 			
+			currNode.setGPACPose(self.poseGraph.nodePoses[i])
+			
 			self.poseGraph.nodeHash[i] = currNode
 			#self.drawConstraints()
 			#self.poseGraph.mergePriorityConstraints()
 
 			#self.poseGraph.restoreNode(dirName, currNode)		
-		
+			#for k in range(len(self.nodePoses)):
+			#self.nodeHash[k].setGlobalGPACPose(self.nodePoses[k])
+
 		self.poseGraph.mergePriorityConstraints()
 
 		self.drawConstraints()
@@ -72,8 +89,8 @@ class VisualGraph:
 		backNode.readFromFile2(dirName, num_poses+1)
 		self.poseGraph.insertPose(foreNode, backNode, initLocation = foreNode.getEstPose())
 			
-		#for i in range(num_poses+2, num_poses+70):
-		for i in range(num_poses+2, num_poses+26):
+		for i in range(num_poses+2, num_poses+70):
+		#for i in range(num_poses+2, num_poses+26):
 			#for i in range(num_poses+2, num_poses+8):
 
 			print "loading node", i		
@@ -252,7 +269,7 @@ class VisualGraph:
 		#self.drawTopology2(num_poses+1)
 		#self.drawMedialPath(num_poses+1)
 		
-		self.drawAllConstraints()
+		#self.drawAllConstraints()
 
 		#self.drawTopology()
 		#self.poseGraph.resetGraphToGround()
