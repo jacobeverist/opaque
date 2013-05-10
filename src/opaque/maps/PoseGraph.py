@@ -2169,7 +2169,7 @@ class PoseGraph:
 				lessID = pathID2
 				
 				
-				mergeNodes = self.paths.getNodes(lessID)
+				mergeNodes = copy(self.paths.getNodes(lessID))
 				
 				
 				" capture transform between pathID2 and member nodes "
@@ -2216,7 +2216,7 @@ class PoseGraph:
 					else:
 						nodeHasMerged[nodeID] = False
 			
-					
+
 				
 
 					" control point nearest the GPAC origin "
@@ -2225,6 +2225,18 @@ class PoseGraph:
 					splicedPaths1 = self.paths.splicePathIDs([rootID])
 
 					self.fitToSplices(nodeID, splicedPaths1, globalPoint1, globalPoint1)
+					
+					
+					self.paths.addNode(nodeID, rootID)
+					self.paths.delNode(nodeID, lessID)
+					
+					if len(self.paths.getNodes(lessID)) == 0:
+						self.paths.delPath(lessID, rootID)
+
+					
+					
+					self.paths.generatePaths()
+					
 
 					"""
 					totalGuesses = []
@@ -2316,8 +2328,8 @@ class PoseGraph:
 				
 				
 				" move nodes from lessID into rootID and delete pathID "
-				for nodeID in mergeNodes:
-					self.paths.addNode(nodeID, rootID)
+				#for nodeID in mergeNodes:
+				#	self.paths.addNode(nodeID, rootID)
 	
 				" move nodes to pathID1, delete pathID2 "
 				self.paths.delPath(lessID, rootID)
@@ -3477,8 +3489,8 @@ class PoseGraph:
 		"""
 
 
-		resultArgs1 = self.paths.getDeparturePoint(path, nodeID1, plotIter = True)
-		resultArgs2 = self.paths.getDeparturePoint(path, nodeID2, plotIter = True)
+		resultArgs1 = self.paths.getDeparturePoint(path1, nodeID1, plotIter = True)
+		resultArgs2 = self.paths.getDeparturePoint(path2, nodeID2, plotIter = True)
 
 
 		contigFrac1 = resultArgs1[10]

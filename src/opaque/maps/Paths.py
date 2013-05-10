@@ -1306,6 +1306,13 @@ class Paths:
 
         return resultPose1, lastCost1, matchCount1
      
+     
+    def delNode(self, nodeID, pathID):
+        print "deleting node", nodeID, "from path", pathID
+        self.pathClasses[pathID]["nodeSet"].remove(nodeID)
+        
+        
+     
     def addNode(self, nodeID, pathID):
         
         print "adding node", nodeID, "to path", pathID
@@ -1336,27 +1343,29 @@ class Paths:
     def delPath(self, pathID, mergeTargetID):
         
         print "deleting path", pathID, "merging to path", mergeTargetID
-        
-        del self.pathClasses[pathID]
-        del self.pathTermsVisited[pathID]
-        
-        keys = []
-        
-        for key, val in self.consistency.iteritems():
+        try: 
+            del self.pathClasses[pathID]
+            del self.pathTermsVisited[pathID]
             
-            if key[0] == pathID or key[1] == pathID:
-                keys.append(key)
-        
-        for key in keys:        
-            del self.consistency[key]
+            keys = []
             
-        
-        for k, pathClass in self.pathClasses.iteritems():
+            for key, val in self.consistency.iteritems():
+                
+                if key[0] == pathID or key[1] == pathID:
+                    keys.append(key)
             
-            if pathClass["parentID"] == pathID:
-                pathClass["parentID"] = mergeTargetID
+            for key in keys:        
+                del self.consistency[key]
+                
             
-        
+            for k, pathClass in self.pathClasses.iteritems():
+                
+                if pathClass["parentID"] == pathID:
+                    pathClass["parentID"] = mergeTargetID
+                    
+        except:
+            pass
+    
     def addPath(self, parentID, branchNodeID, localJunctionPose):
         
         oldPaths = self.getPathIDs()

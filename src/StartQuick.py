@@ -39,6 +39,27 @@ def runTest(probe):
 	while True:
 		probe.frameStarted()
 
+
+def startRun():
+	try:
+		" create the robot "
+		" create the environment "
+		" add control program "		
+		probe = createTest()
+
+		runTest(probe)
+		
+		" while loop "		
+		#cProfile.run('runTest(probe)', 'test_prof')
+	
+	except ControlError as inst:
+		print inst.value
+
+	except:
+		traceback.print_exc()
+		print "Exception:", sys.exc_info()[0]
+	
+
 if __name__ == '__main__':
 
 	try:
