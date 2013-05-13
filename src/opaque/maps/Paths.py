@@ -160,6 +160,8 @@ class Paths:
         self.pathClasses[0] = {"parentID" : None, "branchNodeID" : None, "localJunctionPose" : None, 
                             "sameProb" : {}, "nodeSet" : []}
         
+        self.mergeMapping = {}
+        
         self.consistency = {}
         
         self.rootPoint = [-3.2, 0.0]
@@ -1347,6 +1349,9 @@ class Paths:
             del self.pathClasses[pathID]
             del self.pathTermsVisited[pathID]
             
+            self.mergeMapping[pathID] = mergeTargetID
+
+            
             keys = []
             
             for key, val in self.consistency.iteritems():
@@ -1377,6 +1382,9 @@ class Paths:
         self.pathTermsVisited[newPathID] = False
         
         self.pathIDs += 1
+
+
+        self.mergeMapping[newPathID] = None
         
         for oldID in oldPaths:
             
@@ -1828,7 +1836,7 @@ class Paths:
     
             " SAVE THE RESULTING PATH DATA STRUCTURE "
             nodePaths[leaf] = nodePath
-                
+            
 
         " FOR EVERY PAIR OF LEAVES, SAVE ITS PATH IF ITS LONG ENOUGH "
         " should have X choose 2 combinations"

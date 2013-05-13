@@ -5310,6 +5310,9 @@ def minICP_GPU2(initGuess, medialPoints1, medialPoints2, foreI1, backI1, foreI2,
     uHigh = medialSpline2.getUOfDist(u2, uRange, distIter = 0.001)
     uLow = medialSpline2.getUOfDist(u2, -uRange, distIter = 0.001)
 
+    uHigh = u2 + 0.2
+    uLow = u2 - 0.2
+
     if u1 >= 1.0:
         pose1 = poses_1[-1]
     elif u1 < 0.0:
@@ -5493,7 +5496,7 @@ def minICP_GPU2(initGuess, medialPoints1, medialPoints2, foreI1, backI1, foreI2,
             flatMatchPairs.append(C2[1][1])
         c_poses_1 = [item for sublist in poses_1 for item in sublist]
         c_poses_2 = [item for sublist in poses_2 for item in sublist]
-        newParam, newCost = nelminICP.ICPmin(flatMatchPairs, len(match_pairs), initGuess, c_poses_1, c_poses_2, len(poses_1))
+        newParam, newCost = nelminICP.ICPmin(flatMatchPairs, len(match_pairs), initGuess, uHigh, uLow, c_poses_1, c_poses_2, len(poses_1))
 
 
         #newParam = scipy.optimize.fmin(medialOverlapCostFunc, [currU,currAng], [match_pairs, medialSpline1, medialSpline2, uHigh, uLow, u1], disp = 0)
@@ -5667,6 +5670,9 @@ def overlapICP_GPU2(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1,
 
     uHigh = medialSpline2.getUOfDist(u2, uRange, distIter = 0.001)
     uLow = medialSpline2.getUOfDist(u2, -uRange, distIter = 0.001)
+    
+    #uHigh = u2 + 0.2
+    #uLow = u2 - 0.2
 
     if inPlace:
         uHigh = u2 + 0.08
@@ -5820,7 +5826,7 @@ def overlapICP_GPU2(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1,
             flatMatchPairs.append(C2[1][1])
         c_poses_1 = [item for sublist in poses_1 for item in sublist]
         c_poses_2 = [item for sublist in poses_2 for item in sublist]
-        newParam, newCost = nelminICP.ICPmin(flatMatchPairs, len(match_pairs), initGuess, c_poses_1, c_poses_2, len(poses_1))
+        newParam, newCost = nelminICP.ICPmin(flatMatchPairs, len(match_pairs), initGuess, uHigh, uLow, c_poses_1, c_poses_2, len(poses_1))
 
 
         #newParam = scipy.optimize.fmin(medialOverlapCostFunc, [currU,currAng], [match_pairs, medialSpline1, medialSpline2, uHigh, uLow, u1], disp = 0)
@@ -7135,7 +7141,7 @@ def globalOverlapICP_GPU2(initGuess, globalPath, medialPoints,plotIter = False, 
         
 
         
-        newParam, newCost = nelminICP.ICPmin(flatMatchPairs, len(match_pairs), [u1,currU,currAng], c_poses_1, c_poses_2, len(poses_1))
+        newParam, newCost = nelminICP.ICPmin(flatMatchPairs, len(match_pairs), [u1,currU,currAng], uHigh, uLow, c_poses_1, c_poses_2, len(poses_1))
         #newParam, newCost = nelminICP.ICPmin(flatMatchPairs, len(match_pairs), initGuess, c_poses_1, c_poses_2, len(poses_1))
 
         newU = newParam[0]
@@ -7578,7 +7584,7 @@ def pathOverlapICP(initGuess, globalPath, medialPoints,plotIter = False, n1 = 0,
         
         
         #newParam, newCost = nelminICP.ICPmin(flatMatchPairs, len(match_pairs), initGuess, c_poses_1, c_poses_2, len(poses_1))
-        newParam, newCost = nelminICP.ICPmin(flatMatchPairs, len(match_pairs), [u1,currU,currAng], c_poses_1, c_poses_2, len(poses_1))
+        newParam, newCost = nelminICP.ICPmin(flatMatchPairs, len(match_pairs), [u1,currU,currAng], uHigh, uLow, c_poses_1, c_poses_2, len(poses_1))
         
 
 

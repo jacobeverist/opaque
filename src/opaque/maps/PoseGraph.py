@@ -1408,7 +1408,8 @@ class PoseGraph:
 					else:
 						transform = transform1
 						covE = covE1
-					
+				
+				print "add overlap constraint", nodeID-2, nodeID, direction, transform
 				self.addPriorityEdge([nodeID-2,nodeID,transform,covE], OVERLAP_PRIORITY)
 	
 				" merge constraints by priority and updated estimated poses "
@@ -1511,6 +1512,7 @@ class PoseGraph:
 							covE = covE1
 						
 					
+					print "add overlap constraint", nodeID-2, nodeID, direction, transform
 					self.addPriorityEdge([nodeID-2,nodeID,transform,covE], OVERLAP_PRIORITY)
 
 	
@@ -1609,7 +1611,7 @@ class PoseGraph:
 				
 				" COMPUTE DEPARTURE EVENTS FOR EACH OVERLAPPING PATH SECTION "
 				for pathID in orderedPathIDs1:
-					departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = self.paths.getDeparturePoint(self.trimmedPaths[pathID], nodeID1)
+					departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = self.paths.getDeparturePoint(self.trimmedPaths[pathID], nodeID1, plotIter = True)
 					departures1.append([isExist1,isExist2])
 					interiors1.append([isInterior1, isInterior2])
 					depPoints1.append([departurePoint1, departurePoint2])
@@ -1618,7 +1620,7 @@ class PoseGraph:
 					contig1.append((contigFrac, overlapSum))
 			
 				for pathID in orderedPathIDs2:
-					departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = self.paths.getDeparturePoint(self.trimmedPaths[pathID], nodeID2)
+					departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = self.paths.getDeparturePoint(self.trimmedPaths[pathID], nodeID2, plotIter = True)
 					departures2.append([isExist1,isExist2])
 					interiors2.append([isInterior1, isInterior2])
 					depPoints2.append([departurePoint1, departurePoint2])
@@ -1788,7 +1790,7 @@ class PoseGraph:
 					
 					" now compute whether there are departure points after we have guessed a better position in synch with the paths "
 					for pathID in orderedPathIDs1:
-						departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = self.paths.getDeparturePoint(self.trimmedPaths[pathID], nodeID1)
+						departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = self.paths.getDeparturePoint(self.trimmedPaths[pathID], nodeID1, plotIter = True)
 						departures1.append([isExist1,isExist2])
 						interiors1.append([isInterior1, isInterior2])
 						depPoints1.append([departurePoint1, departurePoint2])
@@ -1798,7 +1800,7 @@ class PoseGraph:
 	
 					
 					for pathID in orderedPathIDs2:
-						departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = self.paths.getDeparturePoint(self.trimmedPaths[pathID], nodeID2)
+						departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = self.paths.getDeparturePoint(self.trimmedPaths[pathID], nodeID2, plotIter = True)
 						departures2.append([isExist1,isExist2])
 						interiors2.append([isInterior1, isInterior2])
 						depPoints2.append([departurePoint1, departurePoint2])
@@ -2023,6 +2025,30 @@ class PoseGraph:
 					del departures1[k]
 					del interiors1[k]
 					del depPoints1[k]
+					
+				" recompute if we've removed all overlapped paths "
+				" FIXME:  are there cases where a merging will remove critical path overlap information? "
+				if len(orderedPathIDs1) == 0:
+
+					departures1 = []
+					interiors1 = []
+					depPoints1 = []
+					distances1 = []
+					depAngles1 = []
+					contig1 = []
+					
+					orderedPathIDs1 = self.paths.getOrderedOverlappingPaths(nodeID1)
+					print nodeID1, "recompute orderedPathIDs1:", orderedPathIDs1
+					
+					" now compute whether there are departure points after we have guessed a better position in synch with the paths "
+					for pathID in orderedPathIDs1:
+						departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = self.paths.getDeparturePoint(self.trimmedPaths[pathID], nodeID1)
+						departures1.append([isExist1,isExist2])
+						interiors1.append([isInterior1, isInterior2])
+						depPoints1.append([departurePoint1, departurePoint2])
+						distances1.append([discDist1, discDist2])
+						depAngles1.append([depAngle1, depAngle2])
+						contig1.append((contigFrac, overlapSum))
 
 				toBeRemoved = []
 				for k in range(len(orderedPathIDs2)):
@@ -2037,6 +2063,28 @@ class PoseGraph:
 					del departures2[k]
 					del interiors2[k]
 					del depPoints2[k]
+
+				if len(orderedPathIDs2) == 0:
+
+					departures2 = []
+					interiors2 = []
+					depPoints2 = []
+					distances2 = []
+					depAngles2 = []
+					contig2 = []
+					
+					orderedPathIDs2 = self.paths.getOrderedOverlappingPaths(nodeID2)
+					print nodeID2, "recompute orderedPathIDs2:", orderedPathIDs2
+					
+					" now compute whether there are departure points after we have guessed a better position in synch with the paths "
+					for pathID in orderedPathIDs2:
+						departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = self.paths.getDeparturePoint(self.trimmedPaths[pathID], nodeID2)
+						departures2.append([isExist1,isExist2])
+						interiors2.append([isInterior1, isInterior2])
+						depPoints2.append([departurePoint1, departurePoint2])
+						distances2.append([discDist1, discDist2])
+						depAngles2.append([depAngle1, depAngle2])
+						contig2.append((contigFrac, overlapSum))
 
 
 				for k in pathIDs:
@@ -3148,9 +3196,14 @@ class PoseGraph:
 			transform = edge[0]
 			offset = [transform[0,0],transform[1,0],transform[2,0]]
 
+			print "applying constraint", nodeID-2, nodeID, self.nodeHash[nodeID].travelDir, transform
+
 			"compute pose nodeID wrt node-2 given offset "
 			
 			origPose = self.nodeHash[nodeID-2].getGlobalGPACPose()
+			
+			print "origPose", nodeID-2, origPose
+			print "origPose", nodeID, self.nodeHash[nodeID].getGlobalGPACPose()
 			
 			originPose = Pose(origPose)
 			nodePose = originPose.convertLocalOffsetToGlobal(offset)
@@ -4712,12 +4765,12 @@ class PoseGraph:
 		return transform, covE, hist
 
 
-	def makeMedialOverlapConstraint(self, i, j, isMove = True, isForward = True, inPlace = False, uRange = 1.5 ):
+	def makeMedialOverlapConstraint(self, i, j, isMove = True, isForward = True, inPlace = False, uRange = 0.1 ):
 
 		#print "recomputing hulls and medial axis"
 		" compute the medial axis for each pose "
 		
-			
+		
 
 		#self.nodeHash[i].computeStaticAlphaBoundary()
 		#print "static alpha computed"
@@ -4753,6 +4806,11 @@ class PoseGraph:
 
 		#medialSpline1.getUOfDist(originU1, dist)
 
+		#distEst = 0.3
+		#distEst = 1.0
+		#distEst = 0.5
+		distEst = 0.8
+
 		if inPlace:
 			" FULL LENGTH MEDIAL AXIS "
 			originU1 = 0.5
@@ -4780,12 +4838,30 @@ class PoseGraph:
 					if foreAvg >= 1.4:
 						u2 = medialSpline2.getUOfDist(originU2, 0.0, distIter = 0.001)
 					else:	
-						u2 = medialSpline2.getUOfDist(originU2, 0.3, distIter = 0.001)
+						u2 = medialSpline2.getUOfDist(originU2, distEst, distIter = 0.001)
 				else:	
-					u2 = medialSpline2.getUOfDist(originU2, 0.3, distIter = 0.001)
+					u2 = medialSpline2.getUOfDist(originU2, distEst, distIter = 0.001)
 					
 			else:
-				u2 = medialSpline2.getUOfDist(originU2, -0.3, distIter = 0.001)
+
+				#u2 = medialSpline2.getUOfDist(originU2, -0.3, distIter = 0.001)
+
+				if len(node2.backProbeError) > 0:
+	
+					backSum = 0.0
+					backProbeError = node2.backProbeError
+					for n in backProbeError:
+						backSum += n
+					backAvg = backSum / len(backProbeError)
+									
+					if backAvg >= 1.4:
+						u2 = medialSpline2.getUOfDist(originU2, 0.0, distIter = 0.001)
+					else:	
+						u2 = medialSpline2.getUOfDist(originU2, -distEst, distIter = 0.001)
+				else:	
+					u2 = medialSpline2.getUOfDist(originU2, -distEst, distIter = 0.001)
+				
+				
 				#u2 = 0.4
 			print "computed u2 =", u2, "from originU2 =", originU2
 			 

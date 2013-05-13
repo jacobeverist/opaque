@@ -731,7 +731,7 @@ double objFunc2(double *params, double *d_matchPairs, double *d_offset, double *
 }
 */
 
-void doTest(double *h_matchPairs, int numPairs, double *initGuess, double *poses_1, double *poses_2, int numPoses, double *resultParam, double *resultSum) {
+void doTest(double *h_matchPairs, int numPairs, double *initGuess, double uHigh, double uLow, double *poses_1, double *poses_2, int numPoses, double *resultParam, double *resultSum) {
 
 	double* d_matchPairs;
 	double* d_offset;
@@ -754,7 +754,8 @@ void doTest(double *h_matchPairs, int numPairs, double *initGuess, double *poses
 
 	int i;
 
-	double u1, u2, uHigh, uLow, currU, currAng;
+	//double u1, u2, uHigh, uLow, currU, currAng;
+	double u1, u2, currU, currAng;
 
 	//int blocksPerGrid = (numPairs + threadsPerBlock - 1) / threadsPerBlock;
 
@@ -773,8 +774,8 @@ void doTest(double *h_matchPairs, int numPairs, double *initGuess, double *poses
 
 	u1 = initGuess[0];
 	u2 = initGuess[1];
-	uHigh = u2 + 0.2;
-	uLow = u2 - 0.2;
+	//uHigh = u2 + 0.2;
+	//uLow = u2 - 0.2;
 	currU = u2;
 	currAng = initGuess[2];
 
