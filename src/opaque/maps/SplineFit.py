@@ -66,14 +66,14 @@ class SplineFit:
 				
 		return minI * 0.01
 
-	def getUniformSamples(self, spacing = 0.04):
+	def getUniformSamples(self, spacing = 0.04, interpAngle = False):
 		
 		samples = scipy.arange(0.0,1.05,0.05)
 		sample_points = self.getUVecSet(samples)
-		sample_points = self.makePointsUniform(sample_points, max_spacing = spacing)
+		sample_points = self.makePointsUniform(sample_points, max_spacing = spacing, interpAngle = interpAngle)
 		return sample_points
 	
-	def makePointsUniform(self, points, max_spacing = 0.04):
+	def makePointsUniform(self, points, max_spacing = 0.04, interpAngle = False):
 		
 		" make the points uniformly distributed "
 		
@@ -90,12 +90,22 @@ class SplineFit:
 			
 			new_points.append(copy(p0))
 			
+			ang0 = p0[2]
+			ang1 = p1[2]
+			
 			if dist > max_spacing:
 				" cut into pieces max_spacing length or less "
 				numCount = int(floor(dist / max_spacing))
 				
+				angStep = (ang1-ang0) / float(numCount+1)
+				
+				
 				for j in range(1, numCount+1):
-					newP = [j*max_spacing*vec[0] + p0[0], j*max_spacing*vec[1] + p0[1], p0[2]]
+					if interpAngle:
+						newP = [j*max_spacing*vec[0] + p0[0], j*max_spacing*vec[1] + p0[1], p0[2]+j*angStep]
+					else:
+						newP = [j*max_spacing*vec[0] + p0[0], j*max_spacing*vec[1] + p0[1], p0[2]]
+						
 					new_points.append(newP)
 		
 		return new_points		

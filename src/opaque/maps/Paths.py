@@ -399,7 +399,7 @@ class Paths:
     def getPath(self, pathID):
         return self.pathClasses[pathID]
     
-    def getAllSplices(self):
+    def getAllSplices(self, plotIter = False):
 
         print "junctions:", self.junctions
         print "terminals:", self.terminals
@@ -649,40 +649,51 @@ class Paths:
                 print sPath['orderedPathIDs'], sPath['termPath'], len(sPath['path'])
 
 
-        """
-        pylab.clf()
-        
-        for k,path in  self.trimmedPaths.iteritems():
-            print "path has", len(path), "points"
-            xP = []
-            yP = []
-            for p in path:
-                xP.append(p[0])
-                yP.append(p[1])
-
-            pylab.plot(xP,yP, color = self.colors[k])
-
-
-        for k, result in results.iteritems():
-            for sPath in result:
-                path = sPath['path']
-
+        if plotIter:
+            pylab.clf()
+            
+            for k,path in  self.trimmedPaths.iteritems():
+                print "path has", len(path), "points"
                 xP = []
                 yP = []
                 for p in path:
                     xP.append(p[0])
                     yP.append(p[1])
-                pylab.plot(xP,yP, color='b')
+    
+                pylab.plot(xP,yP, color = self.colors[k])
+    
+    
+            for k, result in results.iteritems():
+                for sPath in result:
+                    path = sPath['path']
+    
+                    xP = []
+                    yP = []
+                    for p in path:
+                        xP.append(p[0])
+                        yP.append(p[1])
+                    pylab.plot(xP,yP, color='b')
+
+
+            for k in pathIDs:
+                xP = []
+                yP = []
+                
+                for p in self.paths[k]:
+                    xP.append(p[0])
+                    yP.append(p[1])
+                pylab.plot(xP,yP, color=self.colors[k], linewidth=1)
+
+
+            #pylab.xlim(-4,4)
+            #pylab.ylim(-4,4)
+    
+            #self.drawWalls()
+    
+            pylab.title("Spliced Paths, pathIDs = %s" %  self.getPathIDs())
+            pylab.savefig("splicedPath_%04u.png" % self.spliceCount)
+            self.spliceCount += 1
         
-        #pylab.xlim(-4,4)
-        #pylab.ylim(-4,4)
-
-        #self.drawWalls()
-
-        pylab.title("Spliced Paths, pathIDs = %s" %  self.getPathIDs())
-        pylab.savefig("splicedPath_%04u.png" % self.spliceCount)
-        self.spliceCount += 1
-        """
 
 
         return results, self.terminals, self.junctions
@@ -774,7 +785,7 @@ class Paths:
     def comparePaths(self):
  
         #allSplices = self.getAllSplices()
-        allSplices, terminals, junctions = self.getAllSplices()
+        allSplices, terminals, junctions = self.getAllSplices(plotIter = True)
         
         toBeMerged = []
         print "consistency:", self.consistency
@@ -917,27 +928,37 @@ class Paths:
                         print "termPath2:", termPath2
 
                         startKey = termPath1[0]
-                        endKey = termPath1[-1]
+                        endKey = termPath1[-1]       
+                        midKey = termPath1[1]
     
                         shortestPathSpanTree, shortestDist = self.pathGraph.shortest_path(endKey)
                         currNode = shortestPathSpanTree[startKey]                    
                         path1 = []
+                        midIndex = 0
                         while currNode != endKey:
                             path1.append(self.pathGraph.get_node_attributes(currNode))
                             currNode = shortestPathSpanTree[currNode]
+                            
+                            if currNode == midKey:
+                                midIndex = len(path1)
+                            
                         path1.append(self.pathGraph.get_node_attributes(currNode))
+                        
+                        if midIndex > 50:
+                            path1 = path1[midIndex:]
 
                         startKey = termPath2[0]
                         endKey = termPath2[-1]
-    
+
                         shortestPathSpanTree, shortestDist = self.pathGraph.shortest_path(endKey)
                         currNode = shortestPathSpanTree[startKey]                    
                         path2 = []
                         while currNode != endKey:
                             path2.append(self.pathGraph.get_node_attributes(currNode))
                             currNode = shortestPathSpanTree[currNode]
-                        path2.append(self.pathGraph.get_node_attributes(currNode))
 
+                        path2.append(self.pathGraph.get_node_attributes(currNode))
+                            
                         pathPairs.append((path1,path2,pathID1,pathID2))
 
             elif parentID2 == pathID1:
@@ -970,15 +991,24 @@ class Paths:
 
                         startKey = termPath2[0]
                         endKey = termPath2[-1]
+                        midKey = termPath2[1]
     
                         shortestPathSpanTree, shortestDist = self.pathGraph.shortest_path(endKey)
                         currNode = shortestPathSpanTree[startKey]                    
                         path2 = []
+                        midIndex = 0
                         while currNode != endKey:
                             path2.append(self.pathGraph.get_node_attributes(currNode))
                             currNode = shortestPathSpanTree[currNode]
+                            
+                            if currNode == midKey:
+                                midIndex = len(path2)
+                                                            
                         path2.append(self.pathGraph.get_node_attributes(currNode))
 
+                        if midIndex > 50:
+                            path2 = path2[midIndex:]
+                            
                         pathPairs.append((path1,path2,pathID1,pathID2))
 
             elif parentID1 == parentID2:
@@ -995,7 +1025,7 @@ class Paths:
                         termPath1 = sPath['termPath']
                         terms1.append(termPath1)
                         print termPath1
-                        
+                
                 terms2 = []
                 for sPath in values2:
                     orderedIDs = sPath['orderedPathIDs']
@@ -1003,7 +1033,7 @@ class Paths:
                         termPath2 = sPath['termPath']
                         terms2.append(termPath2)
                         print termPath2
-
+                
                 for k in range(len(terms1)):
                     
                     termPath1 = terms1[k]
@@ -1044,7 +1074,7 @@ class Paths:
                     print "comparing paths", pathID2, pathID1
                     print pair[1][0], pair[0][0]
                     print pair[1][-1], pair[0][-1]
-                    resultPose0, lastCost0, matchCount0 = self.makePathCompare(pair[1], pair[0], pathID2, pathID1)
+                    resultPose0, lastCost0, matchCount0 = self.makePathCompare(pair[1], pair[0], pathID2, pathID1, plotIter = True)
                     
                     if fabs(resultPose0[2]) < 0.5:
     
@@ -1055,8 +1085,8 @@ class Paths:
                             result = poseOrigin.convertLocalToGlobal(p)
                             path1_offset.append(result)                    
                         
-                        result0 = self.getPathDeparture(path1_offset, pair[0], pathID2, pathID1)
-    
+                        result0 = self.getPathDeparture(path1_offset, pair[0], pathID2, pathID1, plotIter = True)
+                        print "getPathDeparture() = ", result0
     
                         isInterior1 = result0[2]
                         isInterior2 = result0[7]
@@ -1079,8 +1109,9 @@ class Paths:
                             path0.append(self.pathGraph.get_node_attributes(currNode))
                             
                             #cost = self.getPathOverlapCondition(self.trimmedPaths[pathID1], path1_offset, pathID1, pathID2)
-                            cost = self.getPathOverlapCondition(path0, path1_offset, pathID1, pathID2)                
+                            cost = self.getPathOverlapCondition(path0, path1_offset, pathID1, pathID2, plotIter = True)                
                             #cost = self.getPathOverlapCondition(path2_offset, self.trimmedPaths[pathID1])
+                            print "getPathOverlapCondition() =", cost
     
                             if cost < 1e10:
                                 print pathID1, "and", pathID2, "are similar!"
@@ -1097,7 +1128,7 @@ class Paths:
 
     #def makePathCompare(self, nodeID, globalPath, globalJunctionPoint, globalDeparturePoint):
 
-    def makePathCompare(self, globalPath1, globalPath2, pathID1, pathID2):
+    def makePathCompare(self, globalPath1, globalPath2, pathID1, pathID2, plotIter = False):
 
         " compute the medial axis for each pose "
         
@@ -1292,7 +1323,7 @@ class Paths:
         u1 = originU1
         angGuess = 0.0
         
-        resultPose1, lastCost1, matchCount1 = gen_icp.pathOverlapICP([u1,u2,angGuess], orientedGlobalPath, globalPath1, plotIter = False, n1 = pathID1, n2 = pathID2)
+        resultPose1, lastCost1, matchCount1 = gen_icp.pathOverlapICP([u1,u2,angGuess], orientedGlobalPath, globalPath1, plotIter = plotIter, n1 = pathID1, n2 = pathID2)
         #resultPose2, lastCost2, matchCount2 = gen_icp.pathOverlapICP([u1,u2+0.1,angGuess], orientedGlobalPath, globalPath1, plotIter = True, n1 = pathID1, n2 = pathID2)
         #resultPose3, lastCost3, matchCount3 = gen_icp.pathOverlapICP([u1,u2-0.1,angGuess], orientedGlobalPath, globalPath1, plotIter = True, n1 = pathID1, n2 = pathID2)
         #resultPose1, lastCost1, matchCount1 = gen_icp.pathOverlapICP([u1,u2,angGuess], orientedGlobalPath, globalPath1, plotIter = False, n1 = pathID1, n2 = pathID2)
@@ -1372,13 +1403,15 @@ class Paths:
             pass
     
     def addPath(self, parentID, branchNodeID, localJunctionPose):
+
+        print "addPath(", parentID, branchNodeID, localJunctionPose
         
         oldPaths = self.getPathIDs()
         
         newPathID = self.pathIDs
         self.pathClasses[newPathID] = {"parentID" : parentID, "branchNodeID" : branchNodeID, "localJunctionPose" : localJunctionPose, 
                             "sameProb" : {}, "nodeSet" : []}        
-        
+                
         self.pathTermsVisited[newPathID] = False
         
         self.pathIDs += 1
@@ -1800,6 +1833,7 @@ class Paths:
             if len(v) > 2:
                 junctions.append(k)
 
+        print "junctionNodeID:", junctionNodeID
         print "junctions:", junctions
         
         " SAVE FOR LATER, IDENTIFIED BY THEIR INDEX NOW "
@@ -1810,11 +1844,47 @@ class Paths:
             allLeafs.append(gridToReal(leaf))
 
         if junctionNodeID != None:
-            for junc in junctions:
-                gJunc = gridToReal(junc)
-                juncDist = sqrt((globalJunctionPoint[0]-gJunc[0])**2 + (globalJunctionPoint[1]-gJunc[1])**2)
-                allJunctions.append((junc, gJunc,juncDist))
+        
+            print "finding theoretical junction:"
+            minKey = None
+            minCand = None
+            minJuncDist = 1e100
+            for k, v in uni_mst.items():
+                gCand = gridToReal(k)
+                juncDist = sqrt((globalJunctionPoint[0]-gCand[0])**2 + (globalJunctionPoint[1]-gCand[1])**2)
                 
+                if juncDist < minJuncDist:
+                    minKey = k
+                    minJuncDist = juncDist
+                    minCand = gCand
+        
+            theoryVec = [cos(globalJunctionPoint[2]), sin(globalJunctionPoint[2])]
+
+            theoryJunc = (minKey, minCand, minJuncDist, theoryVec)
+            print "theoryJunc:", theoryJunc
+            
+            theoryJuncPoint = theoryJunc[1]
+            theoryLeaf = []
+            leafMag = 0.02
+            for i in range(5):
+                newPoint = [theoryVec[0]*leafMag + theoryJuncPoint[0], theoryVec[1]*leafMag + theoryJuncPoint[1]]
+                theoryLeaf.append(newPoint)
+                leafMag += 0.02
+
+
+            print "theoryLeaf:", theoryLeaf
+            
+            if len(junctions) > 0:
+                
+                for junc in junctions:
+                    gJunc = gridToReal(junc)
+                    juncDist = sqrt((globalJunctionPoint[0]-gJunc[0])**2 + (globalJunctionPoint[1]-gJunc[1])**2)
+                    allJunctions.append((junc, gJunc,juncDist))
+
+            else:
+                
+                print "adding theoretical junction:", (minKey, minCand, minJuncDist)
+                allJunctions.append(theoryJunc)                       
         
         print "allJunctions:", allJunctions
         
@@ -1858,6 +1928,125 @@ class Paths:
                                 juncIndices.append(index)
                                 
                         longPaths.append((len(nPath),nPath, juncIndices))
+
+
+        if junctionNodeID != None:
+            theoryMedialLongPaths = []
+            theoryPaths = []
+            print "theoryPaths:"
+            for leaf1 in leaves:
+                nPath = deepcopy(nodePaths[leaf1][theoryJunc[0]])                    
+                theoryPaths.append((len(nPath), nPath))
+                print leaf1, theoryJunc, len(nPath)
+    
+            theoryPaths.sort(reverse=True)
+    
+            for k in range(len(theoryPaths)):
+                path = theoryPaths[k][1]
+                realPath = []
+                for p in path:
+                    realPath.append(gridToReal(p))
+                #realPath.reverse()
+                
+                
+                theoryPaths[k] = realPath + theoryLeaf
+                
+                print "theoryPath(" , k , ")", len(realPath), realPath[-1], theoryLeaf
+                
+                theoryPath = theoryPaths[k]
+                print "theoryPath:", len(theoryPath)
+                
+                leafPath = deepcopy(theoryPath)
+                
+                frontVec = [0.,0.]
+                backVec = [0.,0.]
+                indic = range(3)
+                indic.reverse()
+                
+                for i in indic:
+                    if i+2 < len(leafPath):
+                        p1 = leafPath[i+2]
+                        p2 = leafPath[i]
+                        vec = [p2[0]-p1[0], p2[1]-p1[1]]
+                        frontVec[0] += vec[0]
+                        frontVec[1] += vec[1]
+            
+                        p1 = leafPath[-i-3]
+                        p2 = leafPath[-i-1]
+                        vec = [p2[0]-p1[0], p2[1]-p1[1]]
+                        backVec[0] += vec[0]
+                        backVec[1] += vec[1]
+            
+                frontMag = math.sqrt(frontVec[0]*frontVec[0] + frontVec[1]*frontVec[1])
+                backMag = math.sqrt(backVec[0]*backVec[0] + backVec[1]*backVec[1])
+            
+                frontVec[0] /= frontMag
+                frontVec[1] /= frontMag
+                backVec[0] /= backMag
+                backVec[1] /= backMag
+            
+                newP1 = (leafPath[0][0] + frontVec[0]*10, leafPath[0][1] + frontVec[1]*10)
+                newP2 = (leafPath[-1][0] + backVec[0]*10, leafPath[-1][1] + backVec[1]*10)
+            
+                leafPath.insert(0,newP1)
+                leafPath.append(newP2)
+                
+                medial2 = deepcopy(leafPath)
+        
+                " take the long length segments at tips of medial axis"
+                edge1 = medial2[0:2]
+                edge2 = medial2[-2:]
+                
+                frontVec = [edge1[0][0]-edge1[1][0], edge1[0][1]-edge1[1][1]]
+                backVec = [edge2[1][0]-edge2[0][0], edge2[1][1]-edge2[0][1]]
+                frontMag = math.sqrt(frontVec[0]*frontVec[0] + frontVec[1]*frontVec[1])
+                backMag = math.sqrt(backVec[0]*backVec[0] + backVec[1]*backVec[1])
+                
+                frontVec[0] /= frontMag
+                frontVec[1] /= frontMag
+                backVec[0] /= backMag
+                backVec[1] /= backMag
+                
+                " make a smaller version of these edges "
+                newP1 = (edge1[1][0] + frontVec[0]*2, edge1[1][1] + frontVec[1]*2)
+                newP2 = (edge2[0][0] + backVec[0]*2, edge2[0][1] + backVec[1]*2)
+        
+                edge1 = [newP1, edge1[1]]
+                edge2 = [edge2[0], newP2]
+    
+                " find the intersection points with the hull "
+                hull = vertices
+                interPoints = []
+                for k in range(len(hull)-1):
+                    hullEdge = [hull[k],hull[k+1]]
+                    isIntersect1, point1 = Intersect(edge1, hullEdge)
+                    if isIntersect1:
+                        interPoints.append(point1)
+                        break
+        
+                for k in range(len(hull)-1):
+                    hullEdge = [hull[k],hull[k+1]]
+                    isIntersect2, point2 = Intersect(edge2, hullEdge)
+                    if isIntersect2:
+                        interPoints.append(point2)
+                        break
+                
+                " replace the extended edges with a termination point at the hull edge "            
+                medial2 = medial2[1:-2]
+                
+                if isIntersect1:
+                    medial2.insert(0, point1)
+                if isIntersect2:
+                    medial2.append(point2)
+    
+                theoryMedialLongPaths.append(deepcopy(medial2))
+
+
+
+
+    
+
+
         
         print "longPaths:"
         for longPath in longPaths:
@@ -2084,7 +2273,7 @@ class Paths:
         for junc in allJunctions:
             juncDists.append(junc[2])
         
-        if False:
+        if True:
             pylab.clf()
     
             for path in medialLongPaths:
@@ -2097,6 +2286,20 @@ class Paths:
     
                 pylab.plot(xP,yP)
             #pylab.scatter(xP,yP, color='b')
+
+    
+            if junctionNodeID != None:
+    
+                for path in theoryMedialLongPaths:
+                    xP = []
+                    yP = []
+                    for p in path:
+                        xP.append(p[0])
+                        yP.append(p[1])
+    
+                    pylab.plot(xP,yP, color='k')
+
+
             
             xP = []
             yP = []
@@ -2121,6 +2324,7 @@ class Paths:
                     if angs != None:
                         bufStr2 += "%1.2f %1.2f " % (angs[0],angs[1])
             
+            pylab.axis("equal")
             pylab.title("Path %d %s %s %s" % (pathID, sizes,bufStr1,bufStr2))
             pylab.savefig("medialOut2_%04u.png" % self.topCount)
             self.topCount += 1
@@ -2143,6 +2347,9 @@ class Paths:
         pathCands.sort(reverse=True)
         
         print "pathCands:", pathCands
+        
+        
+        " FIXME:  Verify that leaf path exists for the junction point "
         
         " select longest path that has the best angle fit "
         if globalJunctionPoint != None:
@@ -2169,12 +2376,24 @@ class Paths:
                             minDiff = fabs(angDiff2)
                             bestFit = k
 
+                pass
+
+
             if bestFit != -1:
-                print "returning bestFit:", bestFit, minDiff
-                return medialLongPaths[bestFit], vertices
+                
+                if fabs(minDiff) < 0.5:
+
+                    print "returning bestFit:", bestFit, minDiff
+                    return medialLongPaths[bestFit], vertices
+
+                else:
+                    print "returning bestFit theory:", theoryJunc
+                    return theoryMedialLongPaths[0], vertices
+            
             else:
                 print "not returning bestFit"
 
+        print "returning longest fit"
                 
 
         " find the longest path from each leaf"
@@ -3332,7 +3551,7 @@ class Paths:
         
         return orderedPaths
 
-    def getPathDeparture(self, path1, path2, pathID1, pathID2, termPathIDs1 = [], termPathIDs2 = []):
+    def getPathDeparture(self, path1, path2, pathID1, pathID2, termPathIDs1 = [], termPathIDs2 = [], plotIter = False):
         
         isExist1 = False
         isInterior1 = False
@@ -3553,7 +3772,7 @@ class Paths:
             pylab.title("%1.2f %1.2f %d %d %d" % ( maxFront, maxBack, len(pathPoints1), max1, max2))
             pylab.savefig("distances_%04u.png" % self.pathPlotCount)
 
-        if False:
+        if plotIter:
             pylab.clf()
             xP = []
             yP = []
@@ -3899,17 +4118,79 @@ class Paths:
         poseOrigin = Pose(estPose2)
         
         medialSpline2 = SplineFit(medial2, smooth=0.1)
-        points2 = medialSpline2.getUniformSamples()
+        points2 = medialSpline2.getUniformSamples(interpAngle=True)
 
-        pathSpline = SplineFit(currPath, smooth=0.1)
-        pathPoints = pathSpline.getUniformSamples()
-
-        
         points2_offset = []
         for p in points2:
             result = poseOrigin.convertLocalOffsetToGlobal(p)
             points2_offset.append(result)
 
+
+        globalMedialSpline = SplineFit(points2_offset, smooth=0.1)
+        globalMedialPoints = globalMedialSpline.getUniformSamples()
+
+
+
+        pathSpline = SplineFit(currPath, smooth=0.1)
+        pathPoints = pathSpline.getUniformSamples()
+
+        currPathReverse = deepcopy(currPath)
+        currPathReverse.reverse()
+        pathSplineReverse = SplineFit(currPathReverse, smooth=0.1)
+        pathPointsReverse = pathSplineReverse.getUniformSamples()
+
+        overlapMatch = []
+        angleSum1 = 0.0
+        angleSum2 = 0.0
+        for i in range(0,len(points2_offset)):
+            p_1 = points2_offset[i]
+            p_2, j, minDist = gen_icp.findClosestPointInA(pathPoints, p_1)
+            if minDist < 0.5:
+                overlapMatch.append((i,j,minDist))
+
+                pathU1 = globalMedialSpline.findU(p_1)    
+                pathU2 = pathSpline.findU(p_2)    
+                pathU2_R = pathSplineReverse.findU(p_2)    
+
+                pathVec1 = globalMedialSpline.getUVector(pathU1)
+                pathVec2 = pathSpline.getUVector(pathU2)
+                pathVec2_R = pathSplineReverse.getUVector(pathU2_R)
+
+                val1 = pathVec1[0]*pathVec2[0] + pathVec1[1]*pathVec2[1]
+                if val1 > 1.0:
+                    val1 = 1.0
+                elif val1 < -1.0:
+                    val1 = -1.0
+                ang1 = acos(val1)
+                
+                val2 = pathVec1[0]*pathVec2_R[0] + pathVec1[1]*pathVec2_R[1]
+                if val2 > 1.0:
+                    val2 = 1.0
+                elif val2 < -1.0:
+                    val2 = -1.0
+                ang2 = acos(val2)
+
+                angleSum1 += ang1
+                angleSum2 += ang2
+
+        
+        " select global path orientation based on which has the smallest angle between tangent vectors "
+        print "getDeparturePoint:", i, "angleSum1 =", angleSum1, "angleSum2 =", angleSum2
+        if angleSum1 > angleSum2:
+            pathPoints = pathPointsReverse
+            pathSpline = pathSplineReverse
+                    
+
+
+        
+        
+        
+        
+        
+        
+        
+        
+  
 
         " tip angles "
         angSum1 = 0.0
@@ -3936,7 +4217,7 @@ class Paths:
         print "ang1:", angle1, angs1
         print "ang2:", angle2, angs2
         print "diff:", diffAngle(angle1, angle2)
-
+        
         distSum = 0.0
         contigCount = 0
         maxContig = 0
@@ -3977,6 +4258,32 @@ class Paths:
         frontDepI = currI
         frontPoint = [frontDepI, distances[frontDepI]]
 
+
+        frontAngleRefI = frontDepI
+        while distances[frontAngleRefI] < 0.1:
+            frontAngleRefI -= 1
+            
+            if frontAngleRefI < 0:
+                frontAngleRefI = 0
+                break
+                        
+        forePathIndex = indices[frontAngleRefI]
+        forePathAngle = pathPoints[forePathIndex][2]
+        forePathAngle = normalizeAngle(forePathAngle + pi)
+
+        foreDiffAngle = diffAngle(angle1, forePathAngle)
+        
+        newFrontDepI = 4
+        while fabs(diffAngle(normalizeAngle(points2_offset[newFrontDepI][2]+pi), forePathAngle)) > pi/6.0:
+            
+            if newFrontDepI < frontDepI:
+                newFrontDepI += 1
+            else:
+                break        
+        
+        print "front:", nodeID, frontDepI, distances[frontDepI], frontAngleRefI, forePathIndex, forePathAngle, angle1, foreDiffAngle, newFrontDepI, diffAngle(normalizeAngle(points2_offset[newFrontDepI][2]+pi), forePathAngle) 
+        
+
         " FIXME:  index out of bounds case "
         currI = 2
         try:
@@ -3988,6 +4295,42 @@ class Paths:
 
         backDepI = len(distances) - currI
         backPoint = [backDepI, distances[backDepI]]
+
+        backAngleRefI = backDepI
+        while distances[backAngleRefI] < 0.1:
+            backAngleRefI += 1
+            
+            if backAngleRefI >= len(distances):
+                backAngleRefI = len(distances)-1
+                break
+        
+        backPathIndex = indices[backAngleRefI]
+        backPathAngle = pathPoints[backPathIndex][2]
+        
+        backDiffAngle = diffAngle(angle2, backPathAngle)
+        
+        newBackDepI = len(distances)-5
+        while fabs(diffAngle(points2_offset[newBackDepI][2], backPathAngle)) > pi/6.0:
+            
+            if newBackDepI > backDepI:
+                newBackDepI -= 1
+            else:
+                break        
+
+        print "back:", nodeID, backDepI, distances[backDepI], backAngleRefI, backPathIndex, backPathAngle, angle2, backDiffAngle, newBackDepI, diffAngle(points2_offset[newBackDepI][2], backPathAngle) 
+
+
+        foreAngDiffs = []
+        #for i in range(0,frontDepI+1):
+        for i in range(0,len(points2_offset)):
+            foreAngDiffs.append(fabs(diffAngle(normalizeAngle(points2_offset[i][2] + pi), forePathAngle)))
+
+        backAngDiffs = []
+        #for i in range(backDepI,len(points2_offset)):
+        for i in range(0,len(points2_offset)):
+            backAngDiffs.append(fabs(diffAngle(points2_offset[i][2], backPathAngle)))
+
+
 
         "reset to the maximum distances "
         maxFront = distances[0]
@@ -4063,6 +4406,9 @@ class Paths:
 
         if maxFront > DEP_THRESH:
             departurePoint1 = pathPoints[max1]
+            
+            departurePoint1 = points2_offset[newFrontDepI]
+            
             isExist1 = True
 
             if max1 == 0 or max1 == len(pathPoints)-1:
@@ -4072,6 +4418,9 @@ class Paths:
 
         if maxBack > DEP_THRESH:
             departurePoint2 = pathPoints[max2]
+
+            departurePoint2 = points2_offset[newBackDepI]
+
             isExist2 = True
             
             if max2 == 0 or max2 == len(pathPoints)-1:
@@ -4116,6 +4465,12 @@ class Paths:
             yP = distances
             pylab.plot(xP,yP, color ='b')
             
+            yP = foreAngDiffs
+            pylab.plot(xP,yP, color ='r')
+
+            yP = backAngDiffs
+            pylab.plot(xP,yP, color ='g')
+            
             if maxFront > 0.5:
                 xP = [frontPoint[0]]
                 yP = [frontPoint[1]]
@@ -4149,6 +4504,18 @@ class Paths:
                 xP = [tipMatch1[0]]
                 yP = [tipMatch1[1]]
                 pylab.scatter(xP,yP, color='r')        
+
+                xP = [points2_offset[frontDepI][0]]
+                yP = [points2_offset[frontDepI][1]]
+                pylab.scatter(xP,yP, color='g')        
+
+                xP = [pathPoints[forePathIndex][0]]
+                yP = [pathPoints[forePathIndex][1]]
+                pylab.scatter(xP,yP, color='y')        
+
+                xP = [points2_offset[newFrontDepI][0]]
+                yP = [points2_offset[newFrontDepI][1]]
+                pylab.scatter(xP,yP, color='m')        
     
     
             if True:
@@ -4159,7 +4526,19 @@ class Paths:
                 xP = [tipMatch2[0]]
                 yP = [tipMatch2[1]]
                 pylab.scatter(xP,yP, color='r')        
-    
+
+                xP = [points2_offset[backDepI][0]]
+                yP = [points2_offset[backDepI][1]]
+                pylab.scatter(xP,yP, color='g')        
+
+                xP = [pathPoints[backPathIndex][0]]
+                yP = [pathPoints[backPathIndex][1]]
+                pylab.scatter(xP,yP, color='y')        
+
+                xP = [points2_offset[newBackDepI][0]]
+                yP = [points2_offset[newBackDepI][1]]
+                pylab.scatter(xP,yP, color='m')        
+
     
             xP = []
             yP = []
@@ -4551,9 +4930,9 @@ class Paths:
         return len(support_pairs)
 
 
-    def getPathOverlapCondition(self, path1, path2, pathID1, pathID2):
+    def getPathOverlapCondition(self, path1, path2, pathID1, pathID2, plotIter = False):
 
-        plotIter = True
+        #plotIter = True
 
         if len(path1) == 0:
             return 1e100

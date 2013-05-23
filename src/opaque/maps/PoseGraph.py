@@ -801,6 +801,9 @@ class PoseGraph:
 				nodeID1 = foreNode.nodeID
 				nodeID2 = backNode.nodeID
 
+			#self.updateLastNode(nodeID1)
+			#self.updateLastNode(nodeID2)
+
 			
 			" if these nodes are already path-classified, return"
 			isContained1 = False
@@ -879,7 +882,7 @@ class PoseGraph:
 				
 				" COMPUTE DEPARTURE EVENTS FOR EACH OVERLAPPING PATH SECTION "
 				for pathID in orderedPathIDs1:
-					departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = self.paths.getDeparturePoint(self.trimmedPaths[pathID], nodeID1)
+					departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = self.paths.getDeparturePoint(self.trimmedPaths[pathID], nodeID1, plotIter = True)
 					departures1.append([isExist1,isExist2])
 					interiors1.append([isInterior1, isInterior2])
 					depPoints1.append([departurePoint1, departurePoint2])
@@ -888,7 +891,7 @@ class PoseGraph:
 					contig1.append((contigFrac, overlapSum))
 				
 				for pathID in orderedPathIDs2:
-					departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = self.paths.getDeparturePoint(self.trimmedPaths[pathID], nodeID2)
+					departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = self.paths.getDeparturePoint(self.trimmedPaths[pathID], nodeID2, plotIter = True)
 					departures2.append([isExist1,isExist2])
 					interiors2.append([isInterior1, isInterior2])
 					depPoints2.append([departurePoint1, departurePoint2])
@@ -1049,7 +1052,7 @@ class PoseGraph:
 					
 					" now compute whether there are departure points after we have guessed a better position in synch with the paths "
 					for pathID in orderedPathIDs1:
-						departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = self.paths.getDeparturePoint(self.trimmedPaths[pathID], nodeID1)
+						departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = self.paths.getDeparturePoint(self.trimmedPaths[pathID], nodeID1, plotIter = True)
 						departures1.append([isExist1,isExist2])
 						interiors1.append([isInterior1, isInterior2])
 						depPoints1.append([departurePoint1, departurePoint2])
@@ -1058,7 +1061,7 @@ class PoseGraph:
 						contig1.append((contigFrac, overlapSum))
 					
 					for pathID in orderedPathIDs2:
-						departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = self.paths.getDeparturePoint(self.trimmedPaths[pathID], nodeID2)
+						departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = self.paths.getDeparturePoint(self.trimmedPaths[pathID], nodeID2, plotIter = True)
 						departures2.append([isExist1,isExist2])
 						interiors2.append([isInterior1, isInterior2])
 						depPoints2.append([departurePoint1, departurePoint2])
@@ -2130,7 +2133,7 @@ class PoseGraph:
 	
 				self.updateLastNode(nodeID1+2)
 				self.updateLastNode(nodeID2+2)
-				
+			
 			self.paths.generatePaths()
 			self.drawPathAndHull()
 
@@ -7506,6 +7509,9 @@ class PoseGraph:
 		print "pathAndHull:", self.pathDrawCount
 		printStack()
 
+		pylab.axis("equal")
+		#pylab.xlim(-10, 12)
+		#pylab.ylim(-10, 10)
 		pylab.title("paths: %s numNodes: %d %d" % (repr(self.paths.getPathIDs()), self.numNodes, highestNodeID))
 		pylab.savefig("pathAndHull_%04u.png" % self.pathDrawCount)
 
