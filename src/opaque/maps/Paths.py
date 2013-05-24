@@ -928,36 +928,57 @@ class Paths:
                         print "termPath2:", termPath2
 
                         startKey = termPath1[0]
-                        endKey = termPath1[-1]       
-                        midKey = termPath1[1]
+                        endKey = termPath1[-1] 
+                        if len(termPath1) > 2:      
+                            midKey = termPath1[1]
+                        else:
+                            midKey = None
     
                         shortestPathSpanTree, shortestDist = self.pathGraph.shortest_path(endKey)
                         currNode = shortestPathSpanTree[startKey]                    
                         path1 = []
                         midIndex = 0
                         while currNode != endKey:
+
+                            if currNode == midKey:
+                                midIndex = len(path1)
+
                             path1.append(self.pathGraph.get_node_attributes(currNode))
                             currNode = shortestPathSpanTree[currNode]
                             
-                            if currNode == midKey:
-                                midIndex = len(path1)
                             
                         path1.append(self.pathGraph.get_node_attributes(currNode))
                         
-                        if midIndex > 50:
-                            path1 = path1[midIndex:]
+                        print "path1:", len(path1), midIndex, midKey
+                        
+                        if midIndex > 150:
+                            path1 = path1[midIndex-150:]
 
                         startKey = termPath2[0]
                         endKey = termPath2[-1]
-
+                        if len(termPath2) > 2:      
+                            midKey = termPath2[1]
+                        else:
+                            midKey = None
+                            
                         shortestPathSpanTree, shortestDist = self.pathGraph.shortest_path(endKey)
                         currNode = shortestPathSpanTree[startKey]                    
                         path2 = []
+                        midIndex = 0
                         while currNode != endKey:
+                            
+                            if currNode == midKey:
+                                midIndex = len(path2)
+                                                            
                             path2.append(self.pathGraph.get_node_attributes(currNode))
                             currNode = shortestPathSpanTree[currNode]
 
                         path2.append(self.pathGraph.get_node_attributes(currNode))
+
+                        print "path2:", len(path2), midIndex, midKey
+
+                        if midIndex > 150:
+                            path2 = path2[midIndex-150:]
                             
                         pathPairs.append((path1,path2,pathID1,pathID2))
 
@@ -980,34 +1001,53 @@ class Paths:
 
                         startKey = termPath1[0]
                         endKey = termPath1[-1]
+                        if len(termPath1) > 2:      
+                            midKey = termPath1[1]
+                        else:
+                            midKey = None
     
                         shortestPathSpanTree, shortestDist = self.pathGraph.shortest_path(endKey)
                         currNode = shortestPathSpanTree[startKey]                    
                         path1 = []
+                        midIndex = 0
+                        
                         while currNode != endKey:
+                            if currNode == midKey:
+                                midIndex = len(path1)
+
                             path1.append(self.pathGraph.get_node_attributes(currNode))
                             currNode = shortestPathSpanTree[currNode]
                         path1.append(self.pathGraph.get_node_attributes(currNode))
 
+                        print "path1:", len(path1), midIndex, midKey
+
+                        if midIndex > 150:
+                            path1 = path1[midIndex-150:]
+                            
                         startKey = termPath2[0]
                         endKey = termPath2[-1]
-                        midKey = termPath2[1]
+                        if len(termPath2) > 2:      
+                            midKey = termPath2[1]
+                        else:
+                            midKey = None
     
                         shortestPathSpanTree, shortestDist = self.pathGraph.shortest_path(endKey)
                         currNode = shortestPathSpanTree[startKey]                    
                         path2 = []
                         midIndex = 0
                         while currNode != endKey:
-                            path2.append(self.pathGraph.get_node_attributes(currNode))
-                            currNode = shortestPathSpanTree[currNode]
-                            
                             if currNode == midKey:
                                 midIndex = len(path2)
-                                                            
+                                
+                            path2.append(self.pathGraph.get_node_attributes(currNode))
+                            currNode = shortestPathSpanTree[currNode]
+                                                                                        
                         path2.append(self.pathGraph.get_node_attributes(currNode))
 
-                        if midIndex > 50:
-                            path2 = path2[midIndex:]
+                        print "path2:", len(path2), midIndex, midKey
+
+                        if midIndex > 150:
+                            path2 = path2[midIndex-150:]
                             
                         pathPairs.append((path1,path2,pathID1,pathID2))
 
@@ -1269,11 +1309,15 @@ class Paths:
         #TERM_DIST = 0
         TERM_DIST = 20
         
-        for i in range(TERM_DIST, len(globalSamples2)-TERM_DIST):
+        TERM_DIST1 = len(globalSamples1)/4
+        TERM_DIST2 = len(globalSamples2)/4
+        
+        
+        for i in range(TERM_DIST2, len(globalSamples2)-TERM_DIST2):
             pG = globalSamples2[i]
             minDist = 1e100
             minJ = -1
-            for j in range(TERM_DIST, len(globalSamples1)-TERM_DIST):
+            for j in range(TERM_DIST1, len(globalSamples1)-TERM_DIST1):
                 pM = globalSamples1[j]
                 dist = math.sqrt((pG[0]-pM[0])**2 + (pG[1]-pM[1])**2)
                 
@@ -1285,11 +1329,11 @@ class Paths:
             if True:
                 closestPairs.append((i,minJ,minDist,globalVar[i][0],medialVar[minJ][0],globalVar[i][1],medialVar[minJ][1]))
 
-        for j in range(TERM_DIST, len(globalSamples1)-TERM_DIST):
+        for j in range(TERM_DIST1, len(globalSamples1)-TERM_DIST1):
             pM = globalSamples1[j]
             minDist = 1e100
             minI = -1
-            for i in range(TERM_DIST, len(globalSamples2)-TERM_DIST):
+            for i in range(TERM_DIST2, len(globalSamples2)-TERM_DIST2):
                 pG = globalSamples2[i]
                 dist = math.sqrt((pG[0]-pM[0])**2 + (pG[1]-pM[1])**2)
                 
@@ -1310,11 +1354,11 @@ class Paths:
         #s = sorted(student_objects, key=attrgetter('age'))     # sort on secondary key
         #sorted(s, key=attrgetter('grade'), reverse=True)  
         #closestPairs.sort()
-
+        
         #print len(closestPairs), "closest pairs"
         #for val in closestPairs:
         #    print val
-
+        
         if len(closestPairs) > 0:
             originU2 = globalSpline1.findU(globalSamples1[closestPairs[0][1]])    
             originU1 = orientedGlobalSpline2.findU(globalSamples2[closestPairs[0][0]])

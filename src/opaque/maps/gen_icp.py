@@ -7320,6 +7320,8 @@ def pathOverlapICP(initGuess, globalPath, medialPoints,plotIter = False, n1 = 0,
     currU = u2
     currAng = initGuess[2]
     
+    startU2 = u2
+    
     globalSpline = SplineFit(globalPath, smooth=0.1)
     medialSpline = SplineFit(medialPoints, smooth=0.1)
     
@@ -7385,6 +7387,8 @@ def pathOverlapICP(initGuess, globalPath, medialPoints,plotIter = False, n1 = 0,
     
     
     while True:
+        
+        
         
         " find the matching pairs "
         match_pairs = []
@@ -7619,6 +7623,26 @@ def pathOverlapICP(initGuess, globalPath, medialPoints,plotIter = False, n1 = 0,
         #    pose2 = medialSpline.getUVecSet([0.0, 0.02])[0]
         #else:
         #    pose2 = medialSpline.getUVecSet([currU, currU + 0.02])[0]
+
+        """
+        startU2
+
+        if u1 >= 1.0:
+            pose1 = poses_1[-1]
+        elif u1 < 0.0:
+            pose1 = poses_1[0]
+        else:
+            pose1 = poses_1[int(u1*100)]
+    
+        if currU >= 1.0:
+            pose2 = poses_2[-1]
+        elif currU < 0.0:
+            pose2 = poses_2[0]
+        else:
+            pose2 = poses_2[int(startU*100)]
+        """
+        
+
             
         if currU >= 1.0:
             pose2 = poses_2[-1]
