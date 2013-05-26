@@ -2273,6 +2273,9 @@ class PoseGraph:
 					" control point nearest the GPAC origin "
 					globalPoint1 = self.nodeHash[nodeID].getGlobalGPACPose()[:2]					
 					print "adjusting pose", nodeID, "from", self.nodeHash[nodeID].getGlobalGPACPose()
+					
+					" if siblings, include mutual parent in splice"
+					#if 
 					splicedPaths1 = self.paths.splicePathIDs([rootID])
 
 					self.fitToSplices(nodeID, splicedPaths1, globalPoint1, globalPoint1)

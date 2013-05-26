@@ -827,7 +827,6 @@ class Paths:
 
             print pathID1, pathID2, parentID1, parentID2
             
-
             if grandParentID1 == pathID2 and parentID1 != None:
                 
                 if parentID2 != None:
@@ -1152,10 +1151,10 @@ class Paths:
                             cost = self.getPathOverlapCondition(path0, path1_offset, pathID1, pathID2, plotIter = True)                
                             #cost = self.getPathOverlapCondition(path2_offset, self.trimmedPaths[pathID1])
                             print "getPathOverlapCondition() =", cost
-    
+                            
                             if cost < 1e10:
                                 print pathID1, "and", pathID2, "are similar!"
-                                toBeMerged.append((pathID1, pathID2,resultPose0))
+                                toBeMerged.append((pathID1, pathID2, resultPose0 ))
                                 if pathID1 < pathID2:
                                     self.consistency[(pathID1,pathID2)] = 1.0
                                 else:
