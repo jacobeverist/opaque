@@ -72,6 +72,10 @@ class SimpleScenesFrameListener ( sf.FrameListener ):
 		# slow the window navigation to a reasonable speed
 		self.moveSpeed = 6.0
 
+
+		self.renderCount = 0
+
+
 	def __del__(self):
 		sf.FrameListener.__del__(self)
 
@@ -89,7 +93,11 @@ class SimpleScenesFrameListener ( sf.FrameListener ):
 		
 		self.adjustCamera()
 
-		self.rWindow.update()
+		if self.renderCount >= 200:
+			self.rWindow.update()
+			self.renderCount = 0
+		else:
+			self.renderCount += 1
 		
 		return result
 
