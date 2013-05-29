@@ -24,6 +24,8 @@ import cProfile
 import time
 import traceback
 
+from Splices import batchGlobalMultiFit
+
 import pylab
 #import Image
 
@@ -268,6 +270,9 @@ def computeHullAxis(nodeID, node2, tailCutOff = False):
 			medial2 = medial2[k:]
 			
 	return hull2, medial2
+
+
+
 
 def printStack():
 
@@ -2207,6 +2212,7 @@ class PoseGraph:
 			pathID1 = mergeThis[0]
 			pathID2 = mergeThis[1]
 			offset = mergeThis[2]
+			pathSplices = mergeThis[3]
 
 			" verify that this path still exists before we try to merge it "
 			allPathIDs = self.paths.getPathIDs()
@@ -2276,9 +2282,11 @@ class PoseGraph:
 					
 					" if siblings, include mutual parent in splice"
 					#if 
-					splicedPaths1 = self.paths.splicePathIDs([rootID])
 
-					self.fitToSplices(nodeID, splicedPaths1, globalPoint1, globalPoint1)
+					#splicedPaths1 = self.paths.splicePathIDs([rootID])
+					#self.fitToSplices(nodeID, splicedPaths1, globalPoint1, globalPoint1)
+					self.fitToSplices(nodeID, pathSplices, globalPoint1, globalPoint1)
+
 					
 					
 					self.paths.addNode(nodeID, rootID)
@@ -3562,7 +3570,8 @@ class PoseGraph:
 			self.findPathLocation(nodeID1, path1)
 		if contigFrac2 < 0.98:
 			self.findPathLocation(nodeID2, path2)
-		
+
+		self.findPathLocation2(nodeID1, path1)		
 
 
 	def findPathLocation(self, nodeID, path):
@@ -3892,6 +3901,283 @@ class PoseGraph:
 		else:
 			print "node", nodeID, "departs BOTH SIDES, not changing anything!"
 			return
+
+	def findPathLocation2(self, nodeID, path):
+
+
+		print "findPathLocation2(", nodeID
+		
+		node1 = self.nodeHash[nodeID]
+		hull1, medial1 = computeHullAxis(nodeID, node1, tailCutOff = False)
+		medialSpline1 = SplineFit(medial1, smooth=0.1)
+
+		estPose1 = node1.getGlobalGPACPose()		
+		poseOrigin = Pose(estPose1)
+		
+		globalMedial = []
+		for p in medial1:
+			globalMedial.append(poseOrigin.convertLocalToGlobal(p))
+
+		globalMedialSpline1 = SplineFit(globalMedial, smooth=0.1)
+					
+		originU1 = medialSpline1.findU([0.0,0.0])	
+
+
+
+		pathSpline = SplineFit(path, smooth=0.1)
+		pathU1 = pathSpline.findU(estPose1[:2])
+		pathForeU = pathSpline.getUOfDist(originU1, 1.0, distIter = 0.001)
+		pathBackU = pathSpline.getUOfDist(originU1, -1.0, distIter = 0.001)
+		
+		
+		" orient the path correctly with the orientation of the node medial axis "
+
+		pathReverse = deepcopy(path)
+		pathReverse.reverse()
+		pathSplineReverse = SplineFit(pathReverse, smooth=0.1)
+
+		" FIXME: switches between global and local coordinates for medial axis incorrectly "
+
+		overlapMatch = []
+		angleSum1 = 0.0
+		angleSum2 = 0.0
+		for i in range(0,len(globalMedial)):
+			p_1 = globalMedial[i]
+			p_2, j, minDist = gen_icp.findClosestPointInA(path, p_1)
+			if minDist < 0.5:
+				overlapMatch.append((i,j,minDist))
+
+				pathU1 = globalMedialSpline1.findU(p_1)	
+				pathU2 = pathSpline.findU(p_2)	
+				pathU2_R = pathSplineReverse.findU(p_2)	
+
+				pathVec1 = globalMedialSpline1.getUVector(pathU1)
+				pathVec2 = pathSpline.getUVector(pathU2)
+				pathVec2_R = pathSplineReverse.getUVector(pathU2_R)
+
+				val1 = pathVec1[0]*pathVec2[0] + pathVec1[1]*pathVec2[1]
+				if val1 > 1.0:
+					val1 = 1.0
+				elif val1 < -1.0:
+					val1 = -1.0
+				ang1 = acos(val1)
+				
+				val2 = pathVec1[0]*pathVec2_R[0] + pathVec1[1]*pathVec2_R[1]
+				if val2 > 1.0:
+					val2 = 1.0
+				elif val2 < -1.0:
+					val2 = -1.0
+				ang2 = acos(val2)
+				
+				angleSum1 += ang1
+				angleSum2 += ang2
+		
+		" select global path orientation based on which has the smallest angle between tangent vectors "
+		print i, "angleSum1 =", angleSum1, "angleSum2 =", angleSum2
+		if angleSum1 > angleSum2:
+			orientedPath = pathReverse
+		else:
+			orientedPath = path
+			
+		orientedPathSpline = SplineFit(orientedPath, smooth=0.1)
+
+		#medialSpline1 = SplineFit(medial1, smooth=0.1)
+
+
+		globalSamples = orientedPathSpline.getUniformSamples(spacing = 0.04)
+		medialSamples = medialSpline1.getUniformSamples(spacing = 0.04)
+		
+		globalMedialSamples = []
+		for p in medialSamples:
+			result = poseOrigin.convertLocalOffsetToGlobal(p)	
+			globalMedialSamples.append(result)
+		
+		
+		globalVar = []
+		medialVar = []
+		
+		" compute the local variance of the angle "
+		VAR_WIDTH = 40
+		for i in range(len(globalSamples)):
+			
+			lowK = i - VAR_WIDTH/2
+			if lowK < 0:
+				lowK = 0
+				
+			highK = i + VAR_WIDTH/2
+			if highK >= len(globalSamples):
+				highK = len(globalSamples)-1
+			
+			localSamp = []
+			for k in range(lowK, highK+1):
+				localSamp.append(globalSamples[k][2])
+			
+			sum = 0.0
+			for val in localSamp:
+				sum += val
+				
+			meanSamp = sum / float(len(localSamp))
+			
+
+			sum = 0
+			for k in range(len(localSamp)):
+				sum += (localSamp[k] - meanSamp)*(localSamp[k] - meanSamp)
+		
+			varSamp = sum / float(len(localSamp))
+			
+			globalVar.append((meanSamp, varSamp))		
+
+		for i in range(len(globalMedialSamples)):
+			
+			lowK = i - VAR_WIDTH/2
+			if lowK < 0:
+				lowK = 0
+				
+			highK = i + VAR_WIDTH/2
+			if highK >= len(globalMedialSamples):
+				highK = len(globalMedialSamples)-1
+			
+			localSamp = []
+			for k in range(lowK, highK+1):
+				localSamp.append(globalMedialSamples[k][2])
+			
+			sum = 0.0
+			for val in localSamp:
+				sum += val
+				
+			meanSamp = sum / float(len(localSamp))
+			
+
+			sum = 0
+			for k in range(len(localSamp)):
+				sum += (localSamp[k] - meanSamp)*(localSamp[k] - meanSamp)
+		
+			varSamp = sum / float(len(localSamp))
+			
+			medialVar.append((meanSamp, varSamp))		
+
+
+		" now lets find closest points and save their local variances "			
+		closestPairs = []
+		TERM_DIST = 20
+		
+		for i in range(TERM_DIST, len(globalSamples)-TERM_DIST):
+			pG = globalSamples[i]
+			minDist = 1e100
+			minJ = -1
+			for j in range(TERM_DIST, len(globalMedialSamples)-TERM_DIST):
+				pM = globalMedialSamples[j]
+				dist = math.sqrt((pG[0]-pM[0])**2 + (pG[1]-pM[1])**2)
+				
+				if dist < minDist:
+					minDist = dist
+					minJ = j
+					
+			if minDist < 0.1:
+				closestPairs.append((i,minJ,minDist,globalVar[i][0],medialVar[minJ][0],globalVar[i][1],medialVar[minJ][1]))
+
+		for j in range(TERM_DIST, len(globalMedialSamples)-TERM_DIST):
+			pM = globalMedialSamples[j]
+			minDist = 1e100
+			minI = -1
+			for i in range(TERM_DIST, len(globalSamples)-TERM_DIST):
+				pG = globalSamples[i]
+				dist = math.sqrt((pG[0]-pM[0])**2 + (pG[1]-pM[1])**2)
+				
+				if dist < minDist:
+					minDist = dist
+					minI = i
+					
+			if minDist < 0.1:
+				closestPairs.append((minI,j,minDist,globalVar[minI][0],medialVar[j][0],globalVar[minI][1],medialVar[j][1]))
+
+		" remove duplicates "
+		closestPairs = list(set(closestPairs))
+		
+		" sort by lowest angular variance"
+		closestPairs = sorted(closestPairs, key=itemgetter(5,6))
+		print len(closestPairs), "closest pairs"
+
+
+		if len(closestPairs) > 0:
+			originU2 = medialSpline1.findU(medialSamples[closestPairs[0][1]])	
+			pathU1 = orientedPathSpline.findU(globalSamples[closestPairs[0][0]])
+
+		else:
+		
+			originU2 = medialSpline1.findU([0.0,0.0])
+			pathU1 = orientedPathSpline.findU(estPose1[:2])
+		
+		
+
+
+
+		resultArgs = self.paths.getDeparturePoint(orientedPath, nodeID, plotIter = True)
+		"""
+		departurePoint1 = resultArgs[0]
+		depAngle1 = resultArgs[1]
+		isInterior1 = resultArgs[2]
+		isExist1 = resultArgs[3]
+		discDist1 = resultArgs[4]
+		departurePoint2 = resultArgs[5]
+		depAngle2 = resultArgs[6]
+		isInterior2 = resultArgs[7]
+		isExist2 = resultArgs[8]
+		discDist2 = resultArgs[9]
+		contigFrac = resultArgs[10]
+		overlapSum = resultArgs[11]
+		"""
+		
+		isExist1 = resultArgs[3]
+		isExist2 = resultArgs[8]
+
+		originForeU = globalMedialSpline1.getUOfDist(originU1, -0.2, distIter = 0.001)
+		originBackU = globalMedialSpline1.getUOfDist(originU1, 0.2, distIter = 0.001)
+							
+		forePoint = globalMedialSpline1.getU(originForeU)
+		backPoint = globalMedialSpline1.getU(originBackU)
+
+		pathForeU = orientedPathSpline.findU(forePoint)
+		pathBackU = orientedPathSpline.findU(backPoint)
+		
+		if pathForeU > pathBackU:
+			deltaForeU = 0.02
+			deltaBackU = -0.02
+		else:
+			deltaForeU = -0.02
+			deltaBackU = 0.02
+				
+				
+		#if isExist1 or isExist2:
+		
+		if True:
+
+			time1 = time.time()
+	
+			" while loop "		
+
+						
+			initGuesses = []
+			
+			
+			for k in range(20):
+				pathUGuess = k*0.05
+				initGuesses.append([pathUGuess, originU2, 0.0])
+
+			results = batchGlobalMultiFit(initGuesses, orientedPath, medial1, estPose1, -1, nodeID)
+
+			time2 = time.time()
+			print "time:", time2 - time1
+				
+
+
+			print "results:"
+			for result in results:
+				print result
+		
+			raise
+
+
 
 
 	def fitToSplices(self, nodeID, splicedPaths1, globalPoint1, globalPoint2):

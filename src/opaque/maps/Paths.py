@@ -143,6 +143,8 @@ def computeHullAxis(nodeID, node2, tailCutOff = False):
     return hull2, medial2
 
 
+
+
 class Paths:
     
     
@@ -821,6 +823,8 @@ class Paths:
             
             " Only consider case when two paths share the same parent "
             pathPairs = []
+            
+            rootPaths = []
 
             #if True:
             #if pathID1 == 0 and pathID2 == 3 or pathID1 == 3 and pathID2 == 0:
@@ -837,23 +841,26 @@ class Paths:
                     sPaths2 = allSplices[(pathID2, pathID2)]
 
                 for sPath1 in sPaths1:
+                    termPath1 = sPath1['termPath']
+                    print "termPath1:", termPath1
+                    startKey = termPath1[0]
+                    endKey = termPath1[-1]
+
+                    shortestPathSpanTree, shortestDist = self.pathGraph.shortest_path(endKey)
+                    currNode = shortestPathSpanTree[startKey]                    
+                    path1 = []
+                    while currNode != endKey:
+                        path1.append(self.pathGraph.get_node_attributes(currNode))
+                        currNode = shortestPathSpanTree[currNode]
+                    path1.append(self.pathGraph.get_node_attributes(currNode))
+
+                    rootPaths.append(path1)
+
                     for sPath2 in sPaths2:
-                        termPath1 = sPath1['termPath']
                         termPath2 = sPath2['termPath']
                         
-                        print "termPath1:", termPath1
                         print "termPath2:", termPath2
 
-                        startKey = termPath1[0]
-                        endKey = termPath1[-1]
-    
-                        shortestPathSpanTree, shortestDist = self.pathGraph.shortest_path(endKey)
-                        currNode = shortestPathSpanTree[startKey]                    
-                        path1 = []
-                        while currNode != endKey:
-                            path1.append(self.pathGraph.get_node_attributes(currNode))
-                            currNode = shortestPathSpanTree[currNode]
-                        path1.append(self.pathGraph.get_node_attributes(currNode))
 
                         startKey = termPath2[0]
                         endKey = termPath2[-1]
@@ -878,23 +885,26 @@ class Paths:
                     sPaths2 = allSplices[(pathID1, pathID2)]
 
                 for sPath1 in sPaths1:
+                    termPath1 = sPath1['termPath']
+                    print "termPath1:", termPath1
+                    startKey = termPath1[0]
+                    endKey = termPath1[-1]
+
+                    shortestPathSpanTree, shortestDist = self.pathGraph.shortest_path(endKey)
+                    currNode = shortestPathSpanTree[startKey]                    
+                    path1 = []
+                    while currNode != endKey:
+                        path1.append(self.pathGraph.get_node_attributes(currNode))
+                        currNode = shortestPathSpanTree[currNode]
+                    path1.append(self.pathGraph.get_node_attributes(currNode))
+
+                    rootPaths.append(path1)
+                    
                     for sPath2 in sPaths2:
-                        termPath1 = sPath1['termPath']
                         termPath2 = sPath2['termPath']
                         
-                        print "termPath1:", termPath1
                         print "termPath2:", termPath2
 
-                        startKey = termPath1[0]
-                        endKey = termPath1[-1]
-    
-                        shortestPathSpanTree, shortestDist = self.pathGraph.shortest_path(endKey)
-                        currNode = shortestPathSpanTree[startKey]                    
-                        path1 = []
-                        while currNode != endKey:
-                            path1.append(self.pathGraph.get_node_attributes(currNode))
-                            currNode = shortestPathSpanTree[currNode]
-                        path1.append(self.pathGraph.get_node_attributes(currNode))
 
                         startKey = termPath2[0]
                         endKey = termPath2[-1]
@@ -919,39 +929,43 @@ class Paths:
                     sPaths2 = allSplices[(pathID2, pathID2)]
 
                 for sPath1 in sPaths1:
+                    termPath1 = sPath1['termPath']
+                    print "termPath1:", termPath1
+
+                    startKey = termPath1[0]
+                    endKey = termPath1[-1] 
+                    if len(termPath1) > 2:      
+                        midKey = termPath1[1]
+                    else:
+                        midKey = None
+
+                    shortestPathSpanTree, shortestDist = self.pathGraph.shortest_path(endKey)
+                    currNode = shortestPathSpanTree[startKey]                    
+                    path1 = []
+                    midIndex = 0
+                    while currNode != endKey:
+
+                        if currNode == midKey:
+                            midIndex = len(path1)
+
+                        path1.append(self.pathGraph.get_node_attributes(currNode))
+                        currNode = shortestPathSpanTree[currNode]
+                        
+                        
+                    path1.append(self.pathGraph.get_node_attributes(currNode))
+                    
+                    print "path1:", len(path1), midIndex, midKey
+                    
+                    if midIndex > 150:
+                        path1 = path1[midIndex-150:]
+
+                    rootPaths.append(path1)
+                    
                     for sPath2 in sPaths2:
-                        termPath1 = sPath1['termPath']
                         termPath2 = sPath2['termPath']
                         
-                        print "termPath1:", termPath1
                         print "termPath2:", termPath2
 
-                        startKey = termPath1[0]
-                        endKey = termPath1[-1] 
-                        if len(termPath1) > 2:      
-                            midKey = termPath1[1]
-                        else:
-                            midKey = None
-    
-                        shortestPathSpanTree, shortestDist = self.pathGraph.shortest_path(endKey)
-                        currNode = shortestPathSpanTree[startKey]                    
-                        path1 = []
-                        midIndex = 0
-                        while currNode != endKey:
-
-                            if currNode == midKey:
-                                midIndex = len(path1)
-
-                            path1.append(self.pathGraph.get_node_attributes(currNode))
-                            currNode = shortestPathSpanTree[currNode]
-                            
-                            
-                        path1.append(self.pathGraph.get_node_attributes(currNode))
-                        
-                        print "path1:", len(path1), midIndex, midKey
-                        
-                        if midIndex > 150:
-                            path1 = path1[midIndex-150:]
 
                         startKey = termPath2[0]
                         endKey = termPath2[-1]
@@ -991,37 +1005,42 @@ class Paths:
                     sPaths2 = allSplices[(pathID1, pathID2)]
 
                 for sPath1 in sPaths1:
+
+                    termPath1 = sPath1['termPath']
+                    print "termPath1:", termPath1
+
+                    startKey = termPath1[0]
+                    endKey = termPath1[-1]
+                    if len(termPath1) > 2:      
+                        midKey = termPath1[1]
+                    else:
+                        midKey = None
+
+                    shortestPathSpanTree, shortestDist = self.pathGraph.shortest_path(endKey)
+                    currNode = shortestPathSpanTree[startKey]                    
+                    path1 = []
+                    midIndex = 0
+                    
+                    while currNode != endKey:
+                        if currNode == midKey:
+                            midIndex = len(path1)
+
+                        path1.append(self.pathGraph.get_node_attributes(currNode))
+                        currNode = shortestPathSpanTree[currNode]
+                    path1.append(self.pathGraph.get_node_attributes(currNode))
+
+                    print "path1:", len(path1), midIndex, midKey
+
+                    if midIndex > 150:
+                        path1 = path1[midIndex-150:]
+                                        
+                    rootPaths.append(path1)            
+                    
                     for sPath2 in sPaths2:
-                        termPath1 = sPath1['termPath']
                         termPath2 = sPath2['termPath']
                         
-                        print "termPath1:", termPath1
                         print "termPath2:", termPath2
 
-                        startKey = termPath1[0]
-                        endKey = termPath1[-1]
-                        if len(termPath1) > 2:      
-                            midKey = termPath1[1]
-                        else:
-                            midKey = None
-    
-                        shortestPathSpanTree, shortestDist = self.pathGraph.shortest_path(endKey)
-                        currNode = shortestPathSpanTree[startKey]                    
-                        path1 = []
-                        midIndex = 0
-                        
-                        while currNode != endKey:
-                            if currNode == midKey:
-                                midIndex = len(path1)
-
-                            path1.append(self.pathGraph.get_node_attributes(currNode))
-                            currNode = shortestPathSpanTree[currNode]
-                        path1.append(self.pathGraph.get_node_attributes(currNode))
-
-                        print "path1:", len(path1), midIndex, midKey
-
-                        if midIndex > 150:
-                            path1 = path1[midIndex-150:]
                             
                         startKey = termPath2[0]
                         endKey = termPath2[-1]
@@ -1100,7 +1119,9 @@ class Paths:
                         currNode = shortestPathSpanTree[currNode]
                     path2.append(self.pathGraph.get_node_attributes(currNode))
 
-                    pathPairs.append((path1,path2,pathID1,pathID2))                        
+                    pathPairs.append((path1,path2,pathID1,pathID2))
+                    
+                    rootPaths.append(path1)            
             
             print
             
@@ -1154,7 +1175,7 @@ class Paths:
                             
                             if cost < 1e10:
                                 print pathID1, "and", pathID2, "are similar!"
-                                toBeMerged.append((pathID1, pathID2, resultPose0 ))
+                                toBeMerged.append((pathID1, pathID2, resultPose0, rootPaths))
                                 if pathID1 < pathID2:
                                     self.consistency[(pathID1,pathID2)] = 1.0
                                 else:

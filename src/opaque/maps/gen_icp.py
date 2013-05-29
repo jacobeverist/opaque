@@ -397,6 +397,7 @@ def batchGlobalICP(globalPath, medial, args):
     return knn
 
 
+
 def matchPairs2(points, points_offset, globalPoints, minMatchDist):
     
     def findClosestPointInA(a_trans, b):

@@ -93,11 +93,10 @@ class SimpleScenesFrameListener ( sf.FrameListener ):
 		
 		self.adjustCamera()
 
+		self.renderCount += 1
 		if self.renderCount >= 200:
 			self.rWindow.update()
 			self.renderCount = 0
-		else:
-			self.renderCount += 1
 		
 		return result
 
