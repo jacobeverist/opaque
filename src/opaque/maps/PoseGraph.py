@@ -2134,7 +2134,8 @@ class PoseGraph:
 				self.paths.generatePaths()
 				self.drawPathAndHull()
 	
-				self.updatePathNode(nodeID1, nodeID2, orderedPathIDs1, orderedPathIDs2)
+				#self.updatePathNode(nodeID1, nodeID2, orderedPathIDs1, orderedPathIDs2)
+				self.makeNodePathConsistent(nodeID1, nodeID2, orderedPathIDs1, orderedPathIDs2)
 	
 				self.updateLastNode(nodeID1+2)
 				self.updateLastNode(nodeID2+2)
@@ -3226,6 +3227,283 @@ class PoseGraph:
 
 			print "update position of node", nodeID, "from", origPose, "to", nodePose
 
+
+	def makeNodePathConsistent(self, nodeID1, nodeID2, orderedPathIDs1, orderedPathIDs2):
+
+		"""
+		GOALS:
+		
+		1) node medial axes should be 100% contiguously overlapping path
+		2) pair nodes should be approximately in the same location and orientation
+		
+		"""
+		
+		print "makePathNodeConsistent(", nodeID1, nodeID2, orderedPathIDs1, orderedPathIDs2, ")"
+
+
+		if nodeID1 > nodeID2:
+			print "nodes called out of order", nodeID1, nodeID2
+			raise
+
+	
+
+		" INPLACE CONSTRAINT BETWEEN PAIRED NODES "
+		resultEdges = self.getEdges(nodeID1, nodeID2)
+		resultEdges.sort(key=itemgetter(2), reverse=True)
+		edge = resultEdges[0]
+		
+		transform = edge[0]
+		offset = [transform[0,0],transform[1,0],transform[2,0]]
+		
+		nomAngDiff = offset[2]
+
+		origPose1 = self.nodeHash[nodeID1].getGlobalGPACPose()
+		origPose2 = self.nodeHash[nodeID2].getGlobalGPACPose()
+
+
+		#if edge[0] == nodeID1 and edge[1] == nodeID2:
+		if True:
+			offset12 = offset
+			offsetPose12 = Pose(offset12)
+						
+			offset21 = offsetPose12.convertGlobalPoseToLocal([0.0,0.0,0.0])
+			
+		#elif edge[0] == nodeID2 and edge[1] == nodeID1:
+		elif False:
+			offset21 = offset
+			offsetPose21 = Pose(offset21)
+						
+			offset12 = offsetPose21.convertGlobalPoseToLocal([0.0,0.0,0.0])
+
+		else:
+			print "using edge:", edge
+			print "all edges:"
+			print resultEdges
+			raise
+
+
+		print "update position of path node", nodeID1, nodeID2
+	
+		" control point nearest the GPAC origin "
+		globalPoint1 = self.nodeHash[nodeID1].getGlobalGPACPose()[:2]
+
+		print "adjusting pose", nodeID1, "from", origPose1
+
+		splicedPaths1 = self.paths.splicePathIDs(orderedPathIDs1)
+		print "received", len(splicedPaths1), "spliced paths from path IDs", orderedPathIDs1
+
+
+		totalGuesses1 = []
+		results1 = []
+		
+		for k in range(len(splicedPaths1)):
+
+			path = splicedPaths1[k]
+
+			"resultPose, lastCost, matchCount, departurePoint1, angle1, isInterior1, isExist1, dist1, departurePoint2, angle2, isInterior2, isExist2, dist2, contigFrac, overlapSum, angDiff"
+			results = self.findPathLocation2(orderedPathIDs1, nodeID1, path)
+			#for result in results:
+			#	result.append(k)
+			results1 += results
+
+
+		results1 = sorted(results1, key=itemgetter(15))
+		results1 = sorted(results1, key=itemgetter(13), reverse=True)		
+
+		for result in results1:
+			isExist1 = result[6]
+			isExist2 = result[11]
+			isInterior1 = result[5]
+			isInterior2 = result[10]
+			contigFrac = result[13]
+			guessPoseA = result[0]
+			angDiffA = result[15]
+			#k = result[16]
+			
+			print nodeID1, "splice", "X", "result =", isExist1, isExist2, isInterior1, isInterior2, contigFrac, angDiffA, guessPoseA
+			
+			if not isExist1 and not isInterior2 or not isInterior1 and not isExist2:										
+				costA = result[1]
+				totalGuesses1.append((angDiffA, costA, guessPoseA, result[3:], path, k))
+			
+		
+		#totalGuesses1.sort()
+		print "totalGuesses1:", totalGuesses1
+
+		angDiff1 = totalGuesses1[0][0]
+		guessPose1 = totalGuesses1[0][2]
+		resultArgs1 = totalGuesses1[0][3]
+		path1 = totalGuesses1[0][4]
+		
+		if len(splicedPaths1) > 1:
+			angDiffA = totalGuesses1[0][0]
+			angDiffB = totalGuesses1[1][0]
+			
+			print "angDiffs:", angDiffA, angDiffB
+			if fabs(angDiffA-angDiffB) < 0.1:
+				resultArgsA = totalGuesses1[0][3]
+				resultArgsB = totalGuesses1[1][3]
+				
+				"select the most contiguous overlap "
+				contigFracA = resultArgsA[10]
+				contigFracB = resultArgsB[10]
+				
+				print "contigFracs:", contigFracA, contigFracB
+				
+				if contigFracA < contigFracB:
+					guessPose1 = totalGuesses1[1][2]
+					angDiff1 = totalGuesses1[1][0]
+					resultArgs1 = totalGuesses1[1][3]
+					path1 = totalGuesses1[1][4]
+
+
+		globalPoint2 = self.nodeHash[nodeID2].getGlobalGPACPose()[:2]
+		
+		print "adjusting pose", nodeID2, "from", origPose2
+
+		splicedPaths2 = self.paths.splicePathIDs(orderedPathIDs2)
+		print "received", len(splicedPaths2), "spliced paths from path IDs", orderedPathIDs2
+
+
+
+		totalGuesses2 = []
+		results2 = []
+		
+		for k in range(len(splicedPaths2)):
+
+			path = splicedPaths2[k]
+
+			"resultPose, lastCost, matchCount, departurePoint1, angle1, isInterior1, isExist1, dist1, departurePoint2, angle2, isInterior2, isExist2, dist2, contigFrac, overlapSum, angDiff"
+			results = self.findPathLocation2(orderedPathIDs2, nodeID2, path)
+			#for result in results:
+			#	result.append(k)
+			results2 += results
+
+
+		results2 = sorted(results2, key=itemgetter(15))
+		results2 = sorted(results2, key=itemgetter(13), reverse=True)		
+
+		for result in results2:
+			isExist1 = result[6]
+			isExist2 = result[11]
+			isInterior1 = result[5]
+			isInterior2 = result[10]
+			contigFrac = result[13]
+			guessPoseA = result[0]
+			angDiffA = result[15]
+			#k = result[16]
+			
+			print nodeID2, "splice", "X", "result =", isExist1, isExist2, isInterior1, isInterior2, contigFrac, angDiffA, guessPoseA
+			
+			if not isExist1 and not isInterior2 or not isInterior1 and not isExist2:
+										
+				costA = result[1]
+				totalGuesses2.append((angDiffA, costA, guessPoseA, result[3:], path, k))
+
+
+		"""
+		totalGuesses2 = []
+		
+		for k in range(len(splicedPaths2)):
+
+			path = splicedPaths2[k]
+
+			"resultPose, lastCost, matchCount, departurePoint1, angle1, isInterior1, isExist1, dist1, departurePoint2, angle2, isInterior2, isExist2, dist2, contigFrac, overlapSum"
+			results = self.findPathLocation2(orderedPathIDs2, nodeID2, path)
+
+			for result in results:
+
+				isExist1 = result[6]
+				isExist2 = result[11]
+				isInterior1 = result[5]
+				isInterior2 = result[10]
+				contigFrac = result[13]
+				guessPoseA = result[0]
+				
+				print nodeID2, "splice", k, "result =", isExist1, isExist2, isInterior1, isInterior2, contigFrac, guessPoseA
+				
+				if not isExist1 and not isInterior2 or not isInterior1 and not isExist2:
+					
+					if contigFrac >= 0.98:
+											
+						angDiffA = abs(diffAngle(origPose2[2], guessPoseA[2]))
+						
+						costA = result[1]
+						totalGuesses2.append((angDiffA, costA, guessPoseA, result[3:], path, k))
+		"""
+		
+		#totalGuesses2.sort()
+		print "totalGuesses2:", totalGuesses2
+
+		angDiff2 = totalGuesses2[0][0]
+		guessPose2 = totalGuesses2[0][2]
+		resultArgs2 = totalGuesses2[0][3]
+		path2 = totalGuesses2[0][4]
+		
+		if len(splicedPaths2) > 1:
+			angDiffA = totalGuesses2[0][0]
+			angDiffB = totalGuesses2[1][0]
+			
+			print "angDiffs:", angDiffA, angDiffB
+			if fabs(angDiffA-angDiffB) < 0.1:
+				resultArgsA = totalGuesses2[0][3]
+				resultArgsB = totalGuesses2[1][3]
+				
+				"select the most contiguous overlap "
+				contigFracA = resultArgsA[10]
+				contigFracB = resultArgsB[10]
+				
+				print "contigFracs:", contigFracA, contigFracB
+				
+				if contigFracA < contigFracB:
+					guessPose2 = totalGuesses2[1][2]
+					angDiff2 = totalGuesses2[1][0]
+					resultArgs2 = totalGuesses2[1][3]
+					path2 = totalGuesses2[1][4]
+
+
+		originPose1 = Pose(origPose1)
+		originPose2 = Pose(origPose2)
+		
+		if angDiff1 < angDiff2:
+			
+			nodePose2 = originPose1.convertLocalOffsetToGlobal(offset12)	
+					
+			inPlaceDiff2 = abs(guessPose2[2]-nodePose2[2])
+			print "inPlaceDiff2 = |", guessPose2[2], "-", nodePose2[2], "| =", inPlaceDiff2
+			
+			if inPlaceDiff2 > pi/4.0:
+				self.nodeHash[nodeID2].setGPACPose(nodePose2)
+				print "set to pose", nodeID2, "to", nodePose2
+				
+			else:
+				self.nodeHash[nodeID2].setGPACPose(guessPose2)
+				print "set to pose", nodeID2, "to", guessPose2
+						
+
+			self.nodeHash[nodeID1].setGPACPose(guessPose1)
+			print "set to pose", nodeID1, "to", guessPose1
+
+		
+		else:
+			
+			nodePose1 = originPose2.convertLocalOffsetToGlobal(offset21)			
+
+			inPlaceDiff1 = abs(guessPose1[2]-nodePose1[2])
+			print "inPlaceDiff1 = |", guessPose1[2], "-", nodePose1[2], "| =", inPlaceDiff1
+			
+			if inPlaceDiff1 > pi/4.0:
+				self.nodeHash[nodeID1].setGPACPose(nodePose1)
+				print "set to pose", nodeID1, "to", nodePose1
+				
+			else:
+				self.nodeHash[nodeID1].setGPACPose(guessPose1)
+				print "set to pose", nodeID1, "to", guessPose1
+
+			self.nodeHash[nodeID2].setGPACPose(guessPose2)
+			print "set to pose", nodeID2, "to", guessPose2
+		
+
 	def updatePathNode(self, nodeID1, nodeID2, orderedPathIDs1, orderedPathIDs2):
 
 		"""
@@ -3902,7 +4180,7 @@ class PoseGraph:
 			print "node", nodeID, "departs BOTH SIDES, not changing anything!"
 			return
 
-	def findPathLocation2(self, nodeID, path):
+	def findPathLocation2(self, pathIDs, nodeID, path):
 
 
 		print "findPathLocation2(", nodeID
@@ -4164,18 +4442,18 @@ class PoseGraph:
 				pathUGuess = k*0.05
 				initGuesses.append([pathUGuess, originU2, 0.0])
 
-			results = batchGlobalMultiFit(initGuesses, orientedPath, medial1, estPose1, -1, nodeID)
+			results = batchGlobalMultiFit(initGuesses, orientedPath, medial1, estPose1, pathIDs, nodeID)
 
 			time2 = time.time()
 			print "time:", time2 - time1
 				
+			return results
 
-
-			print "results:"
-			for result in results:
-				print result
+			#print "results:"
+			#for result in results:
+			#	print result
 		
-			raise
+			#raise
 
 
 
