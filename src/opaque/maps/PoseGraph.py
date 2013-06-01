@@ -2133,9 +2133,10 @@ class PoseGraph:
 
 				self.paths.generatePaths()
 				self.drawPathAndHull()
+				self.drawTrimmedPaths(self.trimmedPaths)
 	
 				#self.updatePathNode(nodeID1, nodeID2, orderedPathIDs1, orderedPathIDs2)
-				self.makeNodePathConsistent(nodeID1, nodeID2, orderedPathIDs1, orderedPathIDs2)
+				#self.makeNodePathConsistent(nodeID1, nodeID2, orderedPathIDs1, orderedPathIDs2)
 	
 				self.updateLastNode(nodeID1+2)
 				self.updateLastNode(nodeID2+2)
