@@ -137,7 +137,7 @@ def batchGlobalMultiFit(initGuesses, globalPath, medial, initPose, pathIDs, node
 
 
 
-def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, nodeID, pathPlotCount, plotIter = False):
+def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, nodeID, pathPlotCount = 0, plotIter = False):
 	
 	isExist1 = False
 	isInterior1 = False

@@ -250,7 +250,7 @@ class SplineFit:
 			xd = point[0] + extraLen*cos(angle)
 			yd = point[1] + extraLen*sin(angle)
 			
-			return [xd,yd]
+			return [xd,yd,angle]
 			#raise
 
 		if dist == totalLen:
@@ -271,7 +271,7 @@ class SplineFit:
 			xd = point[0] + extraLen*cos(angle)
 			yd = point[1] + extraLen*sin(angle)
 			
-			return [xd,yd]
+			return [xd,yd,angle]
 			#raise
 
 		if dist == 0.0:

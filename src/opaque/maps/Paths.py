@@ -230,7 +230,7 @@ class Paths:
             print "computing path for node set", k, ":", self.getNodes(k)
             self.paths[k], self.hulls[k] = self.getTopology(k)
 
-        self.getUnionTopology()
+        #self.getUnionTopology()
 
         self.trimmedPaths = self.trimPaths(self.paths)
 
@@ -1136,7 +1136,7 @@ class Paths:
                     print "comparing paths", pathID2, pathID1
                     print pair[1][0], pair[0][0]
                     print pair[1][-1], pair[0][-1]
-                    resultPose0, lastCost0, matchCount0 = self.makePathCompare(pair[1], pair[0], pathID2, pathID1, plotIter = True)
+                    resultPose0, lastCost0, matchCount0 = self.makePathCompare(pair[1], pair[0], pathID2, pathID1, plotIter = False)
                     
                     if fabs(resultPose0[2]) < 0.5:
     
@@ -2339,7 +2339,7 @@ class Paths:
         for junc in allJunctions:
             juncDists.append(junc[2])
         
-        if False:
+        if True:
             pylab.clf()
     
             for path in medialLongPaths:
@@ -2447,7 +2447,7 @@ class Paths:
 
             if bestFit != -1:
                 
-                if fabs(minDiff) < 0.5:
+                if fabs(minDiff) < 1.047:
 
                     print "returning bestFit:", bestFit, minDiff
                     return medialLongPaths[bestFit], vertices
@@ -2713,7 +2713,7 @@ class Paths:
         #nodeID = self.numNodes - 1
             
         #radius = 0.2
-        radius = 0.01
+        radius = 0.05
 
         numPoints = len(medialPointSoup)
 
@@ -5065,7 +5065,7 @@ class Paths:
         " sum of closest points on front and back "
         " select the one with minimal cost "
         
-        if plotIter:
+        if False:
             pylab.clf()
             xP = range(len(points2_offset))
             yP = distances
