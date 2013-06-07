@@ -270,7 +270,10 @@ int runAlg(int index, int sizeX, int sizeY, int numPoints, int thickSize, double
 	// Release images' buffers...
 	cvReleaseImage(&image);
 	cvReleaseImage(&srcCopy);
-	
+
+	cvReleaseImage(&thick1);
+	cvReleaseImage(&thick2);
+
   return 0;
 }
 

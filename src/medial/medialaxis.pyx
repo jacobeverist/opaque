@@ -53,6 +53,8 @@ def computeMedialAxis(index, sizeX, sizeY, thickSize, resultImg, numPoints, poin
 
 	#free(cInputStr)
 	free(cResultStr)
+	free(cPolyX)
+	free(cPolyY)
 
 
 	return resultImg

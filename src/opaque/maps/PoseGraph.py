@@ -2626,9 +2626,9 @@ class PoseGraph:
 				estPose1 = self.nodeHash[nodeID1].getGlobalGPACPose()
 				estPose2 = self.nodeHash[nodeID2].getGlobalGPACPose()
 				self.currSplicePath = self.selectSplice(nodeID1, nodeID2, medial1, medial2, estPose1, estPose2, orderedPathIDs1, orderedPathIDs2)
-
+				
 				self.mergePriorityConstraints()
-
+				
 				self.paths.generatePaths()
 				self.drawPathAndHull()
 				self.drawTrimmedPaths(self.trimmedPaths)
@@ -2716,14 +2716,15 @@ class PoseGraph:
 
 				
 				" 3) step distance along the path in direction of travel "
-				distEst = 0.6			
+				#distEst = 0.6			
+				distEst = 1.0			
 				
 				if direction:
-					arcDist2 = arcDist0 + distEst
-					arcDist3 = arcDist1 + distEst
-				else:
 					arcDist2 = arcDist0 - distEst
 					arcDist3 = arcDist1 - distEst
+				else:
+					arcDist2 = arcDist0 + distEst
+					arcDist3 = arcDist1 + distEst
 				
 				print "arcDist0, arcDist1, arcDist2, arcDist3:", arcDist0, arcDist1, arcDist2, arcDist3
 				
@@ -2751,12 +2752,16 @@ class PoseGraph:
 					medialSpline2 = SplineFit(medial2, smooth=0.1)
 					uMedialOrigin2 = medialSpline2.findU([0.0,0.0])
 
+				#uPath2 = currPathSpline.findU(pose2[0:2])
+
 				try:	
 					uPath3, uMedialOrigin3 = self.selectCommonOrigin(orientedSplicePath, medial3, pose3)
 				except:
 					uPath3 = currPathSpline.findU(pose3[0:2])
 					medialSpline3 = SplineFit(medial3, smooth=0.1)
 					uMedialOrigin3 = medialSpline3.findU([0.0,0.0])
+
+				#uPath3 = currPathSpline.findU(pose3[0:2])
 				
 				u2 = uPath2
 				u3 = uPath3
@@ -2786,10 +2791,18 @@ class PoseGraph:
 				resultPose3, lastCost3, matchCount3 = gen_icp.globalPathToNodeOverlapICP2([u3, uMedialOrigin3, 0.0], orientedSplicePath, medial3, plotIter = True, n1 = nodeID, n2 = -1, arcLimit = 0.1)
 				#resultPose2, lastCost2, matchCount2 = gen_icp.globalPathToNodeOverlapICP([u2, uMedialOrigin2, 0.0], orientedSplicePath, medial2, plotIter = True, n1 = nodeID-1, n2 = -1, arcLimit = 0.1)
 				#resultPose3, lastCost3, matchCount3 = gen_icp.globalPathToNodeOverlapICP([u3, uMedialOrigin3, 0.0], orientedSplicePath, medial3, plotIter = True, n1 = nodeID, n2 = -1, arcLimit = 0.1)
-
 				
-				#resultPose2, lastCost2, matchCount2 = gen_icp.globalOverlapICP_GPU2([u2, uMedialOrigin2, 0.0], orientedSplicePath, medial2, plotIter = False, n1 = nodeID-1, n2 = -1, arcLimit = 0.1)
-				#resultPose3, lastCost3, matchCount3 = gen_icp.globalOverlapICP_GPU2([u3, uMedialOrigin3, 0.0], orientedSplicePath, medial3, plotIter = False, n1 = nodeID, n2 = -1, arcLimit = 0.1)
+				pathPose2 = resultPose2
+				pathPose3 = resultPose3
+				
+				#resultPose2, lastCost2, matchCount2 = gen_icp.globalOverlapICP_GPU2([u2, uMedialOrigin2, 0.0], orientedSplicePath, medial2, plotIter = True, n1 = nodeID-1, n2 = -1, arcLimit = 0.1)
+				#resultPose3, lastCost3, matchCount3 = gen_icp.globalOverlapICP_GPU2([u3, uMedialOrigin3, 0.0], orientedSplicePath, medial3, plotIter = True, n1 = nodeID, n2 = -1, arcLimit = 0.1)
+
+				medialPose2 = resultPose2
+				medialPose3 = resultPose3
+
+				print "pathPoses:", pathPose2, pathPose3
+				print "medialPoses:", medialPose2, medialPose3
 
 				self.nodeHash[nodeID-1].setGPACPose(resultPose2)
 				self.nodeHash[nodeID].setGPACPose(resultPose3)
