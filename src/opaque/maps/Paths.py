@@ -1380,14 +1380,49 @@ class Paths:
         #print len(closestPairs), "closest pairs"
         #for val in closestPairs:
         #    print val
+
+        pathDict1 = self.getPath(pathID1)
+        pathDict2 = self.getPath(pathID2)
         
-        if len(closestPairs) > 0:
+        parentID1 = pathDict1["parentID"]
+        parentID2 = pathDict2["parentID"]
+        
+        if parentID1 == parentID2:
+            
+            
+            branchNodeID1 = pathDict1["branchNodeID"]
+            branchNodeID2 = pathDict2["branchNodeID"]
+
+            localJunctionPose1 = pathDict1["localJunctionPose"]
+            localJunctionPose2 = pathDict2["localJunctionPose"]
+            
+            estPose1 = self.nodeHash[branchNodeID1].getGlobalGPACPose()
+            estPose2 = self.nodeHash[branchNodeID2].getGlobalGPACPose()
+            
+            poseOrigin1 = Pose(estPose1)
+            poseOrigin2 = Pose(estPose2)
+            
+            globalJunctionPose1 = poseOrigin1.convertLocalOffsetToGlobal(localJunctionPose1)
+            globalJunctionPose2 = poseOrigin2.convertLocalOffsetToGlobal(localJunctionPose2)
+
+            originU2 = globalSpline1.findU(globalJunctionPose1)    
+            originU1 = orientedGlobalSpline2.findU(globalJunctionPose2)
+        
+        elif len(closestPairs) > 0:
             originU2 = globalSpline1.findU(globalSamples1[closestPairs[0][1]])    
             originU1 = orientedGlobalSpline2.findU(globalSamples2[closestPairs[0][0]])
 
+        else:
+            raise
+        
         u2 = originU2
         u1 = originU1
         angGuess = 0.0
+        
+
+        #resultPose2, lastCost2, matchCount2 = gen_icp.globalPathToNodeOverlapICP2([u2, uMedialOrigin2, 0.0], orientedSplicePath, medial2, plotIter = True, n1 = nodeID-1, n2 = -1, arcLimit = 0.1)
+        #resultPose2, lastCost2, matchCount2 = gen_icp.globalOverlapICP_GPU2([u2, uMedialOrigin2, 0.0], orientedSplicePath, medial2, plotIter = True, n1 = nodeID-1, n2 = -1, arcLimit = 0.1)
+
         
         resultPose1, lastCost1, matchCount1 = gen_icp.pathOverlapICP([u1,u2,angGuess], orientedGlobalPath, globalPath1, plotIter = plotIter, n1 = pathID1, n2 = pathID2)
         #resultPose2, lastCost2, matchCount2 = gen_icp.pathOverlapICP([u1,u2+0.1,angGuess], orientedGlobalPath, globalPath1, plotIter = True, n1 = pathID1, n2 = pathID2)
