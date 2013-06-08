@@ -83,7 +83,8 @@ overlapIn = None
 overlapOut = None
 globalPool = None
 
-fig = pylab.figure()
+#fig = pylab.figure()
+#figPlot, (ax1, ax2) = plt.subplots(2, sharex=True, sharey=True)
 
 import nelminICP
 
@@ -7295,6 +7296,8 @@ def globalPathToNodeOverlapICP2(initGuess, globalPath, medialPoints, plotIter = 
 
     global numIterations
     global globalPlotCount
+    #global figPlot
+    #global ax1, ax2
     
     def computeOffset(point1, point2, ang1, ang2):
     
@@ -7676,224 +7679,232 @@ def globalPathToNodeOverlapICP2(initGuess, globalPath, medialPoints, plotIter = 
         if plotIter:
 
 
-            trueCost = shapeCostC(currPose, match_pairs)
-            
-            numPairs = len(match_pairs)
-            numPoses = len(poses_3)
-            trueCost2, resultParam, resultOffset = nelminICP.ICPcost(flatMatchPairs, numPairs, [u2,currU,currAng], c_poses_2, c_poses_3, numPoses)
-            trueCost3 = shapeCostC(resultOffset, match_pairs)
-            
-            print "currPose:", currPose
-            print "resultOffset:", resultOffset
-            print "trueCost:", trueCost
-            print "trueCost2:", trueCost2
-            print "trueCost3:", trueCost3
+	    trueCost = shapeCostC(currPose, match_pairs)
+	    
+	    numPairs = len(match_pairs)
+	    numPoses = len(poses_3)
+	    trueCost2, resultParam, resultOffset = nelminICP.ICPcost(flatMatchPairs, numPairs, [u2,currU,currAng], c_poses_2, c_poses_3, numPoses)
+	    trueCost3 = shapeCostC(resultOffset, match_pairs)
+	    
+	    print "currPose:", currPose
+	    print "resultOffset:", resultOffset
+	    print "trueCost:", trueCost
+	    print "trueCost2:", trueCost2
+	    print "trueCost3:", trueCost3
 
 
-            f, (ax1, ax2) = plt.subplots(2, sharex=True, sharey=True)
-            
-            doPoseOffset = Pose(currPose)
-            unPoseOffset = doPoseOffset.doInverse(currPose)
-            doUnPoseOffset = Pose(unPoseOffset)
+	    figPlot, (ax1, ax2) = plt.subplots(2, sharex=True, sharey=True)
+	    
+	    doPoseOffset = Pose(currPose)
+	    unPoseOffset = doPoseOffset.doInverse(currPose)
+	    doUnPoseOffset = Pose(unPoseOffset)
 
-            " transform the target Hull with the latest offset "
-            localPathPoints_offset = []
-            for p in localPathPoints:
-                result = dispPoint(p, currPose)
-                #result = doPoseOffset.convertLocalOffsetToGlobal(p)   
-                localPathPoints_offset.append(result)
-            
+	    " transform the target Hull with the latest offset "
+	    localPathPoints_offset = []
+	    for p in localPathPoints:
+		result = dispPoint(p, currPose)
+		#result = doPoseOffset.convertLocalOffsetToGlobal(p)   
+		localPathPoints_offset.append(result)
+	    
 
-            " set the origin of pose 1 "
-            poseOrigin = Pose(currPose)
-            
-            #pylab.clf()
-            #pylab.axes()
-            match_global = []
-            
-            for pair in match_pairs:
-                p1 = pair[0]
-                p2 = pair[1]
-                
-                p1_g = dispOffset(p1, deOffset)
+	    " set the origin of pose 1 "
+	    poseOrigin = Pose(currPose)
+	    
+	    #pylab.clf()
+	    #pylab.axes()
+	    match_global = []
+	    
+	    for pair in match_pairs:
+		p1 = pair[0]
+		p2 = pair[1]
+		
+		p1_g = dispOffset(p1, deOffset)
    
-                p2Local = dispOffset(p2, unPoseOffset)
-                p2_g = dispOffset(p2Local, deOffset)                
-             
-                match_global.append([p1_g,p2_g])
+		p2Local = dispOffset(p2, unPoseOffset)
+		p2_g = dispOffset(p2Local, deOffset)                
+	     
+		match_global.append([p1_g,p2_g])
     
-            #draw_matches(match_global, [0.0,0.0,0.0])
-            draw_matches(match_global, [0.0,0.0,0.0], ax1)
-            
-            """
-            for pair in match_pairs:
-                p1 = pair[0]
-                p2 = pair[1]
-                
-                p1_o = dispOffset(p1, currPose)
-                
-                p1_g = p1_o
-                p2_g = p2
-                match_global.append([p1_g,p2_g])
+	    #draw_matches(match_global, [0.0,0.0,0.0])
+	    draw_matches(match_global, [0.0,0.0,0.0], ax1)
+	    
+	    """
+	    for pair in match_pairs:
+		p1 = pair[0]
+		p2 = pair[1]
+		
+		p1_o = dispOffset(p1, currPose)
+		
+		p1_g = p1_o
+		p2_g = p2
+		match_global.append([p1_g,p2_g])
     
-            draw_matches(match_global, [0.0,0.0,0.0])
-            """
-            
-            xP = []
-            yP = []
-            for b in globalPoly:
-                p1 = b
-                xP.append(p1[0])    
-                yP.append(p1[1])
+	    draw_matches(match_global, [0.0,0.0,0.0])
+	    """
+	    
+	    xP = []
+	    yP = []
+	    for b in globalPoly:
+		p1 = b
+		xP.append(p1[0])    
+		yP.append(p1[1])
     
-            ax1.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
-            #pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+	    ax1.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+	    #pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
     
     
-            ax1.scatter([pose1[0]],[pose1[1]],color=(0.0,0.0,1.0))
-            #pylab.scatter([pose1[0]],[pose1[1]],color=(0.0,0.0,1.0))
+	    ax1.scatter([pose1[0]],[pose1[1]],color=(0.0,0.0,1.0))
+	    #pylab.scatter([pose1[0]],[pose1[1]],color=(0.0,0.0,1.0))
     
-            xP = []
-            yP = []
-            #for b in localPathPoints:
-            for b in localPathPoints_offset:
-                pLocal = dispOffset(b, unPoseOffset)
-                p1 = dispOffset(pLocal, deOffset)                
-                #pLocal = doUnPoseOffset.convertLocalOffsetToGlobal(b)
-                #p1 = p3Restore.convertLocalToGlobal(pLocal)
-                xP.append(p1[0])    
-                yP.append(p1[1])
+	    xP = []
+	    yP = []
+	    #for b in localPathPoints:
+	    for b in localPathPoints_offset:
+		pLocal = dispOffset(b, unPoseOffset)
+		p1 = dispOffset(pLocal, deOffset)                
+		#pLocal = doUnPoseOffset.convertLocalOffsetToGlobal(b)
+		#p1 = p3Restore.convertLocalToGlobal(pLocal)
+		xP.append(p1[0])    
+		yP.append(p1[1])
     
-            ax1.plot(xP,yP,linewidth=1, color=(0.0,1.0,0.0))
-            #pylab.plot(xP,yP,linewidth=1, color=(0.0,1.0,0.0))
+	    ax1.plot(xP,yP,linewidth=1, color=(0.0,1.0,0.0))
+	    #pylab.plot(xP,yP,linewidth=1, color=(0.0,1.0,0.0))
     
-            #p3 = dispOffset(pose3, deOffset)
-            p3 = p3Restore.convertLocalOffsetToGlobal(pose3)
+	    #p3 = dispOffset(pose3, deOffset)
+	    p3 = p3Restore.convertLocalOffsetToGlobal(pose3)
 
-            ax1.scatter([p3[0]],[p3[1]],color=(0.0,1.0,0.0))
-            #pylab.scatter([p3[0]],[p3[1]],color=(0.0,1.0,0.0))
+	    ax1.scatter([p3[0]],[p3[1]],color=(0.0,1.0,0.0))
+	    #pylab.scatter([p3[0]],[p3[1]],color=(0.0,1.0,0.0))
     
  
 
     
-            xP = []
-            yP = []
-            for b in points:
-                p1 = [b[0],b[1]]
-                #p1 = dispOffset(p,currPose)
+	    xP = []
+	    yP = []
+	    for b in points:
+		p1 = [b[0],b[1]]
+		#p1 = dispOffset(p,currPose)
 
  
-                p1Local = dispOffset(p1, unPoseOffset)
-                p1_g = dispOffset(p1Local, deOffset)                     
-                #p1 = poseOrigin.convertLocalToGlobal(p)
-                xP.append(p1_g[0])    
-                yP.append(p1_g[1])
-                    
-            """
-            xP = []
-            yP = []
-            for b in points:
-                p = [b[0],b[1]]
-                p1 = dispOffset(p,currPose)
-                
-                #p1 = poseOrigin.convertLocalToGlobal(p)
-                xP.append(p1[0])    
-                yP.append(p1[1])
-            """
-            
-            ax1.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
-            #pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
+		p1Local = dispOffset(p1, unPoseOffset)
+		p1_g = dispOffset(p1Local, deOffset)                     
+		#p1 = poseOrigin.convertLocalToGlobal(p)
+		xP.append(p1_g[0])    
+		yP.append(p1_g[1])
+		    
+	    """
+	    xP = []
+	    yP = []
+	    for b in points:
+		p = [b[0],b[1]]
+		p1 = dispOffset(p,currPose)
+		
+		#p1 = poseOrigin.convertLocalToGlobal(p)
+		xP.append(p1[0])    
+		yP.append(p1[1])
+	    """
+	    
+	    ax1.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
+	    #pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
     
-            #p2 = dispOffset(pose2,currPose)
-            p2Local = dispOffset(pose2, unPoseOffset)
-            p2 = dispOffset(p2Local, deOffset)   
-            ax1.scatter([p2[0]],[p2[1]],color=(1.0,0.0,0.0))
-            #pylab.scatter([p2[0]],[p2[1]],color=(1.0,0.0,0.0))
-            #pylab.scatter([pose2[0]],[pose2[1]],color=(1.0,0.0,0.0))
+	    #p2 = dispOffset(pose2,currPose)
+	    p2Local = dispOffset(pose2, unPoseOffset)
+	    p2 = dispOffset(p2Local, deOffset)   
+	    ax1.scatter([p2[0]],[p2[1]],color=(1.0,0.0,0.0))
+	    #pylab.scatter([p2[0]],[p2[1]],color=(1.0,0.0,0.0))
+	    #pylab.scatter([pose2[0]],[pose2[1]],color=(1.0,0.0,0.0))
     
     
-            plotEnv(ax1)        
-            #plotEnv()        
-            ax1.set_title("(%u,%u) u1 = %1.3f, u2 = %1.3f, ang = %1.3f, cost = %1.3f, %1.3f, %1.3f" % (n1, n2, u1, currU, currAng, newCost, trueCost, trueCost2))
-            #pylab.title("(%u,%u) u1 = %1.3f, u2 = %1.3f, ang = %1.3f, cost = %f" % (n1, n2, u1, currU, currAng, newCost))
+	    plotEnv(ax1)        
+	    #plotEnv()        
+	    ax1.set_title("(%u,%u) u1 = %1.3f, u2 = %1.3f, ang = %1.3f, cost = %1.3f, %1.3f, %1.3f" % (n1, n2, u1, currU, currAng, newCost, trueCost, trueCost2))
+	    #pylab.title("(%u,%u) u1 = %1.3f, u2 = %1.3f, ang = %1.3f, cost = %f" % (n1, n2, u1, currU, currAng, newCost))
     
-            #pylab.xlim(currPose[0]-4, currPose[0]+4)                    
-            #pylab.ylim(currPose[1]-3, currPose[1]+3)
-            ax1.set_xlim(-4, 4)                    
-            ax1.set_ylim(-3, 3)
-            #pylab.xlim(-4, 4)                    
-            #pylab.ylim(-3, 3)
-            #pylab.savefig("ICP_plot_%04u.png" % globalPlotCount)
-            #pylab.clf()
-            
-            " save inputs "
-            #saveFile = ""
-            #saveFile += "initGuess = " + repr(initGuess) + "\n"
-            #saveFile += "globalPath = " + repr(globalPath) + "\n"
-            #saveFile += "medialPoints = " + repr(medialPoints) + "\n"
+	    #pylab.xlim(currPose[0]-4, currPose[0]+4)                    
+	    #pylab.ylim(currPose[1]-3, currPose[1]+3)
+	    ax1.set_xlim(-4, 4)                    
+	    ax1.set_ylim(-3, 3)
+	    #pylab.xlim(-4, 4)                    
+	    #pylab.ylim(-3, 3)
+	    #pylab.savefig("ICP_plot_%04u.png" % globalPlotCount)
+	    #pylab.clf()
+	    
+	    " save inputs "
+	    #saveFile = ""
+	    #saveFile += "initGuess = " + repr(initGuess) + "\n"
+	    #saveFile += "globalPath = " + repr(globalPath) + "\n"
+	    #saveFile += "medialPoints = " + repr(medialPoints) + "\n"
     
-            #f = open("icpInputSave_%04u.txt" % globalPlotCount, 'w')
-            #globalPlotCount += 1
-            #f.write(saveFile)
-            #f.close()        
-                
-            #numIterations += 1
+	    #f = open("icpInputSave_%04u.txt" % globalPlotCount, 'w')
+	    #globalPlotCount += 1
+	    #f.write(saveFile)
+	    #f.close()        
+		
+	    #numIterations += 1
 
-            #" draw final position "
-            #if True:
-            
-            " set the origin of pose 1 "
-            poseOrigin = Pose(currPose)
-            
-            #pylab.clf()
-            #pylab.axes()
-            match_global = []
-            
-            for pair in match_pairs:
-                p2 = pair[0]
-                p3 = pair[1]
-                
-                p2_o = dispOffset(p2, currPose)
-                #p2_o = poseOrigin.convertGlobalToLocal(currPose)
-                
-                p2_g = p2_o
-                p3_g = p3
-                match_global.append([p2_g,p3_g])
-        
-            draw_matches(match_global, [0.0,0.0,0.0], ax2)
-        
-            
-            xP = []
-            yP = []
-            for b in medialPoly:
-                p1 = b
-                xP.append(p1[0])    
-                yP.append(p1[1])
-        
-            ax2.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
-        
-            ax2.scatter([pose2[0]],[pose2[1]],color=(0.0,0.0,1.0))
-        
-            xP = []
-            yP = []
-            for b in localPathPoints_offset:
-                xP.append(b[0])    
-                yP.append(b[1])
-            
-        
-            ax2.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
-                
-        
-            plotEnv(ax2)        
-            ax2.set_title("(%u,%u) u2 = %1.3f, u3 = %1.3f, ang = %1.3f, cost = %f" % (n1, n2, u2, currU, currAng, trueCost))
+	    #" draw final position "
+	    #if True:
+	    
+	    " set the origin of pose 1 "
+	    poseOrigin = Pose(currPose)
+	    
+	    #pylab.clf()
+	    #pylab.axes()
+	    match_global = []
+	    
+	    for pair in match_pairs:
+		p2 = pair[0]
+		p3 = pair[1]
+		
+		p2_o = dispOffset(p2, currPose)
+		#p2_o = poseOrigin.convertGlobalToLocal(currPose)
+		
+		p2_g = p2_o
+		p3_g = p3
+		match_global.append([p2_g,p3_g])
+	
+	    draw_matches(match_global, [0.0,0.0,0.0], ax2)
+	
+	    
+	    xP = []
+	    yP = []
+	    for b in medialPoly:
+		p1 = b
+		xP.append(p1[0])    
+		yP.append(p1[1])
+	
+	    ax2.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
+	
+	    ax2.scatter([pose2[0]],[pose2[1]],color=(0.0,0.0,1.0))
+	
+	    xP = []
+	    yP = []
+	    for b in localPathPoints_offset:
+		xP.append(b[0])    
+		yP.append(b[1])
+	    
+	
+	    ax2.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+		
+	
+	    plotEnv(ax2)        
+	    ax2.set_title("(%u,%u) u2 = %1.3f, u3 = %1.3f, ang = %1.3f, cost = %f" % (n1, n2, u2, currU, currAng, trueCost))
 
-            ax2.set_xlim(-4, 4)                    
-            ax2.set_ylim(-3, 3)
-            plt.savefig("ICP_plot_%04u.png" % globalPlotCount)
-            #pylab.clf()
-            
+	    ax2.set_xlim(-4, 4)                    
+	    ax2.set_ylim(-3, 3)
+	    plt.savefig("ICP_plot_%06u.png" % globalPlotCount)
+	    #ax2.clear()
+	    #ax1.clear()
+	    #pylab.clf()
+	    plt.clf()
+	    plt.close()
+	    #figPlot.clf()
+	    #del ax1
+	    #del ax2
+	    #del f
+	    
 
-            globalPlotCount += 1
+	    globalPlotCount += 1
 
     pLocal = doUnPoseOffset.convertLocalOffsetToGlobal([0.0,0.0,0.0])
     resultPose = p3Restore.convertLocalOffsetToGlobal(pLocal)

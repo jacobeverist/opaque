@@ -1136,7 +1136,7 @@ class Paths:
                     print "comparing paths", pathID2, pathID1
                     print pair[1][0], pair[0][0]
                     print pair[1][-1], pair[0][-1]
-                    resultPose0, lastCost0, matchCount0 = self.makePathCompare(pair[1], pair[0], pathID2, pathID1, plotIter = False)
+                    resultPose0, lastCost0, matchCount0 = self.makePathCompare(pair[1], pair[0], pathID2, pathID1, plotIter = True)
                     
                     if fabs(resultPose0[2]) < 0.5:
     
