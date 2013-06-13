@@ -13,6 +13,9 @@ import traceback
 import cProfile
 import sys
 
+sys.setrecursionlimit(10000)
+
+
 " sub process cleanup code "
 import opaque.maps.gen_icp as gen_icp
 import atexit
@@ -46,7 +49,7 @@ def startRun():
 		" create the environment "
 		" add control program "		
 		probe = createTest()
-
+		
 		runTest(probe)
 		
 		" while loop "		

@@ -89,7 +89,8 @@ class VisualGraph:
 		backNode.readFromFile2(dirName, num_poses+1)
 		self.poseGraph.insertPose(foreNode, backNode, initLocation = foreNode.getEstPose())
 			
-		for i in range(num_poses+2, num_poses+70):
+		#for i in range(num_poses+2, num_poses+70):
+		for i in range(num_poses+2, num_poses+4):
 		#for i in range(num_poses+2, num_poses+26):
 			#for i in range(num_poses+2, num_poses+8):
 
@@ -2129,6 +2130,7 @@ class VisualGraph:
 
 	def loadWalls(self, walls):
 		self.walls = walls
+		self.poseGraph.walls = walls
 
 	def getWalls(self):
 		return self.walls

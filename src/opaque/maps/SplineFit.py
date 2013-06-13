@@ -52,6 +52,13 @@ class SplineFit:
 
 	def findU(self, point):
 
+		minDist, uVal, uPoint = self.findClosestPoint(point)
+		
+		return uVal
+		
+		#return min, min_i/1000.0, self.densePoints[min_i]
+		
+		
 		samples = scipy.arange(0.0,1.0,0.01)
 		sample_points = self.getUVecSet(samples)
 		

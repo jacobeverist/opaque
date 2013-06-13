@@ -298,6 +298,7 @@ class PoseGraph:
 		self.nodeHash = {}
 		self.edgeHash = {}
 		
+		
 		self.numNodes = 0
 		self.currNode = 0
 		
@@ -385,7 +386,7 @@ class PoseGraph:
 		self.hypPlotCount = 0
 
 
-		self.nodePoses = []
+		self.nodePoses = {}
 
 	def doNothing1(self):
 		pass
@@ -399,9 +400,9 @@ class PoseGraph:
 
 	def saveState(self):
 
-		self.nodePoses = []
+		#self.nodePoses = {}
 		for k in range(self.numNodes):
-			self.nodePoses.append(self.nodeHash[k].getGlobalGPACPose())
+			self.nodePoses[k] = self.nodeHash[k].getGlobalGPACPose()
 					
 		saveFile = ""
 
@@ -465,6 +466,13 @@ class PoseGraph:
 		saveStr = saveStr.replace('\r\n','\n')
 		
 		exec(saveStr)
+		
+		
+		tempDict = {}
+		for k in range(len(self.nodePoses)):
+			tempDict[k] = self.nodePoses[k]
+			
+		self.nodePoses = tempDict
 		
 		print self.numNodes
 		print self.edgePriorityHash
@@ -2510,7 +2518,7 @@ class PoseGraph:
 
 				paths = {}
 				pathIDs = self.paths.getPathIDs()
-
+				"""
 				" remove pathIDs that have been merged "
 				toBeRemoved = []
 				for k in range(len(orderedPathIDs1)):
@@ -2525,11 +2533,11 @@ class PoseGraph:
 					del departures1[k]
 					del interiors1[k]
 					del depPoints1[k]
-					
+				"""	
 				" recompute if we've removed all overlapped paths "
 				" FIXME:  are there cases where a merging will remove critical path overlap information? "
-				if len(orderedPathIDs1) == 0:
-
+				#if len(orderedPathIDs1) == 0:
+				if True:
 					departures1 = []
 					interiors1 = []
 					depPoints1 = []
@@ -2549,7 +2557,7 @@ class PoseGraph:
 						distances1.append([discDist1, discDist2])
 						depAngles1.append([depAngle1, depAngle2])
 						contig1.append((contigFrac, overlapSum))
-
+				"""
 				toBeRemoved = []
 				for k in range(len(orderedPathIDs2)):
 					currID = orderedPathIDs2[k]
@@ -2563,9 +2571,10 @@ class PoseGraph:
 					del departures2[k]
 					del interiors2[k]
 					del depPoints2[k]
-
-				if len(orderedPathIDs2) == 0:
-
+				"""
+				
+				#if len(orderedPathIDs2) == 0:
+				if True:
 					departures2 = []
 					interiors2 = []
 					depPoints2 = []
@@ -2806,6 +2815,11 @@ class PoseGraph:
 
 				self.nodeHash[nodeID-1].setGPACPose(resultPose2)
 				self.nodeHash[nodeID].setGPACPose(resultPose3)
+
+
+		for k in range(self.numNodes):
+			self.nodePoses[k] = self.nodeHash[k].getGlobalGPACPose()
+
 
 
 	def selectSplice(self, nodeID1, nodeID2, medial1, medial2, estPose1, estPose2, orderedPathIDs1, orderedPathIDs2):
@@ -3061,6 +3075,125 @@ class PoseGraph:
 		
 		return orientedGlobalPath
 
+	def mergeSiblings(self, resultOffset1, resultOffset2, pathID1, pathID2, lastCost, matchCount):
+
+		" verify that this path still exists before we try to merge it "
+		allPathIDs = self.paths.getPathIDs()
+		if pathID1 in allPathIDs and pathID2 in allPathIDs:
+	
+			
+			" capture transform between pathID1 and pathID2 under correction "
+	
+			#cOffset = resultOffset1
+			#rootID = pathID1
+			#lessID = pathID2
+			
+			
+			mergeNodes1 = copy(self.paths.getNodes(pathID1))
+			mergeNodes2 = copy(self.paths.getNodes(pathID2))
+			
+			print "mergeNodes1:", mergeNodes1
+			print "mergeNodes2:", mergeNodes2
+			
+			duplicateNodes = []
+			" look to see if a node is in both paths "
+			for nodeID1 in mergeNodes1:
+				for nodeID2 in mergeNodes2:
+					
+					if nodeID1 == nodeID2:
+						duplicateNodes.append(nodeID1)
+						
+			" if any duplicates, lets choose one path or the other "
+			for nodeID in duplicateNodes:
+				orderedPathIDs = self.paths.getOrderedOverlappingPaths(nodeID)
+				print "duplicate node", nodeID, "is in paths:", orderedPathIDs
+				if pathID1 in orderedPathIDs:
+					mergeNodes2.remove(nodeID)
+				elif pathID2 in orderedPathIDs:
+					mergeNodes1.remove(nodeID)
+				else:
+					print "duplicate not in either sibling path"
+					raise
+
+			print "mergeNodes1:", mergeNodes1
+			print "mergeNodes2:", mergeNodes2
+				
+			
+			poseOrigin1 = Pose(resultOffset1)
+			poseOrigin2 = Pose(resultOffset2)
+
+			" move a node only once, keep track of whether we've moved a node or not "
+			hasMoved = {}
+			for nodeID in mergeNodes1:
+				hasMoved[nodeID] = False
+			for nodeID in mergeNodes2:
+				hasMoved[nodeID] = False
+
+			
+			" capture transform between pathID2 and member nodes "
+			" add compute new node locations under corrected transform "
+			self.drawConstraints(self.statePlotCount)
+			self.statePlotCount += 1
+			self.drawPathAndHull()
+						
+			" offset between paths "
+			for nodeID in mergeNodes1:
+	
+				if not hasMoved[nodeID]:
+					print "modifying node", nodeID, "in path", pathID1 
+					" adjust node poses to relative path positions "
+					nodePose = self.nodeHash[nodeID].getGlobalGPACPose()
+					guessPose = poseOrigin1.convertLocalOffsetToGlobal(nodePose)
+					self.nodeHash[nodeID].setGPACPose(guessPose)
+					
+					self.drawConstraints(self.statePlotCount)
+					self.statePlotCount += 1
+					self.drawPathAndHull()
+					
+					hasMoved[nodeID] = True
+
+			" offset between paths "
+			for nodeID in mergeNodes2:
+	
+				if not hasMoved[nodeID]:
+					print "modifying node", nodeID, "in path", pathID2 
+					" adjust node poses to relative path positions "
+					nodePose = self.nodeHash[nodeID].getGlobalGPACPose()
+					guessPose = poseOrigin2.convertLocalOffsetToGlobal(nodePose)
+					self.nodeHash[nodeID].setGPACPose(guessPose)
+					
+					self.drawConstraints(self.statePlotCount)
+					self.statePlotCount += 1
+					self.drawPathAndHull()
+
+					hasMoved[nodeID] = True
+
+			for nodeID in mergeNodes2:
+
+				print "adding node", nodeID, "to path", pathID1
+				self.paths.addNode(nodeID, pathID1)
+				print "deleting node", nodeID, "from path", pathID2
+				self.paths.delNode(nodeID, pathID2)
+
+
+			" move nodes to pathID1, delete pathID2 "
+			self.paths.delPath(pathID2, pathID1)
+			
+			self.paths.generatePaths()
+				
+			
+			
+			
+			
+			self.drawConstraints(self.statePlotCount)
+			self.statePlotCount += 1
+			self.drawPathAndHull()
+		
+			for k, v in hasMoved.iteritems():
+				pass
+				
+		
+
 	def mergePaths(self):
 
 
@@ -3082,14 +3215,50 @@ class PoseGraph:
 		
 
 		toBeMerged = self.paths.comparePaths()
-							
-		for mergeThis in toBeMerged:
+		toBeSibMerged = []
+		
+		delIndex = []
+		for k in range(len(toBeMerged)):
+			
+			mergeThis = toBeMerged[k]
+	
+			if len(mergeThis) > 4:
+				delIndex.append(k)
+				toBeSibMerged.append(mergeThis)
+		
+		delIndex.reverse()
+		for index in delIndex:
+			toBeMerged.pop(index)
+	
+		
+		sorted(toBeSibMerged, key=itemgetter(5))
+		
+		for mergeThis in toBeSibMerged:
+			print "mergeThis:", mergeThis[0], mergeThis[1], mergeThis[2], mergeThis[4], mergeThis[5], mergeThis[6]				
 
 			pathID1 = mergeThis[0]
 			pathID2 = mergeThis[1]
 			offset = mergeThis[2]
 			pathSplices = mergeThis[3]
+			offset2 = mergeThis[4]
+			lastCost = mergeThis[5]
+			matchCount = mergeThis[6]
+			
+			allPathIDs = self.paths.getPathIDs()
+			if pathID1 in allPathIDs and pathID2 in allPathIDs:
+				
+				self.mergeSiblings(offset, offset2, pathID1, pathID2, mergeThis[5], mergeThis[6])			
+			
+		for mergeThis in toBeMerged:		
 
+			print "mergeThis:", mergeThis[0], mergeThis[1], mergeThis[2]
+
+
+			pathID1 = mergeThis[0]
+			pathID2 = mergeThis[1]
+			offset = mergeThis[2]
+			pathSplices = mergeThis[3]
+			
 			" verify that this path still exists before we try to merge it "
 			allPathIDs = self.paths.getPathIDs()
 			if pathID1 in allPathIDs and pathID2 in allPathIDs:
@@ -3277,7 +3446,7 @@ class PoseGraph:
 				self.drawConstraints(self.statePlotCount)
 				self.statePlotCount += 1
 				self.drawPathAndHull()
-				
+			
 
 	def constrainToPaths(self, nodeID, orderedPathIDs, departures, interiors, depPoints, insertNode = False):
 			
@@ -8538,7 +8707,8 @@ class PoseGraph:
 
 	def plotEnv(self):
 		
-		walls = self.probe.getWalls()
+		#walls = self.probe.getWalls()
+		walls = self.walls
 	
 		for wall in walls:
 			xP = []
@@ -8548,7 +8718,7 @@ class PoseGraph:
 				xP.append(p[0])
 				yP.append(p[1])
 	
-			pylab.plot(xP,yP, linewidth=2, color = 'g')
+			pylab.plot(xP,yP, linewidth=2, color = 'g', zorder=0)
 			
 
 	def drawHyp(self, tit = ""):
@@ -8825,6 +8995,8 @@ class PoseGraph:
 			yP.append(pose[1])		
 		pylab.scatter(xP,yP, color='k', linewidth=1)
 
+		self.plotEnv()
+
 		#pylab.title("Corner Constraint %d ---> %d" % (id1, id2))
 		#pylab.xlim(-4,4)
 		#pylab.ylim(-4,4)
@@ -8855,10 +9027,16 @@ class PoseGraph:
 
 			pylab.plot(xP,yP, color = self.colors[k])
 
+			globJuncPose = self.paths.getGlobalJunctionPose(k)
+			if globJuncPose != None:
+				pylab.scatter([globJuncPose[0],], [globJuncPose[1],], color='k')
+			
 		#pylab.xlim(-4,4)
 		#pylab.ylim(-4,4)
 
-		self.drawWalls()
+		#self.drawWalls()
+		self.plotEnv()
+
 
 		pylab.title("Trimmed Paths, numNodes = %d" % self.numNodes)
 		pylab.savefig("trimmedPath_%04u.png" % self.trimCount)
@@ -8906,6 +9084,10 @@ class PoseGraph:
 			pylab.plot(xP,yP, color=self.colors[k], linewidth=4)
 
 
+
+
+
+
 			nodeSet = self.paths.getNodes(k)
 
 			print "drawing pathID", k, "for nodes:", nodeSet
@@ -8947,7 +9129,15 @@ class PoseGraph:
 				yP.append(p[1])
 				
 			pylab.plot(xP,yP, '--', color=self.colors[k], linewidth=4)
-			
+
+		for k in pathIDs:
+
+			globJuncPose = self.paths.getGlobalJunctionPose(k)
+			if globJuncPose != None:
+				pylab.scatter([globJuncPose[0],], [globJuncPose[1],], color='k', zorder=10)
+
+		self.plotEnv()
+		
 		print "pathAndHull:", self.pathDrawCount
 		printStack()
 

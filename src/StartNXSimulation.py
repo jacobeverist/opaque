@@ -40,6 +40,9 @@ from DrawThings import DrawThings
 import traceback 
 import cProfile
 import sys
+sys.setrecursionlimit(10000)
+
+
 from math import cos, sin, pi
 from copy import copy
 

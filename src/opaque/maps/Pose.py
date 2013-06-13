@@ -98,25 +98,12 @@ class Pose:
 
 	def convertLocalToGlobal(self, pnt):
 		
-		#print "pnt:", repr(pnt)
 		finalVec = array([[pnt[0]], [pnt[1]]])
-		#print "finalVec:", repr(finalVec)
-		#print "self.R:", repr(self.R)
-		transVec = dot(transpose(self.R), finalVec)
-		#print "transVec:", repr(transVec)
-		
-		resVec = dot(self.backR, transVec)
-		#print "resVec:", repr(resVec)
-		
-		resVec[0, 0] += self.dist
-		#print "resVec0:", repr(resVec)
-		
-		tempVec = dot(self.foreR, resVec)
-		#print "tempVec:", repr(tempVec)
-		
+		transVec = dot(transpose(self.R), finalVec)	
+		resVec = dot(self.backR, transVec)	
+		resVec[0, 0] += self.dist		
+		tempVec = dot(self.foreR, resVec)		
 		newPoint = [tempVec[0,0],tempVec[1,0]]
-		#print "newPoint:", repr(newPoint)
-		
 		return newPoint
 
 	def convertGlobalToLocal(self, pnt):
