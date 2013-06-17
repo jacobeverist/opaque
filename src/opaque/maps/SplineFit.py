@@ -732,7 +732,14 @@ class SplineFit:
 		
 		min, min_i = self.findMinDistancePoint(self.densePoints, pos)
 
-		return min, min_i/1000.0, self.densePoints[min_i]
+		uVal = min_i/1000.0
+		
+		if uVal > 1.0:
+			uVal = 1.0
+		elif uVal < 0.0:
+			uVal = 0.0
+
+		return min, uVal, self.densePoints[min_i]
 
 		#print min, min_i
 

@@ -87,8 +87,9 @@ class VisualGraph:
 		foreNode.readFromFile2(dirName, num_poses)
 		backNode = LocalNode(self.probe, self.contacts, num_poses+1, 19, PIXELSIZE)
 		backNode.readFromFile2(dirName, num_poses+1)
-		self.poseGraph.insertPose(foreNode, backNode, initLocation = foreNode.getEstPose())
-			
+		self.poseGraph.insertPose2(foreNode, backNode, initLocation = foreNode.getEstPose())
+		
+		
 		#for i in range(num_poses+2, num_poses+70):
 		for i in range(num_poses+2, num_poses+4):
 		#for i in range(num_poses+2, num_poses+26):

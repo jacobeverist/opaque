@@ -451,7 +451,7 @@ class TestNavigation(SnakeControl):
 				self.isCapture = False
 
 				#exit()
-
+				
 				#self.mapGraph.correctPoses2()
 				self.mapGraph.correctPosture()
 				#self.mapGraph.localizeCurrentNode()

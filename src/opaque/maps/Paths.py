@@ -2357,15 +2357,15 @@ class Paths:
             pylab.title("%d: %s" % (pathID, repr(nodes)))
             pylab.savefig("plotMedialSoup_%04u.png" % (self.medialSoupCount ))
 
-        saveFile = "medialPointSoup = ["
-        for k in range(len(medialPointSoup)):
-            saveFile += repr(medialPointSoup[k]) + "\n"
-        saveFile += "]\n"
-
-        f = open("medialSoupSave_%04u.txt" % self.medialSoupCount, 'w')
-        f.write(saveFile)
-        f.close()
-        self.medialSoupCount  += 1
+            saveFile = "medialPointSoup = ["
+            for k in range(len(medialPointSoup)):
+                saveFile += repr(medialPointSoup[k]) + "\n"
+            saveFile += "]\n"
+    
+            f = open("medialSoupSave_%04u.txt" % self.medialSoupCount, 'w')
+            f.write(saveFile)
+            f.close()
+            self.medialSoupCount  += 1
         
         #nodeID = self.numNodes - 1
             
