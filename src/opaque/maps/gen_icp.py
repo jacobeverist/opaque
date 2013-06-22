@@ -2777,7 +2777,7 @@ def gen_ICP(pastPose, targetPose, pastHull, targetHull, pastCircles, costThresh 
             pylab.xlim(-4,9)
             pylab.ylim(-3,9)
             #pylab.ylim(-7,5)
-            pylab.savefig("ICP_plot_%04u.png" % numIterations)
+            pylab.savefig("ICP_plot_%06u.png" % numIterations)
             pylab.clf()                    
             
         if False:
@@ -2907,7 +2907,7 @@ def gen_ICP(pastPose, targetPose, pastHull, targetHull, pastCircles, costThresh 
             pylab.xlim(-4,9)
             pylab.ylim(-3,9)
             #pylab.axis('equal')
-            pylab.savefig("ICP_plot_%04u.png" % numIterations)
+            pylab.savefig("ICP_plot_%06u.png" % numIterations)
             pylab.clf()            
                         
         # save the current offset and cost
@@ -3076,7 +3076,7 @@ def gen_ICP2(estPose1, offset, pastHull, targetHull, pastCircles, costThresh = 0
             pylab.ylim(-3,9)
             pylab.title("%u %u" % (n1, n2))
             #pylab.ylim(-7,5)
-            pylab.savefig("ICP_plot_%04u.png" % numIterations)
+            pylab.savefig("ICP_plot_%06u.png" % numIterations)
             pylab.clf()                    
             
         if False:
@@ -3209,7 +3209,7 @@ def gen_ICP2(estPose1, offset, pastHull, targetHull, pastCircles, costThresh = 0
             pylab.xlim(-4,9)
             pylab.ylim(-3,9)
             #pylab.axis('equal')
-            pylab.savefig("ICP_plot_%04u.png" % numIterations)
+            pylab.savefig("ICP_plot_%06u.png" % numIterations)
             pylab.clf()            
                         
         # save the current offset and cost
@@ -3270,7 +3270,7 @@ def gen_ICP2(estPose1, offset, pastHull, targetHull, pastCircles, costThresh = 0
         pylab.title("%u %u" % (n1, n2))
         pylab.xlim(-4,9)
         pylab.ylim(-3,9)
-        pylab.savefig("ICP_plot_%04u.png" % numIterations)
+        pylab.savefig("ICP_plot_%06u.png" % numIterations)
         pylab.clf()            
 
 
@@ -4507,7 +4507,7 @@ def overlapICP(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1, medi
             """
             #fig1 = pylab.gcf()
             #fig1.set_size_inches(12,6)
-            fig1.savefig("ICP_plot_%04u_0.png" % numIterations)
+            fig1.savefig("ICP_plot_%06u_%04u_0.png" % numIterations)
             #fig1.set_size_inches(8,6)
             pylab.clf()            
             
@@ -4736,7 +4736,7 @@ def overlapICP(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1, medi
             #pylab.xlim(-3,3)
             #pylab.ylim(-3,3)
             #pylab.axis('equal')
-            pylab.savefig("ICP_plot_%04u_0.png" % numIterations)
+            pylab.savefig("ICP_plot_%06u_0.png" % numIterations)
             pylab.clf()            
         
 
@@ -4962,7 +4962,7 @@ def overlapICP(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1, medi
             pylab.xlim(estPose1[0]-4, estPose1[0]+4)                    
             pylab.ylim(estPose1[1]-3, estPose1[1]+3)
             #pylab.axis('equal')
-            pylab.savefig("ICP_plot_%04u_1.png" % numIterations)
+            pylab.savefig("ICP_plot_%06u_1.png" % numIterations)
             pylab.clf()            
 
         
@@ -5136,7 +5136,7 @@ def overlapICP(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1, medi
         axes1.set_xlim(0,10)
         axes1.set_ylim(-4,4)        
         """
-        fig1.savefig("ICP_plot_%04u_0.png" % numIterations)
+        fig1.savefig("ICP_plot_%06u_0.png" % numIterations)
         pylab.clf()            
         pylab.figure(1)
         """
@@ -5253,7 +5253,7 @@ def overlapICP(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1, medi
         pylab.title("%s %s, ang = %1.3f, hist = %d %d %d" % (repr(n1), repr(n2), currAng, lowCount, midCount, highCount))
         pylab.xlim(estPose1[0]-4, estPose1[0]+4)                    
         pylab.ylim(estPose1[1]-3, estPose1[1]+3)
-        pylab.savefig("ICP_plot_%04u_1.png" % numIterations)
+        pylab.savefig("ICP_plot_%06u_1.png" % numIterations)
         pylab.clf()        
         """    
         numIterations += 1
@@ -5405,7 +5405,7 @@ def minICP_GPU2(initGuess, medialPoints1, medialPoints2, foreI1, backI1, foreI2,
         pylab.xlim(-4, 4)                    
         pylab.ylim(-3, 3)
 
-        pylab.savefig("ICP_plot_%04u.png" % numIterations)
+        pylab.savefig("ICP_plot_%06u.png" % numIterations)
             
         #pylab.savefig("constraints_%04u.png" % const_count)
         pylab.clf()            
@@ -5614,7 +5614,7 @@ def minICP_GPU2(initGuess, medialPoints1, medialPoints2, foreI1, backI1, foreI2,
         pylab.xlim(-4, 4)                    
         pylab.ylim(-3, 3)
 
-        pylab.savefig("ICP_plot_%04u.png" % numIterations)
+        pylab.savefig("ICP_plot_%06u.png" % numIterations)
         #pylab.savefig("constraints_%04u.png" % const_count)
         pylab.clf()            
 
@@ -6005,7 +6005,7 @@ def overlapICP_GPU2(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1,
         axes2.set_title("%s %s, ang = %1.3f" % (repr(n1), repr(n2), currAng))
         axes2.set_xlim(estPose1[0]-4, estPose1[0]+4)                    
         axes2.set_ylim(estPose1[1]-3, estPose1[1]+3)
-        fig1.savefig("ICP_plot_%04u_0.png" % globalPlotCount)
+        fig1.savefig("ICP_plot_%06u_0.png" % globalPlotCount)
         globalPlotCount += 1
         pylab.clf()            
         pylab.figure(1)
@@ -6365,7 +6365,7 @@ def globalOverlapICP(initGuess, globalPath, medialPoints,  plotIter = False, n1 
             axes1.set_xlim(-2,10)
             axes1.set_ylim(-6,6)        
             """
-            fig1.savefig("ICP_plot_%04u_0.png" % numIterations)
+            fig1.savefig("ICP_plot_%06u_0.png" % numIterations)
             pylab.clf()            
             
             pylab.figure(1)            
@@ -6565,7 +6565,7 @@ def globalOverlapICP(initGuess, globalPath, medialPoints,  plotIter = False, n1 
             axes1.set_xlim(-2,10)
             axes1.set_ylim(-6,6)        
             """
-            fig1.savefig("ICP_plot_%04u_0.png" % numIterations)
+            fig1.savefig("ICP_plot_%06u_0.png" % numIterations)
             pylab.clf()            
             
             pylab.figure(1)            
@@ -6644,7 +6644,7 @@ def globalOverlapICP(initGuess, globalPath, medialPoints,  plotIter = False, n1 
 
         pylab.xlim(currPose[0]-4, currPose[0]+4)                    
         pylab.ylim(currPose[1]-3, currPose[1]+3)
-        pylab.savefig("ICP_plot_%04u_1.png" % globalPlotCount)
+        pylab.savefig("ICP_plot_%06u_1.png" % globalPlotCount)
         pylab.clf()
         " save inputs "
         #saveFile = ""
@@ -6944,7 +6944,7 @@ def globalOverlapICP_GPU(initGuess, globalPath, medialPoints, poses_1, poses_2, 
 
         pylab.xlim(currPose[0]-4, currPose[0]+4)                    
         pylab.ylim(currPose[1]-3, currPose[1]+3)
-        pylab.savefig("ICP_plot_%04u.png" % globalPlotCount)
+        pylab.savefig("ICP_plot_%06u.png" % globalPlotCount)
         pylab.clf()
         
         " save inputs "
@@ -7273,7 +7273,7 @@ def globalOverlapICP_GPU2(initGuess, globalPath, medialPoints,plotIter = False, 
     
             pylab.xlim(currPose[0]-4, currPose[0]+4)                    
             pylab.ylim(currPose[1]-3, currPose[1]+3)
-            pylab.savefig("ICP_plot_%04u.png" % globalPlotCount)
+            pylab.savefig("ICP_plot_%06u.png" % globalPlotCount)
             pylab.clf()
             
             " save inputs "
@@ -7328,6 +7328,16 @@ def globalPathToNodeOverlapICP2(initGuess, globalPath, medialPoints, plotIter = 
 
     uHigh = u3 + 0.2
     uLow = u3 - 0.2
+    
+    " keep the rails within the range of u parameterization "
+    if uHigh >= 1.0:
+        uHigh = 1.0
+        uLow = 0.8
+    
+    if uLow <= 0.0:
+        uLow = 0.0
+        uHigh = 0.2
+    
     currU = u3
     currAng = initGuess[2]
 
@@ -7344,7 +7354,7 @@ def globalPathToNodeOverlapICP2(initGuess, globalPath, medialPoints, plotIter = 
     medialSpline = SplineFit(medialPoints, smooth=0.1)
     
     
-            
+    
     
     #arcDist = medialSpline.dist_u(u2)
     #uMid = medialSpline.getUOfDist(u2, 0.0)
@@ -7470,11 +7480,9 @@ def globalPathToNodeOverlapICP2(initGuess, globalPath, medialPoints, plotIter = 
     " transform the new pose "
     points_offset = []
 
-    ""
     globalPoly = []        
     for p in globalPoints:
         globalPoly.append([p[0],p[1]])    
-    ""
 
 
     medialPoly = []        
@@ -7588,328 +7596,242 @@ def globalPathToNodeOverlapICP2(initGuess, globalPath, medialPoints, plotIter = 
         if isTerminate:
             break
         
+            
+    " draw final position "
+    if plotIter:
         
         
+        trueCost = shapeCostC(currPose, match_pairs)
+        
+        numPairs = len(match_pairs)
+        numPoses = len(poses_3)
+        trueCost2, resultParam, resultOffset = nelminICP.ICPcost(flatMatchPairs, numPairs, [u2,currU,currAng], c_poses_2, c_poses_3, numPoses)
+        trueCost3 = shapeCostC(resultOffset, match_pairs)
+        
+        print "currPose:", currPose
+        print "resultOffset:", resultOffset
+        print "trueCost:", trueCost
+        print "trueCost2:", trueCost2
+        print "trueCost3:", trueCost3
         
         
+        figPlot, (ax1, ax2) = plt.subplots(2, sharex=True, sharey=True)
         
-
-        """
+        doPoseOffset = Pose(currPose)
+        unPoseOffset = doPoseOffset.doInverse(currPose)
+        doUnPoseOffset = Pose(unPoseOffset)
+        
         " transform the target Hull with the latest offset "
-        points_offset = []
-        for p in points:
-            result = dispPoint(p, currPose)        
-            points_offset.append(result)
-        
-        " transformed points without associated covariance "
-
-        match_pairs = matchPairs(points, points_offset, globalPoints, minMatchDist)       
+        localPathPoints_offset = []
+        for p in localPathPoints:
+            result = dispPoint(p, currPose)
+            #result = doPoseOffset.convertLocalOffsetToGlobal(p)   
+            localPathPoints_offset.append(result)
         
         
-        flatMatchPairs = []
+        " set the origin of pose 1 "
+        poseOrigin = Pose(currPose)
+        
+        #pylab.clf()
+        #pylab.axes()
+        match_global = []
+        
         for pair in match_pairs:
             p1 = pair[0]
             p2 = pair[1]
-            C1 = pair[2]
-            C2 = pair[3]
-
-            flatMatchPairs.append(p1[0])
-            flatMatchPairs.append(p1[1])
-            flatMatchPairs.append(C1[0][0])
-            flatMatchPairs.append(C1[0][1])
-            flatMatchPairs.append(C1[1][0])
-            flatMatchPairs.append(C1[1][1])
-            flatMatchPairs.append(p2[0])
-            flatMatchPairs.append(p2[1])
-            flatMatchPairs.append(C2[0][0])
-            flatMatchPairs.append(C2[0][1])
-            flatMatchPairs.append(C2[1][0])
-            flatMatchPairs.append(C2[1][1])
-        c_poses_1 = [item for sublist in poses_1 for item in sublist]
-        c_poses_2 = [item for sublist in poses_2 for item in sublist]
+            
+            p1_g = dispOffset(p1, deOffset)
+            
+            p2Local = dispOffset(p2, unPoseOffset)
+            p2_g = dispOffset(p2Local, deOffset)                
+             
+            match_global.append([p1_g,p2_g])
         
-
+        #draw_matches(match_global, [0.0,0.0,0.0])
+        draw_matches(match_global, [0.0,0.0,0.0], ax1)
         
-        newParam, newCost = nelminICP.ICPmin(flatMatchPairs, len(match_pairs), [u1,currU,currAng], uHigh, uLow, c_poses_1, c_poses_2, len(poses_1))
-
-        newU = newParam[0]
-        newAng = newParam[1]
-        
-
-        " set the current parameters "
-        currAng = functions.normalizeAngle(newAng)
-        currU = newU
-
-        if currU >= 1.0:
-            pose2 = poses_2[-1]
-        elif currU < 0.0:
-            pose2 = poses_2[0]
-        else:
-            pose2 = poses_2[int(currU*100)]
-
-
-        point1 = [pose1[0],pose1[1]]
-        point2 = [pose2[0],pose2[1]]
-        ang1 = pose1[2]
-        ang2 = pose2[2]
-    
-        currPose = computeOffset(point1, point2, ang1, ang2 + currAng)
-
-        # check for convergence condition, different between last and current cost is below threshold
-        
-        isTerminate = False
-        if abs(lastCost - newCost) < costThresh or (numIterations - startIteration) > 10:
-            isTerminate = True
-            print "terminating globalOverlap_GPU2:", lastCost, newCost, costThresh, numIterations-startIteration
-        
-        #if abs(lastCost - newCost) < costThresh or (numIterations - startIteration) > 10:
-        #    break
-
-
-
-        " update after check for termination condition "
-        lastCost = newCost
-
-        numIterations += 1
-        
-        if isTerminate:
-            break
         """
-        " draw final position "
-        if plotIter:
-
-
-	    trueCost = shapeCostC(currPose, match_pairs)
-	    
-	    numPairs = len(match_pairs)
-	    numPoses = len(poses_3)
-	    trueCost2, resultParam, resultOffset = nelminICP.ICPcost(flatMatchPairs, numPairs, [u2,currU,currAng], c_poses_2, c_poses_3, numPoses)
-	    trueCost3 = shapeCostC(resultOffset, match_pairs)
-	    
-	    print "currPose:", currPose
-	    print "resultOffset:", resultOffset
-	    print "trueCost:", trueCost
-	    print "trueCost2:", trueCost2
-	    print "trueCost3:", trueCost3
-
-
-	    figPlot, (ax1, ax2) = plt.subplots(2, sharex=True, sharey=True)
-	    
-	    doPoseOffset = Pose(currPose)
-	    unPoseOffset = doPoseOffset.doInverse(currPose)
-	    doUnPoseOffset = Pose(unPoseOffset)
-
-	    " transform the target Hull with the latest offset "
-	    localPathPoints_offset = []
-	    for p in localPathPoints:
-		result = dispPoint(p, currPose)
-		#result = doPoseOffset.convertLocalOffsetToGlobal(p)   
-		localPathPoints_offset.append(result)
-	    
-
-	    " set the origin of pose 1 "
-	    poseOrigin = Pose(currPose)
-	    
-	    #pylab.clf()
-	    #pylab.axes()
-	    match_global = []
-	    
-	    for pair in match_pairs:
-		p1 = pair[0]
-		p2 = pair[1]
-		
-		p1_g = dispOffset(p1, deOffset)
-   
-		p2Local = dispOffset(p2, unPoseOffset)
-		p2_g = dispOffset(p2Local, deOffset)                
-	     
-		match_global.append([p1_g,p2_g])
-    
-	    #draw_matches(match_global, [0.0,0.0,0.0])
-	    draw_matches(match_global, [0.0,0.0,0.0], ax1)
-	    
-	    """
-	    for pair in match_pairs:
-		p1 = pair[0]
-		p2 = pair[1]
-		
-		p1_o = dispOffset(p1, currPose)
-		
-		p1_g = p1_o
-		p2_g = p2
-		match_global.append([p1_g,p2_g])
-    
-	    draw_matches(match_global, [0.0,0.0,0.0])
-	    """
-	    
-	    xP = []
-	    yP = []
-	    for b in globalPoly:
-		p1 = b
-		xP.append(p1[0])    
-		yP.append(p1[1])
-    
-	    ax1.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
-	    #pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
-    
-    
-	    ax1.scatter([pose1[0]],[pose1[1]],color=(0.0,0.0,1.0))
-	    #pylab.scatter([pose1[0]],[pose1[1]],color=(0.0,0.0,1.0))
-    
-	    xP = []
-	    yP = []
-	    #for b in localPathPoints:
-	    for b in localPathPoints_offset:
-		pLocal = dispOffset(b, unPoseOffset)
-		p1 = dispOffset(pLocal, deOffset)                
-		#pLocal = doUnPoseOffset.convertLocalOffsetToGlobal(b)
-		#p1 = p3Restore.convertLocalToGlobal(pLocal)
-		xP.append(p1[0])    
-		yP.append(p1[1])
-    
-	    ax1.plot(xP,yP,linewidth=1, color=(0.0,1.0,0.0))
-	    #pylab.plot(xP,yP,linewidth=1, color=(0.0,1.0,0.0))
-    
-	    #p3 = dispOffset(pose3, deOffset)
-	    p3 = p3Restore.convertLocalOffsetToGlobal(pose3)
-
-	    ax1.scatter([p3[0]],[p3[1]],color=(0.0,1.0,0.0))
-	    #pylab.scatter([p3[0]],[p3[1]],color=(0.0,1.0,0.0))
-    
- 
-
-    
-	    xP = []
-	    yP = []
-	    for b in points:
-		p1 = [b[0],b[1]]
-		#p1 = dispOffset(p,currPose)
-
- 
-		p1Local = dispOffset(p1, unPoseOffset)
-		p1_g = dispOffset(p1Local, deOffset)                     
-		#p1 = poseOrigin.convertLocalToGlobal(p)
-		xP.append(p1_g[0])    
-		yP.append(p1_g[1])
-		    
-	    """
-	    xP = []
-	    yP = []
-	    for b in points:
-		p = [b[0],b[1]]
-		p1 = dispOffset(p,currPose)
-		
-		#p1 = poseOrigin.convertLocalToGlobal(p)
-		xP.append(p1[0])    
-		yP.append(p1[1])
-	    """
-	    
-	    ax1.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
-	    #pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
-    
-	    #p2 = dispOffset(pose2,currPose)
-	    p2Local = dispOffset(pose2, unPoseOffset)
-	    p2 = dispOffset(p2Local, deOffset)   
-	    ax1.scatter([p2[0]],[p2[1]],color=(1.0,0.0,0.0))
-	    #pylab.scatter([p2[0]],[p2[1]],color=(1.0,0.0,0.0))
-	    #pylab.scatter([pose2[0]],[pose2[1]],color=(1.0,0.0,0.0))
-    
-    
-	    plotEnv(ax1)        
-	    #plotEnv()        
-	    ax1.set_title("(%u,%u) u1 = %1.3f, u2 = %1.3f, ang = %1.3f, cost = %1.3f, %1.3f, %1.3f" % (n1, n2, u1, currU, currAng, newCost, trueCost, trueCost2))
-	    #pylab.title("(%u,%u) u1 = %1.3f, u2 = %1.3f, ang = %1.3f, cost = %f" % (n1, n2, u1, currU, currAng, newCost))
-    
-	    #pylab.xlim(currPose[0]-4, currPose[0]+4)                    
-	    #pylab.ylim(currPose[1]-3, currPose[1]+3)
-	    ax1.set_xlim(-4, 4)                    
-	    ax1.set_ylim(-3, 3)
-	    #pylab.xlim(-4, 4)                    
-	    #pylab.ylim(-3, 3)
-	    #pylab.savefig("ICP_plot_%04u.png" % globalPlotCount)
-	    #pylab.clf()
-	    
-	    " save inputs "
-	    #saveFile = ""
-	    #saveFile += "initGuess = " + repr(initGuess) + "\n"
-	    #saveFile += "globalPath = " + repr(globalPath) + "\n"
-	    #saveFile += "medialPoints = " + repr(medialPoints) + "\n"
-    
-	    #f = open("icpInputSave_%04u.txt" % globalPlotCount, 'w')
-	    #globalPlotCount += 1
-	    #f.write(saveFile)
-	    #f.close()        
-		
-	    #numIterations += 1
-
-	    #" draw final position "
-	    #if True:
-	    
-	    " set the origin of pose 1 "
-	    poseOrigin = Pose(currPose)
-	    
-	    #pylab.clf()
-	    #pylab.axes()
-	    match_global = []
-	    
-	    for pair in match_pairs:
-		p2 = pair[0]
-		p3 = pair[1]
-		
-		p2_o = dispOffset(p2, currPose)
-		#p2_o = poseOrigin.convertGlobalToLocal(currPose)
-		
-		p2_g = p2_o
-		p3_g = p3
-		match_global.append([p2_g,p3_g])
-	
-	    draw_matches(match_global, [0.0,0.0,0.0], ax2)
-	
-	    
-	    xP = []
-	    yP = []
-	    for b in medialPoly:
-		p1 = b
-		xP.append(p1[0])    
-		yP.append(p1[1])
-	
-	    ax2.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
-	
-	    ax2.scatter([pose2[0]],[pose2[1]],color=(0.0,0.0,1.0))
-	
-	    xP = []
-	    yP = []
-	    for b in localPathPoints_offset:
-		xP.append(b[0])    
-		yP.append(b[1])
-	    
-	
-	    ax2.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
-		
-	
-	    plotEnv(ax2)        
-	    ax2.set_title("(%u,%u) u2 = %1.3f, u3 = %1.3f, ang = %1.3f, cost = %f" % (n1, n2, u2, currU, currAng, trueCost))
-
-	    ax2.set_xlim(-4, 4)                    
-	    ax2.set_ylim(-3, 3)
-	    plt.savefig("ICP_plot_%06u.png" % globalPlotCount)
-	    #ax2.clear()
-	    #ax1.clear()
-	    #pylab.clf()
-	    plt.clf()
-	    plt.close()
-	    #figPlot.clf()
-	    #del ax1
-	    #del ax2
-	    #del f
-	    
-
-	    globalPlotCount += 1
-
+        for pair in match_pairs:
+        p1 = pair[0]
+        p2 = pair[1]
+        
+        p1_o = dispOffset(p1, currPose)
+        
+        p1_g = p1_o
+        p2_g = p2
+        match_global.append([p1_g,p2_g])
+        
+        draw_matches(match_global, [0.0,0.0,0.0])
+        """
+        
+        xP = []
+        yP = []
+        for b in globalPoly:
+            p1 = b
+            xP.append(p1[0])    
+            yP.append(p1[1])
+        
+        ax1.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+        #pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+        
+        
+        ax1.scatter([pose1[0]],[pose1[1]],color=(0.0,0.0,1.0))
+        #pylab.scatter([pose1[0]],[pose1[1]],color=(0.0,0.0,1.0))
+        
+        xP = []
+        yP = []
+        #for b in localPathPoints:
+        for b in localPathPoints_offset:
+            pLocal = dispOffset(b, unPoseOffset)
+            p1 = dispOffset(pLocal, deOffset)                
+            #pLocal = doUnPoseOffset.convertLocalOffsetToGlobal(b)
+            #p1 = p3Restore.convertLocalToGlobal(pLocal)
+            xP.append(p1[0])    
+            yP.append(p1[1])
+        
+        ax1.plot(xP,yP,linewidth=1, color=(0.0,1.0,0.0))
+        #pylab.plot(xP,yP,linewidth=1, color=(0.0,1.0,0.0))
+        
+        #p3 = dispOffset(pose3, deOffset)
+        p3 = p3Restore.convertLocalOffsetToGlobal(pose3)
+        
+        ax1.scatter([p3[0]],[p3[1]],color=(0.0,1.0,0.0))
+        #pylab.scatter([p3[0]],[p3[1]],color=(0.0,1.0,0.0))
+        
+        
+        
+        
+        xP = []
+        yP = []
+        for b in points:
+            p1 = [b[0],b[1]]
+            #p1 = dispOffset(p,currPose)
+            
+            
+            p1Local = dispOffset(p1, unPoseOffset)
+            p1_g = dispOffset(p1Local, deOffset)                     
+            #p1 = poseOrigin.convertLocalToGlobal(p)
+            xP.append(p1_g[0])    
+            yP.append(p1_g[1])
+          
+        """
+        xP = []
+        yP = []
+        for b in points:
+        p = [b[0],b[1]]
+        p1 = dispOffset(p,currPose)
+        
+        #p1 = poseOrigin.convertLocalToGlobal(p)
+        xP.append(p1[0])    
+        yP.append(p1[1])
+        """
+        
+        ax1.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
+        #pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
+        
+        #p2 = dispOffset(pose2,currPose)
+        p2Local = dispOffset(pose2, unPoseOffset)
+        p2 = dispOffset(p2Local, deOffset)   
+        ax1.scatter([p2[0]],[p2[1]],color=(1.0,0.0,0.0))
+        #pylab.scatter([p2[0]],[p2[1]],color=(1.0,0.0,0.0))
+        #pylab.scatter([pose2[0]],[pose2[1]],color=(1.0,0.0,0.0))
+        
+        
+        plotEnv(ax1)        
+        #plotEnv()        
+        ax1.set_title("(%u,%u) u1 = %1.3f, currU = %1.3f, currAng = %1.3f, cost = %1.3f, %1.3f, %1.3f" % (n1, n2, u1, currU, currAng, newCost, trueCost, trueCost2))
+        #pylab.title("(%u,%u) u1 = %1.3f, u2 = %1.3f, ang = %1.3f, cost = %f" % (n1, n2, u1, currU, currAng, newCost))
+        
+        #pylab.xlim(currPose[0]-4, currPose[0]+4)                    
+        #pylab.ylim(currPose[1]-3, currPose[1]+3)
+        ax1.set_xlim(-4, 4)                    
+        ax1.set_ylim(-3, 3)
+        #pylab.xlim(-4, 4)                    
+        #pylab.ylim(-3, 3)
+        #pylab.savefig("ICP_plot_%06u.png" % globalPlotCount)
+        #pylab.clf()
+        
+        " save inputs "
+        #saveFile = ""
+        #saveFile += "initGuess = " + repr(initGuess) + "\n"
+        #saveFile += "globalPath = " + repr(globalPath) + "\n"
+        #saveFile += "medialPoints = " + repr(medialPoints) + "\n"
+        
+        #f = open("icpInputSave_%04u.txt" % globalPlotCount, 'w')
+        #globalPlotCount += 1
+        #f.write(saveFile)
+        #f.close()        
+        
+        #numIterations += 1
+        
+        #" draw final position "
+        #if True:
+        
+        " set the origin of pose 1 "
+        poseOrigin = Pose(currPose)
+        
+        #pylab.clf()
+        #pylab.axes()
+        match_global = []
+        
+        for pair in match_pairs:
+            p2 = pair[0]
+            p3 = pair[1]
+            
+            p2_o = dispOffset(p2, currPose)
+            #p2_o = poseOrigin.convertGlobalToLocal(currPose)
+            
+            p2_g = p2_o
+            p3_g = p3
+            match_global.append([p2_g,p3_g])
+        
+        draw_matches(match_global, [0.0,0.0,0.0], ax2)
+        
+        
+        xP = []
+        yP = []
+        for b in medialPoly:
+            p1 = b
+            xP.append(p1[0])    
+            yP.append(p1[1])
+        
+        ax2.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
+        
+        ax2.scatter([pose2[0]],[pose2[1]],color=(0.0,0.0,1.0))
+        
+        xP = []
+        yP = []
+        for b in localPathPoints_offset:
+            xP.append(b[0])    
+            yP.append(b[1])
+        
+        
+        ax2.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+        
+        
+        plotEnv(ax2)        
+        ax2.set_title("(%u,%u) u2 = %1.3f, u3 = %1.3f, ang = %1.3f, cost = %f" % (n1, n2, u2, currU, currAng, trueCost))
+        
+        ax2.set_xlim(-4, 4)                    
+        ax2.set_ylim(-3, 3)
+        plt.savefig("ICP_plot_%06u.png" % globalPlotCount)
+        #ax2.clear()
+        #ax1.clear()
+        #pylab.clf()
+        plt.clf()
+        plt.close()
+        #figPlot.clf()
+        #del ax1
+        #del ax2
+        #del f
+        
+        
+        globalPlotCount += 1
+            
     pLocal = doUnPoseOffset.convertLocalOffsetToGlobal([0.0,0.0,0.0])
     resultPose = p3Restore.convertLocalOffsetToGlobal(pLocal)
 
-    return resultPose, newCost, len(match_pairs)
+    return resultPose, newCost, len(match_pairs), currAng
 
     #return currPose, newCost, len(match_pairs)
 
@@ -8206,7 +8128,7 @@ def globalPathToNodeOverlapICP(initGuess, globalPath, medialPoints, plotIter = F
 
             pylab.xlim(-4, 4)                    
             pylab.ylim(-3, 3)
-            pylab.savefig("ICP_plot_%04u.png" % globalPlotCount)
+            pylab.savefig("ICP_plot_%06u.png" % globalPlotCount)
             pylab.clf()
             
 
@@ -8265,7 +8187,7 @@ def globalPathToNodeOverlapICP(initGuess, globalPath, medialPoints, plotIter = F
 
             pylab.xlim(-4, 4)                    
             pylab.ylim(-3, 3)
-            pylab.savefig("ICP_plot_%04u.png" % globalPlotCount)
+            pylab.savefig("ICP_plot_%06u.png" % globalPlotCount)
             pylab.clf()
             
 
@@ -8585,7 +8507,7 @@ def pathOverlapICP(initGuess, globalPath, medialPoints,plotIter = False, n1 = 0,
     
             pylab.xlim(-6, 10)                    
             pylab.ylim(-8, 8)
-            pylab.savefig("ICP_plot_%04u.png" % globalPlotCount)
+            pylab.savefig("ICP_plot_%06u.png" % globalPlotCount)
             pylab.clf()
             
             " save inputs "
@@ -8748,7 +8670,7 @@ def pathOverlapICP(initGuess, globalPath, medialPoints,plotIter = False, n1 = 0,
     
             pylab.xlim(-6, 10)                    
             pylab.ylim(-8, 8)
-            pylab.savefig("ICP_plot_%04u.png" % globalPlotCount)
+            pylab.savefig("ICP_plot_%06u.png" % globalPlotCount)
             pylab.clf()
             
             " save inputs "
@@ -8817,7 +8739,7 @@ def pathOverlapICP(initGuess, globalPath, medialPoints,plotIter = False, n1 = 0,
 
         pylab.xlim(-6, 10)                    
         pylab.ylim(-8, 8)
-        pylab.savefig("ICP_plot_%04u.png" % globalPlotCount)
+        pylab.savefig("ICP_plot_%06u.png" % globalPlotCount)
         pylab.clf()
         
         " save inputs "
@@ -9163,7 +9085,7 @@ def globalOverlapTransformICP(initGuess, globalPath, hull, medialPoints,  plotIt
             axes1.set_xlim(-2,10)
             axes1.set_ylim(-6,6)        
 
-            fig1.savefig("ICP_plot_%04u_0.png" % numIterations)
+            fig1.savefig("ICP_plot_%06u_0.png" % numIterations)
             pylab.clf()            
             
             pylab.figure(1)            
@@ -9367,7 +9289,7 @@ def globalOverlapTransformICP(initGuess, globalPath, hull, medialPoints,  plotIt
             axes1.set_xlim(-2,10)
             axes1.set_ylim(-6,6)        
 
-            fig1.savefig("ICP_plot_%04u_0.png" % numIterations)
+            fig1.savefig("ICP_plot_%06u_0.png" % numIterations)
             pylab.clf()            
             
             pylab.figure(1)            
@@ -9446,7 +9368,7 @@ def globalOverlapTransformICP(initGuess, globalPath, hull, medialPoints,  plotIt
 
         pylab.xlim(currPose[0]-4, currPose[0]+4)                    
         pylab.ylim(currPose[1]-3, currPose[1]+3)
-        pylab.savefig("ICP_plot_%04u_1.png" % numIterations)
+        pylab.savefig("ICP_plot_%06u_1.png" % numIterations)
         pylab.clf()            
         numIterations += 1
     
@@ -9831,7 +9753,7 @@ def overlapICP2(estPose1, initGuess, hull1, hull2, medialPoints1, medialPoints2,
             #pylab.xlim(-3,3)
             #pylab.ylim(-3,3)
             #pylab.axis('equal')
-            pylab.savefig("ICP_plot_%04u_0.png" % numIterations)
+            pylab.savefig("ICP_plot_%06u_0.png" % numIterations)
             pylab.clf()            
         
 
@@ -10047,7 +9969,7 @@ def overlapICP2(estPose1, initGuess, hull1, hull2, medialPoints1, medialPoints2,
             pylab.xlim(estPose1[0]-4, estPose1[0]+4)                    
             pylab.ylim(estPose1[1]-3, estPose1[1]+3)
             #pylab.axis('equal')
-            pylab.savefig("ICP_plot_%04u_1.png" % numIterations)
+            pylab.savefig("ICP_plot_%06u_1.png" % numIterations)
             pylab.clf()            
 
         
@@ -10243,7 +10165,7 @@ def cornerICP(estPose1, angGuess, point1, point2, ang1, ang2, hull1, hull2, swee
             pylab.ylim(-3,9)
             pylab.title("%u %u, cost = %f" % (n1, n2, newCost))
             #pylab.ylim(-7,5)
-            pylab.savefig("ICP_plot_%04u.png" % numIterations)
+            pylab.savefig("ICP_plot_%06u.png" % numIterations)
             pylab.clf()                    
 
             
@@ -10336,7 +10258,7 @@ def cornerICP(estPose1, angGuess, point1, point2, ang1, ang2, hull1, hull2, swee
             pylab.title("%u %u, cost = %f" % (n1, n2, newCost))
             pylab.xlim(-4,9)
             pylab.ylim(-3,9)
-            pylab.savefig("ICP_plot_%04u.png" % numIterations)
+            pylab.savefig("ICP_plot_%06u.png" % numIterations)
             pylab.clf()            
                         
         # save the current offset and cost
@@ -10502,7 +10424,7 @@ def cornerICP(estPose1, angGuess, point1, point2, ang1, ang2, hull1, hull2, swee
         pylab.title("%u %u, ratio = %f, thresh = %f, over = %d, under = %d" % (n1, n2, float(upCount)/float(downCount), threshVal, upCount, downCount))
         pylab.xlim(-4,9)
         pylab.ylim(-3,9)
-        pylab.savefig("ICP_plot_%04u.png" % numIterations)
+        pylab.savefig("ICP_plot_%06u.png" % numIterations)
         pylab.clf()            
         
     
@@ -10705,7 +10627,7 @@ def motionICP(points1, points2, offset, costThresh = 0.004, minMatchDist = 2.0, 
             pylab.xlim(-3,3)
             pylab.ylim(-3,3)
             #pylab.axis('equal')
-            pylab.savefig("ICP_plot_%04u.png" % numIterations)
+            pylab.savefig("ICP_plot_%06u.png" % numIterations)
             pylab.clf()            
         
         #print "pairs =", len(match_pairs)
@@ -10803,7 +10725,7 @@ def motionICP(points1, points2, offset, costThresh = 0.004, minMatchDist = 2.0, 
             pylab.xlim(-3,3)
             pylab.ylim(-3,3)
             #pylab.axis('equal')
-            pylab.savefig("ICP_plot_%04u.png" % numIterations)
+            pylab.savefig("ICP_plot_%06u.png" % numIterations)
             pylab.clf()            
 
     #print "offset:", offset
@@ -10906,7 +10828,8 @@ def plotEnv(axes = 0):
     
     walls = [wall1, wall2, wall3, wall4, wall5, wall6]
     """
-
+    
+    """
     # triple-Y - multi-junction, test 1                 
     WLEN = 5.0
     WLEN2 = 1.0
@@ -10946,7 +10869,10 @@ def plotEnv(axes = 0):
             p = copy(wall[i])
             p[0] += 6.0
             wall[i] = p
+    """
 
+    " Y-junction, test 1"                 
+    walls = [[[-8.0, -0.20000000000000001], [2.0, -0.20000000000000001], [5.5, -6.2621779441833496]], [[5.5, 6.2621779441833496], [2.0, 0.20000000000000001], [-8.0, 0.20000000000000001]], [[5.846409797668457, -6.0621781349182129], [2.3464102745056152, 0.0], [5.846409797668457, 6.0621781349182129], [5.5, 6.2621779441833496]], [[5.5, -6.2621779441833496], [5.846409797668457, -6.0621781349182129]], [[-8.0, 0.20000000000000001], [-8.0, -0.20000000000000001]]]
 
     if axes == 0:
     

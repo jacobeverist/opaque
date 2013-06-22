@@ -326,9 +326,13 @@ class TestProcess(SnakeControl):
 			#self.mapGraph.loadSeries("result_2013_05_24", 104)
 
 			
+			#self.mapGraph.loadSeries("result_2013_05_24", 50)
 			self.mapGraph.loadSeries("result_2013_05_24", 114)
 			#self.mapGraph.restoreSeries("result_2013_05_24", 4)
 
+			#self.mapGraph.restoreSeries("resultProcess_2013_06_20b", 50)
+
+			#self.mapGraph.restoreSeries("resultProcess_2013_06_20b", 22)
 			
 			#self.mapGraph.restoreSeries("result_2013_05_24", 104)
 			#self.mapGraph.restoreSeries("resultProcess_2013_06_07b", 64)

@@ -273,6 +273,10 @@ class Paths:
             junctionPoint = poseOrigin.convertLocalToGlobal(localJunctionPoint)
             junctionPose = poseOrigin.convertLocalOffsetToGlobal(localJunctionPoint)
 
+            junctionPose = self.getGlobalJunctionPose(pathID)
+            #junctionPose = cPath["globalJunctionPose"]
+            junctionPoint = [junctionPose[0],junctionPose[1]]
+
             print "node globJuncPose:",  junctionPose
 
             path1 = self.trimmedPaths[pathID]
@@ -302,14 +306,17 @@ class Paths:
 
 
             " get junctions " 
-            localPose = cPath["localJunctionPose"]
+            #localPose = cPath["localJunctionPose"]
             branchNodeID = cPath["branchNodeID"]
             
-            poseOrigin = Pose(self.nodeHash[branchNodeID].getEstPose())
-            junctionPoint = poseOrigin.convertLocalToGlobal(localPose)
+            #poseOrigin = Pose(self.nodeHash[branchNodeID].getEstPose())
+            #junctionPoint = poseOrigin.convertLocalToGlobal(localPose)
+
+            self.junctions[pathID] = [branchNodeID, junctionPose, (parentPathID,minI2), path2[minI2], minI1]
             
+            #self.junctions[pathID] = [branchNodeID, junctionPoint, (parentPathID,minI2), path2[minI2], minI1]
+
             #globalPose = self.nodeHash[branchNodeID].getGlobalGPACPose()
-            self.junctions[pathID] = [branchNodeID, junctionPoint, (parentPathID,minI2), path2[minI2], minI1]
             #junctions[pathID] = [cPath["branchNodeID"], cPath["localJunctionPose"]]
             
 
@@ -341,6 +348,7 @@ class Paths:
             parentPathID = cPath["parentID"]
             
             " parent does not concern us "
+            """
             if parentPathID != None:
                 
                 junctionNodeID = cPath["branchNodeID"]
@@ -351,6 +359,7 @@ class Paths:
                 #xP = [junctionPoint[0]]
                 #yP = [junctionPoint[1]]
                 #pylab.scatter(xP,yP, color='r')
+            """
             
         " join with the junction in between the join points "
         for k in range(len(self.joins)):
@@ -440,6 +449,12 @@ class Paths:
     def getPathIDs(self):
         #print "keys:", self.pathClasses.keys()
         return self.pathClasses.keys()
+    
+    def getParentPathID(self, pathID):
+        
+        parentID = self.pathClasses[pathID]["parentID"]
+    
+        return parentID
     
     def getPath(self, pathID):
         return self.pathClasses[pathID]
@@ -2228,14 +2243,14 @@ class Paths:
 
         if junctionNodeID != None:
         
-            localJunctionPoint = self.pathClasses[pathID]["localJunctionPose"]
+            #localJunctionPoint = self.pathClasses[pathID]["localJunctionPose"]
             
             print "junctionNodeID:", junctionNodeID
             print "nodes:", self.nodeHash.keys()
             
-            poseOrigin = Pose(self.nodeHash[junctionNodeID].getEstPose())
-            globalJunctionPoint = poseOrigin.convertLocalOffsetToGlobal(localJunctionPoint)
-                        
+            #poseOrigin = Pose(self.nodeHash[junctionNodeID].getEstPose())
+            #globalJunctionPoint = poseOrigin.convertLocalOffsetToGlobal(localJunctionPoint)
+            globalJunctionPoint = self.getGlobalJunctionPose(pathID) 
         
         def convertAlphaUniform(a_vert, max_spacing = 0.04):
             
@@ -3929,12 +3944,13 @@ class Paths:
                         minDist = distList[i]
                         minI = i
                 
-                junctionNodeID = self.pathClasses[pathID]["branchNodeID"]
-                localJunctionPoint = self.pathClasses[pathID]["localJunctionPose"]
+                #junctionNodeID = self.pathClasses[pathID]["branchNodeID"]
+                #localJunctionPoint = self.pathClasses[pathID]["localJunctionPose"]
                 
-                poseOrigin = Pose(self.nodeHash[junctionNodeID].getEstPose())
-                junctionPoint = poseOrigin.convertLocalToGlobal(localJunctionPoint)
+                #poseOrigin = Pose(self.nodeHash[junctionNodeID].getEstPose())
+                #junctionPoint = poseOrigin.convertLocalToGlobal(localJunctionPoint)
                 
+                junctionPoint = self.getGlobalJunctionPose(pathID)
                 
                 if minDist_1 < minDist_2:
                     junctionPoint_K = secP1
@@ -4129,16 +4145,18 @@ class Paths:
 
         branchNodeID = self.pathClasses[childPathID]["branchNodeID"]
         poseOrigin = Pose(self.nodeHash[branchNodeID].getGlobalGPACPose())
-        localJunctionPoint = self.pathClasses[childPathID]["localJunctionPose"]
+        #localJunctionPoint = self.pathClasses[childPathID]["localJunctionPose"]
         
         
-        poseOrigin2 = Pose(self.nodeHash[branchNodeID].getEstPose())
-        globalJunctionPoint = poseOrigin2.convertLocalToGlobal(localJunctionPoint)
+        #poseOrigin2 = Pose(self.nodeHash[branchNodeID].getEstPose())
+        #globalJunctionPoint = poseOrigin2.convertLocalToGlobal(localJunctionPoint)
         
+        globalJunctionPoint = self.getGlobalJunctionPose(childPathID)
         
         " orienting the medial axis of the branch node correctly "
         #branchDir = self.pathParents[childPathID][3]
         
+        """
         branchHull, branchMedial = computeHullAxis(branchNodeID, self.nodeHash[branchNodeID], tailCutOff = False)
 
         branchMedialSpline = SplineFit(branchMedial, smooth=0.1)
@@ -4154,7 +4172,7 @@ class Paths:
         #    globalBranchPoints.reverse()
             
         globalBranchSpline = SplineFit(globalBranchPoints, smooth = 0.1)
-
+        """
             
 
         " return exception if we receive an invalid path "        
@@ -4340,6 +4358,7 @@ class Paths:
         pathSec1 = pathPoints2[:frontDepI+1]
         pathSec1.reverse()
         
+        """
         if len(pathSec1) > 5:
             pathSec1Spline = SplineFit(pathSec1, smooth = 0.1)        
             
@@ -4371,7 +4390,7 @@ class Paths:
             if matchCount1 > 0:
                 angleSum1 /= matchCount1
                 overlapSum1 /= matchCount1
-        
+        """
 
         angleSum2 = 0.0
         overlapSum2 = 0.0
@@ -4380,6 +4399,7 @@ class Paths:
         " path section for our back departure hypothesis "
         pathSec2 = pathPoints2[backDepI:]
 
+        """
         if len(pathSec2) > 5:
             pathSec2Spline = SplineFit(pathSec2, smooth = 0.1)        
     
@@ -4411,7 +4431,7 @@ class Paths:
             if matchCount2 > 0:
                 angleSum2 /= matchCount2
                 overlapSum2 /= matchCount2
-
+        """
         print "pathSec1 hypothesis angle and overlap sum and match count:", angleSum1, overlapSum1, matchCount1
         print "pathSec2 hypothesis angle and overlap sum and match count:", angleSum2, overlapSum2, matchCount2
 
@@ -4997,7 +5017,7 @@ class Paths:
                 index = 1
             #newPath2 = path2[:index+1] + [junctionPoint]
             
-            self.pathClasses[childPathID]["globalJunctionPose"] = path2[index]
+            #self.pathClasses[childPathID]["globalJunctionPose"] = path2[index]
 
             
             newPath2 = path2[:index+1]
@@ -5012,7 +5032,7 @@ class Paths:
                 " ensure at least 2 elements in path "
                 index = len(path2)-2
 
-            self.pathClasses[childPathID]["globalJunctionPose"] = path2[index]
+            #self.pathClasses[childPathID]["globalJunctionPose"] = path2[index]
 
             #newPath2 = [junctionPoint] + path2[index:]
             newPath2 = path2[index:]
@@ -5025,7 +5045,7 @@ class Paths:
             if index < 1:
                 index = 1
 
-            self.pathClasses[childPathID]["globalJunctionPose"] = path2[index]
+            #self.pathClasses[childPathID]["globalJunctionPose"] = path2[index]
 
             #newPath2 = path2[:index+1] + [junctionPoint]
             newPath2 = path2[:index+1]
@@ -5039,7 +5059,7 @@ class Paths:
                 " ensure at least 2 elements in path "
                 index = len(path2)-2
             
-            self.pathClasses[childPathID]["globalJunctionPose"] = path2[index]
+            #self.pathClasses[childPathID]["globalJunctionPose"] = path2[index]
             
             #newPath2 = [junctionPoint] + path2[index:]
             newPath2 = path2[index:]
@@ -5233,6 +5253,26 @@ class Paths:
         print "returning path terms:", terms
 
         return terms
+
+    def getClosestPath(self, locPose):
+        pass
+    
+        pathIDs = self.getPathIDs()
+        
+        minDist = 1e100
+        minPathID = 0
+        for pathID in pathIDs:
+            
+            pathSeg = self.trimmedPaths[pathID]
+            
+            for p in pathSeg:
+                dist = sqrt((p[0]-locPose[0])**2+(p[1]-locPose[1])**2)
+                
+                if dist < minDist:
+                    minDist = dist
+                    minPathID = pathID
+        
+        return minPathID
 
     def getOrderedOverlappingPaths(self, nodeID):
 
@@ -7386,11 +7426,13 @@ class Paths:
             if path["parentID"] == parentPathID:
                 
                 junctionNodeID = path["branchNodeID"]
-                localJunctionPoint = path["localJunctionPose"]
+                #localJunctionPoint = path["localJunctionPose"]
                 " check dist "
 
-                poseOrigin = Pose(self.nodeHash[junctionNodeID].getEstPose())
-                junctionPoint = poseOrigin.convertLocalOffsetToGlobal(localJunctionPoint)
+                #poseOrigin = Pose(self.nodeHash[junctionNodeID].getEstPose())
+                #junctionPoint = poseOrigin.convertLocalOffsetToGlobal(localJunctionPoint)
+                
+                junctionPoint = self.getGlobalJunctionPose(pathID)
                 
                 dist = sqrt((depPoint[0]-junctionPoint[0])**2 + (depPoint[1]-junctionPoint[1])**2 )
 
