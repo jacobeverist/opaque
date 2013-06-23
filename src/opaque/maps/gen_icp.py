@@ -7739,7 +7739,7 @@ def globalPathToNodeOverlapICP2(initGuess, globalPath, medialPoints, plotIter = 
         
         plotEnv(ax1)        
         #plotEnv()        
-        ax1.set_title("(%u,%u) u1 = %1.3f, currU = %1.3f, currAng = %1.3f, cost = %1.3f, %1.3f, %1.3f" % (n1, n2, u1, currU, currAng, newCost, trueCost, trueCost2))
+        ax1.set_title("(%u,%u) u1 = %1.3f, U = %1.3f, A = %1.3f, cost = %1.3f, %1.3f, %1.3f" % (n1, n2, u1, currU, currAng, newCost, trueCost, trueCost2))
         #pylab.title("(%u,%u) u1 = %1.3f, u2 = %1.3f, ang = %1.3f, cost = %f" % (n1, n2, u1, currU, currAng, newCost))
         
         #pylab.xlim(currPose[0]-4, currPose[0]+4)                    

@@ -432,7 +432,7 @@ def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, node
 
 	angDiff2 = abs(diffAngle(initPose2[2], estPose2[2]))
 	
-	print "returning:", contigFrac, overlapSum
+	print "returning:", angDiff2, contigFrac, overlapSum
 		
 	" sum of closest points on front and back "
 	" select the one with minimal cost "
@@ -532,7 +532,7 @@ def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, node
 		pylab.title("%d %s: [%d,%d] [%d,%d] %1.2f %1.2f" % (nodeID, repr(pathIDs), isExist1, isExist2, isInterior1, isInterior2, contigFrac, angDiff2))
 		pylab.savefig("multi_departure_%04u.png" % pathPlotCount)
 			
-	print "departure %d: %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, [%d,%d] [%d,%d], [%d,%d]" % (nodeID, maxFront, maxBack, dist1, dist2, matchVar1, matchVar2, angle1, angle2, isExist1, isExist2, isInterior1, isInterior2, frontDepI, backDepI)
+	print "multi_departure %d: %1.2f %1.2f %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, [%d,%d] [%d,%d], [%d,%d]" % (nodeID, angDiff2, contigFrac, maxFront, maxBack, dist1, dist2, matchVar1, matchVar2, angle1, angle2, isExist1, isExist2, isInterior1, isInterior2, frontDepI, backDepI)
 	
 	
 	" if the medial axis does not overlap the path contiguously enough, mark a high discrepancy "

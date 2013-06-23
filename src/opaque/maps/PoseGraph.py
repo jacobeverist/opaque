@@ -313,6 +313,8 @@ class PoseGraph:
 		self.candidateCount = 0
 		self.statePlotCount = 0
 		self.commonOriginCount = 0
+		self.multiDepCount = 0
+		
 
 		#self.numPaths = 1
 		#self.paths = {0 : []}
@@ -3156,8 +3158,11 @@ class PoseGraph:
 					print "resultPoses:", resultPose2, resultPose3
 					print "currAngs:", currAng2, currAng3
 
-					result2 = getMultiDeparturePoint(orientedSplicePath, medial2, initPose2, resultPose2, [], nodeID-1)
-					result3 = getMultiDeparturePoint(orientedSplicePath, medial3, initPose3, resultPose3, [], nodeID)
+					result2 = getMultiDeparturePoint(orientedSplicePath, medial2, pose2, resultPose2, [], nodeID-1, pathPlotCount = self.multiDepCount, plotIter = True)
+					self.multiDepCount += 1
+					result3 = getMultiDeparturePoint(orientedSplicePath, medial3, pose3, resultPose3, [], nodeID, pathPlotCount = self.multiDepCount, plotIter = True)
+					self.multiDepCount += 1
+
 					#results1.append(result+(k,))
 					" (departurePoint1, angle1, isInterior1, isExist1, dist1, departurePoint2, angle2, isInterior2, isExist2, dist2, contigFrac, overlapSum, angDiff2 )"
 														
