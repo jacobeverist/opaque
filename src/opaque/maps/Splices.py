@@ -437,7 +437,7 @@ def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, node
 	" sum of closest points on front and back "
 	" select the one with minimal cost "
 	
-	if plotIter:
+	if False:
 		pylab.clf()
 		xP = range(len(points2_offset))
 		yP = distances
@@ -473,6 +473,22 @@ def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, node
 			xP.append(p[0])
 			yP.append(p[1])
 		pylab.plot(xP,yP, color='b')
+
+
+		poseOrigin2 = Pose(initPose2)	
+		points2_offset2 = []
+		for p in points2:
+			result = poseOrigin2.convertLocalOffsetToGlobal(p)
+			points2_offset2.append(result)
+
+
+		xP = []
+		yP = []
+		for p in points2_offset2:
+			xP.append(p[0])
+			yP.append(p[1])
+		pylab.plot(xP,yP, color='b', alpha=0.5)
+
 
 		if True:	
 			xP = [pathPoints[max1][0]]
