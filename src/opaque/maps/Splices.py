@@ -91,6 +91,7 @@ def batchGlobalMultiFit(initGuesses, splices, medial, initPose, pathIDs, nodeID)
 	
 	nproc = __num_processors()
 	
+	nproc *= 2
 	print "nproc =", nproc
 	
 	# compute chunk size

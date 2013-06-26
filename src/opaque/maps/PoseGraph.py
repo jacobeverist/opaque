@@ -6364,10 +6364,10 @@ class PoseGraph:
 					if exID in splicePathIDs[spliceIndex]:
 						exclude = True
 				
-				if not exclude:			
+				if dist < 2.0 and contigFrac > 0.7 and not exclude:
 					filteredResults.append(result)
 
-		filteredResults = sorted(filteredResults, key=itemgetter(13))
+		filteredResults = sorted(filteredResults, key=itemgetter(14))
 
 		for result in filteredResults:
 			resultPose = result[0]
@@ -6386,7 +6386,15 @@ class PoseGraph:
 			angDiff2 = result[15]
 			spliceIndex = result[16]
 			dist = sqrt((estPose1[0]-resultPose[0])**2 + (estPose1[1] - resultPose[1])**2)
-			print spliceIndex, contigFrac, dist, angDiff2, spliceTerms[spliceIndex], splicePathIDs[spliceIndex]
+			lastCost = result[1]
+			matchCount = result[2]
+			overlapSum = result[14]
+			print spliceIndex, contigFrac, dist, angDiff2, lastCost, matchCount, overlapSum, spliceTerms[spliceIndex], splicePathIDs[spliceIndex], resultPose
+
+	
+
+		guessPose = filteredResults[0][0]
+		self.nodeHash[nodeID].setGPACPose(guessPose)
 	
 	
 
