@@ -3190,13 +3190,16 @@ class PoseGraph:
 					
 					" (resultPose2,lastCost2,matchCount2,fabs(currAng2)) "
 					
+					angDiff2 = abs(diffAngle(pose2[2],resultPose2[2]))
+					angDiff3 = abs(diffAngle(pose3[2],resultPose3[2]))
 					
+					print "angDiff:", angDiff2, angDiff3
 					
 					" NOTE:  added minimum threshold to angle difference "
 					" NOTE:  guess pose is now the inter-nodal estimate instead of path-based estimate "
-					if result2[-1] < 0.5:
+					if angDiff2 < 0.5:
 						resultMoves2.append((resultPose2,lastCost2,matchCount2,fabs(currAng2)) + result2)
-					if result3[-1] < 0.5:
+					if angDiff3 < 0.5:
 						resultMoves3.append((resultPose3,lastCost3,matchCount3,fabs(currAng3)) + result3)				
 				
 				
@@ -3216,8 +3219,14 @@ class PoseGraph:
 				for res in resultMoves3:
 					print res
 
-				self.nodeHash[nodeID-1].setGPACPose(resultMoves2[0][0])
-				self.nodeHash[nodeID].setGPACPose(resultMoves3[0][0])
+				if len(resultMoves2) > 0:
+					self.nodeHash[nodeID-1].setGPACPose(resultMoves2[0][0])
+				else:
+					print "node", nodeID-1, "not movePathed because no valid pose"
+				if len(resultMoves3) > 0:
+					self.nodeHash[nodeID].setGPACPose(resultMoves3[0][0])
+				else:
+					print "node", nodeID, "not movePathed because no valid pose"
 
 
 	
