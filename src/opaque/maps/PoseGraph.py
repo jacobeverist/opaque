@@ -2464,6 +2464,17 @@ class PoseGraph:
 				#self.updatePathNode(nodeID1, nodeID2, orderedPathIDs1, orderedPathIDs2)
 				#self.makeNodePathConsistent(nodeID1, nodeID2, orderedPathIDs1, orderedPathIDs2)
 	
+	
+				self.consistentFit(nodeID1,  self.nodeHash[nodeID1].getGlobalGPACPose())
+				self.drawConstraints(self.statePlotCount)
+				self.statePlotCount += 1
+				self.drawPathAndHull()
+
+				self.consistentFit(nodeID2,  self.nodeHash[nodeID2].getGlobalGPACPose())
+				self.drawConstraints(self.statePlotCount)
+				self.statePlotCount += 1
+				self.drawPathAndHull()
+				
 				#self.updateLastNode(nodeID1+2)
 				#self.updateLastNode(nodeID2+2)
 			
@@ -3739,8 +3750,10 @@ class PoseGraph:
 				print "received", len(splicedPaths1), "spliced paths from path IDs", orderedPathIDs
 				" departurePoint1, angle1, isInterior1, isExist1, dist1, departurePoint2, angle2, isInterior2, isExist2, dist2, contigFrac, overlapSum, angDiff2 |"
 		
+
+				self.consistentFit(nodeID, estPose, excludePathIDs = [pathID2])
 		
-				self.fitToSplices(nodeID, splicedPaths1, estPose, estPose)
+				#self.fitToSplices(nodeID, splicedPaths1, estPose, estPose)
 
 				self.drawConstraints(self.statePlotCount)
 				self.statePlotCount += 1
@@ -3927,6 +3940,10 @@ class PoseGraph:
 					#self.fitToSplices(nodeID, pathSplices, globalPoint1, globalPoint1)
 
 					self.consistentFit(nodeID, self.nodeHash[nodeID].getGlobalGPACPose(), excludePathIDs = [lessID])
+
+					self.drawConstraints(self.statePlotCount)
+					self.statePlotCount += 1
+					self.drawPathAndHull()
 
 					
 					
@@ -6344,8 +6361,27 @@ class PoseGraph:
 
 		resultsBySplice += results
 		
-		print len(resultsBySplice), "results"
+		print "consistentFit node", nodeID
 		
+		print len(resultsBySplice), "results"
+
+		print "unfilteredResults:"
+		for result in resultsBySplice:
+			resultPose = result[0]
+			isInterior1 = result[5]
+			isExist1 = result[6]
+			isInterior2 = result[10]
+			isExist2 = result[11]
+			contigFrac = result[13]
+			angDiff2 = result[15]
+			spliceIndex = result[16]
+			dist = sqrt((estPose1[0]-resultPose[0])**2 + (estPose1[1] - resultPose[1])**2)
+			lastCost = result[1]
+			matchCount = result[2]
+			overlapSum = result[14]
+			print spliceIndex, [int(isInterior1), int(isInterior2), int(isExist1), int(isExist2)], contigFrac, dist, angDiff2, lastCost, matchCount, overlapSum, spliceTerms[spliceIndex], splicePathIDs[spliceIndex], resultPose
+
+			
 		
 		filteredResults = []
 		for result in resultsBySplice:
@@ -6364,7 +6400,7 @@ class PoseGraph:
 					if exID in splicePathIDs[spliceIndex]:
 						exclude = True
 				
-				if dist < 2.0 and contigFrac > 0.7 and not exclude:
+				if dist < 2.0 and contigFrac > 0.7 and angDiff2 < 0.5 and not exclude:
 					filteredResults.append(result)
 
 		filteredResults = sorted(filteredResults, key=itemgetter(14))
