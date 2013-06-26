@@ -174,6 +174,7 @@ class SplineFit:
 
 		magDist = abs(dist)
 		
+		returnVal = -1
 		#print "dist =", dist, "startU =", startU, "magDist =", magDist
 		
 		if dist >= 0:
@@ -185,8 +186,9 @@ class SplineFit:
 			else:
 				termDist = self.dist(startU, highU)
 			#print "termDist =", termDist
-			if termDist >= magDist:
-				return highU
+			if termDist <= magDist:
+				returnVal = highU
+				return returnVal
 
 		else:
 			highU = startU
@@ -198,48 +200,91 @@ class SplineFit:
 			#print "termDist =", termDist
 
 			if termDist <= magDist:
-				return lowU
+				returnVal = lowU
+				return returnVal
 		
-		count = 0
-		
-		while True:
-			" find U between the highest and lowest"
-			midU = (highU - lowU)/2.0 + lowU
-			if distIter != None:
-				midDist = self.dist(startU, midU, iter = distIter)
-			else:
-				midDist = self.dist(startU, midU)
+		if returnVal == -1:
+			count = 0
 			
-			#print "midU =", midU, "midDist =", midDist
-			
-			if dist >= 0:
-				if midDist > magDist:
-					highU = midU
-					lowU = lowU
+			while True:
+				" find U between the highest and lowest"
+				midU = (highU - lowU)/2.0 + lowU
+				if distIter != None:
+					midDist = self.dist(startU, midU, iter = distIter)
 				else:
-					highU = highU
-					lowU = midU
-			else:
-				if midDist > magDist:
-					highU = highU
-					lowU = midU
+					midDist = self.dist(startU, midU)
+				
+				#print "midU =", midU, "midDist =", midDist
+				
+				if dist >= 0:
+					if midDist > magDist:
+						highU = midU
+						lowU = lowU
+					else:
+						highU = highU
+						lowU = midU
 				else:
-					highU = midU
-					lowU = lowU
-			
-			#print "highU =", highU, "lowU =", lowU
-			
-			" terminate when close enough "
-			if abs(magDist-midDist) < 0.01:
-				#print "returning u =", midU, "for midU =", midU
-				#print
-				return midU
+					if midDist > magDist:
+						highU = highU
+						lowU = midU
+					else:
+						highU = midU
+						lowU = lowU
+				
+				#print "highU =", highU, "lowU =", lowU
+				
+				" terminate when close enough "
+				if abs(magDist-midDist) < 0.01:
+					#print "returning u =", midU, "for midU =", midU
+					#print
+					returnVal = midU
+					return returnVal
+	
+				count += 1
+				if count > 30:
+					print "Fail getUofDist:"
+					print startU, dist, highU, lowU, midU, midDist, magDist, termDist
+					#raise
 
-			count += 1
-			if count > 30:
-				print "Fail getUofDist:"
-				print startU, dist, highU, lowU, midU, midDist, magDist, termDist
-				raise
+					" brute force search"
+					bestDiff = 1e100
+					bestIndex = int(startU*1000.)
+					initDist = self.distPoints[bestIndex]
+			
+					print "bestIndex, initDist =", bestIndex, initDist
+			
+					if dist >= 0:
+						setIndices = range(bestIndex,1000)
+						for k in setIndices:
+							currDist = self.distPoints[k] - initDist
+							deltaDiff = abs(magDist-currDist)
+							
+							if deltaDiff < bestDiff:
+								bestDiff = deltaDiff
+								bestIndex = k
+					else:
+						setIndices = range(0,bestIndex+1)
+						setIndices.reverse()
+						for k in setIndices:
+							currDist = initDist - self.distPoints[k]
+							deltaDiff = abs(magDist-currDist)
+							
+							if deltaDiff < bestDiff:
+								bestDiff = deltaDiff
+								bestIndex = k
+			
+					uVal = bestIndex * 0.001
+					print "currDist, bestIndex, bestDiff, uVal =", currDist, bestIndex, bestDiff, uVal
+					returnVal2 = uVal
+					
+					return uVal
+
+		#print "returnVals:", returnVal, returnVal2
+		#if returnVal - returnVal2 > 0.01:
+		#	print "WOW"
+		
+		#return returnVal
+	
 	
 
 	def getPointOfDist(self, dist):
