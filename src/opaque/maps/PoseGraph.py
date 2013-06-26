@@ -3926,7 +3926,7 @@ class PoseGraph:
 					#self.fitToSplices(nodeID, splicedPaths1, globalPoint1, globalPoint1)
 					#self.fitToSplices(nodeID, pathSplices, globalPoint1, globalPoint1)
 
-					self.consistentFit(nodeID, self.nodeHash[nodeID].getGlobalGPACPose())
+					self.consistentFit(nodeID, self.nodeHash[nodeID].getGlobalGPACPose(), excludePathIDs = [lessID])
 
 					
 					
@@ -6101,7 +6101,7 @@ class PoseGraph:
 
 
 
-	def consistentFit(self, nodeID, estPose):
+	def consistentFit(self, nodeID, estPose, excludePathIDs = []):
 
 		splicedPaths1, spliceTerms, splicePathIDs = self.paths.getSplicesByNearJunction(nodeID)
 
@@ -6325,7 +6325,7 @@ class PoseGraph:
 			
 	
 			" while loop "
-			dists = [(k-5)*0.2 in range(11)]	
+			dists = [(k-5)*0.2 for k in range(11)]	
 			for dist in dists:
 				
 				
@@ -6335,6 +6335,8 @@ class PoseGraph:
 				
 			orientedPaths.append(orientedPath)
 
+		print len(orientedPaths), "orientedPaths"
+		print len(initGuesses), "initGuesses"
 		results = batchGlobalMultiFit(initGuesses, orientedPaths, medial1, estPose1, [], nodeID)
 
 		time2 = time.time()
@@ -6357,7 +6359,13 @@ class PoseGraph:
 			spliceIndex = result[16]
 			dist = sqrt((estPose1[0]-resultPose[0])**2 + (estPose1[1] - resultPose[1])**2)
 			if not isInterior1 and not isInterior2 and not isExist1 and not isExist2:
-				filteredResults.append(result)
+				exclude = False
+				for exID in excludePathIDs:
+					if exID in splicePathIDs[spliceIndex]:
+						exclude = True
+				
+				if not exclude:			
+					filteredResults.append(result)
 
 		filteredResults = sorted(filteredResults, key=itemgetter(13))
 
