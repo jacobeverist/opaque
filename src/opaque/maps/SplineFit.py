@@ -42,7 +42,12 @@ class SplineFit:
 				intArray[1].append(p[1])
 				
 		" performing spline fit "
-		self.tck, self.u = scipy.interpolate.splprep(intArray, s = self.smoothNess, k=self.kp)
+		try:
+			self.tck, self.u = scipy.interpolate.splprep(intArray, s = self.smoothNess, k=self.kp)
+		except:
+			print "points:", points
+			print "intArray:", intArray
+			raise
 
 
 		" precomputed points "

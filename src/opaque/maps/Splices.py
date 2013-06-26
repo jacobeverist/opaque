@@ -24,17 +24,21 @@ def __num_processors():
 		get_nprocs.argtypes = []
 		return get_nprocs()
 
-def __remote_multiFit(rank, qin, qout, globalPath, medial, initPose, pathIDs, nodeID):
+def __remote_multiFit(rank, qin, qout, splices, medial, initPose, pathIDs, nodeID):
+
+	print "started __remote_multiFit"
 
 	while 1:
 		# read input queue (block until data arrives)
 		nc, args = qin.get()
-		#print rank, "received", nc, args
+		print rank, "received", nc, args
 		# process data
 		#knn = __do_nothing(data, nc, someArg2, someArg3)
 		results = []
 		for arg in args:
-			results.append(multiFitSplice(arg[0], globalPath, medial, initPose, pathIDs, nodeID, arg[1]))
+			print "multiFitSplice(", arg
+			globalPath = splices[arg[0][3]]
+			results.append(multiFitSplice(arg[0][0:3], globalPath, medial, initPose, pathIDs, nodeID, arg[1]) + (arg[0][3],))
 						   
 			#resultPose, lastCost, matchCount = globalOverlapICP_GPU2(arg, globalPath, medial)
 			#results.append([resultPose, lastCost, matchCount])
@@ -51,13 +55,13 @@ def multiFitSplice(initGuess, orientedPath, medialAxis, initPose, pathIDs, nodeI
 	#u2 = originU2
 	#u1 = currPathU
 	#angGuess = 0.0
-	
+	print "ICP:", pathPlotCount
 	resultPose, lastCost, matchCount = globalOverlapICP_GPU2([u1,u2,angGuess], orientedPath, medialAxis, globalPlotCount = pathPlotCount, plotIter = False, n1 = nodeID, n2 = -1)
-		
+	print "ICP done"
 	#self.nodeHash[nodeID].setGPACPose(resultPose)
 	
 	#pathPlotCount = 0
-	resultArgs = getMultiDeparturePoint(orientedPath, medialAxis, initPose, resultPose, pathIDs, nodeID, pathPlotCount, plotIter = True)
+	resultArgs = getMultiDeparturePoint(orientedPath, medialAxis, initPose, resultPose, pathIDs, nodeID, pathPlotCount, plotIter = False)
 
 	isExist1 = resultArgs[3]
 
@@ -65,7 +69,7 @@ def multiFitSplice(initGuess, orientedPath, medialAxis, initPose, pathIDs, nodeI
 	return (resultPose, lastCost, matchCount) + resultArgs
 
 
-def batchGlobalMultiFit(initGuesses, globalPath, medial, initPose, pathIDs, nodeID):
+def batchGlobalMultiFit(initGuesses, splices, medial, initPose, pathIDs, nodeID):
 
 	global renderGlobalPlotCount
 
@@ -102,15 +106,19 @@ def batchGlobalMultiFit(initGuesses, globalPath, medial, initPose, pathIDs, node
 	qin = processing.Queue(maxsize=ndata/chunk_size)
 	qout = processing.Queue(maxsize=ndata/chunk_size)
 	pool = [processing.Process(target=__remote_multiFit,
-				args=(rank, qin, qout, globalPath, medial, initPose, pathIDs, nodeID))
+				args=(rank, qin, qout, splices, medial, initPose, pathIDs, nodeID))
 					for rank in range(nproc)]
 	for p in pool: p.start()
 	
 	# put data chunks in input queue
 	cur, nc = 0, 0
+	print "args =", args
 	while 1:
 		#_data = data[:,cur:cur+chunk_size]
 		_data = args[cur:cur+chunk_size]
+		print "_data =", _data
+		print "nc = ", nc
+		print "cur =", cur
 		if len(_data) == 0: break
 		print "put(", (nc,_data), ")"
 		qin.put((nc,_data))
@@ -118,17 +126,33 @@ def batchGlobalMultiFit(initGuesses, globalPath, medial, initPose, pathIDs, node
 		cur += chunk_size
 		nc += 1
 	
+	print "BATCH FINISHED"
+	
+	
 	# read output queue
 	knn = []
 	while len(knn) < nc:
 		knn += [qout.get()]
+	
+	print "received output:", knn
+		
 	# avoid race condition
 	_knn = [n for i,n in sorted(knn)]
 	knn = []
 	for tmp in _knn:
 		knn += tmp
+
+	print "sorted output:", knn
+		
+
+	print "terminating pool"
 	# terminate workers
-	for p in pool: p.terminate()
+	for p in pool:
+		print "terminate"
+		p.terminate()
+		print "terminated"
+		
+	print "returning"
 	return knn
 
 
@@ -177,6 +201,7 @@ def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, node
 	pathSpline = SplineFit(currPath, smooth=0.1)
 	pathPoints = pathSpline.getUniformSamples()
 
+
 	currPathReverse = deepcopy(currPath)
 	currPathReverse.reverse()
 	pathSplineReverse = SplineFit(currPathReverse, smooth=0.1)
@@ -212,7 +237,7 @@ def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, node
 			elif val2 < -1.0:
 				val2 = -1.0
 			ang2 = acos(val2)
-
+			
 			angleSum1 += ang1
 			angleSum2 += ang2
 
@@ -222,7 +247,7 @@ def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, node
 	if angleSum1 > angleSum2:
 		pathPoints = pathPointsReverse
 		pathSpline = pathSplineReverse
-
+	
 	" tip angles "
 	angSum1 = 0.0
 	angSum2 = 0.0
@@ -481,7 +506,6 @@ def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, node
 			result = poseOrigin2.convertLocalOffsetToGlobal(p)
 			points2_offset2.append(result)
 
-
 		xP = []
 		yP = []
 		for p in points2_offset2:
@@ -559,6 +583,81 @@ def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, node
 	#return departurePoint, isInterior, isExist
 	#return departurePoint1, angle1, isInterior1, isExist1, dist1, departurePoint2, angle2, isInterior2, isExist2, dist2
 	return departurePoint1, angle1, isInterior1, isExist1, dist1, departurePoint2, angle2, isInterior2, isExist2, dist2, contigFrac, overlapSum, angDiff2
+
+def orientPath(globalPath, medial1, estPose1):
+	
+	#node1 = self.nodeHash[nodeID]
+	#hull1, medial1 = computeHullAxis(nodeID, node1, tailCutOff = False)
+
+	#medial1 = globalMedial
+	
+	globalPathReverse = deepcopy(globalPath)
+	globalPathReverse.reverse()
+	
+
+	
+	#estPose1 = node1.getGlobalGPACPose()		
+	poseOrigin = Pose(estPose1)
+	
+	globalMedial = []
+	for p in medial1:
+		globalMedial.append(poseOrigin.convertLocalToGlobal(p))
+	
+	medialSpline1 = SplineFit(globalMedial, smooth=0.1)
+	globalSpline = SplineFit(globalPath, smooth=0.1)
+	globalSplineReverse = SplineFit(globalPathReverse, smooth=0.1)
+
+
+	overlapMatch = []
+	angleSum1 = 0.0
+	angleSum2 = 0.0
+	for i in range(0,len(globalMedial)):
+		p_1 = globalMedial[i]
+		p_2, j, minDist = findClosestPointInA(globalPath, p_1)
+		if minDist < 0.5:
+			overlapMatch.append((i,j,minDist))
+
+			pathU1 = medialSpline1.findU(p_1)	
+			pathU2 = globalSpline.findU(p_2)	
+			pathU2_R = globalSplineReverse.findU(p_2)	
+
+			pathVec1 = medialSpline1.getUVector(pathU1)
+			pathVec2 = globalSpline.getUVector(pathU2)
+			pathVec2_R = globalSplineReverse.getUVector(pathU2_R)
+
+			#path1Mag = sqrt(pathVec1[0]*pathVec1[0] + pathVec1[1]*pathVec1[1])
+			#path2Mag = sqrt(pathVec2[0]*pathVec2[0] + pathVec2[1]*pathVec2[1])
+			#path2MagR = sqrt(pathVec2_R[0]*pathVec2_R[0] + pathVec2_R[1]*pathVec2_R[1])
+
+			val1 = pathVec1[0]*pathVec2[0] + pathVec1[1]*pathVec2[1]
+			if val1 > 1.0:
+				val1 = 1.0
+			elif val1 < -1.0:
+				val1 = -1.0
+			ang1 = acos(val1)
+			
+			val2 = pathVec1[0]*pathVec2_R[0] + pathVec1[1]*pathVec2_R[1]
+			if val2 > 1.0:
+				val2 = 1.0
+			elif val2 < -1.0:
+				val2 = -1.0
+			ang2 = acos(val2)
+			
+
+			#ang1 = acos(pathVec1[0]*pathVec2[0] + pathVec1[1]*pathVec2[1])
+			#ang2 = acos(pathVec1[0]*pathVec2_R[0] + pathVec1[1]*pathVec2_R[1])
+	
+			angleSum1 += ang1
+			angleSum2 += ang2
+	
+	" select global path orientation based on which has the smallest angle between tangent vectors "
+	print i, "angleSum1 =", angleSum1, "angleSum2 =", angleSum2
+	if angleSum1 > angleSum2:
+		orientedGlobalPath = globalPathReverse
+	else:
+		orientedGlobalPath = globalPath
+	
+	return orientedGlobalPath
 
 
 def globalOverlapICP_GPU2(initGuess, globalPath, medialPoints, globalPlotCount = 0, plotIter = False, n1 = 0, n2 = 0, minMatchDist = 1.0):
@@ -955,6 +1054,8 @@ def findClosestPointInA(a_trans, b):
 		return minPoint, min_i, minDist
 	else:
 		raise
+
+
 
 " displace the point by the offset only.  No covariance "
 def dispOffset(p, offset):

@@ -16,6 +16,7 @@ import pylab
 import numpy
 from operator import itemgetter
 import hashlib
+from Splices import batchGlobalMultiFit, getMultiDeparturePoint, orientPath
 
 import alphamod
 
@@ -181,7 +182,7 @@ class Paths:
         self.topCount = 0
         self.medialSoupCount = 0
         self.pathIDs += 1
-
+        self.multiDepCount = 0
         self.colors = []
         for i in range(1000):
             self.colors.append((random.random(),random.random(),random.random()))
@@ -841,6 +842,243 @@ class Paths:
         return orderedPathIDs
 
 
+    def getSplicesByNearJunction(self, nodeID):
+        
+        allSplices, terminals, junctions = self.getAllSplices(plotIter = True)
+
+        initPose2 = self.nodeHash[nodeID].getGlobalGPACPose()
+        
+        print "junctions:", junctions
+        print "initPose2:", initPose2
+        
+        junctions2 = []
+        for pathID, params in junctions.iteritems():
+            junctionPose = params[1]
+            
+            print "checking", pathID, params
+            
+            dist2 = sqrt((junctionPose[0]-initPose2[0])**2 + (junctionPose[1]-initPose2[1])**2)
+            
+            print "dist2 =", dist2
+            
+            if dist2 < 3.0:
+                junctions2.append((pathID,params[2][0]))
+            
+        "self.junctions[pathID] = [branchNodeID, junctionPoint, (parentPathID,minI2), path2[minI2], minI1]"
+        
+        closePathID2 = self.getClosestPath(initPose2)
+
+        print "closePathID2:", closePathID2
+        
+        pathSet2 = [closePathID2]
+
+        junctionSet = junctions2
+        junctionSet = list(set(junctionSet))
+
+        print "junctions2:", junctions2
+
+        for junc in junctionSet:
+            pathSet2.append(junc[0])
+            pathSet2.append(junc[1])
+
+        print "pathSet2:", pathSet2
+
+        pathSet2 = list(set(pathSet2))
+        
+        pathSet2.sort()
+
+        print "pathSet2:", pathSet2
+        
+        termSet2 = []
+        for pathID in pathSet2:
+            if pathID == 0:
+                termSet2.append(terminals[0][0])
+                termSet2.append(terminals[1][0])
+            else:
+                termSet2.append(terminals[pathID+1][0])
+                
+        for pathID in pathSet2:
+            parentID = self.getParentPathID(pathID)
+
+            if parentID != None and not parentID in pathSet2:
+                termSet2.append(junctions[pathID][2])
+            
+
+        
+
+        splicePaths = []
+
+        print "termSet2:", termSet2
+        print "allSplices:"
+
+        for k, result in allSplices.iteritems():
+            print "id:", k
+            if k[0] in pathSet2 and k[1] in pathSet2:
+                
+                for sPath in result:
+                    termPath = sPath['termPath']
+                    print "termPath:", termPath
+                                                
+                    if termPath[0] in termSet2 and termPath[-1] in termSet2:
+                        splicePaths.append(sPath['path'])
+                        
+
+
+        return splicePaths, termSet2, pathSet2
+
+    def checkNodeConsistency(self, nodeID1, nodeID2):
+
+        nodeSet = [nodeID1, nodeID2]
+
+        resultSet = []
+        
+        for nodeID in nodeSet:
+
+            pose0 = self.nodeHash[nodeID].getGlobalGPACPose()
+            hull0, medial0 = computeHullAxis(nodeID, self.nodeHash[nodeID], tailCutOff = False)
+
+            splicePaths, termSet2, pathSet2 = self.getSplicesByNearJunction(nodeID)
+   
+            for path in splicePaths:        
+
+                orientedSplicePath = orientPath(path, medial0, pose0)    
+                
+                " (departurePoint1, angle1, isInterior1, isExist1, dist1, departurePoint2, angle2, isInterior2, isExist2, dist2, contigFrac, overlapSum, angDiff2 )"
+                result0 = getMultiDeparturePoint(orientedSplicePath, medial0, pose0, pose0, [], nodeID, pathPlotCount = self.multiDepCount, plotIter = True)
+                self.multiDepCount += 1
+
+                
+                isInterior1 = result0[2]
+                isExist1 = result0[3]
+                isInterior2 = result0[7]
+                isExist2 = result0[8]
+                
+                contigFrac = result0[10]
+                angDiff = result0[12]
+    
+                resultSet.append((nodeID, contigFrac, isInterior1, isInterior2, isExist1, isExist2))
+
+        
+        print "consistency for node", nodeID1, "and", nodeID2
+        for result in resultSet:
+            print "node", result[0], ":", result[1], result[2], result[3], result[4], result[5]
+
+
+
+
+    def checkPathConsistency(self, targetPathID):
+
+        #path = self.trimmedPaths[pathID]
+        nodeSet = self.getNodes(targetPathID)
+
+        resultSet = []
+
+        for nodeID in nodeSet:
+            pose0 = self.nodeHash[nodeID].getGlobalGPACPose()
+            hull0, medial0 = computeHullAxis(nodeID, self.nodeHash[nodeID], tailCutOff = False)
+
+            allSplices, terminals, junctions = self.getAllSplices(plotIter = True)
+
+            initPose2 = self.nodeHash[nodeID].getGlobalGPACPose()
+            
+            print "junctions:", junctions
+            print "initPose2:", initPose2
+            
+            junctions2 = []
+            for pathID, params in junctions.iteritems():
+                junctionPose = params[1]
+                
+                print "checking", pathID, params
+                
+                dist2 = sqrt((junctionPose[0]-initPose2[0])**2 + (junctionPose[1]-initPose2[1])**2)
+                
+                print "dist2 =", dist2
+                
+                if dist2 < 3.0:
+                    junctions2.append((pathID,params[2][0]))
+                
+            "self.junctions[pathID] = [branchNodeID, junctionPoint, (parentPathID,minI2), path2[minI2], minI1]"
+            
+            closePathID2 = self.getClosestPath(initPose2)
+
+            print "closePathID2:", closePathID2
+            
+            pathSet2 = [closePathID2]
+
+            junctionSet = junctions2
+            junctionSet = list(set(junctionSet))
+
+            print "junctions2:", junctions2
+
+            for junc in junctionSet:
+                pathSet2.append(junc[0])
+                pathSet2.append(junc[1])
+
+            print "pathSet2:", pathSet2
+
+            pathSet2 = list(set(pathSet2))
+            
+            pathSet2.sort()
+
+            print "pathSet2:", pathSet2
+            
+            termSet2 = []
+            for pathID in pathSet2:
+                if pathID == 0:
+                    termSet2.append(terminals[0][0])
+                    termSet2.append(terminals[1][0])
+                else:
+                    termSet2.append(terminals[pathID+1][0])
+                    
+            for pathID in pathSet2:
+                parentID = self.getParentPathID(pathID)
+
+                if parentID != None and not parentID in pathSet2:
+                    termSet2.append(junctions[pathID][2])
+                
+
+            
+
+            splicePaths = []
+
+            print "termSet2:", termSet2
+            print "allSplices:"
+
+            for k, result in allSplices.iteritems():
+                print "id:", k
+                if k[0] in pathSet2 and k[1] in pathSet2:
+                    
+                    for sPath in result:
+                        termPath = sPath['termPath']
+                        print "termPath:", termPath
+                                                    
+                        if termPath[0] in termSet2 and termPath[-1] in termSet2:
+                            splicePaths.append(sPath['path'])
+                            
+            for path in splicePaths:        
+
+                orientedSplicePath = orientPath(path, medial0, pose0)    
+                
+                " (departurePoint1, angle1, isInterior1, isExist1, dist1, departurePoint2, angle2, isInterior2, isExist2, dist2, contigFrac, overlapSum, angDiff2 )"
+                result0 = getMultiDeparturePoint(orientedSplicePath, medial0, pose0, pose0, [], nodeID, pathPlotCount = self.multiDepCount, plotIter = True)
+                self.multiDepCount += 1
+
+                
+                isInterior1 = result0[2]
+                isExist1 = result0[3]
+                isInterior2 = result0[7]
+                isExist2 = result0[8]
+                
+                contigFrac = result0[10]
+                angDiff = result0[12]
+    
+                resultSet.append((nodeID, contigFrac, isInterior1, isInterior2, isExist1, isExist2))
+
+        
+        print "consistency for path", targetPathID
+        for result in resultSet:
+            print "node", result[0], ":", result[1], result[2], result[3], result[4], result[5]
+
     
     def comparePaths(self):
  
@@ -889,7 +1127,7 @@ class Paths:
 
             print pathID1, pathID2, parentID1, parentID2
             
-            if grandParentID1 == pathID2 and parentID1 != None:
+            if False and grandParentID1 == pathID2 and parentID1 != None:
                 
                 if parentID2 != None:
                     sPaths1 = allSplices[(parentID2, pathID1)]
@@ -933,7 +1171,7 @@ class Paths:
 
                         pathPairs.append((path1,path2,pathID1,pathID2))
 
-            elif grandParentID2 == pathID1 and parentID2 != None:
+            elif False and grandParentID2 == pathID1 and parentID2 != None:
                 
                 if parentID1 != None:
                     sPaths1 = allSplices[(parentID1, pathID1)]
@@ -1198,11 +1436,11 @@ class Paths:
                     if pair[0] == None:
                         
                         print "comparing sibling paths", pathID1, pathID2
-                        resultPose0, resultPose1, lastCost0, matchCount0 = self.makeSiblingPathCompare(pathID1, pathID2, parentID1, plotIter = True)
+                        resultPose0, resultPose1, lastCost0, matchCount0, juncAngDiff = self.makeSiblingPathCompare(pathID1, pathID2, parentID1, plotIter = True)
                         
-                        print "sibling compare result:", resultPose0, resultPose1, lastCost0, matchCount0
+                        print "sibling compare result:", resultPose0, resultPose1, lastCost0, matchCount0, juncAngDiff
                         
-                        if fabs(resultPose0[2]) < 0.5 and fabs(resultPose1[2]) < 0.5:
+                        if fabs(resultPose0[2]) < 0.5 and fabs(resultPose1[2]) < 0.5 and fabs(juncAngDiff) < 0.5:
 
                             print "queuing paths", pathID1, pathID2, "to be merged"
 
@@ -1801,6 +2039,14 @@ class Paths:
         globalPath2 = self.paths[pathID2]
         parentPath = self.paths[parentPathID]
 
+        offsetOrigin1 = Pose(resultPose1)
+        offsetOrigin2 = Pose(resultPose2)
+
+        offJuncPose1 = offsetOrigin1.convertLocalOffsetToGlobal(junctionPose1)
+        offJuncPose2 = offsetOrigin2.convertLocalOffsetToGlobal(junctionPose2)
+
+        juncAngDiff = diffAngle(offJuncPose1[2],offJuncPose2[2])
+
         if plotIter:
             
             pylab.clf()
@@ -1812,7 +2058,6 @@ class Paths:
         
             xP = []
             yP = []
-            offsetOrigin1 = Pose(resultPose1)
 
             for p in globalPath1:
                 p1 = offsetOrigin1.convertLocalToGlobal(p)
@@ -1827,7 +2072,6 @@ class Paths:
             xP = []
             yP = []
             #offsetOrigin2 = Pose(fooPose1)
-            offsetOrigin2 = Pose(resultPose2)
             #offsetOrigin2 = Pose(resultOffset)
             for p in globalPath2:
                 p1 = offsetOrigin2.convertLocalToGlobal(p)
@@ -1858,15 +2102,17 @@ class Paths:
                 yP.append(p[1])
             pylab.plot(xP,yP,color='g')
         
-            pylab.title("resultPose = [%1.2f %1.2f %1.2f] [%1.2f %1.2f %1.2f]\n" % (resultPose1[0], resultPose1[1], resultPose1[2], resultPose2[0], resultPose2[1], resultPose2[2]))
+            pylab.title("resultPose = [%1.2f %1.2f %1.2f] [%1.2f %1.2f %1.2f] %1.2f\n" % (resultPose1[0], resultPose1[1], resultPose1[2], resultPose2[0], resultPose2[1], resultPose2[2], juncAngDiff))
         
             pylab.savefig("siblingCompare_%08u.png" % self.pathPlotCount2)
         
             self.pathPlotCount2 += 1
         
 
+        
 
-        return resultPose1, resultPose2, lastCost1, matchCount1
+
+        return resultPose1, resultPose2, lastCost1, matchCount1, juncAngDiff
      
 
 
