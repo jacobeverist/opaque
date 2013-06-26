@@ -6409,7 +6409,7 @@ class PoseGraph:
 					if exID in splicePathIDs[spliceIndex]:
 						exclude = True
 				
-				if dist < 2.0 and contigFrac > 0.7 and angDiff2 < 0.5 and not exclude:
+				if dist < 3.0 and contigFrac > 0.7 and angDiff2 < 0.5 and not exclude:
 					filteredResults.append(result)
 
 		filteredResults = sorted(filteredResults, key=itemgetter(14))
