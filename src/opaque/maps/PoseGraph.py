@@ -3924,9 +3924,9 @@ class PoseGraph:
 
 					#splicedPaths1 = self.paths.splicePathIDs([rootID])
 					#self.fitToSplices(nodeID, splicedPaths1, globalPoint1, globalPoint1)
-					self.fitToSplices(nodeID, pathSplices, globalPoint1, globalPoint1)
+					#self.fitToSplices(nodeID, pathSplices, globalPoint1, globalPoint1)
 
-					#self.consistentFit(nodeID, self.nodeHash[nodeID].getGlobalGPACPose())
+					self.consistentFit(nodeID, self.nodeHash[nodeID].getGlobalGPACPose())
 
 					
 					
@@ -6103,7 +6103,7 @@ class PoseGraph:
 
 	def consistentFit(self, nodeID, estPose):
 
-		splicedPaths1, termSet1, pathSet1 = self.paths.getSplicesByNearJunction(nodeID)
+		splicedPaths1, spliceTerms, splicePathIDs = self.paths.getSplicesByNearJunction(nodeID)
 
 
 		print "findPathLocation2(", nodeID
@@ -6317,50 +6317,20 @@ class PoseGraph:
 				originU2 = medialSpline1.findU([0.0,0.0])
 				pathU1 = orientedPathSpline.findU(estPose1[:2])
 			
-			
-	
-	
-	
-			resultArgs = self.paths.getDeparturePoint(orientedPath, nodeID, plotIter = True)
-			"""
-			departurePoint1 = resultArgs[0]
-			depAngle1 = resultArgs[1]
-			isInterior1 = resultArgs[2]
-			isExist1 = resultArgs[3]
-			discDist1 = resultArgs[4]
-			departurePoint2 = resultArgs[5]
-			depAngle2 = resultArgs[6]
-			isInterior2 = resultArgs[7]
-			isExist2 = resultArgs[8]
-			discDist2 = resultArgs[9]
-			contigFrac = resultArgs[10]
-			overlapSum = resultArgs[11]
-			"""
-			
-			isExist1 = resultArgs[3]
-			isExist2 = resultArgs[8]
-	
-			originForeU = globalMedialSpline1.getUOfDist(originU1, -0.2, distIter = 0.001)
-			originBackU = globalMedialSpline1.getUOfDist(originU1, 0.2, distIter = 0.001)
-								
-			forePoint = globalMedialSpline1.getU(originForeU)
-			backPoint = globalMedialSpline1.getU(originBackU)
-	
-			pathForeU = orientedPathSpline.findU(forePoint)
-			pathBackU = orientedPathSpline.findU(backPoint)
-			
-			if pathForeU > pathBackU:
-				deltaForeU = 0.02
-				deltaBackU = -0.02
-			else:
-				deltaForeU = -0.02
-				deltaBackU = 0.02
-					
+
 			time1 = time.time()
 	
-			" while loop "			
-			for i in range(20):
-				pathUGuess = i*0.05
+			" add guesses in the neighborhood of the closest pathU "
+			" 5 forward, 5 backward "
+			
+	
+			" while loop "
+			dists = [(k-5)*0.2 in range(11)]	
+			for dist in dists:
+				
+				
+				#pathUGuess = i*0.05
+				pathUGuess = orientedPathSpline.getUOfDist(pathU1, dist)
 				initGuesses.append([pathUGuess, originU2, 0.0, spliceIndex])
 				
 			orientedPaths.append(orientedPath)
@@ -6375,6 +6345,7 @@ class PoseGraph:
 		print len(resultsBySplice), "results"
 		
 		
+		filteredResults = []
 		for result in resultsBySplice:
 			resultPose = result[0]
 			isInterior1 = result[5]
@@ -6385,10 +6356,29 @@ class PoseGraph:
 			angDiff2 = result[15]
 			spliceIndex = result[16]
 			dist = sqrt((estPose1[0]-resultPose[0])**2 + (estPose1[1] - resultPose[1])**2)
-			print spliceIndex, contigFrac, dist, angDiff2, isInterior1, isInterior2, isExist1, isExist2, resultPose
-			#return resultPose, lastCost, matchCount, departurePoint1, angle1, isInterior1, isExist1, dist1, departurePoint2, angle2, isInterior2, isExist2, dist2, contigFrac, overlapSum, angDiff2, spliceIndex
-					
-			#return results
+			if not isInterior1 and not isInterior2 and not isExist1 and not isExist2:
+				filteredResults.append(result)
+
+		filteredResults = sorted(filteredResults, key=itemgetter(13))
+
+		for result in filteredResults:
+			resultPose = result[0]
+			spliceIndex = result[16]
+			getMultiDeparturePoint(orientedPaths[spliceIndex], medial1, estPose1, resultPose, [], nodeID, pathPlotCount = self.multiDepCount, plotIter = True)
+			self.multiDepCount += 1
+		
+		print "filteredResults:"
+		for result in filteredResults:
+			resultPose = result[0]
+			isInterior1 = result[5]
+			isExist1 = result[6]
+			isInterior2 = result[10]
+			isExist2 = result[11]
+			contigFrac = result[13]
+			angDiff2 = result[15]
+			spliceIndex = result[16]
+			dist = sqrt((estPose1[0]-resultPose[0])**2 + (estPose1[1] - resultPose[1])**2)
+			print spliceIndex, contigFrac, dist, angDiff2, spliceTerms[spliceIndex], splicePathIDs[spliceIndex]
 	
 	
 

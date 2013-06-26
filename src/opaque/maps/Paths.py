@@ -907,6 +907,8 @@ class Paths:
         
 
         splicePaths = []
+        spliceTerms = []
+        splicePathIDs = []
 
         print "termSet2:", termSet2
         print "allSplices:"
@@ -921,10 +923,12 @@ class Paths:
                                                 
                     if termPath[0] in termSet2 and termPath[-1] in termSet2:
                         splicePaths.append(sPath['path'])
+                        spliceTerms.append(termPath)
+                        splicePathIDs.append(k)
                         
 
 
-        return splicePaths, termSet2, pathSet2
+        return splicePaths, spliceTerms, splicePathIDs
 
     def checkNodeConsistency(self, nodeID1, nodeID2):
 
