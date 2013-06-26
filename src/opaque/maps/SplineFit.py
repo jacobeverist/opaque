@@ -185,7 +185,7 @@ class SplineFit:
 			else:
 				termDist = self.dist(startU, highU)
 			#print "termDist =", termDist
-			if termDist > magDist:
+			if termDist >= magDist:
 				return highU
 
 		else:
@@ -197,7 +197,7 @@ class SplineFit:
 				termDist = self.dist(startU, lowU)
 			#print "termDist =", termDist
 
-			if termDist < magDist:
+			if termDist <= magDist:
 				return lowU
 		
 		count = 0
