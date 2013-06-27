@@ -3760,7 +3760,9 @@ class PoseGraph:
 				" departurePoint1, angle1, isInterior1, isExist1, dist1, departurePoint2, angle2, isInterior2, isExist2, dist2, contigFrac, overlapSum, angDiff2 |"
 		
 
-				self.consistentFit(nodeID, estPose, excludePathIDs = [pathID2])
+				" exclusion not required since paths are siblings "
+				self.consistentFit(nodeID, estPose)
+				#self.consistentFit(nodeID, estPose, excludePathIDs = [pathID2])
 		
 				#self.fitToSplices(nodeID, splicedPaths1, estPose, estPose)
 
@@ -6417,8 +6419,8 @@ class PoseGraph:
 		for result in filteredResults:
 			resultPose = result[0]
 			spliceIndex = result[16]
-			getMultiDeparturePoint(orientedPaths[spliceIndex], medial1, estPose1, resultPose, [], nodeID, pathPlotCount = self.multiDepCount, plotIter = True)
-			self.multiDepCount += 1
+			#getMultiDeparturePoint(orientedPaths[spliceIndex], medial1, estPose1, resultPose, [], nodeID, pathPlotCount = self.multiDepCount, plotIter = True)
+			#self.multiDepCount += 1
 		
 		print "filteredResults:"
 		for result in filteredResults:
