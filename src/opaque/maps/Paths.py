@@ -763,6 +763,41 @@ class Paths:
     def isNodeExist(self, nodeID, pathID):
         return nodeID in self.pathClasses[pathID]["nodeSet"]
 
+    def findSplice2(self, nodeID):
+
+        splicePaths, spliceTerms, splicePathIDs = self.getSplicesByNearJunction(nodeID)
+        
+        node2 = self.nodeHash[nodeID]
+        hull2, medial2 = computeHullAxis(nodeID, node2, tailCutOff = False)
+        estPose2 = node2.getGlobalGPACPose()        
+
+        resultSet = []
+
+        for k in range(len(splicePaths)):
+            
+            currPath = splicePaths[k]
+            pathIDs = splicePathIDs[k]
+            results = getMultiDeparturePoint(currPath, medial2, estPose2, estPose2, pathIDs, nodeID)
+
+            resultSet.append(results+(k,))
+
+            "departurePoint1, angle1, isInterior1, isExist1, dist1, departurePoint2, angle2, isInterior2, isExist2, dist2, contigFrac, overlapSum, angDiff2"
+        
+        resultSet = sorted(resultSet, key=itemgetter(10), reverse=True)
+        
+        print "findSplice2 resultSet:"
+        for result in resultSet:
+            print result
+
+
+        spliceIndex = resultSet[0][13]
+        overlappedPathIDs = splicePathIDs[spliceIndex]
+        orderedPathIDs = self.getPathOrdering(nodeID, overlappedPathIDs)
+
+        print "returned ordered", orderedPathIDs, "from unordered", overlappedPathIDs
+        
+        return orderedPathIDs
+        
 
     def findSplice(self, nodeID):
 
@@ -830,6 +865,9 @@ class Paths:
         print "unordered:", overlappedPaths
 
         orderedPathIDs = self.getPathOrdering(nodeID, overlappedPaths)
+
+        " already ordered! "
+        #orderedPathIDs = overlappedPaths
 
         print "ordered:", orderedPathIDs
 
@@ -924,7 +962,7 @@ class Paths:
                     if termPath[0] in termSet2 and termPath[-1] in termSet2:
                         splicePaths.append(sPath['path'])
                         spliceTerms.append(termPath)
-                        splicePathIDs.append(k)
+                        splicePathIDs.append(sPath['orderedPathIDs'])
                         
 
 
@@ -5525,6 +5563,11 @@ class Paths:
         return minPathID
 
     def getOrderedOverlappingPaths(self, nodeID):
+         
+        ordered1 = self.findSplice2(nodeID)
+        return ordered1
+        
+    def getOrderedOverlappingPaths_old(self, nodeID):
 
         overlappedPaths = []
         
