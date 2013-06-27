@@ -133,6 +133,7 @@ __inline void buildMatrix(double *R, double ang, int isForward) {
 
 }
 
+//newSum = objFunc(&start[0], d_matchPairs, d_offset, d_sum, numPairs, poses_1, poses_2, numPoses, uHigh, uLow, u1, offset);
 double objFunc(double *params, double *d_matchPairs, double *d_offset, double *d_sum, int N, double *poses_1, double *poses_2, int numPoses, double uHigh, double uLow, double u1, double *resultOffset) {
 
 
@@ -180,20 +181,20 @@ double objFunc(double *params, double *d_matchPairs, double *d_offset, double *d
 
 	if (currU < 0.0) {
 		//printf("%f\n",100000.0 * (0.15-currU));
-		return 100000.0 * (0.15-currU);
+		return 10000000.0 * (0.15-currU);
 	}
 	if (currU > 1.0 ) {
 		//printf("%f\n",100000.0 * (currU-0.85));
-		return 100000.0 * (currU - 0.85);
+		return 10000000.0 * (currU - 0.85);
 	}
 
 	if (currU < uLow) {
 		//printf("%f\n",100000.0 * (uLow+0.05-currU));
-		return 100000.0 * (uLow+0.05-currU);
+		return 10000000.0 * (uLow+0.05-currU);
 	}
 	if (currU > uHigh) {
 		//printf("%f\n",100000.0 * (currU-uHigh+0.05));
-		return 100000.0 * (currU - uHigh+0.05);
+		return 10000000.0 * (currU - uHigh+0.05);
 	}
 
 	// compute the point and angles from the parameters 
