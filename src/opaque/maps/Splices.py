@@ -841,8 +841,28 @@ def globalOverlapICP_GPU2(initGuess, globalPath, medialPoints, globalPlotCount =
 		
 
 		
+		globalPlotCount
+		
+		saveFile = ""	
+		saveFile += "flatMatchPairs = " + repr(flatMatchPairs) + "\n"
+		saveFile += "len(matchPairs) = " + repr(len(match_pairs)) + "\n"
+		saveFile += "u1 = " + repr(u1) + "\n"
+		saveFile += "currU = " + repr(currU) + "\n"
+		saveFile += "currAng = " + repr(currAng) + "\n"
+		saveFile += "uHigh = " + repr(uHigh) + "\n"
+		saveFile += "uLow = " + repr(uLow) + "\n"
+		saveFile += "c_poses_1 = " + repr(c_poses_1) + "\n"
+		saveFile += "c_poses_2 = " + repr(c_poses_2) + "\n"
+		saveFile += "len(poses_1) = " + repr(len(poses_1)) + "\n"
+
+		f = open("icpInput_%04u.txt" % (globalPlotCount), 'w')
+		f.write(saveFile)
+		f.close()		
+	
 		newParam, newCost = nelminICP.ICPmin(flatMatchPairs, len(match_pairs), [u1,currU,currAng], uHigh, uLow, c_poses_1, c_poses_2, len(poses_1))
 		#newParam, newCost = nelminICP.ICPmin(flatMatchPairs, len(match_pairs), initGuess, c_poses_1, c_poses_2, len(poses_1))
+
+		os.remove("icpInput_%04u.txt" % (globalPlotCount))
 
 		newU = newParam[0]
 		newAng = newParam[1]
