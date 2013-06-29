@@ -7605,7 +7605,7 @@ def globalPathToNodeOverlapICP2(initGuess, globalPath, medialPoints, plotIter = 
         
         numPairs = len(match_pairs)
         numPoses = len(poses_3)
-        trueCost2, resultParam, resultOffset = nelminICP.ICPcost(flatMatchPairs, numPairs, [u2,currU,currAng], c_poses_2, c_poses_3, numPoses)
+        trueCost2, resultParam, resultOffset = nelminICP.ICPcost(flatMatchPairs, numPairs, [u2,currU,currAng], uHigh, uLow, c_poses_2, c_poses_3, numPoses)
         trueCost3 = shapeCostC(resultOffset, match_pairs)
         
         print "currPose:", currPose
@@ -8452,7 +8452,7 @@ def pathOverlapICP(initGuess, globalPath, medialPoints,plotIter = False, n1 = 0,
         
         
         
-        resultSum, resultParam, resultOffset = nelminICP.ICPcost(flatMatchPairs, len(match_pairs), [u1,currU,currAng], c_poses_1, c_poses_2, len(poses_1))
+        resultSum, resultParam, resultOffset = nelminICP.ICPcost(flatMatchPairs, len(match_pairs), [u1,currU,currAng], uHigh, uLow, c_poses_1, c_poses_2, len(poses_1))
         " draw final position "
         if plotIter:
             
@@ -11184,7 +11184,7 @@ def doTest2():
     #newParam, newCost = nelminICP.ICPmin(flatMatchPairs, len(match_pairs), initGuess, c_poses_1, c_poses_2, len(poses_1))
 
     for i in range(1):
-        cost1, param, offset = nelminICP.ICPcost(flatMatchPairs, len(match_pairs), initGuess, c_poses_1, c_poses_2, len(poses_1))
+        cost1, param, offset = nelminICP.ICPcost(flatMatchPairs, len(match_pairs), initGuess, currU+0.2, currU-0.2, c_poses_1, c_poses_2, len(poses_1))
         print "offset =", offset
         print "param =", param
         cost2 = medialOverlapCostFunc([currU, currAng], match_pairs, poses_1, poses_2, uHigh, uLow, u1)            
