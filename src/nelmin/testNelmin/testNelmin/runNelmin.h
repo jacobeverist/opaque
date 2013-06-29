@@ -7,7 +7,7 @@ void doCost(double *matchPairs, int numPairs, double *initGuess, double uHigh, d
 
 #else
 void doTest(double *matchPairs, int numPairs, double *initGuess, double uHigh, double uLow, double *poses_1, double *poses_2, int numPoses, double *resultParam, double *resultSum); 
-void doCost(double *matchPairs, int numPairs, double *initGuess, double uHigh, double uLow, double *poses_1, double *poses_2, int numPoses, double *resultParam, double *resultSum, double *resultOffset);
+void doCost(double *matchPairs, int numPairs, double *initGuess, double *poses_1, double *poses_2, int numPoses, double *resultParam, double *resultSum, double *resultOffset);
 #endif
 
 

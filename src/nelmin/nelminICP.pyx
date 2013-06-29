@@ -2,9 +2,9 @@ from libc.stdlib cimport malloc, free
 
 cdef extern from "runNelmin.h":
 	void doTest(double *matchPairs, int numPairs, double *initGuess, double uHigh, double uLow, double *poses_1, double *poses_2, int numPoses, double *resultParam, double *resultSum)	
-	void doCost(double *matchPairs, int numPairs, double *initGuess, double *poses_1, double *poses_2, int numPoses, double *resultParam, double *resultSum, double *resultOffset)	
+	void doCost(double *matchPairs, int numPairs, double *initGuess, double uHigh, double uLow, double *poses_1, double *poses_2, int numPoses, double *resultParam, double *resultSum, double *resultOffset)	
 
-def ICPcost(matchPairs, int numPairs, initGuess, poses_1, poses_2, int numPoses):
+def ICPcost(matchPairs, int numPairs, initGuess, uHigh, uLow, poses_1, poses_2, int numPoses):
 
 	#cdef double c_matchPairs[12*numPairs]
 	cdef double *c_matchPairs = <double *>malloc(12*numPairs * sizeof(double))
@@ -28,7 +28,7 @@ def ICPcost(matchPairs, int numPairs, initGuess, poses_1, poses_2, int numPoses)
 	cdef double resultOffset[3]
 	
 	
-	doCost(c_matchPairs, numPairs, c_initGuess, c_poses_1, c_poses_2, numPoses, resultParam, resultSum, resultOffset)	
+	doCost(c_matchPairs, numPairs, c_initGuess, uHigh, uLow, c_poses_1, c_poses_2, numPoses, resultParam, resultSum, resultOffset)	
 	
 	free(c_matchPairs)
 	free(c_initGuess)
