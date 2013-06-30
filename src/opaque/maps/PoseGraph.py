@@ -2465,12 +2465,12 @@ class PoseGraph:
 				#self.makeNodePathConsistent(nodeID1, nodeID2, orderedPathIDs1, orderedPathIDs2)
 	
 	
-				self.consistentFit(nodeID1,  self.nodeHash[nodeID1].getGlobalGPACPose())
+				self.consistentFit(nodeID1,  self.nodeHash[nodeID1].getGlobalGPACPose(), numGuesses = 3)
 				self.drawConstraints(self.statePlotCount)
 				self.statePlotCount += 1
 				self.drawPathAndHull()
 
-				self.consistentFit(nodeID2,  self.nodeHash[nodeID2].getGlobalGPACPose())
+				self.consistentFit(nodeID2,  self.nodeHash[nodeID2].getGlobalGPACPose(), numGuesses = 3)
 				self.drawConstraints(self.statePlotCount)
 				self.statePlotCount += 1
 				self.drawPathAndHull()
@@ -6129,7 +6129,7 @@ class PoseGraph:
 
 
 
-	def consistentFit(self, nodeID, estPose, excludePathIDs = []):
+	def consistentFit(self, nodeID, estPose, numGuesses = 11, excludePathIDs = []):
 
 		splicedPaths1, spliceTerms, splicePathIDs = self.paths.getSplicesByNearJunction(nodeID)
 
@@ -6353,7 +6353,8 @@ class PoseGraph:
 			
 	
 			" while loop "
-			dists = [(k-5)*0.2 for k in range(11)]	
+			halfNum = numGuesses/2
+			dists = [(k-halfNum)*0.2 for k in range(numGuesses)]	
 			for dist in dists:
 				
 				
@@ -7406,10 +7407,9 @@ class PoseGraph:
 		#medialSpline1.getUOfDist(originU1, dist)
 
 		#distEst = 0.3
-		#distEst = 1.0
-		#distEst = 0.5
+		distEst = 0.5
 		#distEst = 0.8
-		distEst = 1.0
+		#distEst = 1.0
 
 		if inPlace:
 			" FULL LENGTH MEDIAL AXIS "
