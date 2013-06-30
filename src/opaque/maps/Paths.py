@@ -7711,7 +7711,7 @@ class Paths:
         ANG_THRESH = 0.523 # pi/6
         
         " maximum distance to the parent terminal point before creating a junction point "
-        TERM_THRESH = 0.5
+        TERM_THRESH = 0.8
         
         pathIDs = self.getPathIDs()
         
@@ -7727,7 +7727,7 @@ class Paths:
                 
                 if termDist < TERM_THRESH:
                     print "REJECT, proposed junction point is too close to parent pathID terminal", pathID, termDist, termPoint, depPoint
-                    pass        
+                    return False, pathID
 
             
             path = self.getPath(pathID)
