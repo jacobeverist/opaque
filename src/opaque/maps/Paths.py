@@ -7720,7 +7720,10 @@ class Paths:
             if pathID == parentPathID:
                 termPoint = self.terminals[pathID+1]
                 
-                termDist = sqrt((depPoint[0]-termPoint[0])**2 + (depPoint[1]-termPoint[1])**2)
+                print "termPoint =", termPoint
+                termDist = sqrt((depPoint[0]-termPoint[1][0])**2 + (depPoint[1]-termPoint[1][1])**2)
+                
+                print "termDist =", termDist
                 
                 if termDist < TERM_THRESH:
                     print "REJECT, proposed junction point is too close to parent pathID terminal", pathID, termDist, termPoint, depPoint
