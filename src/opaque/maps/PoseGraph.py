@@ -2465,12 +2465,12 @@ class PoseGraph:
 				#self.makeNodePathConsistent(nodeID1, nodeID2, orderedPathIDs1, orderedPathIDs2)
 	
 	
-				self.consistentFit(nodeID1,  self.nodeHash[nodeID1].getGlobalGPACPose(), numGuesses = 3)
+				self.consistentFit(nodeID1,  self.nodeHash[nodeID1].getGlobalGPACPose(), numGuesses = 5)
 				self.drawConstraints(self.statePlotCount)
 				self.statePlotCount += 1
 				self.drawPathAndHull()
 
-				self.consistentFit(nodeID2,  self.nodeHash[nodeID2].getGlobalGPACPose(), numGuesses = 3)
+				self.consistentFit(nodeID2,  self.nodeHash[nodeID2].getGlobalGPACPose(), numGuesses = 5)
 				self.drawConstraints(self.statePlotCount)
 				self.statePlotCount += 1
 				self.drawPathAndHull()
@@ -6393,8 +6393,6 @@ class PoseGraph:
 			overlapSum = result[14]
 			print spliceIndex, [int(isInterior1), int(isInterior2), int(isExist1), int(isExist2)], contigFrac, dist, angDiff2, lastCost, matchCount, overlapSum, spliceTerms[spliceIndex], splicePathIDs[spliceIndex], resultPose
 
-			
-		
 		filteredResults = []
 		for result in resultsBySplice:
 			resultPose = result[0]
@@ -6437,7 +6435,7 @@ class PoseGraph:
 			lastCost = result[1]
 			matchCount = result[2]
 			overlapSum = result[14]
-			print spliceIndex, contigFrac, dist, angDiff2, lastCost, matchCount, overlapSum, spliceTerms[spliceIndex], splicePathIDs[spliceIndex], resultPose
+			print spliceIndex, [int(isInterior1), int(isInterior2), int(isExist1), int(isExist2)], contigFrac, dist, angDiff2, lastCost, matchCount, overlapSum, spliceTerms[spliceIndex], splicePathIDs[spliceIndex], resultPose
 
 	
 
