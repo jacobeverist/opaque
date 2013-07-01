@@ -781,9 +781,9 @@ class Paths:
 
             resultSet.append(results+(k,))
 
-            "departurePoint1, angle1, isInterior1, isExist1, dist1, departurePoint2, angle2, isInterior2, isExist2, dist2, contigFrac, overlapSum, angDiff2"
+            "departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2"
         
-        resultSet = sorted(resultSet, key=itemgetter(10), reverse=True)
+        resultSet = sorted(resultSet, key=itemgetter(12), reverse=True)
         
         print "findSplice2 resultSet:"
         for result in resultSet:
@@ -792,7 +792,7 @@ class Paths:
 
         for k in range(len(resultSet)):
             result = resultSet[k]    
-            spliceIndex = result[13]
+            spliceIndex = result[15]
             overlappedPathIDs = splicePathIDs[spliceIndex]
 
             isNotOverlapped = False
@@ -998,20 +998,26 @@ class Paths:
    
             for path in splicePaths:        
 
-                orientedSplicePath = orientPath(path, medial0, pose0)    
+                #orientedSplicePath = orientPath(path, medial0, pose0)    
+                poseOrigin0 = Pose(pose0)
+                globalMedial0 = []
+                for p in medial0:
+                    globalMedial0.append(poseOrigin0.convertLocalToGlobal(p))
+    
+                orientedSplicePath = orientPath(path, globalMedial0)                
                 
-                " (departurePoint1, angle1, isInterior1, isExist1, dist1, departurePoint2, angle2, isInterior2, isExist2, dist2, contigFrac, overlapSum, angDiff2 )"
+                " (departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2 )"
                 result0 = getMultiDeparturePoint(orientedSplicePath, medial0, pose0, pose0, [], nodeID, pathPlotCount = self.multiDepCount, plotIter = True)
                 self.multiDepCount += 1
 
                 
                 isInterior1 = result0[2]
                 isExist1 = result0[3]
-                isInterior2 = result0[7]
-                isExist2 = result0[8]
+                isInterior2 = result0[8]
+                isExist2 = result0[9]
                 
-                contigFrac = result0[10]
-                angDiff = result0[12]
+                contigFrac = result0[12]
+                angDiff = result0[14]
     
                 resultSet.append((nodeID, contigFrac, isInterior1, isInterior2, isExist1, isExist2))
 
@@ -1114,20 +1120,26 @@ class Paths:
                             
             for path in splicePaths:        
 
-                orientedSplicePath = orientPath(path, medial0, pose0)    
+                #orientedSplicePath = orientPath(path, medial0, pose0)    
+                poseOrigin0 = Pose(pose0)
+                globalMedial0 = []
+                for p in medial0:
+                    globalMedial0.append(poseOrigin0.convertLocalToGlobal(p))
+    
+                orientedSplicePath = orientPath(path, globalMedial0)                
                 
-                " (departurePoint1, angle1, isInterior1, isExist1, dist1, departurePoint2, angle2, isInterior2, isExist2, dist2, contigFrac, overlapSum, angDiff2 )"
+                " (departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2 )"
                 result0 = getMultiDeparturePoint(orientedSplicePath, medial0, pose0, pose0, [], nodeID, pathPlotCount = self.multiDepCount, plotIter = True)
                 self.multiDepCount += 1
 
                 
                 isInterior1 = result0[2]
                 isExist1 = result0[3]
-                isInterior2 = result0[7]
-                isExist2 = result0[8]
+                isInterior2 = result0[8]
+                isExist2 = result0[9]
                 
-                contigFrac = result0[10]
-                angDiff = result0[12]
+                contigFrac = result0[12]
+                angDiff = result0[14]
     
                 resultSet.append((nodeID, contigFrac, isInterior1, isInterior2, isExist1, isExist2))
 
@@ -5940,24 +5952,22 @@ class Paths:
         
         if len(path1) == 0:
             return departurePoint1, angle1, isInterior1, isExist1, 0.0, departurePoint2, angle2, isInterior2, isExist2, 0.0
-        
-        #node2 = self.nodeHash[nodeID]
+                
+                
+                
+                
+        orientedPath1 = orientPath(path1, path2)           
+        #orientPath(globalPath, medial1, estPose1)
 
-        #hull2, medial2 = computeHullAxis(nodeID, node2, tailCutOff = False)
-        
-        #estPose2 = node2.getGlobalGPACPose()        
-        
         "Assumption:  one section of the medial axis is closely aligned with the path "
-        #poseOrigin = Pose(estPose2)
-        
         
         pathSpline2 = SplineFit(path2, smooth=0.1)
         pathPoints2 = pathSpline2.getUniformSamples()
         print "path2:", path2[0], pathPoints2[0], path2[-1], pathPoints2[-1]
 
-        pathSpline1 = SplineFit(path1, smooth=0.1)
+        pathSpline1 = SplineFit(orientedPath1, smooth=0.1)
         pathPoints1 = pathSpline1.getUniformSamples()
-        print "path1:", path1[0], pathPoints1[0], path1[-1], pathPoints1[-1]
+        print "path1:", orientedPath1[0], pathPoints1[0], orientedPath1[-1], pathPoints1[-1]
 
 
         " tip angles "
@@ -5986,16 +5996,29 @@ class Paths:
         #print "ang2:", angle2, angs2
         #print "diff:", diffAngle(angle1, angle2)
 
+        distSum = 0.0
+        contigCount = 0
+        maxContig = 0
         distances = []
         indices = []
         for i in range(0,len(pathPoints2)):
             p_2 = pathPoints2[i]
-            #p_1, minDist = gen_icp.findClosestPointInB(pathPoints, p_2, [0.0,0.0,0.0])
             p_1, i_1, minDist = gen_icp.findClosestPointInA(pathPoints1, p_2)
             distances.append(minDist)
             indices.append(i_1)
+            distSum += minDist
+            
+            if minDist < 0.2:
+                contigCount += 1
+                if contigCount > maxContig:
+                    maxContig = contigCount
+            else:
+                contigCount = 0
         
+        overlapSum = distSum / float(len(pathPoints2))
         
+        print "maxContig,overlapSum:", maxContig, overlapSum
+
         " Compute the front and back departure points by finding the inflection point on the distance curve "
         " these indices become frontDepI and backDepI respectively "
         maxFront = distances[0]
@@ -6012,6 +6035,31 @@ class Paths:
         frontDepI = currI
         frontPoint = [frontDepI, distances[frontDepI]]
 
+
+        frontAngleRefI = frontDepI
+        while distances[frontAngleRefI] < 0.1:
+            frontAngleRefI -= 1
+            
+            if frontAngleRefI < 0:
+                frontAngleRefI = 0
+                break
+                        
+        forePathIndex = indices[frontAngleRefI]
+        forePathAngle = pathPoints1[forePathIndex][2]
+        forePathAngle = normalizeAngle(forePathAngle + pi)
+
+        foreDiffAngle = diffAngle(angle1, forePathAngle)
+        
+        newFrontDepI = 4
+        while fabs(diffAngle(normalizeAngle(pathPoints2[newFrontDepI][2]+pi), forePathAngle)) > pi/6.0:
+            
+            if newFrontDepI < frontDepI:
+                newFrontDepI += 1
+            else:
+                break        
+        
+        #print "front:", nodeID, frontDepI, distances[frontDepI], frontAngleRefI, forePathIndex, forePathAngle, angle1, foreDiffAngle, newFrontDepI, diffAngle(normalizeAngle(points2_offset[newFrontDepI][2]+pi), forePathAngle) 
+
         " FIXME:  index out of bounds case "
         currI = 2
         try:
@@ -6024,31 +6072,45 @@ class Paths:
         backDepI = len(distances) - currI
         backPoint = [backDepI, distances[backDepI]]
 
+        backAngleRefI = backDepI
+        while distances[backAngleRefI] < 0.1:
+            backAngleRefI += 1
+            
+            if backAngleRefI >= len(distances):
+                backAngleRefI = len(distances)-1
+                break
+        
+        backPathIndex = indices[backAngleRefI]
+        backPathAngle = pathPoints1[backPathIndex][2]
+        
+        backDiffAngle = diffAngle(angle2, backPathAngle)
+        
+        newBackDepI = len(distances)-5
+        while fabs(diffAngle(pathPoints2[newBackDepI][2], backPathAngle)) > pi/6.0:
+            
+            if newBackDepI > backDepI:
+                newBackDepI -= 1
+            else:
+                break        
+
+        #print "back:", nodeID, backDepI, distances[backDepI], backAngleRefI, backPathIndex, backPathAngle, angle2, backDiffAngle, newBackDepI, diffAngle(points2_offset[newBackDepI][2], backPathAngle) 
+
+        foreAngDiffs = []
+        #for i in range(0,frontDepI+1):
+        for i in range(0,len(pathPoints2)):
+            foreAngDiffs.append(fabs(diffAngle(normalizeAngle(pathPoints2[i][2] + pi), forePathAngle)))
+
+        backAngDiffs = []
+        #for i in range(backDepI,len(points2_offset)):
+        for i in range(0,len(pathPoints2)):
+            backAngDiffs.append(fabs(diffAngle(pathPoints2[i][2], backPathAngle)))
+            
         "reset to the maximum distances "
         maxFront = distances[0]
         maxBack = distances[-1]
         
-        " perform a line fit on the distance curves from the departure point to the tip"    
-        #(ar1,br1)= scipy.polyfit(range(0,frontDepI+1),distances[0:frontDepI+1],1)
-        #(ar2,br2)= scipy.polyfit(range(backDepI,len(distances)),distances[backDepI:],1)
-
-        #t1 = range(0,frontDepI+1)
-        #xr1 = scipy.polyval([ar1,br1],t1)            
         
-        #t2 = range(backDepI,len(distances))
-        #xr2 = scipy.polyval([ar2,br2],t2)            
         
-        " compute the average of distances between departure and termination "
-        #frontAvg = 0.0
-        #for i in range(0,frontDepI+1):
-        #    frontAvg += distances[i]
-        #frontAvg /= (frontDepI+1)
-
-        #backAvg = 0.0
-        #for i in range(backDepI,len(distances)):
-        #    backAvg += distances[i]
-        #backAvg /= len(distances)-backDepI
-
         " for all the points matched from the local curve to the path curve "
         " count the number of times they are matched "
         foo = indices[0:frontDepI+1]
@@ -6098,25 +6160,17 @@ class Paths:
         #DEP_THRESH = 0.3
 
         if maxFront > DEP_THRESH:
-            departurePoint1 = pathPoints1[max1]
+            departurePoint1 = pathPoints2[newFrontDepI]
             isExist1 = True
-
-
 
             if max1 == 0 or max1 == len(pathPoints1)-1:
                 isInterior1 = False
             else:
                 isInterior1 = True
 
-            # Test purposes only
-            #if nodeID == 4 or nodeID == 5:
-            #    isInterior1 = True
-
-
         if maxBack > DEP_THRESH:
-            departurePoint2 = pathPoints1[max2]
+            departurePoint2 = pathPoints2[newBackDepI]
             isExist2 = True
-
 
             if max2 == 0 or max2 == len(pathPoints1)-1:
                 isInterior2 = False
@@ -6155,8 +6209,8 @@ class Paths:
             for p in pathPoints2:
                 xP.append(p[0])
                 yP.append(p[1])
-            pylab.plot(xP,yP, color='b')
-    
+            pylab.plot(xP,yP, color='b')   
+
             if True:    
                 xP = [pathPoints1[max1][0]]
                 yP = [pathPoints1[max1][1]]
@@ -6165,6 +6219,18 @@ class Paths:
                 xP = [tipMatch1[0]]
                 yP = [tipMatch1[1]]
                 pylab.scatter(xP,yP, color='r')        
+
+                xP = [pathPoints2[frontDepI][0]]
+                yP = [pathPoints2[frontDepI][1]]
+                pylab.scatter(xP,yP, color='g')        
+
+                xP = [pathPoints1[forePathIndex][0]]
+                yP = [pathPoints1[forePathIndex][1]]
+                pylab.scatter(xP,yP, color='y')        
+
+                xP = [pathPoints2[newFrontDepI][0]]
+                yP = [pathPoints2[newFrontDepI][1]]
+                pylab.scatter(xP,yP, color='m')        
     
     
             if True:
@@ -6175,6 +6241,18 @@ class Paths:
                 xP = [tipMatch2[0]]
                 yP = [tipMatch2[1]]
                 pylab.scatter(xP,yP, color='r')        
+
+                xP = [pathPoints2[backDepI][0]]
+                yP = [pathPoints2[backDepI][1]]
+                pylab.scatter(xP,yP, color='g')        
+
+                xP = [pathPoints1[backPathIndex][0]]
+                yP = [pathPoints1[backPathIndex][1]]
+                pylab.scatter(xP,yP, color='y')        
+
+                xP = [pathPoints2[newBackDepI][0]]
+                yP = [pathPoints2[newBackDepI][1]]
+                pylab.scatter(xP,yP, color='m')        
     
     
             xP = []
@@ -6711,27 +6789,8 @@ class Paths:
         "reset to the maximum distances "
         maxFront = distances[0]
         maxBack = distances[-1]
-        
-        " perform a line fit on the distance curves from the departure point to the tip"    
-        #(ar1,br1)= scipy.polyfit(range(0,frontDepI+1),distances[0:frontDepI+1],1)
-        #(ar2,br2)= scipy.polyfit(range(backDepI,len(distances)),distances[backDepI:],1)
 
-        #t1 = range(0,frontDepI+1)
-        #xr1 = scipy.polyval([ar1,br1],t1)            
-        
-        #t2 = range(backDepI,len(distances))
-        #xr2 = scipy.polyval([ar2,br2],t2)            
-        
-        " compute the average of distances between departure and termination "
-        #frontAvg = 0.0
-        #for i in range(0,frontDepI+1):
-        #    frontAvg += distances[i]
-        #frontAvg /= (frontDepI+1)
 
-        #backAvg = 0.0
-        #for i in range(backDepI,len(distances)):
-        #    backAvg += distances[i]
-        #backAvg /= len(distances)-backDepI
 
         " for all the points matched from the local curve to the path curve "
         " count the number of times they are matched "
@@ -6781,10 +6840,7 @@ class Paths:
         DEP_THRESH = 0.3
 
         if maxFront > DEP_THRESH:
-            departurePoint1 = pathPoints[max1]
-            
             departurePoint1 = points2_offset[newFrontDepI]
-            
             isExist1 = True
 
             if max1 == 0 or max1 == len(pathPoints)-1:
@@ -6793,10 +6849,7 @@ class Paths:
                 isInterior1 = True
 
         if maxBack > DEP_THRESH:
-            departurePoint2 = pathPoints[max2]
-
             departurePoint2 = points2_offset[newBackDepI]
-
             isExist2 = True
             
             if max2 == 0 or max2 == len(pathPoints)-1:
@@ -6804,34 +6857,6 @@ class Paths:
             else:
                 isInterior2 = True
 
-        """
-        #p_1, depI1, pDist1 = gen_icp.findClosestPointInA(points2_offset, pathPoints[max1])
-        #p_2, depI2, pDist2 = gen_icp.findClosestPointInA(points2_offset, pathPoints[max2])
-
-        #p_1, depI1, pDist1 = gen_icp.findClosestPointInA(medial2, points2[depI1])
-        #p_2, depI2, pDist2 = gen_icp.findClosestPointInA(medial2, points2[depI2])
-        """
-            
-        """
-        if maxFront > 0.5 and maxFront > maxBack:
-            departurePoint = pathPoints[max1]
-            isExist = True
-
-            if max1 == 0 or max1 == len(pathPoints)-1:
-                isInterior = False
-            else:
-                isInterior = True
-
-        if maxBack > 0.5 and maxBack > maxFront:
-            departurePoint = pathPoints[max2]
-            isExist = True
-
-            if max2 == 0 or max2 == len(pathPoints)-1:
-                isInterior = False
-            else:
-                isInterior = True
-        """    
-            
         " sum of closest points on front and back "
         " select the one with minimal cost "
         

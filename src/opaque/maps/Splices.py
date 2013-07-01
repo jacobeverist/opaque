@@ -583,9 +583,9 @@ def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, node
 	
 	#return departurePoint, isInterior, isExist
 	#return departurePoint1, angle1, isInterior1, isExist1, dist1, departurePoint2, angle2, isInterior2, isExist2, dist2
-	return departurePoint1, angle1, isInterior1, isExist1, dist1, departurePoint2, angle2, isInterior2, isExist2, dist2, contigFrac, overlapSum, angDiff2
+	return departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2
 
-def orientPath(globalPath, medial1, estPose1):
+def orientPath(globalPath, globalMedial):
 	
 	#node1 = self.nodeHash[nodeID]
 	#hull1, medial1 = computeHullAxis(nodeID, node1, tailCutOff = False)
@@ -598,11 +598,11 @@ def orientPath(globalPath, medial1, estPose1):
 
 	
 	#estPose1 = node1.getGlobalGPACPose()		
-	poseOrigin = Pose(estPose1)
+	#poseOrigin = Pose(estPose1)
 	
-	globalMedial = []
-	for p in medial1:
-		globalMedial.append(poseOrigin.convertLocalToGlobal(p))
+	#globalMedial = []
+	#for p in medial1:
+	#	globalMedial.append(poseOrigin.convertLocalToGlobal(p))
 	
 	medialSpline1 = SplineFit(globalMedial, smooth=0.1)
 	globalSpline = SplineFit(globalPath, smooth=0.1)
