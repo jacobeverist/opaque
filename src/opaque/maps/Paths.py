@@ -790,8 +790,23 @@ class Paths:
             print result
 
 
-        spliceIndex = resultSet[0][13]
-        overlappedPathIDs = splicePathIDs[spliceIndex]
+        for k in range(len(resultSet)):
+            result = resultSet[k]    
+            spliceIndex = result[13]
+            overlappedPathIDs = splicePathIDs[spliceIndex]
+
+            isNotOverlapped = False
+            for pathID in overlappedPathIDs:
+                sum1 = self.getOverlapCondition(self.trimmedPaths[pathID], nodeID)
+
+                if sum1 > 1e10:
+                    isNotOverlapped = True
+                    
+            if not isNotOverlapped:
+                print "selected", k, "'th result"
+                break
+            
+        
         orderedPathIDs = self.getPathOrdering(nodeID, overlappedPathIDs)
 
         print "returned ordered", orderedPathIDs, "from unordered", overlappedPathIDs
