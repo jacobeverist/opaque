@@ -1473,7 +1473,7 @@ class Paths:
                         currNode = shortestPathSpanTree[currNode]
                     path2.append(self.pathGraph.get_node_attributes(currNode))
 
-                    pathPairs.append((path1,path2,pathID1,pathID2))
+                    #pathPairs.append((path1,path2,pathID1,pathID2))
                     
                     rootPaths.append(path1)            
 
