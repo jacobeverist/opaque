@@ -3062,7 +3062,13 @@ class PoseGraph:
 	
 					" FIXME:  make sure path is oriented correctly wrt node medial axis "
 					hull0, medial0 = computeHullAxis(nodeID-3, self.nodeHash[nodeID-3], tailCutOff = False)
-					orientedSplicePath = orientPath(path, medial0, pose0)				
+					
+					poseOrigin0 = Pose(pose0)
+					globalMedial0 = []
+					for p in medial0:
+						globalMedial0.append(poseOrigin0.convertLocalToGlobal(p))
+		
+					orientedSplicePath = orientPath(path, globalMedial0)				
 					#orientedSplicePath = self.orientPath(self.currSplicePath, medial0, pose0)				
 					currPathSpline = SplineFit(orientedSplicePath, smooth=0.1)
 	
@@ -3186,7 +3192,7 @@ class PoseGraph:
 					self.multiDepCount += 1
 
 					#results1.append(result+(k,))
-					" (departurePoint1, angle1, isInterior1, isExist1, dist1, departurePoint2, angle2, isInterior2, isExist2, dist2, contigFrac, overlapSum, angDiff2 )"
+					" (departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2 )"
 					
 					" (resultPose2,lastCost2,matchCount2,fabs(currAng2)) "
 					
@@ -3204,11 +3210,11 @@ class PoseGraph:
 				
 				
 				
-				resultMoves2 = sorted(resultMoves2, key=itemgetter(16))
-				resultMoves2 = sorted(resultMoves2, key=itemgetter(14), reverse=True)
+				resultMoves2 = sorted(resultMoves2, key=itemgetter(18))
+				resultMoves2 = sorted(resultMoves2, key=itemgetter(16), reverse=True)
 
-				resultMoves3 = sorted(resultMoves3, key=itemgetter(16))
-				resultMoves3 = sorted(resultMoves3, key=itemgetter(14), reverse=True)
+				resultMoves3 = sorted(resultMoves3, key=itemgetter(18))
+				resultMoves3 = sorted(resultMoves3, key=itemgetter(16), reverse=True)
 				
 				##resultMoves = sorted(resultMoves, key=itemgetter(3))
 
@@ -3239,7 +3245,8 @@ class PoseGraph:
 		print "received", len(splicedPaths1), "spliced paths from path IDs", orderedPathIDs1
 		print "received", len(splicedPaths2), "spliced paths from path IDs", orderedPathIDs2
 
-		" departurePoint1, angle1, isInterior1, isExist1, dist1, departurePoint2, angle2, isInterior2, isExist2, dist2, contigFrac, overlapSum, angDiff2 |"
+		" departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2 |"
+		" departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2 "
 
 		results1 = []		
 		for k in range(len(splicedPaths1)):
@@ -3248,8 +3255,8 @@ class PoseGraph:
 			results1.append(result+(k,))
 
 
-		results1 = sorted(results1, key=itemgetter(12))
-		results1 = sorted(results1, key=itemgetter(10), reverse=True)				
+		results1 = sorted(results1, key=itemgetter(14))
+		results1 = sorted(results1, key=itemgetter(12), reverse=True)				
 
 		results2 = []		
 		for k in range(len(splicedPaths2)):
@@ -3257,11 +3264,11 @@ class PoseGraph:
 			result = getMultiDeparturePoint(path, medial2, estPose2, estPose2, orderedPathIDs2, nodeID2)
 			results2.append(result+(k,))
 
-		results2 = sorted(results2, key=itemgetter(12))
-		results2 = sorted(results2, key=itemgetter(10), reverse=True)				
+		results2 = sorted(results2, key=itemgetter(14))
+		results2 = sorted(results2, key=itemgetter(12), reverse=True)				
 
 
-		kIndex = results1[0][13]
+		kIndex = results1[0][15]
 
 		return splicedPaths1[kIndex]
 
@@ -4971,24 +4978,24 @@ class PoseGraph:
 
 			path = splicedPaths1[k]
 
-			"resultPose, lastCost, matchCount, departurePoint1, angle1, isInterior1, isExist1, dist1, departurePoint2, angle2, isInterior2, isExist2, dist2, contigFrac, overlapSum, angDiff"
+			"resultPose, lastCost, matchCount, departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff"
 			results = self.findPathLocation2(orderedPathIDs1, nodeID1, path)
 			#for result in results:
 			#	result.append(k)
 			results1 += results
 
 
-		results1 = sorted(results1, key=itemgetter(15))
-		results1 = sorted(results1, key=itemgetter(13), reverse=True)		
+		results1 = sorted(results1, key=itemgetter(16))
+		results1 = sorted(results1, key=itemgetter(15), reverse=True)		
 
 		for result in results1:
 			isExist1 = result[6]
-			isExist2 = result[11]
+			isExist2 = result[12]
 			isInterior1 = result[5]
-			isInterior2 = result[10]
-			contigFrac = result[13]
+			isInterior2 = result[11]
+			contigFrac = result[15]
 			guessPoseA = result[0]
-			angDiffA = result[15]
+			angDiffA = result[17]
 			#k = result[16]
 			
 			print nodeID1, "splice", "X", "result =", isExist1, isExist2, isInterior1, isInterior2, contigFrac, angDiffA, guessPoseA
@@ -5051,17 +5058,17 @@ class PoseGraph:
 			results2 += results
 
 
-		results2 = sorted(results2, key=itemgetter(15))
-		results2 = sorted(results2, key=itemgetter(13), reverse=True)		
+		results2 = sorted(results2, key=itemgetter(17))
+		results2 = sorted(results2, key=itemgetter(15), reverse=True)		
 
 		for result in results2:
 			isExist1 = result[6]
-			isExist2 = result[11]
+			isExist2 = result[12]
 			isInterior1 = result[5]
-			isInterior2 = result[10]
-			contigFrac = result[13]
+			isInterior2 = result[11]
+			contigFrac = result[15]
 			guessPoseA = result[0]
-			angDiffA = result[15]
+			angDiffA = result[17]
 			#k = result[16]
 			
 			print nodeID2, "splice", "X", "result =", isExist1, isExist2, isInterior1, isInterior2, contigFrac, angDiffA, guessPoseA
@@ -6382,15 +6389,15 @@ class PoseGraph:
 			resultPose = result[0]
 			isInterior1 = result[5]
 			isExist1 = result[6]
-			isInterior2 = result[10]
-			isExist2 = result[11]
-			contigFrac = result[13]
-			angDiff2 = result[15]
-			spliceIndex = result[16]
+			isInterior2 = result[11]
+			isExist2 = result[12]
+			contigFrac = result[15]
+			angDiff2 = result[17]
+			spliceIndex = result[18]
 			dist = sqrt((estPose1[0]-resultPose[0])**2 + (estPose1[1] - resultPose[1])**2)
 			lastCost = result[1]
 			matchCount = result[2]
-			overlapSum = result[14]
+			overlapSum = result[16]
 			print spliceIndex, [int(isInterior1), int(isInterior2), int(isExist1), int(isExist2)], contigFrac, dist, angDiff2, lastCost, matchCount, overlapSum, spliceTerms[spliceIndex], splicePathIDs[spliceIndex], resultPose
 
 		filteredResults = []
@@ -6398,11 +6405,11 @@ class PoseGraph:
 			resultPose = result[0]
 			isInterior1 = result[5]
 			isExist1 = result[6]
-			isInterior2 = result[10]
-			isExist2 = result[11]
-			contigFrac = result[13]
-			angDiff2 = result[15]
-			spliceIndex = result[16]
+			isInterior2 = result[11]
+			isExist2 = result[12]
+			contigFrac = result[15]
+			angDiff2 = result[17]
+			spliceIndex = result[18]
 			dist = sqrt((estPose1[0]-resultPose[0])**2 + (estPose1[1] - resultPose[1])**2)
 			if not isInterior1 and not isInterior2 and not isExist1 and not isExist2:
 				exclude = False
@@ -6417,7 +6424,7 @@ class PoseGraph:
 
 		for result in filteredResults:
 			resultPose = result[0]
-			spliceIndex = result[16]
+			spliceIndex = result[18]
 			#getMultiDeparturePoint(orientedPaths[spliceIndex], medial1, estPose1, resultPose, [], nodeID, pathPlotCount = self.multiDepCount, plotIter = True)
 			#self.multiDepCount += 1
 		
@@ -6426,15 +6433,15 @@ class PoseGraph:
 			resultPose = result[0]
 			isInterior1 = result[5]
 			isExist1 = result[6]
-			isInterior2 = result[10]
-			isExist2 = result[11]
-			contigFrac = result[13]
-			angDiff2 = result[15]
-			spliceIndex = result[16]
+			isInterior2 = result[11]
+			isExist2 = result[12]
+			contigFrac = result[15]
+			angDiff2 = result[17]
+			spliceIndex = result[18]
 			dist = sqrt((estPose1[0]-resultPose[0])**2 + (estPose1[1] - resultPose[1])**2)
 			lastCost = result[1]
 			matchCount = result[2]
-			overlapSum = result[14]
+			overlapSum = result[16]
 			print spliceIndex, [int(isInterior1), int(isInterior2), int(isExist1), int(isExist2)], contigFrac, dist, angDiff2, lastCost, matchCount, overlapSum, spliceTerms[spliceIndex], splicePathIDs[spliceIndex], resultPose
 
 	
