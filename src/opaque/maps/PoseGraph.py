@@ -2465,12 +2465,12 @@ class PoseGraph:
 				#self.makeNodePathConsistent(nodeID1, nodeID2, orderedPathIDs1, orderedPathIDs2)
 	
 	
-				self.consistentFit(nodeID1,  self.nodeHash[nodeID1].getGlobalGPACPose(), numGuesses = 5)
+				self.consistentFit(nodeID1,  self.nodeHash[nodeID1].getGlobalGPACPose(), numGuesses = 11)
 				self.drawConstraints(self.statePlotCount)
 				self.statePlotCount += 1
 				self.drawPathAndHull()
 
-				self.consistentFit(nodeID2,  self.nodeHash[nodeID2].getGlobalGPACPose(), numGuesses = 5)
+				self.consistentFit(nodeID2,  self.nodeHash[nodeID2].getGlobalGPACPose(), numGuesses = 11)
 				self.drawConstraints(self.statePlotCount)
 				self.statePlotCount += 1
 				self.drawPathAndHull()
@@ -6383,6 +6383,13 @@ class PoseGraph:
 		print "consistentFit node", nodeID
 		
 		print len(resultsBySplice), "results"
+		
+		for k in range(len(resultsBySplice)):
+			result = resultsBySplice[k]
+			resultPose = result[0]
+			dist = sqrt((estPose1[0]-resultPose[0])**2 + (estPose1[1] - resultPose[1])**2)
+			resultsBySplice[k] = result + (dist, k,)
+
 
 		print "unfilteredResults:"
 		for result in resultsBySplice:
@@ -6393,13 +6400,27 @@ class PoseGraph:
 			isExist2 = result[12]
 			contigFrac = result[15]
 			angDiff2 = result[17]
-			spliceIndex = result[18]
+			spliceIndex = result[19]
 			dist = sqrt((estPose1[0]-resultPose[0])**2 + (estPose1[1] - resultPose[1])**2)
 			lastCost = result[1]
 			matchCount = result[2]
 			overlapSum = result[16]
 			print spliceIndex, [int(isInterior1), int(isInterior2), int(isExist1), int(isExist2)], contigFrac, dist, angDiff2, lastCost, matchCount, overlapSum, spliceTerms[spliceIndex], splicePathIDs[spliceIndex], resultPose
 
+		
+		" resultPose, lastCost, matchCount, departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2, isDeparture, spliceIndex "
+
+
+		"""
+		1) departures:  (0,0) good, (1,0) okay, (1,1) bad 
+		2) contigFrac:  1.0 good, 0.9 okay, 0.5 bad, 0.0 reject
+		3) dist:   0.0 great, 0.5 good, 1.0 okay, 2.0 bad, 3.0 reject
+		4) angDiff2:  0.0 great, 0.2 good, 0.5 bad/reject
+		5) splicePathIDs:  exID in REJECT, currPathID in GOOD
+		"""
+		
+		#(0.5-angDiff2)/0.5 + (contigFrac-0.5)/0.5 + (3.0-dist)/3.0 + 1-isDeparture*0.5
+		
 		filteredResults = []
 		for result in resultsBySplice:
 			resultPose = result[0]
@@ -6409,8 +6430,43 @@ class PoseGraph:
 			isExist2 = result[12]
 			contigFrac = result[15]
 			angDiff2 = result[17]
-			spliceIndex = result[18]
-			dist = sqrt((estPose1[0]-resultPose[0])**2 + (estPose1[1] - resultPose[1])**2)
+			isDeparture = result[18]
+			spliceIndex = result[19]
+			dist = result[20]
+			
+			
+			" rejection filter "
+			isReject = False
+			
+			if isInterior1 or isInterior2:
+				isReject = True
+			
+			if isDeparture:
+				isReject = True
+			
+			for exID in excludePathIDs:
+				if exID in splicePathIDs[spliceIndex]:
+					isReject = True
+		
+			if contigFrac <= 0.5:
+				isReject = True
+				
+			if dist >= 3.0:
+				isReject = True
+			
+			if angDiff2 > 0.7:
+				isReject = True
+				
+			if not isReject:
+				filteredResults.append(result)
+
+			"""			
+			if isExist1 or isExist2:
+				depVal = 50.0
+			else:
+				depVal = 100.0
+			
+			
 			if not isInterior1 and not isInterior2 and not isExist1 and not isExist2:
 				exclude = False
 				for exID in excludePathIDs:
@@ -6419,12 +6475,12 @@ class PoseGraph:
 				
 				if dist < 3.0 and contigFrac > 0.7 and angDiff2 < 0.5 and not exclude:
 					filteredResults.append(result)
+			"""
+			
 
-		filteredResults = sorted(filteredResults, key=itemgetter(14))
-
-		for result in filteredResults:
-			resultPose = result[0]
-			spliceIndex = result[18]
+		#for result in filteredResults:
+		#	resultPose = result[0]
+		#	spliceIndex = result[18]
 			#getMultiDeparturePoint(orientedPaths[spliceIndex], medial1, estPose1, resultPose, [], nodeID, pathPlotCount = self.multiDepCount, plotIter = True)
 			#self.multiDepCount += 1
 		
@@ -6437,18 +6493,72 @@ class PoseGraph:
 			isExist2 = result[12]
 			contigFrac = result[15]
 			angDiff2 = result[17]
-			spliceIndex = result[18]
-			dist = sqrt((estPose1[0]-resultPose[0])**2 + (estPose1[1] - resultPose[1])**2)
+			spliceIndex = result[19]
+			dist = result[20]
 			lastCost = result[1]
 			matchCount = result[2]
 			overlapSum = result[16]
-			print spliceIndex, [int(isInterior1), int(isInterior2), int(isExist1), int(isExist2)], contigFrac, dist, angDiff2, lastCost, matchCount, overlapSum, spliceTerms[spliceIndex], splicePathIDs[spliceIndex], resultPose
+			resultIndex = result[21]
+			print resultIndex, spliceIndex, [int(isInterior1), int(isInterior2), int(isExist1), int(isExist2)], contigFrac, dist, angDiff2, lastCost, matchCount, overlapSum, spliceTerms[spliceIndex], splicePathIDs[spliceIndex], resultPose
 
-	
+
+
+		utilResults = []
+		for k in range(len(filteredResults)):
+			result = filteredResults[k]
+			angDiff2 = result[17]
+			contigFrac = result[15]
+			dist = result[20]
+			isDeparture = result[18]
+			utilVal = (0.5-angDiff2)/0.5 + (contigFrac-0.5)/0.5 + (3.0-dist)/3.0 + 1-isDeparture*0.5
+			
+			filteredResults[k] = result + (utilVal)
+			
+
+		sortedResults = sorted(filteredResults, key=itemgetter(15), reverse=True)
+		contigSort = []
+		for k in range(len(sortedResults)):
+			result = sortedResults[k]
+			contigSort.append((result[15],result[21]))
+		
+		sortedResults = sorted(filteredResults, key=itemgetter(20))
+		distSort = []
+		for k in range(len(sortedResults)):
+			result = sortedResults[k]
+			distSort.append((result[20],result[21]))
+		
+		sortedResults = sorted(filteredResults, key=itemgetter(17))
+		angSort = []
+		for k in range(len(sortedResults)):
+			result = sortedResults[k]
+			angSort.append((result[17],result[21]))
+		
+		sortedResults = sorted(filteredResults, key=itemgetter(18))
+		depSort = []
+		for k in range(len(sortedResults)):
+			result = sortedResults[k]
+			depSort.append((result[18],result[21]))
+
+
+		sortedResults = sorted(filteredResults, key=itemgetter(22))
+		utilSort = []
+		for k in range(len(sortedResults)):
+			result = sortedResults[k]
+			utilSort.append((result[22],result[21]))
+		
+		
+		print "contigSort:", contigSort
+		print "distSort:", distSort
+		print "angSort:", angSort
+		print "depSort:", depSort
+		print "utilSort:", utilSort
+
+
+		filteredResults = sorted(filteredResults, key=itemgetter(16))
 
 		guessPose = filteredResults[0][0]
 		self.nodeHash[nodeID].setGPACPose(guessPose)
-	
+
 	
 
 		"""

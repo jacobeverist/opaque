@@ -64,9 +64,11 @@ def multiFitSplice(initGuess, orientedPath, medialAxis, initPose, pathIDs, nodeI
 	resultArgs = getMultiDeparturePoint(orientedPath, medialAxis, initPose, resultPose, pathIDs, nodeID, pathPlotCount, plotIter = True)
 
 	isExist1 = resultArgs[3]
+	isExist2 = resultArgs[9]
+	
+	" departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2 "
 
-
-	return (resultPose, lastCost, matchCount) + resultArgs
+	return (resultPose, lastCost, matchCount) + resultArgs + (isExist1 or isExist2,)
 
 
 def batchGlobalMultiFit(initGuesses, splices, medial, initPose, pathIDs, nodeID):
