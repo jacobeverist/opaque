@@ -6540,7 +6540,7 @@ class PoseGraph:
 			depSort.append((result[18],result[21]))
 
 
-		sortedResults = sorted(filteredResults, key=itemgetter(22))
+		sortedResults = sorted(filteredResults, key=itemgetter(22), reverse = True)
 		utilSort = []
 		for k in range(len(sortedResults)):
 			result = sortedResults[k]
@@ -6554,7 +6554,8 @@ class PoseGraph:
 		print "utilSort:", utilSort
 
 
-		filteredResults = sorted(filteredResults, key=itemgetter(16))
+		#filteredResults = sorted(filteredResults, key=itemgetter(16))
+		filteredResults = sorted(filteredResults, key=itemgetter(22), reverse=True)
 
 		guessPose = filteredResults[0][0]
 		self.nodeHash[nodeID].setGPACPose(guessPose)
