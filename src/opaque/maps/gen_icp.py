@@ -7326,17 +7326,6 @@ def globalPathToNodeOverlapICP2(initGuess, globalPath, medialPoints, plotIter = 
     u2 = initGuess[1]
     u3 = u1
 
-    uHigh = u3 + 0.2
-    uLow = u3 - 0.2
-    
-    " keep the rails within the range of u parameterization "
-    if uHigh >= 1.0:
-        uHigh = 1.0
-        uLow = 0.8
-    
-    if uLow <= 0.0:
-        uLow = 0.0
-        uHigh = 0.2
     
     currU = u3
     currAng = initGuess[2]
@@ -7348,11 +7337,29 @@ def globalPathToNodeOverlapICP2(initGuess, globalPath, medialPoints, plotIter = 
     """
 
 
-    print "u1,u2,u3,uHigh,uLow,currU,currAng:", u1, u2, u3, uHigh, uLow, currU, currAng
     
     globalSpline = SplineFit(globalPath, smooth=0.1)
     medialSpline = SplineFit(medialPoints, smooth=0.1)
+
+    uHigh = globalSpline.getUOfDist(u3, arcLimit, distIter = 0.001)
+    uLow = globalSpline.getUOfDist(u3, -arcLimit, distIter = 0.001)
+
+    #uHigh = u3 + 0.2
+    #uLow = u3 - 0.2
     
+    " keep the rails within the range of u parameterization "
+    if uHigh >= 1.0:
+        uHigh = 1.0
+        #uLow = 0.8
+        uLow = globalSpline.getUOfDist(1.0, -arcLimit)
+    
+    if uLow <= 0.0:
+        uLow = 0.0
+        #uHigh = 0.2
+        uHigh = globalSpline.getUOfDist(0.0, arcLimit)
+    
+
+    print "u1,u2,u3,uHigh,uLow,currU,currAng:", u1, u2, u3, uHigh, uLow, currU, currAng
     
     
     
