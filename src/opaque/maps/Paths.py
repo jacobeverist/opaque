@@ -1696,6 +1696,7 @@ class Paths:
             pylab.plot(xP,yP,color='g')
         
         
+            pylab.title("parent = %d, siblings = %d %d", (parentPathID, pathID1, pathID2))
             pylab.savefig("siblingCompare_%08u.png" % self.pathPlotCount2)
         
             self.pathPlotCount2 += 1
@@ -1768,10 +1769,10 @@ class Paths:
         orientedGlobalSpline2 = SplineFit(orientedGlobalPath, smooth=0.1)
 
 
-        globalSamples2 = orientedGlobalSpline2.getUniformSamples(spacing = 0.005)
-        globalSamples1 = globalSpline1.getUniformSamples(spacing = 0.005)
-        #globalSamples2 = orientedGlobalSpline2.getUniformSamples(spacing = 0.04)
-        #globalSamples1 = globalSpline1.getUniformSamples(spacing = 0.04)
+        #globalSamples2 = orientedGlobalSpline2.getUniformSamples(spacing = 0.005)
+        #globalSamples1 = globalSpline1.getUniformSamples(spacing = 0.005)
+        globalSamples2 = orientedGlobalSpline2.getUniformSamples(spacing = 0.04)
+        globalSamples1 = globalSpline1.getUniformSamples(spacing = 0.04)
 
         
         globalVar = []
@@ -1891,9 +1892,45 @@ class Paths:
         #sorted(s, key=attrgetter('grade'), reverse=True)  
         #closestPairs.sort()
         
-        #print len(closestPairs), "closest pairs"
+        print len(closestPairs), "closest pairs"
         #for val in closestPairs:
         #    print val
+
+        if plotIter:
+            
+            pylab.clf()
+            
+            xP = [junctionPose1[0]]
+            yP = [junctionPose1[1]]
+        
+            pylab.scatter(xP,yP, color='k', zorder=10)
+
+            xP = []
+            yP = []
+            for p in globalPath1:
+                xP.append(p[0])
+                yP.append(p[1])
+            pylab.plot(xP,yP,color='k')
+
+            xP = []
+            yP = []
+            for p in globalPath2:
+                xP.append(p[0])
+                yP.append(p[1])
+            pylab.plot(xP,yP,color='g')
+
+            for pair in closestPairs:
+                p1 = globalSamples1[pair[1]]
+                p2 = globalSamples2[pair[0]]        
+                pylab.plot([p1[0],p2[0]], [p1[1],p2[1]])
+
+            pylab.title("parent = %d, siblings = %d %d", (parentPathID, pathID1, pathID2))        
+            pylab.savefig("siblingCompare_%08u.png" % self.pathPlotCount2)
+        
+            self.pathPlotCount2 += 1
+
+
+
 
         pathDict1 = self.getPath(pathID1)
         pathDict2 = self.getPath(pathID2)
@@ -1930,7 +1967,8 @@ class Paths:
                     break
                 
             if not isFound:
-                print closestPairs
+                for pair in closestPairs:
+                    print pair
                 raise
         else:
             raise
@@ -1999,6 +2037,7 @@ class Paths:
             pylab.plot(xP,yP,color='g')
         
         
+            pylab.title("parent = %d, siblings = %d %d", (parentPathID, pathID1, pathID2))
             pylab.savefig("siblingCompare_%08u.png" % self.pathPlotCount2)
         
             self.pathPlotCount2 += 1

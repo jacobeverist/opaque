@@ -76,7 +76,7 @@ class VisualGraph:
 
 		self.poseGraph.mergePriorityConstraints()
 
-		self.drawConstraints()
+		#self.drawConstraints()
 		
 
 		#return
@@ -101,12 +101,12 @@ class VisualGraph:
 			self.localNodes.append(currNode)
 			self.poseGraph.loadNewNode(currNode)
 			self.poseGraph.mergePriorityConstraints()
-			self.drawConstraints(i)
+			#self.drawConstraints(i)
 			self.poseGraph.saveState()
 		
 
 		self.drawMap()
-		self.drawConstraints(num_poses)
+		#self.drawConstraints(num_poses)
 
 		return
 
@@ -234,7 +234,7 @@ class VisualGraph:
 
 	
 			#self.drawMotion(i)
-			self.drawConstraints(i)
+			#self.drawConstraints(i)
 			#self.drawTopology2(i)
 			#self.drawMedialPath(i)
 			

@@ -2391,6 +2391,8 @@ class PoseGraph:
 			self.paths.generatePaths()
 
 				
+			self.drawConstraints(self.statePlotCount)
+			self.statePlotCount += 1
 			self.drawPathAndHull()
 
 
@@ -2401,6 +2403,9 @@ class PoseGraph:
 				
 				#self.paths.comparePaths()
 				self.mergePaths()
+				self.drawConstraints(self.statePlotCount)
+				self.statePlotCount += 1
+				self.drawPathAndHull()
 
 				paths = {}
 				pathIDs = self.paths.getPathIDs()
@@ -2455,10 +2460,13 @@ class PoseGraph:
 				estPose2 = self.nodeHash[nodeID2].getGlobalGPACPose()
 				self.currSplicePath = self.selectSplice(nodeID1, nodeID2, medial1, medial2, estPose1, estPose2, orderedPathIDs1, orderedPathIDs2)
 				
-				self.mergePriorityConstraints()
+				#self.mergePriorityConstraints()
 				
 				self.paths.generatePaths()
+				self.drawConstraints(self.statePlotCount)
+				self.statePlotCount += 1
 				self.drawPathAndHull()
+
 				self.drawTrimmedPaths(self.trimmedPaths)
 
 				#self.updatePathNode(nodeID1, nodeID2, orderedPathIDs1, orderedPathIDs2)
@@ -2532,6 +2540,9 @@ class PoseGraph:
 
 				" Move node along path "
 				self.movePath(nodeID, direction)
+				self.drawConstraints(self.statePlotCount)
+				self.statePlotCount += 1
+				self.drawPathAndHull()
 				
 
 		#pathIDs = self.paths.getPathIDs()
@@ -10095,7 +10106,7 @@ class PoseGraph:
 		for pose in poses:
 			xP.append(pose[0])
 			yP.append(pose[1])		
-		pylab.scatter(xP,yP, color='k', linewidth=1)
+		pylab.scatter(xP,yP, color='k', linewidth=1, zorder=10)
 
 		self.plotEnv()
 
