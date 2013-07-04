@@ -568,8 +568,9 @@ def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, node
 			yP.append(p[1])
 		pylab.plot(xP,yP, color='r')
 		
-		pylab.xlim(-5,10)
-		pylab.ylim(-8,8)
+		pylab.axis("equal")
+		#pylab.xlim(-5,10)
+		#pylab.ylim(-8,8)
 		#pylab.title("nodeID %d: %d %d" % (nodeID, isInterior, isExist))
 		#pylab.title("%d: %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, [%d,%d] [%d,%d]" % (nodeID, maxFront, maxBack, dist1, dist2, matchVar1, matchVar2, angle1, angle2, isExist1, isExist2, isInterior1, isInterior2))
 		pylab.title("%d %s: [%d,%d] [%d,%d] %1.2f %1.2f" % (nodeID, repr(pathIDs), isExist1, isExist2, isInterior1, isInterior2, contigFrac, angDiff2))
