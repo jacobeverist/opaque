@@ -244,7 +244,7 @@ class VisualGraph:
 		
 
 		self.drawMap()
-		self.drawConstraints(num_poses)
+		#self.drawConstraints(num_poses)
 		#self.drawPoses()
 		
 		#self.drawAllConstraints()
