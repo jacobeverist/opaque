@@ -2769,10 +2769,10 @@ class PoseGraph:
 				print "reporting discrepancy"
 				print "adjusting pose guess of node because of discrepancy:", nodeID1, nodeID2
 	
-				
+			
 			print "frontAngDiff:", frontAngDiff
 			print "backAngDiff:", backAngDiff
-	
+			
 			
 			depAngle1 = depAngles1[0][0]
 			depAngle2 = depAngles2[0][0]
@@ -6512,7 +6512,7 @@ class PoseGraph:
 			isDeparture = result[18]
 			utilVal = (0.5-angDiff2)/0.5 + (contigFrac-0.5)/0.5 + (3.0-dist)/3.0 + 1-isDeparture*0.5
 			
-			filteredResults[k] = result + (utilVal)
+			filteredResults[k] = result + (utilVal,)
 			
 
 		sortedResults = sorted(filteredResults, key=itemgetter(15), reverse=True)
@@ -10104,8 +10104,8 @@ class PoseGraph:
 		#pylab.ylim(-4,4)
 
 		pylab.title("%d Poses" % self.numNodes)
-		pylab.xlim(-5,10)
-		pylab.ylim(-8,8)
+		pylab.xlim(-10,10)
+		pylab.ylim(-10,10)
 
 			
 		if id == []:

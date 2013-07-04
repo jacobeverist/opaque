@@ -1745,10 +1745,14 @@ class VisualGraph:
 
 
 			
-		pylab.xlim(-5,10)
+		#pylab.xlim(-5,10)
 		#pylab.xlim(-8,12)
 		#pylab.ylim(-10,10)
-		pylab.ylim(-8,8)
+		#pylab.ylim(-8,8)
+		pylab.xlim(-10,10)
+		pylab.ylim(-10,10)
+
+		
 		if id == []:
 			pylab.savefig("plotEstimate%04u.png" % self.numNodes)
 		else:

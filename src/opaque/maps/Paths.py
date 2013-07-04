@@ -1768,8 +1768,10 @@ class Paths:
         orientedGlobalSpline2 = SplineFit(orientedGlobalPath, smooth=0.1)
 
 
-        globalSamples2 = orientedGlobalSpline2.getUniformSamples(spacing = 0.04)
-        globalSamples1 = globalSpline1.getUniformSamples(spacing = 0.04)
+        globalSamples2 = orientedGlobalSpline2.getUniformSamples(spacing = 0.005)
+        globalSamples1 = globalSpline1.getUniformSamples(spacing = 0.005)
+        #globalSamples2 = orientedGlobalSpline2.getUniformSamples(spacing = 0.04)
+        #globalSamples1 = globalSpline1.getUniformSamples(spacing = 0.04)
 
         
         globalVar = []
