@@ -1846,7 +1846,8 @@ class Paths:
         
         TERM_DIST1 = len(globalSamples1)/4
         TERM_DIST2 = len(globalSamples2)/4
-        
+        TERM_DIST1 = 0
+        TERM_DIST2 = 0
         
         for i in range(TERM_DIST2, len(globalSamples2)-TERM_DIST2):
             pG = globalSamples2[i]
@@ -1862,7 +1863,7 @@ class Paths:
             
             juncDist = math.sqrt((junctionPose1[0]-pM[0])**2 + (junctionPose1[1]-pM[1])**2)
             #if minDist < 0.1:
-            if True:
+            if juncDist < 1.0:
                 closestPairs.append((i,minJ,minDist,globalVar[i][0],medialVar[minJ][0],globalVar[i][1],medialVar[minJ][1], juncDist))
 
         for j in range(TERM_DIST1, len(globalSamples1)-TERM_DIST1):
@@ -1879,7 +1880,7 @@ class Paths:
                     
             juncDist = math.sqrt((junctionPose1[0]-pM[0])**2 + (junctionPose1[1]-pM[1])**2)
             #if minDist < 0.1:
-            if True:
+            if juncDist < 1.0:
                 closestPairs.append((minI,j,minDist,globalVar[minI][0],medialVar[j][0],globalVar[minI][1],medialVar[j][1],juncDist))
 
         " remove duplicates "
