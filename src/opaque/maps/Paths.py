@@ -1696,7 +1696,7 @@ class Paths:
             pylab.plot(xP,yP,color='g')
         
         
-            pylab.title("parent = %d, siblings = %d %d", (parentPathID, pathID1, pathID2))
+            pylab.title("parent = %d, siblings = %d %d" % (parentPathID, pathID1, pathID2))
             pylab.savefig("siblingCompare_%08u.png" % self.pathPlotCount2)
         
             self.pathPlotCount2 += 1
@@ -1924,7 +1924,7 @@ class Paths:
                 p2 = globalSamples2[pair[0]]        
                 pylab.plot([p1[0],p2[0]], [p1[1],p2[1]])
 
-            pylab.title("parent = %d, siblings = %d %d", (parentPathID, pathID1, pathID2))        
+            pylab.title("parent = %d, siblings = %d %d" % (parentPathID, pathID1, pathID2))
             pylab.savefig("siblingCompare_%08u.png" % self.pathPlotCount2)
         
             self.pathPlotCount2 += 1
@@ -2037,7 +2037,7 @@ class Paths:
             pylab.plot(xP,yP,color='g')
         
         
-            pylab.title("parent = %d, siblings = %d %d", (parentPathID, pathID1, pathID2))
+            pylab.title("parent = %d, siblings = %d %d" % (parentPathID, pathID1, pathID2))
             pylab.savefig("siblingCompare_%08u.png" % self.pathPlotCount2)
         
             self.pathPlotCount2 += 1
