@@ -3178,16 +3178,14 @@ class PoseGraph:
 	
 					"""
 					
-					resultPose2, lastCost2, matchCount2, currAng2 = gen_icp.globalPathToNodeOverlapICP2([u2, uMedialOrigin2, 0.0], orientedSplicePath, medial2, plotIter = True, n1 = nodeID-1, n2 = -1, arcLimit = 0.5)
-					resultPose3, lastCost3, matchCount3, currAng3 = gen_icp.globalPathToNodeOverlapICP2([u3, uMedialOrigin3, 0.0], orientedSplicePath, medial3, plotIter = True, n1 = nodeID, n2 = -1, arcLimit = 0.5)
-					#resultPose2, lastCost2, matchCount2 = gen_icp.globalPathToNodeOverlapICP([u2, uMedialOrigin2, 0.0], orientedSplicePath, medial2, plotIter = True, n1 = nodeID-1, n2 = -1, arcLimit = 0.1)
-					#resultPose3, lastCost3, matchCount3 = gen_icp.globalPathToNodeOverlapICP([u3, uMedialOrigin3, 0.0], orientedSplicePath, medial3, plotIter = True, n1 = nodeID, n2 = -1, arcLimit = 0.1)
+					#resultPose2, lastCost2, matchCount2, currAng2 = gen_icp.globalPathToNodeOverlapICP2([u2, uMedialOrigin2, 0.0], orientedSplicePath, medial2, plotIter = True, n1 = nodeID-1, n2 = -1, arcLimit = 0.5)
+					#resultPose3, lastCost3, matchCount3, currAng3 = gen_icp.globalPathToNodeOverlapICP2([u3, uMedialOrigin3, 0.0], orientedSplicePath, medial3, plotIter = True, n1 = nodeID, n2 = -1, arcLimit = 0.5)
 					
 					#pathPose2 = resultPose2
 					#pathPose3 = resultPose3
 					
-					#resultPose2, lastCost2, matchCount2 = gen_icp.globalOverlapICP_GPU2([u2, uMedialOrigin2, 0.0], orientedSplicePath, medial2, plotIter = True, n1 = nodeID-1, n2 = -1, arcLimit = 0.1)
-					#resultPose3, lastCost3, matchCount3 = gen_icp.globalOverlapICP_GPU2([u3, uMedialOrigin3, 0.0], orientedSplicePath, medial3, plotIter = True, n1 = nodeID, n2 = -1, arcLimit = 0.1)
+					resultPose2, lastCost2, matchCount2 = gen_icp.globalOverlapICP_GPU2([u2, uMedialOrigin2, 0.0], orientedSplicePath, medial2, plotIter = True, n1 = nodeID-1, n2 = -1, arcLimit = 0.1)
+					resultPose3, lastCost3, matchCount3 = gen_icp.globalOverlapICP_GPU2([u3, uMedialOrigin3, 0.0], orientedSplicePath, medial3, plotIter = True, n1 = nodeID, n2 = -1, arcLimit = 0.1)
 	
 					#medialPose2 = resultPose2
 					#medialPose3 = resultPose3
@@ -3195,7 +3193,7 @@ class PoseGraph:
 					#print "pathPoses:", pathPose2, pathPose3
 					#print "medialPoses:", medialPose2, medialPose3
 					print "resultPoses:", resultPose2, resultPose3
-					print "currAngs:", currAng2, currAng3
+					#print "currAngs:", currAng2, currAng3
 
 					result2 = getMultiDeparturePoint(orientedSplicePath, medial2, pose2, resultPose2, [], nodeID-1, pathPlotCount = self.multiDepCount, plotIter = False)
 					self.multiDepCount += 1
@@ -3215,9 +3213,11 @@ class PoseGraph:
 					" NOTE:  added minimum threshold to angle difference "
 					" NOTE:  guess pose is now the inter-nodal estimate instead of path-based estimate "
 					if angDiff2 < 0.5:
-						resultMoves2.append((resultPose2,lastCost2,matchCount2,fabs(currAng2)) + result2)
+						#resultMoves2.append((resultPose2,lastCost2,matchCount2,fabs(currAng2)) + result2)
+						resultMoves2.append((resultPose2,lastCost2,matchCount2,fabs(0.0)) + result2)
 					if angDiff3 < 0.5:
-						resultMoves3.append((resultPose3,lastCost3,matchCount3,fabs(currAng3)) + result3)				
+						#resultMoves3.append((resultPose3,lastCost3,matchCount3,fabs(currAng3)) + result3)				
+						resultMoves3.append((resultPose3,lastCost3,matchCount3,fabs(0.0)) + result3)				
 				
 				
 				
@@ -3546,8 +3546,9 @@ class PoseGraph:
 					minDist = dist
 					minJ = j
 			
-			poseDist = math.sqrt((pG[0]-estPose1[0])**2 + (pG[1]-estPose1[1])**2)
-			if poseDist < 0.3:
+			#poseDist = math.sqrt((pG[0]-estPose1[0])**2 + (pG[1]-estPose1[1])**2)
+			#if poseDist < 0.3:
+			if True:
 				allPairs.append((i,minJ,minDist,globalVar[i][0],medialVar[minJ][0],globalVar[i][1],medialVar[minJ][1]))
 					
 			#if minDist < 0.1:
@@ -3567,10 +3568,10 @@ class PoseGraph:
 					minDist = dist
 					minI = i
 
-			pG = globalSamples[minI]
-			poseDist = math.sqrt((pG[0]-estPose1[0])**2 + (pG[1]-estPose1[1])**2)
-			if poseDist < 0.3:
-					
+			#pG = globalSamples[minI]
+			#poseDist = math.sqrt((pG[0]-estPose1[0])**2 + (pG[1]-estPose1[1])**2)
+			#if poseDist < 0.3:
+			if True:		
 				allPairs.append((minI,j,minDist,globalVar[minI][0],medialVar[j][0],globalVar[minI][1],medialVar[j][1]))
 			
 			#if minDist < 0.1:
