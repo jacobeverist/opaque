@@ -7351,12 +7351,12 @@ def globalPathToNodeOverlapICP2(initGuess, globalPath, medialPoints, plotIter = 
     if uHigh >= 1.0:
         uHigh = 1.0
         #uLow = 0.8
-        uLow = globalSpline.getUOfDist(1.0, -arcLimit)
+        #uLow = globalSpline.getUOfDist(1.0, -arcLimit)
     
     if uLow <= 0.0:
         uLow = 0.0
         #uHigh = 0.2
-        uHigh = globalSpline.getUOfDist(0.0, arcLimit)
+        #uHigh = globalSpline.getUOfDist(0.0, arcLimit)
     
 
     print "u1,u2,u3,uHigh,uLow,currU,currAng:", u1, u2, u3, uHigh, uLow, currU, currAng
