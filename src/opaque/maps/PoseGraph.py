@@ -2920,8 +2920,9 @@ class PoseGraph:
 			
 			if nodeID % 2 == 1:
 				self.getInPlaceGuess(nodeID-1, nodeID, direction)
+				self.getStepGuess(nodeID-1, direction)
 			else:
-				self.getStepGuess(nodeID, direction)
+				print "movePath:  DO NOTHING"
 			
 			" guess path state from these guesses "
 			#if nodeID % 2 == 1: 
