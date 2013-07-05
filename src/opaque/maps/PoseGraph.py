@@ -3540,11 +3540,15 @@ class PoseGraph:
 				pM = globalMedialSamples[j]
 				dist = math.sqrt((pG[0]-pM[0])**2 + (pG[1]-pM[1])**2)
 				
+				
+				
 				if dist < minDist:
 					minDist = dist
 					minJ = j
 			
-			allPairs.append((i,minJ,minDist,globalVar[i][0],medialVar[minJ][0],globalVar[i][1],medialVar[minJ][1]))
+			poseDist = math.sqrt((pG[0]-estPose1[0])**2 + (pG[1]-estPose1[1])**2)
+			if poseDist < 0.3:
+				allPairs.append((i,minJ,minDist,globalVar[i][0],medialVar[minJ][0],globalVar[i][1],medialVar[minJ][1]))
 					
 			#if minDist < 0.1:
 			#	closestPairs.append((i,minJ,minDist,globalVar[i][0],medialVar[minJ][0],globalVar[i][1],medialVar[minJ][1]))
@@ -3557,11 +3561,18 @@ class PoseGraph:
 				pG = globalSamples[i]
 				dist = math.sqrt((pG[0]-pM[0])**2 + (pG[1]-pM[1])**2)
 				
+				
+				
 				if dist < minDist:
 					minDist = dist
 					minI = i
+
+			pG = globalSamples[minI]
+			poseDist = math.sqrt((pG[0]-estPose1[0])**2 + (pG[1]-estPose1[1])**2)
+			if poseDist < 0.3:
 					
-			allPairs.append((minI,j,minDist,globalVar[minI][0],medialVar[j][0],globalVar[minI][1],medialVar[j][1]))
+				allPairs.append((minI,j,minDist,globalVar[minI][0],medialVar[j][0],globalVar[minI][1],medialVar[j][1]))
+			
 			#if minDist < 0.1:
 			#	closestPairs.append((minI,j,minDist,globalVar[minI][0],medialVar[j][0],globalVar[minI][1],medialVar[j][1]))
 
