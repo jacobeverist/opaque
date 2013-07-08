@@ -1358,7 +1358,8 @@ class Paths:
                         if midIndex > 150:
                             path2 = path2[midIndex-150:]
                             
-                        pathPairs.append((path1,path2,pathID1,pathID2))
+                        pathPairs.append((path2,path1,pathID2,pathID1))
+                        #pathPairs.append((path1,path2,pathID1,pathID2))
 
             elif parentID2 == pathID1:
                 
@@ -1406,7 +1407,7 @@ class Paths:
                         
                         print "termPath2:", termPath2
 
-                            
+                        
                         startKey = termPath2[0]
                         endKey = termPath2[-1]
                         if len(termPath2) > 2:      
@@ -1530,7 +1531,8 @@ class Paths:
                                 result = poseOrigin.convertLocalToGlobal(p)
                                 path1_offset.append(result)                    
                             
-                            result0 = self.getPathDeparture(path1_offset, pair[0], pathID2, pathID1, plotIter = True)
+                            #result0 = self.getPathDeparture(path1_offset, pair[0], pathID2, pathID1, plotIter = True)
+                            result0 = self.getPathDeparture(pair[0], path1_offset, pathID1, pathID2, plotIter = True)
                             print "getPathDeparture() = ", result0
         
                             isInterior1 = result0[2]
@@ -6101,7 +6103,7 @@ class Paths:
             if newFrontDepI < frontDepI:
                 newFrontDepI += 1
             else:
-                break        
+                break
         
         #print "front:", nodeID, frontDepI, distances[frontDepI], frontAngleRefI, forePathIndex, forePathAngle, angle1, foreDiffAngle, newFrontDepI, diffAngle(normalizeAngle(points2_offset[newFrontDepI][2]+pi), forePathAngle) 
 
