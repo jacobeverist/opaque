@@ -797,7 +797,7 @@ class Paths:
 
             isNotOverlapped = False
             for pathID in overlappedPathIDs:
-                sum1 = self.getOverlapCondition(self.trimmedPaths[pathID], nodeID)
+                sum1 = self.getOverlapCondition(self.trimmedPaths[pathID], nodeID, plotIter = True)
 
                 if sum1 > 1e10:
                     isNotOverlapped = True
