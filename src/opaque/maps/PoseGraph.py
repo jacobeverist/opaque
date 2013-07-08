@@ -5910,6 +5910,7 @@ class PoseGraph:
 		pathBackU = pathSpline.getUOfDist(originU1, -1.0, distIter = 0.001)
 		
 		
+		"""
 		" orient the path correctly with the orientation of the node medial axis "
 
 		pathReverse = deepcopy(path)
@@ -5958,7 +5959,9 @@ class PoseGraph:
 			orientedPath = pathReverse
 		else:
 			orientedPath = path
+		"""	
 			
+		orientedPath = orientPath(path, globalMedial)
 		orientedPathSpline = SplineFit(orientedPath, smooth=0.1)
 
 		#medialSpline1 = SplineFit(medial1, smooth=0.1)
@@ -6198,8 +6201,9 @@ class PoseGraph:
 			pathBackU = pathSpline.getUOfDist(originU1, -1.0, distIter = 0.001)
 			
 			
+			"""
 			" orient the path correctly with the orientation of the node medial axis "
-	
+			
 			pathReverse = deepcopy(path)
 			pathReverse.reverse()
 			pathSplineReverse = SplineFit(pathReverse, smooth=0.1)
@@ -6246,7 +6250,9 @@ class PoseGraph:
 				orientedPath = pathReverse
 			else:
 				orientedPath = path
-				
+			"""
+			
+			orientedPath = orientPath(path, globalMedial)
 			orientedPathSpline = SplineFit(orientedPath, smooth=0.1)
 	
 			#medialSpline1 = SplineFit(medial1, smooth=0.1)
@@ -6847,8 +6853,6 @@ class PoseGraph:
 		#hull1, medial1 = computeHullAxis(nodeID, node1, tailCutOff = True)
 		hull1, medial1 = computeHullAxis(nodeID, node1, tailCutOff = False)
 		
-		globalPathReverse = deepcopy(globalPath)
-		globalPathReverse.reverse()
 		
 
 		
@@ -6859,6 +6863,10 @@ class PoseGraph:
 		for p in medial1:
 			globalMedial.append(poseOrigin.convertLocalToGlobal(p))
 		
+		"""
+		globalPathReverse = deepcopy(globalPath)
+		globalPathReverse.reverse()
+
 		medialSpline1 = SplineFit(globalMedial, smooth=0.1)
 		globalSpline = SplineFit(globalPath, smooth=0.1)
 		globalSplineReverse = SplineFit(globalPathReverse, smooth=0.1)
@@ -6912,9 +6920,15 @@ class PoseGraph:
 			orientedGlobalPath = globalPathReverse
 		else:
 			orientedGlobalPath = globalPath
-			
+
+					
 		globalSpline = SplineFit(orientedGlobalPath, smooth=0.1)
+		"""
+
 		medialSpline1 = SplineFit(medial1, smooth=0.1)
+
+		orientedGlobalPath = orientPath(globalPath, globalMedial)
+		globalSpline = SplineFit(orientedGlobalPath, smooth=0.1)
 
 
 		globalSamples = globalSpline.getUniformSamples(spacing = 0.04)
@@ -7187,7 +7201,6 @@ class PoseGraph:
 						result = medialProfile.convertLocalToGlobal(p)
 						medial2_offset.append(result)
 
-				
 					" if isMove is True, then we align medial2 with medial1 "
 					points2R_offset = deepcopy(points2_offset)
 					points2R_offset.reverse()
@@ -7210,14 +7223,16 @@ class PoseGraph:
 					" select global path orientation based on which has the smallest angle between tangent vectors "
 					print i, "angleSum1 =", angleSum1, "angleSum2 =", angleSum2
 					if angleSum1 > angleSum2:
-						#orientedMedial2 = deepcopy(medial2Reverse)
 						medial2Reverse = deepcopy(medial2)
 						medial2Reverse.reverse()
+						orientedMedial2 = deepcopy(medial2Reverse)
 					else:
 						orientedMedial2 = deepcopy(medial2)
-
+					
+					#orientedMedial2 = orientPath(medial2, medial1)
 					medialSpline1 = SplineFit(medial1, smooth=0.1)
 					medialSpline2 = SplineFit(orientedMedial2, smooth=0.1)
+
 			
 					originU1 = medialSpline1.findU([0.0,0.0])	
 					originU2 = medialSpline2.findU([0.0,0.0])	
@@ -7368,9 +7383,9 @@ class PoseGraph:
 					" select global path orientation based on which has the smallest angle between tangent vectors "
 					print i, "angleSum1 =", angleSum1, "angleSum2 =", angleSum2
 					if angleSum1 > angleSum2:
-						#orientedMedial2 = deepcopy(medial2Reverse)
 						medial2Reverse = deepcopy(medial2)
 						medial2Reverse.reverse()
+						orientedMedial2 = deepcopy(medial2Reverse)
 					else:
 						orientedMedial2 = deepcopy(medial2)
 

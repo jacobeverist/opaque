@@ -16,7 +16,7 @@ import pylab
 import numpy
 from operator import itemgetter
 import hashlib
-from Splices import batchGlobalMultiFit, getMultiDeparturePoint, orientPath
+from Splices import batchGlobalMultiFit, getMultiDeparturePoint, orientPath, getTipAngles
 
 import alphamod
 
@@ -6011,6 +6011,7 @@ class Paths:
         print "path1:", orientedPath1[0], pathPoints1[0], orientedPath1[-1], pathPoints1[-1]
 
 
+        """
         " tip angles "
         angSum1 = 0.0
         angSum2 = 0.0
@@ -6032,6 +6033,9 @@ class Paths:
 
         " invert one angle so opposite tips have opposite angles "
         angle1 = normalizeAngle(angle1 + pi)
+        """
+
+        angle1, angle2 = getTipAngles(pathPoints2)
 
         #print "ang1:", angle1, angs1
         #print "ang2:", angle2, angs2
@@ -6350,6 +6354,7 @@ class Paths:
         print "path1:", path1[0], pathPoints1[0], path1[-1], pathPoints1[-1]
 
 
+        """
         " tip angles "
         angSum1 = 0.0
         angSum2 = 0.0
@@ -6371,6 +6376,10 @@ class Paths:
 
         " invert one angle so opposite tips have opposite angles "
         angle1 = normalizeAngle(angle1 + pi)
+        """
+            
+        angle1, angle2 = getTipAngles(pathPoints2)
+
 
         #print "ang1:", angle1, angs1
         #print "ang2:", angle2, angs2
@@ -6621,10 +6630,9 @@ class Paths:
             points2_offset.append(result)
 
 
+        """
         globalMedialSpline = SplineFit(points2_offset, smooth=0.1)
         globalMedialPoints = globalMedialSpline.getUniformSamples()
-
-
 
         pathSpline = SplineFit(currPath, smooth=0.1)
         pathPoints = pathSpline.getUniformSamples()
@@ -6674,7 +6682,10 @@ class Paths:
         if angleSum1 > angleSum2:
             pathPoints = pathPointsReverse
             pathSpline = pathSplineReverse
-                    
+        """    
+        
+        pathPoints = orientPath(currPath, points2_offset)
+        #pathSpline = SplineFit(pathPoints, smooth=0.1)
 
 
         
@@ -6687,6 +6698,7 @@ class Paths:
         
   
 
+        """
         " tip angles "
         angSum1 = 0.0
         angSum2 = 0.0
@@ -6708,9 +6720,13 @@ class Paths:
 
         " invert one angle so opposite tips have opposite angles "
         angle1 = normalizeAngle(angle1 + pi)
+        """
+                
+        angle1, angle2 = getTipAngles(points2_offset)
 
-        print "ang1:", angle1, angs1
-        print "ang2:", angle2, angs2
+
+        print "ang1:", angle1
+        print "ang2:", angle2
         print "diff:", diffAngle(angle1, angle2)
         
         distSum = 0.0
@@ -6761,7 +6777,7 @@ class Paths:
             if frontAngleRefI < 0:
                 frontAngleRefI = 0
                 break
-                        
+        
         forePathIndex = indices[frontAngleRefI]
         forePathAngle = pathPoints[forePathIndex][2]
         forePathAngle = normalizeAngle(forePathAngle + pi)
@@ -7050,6 +7066,7 @@ class Paths:
             points2_offset.append(result)
 
 
+        """
         " tip angles "
         angSum1 = 0.0
         angSum2 = 0.0
@@ -7071,9 +7088,12 @@ class Paths:
 
         " invert one angle so opposite tips have opposite angles "
         angle1 = normalizeAngle(angle1 + pi)
+        """
 
-        print "ang1:", angle1, angs1
-        print "ang2:", angle2, angs2
+        angle1, angle2 = getTipAngles(points2_offset)
+
+        print "ang1:", angle1
+        print "ang2:", angle2
         print "diff:", diffAngle(angle1, angle2)
 
         distances = []

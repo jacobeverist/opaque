@@ -588,50 +588,36 @@ def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, node
 	#return departurePoint1, angle1, isInterior1, isExist1, dist1, departurePoint2, angle2, isInterior2, isExist2, dist2
 	return departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2
 
-def orientPath(globalPath, globalMedial):
-	
-	#node1 = self.nodeHash[nodeID]
-	#hull1, medial1 = computeHullAxis(nodeID, node1, tailCutOff = False)
-
-	#medial1 = globalMedial
+def orientPath(globalPath, globalRefPath):
 	
 	globalPathReverse = deepcopy(globalPath)
 	globalPathReverse.reverse()
-	
 
-	
-	#estPose1 = node1.getGlobalGPACPose()		
-	#poseOrigin = Pose(estPose1)
-	
-	#globalMedial = []
-	#for p in medial1:
-	#	globalMedial.append(poseOrigin.convertLocalToGlobal(p))
-	
-	medialSpline1 = SplineFit(globalMedial, smooth=0.1)
+	refSpline1 = SplineFit(globalRefPath, smooth=0.1)
 	globalSpline = SplineFit(globalPath, smooth=0.1)
 	globalSplineReverse = SplineFit(globalPathReverse, smooth=0.1)
+
+
+	pathPoints = globalSpline.getUniformSamples()
+	pathPointsReverse = globalSplineReverse.getUniformSamples()
 
 
 	overlapMatch = []
 	angleSum1 = 0.0
 	angleSum2 = 0.0
-	for i in range(0,len(globalMedial)):
-		p_1 = globalMedial[i]
+	for i in range(0,len(globalRefPath)):
+		p_1 = globalRefPath[i]
 		p_2, j, minDist = findClosestPointInA(globalPath, p_1)
 		if minDist < 0.5:
 			overlapMatch.append((i,j,minDist))
 
-			pathU1 = medialSpline1.findU(p_1)	
+			pathU1 = refSpline1.findU(p_1)	
 			pathU2 = globalSpline.findU(p_2)	
 			pathU2_R = globalSplineReverse.findU(p_2)	
 
-			pathVec1 = medialSpline1.getUVector(pathU1)
+			pathVec1 = refSpline1.getUVector(pathU1)
 			pathVec2 = globalSpline.getUVector(pathU2)
 			pathVec2_R = globalSplineReverse.getUVector(pathU2_R)
-
-			#path1Mag = sqrt(pathVec1[0]*pathVec1[0] + pathVec1[1]*pathVec1[1])
-			#path2Mag = sqrt(pathVec2[0]*pathVec2[0] + pathVec2[1]*pathVec2[1])
-			#path2MagR = sqrt(pathVec2_R[0]*pathVec2_R[0] + pathVec2_R[1]*pathVec2_R[1])
 
 			val1 = pathVec1[0]*pathVec2[0] + pathVec1[1]*pathVec2[1]
 			if val1 > 1.0:
@@ -646,10 +632,6 @@ def orientPath(globalPath, globalMedial):
 			elif val2 < -1.0:
 				val2 = -1.0
 			ang2 = acos(val2)
-			
-
-			#ang1 = acos(pathVec1[0]*pathVec2[0] + pathVec1[1]*pathVec2[1])
-			#ang2 = acos(pathVec1[0]*pathVec2_R[0] + pathVec1[1]*pathVec2_R[1])
 	
 			angleSum1 += ang1
 			angleSum2 += ang2
@@ -657,11 +639,39 @@ def orientPath(globalPath, globalMedial):
 	" select global path orientation based on which has the smallest angle between tangent vectors "
 	print i, "angleSum1 =", angleSum1, "angleSum2 =", angleSum2
 	if angleSum1 > angleSum2:
-		orientedGlobalPath = globalPathReverse
+		orientedGlobalPath = pathPointsReverse
 	else:
-		orientedGlobalPath = globalPath
+		orientedGlobalPath = pathPoints
 	
 	return orientedGlobalPath
+
+def getTipAngles(pathPoints):
+	
+	" tip angles "
+	angSum1 = 0.0
+	angSum2 = 0.0
+	angs1 = []
+	angs2 = []
+	phi1 = normalizeAngle(pathPoints[0][2])
+	phi2 = normalizeAngle(pathPoints[-1][2])
+	for i in range(10):
+		ang1 = normalizeAngle(pathPoints[i][2]-phi1)
+		ang2 = normalizeAngle(pathPoints[-i-1][2]-phi2)
+		angSum1 += ang1
+		angSum2 += ang2
+		
+		angs1.append(ang1+phi1)
+		angs2.append(ang2+phi2)
+	
+	angle1 = angSum1 / 10.0 + phi1
+	angle2 = angSum2 / 10.0 + phi2
+	
+	" invert one angle so opposite tips have opposite angles "
+	angle1 = normalizeAngle(angle1 + pi)
+
+
+	return angle1, angle2
+
 
 
 def globalOverlapICP_GPU2(initGuess, globalPath, medialPoints, globalPlotCount = 0, plotIter = False, n1 = 0, n2 = 0, minMatchDist = 1.0):
