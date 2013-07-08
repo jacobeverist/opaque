@@ -90,8 +90,8 @@ class VisualGraph:
 		self.poseGraph.insertPose2(foreNode, backNode, initLocation = foreNode.getEstPose())
 		
 		
-		#for i in range(num_poses+2, num_poses+70):
-		for i in range(num_poses+2, num_poses+4):
+		for i in range(num_poses+2, num_poses+70):
+		#for i in range(num_poses+2, num_poses+4):
 		#for i in range(num_poses+2, num_poses+26):
 			#for i in range(num_poses+2, num_poses+8):
 

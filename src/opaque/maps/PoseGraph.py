@@ -2919,8 +2919,8 @@ class PoseGraph:
 		if nodeID > 0:
 			
 			if nodeID % 2 == 1:
-				self.getInPlaceGuess(nodeID-1, nodeID, direction)
 				self.getStepGuess(nodeID-1, direction)
+				self.getInPlaceGuess(nodeID-1, nodeID, direction)
 			else:
 				print "movePath:  DO NOTHING"
 			
@@ -3196,9 +3196,9 @@ class PoseGraph:
 					print "resultPoses:", resultPose2, resultPose3
 					#print "currAngs:", currAng2, currAng3
 
-					result2 = getMultiDeparturePoint(orientedSplicePath, medial2, pose2, resultPose2, [], nodeID-1, pathPlotCount = self.multiDepCount, plotIter = False)
+					result2 = getMultiDeparturePoint(orientedSplicePath, medial2, pose2, resultPose2, [], nodeID-1, pathPlotCount = self.multiDepCount, plotIter = True)
 					self.multiDepCount += 1
-					result3 = getMultiDeparturePoint(orientedSplicePath, medial3, pose3, resultPose3, [], nodeID, pathPlotCount = self.multiDepCount, plotIter = False)
+					result3 = getMultiDeparturePoint(orientedSplicePath, medial3, pose3, resultPose3, [], nodeID, pathPlotCount = self.multiDepCount, plotIter = True)
 					self.multiDepCount += 1
 
 					#results1.append(result+(k,))

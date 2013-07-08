@@ -242,11 +242,11 @@ class Paths:
                 parentPathID = self.pathClasses[pathID]["parentID"]
                 childPathID = pathID
 
-                path1 = self.paths[parentPathID]
-                path2 = self.paths[childPathID]
+                #path1 = self.paths[parentPathID]
+                #path2 = self.paths[childPathID]
                 
 
-                globJuncPose = self.getBranchPoint(parentPathID, childPathID, self.paths)
+                globJuncPose = self.getBranchPoint(parentPathID, childPathID, self.paths, plotIter = True)
                 print "generated globJuncPose:",  globJuncPose
                 
                 self.pathClasses[childPathID]["globalJunctionPose"] = globJuncPose
@@ -1509,7 +1509,7 @@ class Paths:
                         
                         print "sibling compare result:", resultPose0, resultPose1, lastCost0, matchCount0, juncAngDiff
                         
-                        if fabs(resultPose0[2]) < 0.5 and fabs(resultPose1[2]) < 0.5 and fabs(juncAngDiff) < 0.5:
+                        if fabs(resultPose0[2]) < 0.5 and fabs(resultPose1[2]) < 0.5 and fabs(juncAngDiff) < pi/4.0:
 
                             print "queuing paths", pathID1, pathID2, "to be merged"
 
@@ -4894,12 +4894,11 @@ class Paths:
 
 
     " get the trimmed version of child and parent paths that are overlapping in some fashion "
-    def getBranchPoint(self, parentPathID, childPathID, paths):
+    def getBranchPoint(self, parentPathID, childPathID, paths, plotIter = False):
 
         "Assumption:  one section of the medial axis is closely aligned with the path "        
             
-        plotIter = False
-        print "getOverlapDeparture():"
+        print "getBranchPoint():"
         
         path1 = paths[parentPathID]
         path2 = paths[childPathID]
