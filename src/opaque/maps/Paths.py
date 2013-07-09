@@ -5216,55 +5216,6 @@ class Paths:
         print "pathSec1 hypothesis discrepancy distance:", juncDist1
         print "pathSec2 hypothesis discrepancy distance:", juncDist2
 
-        if plotIter:
-            pylab.clf()
-            xP = []
-            yP = []
-            for p in path2:
-                xP.append(p[0])
-                yP.append(p[1])
-            pylab.plot(xP,yP, color=(0.5,0.5,1.0))
-    
-            if True:    
-                P1 = pathPoints2[0]
-                P2 = pathPoints2[frontDepI]
-                
-                P3 = pathPoints2[backDepI]
-                P4 = pathPoints2[-1]
-
-                " 0, frontDepI "
-                xP = [P1[0], P2[0]]
-                yP = [P1[1], P2[1]]
-                pylab.scatter(xP,yP, color='b')        
-
-                " backDepI, -1 "
-                xP = [P3[0], P4[0]]
-                yP = [P3[1], P4[1]]
-                pylab.scatter(xP,yP, color='g')        
-    
-                
-            pylab.scatter([globalJunctionPoint[0]],[globalJunctionPoint[1]], color='r')        
-    
-            xP = []
-            yP = []
-            for p in path1:
-                xP.append(p[0])
-                yP.append(p[1])
-            pylab.plot(xP,yP, color=(1.0,0.5,0.5))
-    
-            #xP = []
-            #yP = []
-            #for p in globalBranchPoints:
-            #    xP.append(p[0])
-            #    yP.append(p[1])
-            #pylab.plot(xP,yP, color='g')
-    
-            pylab.xlim(-5,10)
-            pylab.ylim(-8,8)
-            pylab.title("%d %d %d %d %d %3.2f %3.2f %3.2f %d %3.2f %3.2f %3.2f" % ( isExist1, isExist2, isInterior1, isInterior2, matchCount1, overlapSum1, angleSum1, juncDist1, matchCount2, overlapSum2, angleSum2, juncDist2))
-            pylab.savefig("trimDeparture_%04u.png" % self.pathPlotCount)
-            
-            self.pathPlotCount += 1
 
         secP1 = []
         secP2 = []
@@ -5580,6 +5531,67 @@ class Paths:
         globJuncPose = [medial2[0][0], medial2[0][1], juncAng]
         
         " last junction point is the intersection point "
+
+        if plotIter:
+            pylab.clf()
+            xP = []
+            yP = []
+            for p in path2:
+                xP.append(p[0])
+                yP.append(p[1])
+            pylab.plot(xP,yP, color=(0.5,0.5,1.0))
+    
+            if True:    
+                P1 = pathPoints2[0]
+                P2 = pathPoints2[frontDepI]
+                
+                P3 = pathPoints2[backDepI]
+                P4 = pathPoints2[-1]
+
+                " 0, frontDepI "
+                xP = [P1[0], P2[0]]
+                yP = [P1[1], P2[1]]
+                pylab.scatter(xP,yP, color='b')        
+
+                " backDepI, -1 "
+                xP = [P3[0], P4[0]]
+                yP = [P3[1], P4[1]]
+                pylab.scatter(xP,yP, color='g')        
+    
+                
+            pylab.scatter([globalJunctionPoint[0]],[globalJunctionPoint[1]], color='r')        
+            pylab.scatter([globJuncPose[0]],[globJuncPose[1]], color='k')        
+    
+            xP = []
+            yP = []
+            for p in path1:
+                xP.append(p[0])
+                yP.append(p[1])
+            pylab.plot(xP,yP, color=(1.0,0.5,0.5))
+    
+    
+            xP = []
+            yP = []
+            for p in medial2:
+                xP.append(p[0])
+                yP.append(p[1])
+            pylab.plot(xP,yP, color='k')
+                
+            #xP = []
+            #yP = []
+            #for p in globalBranchPoints:
+            #    xP.append(p[0])
+            #    yP.append(p[1])
+            #pylab.plot(xP,yP, color='g')
+    
+            pylab.xlim(-5,10)
+            pylab.ylim(-8,8)
+            pylab.title("%d %d %d %d %d %3.2f %3.2f %3.2f %d %3.2f %3.2f %3.2f" % ( isExist1, isExist2, isInterior1, isInterior2, matchCount1, overlapSum1, angleSum1, juncDist1, matchCount2, overlapSum2, angleSum2, juncDist2))
+            pylab.savefig("trimDeparture_%04u.png" % self.pathPlotCount)
+            
+            self.pathPlotCount += 1
+
+
         
         return globJuncPose
 
