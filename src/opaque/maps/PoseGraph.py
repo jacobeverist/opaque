@@ -2383,7 +2383,7 @@ class PoseGraph:
 				if self.paths.getNodes(k).count(nodeID2) > 0:
 					isContained2 = True
 					
-				
+			
 			if isContained1 or isContained2:
 				return
 
