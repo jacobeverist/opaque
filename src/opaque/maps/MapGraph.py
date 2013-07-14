@@ -8,6 +8,8 @@ from OccupancyMap import OccupancyMap
 from FreeSpaceBoundaryMap import FreeSpaceBoundaryMap
 from NavRoadMap import NavRoadMap
 from StablePose import StablePose
+from SplineFit import SplineFit
+from PoseGraph import computeHullAxis
 
 import gen_icp
 
@@ -792,6 +794,57 @@ class MapGraph:
 		return newPoint
 	
 	
+	def isDestReached(self, dest, wayPath):
+		#dest = self.localWayPoints[0]			
+
+		" - get splice of wayPath "
+		
+		" - get GPAC of pose "
+		nodeID = self.numNodes-1
+		hull1, medial1 = computeHullAxis(nodeID, self.nodeHash[nodeID], tailCutOff = False)
+		estPose1 = self.nodeHash[nodeID].getGlobalGPACPose()
+
+		poseOrigin = Pose(estPose1)
+
+		medialSpline1 = SplineFit(medial1, smooth=0.1)
+		points1 = medialSpline1.getUniformSamples(interpAngle=True)
+	
+		points1_offset = []
+		for p in points1:
+			result = poseOrigin.convertLocalOffsetToGlobal(p)
+			points1_offset.append(result)
+	
+		globalMedialSpline = SplineFit(points1_offset, smooth=0.1)
+		globalMedialPoints = globalMedialSpline.getUniformSamples()			
+		
+		" - get position of both tips "
+		frontTip = globalMedialPoints[0]
+		backTip = globalMedialPoints[-1]
+		frontTipPathPoint = self.getNearestPathPoint(frontTip)
+		backTipPathPoint = self.getNearestPathPoint(backTip)
+		
+		pathSpline = SplineFit(wayPath)
+		minDist, uVal, uPoint = pathSpline.findClosestPoint(dest)
+		
+		frontMinDist, frontUVal, frontUPoint = pathSpline.findClosestPoint(frontTipPathPoint)
+		backMinDist, backUVal, backUPoint = pathSpline.findClosestPoint(backTipPathPoint)
+		
+		destDist = pathSpline.dist_u(uVal)
+		frontDist = pathSpline.dist_u(frontUVal)
+		backDist = pathSpline.dist_u(backUVal)
+
+
+		destReached = False
+		if frontDist >= destDist and destDist >= backDist:
+			" objective achieved!"
+			destReached = True
+			
+		elif frontDist <= destDist and destDist <= backDist:
+			" objective achieved!"
+			destReached = True
+
+		return destReached
+				
 	def computeGraphPath(self, startPose, endPose):
 		
 		path = self.poseGraph.computeNavigationPath(startPose, endPose)

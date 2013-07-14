@@ -16,6 +16,9 @@ from behaviors.AdaptiveStep import AdaptiveStep
 
 from pose.AverageContacts import AverageContacts
 from maps.MapGraph import MapGraph
+#from maps.PoseGraph import computeHullAxis
+#from maps.Pose import Pose
+#from maps.SplineFit import SplineFit
 
 import numpy
 import sys
@@ -274,6 +277,9 @@ class TestNavigation(SnakeControl):
 
 			initPose = [-0.83215373754501343, 0.046221695840358734, -2.1473097801208496]
 			#initpose = [-0.70651340484619141, 0.02392122894525528, -2.0914869430965584]
+
+			#self.mapGraph.restoreSeries("result_2013_07_05a",60)
+
 
 			#self.mapGraph.initNode(initPose, self.travelDir)
 			#self.mapGraph.forceUpdate()
@@ -1008,7 +1014,18 @@ class TestNavigation(SnakeControl):
 			self.currPose2 = self.contacts.getAverageSegPose(39)
 
 			" determine distance to the next way point "
-			dest = self.localWayPoints[0]			
+			dest = self.localWayPoints[0]
+			wayPath = self.localWayPaths[0]		
+
+			" - get splice of wayPath "
+			destReached = self.mapGraph.isDestReached(dest, wayPath)
+
+
+			
+			" - get splice of GPAC, is it the same as wayPaths? "
+			" - if so, get closest points on wayPath "
+			" - have either of the tips passed the waypoint? "
+
 
 			frontPathPoint = self.mapGraph.getNearestPathPoint(self.currPose1)
 			backPathPoint = self.mapGraph.getNearestPathPoint(self.currPose2)
@@ -1018,8 +1035,8 @@ class TestNavigation(SnakeControl):
 
 			
 			" pop the next way point if we are already close to the first one "
-			#if self.lastDist1 < 0.5:
-			if self.lastDist1 < 0.3:
+			#if self.lastDist1 < 0.3:
+			if destReached:
 				self.localWayPoints = self.localWayPoints[1:]
 				self.localWayPaths = self.localWayPaths[1:]
 
@@ -1070,6 +1087,8 @@ class TestNavigation(SnakeControl):
 			
 
 				dest = self.localWayPoints[0]
+				
+
 				#dist1 = sqrt((dest[0]-self.currPose1[0])**2 + (dest[1]-self.currPose1[1])**2)
 				#dist2 = sqrt((dest[0]-self.currPose2[0])**2 + (dest[1]-self.currPose2[1])**2)
 				dist1 = self.mapGraph.getPathLength(frontPathPoint, dest, self.localWayPaths[0])
@@ -1153,8 +1172,11 @@ class TestNavigation(SnakeControl):
 					self.lastDist1 = totalDist1
 					self.lastDist2 = totalDist2
 
+					destReached = self.mapGraph.isDestReached(dest,path)
+
 					" if we've reached our target after this step, go to next waypoint "
-					if self.targetReached:
+					#if self.targetReached:
+					if destReached:
 						
 						" if there is another way point, set the path and begin "
 						self.localWayPoints = self.localWayPoints[1:]
@@ -1550,4 +1572,6 @@ class TestNavigation(SnakeControl):
 							
 				print "PathFollow: foreAvg =", foreAvg
 															
-		return False				
+		return False			
+	
+		

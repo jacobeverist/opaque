@@ -160,10 +160,7 @@ class SplineFit:
 				points2.append(points_trans[i])
 			
 		return points2
-		#return points_trans
-			
-	def findClosestFromPointSet(self):
-		pass
+
 
 
 	def getUOfDist(self, startU, dist, distIter = None):

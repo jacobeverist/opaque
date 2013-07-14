@@ -781,7 +781,7 @@ class Paths:
 
             resultSet.append(results+(k,))
 
-            "departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2"
+            "departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departu rePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2"
         
         resultSet = sorted(resultSet, key=itemgetter(12), reverse=True)
         
@@ -8078,12 +8078,12 @@ class Paths:
         else:
             "find entire path from rightPathID to leftPathID "
             " start from point farthest from child's junction point "
-
+            
             #print "both paths are childs,  make 1 resultant spliced paths"
-
+            
             rightPath = self.trimmedPaths[rightPathID]
             leftPath = self.trimmedPaths[leftPathID]
-        
+            
             " find the junction of this child's to its parent "    
             #joins.append([(pathID, minI1),(parentPathID, minI2), junctionPoint])
             
@@ -8106,7 +8106,7 @@ class Paths:
                 rightTermI = len(rightPath)-1
             else:
                 rightTermI = 0
-                
+            
             "find path between: (rightPathID, rightTermI) to (leftPathID, rightTermI) "
             shortestPathSpanTree, shortestDist = self.pathGraph.shortest_path((rightPathID, rightTermI))
             currNode = shortestPathSpanTree[(leftPathID, leftTermI)]
@@ -8240,11 +8240,17 @@ class Paths:
         " return splicePath[startIndex:endIndex+1]"
         if spliceIndex[0] < spliceIndex[1]:
             #return splicedPaths[minSplicePathID][spliceIndex[0]:spliceIndex[1]+1]
-            return splicedPaths[minSplicePathID]
+            pathSpline = SplineFit(splicedPaths[minSplicePathID])
+            newPath = pathSpline.getUniformSamples()
+            return newPath
         else:
             #path = splicedPaths[minSplicePathID][spliceIndex[1]:spliceIndex[0]+1]
             path = splicedPaths[minSplicePathID]
             path.reverse()
+            pathSpline = SplineFit(path)
+            newPath = pathSpline.getUniformSamples()
+            return newPath
+
             return path
 
             
