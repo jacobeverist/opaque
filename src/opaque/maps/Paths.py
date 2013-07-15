@@ -960,7 +960,8 @@ class Paths:
         for pathID in pathSet2:
             parentID = self.getParentPathID(pathID)
 
-            if parentID != None and not parentID in pathSet2:
+            #if parentID != None and not parentID in pathSet2:
+            if parentID != None:
                 termSet2.append(junctions[pathID][2])
             
 
