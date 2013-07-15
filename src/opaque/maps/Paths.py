@@ -775,6 +775,8 @@ class Paths:
 
         for k in range(len(splicePaths)):
             
+            print "comparing node", nodeID, "to splice", splicePathIDs[k], spliceTerms[k]
+            
             currPath = splicePaths[k]
             pathIDs = splicePathIDs[k]
             results = getMultiDeparturePoint(currPath, medial2, estPose2, estPose2, pathIDs, nodeID)
@@ -782,23 +784,28 @@ class Paths:
             resultSet.append(results+(k,))
 
             "departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departu rePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2"
+
+        for result in resultSet:
+            print "result:", results+(k,)
         
         resultSet = sorted(resultSet, key=itemgetter(12), reverse=True)
         
-        print "findSplice2 resultSet:"
+        print "findSplice2 sorted node", nodeID, ":"
         for result in resultSet:
-            print result
+            print result[15]
 
 
         for k in range(len(resultSet)):
             result = resultSet[k]    
             spliceIndex = result[15]
             overlappedPathIDs = splicePathIDs[spliceIndex]
-
+            
+            print "checking overlap of", overlappedPathIDs
             isNotOverlapped = False
             for pathID in overlappedPathIDs:
                 sum1 = self.getOverlapCondition(self.trimmedPaths[pathID], nodeID, plotIter = True)
 
+                print "pathID", pathID, "returned", sum1, "for splice", spliceIndex
                 if sum1 > 1e10:
                     isNotOverlapped = True
                     
