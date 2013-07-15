@@ -61,11 +61,8 @@ class VisualGraph:
 			print "loading node", i			
 			currNode = LocalNode(self.probe, self.contacts, i, 19, PIXELSIZE)
 			currNode.readFromFile2(dirName, i)
-
 			self.localNodes.append(currNode)
-			
 			currNode.setGPACPose(self.poseGraph.nodePoses[i])
-			
 			self.poseGraph.nodeHash[i] = currNode
 			#self.drawConstraints()
 			#self.poseGraph.mergePriorityConstraints()

@@ -570,11 +570,18 @@ class MapGraph:
 			print "loading node", i			
 			self.currNode = LocalNode(self.probe, self.contacts, i, 19, PIXELSIZE)
 			self.currNode.readFromFile2(dirName, i)			
+			self.currNode.setGPACPose(self.poseGraph.nodePoses[i])
 			self.poseGraph.nodeHash[i] = self.currNode
-					
+
+
+								
 		
 		self.poseGraph.mergePriorityConstraints()
-		
+		foreNode = LocalNode(self.probe, self.contacts, num_poses, 19, PIXELSIZE)
+		foreNode.readFromFile2(dirName, num_poses)
+		backNode = LocalNode(self.probe, self.contacts, num_poses+1, 19, PIXELSIZE)
+		backNode.readFromFile2(dirName, num_poses+1)
+		self.poseGraph.insertPose2(foreNode, backNode, initLocation = foreNode.getEstPose())
 		
 		self.isDirty = True
 		
@@ -834,6 +841,14 @@ class MapGraph:
 		backDist = pathSpline.dist_u(backUVal)
 
 
+		frontMag = fabs(destDist-frontDist)
+		backMag = fabs(destDist-backDist)
+		
+		if frontMag < backMag:
+			goalDist = frontMag
+		else:
+			goalDist = backMag
+
 		destReached = False
 		if frontDist >= destDist and destDist >= backDist:
 			" objective achieved!"
@@ -842,8 +857,11 @@ class MapGraph:
 		elif frontDist <= destDist and destDist <= backDist:
 			" objective achieved!"
 			destReached = True
+			
+		if destReached:
+			goalDist = 0.0
 
-		return destReached
+		return destReached, goalDist
 				
 	def computeGraphPath(self, startPose, endPose):
 		
