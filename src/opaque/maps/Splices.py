@@ -246,7 +246,7 @@ def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, node
 
 	
 	" select global path orientation based on which has the smallest angle between tangent vectors "
-	print "getDeparturePoint:", i, "angleSum1 =", angleSum1, "angleSum2 =", angleSum2
+	#print "getDeparturePoint:", i, "angleSum1 =", angleSum1, "angleSum2 =", angleSum2
 	if angleSum1 > angleSum2:
 		pathPoints = pathPointsReverse
 		pathSpline = pathSplineReverse
@@ -273,9 +273,9 @@ def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, node
 	" invert one angle so opposite tips have opposite angles "
 	angle1 = normalizeAngle(angle1 + pi)
 
-	print "ang1:", angle1, angs1
-	print "ang2:", angle2, angs2
-	print "diff:", diffAngle(angle1, angle2)
+	#print "ang1:", angle1, angs1
+	#print "ang2:", angle2, angs2
+	#print "diff:", diffAngle(angle1, angle2)
 	
 	distSum = 0.0
 	contigCount = 0
@@ -298,7 +298,7 @@ def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, node
 	
 	overlapSum = distSum / float(len(points2_offset))
 	
-	print "maxContig,overlapSum:", maxContig, overlapSum
+	#print "maxContig,overlapSum:", maxContig, overlapSum
 	
 	" Compute the front and back departure points by finding the inflection point on the distance curve "
 	" these indices become frontDepI and backDepI respectively "
@@ -339,7 +339,7 @@ def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, node
 		else:
 			break		
 	
-	print "front:", nodeID, frontDepI, distances[frontDepI], frontAngleRefI, forePathIndex, forePathAngle, angle1, foreDiffAngle, newFrontDepI, diffAngle(normalizeAngle(points2_offset[newFrontDepI][2]+pi), forePathAngle) 
+	#print "front:", nodeID, frontDepI, distances[frontDepI], frontAngleRefI, forePathIndex, forePathAngle, angle1, foreDiffAngle, newFrontDepI, diffAngle(normalizeAngle(points2_offset[newFrontDepI][2]+pi), forePathAngle) 
 	
 
 	" FIXME:  index out of bounds case "
@@ -375,7 +375,7 @@ def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, node
 		else:
 			break		
 
-	print "back:", nodeID, backDepI, distances[backDepI], backAngleRefI, backPathIndex, backPathAngle, angle2, backDiffAngle, newBackDepI, diffAngle(points2_offset[newBackDepI][2], backPathAngle) 
+	#print "back:", nodeID, backDepI, distances[backDepI], backAngleRefI, backPathIndex, backPathAngle, angle2, backDiffAngle, newBackDepI, diffAngle(points2_offset[newBackDepI][2], backPathAngle) 
 
 
 	foreAngDiffs = []
@@ -868,9 +868,17 @@ def globalOverlapICP_GPU2(initGuess, globalPath, medialPoints, globalPlotCount =
 		saveFile += "c_poses_2 = " + repr(c_poses_2) + "\n"
 		saveFile += "len(poses_1) = " + repr(len(poses_1)) + "\n"
 
-		f = open("icpInput_%04u.txt" % (globalPlotCount), 'w')
-		f.write(saveFile)
-		f.close()		
+		isWritten = False
+		while not isWritten:
+			try:
+				f = open("icpInput_%04u.txt" % (globalPlotCount), 'w')
+				f.write(saveFile)
+				f.close()
+			except:
+				pass
+			else:
+				isWritten = True
+				
 	
 		newParam, newCost = nelminICP.ICPmin(flatMatchPairs, len(match_pairs), [u1,currU,currAng], uHigh, uLow, c_poses_1, c_poses_2, len(poses_1))
 		#newParam, newCost = nelminICP.ICPmin(flatMatchPairs, len(match_pairs), initGuess, c_poses_1, c_poses_2, len(poses_1))
