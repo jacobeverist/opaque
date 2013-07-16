@@ -5380,6 +5380,7 @@ class Paths:
             if True:    
                 P1 = pathPoints2[frontInd]
                 P2 = pathPoints2[frontDepI]
+
                 
                 P3 = pathPoints2[backDepI]
                 P4 = pathPoints2[backInd]
@@ -5393,6 +5394,18 @@ class Paths:
                 xP = [P3[0], P4[0]]
                 yP = [P3[1], P4[1]]
                 pylab.scatter(xP,yP, color='g')        
+
+                " angle references "
+                PF = pathPoints1[forePathIndex]
+                xP = [PF[0],]
+                yP = [PF[1],]
+                pylab.scatter(xP,yP, color='b', alpha=0.5, zorder=100)        
+
+                PB = pathPoints1[backPathIndex]
+                xP = [PB[0],]
+                yP = [PB[1],]
+                pylab.scatter(xP,yP, color='g', alpha=0.5, zorder=100)        
+
     
                 
             pylab.scatter([globalJunctionPoint[0]],[globalJunctionPoint[1]], color='r')        
