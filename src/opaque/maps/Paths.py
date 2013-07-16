@@ -4941,6 +4941,7 @@ class Paths:
 
         distances = []
         indices = []
+        juncDists = []
         for i in range(0,len(pathPoints2)):
             p_2 = pathPoints2[i]
             p_1, i_1, minDist = gen_icp.findClosestPointInA(pathPoints1, p_2)
@@ -4949,19 +4950,42 @@ class Paths:
             distances.append(minDist)
             " and the associated index of the point on the parent path "
             indices.append(i_1)
+            
+            juncDist = sqrt((p_2[0]-globalJunctionPoint[0])**2 + (p_2[1]-globalJunctionPoint[1])**2)
+            juncDists.append(juncDist)
+
+
+        frontInd = 0
+        backInd = len(pathPoints2)-1
+            
+        frontFound = False
+        backFound = False
+        for k in range(0,len(pathPoints2)):
+            if not frontFound and juncDists[k] <= 1.0:
+                frontInd = k
+                frontFound = True
+            elif frontFound and not backFound and juncDists[k] > 1.0:
+                backFound = k-1
+                backFound = True
+
+        frontInd = 0
+        backInd = len(pathPoints2)-1
+   
+        print "frontFound, backFound:", frontFound, backFound
+        print "frontInd, backInd:", frontInd, backInd
 
         " match distances of the tip points of child path "        
-        maxFront = distances[0]
-        maxBack = distances[-1]
+        maxFront = distances[frontInd]
+        maxBack = distances[backInd]
         print "match distances of tip points:", maxFront, maxBack
 
         " walk back from tip point until we have a non-monotic increase in match distance "
         " this becomes our departure point "
         
         "TODO:  why is there a 3-offset in this comparison? "
-        currI = 1
+        currI = frontInd + 1
         try:
-            while distances[currI+3] < maxFront:
+            while distances[currI+3] < maxFront or distances[currI+3] > 0.1:
                 maxFront = distances[currI]
                 currI += 1
         except:
@@ -5001,11 +5025,16 @@ class Paths:
 
 
         " FIXME:  index out of bounds case "
-        currI = 2
+        currI = 1 + len(pathPoints2) - backInd
         try:
-            while distances[-currI-3] < maxBack:
+            while distances[-currI-3] < maxBack or distances[-currI-3] > 0.1:
                 maxBack = distances[-currI]
                 currI += 1
+        #currI = backInd - 1
+        #try:
+        #    while distances[currI-3] < maxBack:
+        #        maxBack = distances[currI]
+        #        currI -= 1
         except:
             pass
 
@@ -5044,8 +5073,8 @@ class Paths:
 
 
         "reset to the tip match distance "
-        maxFront = distances[0]
-        maxBack = distances[-1]
+        maxFront = distances[frontInd]
+        maxBack = distances[backInd]
         
         
         " sum of closest points on front and back "
@@ -5349,11 +5378,11 @@ class Paths:
             pylab.plot(xP,yP, color=(0.5,0.5,1.0))
     
             if True:    
-                P1 = pathPoints2[0]
+                P1 = pathPoints2[frontInd]
                 P2 = pathPoints2[frontDepI]
                 
                 P3 = pathPoints2[backDepI]
-                P4 = pathPoints2[-1]
+                P4 = pathPoints2[backInd]
 
                 " 0, frontDepI "
                 xP = [P1[0], P2[0]]
