@@ -1295,7 +1295,7 @@ class Paths:
             elif parentID1 == pathID2:
                 
                 if parentID2 != None:
-                    sPaths1 = allSplices[(parentID2, pathID1)]
+                    sPaths1 = allSplices[(parentID2, pathID1)] + allSplices[(pathID1, pathID2)]
                     sPaths2 = allSplices[(parentID2, pathID2)]
                 else:
                     sPaths1 = allSplices[(pathID2, pathID1)]
@@ -1372,8 +1372,8 @@ class Paths:
             elif parentID2 == pathID1:
                 
                 if parentID1 != None:
-                    sPaths1 = allSplices[(parentID1, pathID1)]
-                    sPaths2 = allSplices[(parentID1, pathID2)]
+                    sPaths1 = allSplices[(parentID1, pathID1)] 
+                    sPaths2 = allSplices[(parentID1, pathID2)] + allSplices[(pathID1, pathID2)]
                 else:
                     sPaths1 = allSplices[(pathID1, pathID1)]
                     sPaths2 = allSplices[(pathID1, pathID2)]
