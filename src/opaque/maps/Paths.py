@@ -6058,7 +6058,8 @@ class Paths:
         dist2 = sqrt((tipMatch2[0]-pathPoints1[max2][0])**2 + (tipMatch2[1] - pathPoints1[max2][1])**2)
 
 
-        DEP_THRESH = 0.1
+        DEP_THRESH = 0.2
+        #DEP_THRESH = 0.1
         #DEP_THRESH = 0.3
 
         if maxFront > DEP_THRESH:
