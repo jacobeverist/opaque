@@ -2766,9 +2766,27 @@ class Paths:
             
             for p in medialPointSoup:
                 p2 = copy(p)
+                
                 " add a little bit of noise to avoid degenerate conditions in CGAL "
-                p2[0] += random.gauss(0.0,0.000001)
-                p2[1] += random.gauss(0.0,0.000001)
+                " catch exception in case of math domain error "
+                isReturned = False
+                while not isReturned:
+                    try:
+                        p2[0] += random.gauss(0.0,0.000001)
+                    except:
+                        pass
+                    else:
+                        isReturned = True
+
+                isReturned = False
+                while not isReturned:
+                    try:
+                        p2[1] += random.gauss(0.0,0.000001)
+                    except:
+                        pass
+                    else:
+                        isReturned = True
+                        
     
                 perturbPoints.append(p2)
         
