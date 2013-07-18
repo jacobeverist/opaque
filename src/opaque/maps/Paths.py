@@ -5,6 +5,7 @@ import sys
 from copy import copy
 from functions import *
 import random
+import os
 from subprocess import Popen, PIPE
 import Image
 from medialaxis import computeMedialAxis
@@ -179,6 +180,7 @@ class Paths:
         self.pathPlotCount2 = 0
         self.overlapPlotCount = 0
         self.overlapPlotCount2 = 0
+        self.alphaPlotCount = 0
         self.topCount = 0
         self.medialSoupCount = 0
         self.pathIDs += 1
@@ -2771,9 +2773,28 @@ class Paths:
                 perturbPoints.append(p2)
         
             try:            
+        
+                saveFile = ""    
+                saveFile += "radius = " + repr(radius) + "\n"
+                saveFile += "perturbPoints = " + repr(perturbPoints) + "\n"
+        
+                isWritten = False
+                while not isWritten:
+                    try:
+                        f = open("doAlphaInput_%08u.txt" % (self.alphaPlotCount), 'w')
+                        f.write(saveFile)
+                        f.close()
+                    except:
+                        pass
+                    else:
+                        isWritten = True
     
                 vertices = alphamod.doAlpha(radius,perturbPoints)
                 numVert = len(vertices)
+
+                os.remove("doAlphaInput_%04u.txt" % (self.alphaPlotCount))
+                self.alphaPlotCount += 1
+                
                 
                 if numVert <= 2:
                     print "Failed, hull had only", numVert, "vertices"
