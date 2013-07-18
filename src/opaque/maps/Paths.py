@@ -2810,7 +2810,7 @@ class Paths:
                 vertices = alphamod.doAlpha(radius,perturbPoints)
                 numVert = len(vertices)
 
-                os.remove("doAlphaInput_%04u.txt" % (self.alphaPlotCount))
+                os.remove("doAlphaInput_%08u.txt" % (self.alphaPlotCount))
                 self.alphaPlotCount += 1
                 
                 
