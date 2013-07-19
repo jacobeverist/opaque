@@ -189,6 +189,7 @@ class Paths:
         for i in range(1000):
             self.colors.append((random.random(),random.random(),random.random()))
     
+    @logFunction
     def saveState(self, id):
         
         saveFile = ""
@@ -207,6 +208,7 @@ class Paths:
         f.write(saveFile)
         f.close()
         
+    @logFunction
     def restoreState(self, dirName, numNodes):
         
         print "loading" + dirName + "/pathStateSave_%04u.txt" % (numNodes-1)
@@ -222,6 +224,7 @@ class Paths:
         #print self.numNodes
         #print self.edgePriorityHash
             
+    @logFunction
     def generatePaths(self):
         
         " COMPUTE MEDIAL AXIS FROM UNION OF PATH-CLASSIFIED NODES "
@@ -427,6 +430,7 @@ class Paths:
                     #self.topDict["t%u" % (pathID+1)] = (pathID,len(path)-1)
 
 
+    @logFunction
     def getGlobalJunctionPose(self, pathID):
 
         try:
@@ -462,6 +466,7 @@ class Paths:
     def getPath(self, pathID):
         return self.pathClasses[pathID]
     
+    @logFunction
     def getAllSplices(self, plotIter = False):
 
         print "junctions:", self.junctions
@@ -762,9 +767,11 @@ class Paths:
         return results, self.terminals, self.junctions
 
     
+    @logFunction
     def isNodeExist(self, nodeID, pathID):
         return nodeID in self.pathClasses[pathID]["nodeSet"]
 
+    @logFunction
     def findSplice2(self, nodeID):
 
         splicePaths, spliceTerms, splicePathIDs = self.getSplicesByNearJunction(nodeID)
@@ -823,6 +830,7 @@ class Paths:
         return orderedPathIDs
         
 
+    @logFunction
     def findSplice(self, nodeID):
 
         node2 = self.nodeHash[nodeID]
@@ -904,6 +912,7 @@ class Paths:
         return orderedPathIDs
 
 
+    @logFunction
     def getSplicesByNearJunction(self, nodeID):
         
         allSplices, terminals, junctions = self.getAllSplices(plotIter = True)
@@ -993,6 +1002,7 @@ class Paths:
 
         return splicePaths, spliceTerms, splicePathIDs
 
+    @logFunction
     def checkNodeConsistency(self, nodeID1, nodeID2):
 
         nodeSet = [nodeID1, nodeID2]
@@ -1038,7 +1048,7 @@ class Paths:
 
 
 
-
+    @logFunction
     def checkPathConsistency(self, targetPathID):
 
         #path = self.trimmedPaths[pathID]
@@ -1159,6 +1169,7 @@ class Paths:
             print "node", result[0], ":", result[1], result[2], result[3], result[4], result[5]
 
     
+    @logFunction
     def comparePaths(self):
  
         #allSplices = self.getAllSplices()
@@ -1582,6 +1593,7 @@ class Paths:
         return toBeMerged
                     
     
+    @logFunction
     def makeSiblingPathCompare(self, pathID1, pathID2, parentPathID, plotIter = False):
 
 
@@ -2240,6 +2252,7 @@ class Paths:
 
 
 
+    @logFunction
     def makePathCompare(self, globalPath1, globalPath2, pathID1, pathID2, plotIter = False):
 
         " compute the medial axis for each pose "
@@ -2497,12 +2510,14 @@ class Paths:
         return resultPose1, lastCost1, matchCount1
      
      
+    @logFunction
     def delNode(self, nodeID, pathID):
         print "deleting node", nodeID, "from path", pathID
         self.pathClasses[pathID]["nodeSet"].remove(nodeID)
         
         
      
+    @logFunction
     def addNode(self, nodeID, pathID):
         
         print "adding node", nodeID, "to path", pathID
@@ -2530,6 +2545,7 @@ class Paths:
         self.pathProbs[nodeID] = probDist
         """
         
+    @logFunction
     def delPath(self, pathID, mergeTargetID):
         
         print "deleting path", pathID, "merging to path", mergeTargetID
@@ -2559,6 +2575,7 @@ class Paths:
         except:
             pass
     
+    @logFunction
     def addPath(self, parentID, branchNodeID, localJunctionPose):
 
         print "addPath(", parentID, branchNodeID, localJunctionPose
@@ -2601,6 +2618,7 @@ class Paths:
         
         return newPathID
  
+    @logFunction
     def getTopology(self, pathID):
         
         random.seed(0)        
@@ -3724,6 +3742,7 @@ class Paths:
 
 
 
+    @logFunction
     def getUnionTopology(self):
         
         random.seed(0)        
@@ -4264,6 +4283,7 @@ class Paths:
 
 
 
+    @logFunction
     def trimPaths(self, paths):
 
         trimmedPaths = {}
@@ -4942,8 +4962,9 @@ class Paths:
 
 
 
-    " get the trimmed version of child and parent paths that are overlapping in some fashion "
+    @logFunction
     def getBranchPoint(self, parentPathID, childPathID, paths, plotIter = False):
+        """ get the trimmed version of child and parent paths that are overlapping in some fashion """
 
         "Assumption:  one section of the medial axis is closely aligned with the path "        
             
@@ -5478,18 +5499,22 @@ class Paths:
         return globJuncPose
 
 
+    @logFunction
     def pathTermVisited(self, pathID):
         
         self.pathTermsVisited[pathID] = True
 
+    @logFunction
     def getPathTermsVisited(self):
         return self.pathTermsVisited
 
+    @logFunction
     def resetTerms(self):
         
         for k, v in self.pathTermsVisited.iteritems():
             self.pathTermsVisited[k] = False
 
+    @logFunction
     def getPathTerms(self):
 
         terms = {}
@@ -5506,6 +5531,7 @@ class Paths:
 
         return terms
 
+    @logFunction
     def getClosestPath(self, locPose):
         pass
     
@@ -5526,11 +5552,13 @@ class Paths:
         
         return minPathID
 
+    @logFunction
     def getOrderedOverlappingPaths(self, nodeID):
          
         ordered1 = self.findSplice2(nodeID)
         return ordered1
         
+    @logFunction
     def getOrderedOverlappingPaths_old(self, nodeID):
 
         overlappedPaths = []
@@ -5679,6 +5707,7 @@ class Paths:
         return finalPathIDs
     
     
+    @logFunction
     def getPathPath(self, startPathID, endPathID):
         " given start pathID and end pathID, what is the series of paths I need to follow to get from start to end "
 
@@ -5707,6 +5736,7 @@ class Paths:
 
         return splicedPaths
 
+    @logFunction
     def getPathOrdering(self, nodeID, pathIDs):
 
         plotIter = False
@@ -5876,6 +5906,7 @@ class Paths:
         
         return orderedPaths
 
+    @logFunction
     def getPathDeparture(self, path1, path2, pathID1, pathID2, termPathIDs1 = [], termPathIDs2 = [], plotIter = False):
         
         isExist1 = False
@@ -6218,6 +6249,7 @@ class Paths:
         #return departurePoint, isInterior, isExist
         return departurePoint1, angle1, isInterior1, isExist1, dist1, departurePoint2, angle2, isInterior2, isExist2, dist2
 
+    @logFunction
     def getPathDeparture2(self, path1, path2, pathID1, pathID2, termPathIDs1 = [], termPathIDs2 = []):
         
         isExist1 = False
@@ -6494,7 +6526,7 @@ class Paths:
         #return departurePoint, isInterior, isExist
         return departurePoint1, angle1, isInterior1, isExist1, dist1, departurePoint2, angle2, isInterior2, isExist2, dist2
 
-
+    @logFunction
     def getDeparturePoint(self, currPath, nodeID, plotIter = False):
         
         isExist1 = False
@@ -6926,8 +6958,9 @@ class Paths:
         return departurePoint1, angle1, isInterior1, isExist1, dist1, departurePoint2, angle2, isInterior2, isExist2, dist2, contigFrac, overlapSum
         
 
-    " returns the endpoints of a node medial axis overlap path "
+    @logFunction
     def getOverlapBoundaries(self, currPath, nodeID):
+        """ returns the endpoints of a node medial axis overlap path """
         
         isExist1 = False
         isInterior1 = False
@@ -7164,6 +7197,7 @@ class Paths:
         return departurePoint1, angle1, isInterior1, isExist1, dist1, frontDepI, departurePoint2, angle2, isInterior2, isExist2, dist2, backDepI
         
 
+    @logFunction
     def getPathOverlapCondition2(self, path1, path2, pathID1, pathID2):
 
         plotIter = False
@@ -7289,6 +7323,7 @@ class Paths:
         return len(support_pairs)
 
 
+    @logFunction
     def getPathOverlapCondition(self, path1, path2, pathID1, pathID2, plotIter = False):
 
         #plotIter = True
@@ -7416,6 +7451,7 @@ class Paths:
         return cost
 
 
+    @logFunction
     def getOverlapCondition(self, supportLine, nodeID, plotIter = False):
 
         #plotIter = False
@@ -7554,6 +7590,7 @@ class Paths:
         return cost
 
 
+    @logFunction
     def getOverlapCondition2(self, supportLine, nodeID, plotIter = False):
 
         #plotIter = True
@@ -7688,7 +7725,7 @@ class Paths:
         
         return len(support_pairs)
 
-        
+    @logFunction
     def checkUniqueBranch(self, parentPathID, nodeID1, depAngle, depPoint):
 
 
@@ -7767,6 +7804,7 @@ class Paths:
 
 
 
+    @logFunction
     def determineBranch(self, nodeID1, nodeID2, frontExist1, frontExist2, frontInterior1, frontInterior2, depAngle1, depAngle2, depPoint1, depPoint2, parentPathID1, parentPathID2, dirFlag):
         
         """
@@ -8072,6 +8110,7 @@ class Paths:
         return isBranch, pathBranchIDs, isNew
         
         
+    @logFunction
     def splicePathIDs(self, pathIDs):
         
         if len(pathIDs) == 0:
@@ -8220,6 +8259,7 @@ class Paths:
 
         return newPaths
 
+    @logFunction
     def getNearestPathPoint(self, originPoint):
 
         " find closest point on each path "
@@ -8243,6 +8283,7 @@ class Paths:
         
         return newPoint
         
+    @logFunction
     def computeNavigationPath(self, startPose, endPose):
         
         " get the trimmed paths "

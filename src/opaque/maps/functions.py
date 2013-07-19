@@ -2,9 +2,23 @@ from math import *
 from copy import *
 from func import IsContained
 from numpy import matrix
+import sys
 
-# this function converts the angle to its equivalent # in the range [-pi,pi]
+def logFunction(func):
+	pass
+
+	def inner(*args, **kwargs): #1
+		print "func: " + func.__name__ + "(%s, %s)" % (args, kwargs)
+		sys.stdout.flush()
+		retVal = func(*args, **kwargs)
+		print "return: " + func.__name__ + " %s " % repr(retVal)
+		sys.stdout.flush()
+		return retVal
+	
+	return inner
+
 def normalizeAngle(angle):
+	""" "this function converts the angle to its equivalent # in the range [-pi,pi] """
 
 	while angle>pi:
 		angle=angle-2*pi

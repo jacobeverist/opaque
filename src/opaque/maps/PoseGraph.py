@@ -401,6 +401,7 @@ class PoseGraph:
 	def doNothing3(self):
 		pass
 
+	@logFunction
 	def saveState(self):
 
 		#self.nodePoses = {}
@@ -458,6 +459,7 @@ class PoseGraph:
 		#self.orderCount = 0		
 	
 		
+	@logFunction
 	def restoreState(self, dirName, numNodes):
 		
 		print "loading" + dirName + "/stateSave_%04u.txt" % (numNodes-1)
@@ -485,6 +487,7 @@ class PoseGraph:
 
 
 
+	@logFunction
 	def pairLastTwo(self):
 	
 		node1 = self.nodeHash[self.numNodes-1]
@@ -495,6 +498,7 @@ class PoseGraph:
 
 
 
+	@logFunction
 	def checkSupport(self, nodeID1, nodeID2, offset, supportLine):
 
 		node1 = self.nodeHash[nodeID1]
@@ -587,6 +591,7 @@ class PoseGraph:
 		return sum1
 
 
+	@logFunction
 	def addPriorityEdge(self, edge, priority):
 
 		try:
@@ -597,6 +602,7 @@ class PoseGraph:
 		" corner constraints with priority of 3 "
 		self.edgePriorityHash[(edge[0],edge[1])].append([edge[2], edge[3], priority])
 
+	@logFunction
 	def getEdges(self, nodeID1, nodeID2):
 
 		resultEdges = []
@@ -611,6 +617,7 @@ class PoseGraph:
 				
 		return resultEdges
 
+	@logFunction
 	def relaxPriorityEdge(self, nodeID1, nodeID2, priorityLevel = -1):
 
 		# self.addPriorityEdge([nodeID1,nodeID2,transform1,covE1], INPLACE_PRIORITY)
@@ -628,6 +635,7 @@ class PoseGraph:
 				
 		return
 
+	@logFunction
 	def delPriorityEdge(self, nodeID1, nodeID2, priorityLevel = -1):
 		
 		for k, v in self.edgePriorityHash.items():
@@ -646,6 +654,7 @@ class PoseGraph:
 					self.edgePriorityHash[k] = keepList
 		return
 				
+	@logFunction
 	def getPriorityEdges(self, priorityLevel = -1):
 
 		priorityEdges = {}
@@ -692,6 +701,7 @@ class PoseGraph:
 
 		return priorityEdges
 
+	@logFunction
 	def deleteAllPriority(self, priorityLevel):
 		
 		for k, v in self.edgePriorityHash.items():
@@ -703,6 +713,7 @@ class PoseGraph:
 			self.edgePriorityHash[k] = newV
 
 
+	@logFunction
 	def deleteAllEdges(self):
 
 		self.edgePriorityHash = {}
@@ -711,6 +722,7 @@ class PoseGraph:
 	" testing for variation in function "
 
 
+	@logFunction
 	def addNode(self, newNode):
 		
 		self.currNode = newNode
@@ -718,6 +730,7 @@ class PoseGraph:
 		self.nodeHash[nodeID] = self.currNode
 		self.numNodes += 1
 
+	@logFunction
 	def correctNode2(self, nodeID):
 
 		newNode = self.nodeHash[nodeID]		
@@ -725,6 +738,7 @@ class PoseGraph:
 		return self.integrateNode(newNode, nodeID)
 
 
+	@logFunction
 	def loadNewNode(self, newNode):
 
 		self.currNode = newNode
@@ -735,6 +749,7 @@ class PoseGraph:
 		return self.integrateNode2(newNode, nodeID)
 
 
+	@logFunction
 	def insertPose(self, foreNode, backNode, initLocation = [0.0,0.0,0.0]):
 		
 		" CHECK FOR A BRANCHING EVENT "
@@ -1381,6 +1396,7 @@ class PoseGraph:
 
 
 
+	@logFunction
 	def integrateNode(self, newNode, nodeID):
 
 		global globalFunc
@@ -2203,6 +2219,7 @@ class PoseGraph:
 
 
 
+	@logFunction
 	def insertPose2(self, foreNode, backNode, initLocation = [0.0,0.0,0.0]):
 		
 		" CHECK FOR A BRANCHING EVENT "
@@ -2353,6 +2370,7 @@ class PoseGraph:
 			self.nodePoses[k] = self.nodeHash[k].getGlobalGPACPose()
 
 
+	@logFunction
 	def integrateNode2(self, newNode, nodeID):
 
 
@@ -2555,7 +2573,7 @@ class PoseGraph:
 			self.nodePoses[k] = self.nodeHash[k].getGlobalGPACPose()
 
 
-
+	@logFunction
 	def getInPlaceGuess(self, nodeID1, nodeID2, direction):
 		
 		" PERFORM INPLACE CONSTRAINT BETWEEN PAIR "
@@ -2599,6 +2617,7 @@ class PoseGraph:
 			#self.addPriorityEdge([nodeID1,nodeID2,transform3,covE3], INPLACE_PRIORITY)
 	
 
+	@logFunction
 	def getStepGuess(self, nodeID, direction):
 		
 		" ESTIMATE TRAVEL WITH MEDIAL OVERLAP CONSTRAINT OF EVEN NUMBER POSE "
@@ -2631,6 +2650,7 @@ class PoseGraph:
 			self.nodeHash[nodeID].setGPACPose(estPose2)
 
 
+	@logFunction
 	def addToPaths(self, nodeID1, nodeID2):
 
 		" IF THIS IS THE FIRST NODES IN THE FIRST PATH, JUST ADD THEM AS DEFAULT, DO NOTHING "
@@ -2912,6 +2932,7 @@ class PoseGraph:
 		
 
 
+	@logFunction
 	def movePath(self, nodeID, direction, distEst = 1.0):
 		
 		print "movePath(", nodeID, ",", direction, ",", distEst, ")"
@@ -3249,6 +3270,7 @@ class PoseGraph:
 
 	
 
+	@logFunction
 	def selectSplice(self, nodeID1, nodeID2, medial1, medial2, estPose1, estPose2, orderedPathIDs1, orderedPathIDs2):
 		
 		splicedPaths1 = self.paths.splicePathIDs(orderedPathIDs1)
@@ -3284,6 +3306,7 @@ class PoseGraph:
 
 		return splicedPaths1[kIndex]
 
+	@logFunction
 	def selectCommonOrigin(self, globalPath, medial1, estPose1):
 		poseOrigin = Pose(estPose1)
 		
@@ -3432,6 +3455,7 @@ class PoseGraph:
 		
 		return u1, u2
 
+	@logFunction
 	def selectLocalCommonOrigin(self, globalPath, medial1, estPose1):
 		poseOrigin = Pose(estPose1)
 		
@@ -3664,6 +3688,7 @@ class PoseGraph:
 		return u1, u2
 			
 
+	@logFunction
 	def mergeSiblings(self, resultOffset1, resultOffset2, pathID1, pathID2, lastCost, matchCount):
 
 		#tempID = pathID1
@@ -3843,6 +3868,7 @@ class PoseGraph:
 				
 		
 
+	@logFunction
 	def mergePaths(self):
 
 
@@ -4103,6 +4129,7 @@ class PoseGraph:
 				self.drawPathAndHull()
 			
 
+	@logFunction
 	def constrainToPaths(self, nodeID, orderedPathIDs, departures, interiors, depPoints, insertNode = False):
 			
 		"1)  guess pose in front if there is a departure with local and path junction points (not first node) "
@@ -4426,6 +4453,7 @@ class PoseGraph:
 
 
 
+	@logFunction
 	def checkForBranches(self, nodeID1, nodeID2):
 
 		" CHECK FOR A BRANCHING EVENT FROM LEAF "
@@ -4897,6 +4925,7 @@ class PoseGraph:
 		return
 	
 	
+	@logFunction
 	def updateLastNode(self, nodeID):
 		
 		" find constraints of nodeID and update it according to constraint from nodeID-2"
@@ -4930,6 +4959,7 @@ class PoseGraph:
 			print "update position of node", nodeID, "from", origPose, "to", nodePose
 
 
+	@logFunction
 	def makeNodePathConsistent(self, nodeID1, nodeID2, orderedPathIDs1, orderedPathIDs2):
 
 		"""
@@ -5206,6 +5236,7 @@ class PoseGraph:
 			print "set to pose", nodeID2, "to", guessPose2
 		
 
+	@logFunction
 	def updatePathNode(self, nodeID1, nodeID2, orderedPathIDs1, orderedPathIDs2):
 
 		"""
@@ -5554,6 +5585,7 @@ class PoseGraph:
 		self.findPathLocation2(nodeID1, path1)		
 
 
+	@logFunction
 	def findPathLocation(self, nodeID, path):
 
 
@@ -5882,6 +5914,7 @@ class PoseGraph:
 			print "node", nodeID, "departs BOTH SIDES, not changing anything!"
 			return
 
+	@logFunction
 	def findPathLocation2(self, pathIDs, nodeID, path):
 
 
@@ -6163,6 +6196,7 @@ class PoseGraph:
 
 
 
+	@logFunction
 	def consistentFit(self, nodeID, estPose, numGuesses = 11, excludePathIDs = []):
 
 		splicedPaths1, spliceTerms, splicePathIDs = self.paths.getSplicesByNearJunction(nodeID)
@@ -6635,6 +6669,7 @@ class PoseGraph:
 		"""
 
 
+	@logFunction
 	def fitToSplices(self, nodeID, splicedPaths1, globalPoint1, globalPoint2):
 		
 		totalGuesses = []
@@ -6676,6 +6711,7 @@ class PoseGraph:
 		self.nodeHash[nodeID].setGPACPose(guessPose)
 		print "set to pose", nodeID, "to", guessPose
 
+	@logFunction
 	def mergePriorityConstraints(self):
 		
 		totalConstraints = []
@@ -6722,6 +6758,7 @@ class PoseGraph:
 			node = self.nodeHash[v[0]]
 			node.setGPACPose(v[1])
 
+	@logFunction
 	def computeMedialError(self, i, j, offset, minMatchDist = 2.0, tail1=0, tail2=0):
 
 
@@ -6844,6 +6881,7 @@ class PoseGraph:
 		return sum1, matchCount
 
 
+	@logFunction
 	def makeGlobalMedialOverlapConstraint(self, nodeID, globalPath, globalJunctionPoint, globalDeparturePoint, fullOverlap = False ):
 
 		" compute the medial axis for each pose "
@@ -7113,6 +7151,7 @@ class PoseGraph:
 		return resultPose, lastCost
 
 
+	@logFunction
 	def makeMultiJunctionMedialOverlapConstraint(self, nodeID1, nodeID2, isMove = True, isForward = True, inPlace = False, uRange = 1.5):
 
 		#isMove = False
@@ -7521,6 +7560,7 @@ class PoseGraph:
 		return transform, covE, hist
 
 
+	@logFunction
 	def makeMedialOverlapConstraint(self, i, j, isMove = True, isForward = True, inPlace = False, uRange = 0.1 ):
 
 		#print "recomputing hulls and medial axis"
@@ -7670,6 +7710,7 @@ class PoseGraph:
 
 		return transform, covE, hist
 	
+	@logFunction
 	def makeInPlaceConstraint(self, nodeID1, nodeID2):
 
 		" compute the new posture "
@@ -7788,15 +7829,18 @@ class PoseGraph:
 		
 		return transform, covE
 
+	@logFunction
 	def getNearestPathPoint(self, originPoint):
 
 		newPoint = self.paths.getNearestPathPoint(originPoint)
 
 		return newPoint
 
+	@logFunction
 	def computeNavigationPath(self, startPose, endPose):
 		return self.paths.computeNavigationPath(startPose, endPose)
 
+	@logFunction
 	def addTargetBatchConstraints(self, targetNodeID, pathNodes):
 
 		allNodes = pathNodes
@@ -8120,6 +8164,7 @@ class PoseGraph:
 		#	transform, covE, hist = self.makeMedialOverlapConstraint(n1, n2, isMove = False, uRange = 3.0)				
 	
 	
+	@logFunction
 	def addBatchConstraints(self, targetNodeID):
 
 		allNodes = range(targetNodeID)
@@ -8668,6 +8713,7 @@ class PoseGraph:
 
 
 
+	@logFunction
 	def computePathConsistency(self, pathID):
 	
 		nodeSet = self.paths.getNodes(pathID)
@@ -8713,6 +8759,7 @@ class PoseGraph:
 		#print "overlapMatchCounts:", overlapSums
 
 
+	@logFunction
 	def addPathConstraints3(self, pathNodes, targetNodeID, insertNode = False, orderedPathIDs = []):
 
 		print "addPathConstraints:"
@@ -8825,6 +8872,7 @@ class PoseGraph:
 
 		
 
+	@logFunction
 	def addPathConstraints2(self, pathNodes, targetNodeID, insertNode = False):
 
 		print "addPathConstraints:"
@@ -9230,6 +9278,7 @@ class PoseGraph:
 
 		
 
+	@logFunction
 	def addPathConstraints(self, pathNodes, targetNodeID, insertNode = False):
 
 		print "addPathConstraints:"
@@ -9765,6 +9814,7 @@ class PoseGraph:
 
 
 
+	@logFunction
 	def doToro(self, constraints, fileName = "probe"):
 		
 		
@@ -9847,6 +9897,7 @@ class PoseGraph:
 
 		return v_list2, final_constraints
 
+	@logFunction
 	def plotEnv(self):
 		
 		#walls = self.probe.getWalls()
@@ -9863,6 +9914,7 @@ class PoseGraph:
 			pylab.plot(xP,yP, linewidth=2, color = 'g', zorder=0)
 			
 
+	@logFunction
 	def drawHyp(self, tit = ""):
 		
 		poses = []
@@ -9943,6 +9995,7 @@ class PoseGraph:
 		pylab.savefig("plotHypotheses%04u.png" % self.hypPlotCount)
 		self.hypPlotCount += 1
 
+	@logFunction
 	def drawCandidate(self, cand):
 
 
@@ -10073,6 +10126,7 @@ class PoseGraph:
 		self.candidateCount += 1
 
 	
+	@logFunction
 	def drawConstraints(self, id = []):
 		
 		poses = []
@@ -10157,6 +10211,7 @@ class PoseGraph:
 			printStack()
 			pylab.savefig("plotEstimate%04u.png" % id)
 
+	@logFunction
 	def drawTrimmedPaths(self, trimmedPaths):
 		
 		pylab.clf()
@@ -10188,6 +10243,7 @@ class PoseGraph:
 		pylab.savefig("trimmedPath_%04u.png" % self.trimCount)
 		self.trimCount += 1
 
+	@logFunction
 	def drawWalls(self):
 		for wall in self.walls:
 			xP = []
@@ -10201,6 +10257,7 @@ class PoseGraph:
 
 
 
+	@logFunction
 	def drawPathAndHull(self):
 		
 		
@@ -10295,6 +10352,7 @@ class PoseGraph:
 
 		self.pathDrawCount += 1
 			
+	@logFunction
 	def getXiError(self):
 		
 		edgeHash = self.getPriorityEdges()

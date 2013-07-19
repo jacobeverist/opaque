@@ -268,104 +268,18 @@ class TestProcess(SnakeControl):
 			#self.mapGraph.synch()
 			#self.mapGraph.saveMap()
 
-			#self.mapGraph.testHypotheses("testData/sensorLocalize2", 175, "cornerHypotheses_2011_06_05.txt")
-			#self.mapGraph.loadSeries("resultProcess_2012_04_05", 20)
-			#self.mapGraph.loadSeries("resultProcess_2012_04_04", 38)
-			#self.mapGraph.loadSeries("resultProcess_2012_04_11", 52)
-			#self.mapGraph.loadSeries("resultProcess_2012_04_12_2", 47)
-			#self.mapGraph.restoreSeries("resultProcess_2012_05_02_2", 4)
-			#self.mapGraph.restoreSeries("resultProcess_2012_05_03", 6)
-			#self.mapGraph.loadSeries("resultProcess_2012_05_03", 6)
 
-			#self.mapGraph.loadSeries("resultProcess_2012_05_04", 49)
+			#self.mapGraph.restoreSeries("resultProcess_2013_07_06a", 56)
 
 
-			"""
-			self.mapGraph.loadSeries("result_2012_08_12", 117)
-			self.mapGraph.restoreSeries("resultProcess_2012_07_20b", 12)
-
-			"""
-			#self.mapGraph.loadSeries("result_2012_08_27", 70)
-			#self.mapGraph.loadSeries("result_2012_08_27", 68)
-
-			#self.mapGraph.loadSeries("result_2012_08_27", 148)
-			#self.mapGraph.restoreSeries("resultProcess_2013_04_23a", 30)
-			#self.mapGraph.restoreSeries("resultProcess_2013_04_23a", 36)
-			#self.mapGraph.restoreSeries("resultProcess_2013_04_30a", 36)
-			#self.mapGraph.restoreSeries("resultProcess_2013_05_02c", 60)
-			#self.mapGraph.restoreSeries("resultProcess_2013_05_03b", 54)
-
-
-			#self.mapGraph.loadSeries("result_2012_08_22", 70)
-			#self.mapGraph.loadSeries("result_2012_08_22", 144)
-			#self.mapGraph.restoreSeries("resultProcess_2013_05_08b", 34)
-			#self.mapGraph.loadSeries("result_2012_08_22", 10)
-
-
-			#self.mapGraph.loadSeries("result_2013_05_09a", 10)
-			#self.mapGraph.loadSeries("result_2013_05_09b", 16)
-			#self.mapGraph.loadSeries("result_2013_05_09c", 16)
-			#self.mapGraph.loadSeries("result_2013_05_10", 16)
-
-
-			#self.mapGraph.restoreSeries("result_2013_05_11a", 60)
-			#self.mapGraph.loadSeries("result_2013_05_11a", 96)
-			
-			
-			
-			
-			#self.mapGraph.restoreSeries("result_2013_05_13", 120)
-			#self.mapGraph.loadSeries("result_2013_05_13", 136)
-
-			#self.mapGraph.restoreSeries("resultProcess_2013_05_21", 38)
-
-
-			#self.mapGraph.restoreSeries("result_2013_05_24", 104)
-
-			#self.mapGraph.restoreSeries("result_2013_05_24", 58)
-			#self.mapGraph.loadSeries("result_2013_05_24", 104)
-
-			
-			#self.mapGraph.loadSeries("result_2013_05_24", 50)
-			self.mapGraph.loadSeries("result_2013_05_24", 114)
-			#self.mapGraph.restoreSeries("result_2013_05_24", 4)
-
-			#self.mapGraph.restoreSeries("resultProcess_2013_06_20b", 50)
-
-			#self.mapGraph.restoreSeries("resultProcess_2013_06_20b", 22)
-			
-			#self.mapGraph.restoreSeries("result_2013_05_24", 104)
+			self.mapGraph.loadSeries("result_2013_07_15b", 104)
 			#self.mapGraph.restoreSeries("resultProcess_2013_06_07b", 64)
+			#self.mapGraph.restoreSeries("result_2013_07_15b", 102)
 
 
 			#self.mapGraph.restoreSeries("resultProcess_2013_06_24b", 38)
 
 
-			#self.mapGraph.restoreSeries("resultProcess_2012_07_20", 12)
-			#self.mapGraph.loadSeries("resultProcess_2012_07_20", 38)	
-			
-			#self.mapGraph.restoreSeries("resultProcess_2012_05_10", 12)
-
-
-			" parent-child consistency check "
-			#self.mapGraph.restoreSeries("resultProcess_2012_05_04", 49)
-
-			" parent-child consistency check "
-			#self.mapGraph.restoreSeries("resultProcess_2012_05_04", 24)
-
-			#self.mapGraph.loadSeries("resultProcess_2012_04_13_1", 14)
-			#self.mapGraph.loadSeries("resultProcess_2012_04_13_2", 16)
-			#self.mapGraph.loadSeries("resultProcess_2012_04_13_3", 14)
-			#self.mapGraph.loadSeries("resultProcess_2012_04_07", 38)
-			
-			#self.mapGraph.instantSensorTest("testData/sensorLocalize2", 175)
-			#self.mapGraph.instantSensorTest("testData/sensorLocalize2", 50)
-			#self.mapGraph.instantSensorTest("testData/sensorLocalize2", 50)
-
-			#self.mapGraph.sensorTest("testData/sensorLocalize2", 50)
-			#self.mapGraph.sensorTest("testData/sensorLocalize2", 176)
-
-			#self.mapGraph.drawMap()
 			exit()
 			
 			#self.mapGraph.newNode(0.0, self.direction)

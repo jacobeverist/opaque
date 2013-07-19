@@ -47,6 +47,7 @@ import math
 import pylab
 import pca_module
 import functions
+from functions import logFunction
 from subprocess import *
 import traceback
 from math import cos, sin, pi, ceil
@@ -267,6 +268,7 @@ def __remoteOverlap_ICP(rank, qin, qout):
         # write to output queue
         qout.put((nc,results))
 
+@logFunction
 def serialOverlapICP(argSets):
 
     results = []
@@ -4181,6 +4183,7 @@ def shapeICP2(estPose1, estPose2, hull1, hull2, medial1, medial2, posture1_unsta
         
     
     
+@logFunction
 def overlapICP(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1, medialPoints2, rootPose1, rootPose2, inPlace = False, plotIter = False, n1 = 0, n2 = 0, uRange = 1.5):
 
     global numIterations
@@ -5632,6 +5635,7 @@ def minICP_GPU2(initGuess, medialPoints1, medialPoints2, foreI1, backI1, foreI2,
 
 
 
+@logFunction
 def overlapICP_GPU2(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1, medialPoints2, rootPose1, rootPose2, inPlace = False, plotIter = False, n1 = 0, n2 = 0, uRange = 1.5):
 
     global numIterations
@@ -6964,6 +6968,7 @@ def globalOverlapICP_GPU(initGuess, globalPath, medialPoints, poses_1, poses_2, 
     return currPose, newCost
 
 
+@logFunction
 def globalOverlapICP_GPU2(initGuess, globalPath, medialPoints,plotIter = False, n1 = 0, n2 = 0, minMatchDist = 1.0, arcLimit = 0.5):
 
     global numIterations
@@ -7292,6 +7297,7 @@ def globalOverlapICP_GPU2(initGuess, globalPath, medialPoints,plotIter = False, 
 
     return currPose, newCost, len(match_pairs)
 
+@logFunction
 def globalPathToNodeOverlapICP2(initGuess, globalPath, medialPoints, plotIter = False, n1 = 0, n2 = 0, minMatchDist = 1.0, arcLimit = 0.5):
 
     global numIterations
@@ -8228,7 +8234,7 @@ def globalPathToNodeOverlapICP(initGuess, globalPath, medialPoints, plotIter = F
     return estMedialPose, newCost, len(match_pairs)
 
 
-
+@logFunction
 def pathOverlapICP(initGuess, globalPath, medialPoints,plotIter = False, n1 = 0, n2 = 0):
 
     global numIterations
