@@ -542,6 +542,11 @@ class MapGraph:
 			pylab.plot(xP,yP, linewidth=2, color = 'g')
 
 	def localizePose(self):
+		
+		self.foreNode.saveMap()
+		self.backNode.saveMap()
+	
+		
 		self.poseGraph.loadNewNode(self.foreNode)
 		self.poseGraph.loadNewNode(self.backNode)
 		#self.poseGraph.correctNode2(self.foreNode.nodeID)

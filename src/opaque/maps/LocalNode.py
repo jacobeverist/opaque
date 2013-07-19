@@ -24,7 +24,7 @@ from functions import decimatePoints
 from numpy import array, dot, transpose
 
 estPlotCount = 0
-alphaCount = 0
+alphaPlotCount = 0
 splineCount = 0
 
 def computeBareHull(node1, sweep = False, static = False):
@@ -3809,7 +3809,9 @@ class LocalNode:
 	
 	def computeAlpha2(self, points, radius = 0.2):
 		
-		global alphaCount
+		global alphaPlotCount
+		plotIter = True
+		
 		random.seed(0)		
 		
 		isDone = False
@@ -3827,10 +3829,43 @@ class LocalNode:
 				perturbPoints.append(p2)
 		
 			try:			
+
+				saveFile = ""	
+				saveFile += "radius = " + repr(radius) + "\n"
+				saveFile += "perturbPoints = " + repr(perturbPoints) + "\n"
+				
+				isWritten = False
+				while not isWritten:
+					try:
+						f = open("doLocalAlphaInput_%08u.txt" % (alphaPlotCount), 'w')
+						f.write(saveFile)
+						f.close()
+					except:
+						pass
+					else:
+						isWritten = True
 	
 				vertices = alphamod.doAlpha(radius,perturbPoints)
 				numVert = len(vertices)
-				
+
+				os.remove("doLocalAlphaInput_%08u.txt" % (alphaPlotCount))
+
+				if plotIter:
+					xP = []
+					yP = []
+					for p in vertices:
+						xP.append(p[0])
+						yP.append(p[1])
+						
+					pylab.plot(xP,yP, color='r')
+	
+					pylab.xlim(-3,3)
+					pylab.ylim(-3,3)
+					pylab.title("nodeID = %d, radius = %f, numPoints = %d" % (self.nodeID, radius, numVert))
+					pylab.savefig("alphaResult_%04d.png" % alphaPlotCount)
+
+				alphaPlotCount += 1
+									
 				if numVert <= 2:
 					print "Failed, hull had only", numVert, "vertices"
 					raise

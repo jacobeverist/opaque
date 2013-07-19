@@ -745,6 +745,8 @@ class PoseGraph:
 		nodeID = self.numNodes
 		self.nodeHash[nodeID] = self.currNode
 		self.numNodes += 1
+		
+		
 		#return self.integrateNode(newNode, nodeID)
 		return self.integrateNode2(newNode, nodeID)
 
@@ -10164,24 +10166,6 @@ class PoseGraph:
 				xP.append(p[0])
 				yP.append(p[1])
 			pylab.plot(xP,yP, color=(112/256.,147/256.,219/256.))	
-
-		for k, v in self.edgeHash.items():	
-			node1 = self.nodeHash[k[0]]
-			node2 = self.nodeHash[k[1]]
-			pose1 = node1.getGlobalGPACPose()
-			pose2 = node2.getGlobalGPACPose()
-
-			xP = [pose1[0], pose2[0]]
-			yP = [pose1[1], pose2[1]]
-
-			#age = self.edgeAgeHash[k]
-			age = 0
-
-			fval = float(age) / 20.0
-			if fval > 0.4:
-				fval = 0.4
-			color = (fval, fval, fval)
-			pylab.plot(xP, yP, color=color, linewidth=1)
 
 
 		xP = []
