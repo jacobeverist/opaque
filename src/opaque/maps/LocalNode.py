@@ -1,4 +1,5 @@
 import sys
+import os
 
 from LocalOccMap import *
 from LocalBoundaryMap import *
@@ -3847,9 +3848,9 @@ class LocalNode:
 	
 				vertices = alphamod.doAlpha(radius,perturbPoints)
 				numVert = len(vertices)
-
+	
 				os.remove("doLocalAlphaInput_%08u.txt" % (alphaPlotCount))
-
+	
 				if plotIter:
 					xP = []
 					yP = []
@@ -3863,7 +3864,7 @@ class LocalNode:
 					pylab.ylim(-3,3)
 					pylab.title("nodeID = %d, radius = %f, numPoints = %d" % (self.nodeID, radius, numVert))
 					pylab.savefig("alphaResult_%04d.png" % alphaPlotCount)
-
+	
 				alphaPlotCount += 1
 									
 				if numVert <= 2:
