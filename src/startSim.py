@@ -10,6 +10,18 @@
 import random
 random.seed(0)
 
+import os
+import sys
+sys.path.insert(1,"modules/")
+sys.path.insert(1,"modules/nelmin")
+sys.path.insert(1,"modules/bulletprobe")
+sys.path.insert(1,"modules/medialaxis")
+sys.path.insert(1,"modules/alphashape")
+
+os.environ['PATH'] = 'c:\\opencv-2.4.6.0\\build\\x86\\vc9\\bin' + ';' + os.environ['PATH']
+os.environ['PATH'] = os.getcwd() + '\\binaries\\boost_1_53_0\\lib' + ';' + os.environ['PATH']
+
+
 ANY_QUERY_MASK                  = 1<<0
 STATIC_GEOMETRY_QUERY_MASK      = 1<<4
 WORLD_STEP = 0.001
@@ -34,7 +46,7 @@ from opaque.TestPokeWalls import TestPokeWalls
 from opaque.ControlError import *
 
 #from opaque.environment.WallSections import WallSections
-from DrawThings import DrawThings
+from opaque.DrawThings import DrawThings
 
 
 import traceback 

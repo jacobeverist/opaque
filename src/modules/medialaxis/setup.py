@@ -4,8 +4,10 @@ import distutils.sysconfig
 import os
 from Cython.Distutils import build_ext
 
-OPENCV_DIR = '.'
+#OPENCV_DIR = '.'
+#OPENCV_DIR = '.'
 #OPENCV_DIR = 'C:\\OpenCV2.2'
+OPENCV_DIR = 'C:\\opencv-2.4.6.0'
 #OPENCV_DIR = '/opt/local'
 
 #ext_modules = [Extension("medialaxis",
@@ -18,10 +20,12 @@ OPENCV_DIR = '.'
 ext_modules = [Extension("medialaxis",
 		["medialaxis.pyx", "skeletonizeCV.cpp"],
 		language="c++",
-		include_dirs=[OPENCV_DIR + '/include'],
+		#include_dirs=[OPENCV_DIR + '/include'],
+		include_dirs=[OPENCV_DIR + '/build/include'],
 		libraries=["opencv_core246", "opencv_highgui246"],
 		#libraries=["opencv_core220", "opencv_highgui220"],
-		library_dirs=[OPENCV_DIR + '/lib'],
+		#library_dirs=[OPENCV_DIR + '/lib'],
+		library_dirs=[OPENCV_DIR + '/build/x86/vc9/lib'],
 								)]
 
 setup(

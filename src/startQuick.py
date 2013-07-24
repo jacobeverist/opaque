@@ -2,16 +2,28 @@
 import random
 random.seed(0)
 
+import os
+import sys
+sys.path.insert(1,"modules/")
+sys.path.insert(1,"modules/nelmin")
+sys.path.insert(1,"modules/bulletprobe")
+sys.path.insert(1,"modules/medialaxis")
+sys.path.insert(1,"modules/alphashape")
+#sys.path.insert(1,"binaries/opencv")
+
+
+os.environ['PATH'] = 'c:\\opencv-2.4.6.0\\build\\x86\\vc9\\bin' + ';' + os.environ['PATH']
+os.environ['PATH'] = os.getcwd() + '\\binaries\\boost_1_53_0\\lib' + ';' + os.environ['PATH']
+
 
 from opaque.robot.QuickProbe import QuickProbe
 from opaque.TestProcess import TestProcess
 from opaque.TestUnit import TestUnit
 from opaque.ControlError import *
-from CmdDrawThings import CmdDrawThings
+from opaque.CmdDrawThings import CmdDrawThings
 
 import traceback 
 import cProfile
-import sys
 
 sys.setrecursionlimit(10000)
 

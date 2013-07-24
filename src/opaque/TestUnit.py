@@ -20,7 +20,7 @@ import hashlib
 
 import scipy
 import pca_module
-from maps import toro
+#from maps import toro
 
 from maps import scsgp
 

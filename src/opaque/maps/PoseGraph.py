@@ -16,7 +16,7 @@ from Pose import Pose
 from Paths import Paths
 import gen_icp
 from functions import *
-import toro
+#import toro
 import scsgp
 import bayes
 from operator import itemgetter

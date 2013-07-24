@@ -6,7 +6,7 @@ from LocalBoundaryMap import *
 from LocalObstacleMap import *
 from SplineFit import *
 from Pose import Pose
-from cornerDetection import extractCornerCandidates
+#from cornerDetection import extractCornerCandidates
 from voronoi import Site, computeVoronoiDiagram
 
 import estimateMotion
@@ -1500,6 +1500,7 @@ class LocalNode:
 		self.boundaryMap.update()
 		self.obstacleMap.update()
 		
+		"""
 		self.cornerCandidates = []
 		cornerCandidates = extractCornerCandidates(self.sweepMap.getMap(), estPose = self.getGndPose())
 
@@ -1530,6 +1531,7 @@ class LocalNode:
 			#self.cornerCandidates.append((pnt2, cand[1], cand[2]))
 			if distFromCenter >= 1.35:
 				self.cornerCandidates.append((pnt2, cand[1], pose2[2]))
+		"""
 
 		self.dirty = False
 		

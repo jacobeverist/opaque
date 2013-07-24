@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include <math.h>
-#include <OpenCV/cv.h>
-#include <OpenCV/highgui.h>
+//#include <opencv2/core/cv.h>
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
 
 int runAlg(int index, int sizeX, int sizeY, int numPoints, int thickSize, double *polyX, double *polyY, char *result);
 //int runAlg(int index, int sizeX, int sizeY, int numPoints, double *polyX, double *polyY, char *result);
