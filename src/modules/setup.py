@@ -8,7 +8,6 @@ ext_modules = [Extension("transform", ["transform.pyx"]),
 			Extension("servo", ["servo.pyx"]),
 			Extension("func", ["func.pyx"]),
 			Extension("icp", ["icp.pyx"])]
-#ext_modules = [Extension("transform", ["transform.pyx"]), Extension("stability", ["stability.pyx"], language="c++")]
 
 setup(
   name = 'Joint Transformations',

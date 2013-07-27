@@ -230,21 +230,8 @@ class SnakeApp(sf.Application):
 		#pos = ogre.Vector3(1.65,0.04,0.0)
 		pos = ogre.Vector3(1.65,0.04,0.0)
 
-		#self.probe = PhysXProbe(self.sceneManager,yRot,pos,40,0.15,0.2,0.15,30.0*2.5,0.9)
-		#self.probe = PhysXProbe(self.sceneManager,yRot,pos,40,0.15,0.2,0.15,1000.0,0.9)
-
-		
-		#self.probe = PhysXProbe(self.sceneManager,yRot,pos,40,0.15,0.2,0.15,100.0,0.9)
-		#self.probe = PhysXProbe(self.sceneManager,yRot,pos,40,0.15,0.1,0.15,1000.0,0.9)
-		#self.probe = BulletProbe(self.sceneManager,yRot,pos,40,0.15,0.1,0.15,1000.0,1.0)
 		self.probe = BulletProbe(self.sceneManager,yRot,pos,40,0.15,0.1,0.15,1000.0,1.0)
 		
-		#exit()
-		
-
-		#self.probe = SuperbotSnake(self._world,yRot,pos,40,0.15,0.15,30.0*2.5,0.9)
-		#self.probe = SuperbotSnake(self._world,zRot,pos,40,0.15,0.15,30.0*2.5,0.9)
-
 		self.probe.translatePose(probeDisplacement)
 
 		#f = open("poses000160.txt", 'r')
