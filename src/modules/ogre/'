@@ -1,0 +1,328 @@
+/*
+-----------------------------------------------------------------------------
+Filename:    TutorialApplication.cpp
+-----------------------------------------------------------------------------
+
+This source file is part of the
+   ___                 __    __ _ _    _
+  /___\__ _ _ __ ___  / / /\ \ (_) | _(_)
+ //  // _` | '__/ _ \ \ \/  \/ / | |/ / |
+/ \_// (_| | | |  __/  \  /\  /| |   <| |
+\___/ \__, |_|  \___|   \/  \/ |_|_|\_\_|
+      |___/
+      Tutorial Framework
+      http://www.ogre3d.org/tikiwiki/
+-----------------------------------------------------------------------------
+*/
+#include "TutorialApplication.h"
+#include <string>
+#include <iostream>
+#include <sstream>
+
+//-------------------------------------------------------------------------------------
+TutorialApplication::TutorialApplication(void)
+{
+}
+//-------------------------------------------------------------------------------------
+TutorialApplication::~TutorialApplication(void)
+{
+}
+
+//-------------------------------------------------------------------------------------
+void TutorialApplication::createScene(void)
+{
+    // create your scene here :)
+
+    // Create the SkyBox
+    //mSceneMgr->setSkyBox(true, "Examples/CloudyNoonSkyBox");
+
+
+    // Set the scene's ambient light
+    mSceneMgr->setAmbientLight(Ogre::ColourValue(0.8f, 0.8f, 0.8f));
+
+    // Create a Light and set its position
+    Ogre::Light* light = mSceneMgr->createLight("MainLight");
+    light->setPosition(20.0f, 80.0f, 50.0f);
+	light->setCastShadows(true);
+	
+	// Give us some sky
+	mSceneMgr->setSkyBox(true,"kk3d/DesertVII", 5000, true); // Examples/SpaceSkyBox",5000,True)
+
+	// Position and orient the camera
+	mCamera->setPosition(Ogre::Vector3( 2, 10, 0 ));
+	//#self.camera.lookAt(-7,0.5,0)
+	mCamera->setNearClipDistance(0.1);
+
+
+	// Create a default plane to act as the ground
+	Ogre::StaticGeometry* s = mSceneMgr->createStaticGeometry("StaticFloor");
+	s->setRegionDimensions(Ogre::Vector3(160.0, 100.0, 160.0));
+
+	// Set the region origin so the center is at 0 world
+	s->setOrigin(Ogre::Vector3(0,0,0));
+
+
+	// Use a load of meshes to represent the floor
+	int i = 0;
+	for (int z = -80 ; z < 80 ; z += 20) {
+		for (int x = -80 ; x < 80 ; x += 20) {
+
+			std::stringstream ss;
+			ss << i;
+			std::string name("Plane_" + ss.str());
+
+			i += 1;
+
+			Ogre::Entity* entity = mSceneMgr->createEntity(name, "plane.mesh");
+			//entity->setQueryFlags(STATIC_GEOMETRY_QUERY_MASK);
+			entity->setCastShadows(false);
+			s->addEntity(entity, Ogre::Vector3(x,0,z));
+
+		}
+	}
+
+	// add coordinate system markers 
+
+	Ogre::Vector3 xPnt(5.0,0.0,0.0);
+	Ogre::Vector3 zPnt(0.0,0.0,5.0);
+
+	Ogre::Entity* xEntity = mSceneMgr->createEntity("X_ent0", "Cube.mesh");
+	xEntity->setCastShadows(false);
+	xEntity->setMaterialName("Red");
+
+	Ogre::Entity* zEntity = mSceneMgr->createEntity("Z_ent0", "Cube.mesh");
+	zEntity->setCastShadows(false);
+	zEntity->setMaterialName("Green");
+
+	Ogre::Vector3 size = Ogre::Vector3(0.1,0.1,0.1);
+	s->addEntity(xEntity, xPnt, Ogre::Quaternion::IDENTITY, size);
+	s->addEntity(zEntity, zPnt, Ogre::Quaternion::IDENTITY, size);
+
+	s->build();
+
+
+
+
+
+    // Create a SceneNode and attach the Entity to it
+    //Ogre::SceneNode* headNode = mSceneMgr->getRootSceneNode()->createChildSceneNode("HeadNode");
+    //headNode->attachObject(ogreHead);
+
+}
+
+void TutorialApplication::addWall(int numPoints, int *points) {
+}
+
+void TutorialApplication::createWalls() {
+
+
+	/*
+		self.npnts.append(points)
+		
+		# create the static geometry
+		s = self._mgr.createStaticGeometry("corridor_%04u" % self.wallCount)
+
+		self.wallCount += 1
+		
+		# region dimensions (FIXME: what does this mean?)
+		s.setRegionDimensions((160.0, 100.0, 160.0))
+
+		## Set the region origin so the center is at 0 world
+		s.setOrigin(ogre.Vector3().ZERO)
+
+		# start with a ManualObject for the mesh
+		# create the wall1 mesh
+		mo1_int = ogre.ManualObject("WallObject_Interior" + str(self.wallCount))
+		mo1_int.begin("WallMaterial_Int", ogre.RenderOperation.OT_TRIANGLE_LIST)
+
+		mo1_ext = ogre.ManualObject("WallObject_Exterior" + str(self.wallCount))
+		mo1_ext.begin("WallMaterial_Ext", ogre.RenderOperation.OT_TRIANGLE_LIST)
+
+		mo1_top = ogre.ManualObject("WallObject_Top" + str(self.wallCount))
+		mo1_top.begin("WallMaterial_Top", ogre.RenderOperation.OT_TRIANGLE_LIST)
+
+		topPoints = []
+		for i in range(len(points)-1):
+			vec = [points[i][0]-points[i+1][0], points[i][1]-points[i+1][1]]
+			vecMag = sqrt(vec[0]**2 + vec[1]**2)
+			vec[0] /= vecMag
+			vec[1] /= vecMag
+			
+			orthoVec = [vec[0]*cos(pi/2) - vec[1]*sin(pi/2), vec[0]*sin(pi/2) + vec[1]*cos(pi/2)]
+			
+			topPoints.append(ogre.Vector3(points[i][0], 0.2, points[i][1]))
+			topPoints.append(ogre.Vector3(points[i][0] + 0.05*orthoVec[0], 0.2, points[i][1] + 0.05*orthoVec[1]))
+			topPoints.append(ogre.Vector3(points[i+1][0], 0.2, points[i+1][1]))
+			topPoints.append(ogre.Vector3(points[i+1][0] + 0.05*orthoVec[0], 0.2, points[i+1][1] + 0.05*orthoVec[1]))
+		
+		for p in topPoints:
+			mo1_top.position(p[0], p[1], p[2])
+
+		for i in range(len(points) - 1):
+			mo1_top.triangle(4*i+2, 4*i+1, 4*i)
+			mo1_top.triangle(4*i+1, 4*i+2, 4*i+3)
+			if i < len(points)-2:
+				mo1_top.triangle(4*i+2, 4*i+5, 4*i+3)
+				
+		wall1Points = []
+		for i in range(len(points)):
+			wall1Points.append(ogre.Vector3(points[i][0], -100.0, points[i][1]))
+			wall1Points.append(ogre.Vector3(points[i][0], 1.5, points[i][1]))
+
+		# build the triangle meshes of the wall
+		for p in wall1Points:
+			#mo1_int.position(p[0],p[1],p[2])
+			#mo1_ext.position(p[0],p[1],p[2])
+			if p[1] < 0.0:
+				mo1_int.position(p[0],0.0,p[2])
+				mo1_ext.position(p[0],0.0,p[2])
+			else:
+				mo1_int.position(p[0],0.2,p[2])
+				mo1_ext.position(p[0],0.2,p[2])
+
+		# indices for ODE geometry
+		indices1 = []
+		indices2 = []
+
+		for i in range(len(points) - 1):
+			indices1 += [2*i+2, 2*i+1, 2*i]
+			indices1 += [2*i+1, 2*i+2, 2*i+3]
+			mo1_int.triangle(2*i+2, 2*i+1, 2*i)
+			mo1_int.triangle(2*i+1, 2*i+2, 2*i+3)
+
+			indices2 += [2*i, 2*i+1, 2*i+2]
+			indices2 += [2*i+3, 2*i+2, 2*i+1]
+			mo1_ext.triangle(2*i, 2*i+1, 2*i+2)
+			mo1_ext.triangle(2*i+3, 2*i+2, 2*i+1)
+
+
+		mo1_int.end()
+		mo1_ext.end()
+		mo1_top.end()
+
+		# convert to mesh
+		mo1_int.convertToMesh("WallMesh_Interior_" + str(self.wallCount))
+		mo1_ext.convertToMesh("WallMesh_Exterior_" + str(self.wallCount))
+		mo1_top.convertToMesh("WallMesh_Top_" + str(self.wallCount))
+		# create Ogre entity
+		print "creating entity " + str(self.wallCount)
+		entity1_int = self._mgr.createEntity("WallEntity_Interior_" + str(self.wallCount), "WallMesh_Interior_" + str(self.wallCount))
+		entity1_ext = self._mgr.createEntity("WallEntity_Exterior_" + str(self.wallCount), "WallMesh_Exterior_" + str(self.wallCount))
+		entity1_top = self._mgr.createEntity("WallEntity_Top_" + str(self.wallCount), "WallMesh_Top_" + str(self.wallCount))
+
+		# add ODE geometry to the entity
+		entity1_int.setCastShadows(False)
+		entity1_ext.setCastShadows(False)
+		entity1_top.setCastShadows(False)
+
+		# create the ODE geometry
+		#self.trimeshes.append(OgreOde.makeTriangleMeshGeometry(wall1Points, len(wall1Points), indices1, len(indices1), self._world, self._space))
+		#self.trimeshes.append(OgreOde.makeTriangleMeshGeometry(wall1Points, len(wall1Points), indices2, len(indices2), self._world, self._space))
+
+		# add the entity to the Ogre static geometry
+		s.addEntity(entity1_int, ogre.Vector3(0.0,0.0,0.0))
+		s.addEntity(entity1_ext, ogre.Vector3(0.0,0.0,0.0))
+		s.addEntity(entity1_top, ogre.Vector3(0.0,0.0,0.0))
+
+		# now build the StaticGeometry so it will be rendered
+		s.build()
+	*/
+
+}
+
+void TutorialApplication::setupMyWorld(Ogre::Quaternion *R, Ogre::Vector3 *pos) {
+
+	int numSegs = 40;
+	float segLength = 0.15;
+	float segHeight = 0.1;
+	float segWidth = 0.15;
+
+	//self.segMaterials = []
+
+	for (int i = 0 ; i < numSegs ; i++ ) {
+
+		Ogre::Vector3 worldPose(i*segLength, 0.3, 0.0);
+
+		// Create the visual representation (the Ogre entity and scene node)
+		std::stringstream ss;
+		ss << i;
+		std::string name("segment_" + ss.str());
+
+		Ogre::Entity* entity = mSceneMgr->createEntity(name, "Cube.mesh");
+		Ogre::SceneNode* node = mSceneMgr->getRootSceneNode()->createChildSceneNode(name);
+		node->attachObject(entity);
+		entity->setCastShadows(false);
+
+
+		//xEntity->setMaterialName("Red");
+
+
+		// create separate materials for each segment so we can change
+		// them in real-time for visualization purposes 
+		std::stringstream ss2;
+		ss2 << i;
+		std::string name2("custom_" + ss2.str());
+		Ogre::MaterialPtr* newMaterial = entity->getSubEntity(0)->getMaterial()->clone(name2);
+
+		newMaterial->setAmbient(0.0,0.0,1.0);
+
+		//self.segMaterials.append(newMaterial)
+		entity->getSubEntity(0)->setMaterialName(name2);
+
+
+		// Pick a size
+		Ogre::Vector3 size(segLength, segHeight, segWidth);
+		node->setScale(size.x,size.y,size.z);
+		
+		//Ogre::Vector3* currPos = self->getWorldPose(i);
+		//node->setPosition(currPos[0], currPos[1], currPos[2]);
+		node->setPosition(worldPose);
+		//node->setOrientation(self.getWorldOrientation(i));
+		node->setOrientation(Ogre::Quaternion::IDENTITY);
+		
+		// TODO:  keep pointers to all of these objects 
+
+		//self._ent.append(entity)
+		//self._nodes.append(node)
+	}
+
+
+}
+
+
+
+#if OGRE_PLATFORM == OGRE_PLATFORM_WIN32
+#define WIN32_LEAN_AND_MEAN
+#include "windows.h"
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#if OGRE_PLATFORM == OGRE_PLATFORM_WIN32
+    INT WINAPI WinMain( HINSTANCE hInst, HINSTANCE, LPSTR strCmdLine, INT )
+#else
+    int main(int argc, char *argv[])
+#endif
+    {
+        // Create application object
+        TutorialApplication app;
+
+        try {
+            app.go();
+        } catch( Ogre::Exception& e ) {
+#if OGRE_PLATFORM == OGRE_PLATFORM_WIN32
+            MessageBox( NULL, e.getFullDescription().c_str(), "An exception has occured!", MB_OK | MB_ICONERROR | MB_TASKMODAL);
+#else
+            std::cerr << "An exception has occured: " <<
+                e.getFullDescription().c_str() << std::endl;
+#endif
+        }
+
+        return 0;
+    }
+
+#ifdef __cplusplus
+}
+#endif
