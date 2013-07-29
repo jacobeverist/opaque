@@ -91,8 +91,8 @@ class AverageContacts:
 
 		#self.resetPose()
 		
-		self._allRefNodes = []
-		self._allRefEnt = []
+		#self._allRefNodes = []
+		#self._allRefEnt = []
 		
 		#self.createNewNode(19)		
 

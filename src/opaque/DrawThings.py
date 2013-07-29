@@ -1,5 +1,5 @@
 
-import ogre.renderer.OGRE as ogre
+import ogreprobe
 import pylab
 from math import sin, cos
 
@@ -7,9 +7,10 @@ globalID = 0
 
 class DrawThings():
 	
-	def __init__(self, robotParam):
+	def __init__(self, probe):
 		self.renderView = 0
-		self.robotParam = robotParam
+		self.probe = probe
+		self.robotParam = probe.robotParam
 		self.count = 0
 		self.isSim = False
 
@@ -22,6 +23,39 @@ class DrawThings():
 
 		self._allPointNodes = []
 		self._allPointEnt = []
+
+		self.numSegs = self.robotParam['numSegs']
+		segLength = self.robotParam['segLength']
+		segHeight = self.robotParam['segHeight']
+		segWidth = self.robotParam['segWidth']
+
+		self.visProbe = ogreprobe.ProbeApp(self.numSegs, segLength, segHeight, segWidth)
+		
+	def updatePosture(self):
+
+		positions = []
+		quaternions = []
+		for segI in range(self.numSegs):
+			currPos = self.probe.getWorldPose(segI)
+			angQuat = self.probe.getWorldOrientation(segI)
+
+			positions.append(currPos)
+			quaternions.append(angQuat)
+	
+		self.visProbe.updatePose(positions, quaternions)
+
+	def render(self):
+
+		self.updatePosture()
+		self.visProbe.render()
+
+
+	def setWalls(self, walls):
+
+		for wall in walls:
+			self.visProbe.addWall(wall)
+
+		self.visProbe.createWalls()
 
 	def setSim(self, sceneManager):
 		self.sceneManager = sceneManager
@@ -67,6 +101,7 @@ class DrawThings():
 	
 	def renderPoints(self, pnts):
 		
+		"""
 		global globalID
 				
 		" delete any existing points that may exist "
@@ -106,9 +141,10 @@ class DrawThings():
 			self._allRefEnt.append(entity)
 			
 			globalID += 1
-			
+		"""	
 	def drawPath(self, pnts):
 		
+		"""
 		global globalID
 				
 		" delete any existing points that may exist "
@@ -145,9 +181,10 @@ class DrawThings():
 			self._allPathEnt.append(entity)
 			
 			globalID += 1
-				
+		"""			
 
 	def drawPoints(self, pnts):
+		"""
 		
 		global globalID
 				
@@ -185,13 +222,15 @@ class DrawThings():
 			self._allPointEnt.append(entity)
 			
 			globalID += 1
-
+		"""
 
 	def renderLines(self, pnts, color = (0.0,0.0,0.0)):
 		pass
 
 	def saveView(self, filename):
-		if self.renderView != 0:
+		pass
+
+		#if self.renderView != 0:
 			#self.renderView.update()
-			self.renderView.writeContentsToFile(filename)
+		#	self.renderView.writeContentsToFile(filename)
 			

@@ -34,12 +34,12 @@ class TestNavigation(SnakeControl):
 		self.drawThings = drawThings
 		self.probe = probe
 		
-		robotParam = {}
-		robotParam['numJoints'] = self.probe.numSegs-1
-		robotParam['numSegs'] = self.probe.numSegs
-		robotParam['segLength'] = self.probe.segLength
-		robotParam['segWidth'] = self.probe.segWidth
-		robotParam['maxTorque'] = self.probe.maxTorque
+		robotParam = self.probe.robotParam
+		#robotParam['numJoints'] = self.probe.numSegs-1
+		#robotParam['numSegs'] = self.probe.numSegs
+		#robotParam['segLength'] = self.probe.segLength
+		#robotParam['segWidth'] = self.probe.segWidth
+		#robotParam['maxTorque'] = self.probe.maxTorque
 		
 		self.numJoints = robotParam['numJoints']
 		
@@ -194,7 +194,7 @@ class TestNavigation(SnakeControl):
 		#self.grabAngles()
 
 
-		if self.globalState > 1 and self.globalTimer % 10 == 0:
+		if self.globalState > 2 and self.globalTimer % 10 == 0:
 			pnts = []
 			for i in range(self.numJoints):
 				#pnts.append(self.probe.getActualJointPose(i))
