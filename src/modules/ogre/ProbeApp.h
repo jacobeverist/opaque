@@ -22,13 +22,22 @@ This source file is part of the
 class ProbeApp : public BaseApplication
 {
 public:
-    ProbeApp(void);
+    ProbeApp(int numSegs, double segLength, double segHeight, double segWidth);
     virtual ~ProbeApp(void);
 
-	void addWall(int numPoints, float *points);
+	void addWall(int numPoints, double *points);
 	void createWalls();
-	void setupMyWorld(Ogre::Quaternion R, Ogre::Vector3 pos);
+	//void setupMyWorld(Ogre::Quaternion R, Ogre::Vector3 pos);
 
+
+	void buildProbe();
+	void updatePose(double *postions, double *quaternions);
+
+	void updateCamera(double *pos, double *quat);
+
+
+	void render();
+	void shutdown();
 
 protected:
     virtual void createScene(void);
@@ -36,8 +45,17 @@ protected:
 
 private:
 	int numWalls;
-	float **wallPoints;
+	double **wallPoints;
 	int *numWallPoints;
+
+	int numSegs;
+	double segLength;
+	double segHeight;
+	double segWidth;
+
+	Ogre::SceneNode **probeNodes;
+	Ogre::Material **probeMaterials;
+	Ogre::Entity **probeEntities;
 
 };
 

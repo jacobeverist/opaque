@@ -20,13 +20,32 @@ This source file is part of the
 #include <sstream>
 
 //-------------------------------------------------------------------------------------
-ProbeApp::ProbeApp(void) {
+ProbeApp::ProbeApp(int numSegs, double segLength, double segHeight, double segWidth) {
 
-	numWalls = 0;
+	this->numSegs = numSegs;
+	this->segLength = segLength;
+	this->segHeight = segHeight;
+	this->segWidth = segWidth;
+	
+	this->numWalls = 0;
 
 	// assume no more than 100 walls
-	wallPoints = new float*[100];
-	numWallPoints = new int[100];
+	this->wallPoints = new double*[100];
+	this->numWallPoints = new int[100];
+
+	this->probeNodes = new Ogre::SceneNode*[numSegs];
+	this->probeMaterials = new Ogre::Material*[numSegs];
+	this->probeEntities = new Ogre::Entity*[numSegs];
+
+	#ifdef _DEBUG
+    mResourcesCfg = "resources_d.cfg";
+    mPluginsCfg = "plugins_d.cfg";
+	#else
+    mResourcesCfg = "resources.cfg";
+    mPluginsCfg = "plugins.cfg";
+	#endif
+
+    bool returnVal = setup();
 
 }
 //-------------------------------------------------------------------------------------
@@ -109,18 +128,23 @@ void ProbeApp::createScene(void)
 
 
 
-	setupMyWorld(Ogre::Quaternion::IDENTITY, Ogre::Vector3::ZERO);
+	Ogre::Quaternion yRot(Ogre::Degree(180.0), Ogre::Vector3::UNIT_Y);
+	Ogre::Vector3 pos(1.65, 0.04, 0.0);
+
+	//setupMyWorld(Ogre::Quaternion::IDENTITY, Ogre::Vector3::ZERO);
+	//setupMyWorld(yRot, pos);
+	buildProbe();
 
 
-	float WLEN2 = 7.0;
-	float wall1[6] = {-14.0, -0.2, -4.0, -0.2, -4.0 + WLEN2*cos(M_PI/3), -0.2 - WLEN2*sin(M_PI/3)};
-	float wall2[6] = {-4.0 + WLEN2*cos(M_PI/3), 0.2 + WLEN2*sin(M_PI/3), -4.0, 0.2 ,-14.0, 0.2};
-	float wall5[4] = {wall2[2*2], wall2[2*2+1], wall1[0], wall1[1]};
+	double WLEN2 = 7.0;
+	double wall1[6] = {-14.0, -0.2, -4.0, -0.2, -4.0 + WLEN2*cos(M_PI/3), -0.2 - WLEN2*sin(M_PI/3)};
+	double wall2[6] = {-4.0 + WLEN2*cos(M_PI/3), 0.2 + WLEN2*sin(M_PI/3), -4.0, 0.2 ,-14.0, 0.2};
+	double wall5[4] = {wall2[2*2], wall2[2*2+1], wall1[0], wall1[1]};
 	//w1 = wall1[2]
 	//w2 = wall2[0]
 
-	float wall3[8] = {wall1[2*2] + 0.4*cos(M_PI/6), wall1[2*2+1] + 0.4*sin(M_PI/6), 0.4*cos(M_PI/6) - 4, 0.0, wall2[0] + 0.4*cos(M_PI/6), wall2[1] - 0.4*sin(M_PI/6), wall2[0], wall2[1]};
-	float wall4[4] = {wall1[2*2], wall1[2*2+1], wall1[2*2] + 0.4*cos(M_PI/3-M_PI/2), wall1[2*2+1] - 0.4*sin(M_PI/3-M_PI/2) };
+	double wall3[8] = {wall1[2*2] + 0.4*cos(M_PI/6), wall1[2*2+1] + 0.4*sin(M_PI/6), 0.4*cos(M_PI/6) - 4, 0.0, wall2[0] + 0.4*cos(M_PI/6), wall2[1] - 0.4*sin(M_PI/6), wall2[0], wall2[1]};
+	double wall4[4] = {wall1[2*2], wall1[2*2+1], wall1[2*2] + 0.4*cos(M_PI/3-M_PI/2), wall1[2*2+1] - 0.4*sin(M_PI/3-M_PI/2) };
 
 	//wall3 = [[w1[0] + 0.4*cos(pi/6), w1[1] + 0.4*sin(pi/6)], [0.4*cos(pi/6) - 4, 0.0], [w2[0] + 0.4*cos(pi/6), w2[1] - 0.4*sin(pi/6)], w2]
 	//wall4 = [w1, [w1[0] + 0.4*cos(pi/3-pi/2), w1[1] - 0.4*sin(pi/3-pi/2)]]
@@ -129,26 +153,34 @@ void ProbeApp::createScene(void)
 	//walls = [wall1, wall2, wall3, wall4, wall5]
 
 
-	//float wall1[4] = {-14.0,-0.2,14.0,-0.2};
-	//float wall2[4] = {14.0,0.2,-14.0,0.2};
+	//double wall1[4] = {-14.0,-0.2,14.0,-0.2};
+	//double wall2[4] = {14.0,0.2,-14.0,0.2};
 
-	addWall(3,wall1);
-	addWall(3,wall2);
-	addWall(2,wall5);
-	addWall(4,wall3);
-	addWall(2,wall4);
+	//addWall(3,wall1);
+	//addWall(3,wall2);
+	//addWall(2,wall5);
+	//addWall(4,wall3);
+	//addWall(2,wall4);
 
-	createWalls();
+	//createWalls();
 
     // Create a SceneNode and attach the Entity to it
     //Ogre::SceneNode* headNode = mSceneMgr->getRootSceneNode()->createChildSceneNode("HeadNode");
     //headNode->attachObject(ogreHead);
 
+	mCamera->setPosition(Ogre::Vector3(pos[0],12.0,pos[2]));
+
+	Ogre::Quaternion oriQuat(Ogre::Radian(-M_PI/2.0), Ogre::Vector3::UNIT_X);
+	mCamera->setOrientation(oriQuat);
+
+
+	mCameraMan->setTopSpeed(8.0);
+
 }
 
-void ProbeApp::addWall(int numPoints, float *points) {
+void ProbeApp::addWall(int numPoints, double *points) {
 
-	this->wallPoints[this->numWalls] = new float[numPoints*2];
+	this->wallPoints[this->numWalls] = new double[numPoints*2];
 	for ( int i = 0 ; i < numPoints ; i++ ) {
 		this->wallPoints[numWalls][2*i] = points[2*i];
 		this->wallPoints[numWalls][2*i+1] = points[2*i+1];
@@ -202,7 +234,7 @@ void ProbeApp::createWalls() {
 		mo1_ext->begin("WallMaterial_Ext", Ogre::RenderOperation::OT_TRIANGLE_LIST);
 		mo1_top->begin("WallMaterial_Top", Ogre::RenderOperation::OT_TRIANGLE_LIST);
 
-		float *currPoints = this->wallPoints[wallNum];
+		double *currPoints = this->wallPoints[wallNum];
 		int numPoints = this->numWallPoints[wallNum];
 
 		// create mesh for top view of wall
@@ -243,8 +275,8 @@ void ProbeApp::createWalls() {
 
 		// build the triangle meshes of the inner and outer wall view
 		for ( int i = 0 ; i < numPoints ; i++ ) {
-			float pX = currPoints[i*2];
-			float pZ = currPoints[i*2+1];
+			double pX = currPoints[i*2];
+			double pZ = currPoints[i*2+1];
 
 			mo1_int->position(pX,0.0,pZ);
 			mo1_ext->position(pX,0.0,pZ);
@@ -283,18 +315,13 @@ void ProbeApp::createWalls() {
 
 }
 
-void ProbeApp::setupMyWorld(Ogre::Quaternion R, Ogre::Vector3 pos) {
-
-	int numSegs = 40;
-	float segLength = 0.15;
-	float segHeight = 0.1;
-	float segWidth = 0.15;
+void ProbeApp::buildProbe() {
 
 	//self.segMaterials = []
 
-	for (int i = 0 ; i < numSegs ; i++ ) {
+	for (int i = 0 ; i < this->numSegs ; i++ ) {
 
-		Ogre::Vector3 worldPose(i*segLength, 0.3, 0.0);
+		Ogre::Vector3 worldPose(i*this->segLength, 0.3, 0.0);
 
 		// Create the visual representation (the Ogre entity and scene node)
 		std::stringstream ss;
@@ -319,7 +346,7 @@ void ProbeApp::setupMyWorld(Ogre::Quaternion R, Ogre::Vector3 pos) {
 		entity->getSubEntity(0)->setMaterialName(name2);
 
 		// Pick a size
-		Ogre::Vector3 size(segLength, segHeight, segWidth);
+		Ogre::Vector3 size(this->segLength, this->segHeight, this->segWidth);
 		node->setScale(size.x,size.y,size.z);
 		
 		//Ogre::Vector3* currPos = self->getWorldPose(i);
@@ -330,10 +357,40 @@ void ProbeApp::setupMyWorld(Ogre::Quaternion R, Ogre::Vector3 pos) {
 		
 		// TODO:  keep pointers to all of these objects 
 		// entities, scene nodes, materials
+		this->probeNodes[i] = node;
 
 	}
 
+}
 
+void ProbeApp::updatePose(double *positions, double *quaternions) {
+
+	for ( int i = 0 ; i < numSegs ; i++ ) {
+		Ogre::Vector3 pos(positions[3*i], positions[3*i+1], positions[3*i+2]);
+		Ogre::Quaternion quat(quaternions[4*i], quaternions[4*i+1], quaternions[4*i+2], quaternions[4*i+3]);
+
+		probeNodes[i]->setPosition(pos);
+		probeNodes[i]->setOrientation(quat);
+
+	}
+
+}
+
+void ProbeApp::updateCamera(double *pos, double *quat) {
+
+	mCamera->setPosition(Ogre::Vector3(pos[0],pos[1],pos[2]));
+
+	Ogre::Quaternion oriQuat(quat[0],quat[1],quat[2],quat[3]);
+	mCamera->setOrientation(oriQuat);
+
+}
+
+void ProbeApp::render() {
+	mRoot->renderOneFrame();
+}
+
+void ProbeApp::shutdown() {
+	destroyScene();
 }
 
 
@@ -354,10 +411,13 @@ extern "C" {
 #endif
     {
         // Create application object
-        ProbeApp app;
+        ProbeApp app(40, 0.15, 0.1, 0.15);
 
         try {
-            app.go();
+            //app.go();
+			//while (1) {
+				app.render();
+			//}
         } catch( Ogre::Exception& e ) {
 #if OGRE_PLATFORM == OGRE_PLATFORM_WIN32
             MessageBox( NULL, e.getFullDescription().c_str(), "An exception has occured!", MB_OK | MB_ICONERROR | MB_TASKMODAL);
@@ -366,6 +426,8 @@ extern "C" {
                 e.getFullDescription().c_str() << std::endl;
 #endif
         }
+	
+		app.shutdown();
 
         return 0;
     }
