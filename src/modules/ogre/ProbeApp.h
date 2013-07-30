@@ -38,6 +38,7 @@ public:
 
 	void render();
 	void shutdown();
+	void saveView(char *name);
 
 protected:
     virtual void createScene(void);

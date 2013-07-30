@@ -113,6 +113,7 @@ def createTest():
 	quat = [0.0, 1.0, 0.0, -1.62920684943e-07]
 	pos = [1.65, 0.04, 0.0]
 	probe = BulletProbe(quat,pos,40,0.15,0.1,0.15,1000.0,1.0)
+	#probe = BulletProbe(quat,pos,40,0.15,0.1,0.15,1000.0,10.0)
 
 	
 	drawThings = DrawThings(probe)
@@ -149,10 +150,39 @@ def runTest(probe, drawThings):
 
 	while True:
 		probe.frameStarted()
+		
+		adjustCamera( probe, drawThings)
+
 		drawThings.updatePosture()
 		drawThings.render()
 
 
+def adjustCamera(probe, drawThings):
+
+	pose = probe.getActualJointPose(9)
+	#pose = self.probe.getActualJointPose(19)
+	xAvg = pose[0]
+	yAvg = pose[1]
+	
+	#prevPose = self.camera.getPosition()
+	#xPrev = prevPose[0] + 1
+	#yPrev = prevPose[2]
+	#zPrev = prevPose[1]
+	
+	#newPose = [xPrev*0.99 + 0.01*xAvg, yPrev*0.99 + 0.01*yAvg, 12]
+	newPose = [xAvg, yAvg, 12]
+
+
+	#self.camera.setPosition(newPose[0]-1,newPose[2],newPose[1])
+
+	#oriQuat = ogre.Quaternion(ogre.Radian(-pi/2.0), ogre.Vector3().UNIT_X)
+	###self.camera.setOrientation(oriQuat)
+	
+	angQuat = [-0.707107, 0.0, 1.0, 0.707107]
+
+	#drawThings.updateCamera([newPose[0]-1,newPose[2],newPose[1]], angQuat)
+	drawThings.updateCamera(newPose, angQuat)
+		
 def startRun():
 	try:
 		" create the robot "

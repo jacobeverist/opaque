@@ -348,14 +348,27 @@ class TestNavigation(SnakeControl):
 			
 			self.restState = deepcopy(probeState)
 			
-			#self.globalState = 6
-			self.globalState = 4
+			self.globalState = 6
+			#self.globalState = 4
 			#self.globalState = 10
 
-			#self.restState = deepcopy(probeState)
-			#self.mapGraph.newNode(self.stepDist, self.travelDir)
-			#self.mapGraph.forceUpdate(False)
+			self.restState = deepcopy(probeState)
+
+			faceDir = True
+			self.mapGraph.newNode(faceDir, self.travelDir)
+			self.mapGraph.forceUpdate(faceDir)
+
+			self.contacts.resetPose(self.mapGraph.currNode.getEstPose())
+			self.lastPose1 = self.contacts.getAverageSegPose(0)
+			self.lastPose2 = self.contacts.getAverageSegPose(39)
+
+			self.isCapture = True
+
+			#faceDir = True
+			#self.mapGraph.newNode(faceDir, self.travelDir)
+			#self.mapGraph.forceUpdate(faceDir)
 			#self.globalState = 6
+
 			self.currPose1 = self.contacts.getAverageSegPose(0)
 
 			print "Start Time:", time.clock()
@@ -660,6 +673,8 @@ class TestNavigation(SnakeControl):
 		for i in range(self.numJoints):
 			self.probe.setJointTorque(i, self.torques[i])
 
+		#print self.probe.getProbeState()['torques']
+		#print self.torques	
 		sys.stdout.flush()
 		
 		#if self.globalTimer % 200 == 0:
@@ -857,6 +872,7 @@ class TestNavigation(SnakeControl):
 				if self.torques[i] == None:
 					self.torques[i] = self.probe.maxTorque
 
+			#print "poke torques:", self.torques
 			#val = self.behavior.getMask()
 			#self.contacts.setMask(val)
 			

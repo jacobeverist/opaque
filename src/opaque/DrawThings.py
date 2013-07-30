@@ -44,6 +44,9 @@ class DrawThings():
 	
 		self.visProbe.updatePose(positions, quaternions)
 
+	def updateCamera(self, pos, angQuat):
+		self.visProbe.updateCamera(pos, angQuat)
+
 	def render(self):
 
 		self.updatePosture()
@@ -230,7 +233,10 @@ class DrawThings():
 	def saveView(self, filename):
 		pass
 
+		self.visProbe.saveView(filename)
 		#if self.renderView != 0:
 			#self.renderView.update()
 		#	self.renderView.writeContentsToFile(filename)
 			
+
+

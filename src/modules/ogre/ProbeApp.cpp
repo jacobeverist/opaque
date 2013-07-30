@@ -378,12 +378,35 @@ void ProbeApp::updatePose(double *positions, double *quaternions) {
 
 void ProbeApp::updateCamera(double *pos, double *quat) {
 
-	mCamera->setPosition(Ogre::Vector3(pos[0],pos[1],pos[2]));
+	double xAvg = pos[0];
+	double yAvg = pos[1];
+	
+	Ogre::Vector3 prevPose = mCamera->getPosition();
+	double xPrev = prevPose[0] + 1;
+	double yPrev = prevPose[2];
+	double zPrev = prevPose[1];
 
-	Ogre::Quaternion oriQuat(quat[0],quat[1],quat[2],quat[3]);
-	mCamera->setOrientation(oriQuat);
+	Ogre::Vector3 newPose;
+	
+	newPose[0] = xPrev*0.99 + 0.01*xAvg;
+	newPose[1] = yPrev*0.99 + 0.01*yAvg;
+	newPose[2] = 12;
 
+
+	mCamera->setPosition(Ogre::Vector3(newPose[0]-1,newPose[2],newPose[1]));
+
+	//mCamera->setPosition(Ogre::Vector3(pos[0],pos[1],pos[2]));
+
+	Ogre::Quaternion newQuat(Ogre::Radian(-M_PI/2.0), Ogre::Vector3::UNIT_X);
+	mCamera->setOrientation(newQuat);
+
+	//std::cout << "camera quaternion: " << newQuat.x << " " << newQuat.y << " " << newQuat.z << " " << newQuat.w << std::endl;
+
+	//Ogre::Quaternion oriQuat(quat[0],quat[1],quat[2],quat[3]);
+	//mCamera->setOrientation(oriQuat);
 }
+
+
 
 void ProbeApp::render() {
 	mRoot->renderOneFrame();
@@ -392,6 +415,12 @@ void ProbeApp::render() {
 void ProbeApp::shutdown() {
 	destroyScene();
 }
+
+void ProbeApp::saveView(char *name) {
+	std::string strName(name);
+	mWindow->writeContentsToFile(strName);
+}
+
 
 
 

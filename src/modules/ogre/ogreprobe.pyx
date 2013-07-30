@@ -1,4 +1,9 @@
+
+#from libcpp.string cimport string
+cimport stdlib
+
 cdef extern from "ProbeApp.h":
+
 	ctypedef struct c_ProbeApp "ProbeApp":
 
 		void addWall(int numPoints, double *points)
@@ -7,6 +12,7 @@ cdef extern from "ProbeApp.h":
 		void updateCamera(double *pos, double *quat)
 		void render()
 		void shutdown()
+		void saveView(char *name)
 
 	c_ProbeApp *new_ProbeApp "new ProbeApp" (int numSegs, double segLength, double segHeight, double segWidth)
 	void del_ProbeApp "delete" (c_ProbeApp *probe)
@@ -36,6 +42,21 @@ cdef class ProbeApp:
 
 	def createWalls(self):
 		self.thisptr.createWalls()
+
+	def saveView(self, name):
+
+		self.thisptr.saveView(name)
+
+		#cdef bytes byte_string = <bytes> name.encode('UTF-8')
+		#cdef char* c_string = byte_string
+		#cdef string cpp_string = c_string
+
+		#cpp_string = name.encode('UTF-8')
+		#self.thisptr.saveView(c_string)
+
+		#stdlib.free(c_string)
+
+		#cdef char c_name[1000]
 
 	def render(self):
 		self.thisptr.render()

@@ -126,7 +126,8 @@ class BulletProbe:
 
 	def frameStarted(self):
 
-		self.timer += 0.001
+		self.timer += 1./60.
+		#self.timer += 0.001
 
 		self.isStateChanged = True
 		self.isJointChanged = True
