@@ -1,6 +1,7 @@
 
 #from libcpp.string cimport string
-cimport stdlib
+#cimport stdlib
+cimport libc.stdlib
 
 cdef extern from "ProbeApp.h":
 

@@ -18,7 +18,8 @@ def doAlpha(aRadius, points):
 	cdef double cRadius = <double> aRadius
 	cdef double *cPoints = <double *>malloc(2 * nPoints * sizeof(double))
 
-	cdef double *cVerts = <double *>malloc(2 * nPoints * sizeof(double))
+
+	cdef double *cVerts = <double *>malloc(2 * 2 * nPoints * sizeof(double))
 	cdef int *cNumVert = <int *>malloc(sizeof(int))
 
 	cNumVert[0] = 0

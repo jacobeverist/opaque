@@ -53,7 +53,15 @@ double BulletSnake::getServoCmd(int i) {
 }
 
 void BulletSnake::setJointTorque(int i, double torque){ 
+
+	if ( i == 2 ) {
+		//printf("Setting joint %d torque from %1.4f", i, joints[i]->getMaxMotorImpulse());
+	}
+	
 	joints[i]->setMaxMotorImpulse(torque);
+	if ( i == 2 ) {
+		//printf(" with value %1.4f to %1.4f\n", torque, joints[i]->getMaxMotorImpulse());
+	}
 }
 
 double BulletSnake::getJointTorque(int i) {
@@ -110,13 +118,22 @@ BulletSnake::~BulletSnake() {
 void BulletSnake::Step() {
 	RunPID();
 
-	dynamicsWorld->stepSimulation(1/60.f,10,1/(4*60.f));
+	//dynamicsWorld->stepSimulation(1/60.f,10,1/(4*60.f));
+	dynamicsWorld->stepSimulation(1/60.f,30,1/(4*60.f));
 }
 
 void BulletSnake::RunPID() {
 
 	for ( int i = 0 ; i < numSegs-1 ; i++ ) {
 		joints[i]->setMotorTarget(targetAngle[i], 0.1);
+		//if ( i == 2 ) {
+		if ( 0 ) {
+			printf("%d joint %1.2f, %1.2f, %1.3f, %1.2f\n", i,
+				targetAngle[i],
+				joints[i]->getHingeAngle(),
+				joints[i]->getMaxMotorImpulse(),
+				joints[i]->getMotorTargetVelosity());
+		}
 		//joints[i]->enableAngularMotor(true, fDesiredAngularVel, m_fMuscleStrength);
 	}
 
@@ -279,7 +296,7 @@ void BulletSnake::createWalls() {
 			mTriMesh->addTriangle(verts[2*i+1],verts[2*i+2],verts[2*i+3]);
 		}
 
-		delete verts;
+		delete [] verts;
 		wallShape[k] = new btBvhTriangleMeshShape(mTriMesh,true);
 
 		// Now use mTriMeshShape as your collision shape.
