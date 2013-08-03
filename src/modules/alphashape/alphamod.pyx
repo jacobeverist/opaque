@@ -19,6 +19,8 @@ def doAlpha(aRadius, points):
 	cdef double *cPoints = <double *>malloc(2 * nPoints * sizeof(double))
 
 
+	# double the length of the input just in case we bring back more vertices
+	# than input points
 	cdef double *cVerts = <double *>malloc(2 * 2 * nPoints * sizeof(double))
 	cdef int *cNumVert = <int *>malloc(sizeof(int))
 
