@@ -6,80 +6,30 @@ import os
 import sys
 from math import *
 from copy import copy
-sys.path.insert(1,"modules/")
-sys.path.insert(1,"modules/nelmin")
-sys.path.insert(1,"modules/bulletprobe")
-sys.path.insert(1,"modules/medialaxis")
-sys.path.insert(1,"modules/alphashape")
-sys.path.insert(1,"modules/ogre")
+
+relPath = os.path.dirname(os.path.realpath(__file__))
+print relPath
+
+sys.path.insert(1,relPath)
+sys.path.insert(1,relPath + "/modules/")
+sys.path.insert(1,relPath + "/modules/nelmin")
+sys.path.insert(1,relPath + "/modules/bulletprobe")
+sys.path.insert(1,relPath + "/modules/medialaxis")
+sys.path.insert(1,relPath + "/modules/alphashape")
+sys.path.insert(1,relPath + "/modules/ogre")
 
 #os.environ['PATH'] = 'c:\\opencv-2.4.6.0\\build\\x86\\vc9\\bin' + ';' + os.environ['PATH']
 #os.environ['PATH'] = os.getcwd() + '\\binaries\\boost_1_53_0\\lib' + ';' + os.environ['PATH']
 
+import argparse
+
+parser = argparse.ArgumentParser(description='DarkMapper Simulator')
+parser.add_argument('--mapfile', type=str, help="text file containing environment map")
+args = parser.parse_args()
+
+
 from bulletsnakeprobe import BulletSnakeProbe
 from ogreprobe import ProbeApp
-
-
-"""
-numSegs = 40
-segLength = 0.15
-segHeight = 0.1
-segWidth = 0.15
-maxTorque = 1000.0
-friction = 1.0
-quat = [0.0, 1.0, 0.0, -1.62920684943e-07]
-pos = [1.65, 0.04, 0.0]
-
-bullet_snake = BulletSnakeProbe(quat, pos, numSegs, segLength, segHeight, segWidth, friction)
-
-
-# Y - junction, test 1 				
-WLEN2 = 7.0
-wall1 = [[-14.0, -0.2], [-4.0, -0.2], [-4.0 + WLEN2*cos(pi/3), -0.2 - WLEN2*sin(pi/3)]]
-wall2 = [[-4.0 + WLEN2*cos(pi/3), 0.2 + WLEN2*sin(pi/3)], [-4.0, 0.2] ,[-14.0, 0.2]]
-wall5 = [wall2[2],wall1[0]]
-w1 = wall1[2]
-w2 = wall2[0]
-
-wall3 = [[w1[0] + 0.4*cos(pi/6), w1[1] + 0.4*sin(pi/6)], [0.4*cos(pi/6) - 4, 0.0], [w2[0] + 0.4*cos(pi/6), w2[1] - 0.4*sin(pi/6)], w2]
-wall4 = [w1, [w1[0] + 0.4*cos(pi/3-pi/2), w1[1] - 0.4*sin(pi/3-pi/2)]]
-
-walls = [wall1, wall2, wall3, wall4, wall5]
-
-for wall in walls:
-	for i in range(len(wall)):
-		p = copy(wall[i])
-		p[0] += 6.0
-		wall[i] = p
-		
-for wall in walls:
-	bullet_snake.addWall(wall)
-
-visProbe = ProbeApp(numSegs, segLength, segHeight, segWidth)
-
-for wall in walls:
-	visProbe.addWall(wall)
-
-visProbe.createWalls()
-
-while True:
-	bullet_snake.frameStarted()
-
-	positions = []
-	quaternions = []
-	for segI in range(numSegs):
-		currPos = bullet_snake.getGlobalPosition(segI)
-		quat_vars = bullet_snake.getGlobalOrientation(segI)
-
-		positions.append(currPos)
-		quaternions.append([quat_vars[3], quat_vars[0], quat_vars[1], quat_vars[2]])
-	
-	visProbe.updatePose(positions, quaternions)
-
-	visProbe.render()
-
-visProbe.shutdown()
-"""
 
 from opaque.robot.QuickProbe import QuickProbe
 from opaque.robot.BulletProbe import BulletProbe
@@ -110,9 +60,17 @@ atexit.register(cleanup)
 def createTest():
 	#probe = QuickProbe(40,0.15,0.05,30.0*2.5)
 
+	numSegs = 40
+	segLength = 0.15
+	segHeight = 0.1
+	segWidth = 0.15
+	maxTorque = 1000.0
+	friction = 1.0
 	quat = [0.0, 1.0, 0.0, -1.62920684943e-07]
 	pos = [1.65, 0.04, 0.0]
-	probe = BulletProbe(quat,pos,40,0.15,0.1,0.15,1000.0,1.0)
+	#pos = [1.35, 0.04, 0.0]
+	probe = BulletProbe(quat, pos, numSegs, segLength, segHeight, segWidth, maxTorque, friction)
+	#probe = BulletProbe(quat,pos,40,0.15,0.1,0.15,1000.0,1.0)
 	#probe = BulletProbe(quat,pos,40,0.15,0.1,0.15,1000.0,10.0)
 
 	
@@ -121,24 +79,22 @@ def createTest():
 	
 	probe.addControl(currControl)
 
-	# Y - junction, test 1 				
-	WLEN2 = 7.0
-	wall1 = [[-14.0, -0.2], [-4.0, -0.2], [-4.0 + WLEN2*cos(pi/3), -0.2 - WLEN2*sin(pi/3)]]
-	wall2 = [[-4.0 + WLEN2*cos(pi/3), 0.2 + WLEN2*sin(pi/3)], [-4.0, 0.2] ,[-14.0, 0.2]]
-	wall5 = [wall2[2],wall1[0]]
-	w1 = wall1[2]
-	w2 = wall2[0]
+	if args.mapfile != None:
+		f = open(args.mapfile, 'r')
+		saveStr = f.read()
+		f.close()
+		exec(saveStr)
+	else:
 
-	wall3 = [[w1[0] + 0.4*cos(pi/6), w1[1] + 0.4*sin(pi/6)], [0.4*cos(pi/6) - 4, 0.0], [w2[0] + 0.4*cos(pi/6), w2[1] - 0.4*sin(pi/6)], w2]
-	wall4 = [w1, [w1[0] + 0.4*cos(pi/3-pi/2), w1[1] - 0.4*sin(pi/3-pi/2)]]
-
-	walls = [wall1, wall2, wall3, wall4, wall5]
-
-	for wall in walls:
-		for i in range(len(wall)):
-			p = copy(wall[i])
-			p[0] += 6.0
-			wall[i] = p
+		# junction test 
+		#targetMapFile = "mapFile0004.txt"
+		targetMapFile = "testData/curveEnv/mapFile0010.txt"
+		#targetMapFile = "mapFile0002.txt"
+		f = open(relPath + "/" + targetMapFile, 'r')
+		str_f = f.read()
+		walls = eval(str_f)
+		wall5 = [walls[0][0], walls[0][-1]]
+		walls.append(wall5)
 	
 	probe.setWalls(walls)
 
