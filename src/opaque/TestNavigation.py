@@ -123,6 +123,9 @@ class TestNavigation(SnakeControl):
 		#inc = 500
 
 		if self.globalTimer % inc == 0:
+
+			self.drawThings.render()
+
 			#print "saving scene%06u.png" % (self.globalTimer/inc)
 			self.drawThings.saveView("scene%06u.png" % (self.globalTimer/inc))
 			

@@ -112,8 +112,7 @@ def runTest(probe, drawThings):
 		
 		adjustCamera( probe, drawThings)
 
-		drawThings.updatePosture()
-		drawThings.render()
+		#drawThings.render()
 
 
 def adjustCamera(probe, drawThings):
