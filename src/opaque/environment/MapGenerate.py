@@ -1818,16 +1818,11 @@ class Corridor:
 		wall1 = []
 		wall2 = []
 
-		for wall in walls:
-			for i in range(len(wall)):
-				p = copy(wall[i])
-				p[0] += 2.0
-				wall[i] = p
-	
 		for p in self.wall1.points:
 			np = copy(p)
 			np[0] += 2.0
 			wall1.append(np)
+
 		for p in self.wall2.points:
 			np = copy(p)
 			np[0] += 2.0
