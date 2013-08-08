@@ -586,6 +586,19 @@ class LocalNode:
 			self.rootPose = originForeProfile.convertLocalOffsetToGlobal(localRootOffset3)
 
 
+		if isnan(self.rootPose[0]) or isnan(self.rootPose[1]) or isnan(self.rootPose[2]): 
+			print "isNaN:  self.rootPose =", self.rootPose
+			print "self.localPosture =", self.localPosture
+			print "originForePose, originBackPose =", originForePose, originBackPose
+			print "originForePosture =", originForePosture
+			print "originBackPosture =", originBackPosture
+			print "newPosture = ", newPosture
+			print "localForePose, localBackPose =", localForePose, localBackPose
+			print "localForePosture =", localForePosture 
+			print "localBackPosture =", localBackPosture
+			print "foreCost, backCost, angle =", foreCost, backCost, angle
+			print "correctedGPACPose = ", correctedGPACPose
+			print "localRootOffset3 = ", localRootOffset3
 
 		self.correctedPosture = []
 		for j in range(self.numSegs-1):
