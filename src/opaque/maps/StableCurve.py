@@ -65,9 +65,14 @@ class StableCurve:
             backArray[0].append(intArray[0][i])
             backArray[1].append(intArray[1][i])
 
-        self.foreSpline = scipy.interpolate.UnivariateSpline(foreArray[0], foreArray[1], s = 2.0)    
-        self.backSpline = scipy.interpolate.UnivariateSpline(backArray[0], backArray[1], s = 2.0)
+        print "foreArray:", foreArray
+        #print "backArray:", backArray
+
+        self.foreSpline = scipy.interpolate.UnivariateSpline(foreArray[0], foreArray[1], s = 2.5)    
+        print "foreSpline =", self.foreSpline
+        self.backSpline = scipy.interpolate.UnivariateSpline(backArray[0], backArray[1], s = 2.5)
         
+        print "backSpline =", self.backSpline
 
     def getKnots(self):
 
@@ -178,7 +183,6 @@ class StableCurve:
 
         knots1 = self.foreSpline.get_knots()
         knots2 = self.backSpline.get_knots()
-
         x1 = linspace(knots1[0],knots1[-1],100)
         y1 = self.foreSpline(x1)
 
@@ -307,6 +311,7 @@ class StableCurve:
     def getPoses(self):
         
         knots1 = self.foreSpline.get_knots()
+        print "knots1:", knots1
         
         xMid1 = (knots1[0] + knots1[1])/2.0
         yMid1 = self.foreSpline(xMid1)
@@ -335,6 +340,7 @@ class StableCurve:
         pose1 = [newPoint1[0], newPoint1[1], angle]
 
         knots2 = self.backSpline.get_knots()
+        print "knots2:", knots2
                  
         xMid2 = (knots2[0] + knots2[1])/2.0
         yMid2 = self.backSpline(xMid2)
