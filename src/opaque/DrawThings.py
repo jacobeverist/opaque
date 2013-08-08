@@ -7,7 +7,7 @@ globalID = 0
 
 class DrawThings():
 	
-	def __init__(self, probe):
+	def __init__(self, probe, hideWindow = False, restoreConfig = False):
 		self.renderView = 0
 		self.probe = probe
 		self.robotParam = probe.robotParam
@@ -29,7 +29,7 @@ class DrawThings():
 		segHeight = self.robotParam['segHeight']
 		segWidth = self.robotParam['segWidth']
 
-		self.visProbe = ogreprobe.ProbeApp(self.numSegs, segLength, segHeight, segWidth)
+		self.visProbe = ogreprobe.ProbeApp(self.numSegs, segLength, segHeight, segWidth, hideWindow, restoreConfig)
 		
 	def updatePosture(self):
 

@@ -20,7 +20,7 @@ This source file is part of the
 #include <sstream>
 
 //-------------------------------------------------------------------------------------
-ProbeApp::ProbeApp(int numSegs, double segLength, double segHeight, double segWidth) {
+ProbeApp::ProbeApp(int numSegs, double segLength, double segHeight, double segWidth, bool hideWindow, bool restoreConfig) {
 
 	this->numSegs = numSegs;
 	this->segLength = segLength;
@@ -36,6 +36,9 @@ ProbeApp::ProbeApp(int numSegs, double segLength, double segHeight, double segWi
 	this->probeNodes = new Ogre::SceneNode*[numSegs];
 	this->probeMaterials = new Ogre::Material*[numSegs];
 	this->probeEntities = new Ogre::Entity*[numSegs];
+
+	this->mHideWindow = hideWindow;
+	this->mRestoreConfig = restoreConfig;
 
 	#ifdef _DEBUG
     mResourcesCfg = "resources_d.cfg";
@@ -440,7 +443,7 @@ extern "C" {
 #endif
     {
         // Create application object
-        ProbeApp app(40, 0.15, 0.1, 0.15);
+        ProbeApp app(40, 0.15, 0.1, 0.15, false, false);
 
         try {
             //app.go();

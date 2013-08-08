@@ -2,6 +2,7 @@
 #from libcpp.string cimport string
 #cimport stdlib
 cimport libc.stdlib
+from libcpp cimport bool
 
 cdef extern from "ProbeApp.h":
 
@@ -15,7 +16,7 @@ cdef extern from "ProbeApp.h":
 		void shutdown()
 		void saveView(char *name)
 
-	c_ProbeApp *new_ProbeApp "new ProbeApp" (int numSegs, double segLength, double segHeight, double segWidth)
+	c_ProbeApp *new_ProbeApp "new ProbeApp" (int numSegs, double segLength, double segHeight, double segWidth, bool hideWindow, bool restoreConfig)
 	void del_ProbeApp "delete" (c_ProbeApp *probe)
 
 cdef class ProbeApp:
@@ -23,8 +24,8 @@ cdef class ProbeApp:
 	cdef c_ProbeApp *thisptr      # hold a C++ instance which we're wrapping
 	cdef int numSegments
 
-	def __cinit__(self, int numSegs, double segLength, double segHeight, double segWidth):
-		self.thisptr = new_ProbeApp(numSegs, segLength, segHeight, segWidth)
+	def __cinit__(self, int numSegs, double segLength, double segHeight, double segWidth, bool hideWindow, bool restoreConfig):
+		self.thisptr = new_ProbeApp(numSegs, segLength, segHeight, segWidth, hideWindow, restoreConfig)
 		
 		self.numSegments = numSegs
 

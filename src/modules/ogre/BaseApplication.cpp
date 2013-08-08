@@ -29,7 +29,9 @@ BaseApplication::BaseApplication(void)
     mShutDown(false),
     mInputManager(0),
     mMouse(0),
-    mKeyboard(0)
+    mKeyboard(0),
+	mRestoreConfig(false),
+	mHideWindow(false)
 {
 }
 
@@ -50,12 +52,33 @@ bool BaseApplication::configure(void)
     // Show the configuration dialog and initialise the system
     // You can skip this and use root.restoreConfig() to load configuration
     // settings if you were sure there are valid ones saved in ogre.cfg
+
+	bool result = false;
+	if (mRestoreConfig) {
+		result = mRoot->restoreConfig();
+	}
+	else {
+		result = mRoot->showConfigDialog();
+	}
+
     //if(mRoot->showConfigDialog())
-    if(mRoot->restoreConfig())
+    //if(mRoot->restoreConfig())
+	if(result)
     {
         // If returned true, user clicked OK so initialise
         // Here we choose to let the system create a default rendering window by passing 'true'
-        mWindow = mRoot->initialise(true, "Probe Window");
+        mRoot->initialise(false, "Probe Window");
+		
+		if ( mHideWindow ) {
+			Ogre::NameValuePairList opts;
+			opts["hidden"] = "true";
+			mWindow = mRoot->createRenderWindow("Probe Window", 640, 480, false, &opts);
+		}
+		else {
+			mWindow = mRoot->createRenderWindow("Probe Window", 640, 480, false);
+		}
+
+		//mWindow->setHidden(true);
 
         return true;
     }
@@ -101,6 +124,7 @@ void BaseApplication::createFrameListener(void)
     mKeyboard = static_cast<OIS::Keyboard*>(mInputManager->createInputObject( OIS::OISKeyboard, true ));
     mMouse = static_cast<OIS::Mouse*>(mInputManager->createInputObject( OIS::OISMouse, true ));
 
+	/*
     mMouse->setEventCallback(this);
     mKeyboard->setEventCallback(this);
 
@@ -109,6 +133,7 @@ void BaseApplication::createFrameListener(void)
 
     //Register as a Window listener
     Ogre::WindowEventUtilities::addWindowEventListener(mWindow, this);
+	*/
 
     //mTrayMgr = new OgreBites::SdkTrayManager("InterfaceName", mWindow, mMouse, this);
     //mTrayMgr->showFrameStats(OgreBites::TL_BOTTOMLEFT);

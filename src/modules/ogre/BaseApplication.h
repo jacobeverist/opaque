@@ -86,6 +86,9 @@ protected:
     bool mCursorWasVisible;                    // was cursor visible before dialog appeared
     bool mShutDown;
 
+	bool mRestoreConfig;
+	bool mHideWindow;
+
     //OIS Input devices
     OIS::InputManager* mInputManager;
     OIS::Mouse*    mMouse;

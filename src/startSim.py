@@ -25,7 +25,10 @@ import argparse
 
 parser = argparse.ArgumentParser(description='DarkMapper Simulator')
 parser.add_argument('--mapfile', type=str, help="text file containing environment map")
+parser.add_argument('--restoreConfig', type=bool, default=False, help="restore ogre config from file instead of diplaying dialog")
+parser.add_argument('--hideWindow', type=bool, default=False, help="hide Ogre window")
 args = parser.parse_args()
+
 
 
 from bulletsnakeprobe import BulletSnakeProbe
@@ -74,7 +77,7 @@ def createTest():
 	#probe = BulletProbe(quat,pos,40,0.15,0.1,0.15,1000.0,10.0)
 
 	
-	drawThings = DrawThings(probe)
+	drawThings = DrawThings(probe, hideWindow = args.hideWindow, restoreConfig = args.restoreConfig)
 	currControl = TestNavigation(probe, drawThings)
 	
 	probe.addControl(currControl)

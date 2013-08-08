@@ -22,7 +22,7 @@ This source file is part of the
 class ProbeApp : public BaseApplication
 {
 public:
-    ProbeApp(int numSegs, double segLength, double segHeight, double segWidth);
+    ProbeApp(int numSegs, double segLength, double segHeight, double segWidth, bool hideWindow, bool restoreConfig);
     virtual ~ProbeApp(void);
 
 	void addWall(int numPoints, double *points);
