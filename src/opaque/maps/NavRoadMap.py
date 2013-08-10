@@ -33,7 +33,8 @@ class NavRoadMap(Map):
 		nodeCount += 1
 		
 	def __del__(self):
-		self.clearDraw()
+		pass
+		#self.clearDraw()
 
 	def clearDraw(self):
 
@@ -56,7 +57,7 @@ class NavRoadMap(Map):
 					
 	def draw(self):
 		
-		self.clearDraw()
+		#self.clearDraw()
 
 		if self.currNode != 0:
 			pose = Pose(self.currNode.getEstPose())
