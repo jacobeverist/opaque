@@ -91,7 +91,7 @@ class TestNavigation(SnakeControl):
 		self.distCount = 0
 		self.targetReached = False
 		self.isCollided = False
-		
+		self.collisionCount = 0		
 		
 		self.isAnchored = False
 
@@ -528,21 +528,38 @@ class TestNavigation(SnakeControl):
 					
 					#if foreAvg >= 1.4:
 					if foreAvg >= 1.1:
-						self.globalState = 10
-						self.isCollided = True
+						if self.collisionCount >= 2:
+							self.globalState = 10
+							self.isCollided = True
+							self.collisionCount = 0		
+						else:
+							if self.collisionCount == 0:
+								self.inversion *= -1
+							self.globalState = 4
+							self.collisionCount += 1		
 					else:
 						self.globalState = 4
+						self.collisionCount = 0		
 
 				else:
 
 					#if backAvg >= 1.4:
 					if backAvg >= 1.1:
-						self.globalState = 10
-						self.isCollided = True
+						if self.collisionCount >= 2:
+							self.globalState = 10
+							self.isCollided = True
+							self.collisionCount = 0		
+						else:
+							if self.collisionCount == 0:
+								self.inversion *= -1
+							self.globalState = 4
+							self.collisionCount += 1		
+							
 					else:
 						self.globalState = 4
+						self.collisionCount = 0		
 					
-
+				print "collisionCount =", self.collisionCount, self.isCollided, self.globalState
 				#self.globalState = 10
 					
 				#if self.mapGraph.numNodes > 26:
