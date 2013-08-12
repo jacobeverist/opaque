@@ -119,10 +119,10 @@ void BaseApplication::createFrameListener(void)
     windowHndStr << windowHnd;
     pl.insert(std::make_pair(std::string("WINDOW"), windowHndStr.str()));
 
-    mInputManager = OIS::InputManager::createInputSystem( pl );
+    //mInputManager = OIS::InputManager::createInputSystem( pl );
 
-    mKeyboard = static_cast<OIS::Keyboard*>(mInputManager->createInputObject( OIS::OISKeyboard, true ));
-    mMouse = static_cast<OIS::Mouse*>(mInputManager->createInputObject( OIS::OISMouse, true ));
+    //mKeyboard = static_cast<OIS::Keyboard*>(mInputManager->createInputObject( OIS::OISKeyboard, true ));
+    //mMouse = static_cast<OIS::Mouse*>(mInputManager->createInputObject( OIS::OISMouse, true ));
 
 	/*
     mMouse->setEventCallback(this);
@@ -270,8 +270,8 @@ bool BaseApplication::frameRenderingQueued(const Ogre::FrameEvent& evt)
     //    return false;
 
     //Need to capture/update each device
-    mKeyboard->capture();
-    mMouse->capture();
+    //mKeyboard->capture();
+    //mMouse->capture();
 
     //mTrayMgr->frameRenderingQueued(evt);
 
@@ -340,9 +340,9 @@ void BaseApplication::windowResized(Ogre::RenderWindow* rw)
     int left, top;
     rw->getMetrics(width, height, depth, left, top);
 
-    const OIS::MouseState &ms = mMouse->getMouseState();
-    ms.width = width;
-    ms.height = height;
+    //const OIS::MouseState &ms = mMouse->getMouseState();
+    //ms.width = width;
+    //ms.height = height;
 }
 
 //Unattach OIS before window shutdown (very important under Linux)
@@ -351,13 +351,15 @@ void BaseApplication::windowClosed(Ogre::RenderWindow* rw)
     //Only close for window that created OIS (the main window in these demos)
     if( rw == mWindow )
     {
+		/*
         if( mInputManager )
         {
-            mInputManager->destroyInputObject( mMouse );
-            mInputManager->destroyInputObject( mKeyboard );
+            //mInputManager->destroyInputObject( mMouse );
+            //mInputManager->destroyInputObject( mKeyboard );
 
-            OIS::InputManager::destroyInputSystem(mInputManager);
-            mInputManager = 0;
+            //OIS::InputManager::destroyInputSystem(mInputManager);
+            //mInputManager = 0;
         }
+		*/
     }
 }
