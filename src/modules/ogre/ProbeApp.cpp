@@ -256,12 +256,19 @@ void ProbeApp::createWalls() {
 
 		}
 
+		std::cout << "numPoints = " << numPoints << " " << 4*numPoints << std::endl;
 		// create triangles out of vertices
 		for ( int i = 0 ; i < numPoints-1 ; i++ ) {
+
 			mo1_top->triangle(4*i+2, 4*i+1, 4*i);
 			mo1_top->triangle(4*i+1, 4*i+2, 4*i+3);
-			if (i < numPoints-2)
-				mo1_top->triangle(4*i+2, 4*i+5, 4*i+3);
+
+			std::cout << 4*i+2 << " " << 4*i+1 << " " << 4*i << std::endl;
+			std::cout << 4*i+1 << " " << 4*i+2 << " " << 4*i+3 << std::endl;
+
+			//if (i < numPoints-2)
+			//	std::cout << 4*i+2 << " " << 4*i+5 << " " << 4*i+3 << std::endl;
+			//	mo1_top->triangle(4*i+2, 4*i+5, 4*i+3);
 		}
 	
 		// end the number of vertices
