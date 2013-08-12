@@ -178,6 +178,314 @@ def closestSegPoint(seg, tPoint):
 		raise
 
 
+class MapMaker:
+
+	def __init__(self, entr_len, pipe_width):
+	
+		self.activeSegments = {}
+		self.doneSegments = {}
+
+		self.entrLen = entr_len
+		self.pipeWidth = pipe_width
+		self.wallSoup = []
+		self.segCount = 0
+
+		p1 = [0.0,-self.pipeWidth/2]
+		p2 = [0.0,self.pipeWidth/2]
+
+		self.wallSoup.append([p1,p2])
+
+		self.walls = []
+		self.walls.append([p1,p2])
+
+		#self.walls = {}
+		#self.walls[-1] = [p1,p2]
+
+		currAng = 0.0
+
+		# [wallEnd1, wallEnd2, wallAngle]
+		self.addSeg(p1,p2,currAng)
+
+		self.addStraight(0,entr_len)
+
+	def done(self):
+		for k, v in self.activeSegments.iteritems():
+			self.delSeg(k)
+
+
+	def getSegs(self):
+		segIDs = []
+		for k, v in self.activeSegments.iteritems():
+			segIDs.append(k)
+
+		return segIDs
+			
+	def addLeftWall(self, segNum, p):
+		self.activeSegments[segNum][3].append(p)
+
+	def addRightWall(self, segNum, p):
+		self.activeSegments[segNum][4].append(p)
+
+	def updateSeg(self, segNum, p1, p2, currAng):
+		self.activeSegments[segNum][0] = p1
+		self.activeSegments[segNum][1] = p2
+		self.activeSegments[segNum][2] = currAng
+
+	def addSeg(self, p1, p2, currAng):
+
+		segNum = self.segCount
+		self.activeSegments[segNum] = [p1, p2, currAng, [p1], [p2]]
+		self.segCount += 1
+	
+		return segNum
+
+	def delSeg(self, segNum):
+		self.doneSegments[segNum] = self.activeSegments[segNum]
+		del self.activeSegments[segNum]
+
+		self.walls.append(self.doneSegments[segNum][3])
+		self.walls.append(self.doneSegments[segNum][4])
+
+	def addCap(self, segNum):
+
+		p1, p2, currAng, wallL, wallR = self.activeSegments[segNum]
+
+		wall = [p1, p2]
+		self.addLeftWall(segNum, p2)
+		self.wallSoup.append(wall)
+
+		self.delSeg(segNum)
+
+	def addSymJunction(self, segNum, angle):
+
+		turnAngleA = angle
+		turnAngleB = -angle
+
+		p1, p2, currAng, wallL, wallR = self.activeSegments[segNum]
+
+		#print "addSymJunction(", p1, p2, currAng, angle
+
+		" center line point between p1 and p2 "
+		pC = [(p2[0]+p1[0])/2.0, (p2[1]+p1[1])/2.0]
+		angC = currAng
+
+
+		wallA1 = []
+		wallA2 = []
+
+		wallB1 = []
+		wallB2 = []
+
+		" SIDE A "
+
+		" turnAngleA "
+		currAngA = currAng
+	
+		" angle of right triangle at the junction "
+		pivotAngle = (pi - turnAngleA)/2.0
+
+		" hypotenuse and x side "
+		hyp = self.pipeWidth / sin(pivotAngle)
+		x = hyp * cos(pivotAngle)
+		
+		" compensating distance of one side "
+		newP1 = [p1[0] + x*cos(currAngA), p1[1] + x*sin(currAngA)]
+
+		currAngA += turnAngleA
+
+		" side continued in junction direction "
+		newP1 = [newP1[0] + x*cos(currAngA), newP1[1] + x*sin(currAngA)]
+
+		" two simultaneous equations to find opposing corner point and angle "
+		" C is centerline vector and Q is side point and vector "
+		pQ = newP1
+		angQ = currAngA
+		Q = (pC[1] + tan(angC) * (pQ[0]-pC[0]) - pQ[1]) / ( sin(angQ) - cos(angQ) * tan(angC) )
+
+		newPX1 = [newP1[0] + Q*cos(currAngA), newP1[1] + Q*sin(currAngA)]
+
+		wallA1.append(newPX1)
+		wallA2.append(p2)
+
+		if angle <= pi/3:
+
+			newPA2 = [newPX1[0] + self.pipeWidth*cos(currAngA+pi/2), newPX1[1] + self.pipeWidth*sin(currAngA+pi/2)]
+			wallA2.append(newPA2)
+
+			self.addRightWall(segNum, newPA2)
+			self.wallSoup.append(wallA2)
+		
+			segA = self.addSeg(newPX1,newPA2, currAngA)
+
+		else:
+			newPA1 = [p2[0] + self.pipeWidth*cos(currAngA-pi/2), p2[1] + self.pipeWidth*sin(currAngA-pi/2)]
+			wallA1.append(newPA1)
+
+			self.addLeftWall(segNum, newPA1)
+			self.wallSoup.append(wallA1)
+		
+			segA = self.addSeg(newPA1,p2, currAngA)
+
+		"  SIDE B "
+
+		" turnAngleB "
+		currAngB = currAng
+
+		pivotAngle = (pi + turnAngleB)/2.0
+		
+		hyp = self.pipeWidth / sin(pivotAngle)
+		x = hyp * cos(pivotAngle)
+		
+		newP2 = [p2[0] + x*cos(currAngB), p2[1] + x*sin(currAngB)]
+
+		currAngB += turnAngleB
+
+		newP2 = [newP2[0] + x*cos(currAngB), newP2[1] + x*sin(currAngB)]
+
+		pQ = newP2
+		angQ = currAngB
+		Q = (pC[1] + tan(angC) * (pQ[0]-pC[0]) - pQ[1]) / ( sin(angQ) - cos(angQ) * tan(angC) )
+
+		newPX2 = [newP1[0] + Q*cos(currAngA), newP1[1] + Q*sin(currAngA)]
+
+		wallB1.append(p1)
+		wallB2.append(newPX2)
+
+		#newPB1 = [newPX2[0] + self.pipeWidth*cos(currAngB-pi/2), newPX2[1] + self.pipeWidth*sin(currAngB-pi/2)]
+		#wallB1.append(newPB1)
+
+		#self.wallSoup.append(wallB1)
+		#segB = self.addSeg(newPB1,newPX2, currAngB)
+
+		if angle <= pi/3:
+
+			newPB1 = [newPX2[0] + self.pipeWidth*cos(currAngB-pi/2), newPX2[1] + self.pipeWidth*sin(currAngB-pi/2)]
+			wallB1.append(newPB1)
+
+			self.addLeftWall(segNum, newPB1)
+			self.wallSoup.append(wallB1)
+
+			segB = self.addSeg(newPB1,newPX2, currAngB)
+
+		else:
+			newPB2 = [p1[0] + self.pipeWidth*cos(currAngB+pi/2), p1[1] + self.pipeWidth*sin(currAngB+pi/2)]
+			wallB2.append(newPB2)
+
+			self.addRightWall(segNum, newPB2)
+			self.wallSoup.append(wallB2)
+
+			segB = self.addSeg(p1,newPB2, currAngB)
+
+
+
+		self.delSeg(segNum)
+
+		#self.activeSegments[segNum] = [wall1[-1], wall2[-1], currAng]
+
+		#if len(wall1) > 1:
+		#	self.wallSoup.append(wall1)
+		#if len(wall2) > 1:
+		#	self.wallSoup.append(wall2)
+
+		return segA, segB
+
+	def addTurn(self, segNum, turnAngle, ):
+
+		p1, p2, currAng, wallL, wallR = self.activeSegments[segNum]
+
+		#print "addTurn(", p1, p2, currAng, turnAngle
+
+		wall1 = [p1]
+		wall2 = [p2]
+
+		if turnAngle > 0.0:	
+			pivotAngle = (pi - turnAngle)/2.0
+
+			hyp = self.pipeWidth / sin(pivotAngle)
+			x = hyp * cos(pivotAngle)
+			
+			newP1 = [wall1[-1][0] + x*cos(currAng), wall1[-1][1] + x*sin(currAng)]
+			self.addLeftWall(segNum, newP1)
+			wall1.append(newP1)
+
+
+			currAng += turnAngle
+
+			newP1 = [wall1[-1][0] + x*cos(currAng), wall1[-1][1] + x*sin(currAng)]
+			self.addLeftWall(segNum, newP1)
+			wall1.append(newP1)
+
+		else:
+			pivotAngle = (pi + turnAngle)/2.0
+			
+			hyp = self.pipeWidth / sin(pivotAngle)
+			x = hyp * cos(pivotAngle)
+			
+			newP2 = [wall2[-1][0] + x*cos(currAng), wall2[-1][1] + x*sin(currAng)]
+			self.addRightWall(segNum, newP2)
+			wall2.append(newP2)
+
+			currAng += turnAngle
+
+			newP2 = [wall2[-1][0] + x*cos(currAng), wall2[-1][1] + x*sin(currAng)]
+			self.addRightWall(segNum, newP2)
+			wall2.append(newP2)
+
+		#self.activeSegments[segNum] = [wall1[-1], wall2[-1], currAng]
+		self.updateSeg(segNum, wall1[-1], wall2[-1], currAng)
+
+		if len(wall1) > 1:
+			self.wallSoup.append(wall1)
+		if len(wall2) > 1:
+			self.wallSoup.append(wall2)
+
+
+	def addStraight(self, segNum, pipeLen):
+		
+		p1, p2, currAng, wallL, wallR = self.activeSegments[segNum]
+
+		#print "addStraight(", segNum, p1, p2, currAng, pipeLen
+
+		wall1 = [p1]
+		wall2 = [p2]
+
+
+		newP1 = [p1[0] + pipeLen*cos(currAng), p1[1] + pipeLen*sin(currAng)]
+		newP2 = [p2[0] + pipeLen*cos(currAng), p2[1] + pipeLen*sin(currAng)]
+
+		self.addLeftWall(segNum, newP1)
+		self.addRightWall(segNum, newP2)
+		wall1.append(newP1)
+		wall2.append(newP2)
+
+		#self.activeSegments[segNum] = [newP1, newP2, currAng]
+		self.updateSeg(segNum, newP1, newP2, currAng)
+
+		self.wallSoup.append(wall1)
+		self.wallSoup.append(wall2)
+
+	def draw(self):
+
+		print "walls =", repr(self.walls)
+
+		pylab.clf()
+		
+
+		for wall in self.walls:
+			xP = []
+			yP = []
+			for p in wall:
+				xP.append(p[0])
+				yP.append(p[1])	
+
+			pylab.plot(xP,yP, color='k')
+		
+		pylab.xlim(-2,18)
+		pylab.ylim(-10,10)
+		pylab.axis('equal')
+		pylab.show()
+
+
 class CrossJunction:
 	
 	def __init__(self, pipe_len, entr_len, pipe_width, turn_angle):
