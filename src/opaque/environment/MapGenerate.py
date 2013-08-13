@@ -209,7 +209,10 @@ class MapMaker:
 		self.addStraight(0,entr_len)
 
 	def done(self):
+		toDel = []
 		for k, v in self.activeSegments.iteritems():
+			toDel.append(k)
+		for k in toDel:
 			self.delSeg(k)
 
 
@@ -318,13 +321,19 @@ class MapMaker:
 			segA = self.addSeg(newPX1,newPA2, currAngA)
 
 		else:
+
 			newPA1 = [p2[0] + self.pipeWidth*cos(currAngA-pi/2), p2[1] + self.pipeWidth*sin(currAngA-pi/2)]
 			wallA1.append(newPA1)
 
-			self.addLeftWall(segNum, newPA1)
+			#self.addLeftWall(segNum, newPA1)
 			self.wallSoup.append(wallA1)
 		
-			segA = self.addSeg(newPA1,p2, currAngA)
+			segA = self.addSeg(newPX1,p2, currAngA)
+			#segA = self.addSeg(newPA1,p2, currAngA)
+
+			self.addLeftWall(segA, newPA1)
+
+			self.updateSeg(segA, newPA1, p2, currAngA)
 
 		"  SIDE B "
 
@@ -371,11 +380,15 @@ class MapMaker:
 			newPB2 = [p1[0] + self.pipeWidth*cos(currAngB+pi/2), p1[1] + self.pipeWidth*sin(currAngB+pi/2)]
 			wallB2.append(newPB2)
 
-			self.addRightWall(segNum, newPB2)
+			#self.addRightWall(segNum, newPB2)
 			self.wallSoup.append(wallB2)
 
-			segB = self.addSeg(p1,newPB2, currAngB)
+			#segB = self.addSeg(p1,newPB2, currAngB)
+			segB = self.addSeg(p1,newPX2, currAngB)
 
+			self.addRightWall(segB, newPB2)
+
+			self.updateSeg(segB, p1, newPB2, currAngB)
 
 
 		self.delSeg(segNum)
@@ -471,7 +484,8 @@ class MapMaker:
 		pylab.clf()
 		
 
-		for wall in self.walls:
+		#for wall in self.walls:
+		for wall in self.wallSoup:
 			xP = []
 			yP = []
 			for p in wall:
