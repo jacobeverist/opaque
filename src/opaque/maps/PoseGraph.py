@@ -2493,12 +2493,22 @@ class PoseGraph:
 				#self.makeNodePathConsistent(nodeID1, nodeID2, orderedPathIDs1, orderedPathIDs2)
 	
 	
-				self.consistentFit(nodeID1,  self.nodeHash[nodeID1].getGlobalGPACPose(), numGuesses = 11)
+				try:
+					self.consistentFit(nodeID1,  self.nodeHash[nodeID1].getGlobalGPACPose(), numGuesses = 11)
+				except IndexError:
+					print "failed to consistentFit node", nodeID1
+					pass
+					
 				self.drawConstraints(self.statePlotCount)
 				self.statePlotCount += 1
 				self.drawPathAndHull()
 
-				self.consistentFit(nodeID2,  self.nodeHash[nodeID2].getGlobalGPACPose(), numGuesses = 11)
+				try:
+					self.consistentFit(nodeID2,  self.nodeHash[nodeID2].getGlobalGPACPose(), numGuesses = 11)
+				except IndexError:
+					print "failed to consistentFit node", nodeID2
+					pass
+
 				self.drawConstraints(self.statePlotCount)
 				self.statePlotCount += 1
 				self.drawPathAndHull()
@@ -3819,7 +3829,11 @@ class PoseGraph:
 		
 
 				" exclusion not required since paths are siblings "
-				self.consistentFit(nodeID, estPose)
+				try:
+					self.consistentFit(nodeID, estPose)
+				except IndexError:
+					print "failed to consistentFit node", nodeID
+					pass
 				#self.consistentFit(nodeID, estPose, excludePathIDs = [pathID2])
 		
 				#self.fitToSplices(nodeID, splicedPaths1, estPose, estPose)
@@ -4009,7 +4023,11 @@ class PoseGraph:
 					#self.fitToSplices(nodeID, splicedPaths1, globalPoint1, globalPoint1)
 					#self.fitToSplices(nodeID, pathSplices, globalPoint1, globalPoint1)
 
-					self.consistentFit(nodeID, self.nodeHash[nodeID].getGlobalGPACPose(), excludePathIDs = [lessID])
+					try:
+						self.consistentFit(nodeID, self.nodeHash[nodeID].getGlobalGPACPose(), excludePathIDs = [lessID])
+					except IndexError:
+						print "failed to consistentFit node", nodeID
+						pass
 
 					self.drawConstraints(self.statePlotCount)
 					self.statePlotCount += 1

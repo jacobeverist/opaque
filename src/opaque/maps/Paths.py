@@ -18,6 +18,7 @@ import numpy
 from operator import itemgetter
 import hashlib
 from Splices import batchGlobalMultiFit, getMultiDeparturePoint, orientPath, getTipAngles
+import traceback
 
 import alphamod
 
@@ -144,6 +145,19 @@ def computeHullAxis(nodeID, node2, tailCutOff = False):
     
     return hull2, medial2
 
+
+
+def printStack():
+
+	#traceback.print_stack()
+	flist = traceback.format_stack()
+	flist = flist[:-1]
+	
+	printStr = ""
+	for line in flist:
+		printStr += line
+		
+	print printStr
 
 
 
@@ -5070,7 +5084,12 @@ class Paths:
         forePathAngle = pathPoints1[forePathIndex][2]
         forePathAngle = normalizeAngle(forePathAngle + pi)
         
-        newFrontDepI = 4
+        #newFrontDepI = 4
+
+        newFrontDepI = frontDepI - 40
+        if newFrontDepI < 4:
+            newFrontDepI = 4
+
         while fabs(diffAngle(normalizeAngle(pathPoints2[newFrontDepI][2]+pi), forePathAngle)) > pi/3.0:
             
             if newFrontDepI < frontDepI:
@@ -5079,9 +5098,15 @@ class Paths:
                 break
 
 
+		"""
+        newFrontDepI = frontAngleRefI
+        while fabs(diffAngle(normalizeAngle(pathPoints2[newFrontDepI][2]+pi), forePathAngle)) < pi/3.0:
+            newFrontDepI -= 1
 
-
-
+            if newFrontDepI < 0:
+                newFrontDepI = frontDepI
+                break
+		"""
 
 
         " FIXME:  index out of bounds case "
@@ -5116,7 +5141,14 @@ class Paths:
         backPathIndex = indices[backAngleRefI]
         backPathAngle = pathPoints1[backPathIndex][2]
         
-        newBackDepI = len(distances)-5
+
+
+        #newBackDepI = len(distances)-5
+
+        newBackDepI = backDepI + 40
+        if newBackDepI > len(distances)-5:
+            newBackDepI = len(distances)-5
+
         while fabs(diffAngle(pathPoints2[newBackDepI][2], backPathAngle)) > pi/3.0:
             
             if newBackDepI > backDepI:
@@ -5124,8 +5156,39 @@ class Paths:
             else:
                 break        
 
+		"""
+        newBackDepI = backAngleRefI
+        while fabs(diffAngle(normalizeAngle(pathPoints2[newBackDepI][2]), backPathAngle)) < pi/3.0:
+            newBackDepI += 1
+
+            if newBackDepI > len(distances)-1:
+                newBackDepI = backDepI
+                break
+		"""
+
+        frontDiffAngles = []
+        for k in range(len(pathPoints2)):
+            if k == newFrontDepI:
+                frontDiffAngles.append(None)
+            else:
+                frontDiffAngles.append(fabs(diffAngle(normalizeAngle(pathPoints2[k][2]+pi), forePathAngle)))
+
+        backDiffAngles = []
+        for k in range(len(pathPoints2)):
+            if k == newBackDepI:
+                backDiffAngles.append(None)
+            else:
+                backDiffAngles.append(fabs(diffAngle(normalizeAngle(pathPoints2[k][2]), backPathAngle)))
 
 
+        print "frontDepI, backDepI:", frontDepI, backDepI
+        print "frontAngleRefI, backAngleRefI:", frontAngleRefI, backAngleRefI
+        print "forePathAngle, backPathAngle:", forePathAngle, backPathAngle
+        print "newFrontDepI, newBackDepI:", newFrontDepI, newBackDepI
+        print "foreDiff, backDiff:", diffAngle(normalizeAngle(pathPoints2[newFrontDepI][2]+pi), forePathAngle), diffAngle(normalizeAngle(pathPoints2[newBackDepI][2]), backPathAngle)
+
+        print "frontDiffAngles:", frontDiffAngles
+        print "backDiffAngles:", backDiffAngles
 
 
         print "lengths of parent and child paths:", len(pathPoints1), len(pathPoints2)
@@ -5207,108 +5270,6 @@ class Paths:
             print "no departures found"
             raise
         
-        """
-        term0 = path2[0]
-        termN = path2[-1]
-        
-        " smallest distance is the terminal point "
-        dist0_1 = sqrt((term0[0]-secP1[0])**2 + (term0[1]-secP1[1])**2)
-        distN_1 = sqrt((termN[0]-secP1[0])**2 + (termN[1]-secP1[1])**2)
-        dist0_2 = sqrt((term0[0]-secP2[0])**2 + (term0[1]-secP2[1])**2)
-        distN_2 = sqrt((termN[0]-secP2[0])**2 + (termN[1]-secP2[1])**2)
-        print "terminal distances:", dist0_1, distN_1, dist0_2, distN_2
-        
-        distList = [dist0_1, distN_1, dist0_2, distN_2]
-        
-        minI = -1
-        minDist = 1e100
-        for i in range(len(distList)):
-            if distList[i] < minDist:
-                minDist = distList[i]
-                minI = i
-        
-        
-        print "len(path1):", len(path1)
-        print "len(path2):", len(path2)
-        print "juncI:", juncI
-
-        if minI == 0:
-            "secP1 is terminal 0"
-            index = juncI-10
-            #index = juncI
-            if index < 1:
-                index = 1
-            
-            newPath2 = path2[:index+1]
-            newPath2.reverse()
-            
-        elif minI == 1:
-            "secP1 is terminal N"
-            index = juncI+10
-            #index = juncI
-            if index >= len(path2)-1:
-                
-                " ensure at least 2 elements in path "
-                index = len(path2)-2
-
-            newPath2 = path2[index:]
-
-        elif minI == 2:
-            "secP2 is terminal 0"
-            index = juncI-10
-            #index = juncI
-            if index < 1:
-                index = 1
-
-            newPath2 = path2[:index+1]
-            newPath2.reverse()
-            
-        elif minI == 3:
-            "secP2 is terminal N"
-            index = juncI+10
-            #index = juncI
-            if index >= len(path2)-1:
-                " ensure at least 2 elements in path "
-                index = len(path2)-2
-
-            newPath2 = path2[index:]
-        
-        else:
-            print "no terminal found"
-            raise
-        """
-        
-        """
-        " extrapolate newPath2 to intersect the parent path "  
-        if minI_1 > minI_2:
-            path2[minI_2:minI_1+1]
-        else:
-            path2[minI_1:minI_2+1]
-        
-        
-        if startI == 0:
-            newPath2 = path2[startI:endI+1] + [junctionPoint]
-            newPath2.reverse()
-        else:
-            newPath2 = [junctionPoint] + path2[startI:endI+1]
-            
-
-        print "Sums:", sum1, sum2
-        
-        if sum1 > sum2:
-            index = minI2+1-10
-            if index < 1:
-                index = 1
-            newPath2 = path2[0:index] + [junctionPoint]
-            newPath2.reverse()
-        else:
-            index = minI2+10
-            if index >= len(path2):
-                index = len(path2)-1
-            newPath2 = [junctionPoint] + path2[index:]
-        """
-
-
         " convert path so that the points are uniformly distributed "
         
         
@@ -5486,9 +5447,12 @@ class Paths:
                 xP.append(p[0])
                 yP.append(p[1])
             pylab.plot(xP,yP, color='k')
-                    
-            pylab.xlim(-5,10)
-            pylab.ylim(-8,8)
+
+            print "trimDeparture:", self.pathPlotCount
+            printStack()                 
+
+            #pylab.xlim(-7,12)
+            #pylab.ylim(-12,12)
             pylab.title("%3.2f %3.2f" % (juncDist1, juncDist2))
             pylab.savefig("trimDeparture_%04u.png" % self.pathPlotCount)
             

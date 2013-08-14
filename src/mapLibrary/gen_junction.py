@@ -18,14 +18,25 @@ foo.addTurn(segA, -pi/3)
 foo.addStraight(segA,2.5)
 #foo.addTurn(segA, pi/3)
 segC, segD = foo.addSymJunction(segA, pi/2)
-foo.addStraight(segC,5.0)
-foo.addStraight(segD,5.0)
+
+
+
+#foo.addStraight(segC,4.0)
+foo.addStraight(segC,3.0)
+foo.addTurn(segC, -pi/3)
+foo.addStraight(segC,2.5)
 foo.addCap(segC)
+
+#foo.addStraight(segD,4.0)
+foo.addStraight(segD,3.0)
+foo.addTurn(segD, -pi/3)
+foo.addStraight(segD,2.5)
 foo.addCap(segD)
 
 #foo.addStraight(segA,5.0)
 #foo.addCap(segA)
 
+#foo.addStraight(segB,4.0)
 foo.addStraight(segB,2.5)
 foo.addTurn(segB, -pi/3)
 foo.addStraight(segB,2.5)

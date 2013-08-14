@@ -17,7 +17,8 @@ if __name__ == '__main__':
 		# pipe_len, seg_len_min, seg_len_max, seg_ang_max, pipe_min, pipe_max, feature_len, entr_len, perturb_range)
 		try:
 			#newmap = Corridor(20.0, 0.1, 0.5, pi/4, 0.4, 0.7, 0.2, 10.0, 0.2)
-			newmap = Corridor(20.0, 0.02, 0.2, pi/4, 0.4, 0.41, 0.2, 10.0, 0.1)
+			#newmap = Corridor(20.0, 0.02, 0.2, pi/4, 0.4, 0.41, 0.2, 10.0, 0.1)
+			newmap = ForkEnv(10.0, 0.1, 0.5, pi/16, 0.3, 0.4, 0.2, 5.0, 0.03)
 		except:
 			pass
 		else:
@@ -41,8 +42,8 @@ if __name__ == '__main__':
 			maps.append(newmap)
 			
 			pylab.clf()
-			newmap.drawCorridor()
-			#newmap.draw()
+			#newmap.drawCorridor()
+			newmap.draw()
 	
 			pylab.xlim(-15,15)
 			pylab.ylim(-15,15)

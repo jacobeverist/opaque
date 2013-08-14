@@ -14,6 +14,55 @@ class SplineFit:
 		
 		random.seed(0)		
 
+		if len(points) <= 1:
+			print "ERROR, not enough points", points
+			raise
+
+		if len(points) <= 5:
+
+			print "SplineFit received points:", points
+
+			max_spacing = 0.08
+
+			newPath3 = []
+
+			" make sure path is geq than 5 points "
+			while len(newPath3) <= 5:
+
+				max_spacing /= 2
+				
+				newPath3 = [copy(points[0])]
+									
+				for i in range(len(points)-1):
+					p0 = points[i]
+					p1 = points[(i+1)]
+					dist = sqrt((p0[0]-p1[0])**2 + (p0[1]-p1[1])**2)
+		
+					vec = [p1[0]-p0[0], p1[1]-p0[1]]
+					vec[0] /= dist
+					vec[1] /= dist
+					
+					#print "dist=", repr(dist), repr(max_spacing)
+					
+					if dist > max_spacing:
+						" cut into pieces max_spacing length or less "
+						numCount = int(floor(dist / max_spacing))
+						
+						for j in range(1, numCount+1):
+							newP = [j*max_spacing*vec[0] + p0[0], j*max_spacing*vec[1] + p0[1]]
+							newPath3.append(newP)
+
+					newPath3.append(copy(p1))            
+
+				newP = []
+				for p in newPath3:
+					if p not in newP:
+						newP.append(p)
+				newPath3 = newP
+					
+			points = newPath3
+			print "SplineFit recomputed points:", points
+
 		self.pointSet = points
 		self.smoothNess = smooth
 		self.kp = kp
@@ -847,6 +896,12 @@ if __name__ == '__main__':
 	estPoses = []
 	gndPoses = []
 
+	points = [[6.393668170242247, 8.942828779300818], [6.433224226989662, 8.948771705734424], [6.472780283737078, 8.954714632168029], [6.5123363404844925, 8.960657558601635], [6.528662149296044, 8.963110358216008]]		
+
+	newSpline = SplineFit(points, smooth = 0.1)
+	
+
+	"""
 	for i in range(numPoses):
 
 		f = open(dirName + "/posture%04u.txt" % i, 'r')
@@ -861,6 +916,7 @@ if __name__ == '__main__':
 		pnt = centerCurves[i].getU(0.5)
 
 	print time()
+	"""
         
 
 
