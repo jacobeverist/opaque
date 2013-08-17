@@ -354,7 +354,8 @@ class GlobalCurveFit(Behavior):
 			if asin(desRotVec[1]) < 0:
 				desAngle = -desAngle
 
-			k = 0.1
+			#k = 0.1
+			k = 0.5
 			if segmentOrder == -1:
 				angle = cmdJoints[i]
 			else:
