@@ -282,6 +282,35 @@ class TestNavigation(SnakeControl):
 
 			#self.mapGraph.restoreSeries("result_2013_07_05a",60)
 
+			#self.mapGraph.restoreSeries("../results/result_2013_08_01_complete_45junction",38)
+			#self.mapGraph.poseGraph.paths.resetTerms()
+
+			#self.mapGraph.restoreSeries("../results/result_2013_08_01_complete_Lright_junction",22)
+			#self.mapGraph.poseGraph.paths.resetTerms()
+
+			#self.mapGraph.restoreSeries("../results/result_2013_08_05_Lleft_junction",128)
+			#self.mapGraph.poseGraph.paths.resetTerms()
+
+			#self.mapGraph.restoreSeries("../results/result_2013_08_07_complete_left45junction",42)
+			#self.mapGraph.poseGraph.paths.resetTerms()
+
+			#self.mapGraph.restoreSeries("../results/result_2013_08_02_complete_curve",72)
+			#self.mapGraph.poseGraph.paths.resetTerms()
+
+			#self.mapGraph.restoreSeries("../results/result_2013_08_02_complete_curve",72)
+			#self.mapGraph.poseGraph.paths.resetTerms()
+
+			#self.mapGraph.restoreSeries("../results/result_2013_08_06_complete_bottom_Tjunction",46)
+			#self.mapGraph.poseGraph.paths.resetTerms()
+
+			#self.mapGraph.restoreSeries("../results/result_2013_08_16_Y_junction_complete",136)
+			#self.mapGraph.poseGraph.paths.resetTerms()
+
+			#self.mapGraph.restoreSeries("../results/result_2013_08_02_complete_curve3",64)
+			#self.mapGraph.poseGraph.paths.resetTerms()
+
+			#self.mapGraph.restoreSeries("../results/result_2013_08_02_complete_curve",68)
+			#self.mapGraph.poseGraph.paths.resetTerms()
 
 			#self.mapGraph.initNode(initPose, self.travelDir)
 			#self.mapGraph.forceUpdate()
@@ -351,8 +380,8 @@ class TestNavigation(SnakeControl):
 			
 			self.restState = deepcopy(probeState)
 			
-			self.globalState = 6
-			#self.globalState = 4
+			#self.globalState = 6
+			self.globalState = 4
 			#self.globalState = 10
 
 			self.restState = deepcopy(probeState)
@@ -559,7 +588,7 @@ class TestNavigation(SnakeControl):
 						self.globalState = 4
 						self.collisionCount = 0		
 					
-				print "collisionCount =", self.collisionCount, self.isCollided, self.globalState
+				print "collisionCount =", self.collisionCount, self.isCollided, self.globalState, foreAvg, backAvg, self.inversion, self.travelDir
 				#self.globalState = 10
 					
 				#if self.mapGraph.numNodes > 26:

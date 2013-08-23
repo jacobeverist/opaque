@@ -90,9 +90,9 @@ def createTest():
 	else:
 
 		# junction test 
-		#targetMapFile = "mapFile0004.txt"
-		targetMapFile = "testData/curveEnv/mapFile0010.txt"
-		#targetMapFile = "mapFile0002.txt"
+		targetMapFile = "testData/curveEnv/mapFile0004.txt"
+		#targetMapFile = "testData/curveEnv/mapFile0010.txt"
+		#targetMapFile = "testData/curveEnv/mapFile0002.txt"
 		f = open(relPath + "/" + targetMapFile, 'r')
 		str_f = f.read()
 		walls = eval(str_f)

@@ -4,16 +4,26 @@ random.seed(0)
 
 import os
 import sys
-sys.path.insert(1,"modules/")
-sys.path.insert(1,"modules/nelmin")
-sys.path.insert(1,"modules/bulletprobe")
-sys.path.insert(1,"modules/medialaxis")
-sys.path.insert(1,"modules/alphashape")
-#sys.path.insert(1,"binaries/opencv")
+
+relPath = os.path.dirname(os.path.realpath(__file__))
+sys.path.insert(1,relPath)
+sys.path.insert(1,relPath + "/modules/")
+sys.path.insert(1,relPath + "/modules/nelmin")
+sys.path.insert(1,relPath + "/modules/bulletprobe")
+sys.path.insert(1,relPath + "/modules/medialaxis")
+sys.path.insert(1,relPath + "/modules/alphashape")
+sys.path.insert(1,relPath + "/modules/ogre")
 
 
-os.environ['PATH'] = 'c:\\opencv-2.4.6.0\\build\\x86\\vc9\\bin' + ';' + os.environ['PATH']
-os.environ['PATH'] = os.getcwd() + '\\binaries\\boost_1_53_0\\lib' + ';' + os.environ['PATH']
+#os.environ['PATH'] = 'c:\\opencv-2.4.6.0\\build\\x86\\vc9\\bin' + ';' + os.environ['PATH']
+#os.environ['PATH'] = os.getcwd() + '\\binaries\\boost_1_53_0\\lib' + ';' + os.environ['PATH']
+
+import argparse
+
+parser = argparse.ArgumentParser(description='DarkMapper Simulator')
+parser.add_argument('--mapfile', type=str, help="text file containing environment map")
+args = parser.parse_args()
+
 
 
 from opaque.robot.QuickProbe import QuickProbe

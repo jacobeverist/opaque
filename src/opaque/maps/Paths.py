@@ -2501,13 +2501,57 @@ class Paths:
         u2 = originU2
         u1 = originU1
         angGuess = 0.0
+
+        initGuess = [u1,u2,angGuess]
+        resultPose1, lastCost1, matchCount1 = gen_icp.pathOverlapICP(initGuess, orientedGlobalPath, globalPath1, plotIter = plotIter, n1 = pathID1, n2 = pathID2)
         
+        """
+	
+        initGuesses = []
+        numGuesses = 11
+        " while loop "
+        halfNum = numGuesses/2
+        dists = [(k-halfNum)*0.2 for k in range(numGuesses)]	
+        for dist in dists:
+            #pathUGuess = i*0.05
+            pathUGuess = orientedGlobalSpline2.getUOfDist(originU1, dist)
+            initGuesses.append([pathUGuess, originU2, angGuess])
 
         #resultPose2, lastCost2, matchCount2 = gen_icp.globalPathToNodeOverlapICP2([u2, uMedialOrigin2, 0.0], orientedSplicePath, medial2, plotIter = True, n1 = nodeID-1, n2 = -1, arcLimit = 0.1)
         #resultPose2, lastCost2, matchCount2 = gen_icp.globalOverlapICP_GPU2([u2, uMedialOrigin2, 0.0], orientedSplicePath, medial2, plotIter = True, n1 = nodeID-1, n2 = -1, arcLimit = 0.1)
 
+      
+
+        results = []
+        for k in range(len(initGuesses)):
+            initGuess = initGuesses[k]
         
-        resultPose1, lastCost1, matchCount1 = gen_icp.pathOverlapICP([u1,u2,angGuess], orientedGlobalPath, globalPath1, plotIter = plotIter, n1 = pathID1, n2 = pathID2)
+            #resultPose1, lastCost1, matchCount1 = gen_icp.pathOverlapICP([u1,u2,angGuess], orientedGlobalPath, globalPath1, plotIter = plotIter, n1 = pathID1, n2 = pathID2)
+            resultPose1, lastCost1, matchCount1 = gen_icp.pathOverlapICP(initGuess, orientedGlobalPath, globalPath1, plotIter = plotIter, n1 = pathID1, n2 = pathID2)
+
+            " departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2 "
+            resultArgs = getMultiDeparturePoint(orientedGlobalPath, globalPath1, [0.0,0.0,0.0], resultPose1, [pathID1,pathID2], 0, self.pathPlotCount + 5000, plotIter = True)
+            self.pathPlotCount += 1
+            results.append(resultArgs + (resultPose1,))
+        
+        
+
+            #isDepart = resultArgs[3] or resultArgs[9]
+
+
+        print "unfiltered results:"
+        for result in results:
+            print result
+
+        sortedResults = sorted(results, key=itemgetter(12), reverse=True)
+
+        print "sorted results:"
+        for result in sortedResults:
+            print result
+
+        resultPose1 = sortedResults[0][-1]
+        """
+
         #resultPose2, lastCost2, matchCount2 = gen_icp.pathOverlapICP([u1,u2+0.1,angGuess], orientedGlobalPath, globalPath1, plotIter = True, n1 = pathID1, n2 = pathID2)
         #resultPose3, lastCost3, matchCount3 = gen_icp.pathOverlapICP([u1,u2-0.1,angGuess], orientedGlobalPath, globalPath1, plotIter = True, n1 = pathID1, n2 = pathID2)
         #resultPose1, lastCost1, matchCount1 = gen_icp.pathOverlapICP([u1,u2,angGuess], orientedGlobalPath, globalPath1, plotIter = False, n1 = pathID1, n2 = pathID2)

@@ -3,6 +3,7 @@
 
 PLEN1 = 10.0
 
+-mag1 * sin(-pi/3-pi/2+pi/6) = -0.2
 
 mag1 = -0.2/-sin(-pi/3-pi/2+pi/6)
 x1 = mag1*cos(-pi/3-pi/2+pi/6)

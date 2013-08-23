@@ -10241,6 +10241,7 @@ class PoseGraph:
 		self.plotEnv()
 
 
+		print "saving trimmedPath_%04u.png" % self.trimCount
 		pylab.title("Trimmed Paths, numNodes = %d" % self.numNodes)
 		pylab.savefig("trimmedPath_%04u.png" % self.trimCount)
 		self.trimCount += 1
