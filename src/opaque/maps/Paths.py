@@ -159,6 +159,333 @@ def printStack():
 		
 	print printStr
 
+@logFunction
+def getTangentIntersections(path1, path2, frontDepI, backDepI, path1FrontDepI, path1BackDepI, path2JuncI, path1JuncI, plotCount):
+
+
+    """ for tangent on path2, find the intersection point on path1 """
+
+    interPoints = []
+    indices1 = []
+    edges = []
+
+    forePoints = []
+    backPoints = []
+
+    frontDepI = path2JuncI
+    backDepI = path2JuncI
+
+    frontBoundI = frontDepI - 40
+    if frontBoundI < 0:
+        frontBoundI = 0
+
+    backBoundI = backDepI + 40
+    if backBoundI >= len(path2):
+        backBoundI = len(path2)-1
+
+    frontDepI = frontDepI - 10
+    if frontDepI < 0:
+        frontDepI = 0
+
+    backDepI = backDepI + 10
+    if backDepI >= len(path2):
+        backDepI = len(path2)-1
+
+
+    for i in range(frontBoundI, frontDepI):
+
+        p = path2[i]
+
+        """ generate tangent segment """
+        angle2 = p[2]
+
+        pA = [p[0] + 3*cos(angle2), p[1] + 3*sin(angle2)]
+        pB = [p[0] - 3*cos(angle2), p[1] - 3*sin(angle2)]
+
+        edge2 = [pA,pB]
+        edges.append(edge2)
+
+        """ find the intersection with path1 """
+
+        for k in range(len(path1)-1):
+            pathEdge = [path1[k],path1[k+1]]
+            isIntersect1, point1 = Intersect(edge2, pathEdge)
+            if isIntersect1:
+
+                vec = [p[0]-point1[0],p[1]-point1[1]]
+                mag = sqrt(vec[0]*vec[0] + vec[1]*vec[1])
+
+                vec[0] /= mag
+                vec[1] /= mag
+                
+                tanAng = acos(vec[0])
+                if vec[1] < 0.0:
+                    tanAng = -tanAng
+
+                """ save point and index on path1 """
+                interPoints.append(point1 + [tanAng])
+                indices1.append(k)
+
+                if k <= path1FrontDepI:
+                    forePoints.append(point1 + [tanAng])
+
+    for i in range(backDepI, backBoundI+1):
+
+        p = path2[i]
+
+        """ generate tangent segment """
+        angle2 = p[2]
+
+        pA = [p[0] + 3*cos(angle2), p[1] + 3*sin(angle2)]
+        pB = [p[0] - 3*cos(angle2), p[1] - 3*sin(angle2)]
+
+        edge2 = [pA,pB]
+        edges.append(edge2)
+
+        """ find the intersection with path1 """
+
+        for k in range(len(path1)-1):
+            pathEdge = [path1[k],path1[k+1]]
+            isIntersect1, point1 = Intersect(edge2, pathEdge)
+            if isIntersect1:
+
+                vec = [p[0]-point1[0],p[1]-point1[1]]
+                mag = sqrt(vec[0]*vec[0] + vec[1]*vec[1])
+
+                vec[0] /= mag
+                vec[1] /= mag
+                
+                tanAng = acos(vec[0])
+                if vec[1] < 0.0:
+                    tanAng = -tanAng
+
+                """ save point and index on path1 """
+                interPoints.append(point1 + [tanAng])
+                indices1.append(k)
+
+                if k >= path1BackDepI:
+                    backPoints.append(point1 + [tanAng])
+
+    foreDists = [0.0 for k in range(len(forePoints))]
+    maxForeDist = 0.0
+    minForeDist = 1e100
+    minForeI = 0
+    if len(forePoints) > 1:
+        for k in range(0,len(forePoints)):
+            if k == 0:
+                dist1 = sqrt((forePoints[k][0]-forePoints[k+1][0])**2 + (forePoints[k][1]-forePoints[k+1][1])**2)
+                totalDist = 2*dist1
+
+            elif k == len(forePoints)-1:
+                dist2 = sqrt((forePoints[k][0]-forePoints[k-1][0])**2 + (forePoints[k][1]-forePoints[k-1][1])**2)
+                totalDist = 2*dist2
+
+            else:
+
+                dist1 = sqrt((forePoints[k][0]-forePoints[k+1][0])**2 + (forePoints[k][1]-forePoints[k+1][1])**2)
+                dist2 = sqrt((forePoints[k][0]-forePoints[k-1][0])**2 + (forePoints[k][1]-forePoints[k-1][1])**2)
+
+                totalDist = dist1 + dist2
+
+            if totalDist > maxForeDist:
+                maxForeDist = totalDist
+
+            if totalDist < minForeDist:
+                minForeDist = totalDist
+                minForeI = k
+
+            foreDists[k] = totalDist
+
+    newForeDists = [0.0 for k in range(len(forePoints))]
+    for k in range(0,len(forePoints)):
+
+        leftI = k-2
+        rightI = k+2
+
+        if leftI < 0:
+            leftI = 0
+
+        if rightI > len(forePoints)-1:
+            rightI = len(forePoints)-1
+
+        leftDist = foreDists[leftI]
+        rightDist = foreDists[rightI]
+
+        newForeDists[k] = leftDist + rightDist + foreDists[k]
+
+    foreDists = newForeDists
+
+    backDists = [0.0 for k in range(len(backPoints))]
+    maxBackDist = 0.0
+    minBackDist = 1e100
+    minBackI = 0
+    if len(backPoints) > 1:
+        for k in range(0,len(backPoints)):
+            if k == 0:
+                dist1 = sqrt((backPoints[k][0]-backPoints[k+1][0])**2 + (backPoints[k][1]-backPoints[k+1][1])**2)
+                totalDist = 2*dist1
+
+            elif k == len(backPoints)-1:
+                dist2 = sqrt((backPoints[k][0]-backPoints[k-1][0])**2 + (backPoints[k][1]-backPoints[k-1][1])**2)
+                totalDist = 2*dist2
+
+            else:
+
+                dist1 = sqrt((backPoints[k][0]-backPoints[k+1][0])**2 + (backPoints[k][1]-backPoints[k+1][1])**2)
+                dist2 = sqrt((backPoints[k][0]-backPoints[k-1][0])**2 + (backPoints[k][1]-backPoints[k-1][1])**2)
+
+                totalDist = dist1 + dist2
+
+            if totalDist > maxBackDist:
+                maxBackDist = totalDist
+
+            if totalDist < minBackDist:
+                minBackDist = totalDist
+                minBackI = k
+
+            backDists[k] = totalDist
+
+
+    newBackDists = [0.0 for k in range(len(backPoints))]
+    for k in range(0,len(backPoints)):
+
+        leftI = k-2
+        rightI = k+2
+
+        if leftI < 0:
+            leftI = 0
+
+        if rightI > len(backPoints)-1:
+            rightI = len(backPoints)-1
+
+        leftDist = backDists[leftI]
+        rightDist = backDists[rightI]
+
+        newBackDists[k] = leftDist + rightDist + backDists[k]
+
+    backDists = newBackDists
+
+    print "foreDists:", foreDists
+    print "backDists:", backDists
+    print "interPoints:", interPoints
+
+
+
+    foreAvg = [0.0,0.0]
+    foreWeight = 0.0
+    for k in range(len(forePoints)):
+        if maxForeDist > 0.0:
+            foreAvg[0] += forePoints[k][0] * (1.0 - foreDists[k]/maxForeDist)
+            foreAvg[1] += forePoints[k][1] * (1.0 - foreDists[k]/maxForeDist)
+            foreWeight += (1.0 - foreDists[k]/maxForeDist)
+        else:
+            foreAvg[0] += forePoints[k][0]
+            foreAvg[1] += forePoints[k][1]
+
+    if len(forePoints) > 0:
+        #foreAvg[0] /= float(len(forePoints))
+        #foreAvg[1] /= float(len(forePoints))
+
+        if foreWeight > 0:
+            foreAvg[0] /= foreWeight
+            foreAvg[1] /= foreWeight
+        foreAvg = forePoints[minForeI]
+    else:
+        foreAvg = path1[path1FrontDepI]
+
+    backAvg = [0.0,0.0]
+    backWeight = 0.0
+    for k in range(len(backPoints)):
+        if maxBackDist > 0.0:
+            backAvg[0] += backPoints[k][0] * (1.0 - backDists[k]/maxBackDist)
+            backAvg[1] += backPoints[k][1] * (1.0 - backDists[k]/maxBackDist)
+            backWeight += (1.0 - backDists[k]/maxBackDist)
+        else:
+            backAvg[0] += backPoints[k][0]
+            backAvg[1] += backPoints[k][1]
+
+    if len(backPoints) > 0:
+        #backAvg[0] /= float(len(backPoints))
+        #backAvg[1] /= float(len(backPoints))
+
+        if backWeight > 0:
+            backAvg[0] /= backWeight
+            backAvg[1] /= backWeight
+        backAvg = backPoints[minBackI]
+    else:
+        backAvg = path1[path1BackDepI]
+
+
+
+    p_f, i_f, minDist_f = gen_icp.findClosestPointInA(path1, foreAvg)
+    p_b, i_b, minDist_b = gen_icp.findClosestPointInA(path1, backAvg)
+
+    if len(forePoints) > 0:
+        a_f, i_af, minDist_af = gen_icp.findClosestPointInA(forePoints, p_f)
+        juncForeAng = forePoints[i_af][2]
+    elif len(interPoints) > 0:
+        a_f, i_af, minDist_af = gen_icp.findClosestPointInA(interPoints, p_f)
+        juncForeAng = interPoints[i_af][2]
+    else:
+        juncForeAng = 0.0
+
+    if len(backPoints) > 0:
+        a_b, i_ab, minDist_ab = gen_icp.findClosestPointInA(backPoints, p_b)
+        juncBackAng = backPoints[i_ab][2]
+    elif len(interPoints) > 0:
+        a_b, i_ab, minDist_ab = gen_icp.findClosestPointInA(interPoints, p_b)
+        juncBackAng = interPoints[i_ab][2]
+    else:
+        juncBackAng = 0.0
+
+
+
+
+    if True:
+        pylab.clf()
+        xP = []
+        yP = []
+        for p in path2:
+            xP.append(p[0])
+            yP.append(p[1])
+        pylab.plot(xP,yP, color=(0.5,0.5,1.0),zorder=500)
+
+        if True:    
+
+            """ draw the tangents """
+            for edge in edges:
+                xP = [edge[0][0], edge[1][0]]
+                yP = [edge[0][1], edge[1][1]]
+                pylab.plot(xP,yP, color=(0.5,1.0,0.5), linewidth=1, alpha=0.5,zorder=1)        
+
+            for pnt in forePoints + backPoints:
+                xP = [pnt[0],]
+                yP = [pnt[1],]
+                pylab.scatter(xP,yP,color='k', linewidth=1, zorder=502)
+
+            pylab.scatter([foreAvg[0],backAvg[0]], [foreAvg[1],backAvg[1]], color='m', linewidth=1, zorder=503)
+            pylab.scatter([p_f[0],], [p_f[1],], color='r', linewidth=1, zorder=504)
+            pylab.scatter([p_b[0],], [p_b[1],], color='g', linewidth=1, zorder=504)
+
+            pylab.scatter([path2[path2JuncI][0],], [path2[path2JuncI][1],], color='y', linewidth=1, zorder=504)
+
+        xP = []
+        yP = []
+        for p in path1:
+            xP.append(p[0])
+            yP.append(p[1])
+        pylab.plot(xP,yP, color=(1.0,0.5,0.5),zorder=500)
+
+        print "intersectDeparture:", plotCount
+        printStack()                 
+
+        pylab.title("%d intersections, %d tangent segments, angles %1.2f %1.2f" % (len(interPoints), len(edges), juncForeAng, juncBackAng))
+        pylab.savefig("intersectDeparture_%04u.png" % plotCount)
+        
+
+        return i_f, i_b, juncForeAng, juncBackAng
+
+
 
 
 class Paths:
@@ -5054,8 +5381,8 @@ class Paths:
 
         " for each point on the child path, find its closest pair on the parent path "
         
-        pathPoints1 = path1Spline.getUniformSamples()
-        pathPoints2 = path2Spline.getUniformSamples()
+        pathPoints1 = path1Spline.getUniformSamples(interpAngle=True)
+        pathPoints2 = path2Spline.getUniformSamples(interpAngle=True)
 
         distances = []
         indices = []
@@ -5199,8 +5526,28 @@ class Paths:
                 newBackDepI -= 1
             else:
                 break        
+		
 
-		"""
+        """
+        if len(path1Spline.distPoints) == 0:
+            path1Spline.precompute()
+
+		sample_points1 = path1Spline.makePointsUniform(path1Spline.distPoints, max_spacing = 0.04, interpAngle = True)
+
+        if len(path2Spline.distPoints) == 0:
+            path2Spline.precompute()
+
+        pathPoints1 = path1Spline.getUniformSamples()
+        pathPoints2 = path2Spline.getUniformSamples()
+
+		samples = scipy.arange(0.0,1.01,0.01)
+		sample_points = self.getUVecSet(samples)
+		return sample_points
+        """
+	
+
+
+        """
         newBackDepI = backAngleRefI
         while fabs(diffAngle(normalizeAngle(pathPoints2[newBackDepI][2]), backPathAngle)) < pi/3.0:
             newBackDepI += 1
@@ -5208,7 +5555,7 @@ class Paths:
             if newBackDepI > len(distances)-1:
                 newBackDepI = backDepI
                 break
-		"""
+        """
 
         frontDiffAngles = []
         for k in range(len(pathPoints2)):
@@ -5285,8 +5632,8 @@ class Paths:
         junctionPoint = globalJunctionPoint      
         minDist2 = 1e100
         juncI = 0        
-        for i in range(len(path2)):
-            pnt = path2[i]
+        for i in range(len(pathPoints2)):
+            pnt = pathPoints2[i]
             dist = sqrt((pnt[0]-junctionPoint[0])**2 + (pnt[1]-junctionPoint[1])**2)
         
             if dist < minDist2:
@@ -5302,6 +5649,9 @@ class Paths:
             
             newPath2 = pathPoints2[:newFrontDepI]
             newPath2.reverse()
+
+            #newPath2 = pathPoints2[:newFrontDepI]
+            #newPath2.reverse()
             
         else:
             " FIXME: if [backDepI,len(distances)-1] has high overlap compared to total length, then we reject it "
@@ -5309,6 +5659,7 @@ class Paths:
             secP2 = pathPoints2[len(distances)-1]
 
             newPath2 = pathPoints2[newBackDepI:]
+            #newPath2 = pathPoints2[newBackDepI:]
 
         if len(secP1) == 0:
             print "no departures found"
@@ -5429,7 +5780,19 @@ class Paths:
             juncAng = -juncAng
         
         
-        globJuncPose = [medial2[0][0], medial2[0][1], juncAng]
+
+        try:
+            #foreIntI, backIntI, juncForeAng, juncBackAng = getTangentIntersections(pathPoints1, pathPoints2, frontDepI, backDepI, indices[frontDepI], indices[backDepI], self.pathPlotCount)
+            foreIntI, backIntI, juncForeAng, juncBackAng = getTangentIntersections(pathPoints1, pathPoints2, frontDepI, backDepI, indices[frontDepI], indices[backDepI], juncI, indices[juncI], self.pathPlotCount)
+            print "foreIntI, backIntII:", foreIntI, backIntI
+        
+            if juncDist1 < juncDist2:
+                globJuncPose = [pathPoints1[foreIntI][0], pathPoints1[foreIntI][1], juncForeAng]
+            else:
+                globJuncPose = [pathPoints1[backIntI][0], pathPoints1[backIntI][1], juncBackAng]
+        except:
+            print "getTangentIntersections() failed!"
+            globJuncPose = [medial2[0][0], medial2[0][1], juncAng]
         
         " last junction point is the intersection point "
 
@@ -5505,7 +5868,6 @@ class Paths:
 
         
         return globJuncPose
-
 
     @logFunction
     def pathTermVisited(self, pathID):

@@ -3867,7 +3867,7 @@ class LocalNode:
 				os.remove("doLocalAlphaInput_%08u.txt" % (alphaPlotCount))
 	
 				if plotIter:
-                    pylab.clf()
+					pylab.clf()
 					xP = []
 					yP = []
 					for p in vertices:
@@ -3954,7 +3954,7 @@ class LocalNode:
 					vertices.append([float(sArr[2*i]), float(sArr[2*i + 1])])
 					
 				if plotIter:
-                    pylab.clf()
+					pylab.clf()
 					xP = []
 					yP = []
 					for p in vertices:
@@ -3972,7 +3972,7 @@ class LocalNode:
 				isDone = True
 			except:
 				if plotIter:
-                    pylab.clf()
+					pylab.clf()
 					pylab.xlim(-3,3)
 					pylab.ylim(-3,3)
 					pylab.title("FAIL: nodeID = %d, radius = %f, numPoints = %d" % (self.nodeID, radius, numPoints))

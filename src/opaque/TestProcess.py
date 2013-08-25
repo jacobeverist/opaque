@@ -273,7 +273,8 @@ class TestProcess(SnakeControl):
 			self.mapGraph.loadWalls(walls)
 
 
-			self.mapGraph.loadSeries("../results/result_2013_08_18_cross", 240)
+			#self.mapGraph.restoreSeries("../results/result_2013_08_24_cross", 80)
+			self.mapGraph.restoreSeries("../results/result_2013_08_24_cross", 44)
 			
 			#self.mapGraph.newNode(0.0, self.direction)
 			#self.mapGraph.forceUpdate(False)
