@@ -209,241 +209,6 @@ class MapGraph:
 				pylab.savefig("testplot%04u.png" % k)
 				pylab.show()
 
-	def drawOverlapConstraints(self, id):
-
-		numEdges = 0
-
-		edges = self.poseGraph.getPriorityEdges(self, priorityLevel = OVERLAP_PRIORITY)
-
-
-		for edge in edges:
-
-			pylab.clf()
-
-			nodeID1 = edge[0]
-			nodeID2 = edge[1]
-			status = edge[4]
-
-			if edge[0] < edge[1]:
-				nodeID1 = edge[0]
-				nodeID2 = edge[1]
-				transform = edge[2]
-				offset = [transform[0,0], transform[1,0], transform[2,0]]
-
-			else:
-				nodeID1 = edge[1]
-				nodeID2 = edge[0]
-				transform = edge[2]
-				offset = [transform[0,0], transform[1,0], transform[2,0]]
-				prof1 = Pose(offset)
-				offset = prof1.convertGlobalPoseToLocal([0.0,0.0,0.0])
-		
-
-			hull1 = computeBareHull(self.nodeHash[nodeID1], sweep = False)
-			hull1.append(hull1[0])
-
-			node1 = self.nodeHash[nodeID1]
-			currPose = node1.getGlobalGPACPose()
-			currProfile = Pose(currPose)
-			posture1 = node1.getStableGPACPosture()
-			posture1_trans = []
-			for p in posture1:
-				posture1_trans.append(gen_icp.dispOffset(p, currPose))	
-
-			occ1 = node1.getOccPoints()
-			occ1_trans = []
-			for p in occ1:
-				occ1_trans.append(gen_icp.dispOffset(p, currPose))	
-
-			hull1_trans = []
-			for p in hull1:
-				hull1_trans.append(gen_icp.dispOffset(p, currPose))	
-							
-			xP = []
-			yP = []
-			for p in hull1_trans:
-				xP.append(p[0])
-				yP.append(p[1])
-			#pylab.plot(xP,yP, color=(112/256.,147/256.,219/256.))	
-			pylab.plot(xP,yP, color='r', linewidth=2)	
-
-			xP = []
-			yP = []
-			for p in occ1_trans:
-				xP.append(p[0])
-				yP.append(p[1])
-			pylab.scatter(xP,yP, color=(1.0,0.5,0.5), faceted = False)
-
-
-
-			estPose2 = currProfile.convertLocalOffsetToGlobal(offset)
-			
-			hull2 = PoseGraph.computeBareHull(self.nodeHash[nodeID2], sweep = False)
-			hull2.append(hull2[0])
-
-			node2 = self.nodeHash[nodeID2]
-			#currPose = node2.getGlobalGPACPose()
-			currProfile = Pose(estPose2)
-			posture2 = node2.getStableGPACPosture()
-			posture2_trans = []
-			for p in posture2:
-				posture2_trans.append(gen_icp.dispOffset(p, estPose2))	
-
-			occ2 = node2.getOccPoints()
-			occ2_trans = []
-			for p in occ2:
-				occ2_trans.append(gen_icp.dispOffset(p, estPose2))	
-
-			hull2_trans = []
-			for p in hull2:
-				hull2_trans.append(gen_icp.dispOffset(p, estPose2))	
-			
-			xP = []
-			yP = []
-			for p in hull2_trans:
-				xP.append(p[0])
-				yP.append(p[1])
-			pylab.plot(xP,yP, color=(52/256.,87/256.,159/256.), linewidth=2)
-
-			xP = []
-			yP = []
-			for p in occ2_trans:
-				xP.append(p[0])
-				yP.append(p[1])
-			pylab.scatter(xP,yP, color=(192./256.,227./256.,256./256.), faceted = False)
-	
-			self.drawWalls()
-			
-			pylab.xlim(currPose[0]-4, currPose[0]+4)					
-			pylab.ylim(currPose[1]-3, currPose[1]+3)
-			
-			if status == 1:
-				statusStr = "ORI_FAIL"
-			elif status == 2:
-				statusStr = "COST_FAIL"
-			elif status == 3:
-				statusStr = "HYP_FAIL"
-			else:
-				statusStr = "UNKN_FAIL"
-
-			pylab.title("%d -> %d, status = %s" % (nodeID1, nodeID2, statusStr))
-			
-			pylab.savefig("plotBadShapeConstraint%04u_%04u.png" % (id, numEdges))
-
-			numEdges += 1
-
-
-		numEdges = 0
-		edgeHash = self.poseGraph.getPriorityEdges(PoseGraph.SHAPE_PRIORITY)
-
-		
-		for k, v in edgeHash.items():
-			
-			#print len(v), "edges printing"
-			for i in range(len(v)):
-
-				pylab.clf()
-				
-				if k[0] < k[1]:
-					nodeID1 = k[0]
-					nodeID2 = k[1]
-					transform = v[i][0]
-					offset = [transform[0,0], transform[1,0], transform[2,0]]
-
-				else:
-					nodeID1 = k[1]
-					nodeID2 = k[0]
-					transform = v[i][0]
-					offset = [transform[0,0], transform[1,0], transform[2,0]]
-					prof1 = Pose(offset)
-					offset = prof1.convertGlobalPoseToLocal([0.0,0.0,0.0])
-	
-				hull1 = PoseGraph.computeBareHull(self.nodeHash[nodeID1], sweep = False)
-				hull1.append(hull1[0])
-	
-				node1 = self.nodeHash[nodeID1]
-				currPose = node1.getGlobalGPACPose()
-				currProfile = Pose(currPose)
-				posture1 = node1.getStableGPACPosture()
-				posture1_trans = []
-				for p in posture1:
-					posture1_trans.append(gen_icp.dispOffset(p, currPose))	
-
-				occ1 = node1.getOccPoints()
-				occ1_trans = []
-				for p in occ1:
-					occ1_trans.append(gen_icp.dispOffset(p, currPose))	
-	
-				hull1_trans = []
-				for p in hull1:
-					hull1_trans.append(gen_icp.dispOffset(p, currPose))	
-								
-				xP = []
-				yP = []
-				for p in hull1_trans:
-					xP.append(p[0])
-					yP.append(p[1])
-				#pylab.plot(xP,yP, color=(112/256.,147/256.,219/256.))	
-				pylab.plot(xP,yP, color='r', linewidth=2)	
-
-				xP = []
-				yP = []
-				for p in occ1_trans:
-					xP.append(p[0])
-					yP.append(p[1])
-				pylab.scatter(xP,yP, color=(1.0,0.5,0.5), faceted = False)
-
-
-
-				estPose2 = currProfile.convertLocalOffsetToGlobal(offset)
-				
-				hull2 = PoseGraph.computeBareHull(self.nodeHash[nodeID2], sweep = False)
-				hull2.append(hull2[0])
-	
-				node2 = self.nodeHash[nodeID2]
-				#currPose = node2.getGlobalGPACPose()
-				currProfile = Pose(estPose2)
-				posture2 = node2.getStableGPACPosture()
-				posture2_trans = []
-				for p in posture2:
-					posture2_trans.append(gen_icp.dispOffset(p, estPose2))	
-
-				occ2 = node2.getOccPoints()
-				occ2_trans = []
-				for p in occ2:
-					occ2_trans.append(gen_icp.dispOffset(p, estPose2))	
-	
-				hull2_trans = []
-				for p in hull2:
-					hull2_trans.append(gen_icp.dispOffset(p, estPose2))	
-				
-				xP = []
-				yP = []
-				for p in hull2_trans:
-					xP.append(p[0])
-					yP.append(p[1])
-				pylab.plot(xP,yP, color=(52/256.,87/256.,159/256.), linewidth=2)
-
-				xP = []
-				yP = []
-				for p in occ2_trans:
-					xP.append(p[0])
-					yP.append(p[1])
-				pylab.scatter(xP,yP, color=(192./256.,227./256.,256./256.), faceted = False)
-		
-				self.drawWalls()
-				
-				pylab.xlim(currPose[0]-4, currPose[0]+4)					
-				pylab.ylim(currPose[1]-3, currPose[1]+3)
-
-				pylab.title("%d -> %d" % (nodeID1, nodeID2))
-				
-				#pylab.xlim(-5,10)
-				#pylab.ylim(-8,8)
-				pylab.savefig("plotShapeConstraint%04u_%04u.png" % (id, numEdges))
-	
-				numEdges += 1
-	
 
 	def drawConstraints(self, id = []):
 		
@@ -549,13 +314,7 @@ class MapGraph:
 		
 		self.poseGraph.loadNewNode(self.foreNode)
 		self.poseGraph.loadNewNode(self.backNode)
-		#self.poseGraph.correctNode2(self.foreNode.nodeID)
-		#self.poseGraph.correctNode2(self.backNode.nodeID)
 		
-
-	#def localizeCurrentNode(self):
-	#	#self.poseGraph.localizeCurrentNode()
-	#	self.poseGraph.correctNode2(self.currNode.nodeID)
 
 	def __getattr__(self, name):
 
@@ -581,12 +340,11 @@ class MapGraph:
 
 								
 		
-		self.poseGraph.mergePriorityConstraints()
 		foreNode = LocalNode(self.probe, self.contacts, num_poses, 19, PIXELSIZE)
 		foreNode.readFromFile2(dirName, num_poses)
 		backNode = LocalNode(self.probe, self.contacts, num_poses+1, 19, PIXELSIZE)
 		backNode.readFromFile2(dirName, num_poses+1)
-		self.poseGraph.insertPose2(foreNode, backNode, initLocation = foreNode.getEstPose())
+		self.poseGraph.insertPose(foreNode, backNode, initLocation = foreNode.getEstPose())
 		
 		self.isDirty = True
 		
@@ -606,7 +364,6 @@ class MapGraph:
 			currNode = LocalNode(self.probe, self.contacts, i, 19, PIXELSIZE)
 			currNode.readFromFile(dirName, i)
 			self.poseGraph.loadNewNode(currNode)
-			self.poseGraph.mergePriorityConstraints()
 			self.drawConstraints(i)
 
 		self.isDirty = True
