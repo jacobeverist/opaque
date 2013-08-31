@@ -3898,7 +3898,9 @@ class PoseGraph:
                 contig1 = []        
 
                 orderedPathIDs1 = self.paths.getOrderedOverlappingPaths(nodeID1)
-                orderedPathIDs1.insert(0,0)
+                #orderedPathIDs1.insert(0,0)
+                orderedPathIDs1.append(0)
+
                 #orderedPathIDs1.append(0)
                 print nodeID1, "orderedPathIDs1:", orderedPathIDs1
 
@@ -3912,8 +3914,12 @@ class PoseGraph:
                     depAngles1.append([depAngle1, depAngle2])
                     contig1.append((contigFrac, overlapSum))
 
+                print "node pathIDs   ", nodeID1, ":", orderedPathIDs1
                 print "node departures", nodeID1, ":", departures1
-                print "node  interiors", nodeID1, ":", interiors1
+                print "node interiors ", nodeID1, ":", interiors1
+                print "node depPoints ", nodeID1, ":", depPoints1
+                print "node distances ", nodeID1, ":", distances1
+                print "node depAngles ", nodeID1, ":", depAngles1
                 print "node contiguity", nodeID1, ":", contig1
                     
                 " new junction finding logic "

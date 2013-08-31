@@ -2976,7 +2976,10 @@ class Paths:
 	def addNode(self, nodeID, pathID):
 		
 		print "adding node", nodeID, "to path", pathID
-		self.pathClasses[pathID]["nodeSet"].append(nodeID)
+		if not nodeID in self.pathClasses[pathID]["nodeSet"]:
+			self.pathClasses[pathID]["nodeSet"].append(nodeID)
+		else:
+			print "node", nodeID, "already present in path", pathID
 
 		#self.generatePaths()
 		#self.trimPaths(self.paths)		   
@@ -3050,6 +3053,8 @@ class Paths:
 		
 		self.pathIDs += 1
 
+
+		print "newPath", newPathID, "=", self.pathClasses[newPathID]
 
 		self.mergeMapping[newPathID] = None
 		
@@ -7419,6 +7424,10 @@ class Paths:
 				xP = [points2_offset[newBackDepI][0]]
 				yP = [points2_offset[newBackDepI][1]]
 				pylab.scatter(xP,yP, color='m')		   
+
+			xP = [points2_offset[-1][0]]
+			yP = [points2_offset[-1][1]]
+			pylab.scatter(xP,yP, color=(0.5,0.5,0.5))		   
 
 	
 			xP = []
