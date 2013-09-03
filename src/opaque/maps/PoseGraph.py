@@ -1336,75 +1336,21 @@ class PoseGraph:
                     self.nodeHash[nodeID-1].setGPACPose(pose2)
                     self.nodeHash[nodeID].setGPACPose(pose3)
     
-    
-                    #medialSpline2 = SplineFit(medial2, smooth=0.1)
-                    #uMedialOrigin2 = medialSpline2.findU([0.0,0.0])
-                    #medialSpline3 = SplineFit(medial3, smooth=0.1)
-                    #uMedialOrigin3 = medialSpline3.findU([0.0,0.0])
-    
                     uPath2, uMedialOrigin2 = self.selectLocalCommonOrigin(orientedSplicePath, medial2, pose2)
-                    """
-                    try:
-                        uPath2, uMedialOrigin2 = self.selectLocalCommonOrigin(orientedSplicePath, medial2, pose2)
-                    except:
-                        uPath2 = currPathSpline.findU(pose2[0:2])
-                        medialSpline2 = SplineFit(medial2, smooth=0.1)
-                        uMedialOrigin2 = medialSpline2.findU([0.0,0.0])
-                    """
-                    
-                    #uPath2 = currPathSpline.findU(pose2[0:2])
     
                     uPath3, uMedialOrigin3 = self.selectLocalCommonOrigin(orientedSplicePath, medial3, pose3)
-                    """
-                    try:    
-                        uPath3, uMedialOrigin3 = self.selectLocalCommonOrigin(orientedSplicePath, medial3, pose3)
-                    except:
-                        uPath3 = currPathSpline.findU(pose3[0:2])
-                        medialSpline3 = SplineFit(medial3, smooth=0.1)
-                        uMedialOrigin3 = medialSpline3.findU([0.0,0.0])
-                    """
-                    #uPath3 = currPathSpline.findU(pose3[0:2])
                     
                     u2 = uPath2
                     u3 = uPath3
-                    #u3 = currPathSpline.findU(pose3[0:2])
     
                     print "input: uMedialOrigin2, u2, pose2:", uMedialOrigin2, u2, pose2
                     print "input: uMedialOrigin3, u3, pose3:", uMedialOrigin3, u3, pose3
     
                     
-                    #guessPose2, cost2 = self.makeGlobalMedialOverlapConstraint(nodeID-1, self.currSplicePath, [0.0,0.0], [0.0,0.0])
-                    #guessPose3, cost3 = self.makeGlobalMedialOverlapConstraint(nodeID, self.currSplicePath, [0.0,0.0], [0.0,0.0])
-    
-                    #self.nodeHash[nodeID-1].setGPACPose(guessPose2)
-                    #self.nodeHash[nodeID].setGPACPose(guessPose3)
-    
-                    """
-                    globalPathToNodeOverlapICP2(initGuess, globalPath, medialPoints, plotIter = False, n1 = 0, n2 = 0, minMatchDist = 1.0, arcLimit = 0.5)
-                    u1 = initGuess[0]
-                    u2 = initGuess[1]
-                    u3 = u1
-                    poses_1 = globalSpline.getUVecSet(uSet)
-                    poses_2 = medialSpline.getUVecSet(uSet)
-    
-                    """
-                    
                     resultPose2, lastCost2, matchCount2, currAng2 = gen_icp.globalPathToNodeOverlapICP2([u2, uMedialOrigin2, 0.0], orientedSplicePath, medial2, plotIter = True, n1 = nodeID-1, n2 = -1, arcLimit = 0.1)
                     resultPose3, lastCost3, matchCount3, currAng3 = gen_icp.globalPathToNodeOverlapICP2([u3, uMedialOrigin3, 0.0], orientedSplicePath, medial3, plotIter = True, n1 = nodeID, n2 = -1, arcLimit = 0.1)
                     
-                    #pathPose2 = resultPose2
-                    #pathPose3 = resultPose3
-                    
-                    #resultPose2, lastCost2, matchCount2 = gen_icp.globalOverlapICP_GPU2([u2, uMedialOrigin2, 0.0], orientedSplicePath, medial2, plotIter = True, n1 = nodeID-1, n2 = -1, arcLimit = 0.1)
-                    #resultPose3, lastCost3, matchCount3 = gen_icp.globalOverlapICP_GPU2([u3, uMedialOrigin3, 0.0], orientedSplicePath, medial3, plotIter = True, n1 = nodeID, n2 = -1, arcLimit = 0.1)
-    
-                    #medialPose2 = resultPose2
-                    #medialPose3 = resultPose3
-    
-                    #print "pathPoses:", pathPose2, pathPose3
-                    #print "medialPoses:", medialPose2, medialPose3
                     print "resultPoses:", resultPose2, resultPose3
-                    #print "currAngs:", currAng2, currAng3
 
                     result2 = getMultiDeparturePoint(orientedSplicePath, medial2, pose2, resultPose2, [], nodeID-1, pathPlotCount = self.multiDepCount, plotIter = True)
                     self.multiDepCount += 1

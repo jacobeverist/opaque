@@ -1,4 +1,4 @@
-from PoseGraph import PoseGraph, computeBareHull, OVERLAP_PRIORITY
+from PoseGraph import PoseGraph, computeBareHull
 from Pose import Pose
 
 from LocalNode import LocalNode
