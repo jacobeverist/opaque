@@ -554,6 +554,42 @@ def getTangentIntersections(path1, path2, frontDepI, backDepI, path1FrontDepI, p
 		return i_f, i_b, juncForeAng, juncBackAng
 
 
+def computePathAngleVariance(pathSamples):
+	pathVar = []
+	
+	" compute the local variance of the angle "
+	VAR_WIDTH = 40
+	for i in range(len(pathSamples)):
+		
+		lowK = i - VAR_WIDTH/2
+		if lowK < 0:
+			lowK = 0
+			
+		highK = i + VAR_WIDTH/2
+		if highK >= len(pathSamples):
+			highK = len(pathSamples)-1
+		
+		localSamp = []
+		for k in range(lowK, highK+1):
+			localSamp.append(pathSamples[k][2])
+		
+		sum = 0.0
+		for val in localSamp:
+			sum += val
+			
+		meanSamp = sum / float(len(localSamp))
+		
+
+		sum = 0
+		for k in range(len(localSamp)):
+			sum += (localSamp[k] - meanSamp)*(localSamp[k] - meanSamp)
+	
+		varSamp = sum / float(len(localSamp))
+		
+		pathVar.append((meanSamp, varSamp))		 
+
+	return pathVar
+
 
 
 class Paths:
@@ -575,14 +611,12 @@ class Paths:
 		
 		self.mergeMapping = {}
 		
-		self.consistency = {}
 		
 		self.rootPoint = [-3.2, 0.0]
 		
 		self.pathGraph = graph.graph()
 		self.joins = []
 		
-		self.graphCount = 0
 		self.medialCount = 1000
 		self.spliceCount = 0
 		self.pathPlotCount = 0
@@ -598,13 +632,13 @@ class Paths:
 		for i in range(1000):
 			self.colors.append((random.random(),random.random(),random.random()))
 	
+	""" state save and restore methods """
 	@logFunction
 	def saveState(self, id):
 		
 		saveFile = ""
 		
 		saveFile += "self.pathClasses = " + repr(self.pathClasses) + "\n"
-		saveFile += "self.consistency = " + repr(self.consistency) + "\n"
 		
 		saveFile += "self.pathTermsVisited = " + repr(self.pathTermsVisited) + "\n"
 		saveFile += "self.pathIDs = " + repr(self.pathIDs) + "\n"		 
@@ -633,211 +667,8 @@ class Paths:
 		#print self.numNodes
 		#print self.edgePriorityHash
 			
-	@logFunction
-	def generatePaths(self):
-		
-		" COMPUTE MEDIAL AXIS FROM UNION OF PATH-CLASSIFIED NODES "
-		self.paths = {}
-		self.hulls = {}
-		
-		pathIDs = self.getPathIDs()
-		for k in pathIDs:
-			print "computing path for node set", k, ":", self.getNodes(k)
-			self.paths[k], self.hulls[k] = self.getTopology(k)
 
-		#self.getUnionTopology()
-
-
-		" compute the junction points between parent paths and child branches "
-		for pathID in pathIDs:
-			
-			if self.pathClasses[pathID]["parentID"] != None:
-
-				parentPathID = self.pathClasses[pathID]["parentID"]
-				childPathID = pathID
-
-				#path1 = self.paths[parentPathID]
-				#path2 = self.paths[childPathID]
-				
-
-				globJuncPose = self.getBranchPoint(parentPathID, childPathID, self.paths, plotIter = True)
-				print "generated globJuncPose:",  globJuncPose
-				
-				self.pathClasses[childPathID]["globalJunctionPose"] = globJuncPose
-
-
-
-		self.trimmedPaths = self.trimPaths(self.paths)
-
-		" for each path, attempt to join with its parent path "
-		self.joins = []
-		self.junctions = {}
-		for pathID in pathIDs:
-
-			cPath = self.getPath(pathID)
-			
-			parentPathID = cPath["parentID"]
-			
-			" parent does not concern us "
-			if parentPathID == None:
-				continue
-			
-			junctionNodeID = cPath["branchNodeID"]
-			localJunctionPoint = cPath["localJunctionPose"]
-			poseOrigin = Pose(self.nodeHash[junctionNodeID].getEstPose())
-			junctionPoint = poseOrigin.convertLocalToGlobal(localJunctionPoint)
-			junctionPose = poseOrigin.convertLocalOffsetToGlobal(localJunctionPoint)
-
-			junctionPose = self.getGlobalJunctionPose(pathID)
-			#junctionPose = cPath["globalJunctionPose"]
-			junctionPoint = [junctionPose[0],junctionPose[1]]
-
-			print "node globJuncPose:",  junctionPose
-
-			path1 = self.trimmedPaths[pathID]
-			path2 = self.trimmedPaths[parentPathID]
-			
-			minDist1 = 1e100
-			minI1 = 0		 
-			for i in range(len(path1)):
-				pnt = path1[i]
-				dist = sqrt((pnt[0]-junctionPoint[0])**2 + (pnt[1]-junctionPoint[1])**2)
-			
-				if dist < minDist1:
-					minDist1 = dist
-					minI1 = i
-	
-			minDist2 = 1e100
-			minI2 = 0		 
-			for i in range(len(path2)):
-				pnt = path2[i]
-				dist = sqrt((pnt[0]-junctionPoint[0])**2 + (pnt[1]-junctionPoint[1])**2)
-			
-				if dist < minDist2:
-					minDist2 = dist
-					minI2 = i
-			
-			self.joins.append([(pathID, minI1),(parentPathID, minI2), junctionPoint])
-
-
-			" get junctions " 
-			#localPose = cPath["localJunctionPose"]
-			branchNodeID = cPath["branchNodeID"]
-			
-			#poseOrigin = Pose(self.nodeHash[branchNodeID].getEstPose())
-			#junctionPoint = poseOrigin.convertLocalToGlobal(localPose)
-
-			self.junctions[pathID] = [branchNodeID, junctionPose, (parentPathID,minI2), path2[minI2], minI1]
-			
-			#self.junctions[pathID] = [branchNodeID, junctionPoint, (parentPathID,minI2), path2[minI2], minI1]
-
-			#globalPose = self.nodeHash[branchNodeID].getGlobalGPACPose()
-			#junctions[pathID] = [cPath["branchNodeID"], cPath["localJunctionPose"]]
-			
-
-
-		" create a tree with the node IDs and then stitch them together with joins "
-		#pylab.clf()
-		
-		
-		self.pathGraph = graph.graph()
-		for pathID in pathIDs:
-			path = self.trimmedPaths[pathID]
-			for k in range(len(path)):
-				self.pathGraph.add_node((pathID, k), path[k])
-
-			xP = []
-			yP = []			   
-			if len(path) > 0:
-				pass
-				#xP = [path[0][0]]
-				#yP = [path[0][1]]
-			for k in range(len(path)-1):
-				self.pathGraph.add_edge((pathID, k), (pathID, k+1))
-				#xP.append(path[k+1][0])
-				#yP.append(path[k+1][1])
-			
-			#pylab.plot(xP,yP, color='k')
-			
-			cPath = self.getPath(pathID)			
-			parentPathID = cPath["parentID"]
-			
-			" parent does not concern us "
-			"""
-			if parentPathID != None:
-				
-				junctionNodeID = cPath["branchNodeID"]
-				localJunctionPoint = cPath["localJunctionPose"]
-				poseOrigin = Pose(self.nodeHash[junctionNodeID].getEstPose())
-				junctionPoint = poseOrigin.convertLocalToGlobal(localJunctionPoint)
-
-				#xP = [junctionPoint[0]]
-				#yP = [junctionPoint[1]]
-				#pylab.scatter(xP,yP, color='r')
-			"""
-			
-		" join with the junction in between the join points "
-		for k in range(len(self.joins)):
-			join = self.joins[k]
-			#pathGraph.add_node(k, join[2])
-			#pathGraph.add_edge(join[0], k)
-			#pathGraph.add_edge(k, join[1])
-			self.pathGraph.add_edge(join[0], join[1])
-
-			pID1, k1 = join[0]
-			pID2, k2 = join[1]
-
-			#xP = [self.trimmedPaths[pID1][k1][0], self.trimmedPaths[pID2][k2][0]]
-			#yP = [self.trimmedPaths[pID1][k1][1], self.trimmedPaths[pID2][k2][1]]
-			#pylab.plot(xP,yP, color='k')
-
-		#pylab.title("%s" % repr(pathIDs))
-		#pylab.savefig("splices_%04d.png" % self.graphCount)
-		self.graphCount += 1
-
-		self.topDict = {}
-		
-		
-		" get terminals "
-		self.terminals = {}
-		for pathID in pathIDs:
-			path = self.trimmedPaths[pathID]
-			
-			if len(path) > 0:
-				if pathID == 0:
-					
-					dist1 = sqrt((self.trimmedPaths[pathID][0][0] - self.rootPoint[0])**2 + (self.trimmedPaths[pathID][0][1] - self.rootPoint[1])**2)
-					dist2 = sqrt((self.trimmedPaths[pathID][len(path)-1][0] - self.rootPoint[0])**2 + (self.trimmedPaths[pathID][len(path)-1][1] - self.rootPoint[1])**2)
-
-					if dist1 < dist2:
-						self.terminals[0] = [(pathID,0), path[0]]
-						self.terminals[1] = [(pathID,len(path)-1), path[len(path)-1]]
-						self.topDict["t%u" % 0] = (pathID,0)
-						self.topDict["t%u" % 1] = (pathID,len(path)-1)
-						self.rootPoint = self.trimmedPaths[pathID][0]
-
-					else:
-						self.terminals[1] = [(pathID,0), path[0]]
-						self.terminals[0] = [(pathID,len(path)-1), path[len(path)-1]]
-						self.topDict["t%u" % 1] = (pathID,0)
-						self.topDict["t%u" % 0] = (pathID,len(path)-1)
-						self.rootPoint = self.trimmedPaths[pathID][len(path)-1]
-					
-				else:
-					
-					self.topDict["j%u" % pathID] = self.junctions[pathID][2]
-					minI1 = self.junctions[pathID][4]
-					
-					" determine which side is junction and which side is terminal"
-					if minI1 > len(path)-1 - minI1:    
-						self.terminals[pathID+1] = [(pathID,0), path[0]]
-						self.topDict["t%u" % (pathID+1)] = (pathID,0)
-					else:
-						self.terminals[pathID+1] = [(pathID,len(path)-1), path[len(path)-1]]
-						self.topDict["t%u" % (pathID+1)] = (pathID,len(path)-1)
-					#self.terminals[pathID+1] = [(pathID,len(path)-1), path[len(path)-1]]
-					#self.topDict["t%u" % (pathID+1)] = (pathID,len(path)-1)
-
+	""" member access methods """
 
 	@logFunction
 	def getGlobalJunctionPose(self, pathID):
@@ -859,17 +690,13 @@ class Paths:
 		return globJuncPose
 			
 	def getNodes(self, pathID):
-		
 		return self.pathClasses[pathID]["nodeSet"]
 	
 	def getPathIDs(self):
-		#print "keys:", self.pathClasses.keys()
 		return self.pathClasses.keys()
 	
 	def getParentPathID(self, pathID):
-		
 		parentID = self.pathClasses[pathID]["parentID"]
-	
 		return parentID
 	
 	def getPath(self, pathID):
@@ -1171,14 +998,161 @@ class Paths:
 			pylab.savefig("splicedPath_%04u.png" % self.spliceCount)
 			self.spliceCount += 1
 		
-
-
 		return results, self.terminals, self.junctions
 
 	
 	@logFunction
 	def isNodeExist(self, nodeID, pathID):
 		return nodeID in self.pathClasses[pathID]["nodeSet"]
+
+	""" generate the paths from the node and pose information """
+	@logFunction
+	def generatePaths(self):
+		
+		" COMPUTE MEDIAL AXIS FROM UNION OF PATH-CLASSIFIED NODES "
+		self.paths = {}
+		self.hulls = {}
+		
+		pathIDs = self.getPathIDs()
+		for k in pathIDs:
+			print "computing path for node set", k, ":", self.getNodes(k)
+			self.paths[k], self.hulls[k] = self.getTopology(k)
+
+		" compute the junction points between parent paths and child branches "
+		for pathID in pathIDs:
+			
+			if self.pathClasses[pathID]["parentID"] != None:
+
+				parentPathID = self.pathClasses[pathID]["parentID"]
+				childPathID = pathID
+
+				globJuncPose = self.getBranchPoint(parentPathID, childPathID, self.paths, plotIter = True)
+				print "generated globJuncPose:",  globJuncPose
+				
+				self.pathClasses[childPathID]["globalJunctionPose"] = globJuncPose
+
+
+
+		self.trimmedPaths = self.trimPaths(self.paths)
+
+		" for each path, attempt to join with its parent path "
+		self.joins = []
+		self.junctions = {}
+		for pathID in pathIDs:
+
+			cPath = self.getPath(pathID)
+			
+			parentPathID = cPath["parentID"]
+			
+			" parent does not concern us "
+			if parentPathID == None:
+				continue
+			
+			junctionNodeID = cPath["branchNodeID"]
+			localJunctionPoint = cPath["localJunctionPose"]
+			poseOrigin = Pose(self.nodeHash[junctionNodeID].getEstPose())
+			junctionPoint = poseOrigin.convertLocalToGlobal(localJunctionPoint)
+			junctionPose = poseOrigin.convertLocalOffsetToGlobal(localJunctionPoint)
+
+			junctionPose = self.getGlobalJunctionPose(pathID)
+			junctionPoint = [junctionPose[0],junctionPose[1]]
+
+			print "node globJuncPose:",  junctionPose
+
+			path1 = self.trimmedPaths[pathID]
+			path2 = self.trimmedPaths[parentPathID]
+			
+			minDist1 = 1e100
+			minI1 = 0		 
+			for i in range(len(path1)):
+				pnt = path1[i]
+				dist = sqrt((pnt[0]-junctionPoint[0])**2 + (pnt[1]-junctionPoint[1])**2)
+			
+				if dist < minDist1:
+					minDist1 = dist
+					minI1 = i
+	
+			minDist2 = 1e100
+			minI2 = 0		 
+			for i in range(len(path2)):
+				pnt = path2[i]
+				dist = sqrt((pnt[0]-junctionPoint[0])**2 + (pnt[1]-junctionPoint[1])**2)
+			
+				if dist < minDist2:
+					minDist2 = dist
+					minI2 = i
+			
+			self.joins.append([(pathID, minI1),(parentPathID, minI2), junctionPoint])
+
+
+			" get junctions " 
+			branchNodeID = cPath["branchNodeID"]
+			
+			self.junctions[pathID] = [branchNodeID, junctionPose, (parentPathID,minI2), path2[minI2], minI1]
+
+		" create a tree with the node IDs and then stitch them together with joins "
+		self.pathGraph = graph.graph()
+		for pathID in pathIDs:
+			path = self.trimmedPaths[pathID]
+			for k in range(len(path)):
+				self.pathGraph.add_node((pathID, k), path[k])
+
+			for k in range(len(path)-1):
+				self.pathGraph.add_edge((pathID, k), (pathID, k+1))
+			
+			" parent does not concern us "
+			cPath = self.getPath(pathID)			
+			parentPathID = cPath["parentID"]
+			
+		" join with the junction in between the join points "
+		for k in range(len(self.joins)):
+			join = self.joins[k]
+			self.pathGraph.add_edge(join[0], join[1])
+
+			pID1, k1 = join[0]
+			pID2, k2 = join[1]
+
+
+		self.topDict = {}
+		
+		
+		" get terminals "
+		self.terminals = {}
+		for pathID in pathIDs:
+			path = self.trimmedPaths[pathID]
+			
+			if len(path) > 0:
+				if pathID == 0:
+					
+					dist1 = sqrt((self.trimmedPaths[pathID][0][0] - self.rootPoint[0])**2 + (self.trimmedPaths[pathID][0][1] - self.rootPoint[1])**2)
+					dist2 = sqrt((self.trimmedPaths[pathID][len(path)-1][0] - self.rootPoint[0])**2 + (self.trimmedPaths[pathID][len(path)-1][1] - self.rootPoint[1])**2)
+
+					if dist1 < dist2:
+						self.terminals[0] = [(pathID,0), path[0]]
+						self.terminals[1] = [(pathID,len(path)-1), path[len(path)-1]]
+						self.topDict["t%u" % 0] = (pathID,0)
+						self.topDict["t%u" % 1] = (pathID,len(path)-1)
+						self.rootPoint = self.trimmedPaths[pathID][0]
+
+					else:
+						self.terminals[1] = [(pathID,0), path[0]]
+						self.terminals[0] = [(pathID,len(path)-1), path[len(path)-1]]
+						self.topDict["t%u" % 1] = (pathID,0)
+						self.topDict["t%u" % 0] = (pathID,len(path)-1)
+						self.rootPoint = self.trimmedPaths[pathID][len(path)-1]
+					
+				else:
+					
+					self.topDict["j%u" % pathID] = self.junctions[pathID][2]
+					minI1 = self.junctions[pathID][4]
+					
+					" determine which side is junction and which side is terminal"
+					if minI1 > len(path)-1 - minI1:    
+						self.terminals[pathID+1] = [(pathID,0), path[0]]
+						self.topDict["t%u" % (pathID+1)] = (pathID,0)
+					else:
+						self.terminals[pathID+1] = [(pathID,len(path)-1), path[len(path)-1]]
+						self.topDict["t%u" % (pathID+1)] = (pathID,len(path)-1)
 
 	@logFunction
 	def findSplice2(self, nodeID):
@@ -1326,178 +1300,9 @@ class Paths:
 						splicePaths.append(sPath['path'])
 						spliceTerms.append(termPath)
 						splicePathIDs.append(sPath['orderedPathIDs'])
-						
-
 
 		return splicePaths, spliceTerms, splicePathIDs
 
-	@logFunction
-	def checkNodeConsistency(self, nodeID1, nodeID2):
-
-		nodeSet = [nodeID1, nodeID2]
-
-		resultSet = []
-		
-		for nodeID in nodeSet:
-
-			pose0 = self.nodeHash[nodeID].getGlobalGPACPose()
-			hull0, medial0 = computeHullAxis(nodeID, self.nodeHash[nodeID], tailCutOff = False)
-
-			splicePaths, termSet2, pathSet2 = self.getSplicesByNearJunction(nodeID)
-   
-			for path in splicePaths:		
-
-				#orientedSplicePath = orientPath(path, medial0, pose0)	  
-				poseOrigin0 = Pose(pose0)
-				globalMedial0 = []
-				for p in medial0:
-					globalMedial0.append(poseOrigin0.convertLocalToGlobal(p))
-	
-				orientedSplicePath = orientPath(path, globalMedial0)				
-				
-				" (departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2 )"
-				result0 = getMultiDeparturePoint(orientedSplicePath, medial0, pose0, pose0, [], nodeID, pathPlotCount = self.multiDepCount, plotIter = True)
-				self.multiDepCount += 1
-
-				
-				isInterior1 = result0[2]
-				isExist1 = result0[3]
-				isInterior2 = result0[8]
-				isExist2 = result0[9]
-				
-				contigFrac = result0[12]
-				angDiff = result0[14]
-	
-				resultSet.append((nodeID, contigFrac, isInterior1, isInterior2, isExist1, isExist2))
-
-		
-		print "consistency for node", nodeID1, "and", nodeID2
-		for result in resultSet:
-			print "node", result[0], ":", result[1], result[2], result[3], result[4], result[5]
-
-
-
-	@logFunction
-	def checkPathConsistency(self, targetPathID):
-
-		#path = self.trimmedPaths[pathID]
-		nodeSet = self.getNodes(targetPathID)
-
-		resultSet = []
-
-		for nodeID in nodeSet:
-			pose0 = self.nodeHash[nodeID].getGlobalGPACPose()
-			hull0, medial0 = computeHullAxis(nodeID, self.nodeHash[nodeID], tailCutOff = False)
-
-			allSplices, terminals, junctions = self.getAllSplices(plotIter = True)
-
-			initPose2 = self.nodeHash[nodeID].getGlobalGPACPose()
-			
-			print "junctions:", junctions
-			print "initPose2:", initPose2
-			
-			junctions2 = []
-			for pathID, params in junctions.iteritems():
-				junctionPose = params[1]
-				
-				print "checking", pathID, params
-				
-				dist2 = sqrt((junctionPose[0]-initPose2[0])**2 + (junctionPose[1]-initPose2[1])**2)
-				
-				print "dist2 =", dist2
-				
-				if dist2 < 3.0:
-					junctions2.append((pathID,params[2][0]))
-				
-			"self.junctions[pathID] = [branchNodeID, junctionPoint, (parentPathID,minI2), path2[minI2], minI1]"
-			
-			closePathID2 = self.getClosestPath(initPose2)
-
-			print "closePathID2:", closePathID2
-			
-			pathSet2 = [closePathID2]
-
-			junctionSet = junctions2
-			junctionSet = list(set(junctionSet))
-
-			print "junctions2:", junctions2
-
-			for junc in junctionSet:
-				pathSet2.append(junc[0])
-				pathSet2.append(junc[1])
-
-			print "pathSet2:", pathSet2
-
-			pathSet2 = list(set(pathSet2))
-			
-			pathSet2.sort()
-
-			print "pathSet2:", pathSet2
-			
-			termSet2 = []
-			for pathID in pathSet2:
-				if pathID == 0:
-					termSet2.append(terminals[0][0])
-					termSet2.append(terminals[1][0])
-				else:
-					termSet2.append(terminals[pathID+1][0])
-					
-			for pathID in pathSet2:
-				parentID = self.getParentPathID(pathID)
-
-				if parentID != None and not parentID in pathSet2:
-					termSet2.append(junctions[pathID][2])
-				
-
-			
-
-			splicePaths = []
-
-			print "termSet2:", termSet2
-			print "allSplices:"
-
-			for k, result in allSplices.iteritems():
-				print "id:", k
-				if k[0] in pathSet2 and k[1] in pathSet2:
-					
-					for sPath in result:
-						termPath = sPath['termPath']
-						print "termPath:", termPath
-													
-						if termPath[0] in termSet2 and termPath[-1] in termSet2:
-							splicePaths.append(sPath['path'])
-							
-			for path in splicePaths:		
-
-				#orientedSplicePath = orientPath(path, medial0, pose0)	  
-				poseOrigin0 = Pose(pose0)
-				globalMedial0 = []
-				for p in medial0:
-					globalMedial0.append(poseOrigin0.convertLocalToGlobal(p))
-	
-				orientedSplicePath = orientPath(path, globalMedial0)				
-				
-				" (departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2 )"
-				result0 = getMultiDeparturePoint(orientedSplicePath, medial0, pose0, pose0, [], nodeID, pathPlotCount = self.multiDepCount, plotIter = True)
-				self.multiDepCount += 1
-
-				
-				isInterior1 = result0[2]
-				isExist1 = result0[3]
-				isInterior2 = result0[8]
-				isExist2 = result0[9]
-				
-				contigFrac = result0[12]
-				angDiff = result0[14]
-	
-				resultSet.append((nodeID, contigFrac, isInterior1, isInterior2, isExist1, isExist2))
-
-		
-		print "consistency for path", targetPathID
-		for result in resultSet:
-			print "node", result[0], ":", result[1], result[2], result[3], result[4], result[5]
-
-	
 	@logFunction
 	def comparePaths(self):
  
@@ -1505,9 +1310,18 @@ class Paths:
 		allSplices, terminals, junctions = self.getAllSplices(plotIter = True)
 		
 		toBeMerged = []
-		print "consistency:", self.consistency
 		
-		for pathPair,value in self.consistency.iteritems():
+		allPathIDs = self.getPathIDs()
+		allPathIDs.sort()
+		
+		pathIDPairs = []
+		for i in range(len(allPathIDs)):
+			for j in range(i+1, len(allPathIDs)):
+				pathIDPairs.append((allPathIDs[i],allPathIDs[j]))
+
+		print "pathIDPairs:", pathIDPairs
+
+		for pathPair in pathIDPairs:
 			pathID1 = pathPair[0]
 			pathID2 = pathPair[1]
 
@@ -1532,9 +1346,6 @@ class Paths:
 				pathParent2 = None
 				grandParentID2 = None
 			
-			
-			self.consistency[pathPair] = 0.0	 
-
 			
 			" Only consider case when two paths share the same parent "
 			pathPairs = []
@@ -1913,11 +1724,6 @@ class Paths:
 								if cost < 1e10:
 									print pathID1, "and", pathID2, "are similar!"
 									toBeMerged.append((pathID1, pathID2, resultPose0, rootPaths))
-									if pathID1 < pathID2:
-										self.consistency[(pathID1,pathID2)] = 1.0
-									else:
-										self.consistency[(pathID2,pathID1)] = 1.0
-									print self.consistency
 		
 		return toBeMerged
 					
@@ -1985,9 +1791,6 @@ class Paths:
 		" align the two junctions "
 		alignedJunctionPose2 = [junctionPose2[0], junctionPose2[1], junctionPose1[2]]
 		localJunctionPose2 = juncOrigin1.convertGlobalPoseToLocal(alignedJunctionPose2)
-		#localJunctionPose2 = juncOrigin1.convertGlobalPoseToLocal(junctionPose2)
-		#deOffsetPose2 = juncOrigin1.doInverse(localJunctionPose2)
-		#resultOffset = newJuncOrigin1.convertGlobalPoseToLocal(alignedJunctionPose2)
 		
 		print "alignedJunctionPose2:", alignedJunctionPose2
 		print "localJunctionPose2:", localJunctionPose2
@@ -1998,7 +1801,6 @@ class Paths:
 		for k in range(len(pathSeg2)):
 			p = pathSeg2[k]
 			p2 = alignJuncOrigin2.convertGlobalToLocal(p)			 
-			#p2 = juncOrigin2.convertGlobalToLocal(p)			 
 			p1 = juncOrigin1.convertLocalToGlobal(p2)
 			newPathSeg2.append(p1)
 		
@@ -2054,9 +1856,6 @@ class Paths:
 		
 			self.pathPlotCount2 += 1
 		
-		#return
-
-
 		" compute the medial axis for each pose "
 		globalPath1 = stitchedPath
 		globalPath2 = parentPath
@@ -2069,15 +1868,13 @@ class Paths:
 		globalPath2Reverse = deepcopy(globalPath2)
 		globalPath2Reverse.reverse()
 
-		#globalMedial = globalPath1
-		
-		#medialSpline1 = SplineFit(globalMedial, smooth=0.1)
 		globalSpline1 = SplineFit(globalPath1, smooth=0.1)
 		globalSpline1Reverse = SplineFit(globalPath1Reverse, smooth=0.1)
 		globalSpline2 = SplineFit(globalPath2, smooth=0.1)
 		globalSpline2Reverse = SplineFit(globalPath2Reverse, smooth=0.1)
 
 
+		"""
 		overlapMatch = []
 		angleSum1 = 0.0
 		angleSum2 = 0.0
@@ -2118,7 +1915,11 @@ class Paths:
 			orientedGlobalPath = globalPath2Reverse
 		else:
 			orientedGlobalPath = globalPath2
+		"""
 			
+		orientedGlobalPath = orientPath(globalPath2, globalPath1)
+
+		globalSpline1 = SplineFit(globalPath1, smooth=0.1)
 		orientedGlobalSpline2 = SplineFit(orientedGlobalPath, smooth=0.1)
 
 
@@ -2128,10 +1929,15 @@ class Paths:
 		globalSamples1 = globalSpline1.getUniformSamples(spacing = 0.04)
 
 		
-		globalVar = []
-		medialVar = []
 		
 		" compute the local variance of the angle "
+		globalVar = computePathAngleVariance(globalSamples2)
+		medialVar = computePathAngleVariance(globalSamples1)
+
+		"""
+		globalVar = []
+		medialVar = []
+
 		VAR_WIDTH = 40
 		for i in range(len(globalSamples2)):
 			
@@ -2191,6 +1997,7 @@ class Paths:
 			
 			medialVar.append((meanSamp, varSamp))		 
 
+		"""
 
 		" now lets find closest points and save their local variances "			   
 		closestPairs = []
@@ -2292,16 +2099,7 @@ class Paths:
 		parentID1 = pathDict1["parentID"]
 		parentID2 = pathDict2["parentID"]
 		
-
-		if False:
-			globalJunctionPose1 = pathDict1["globalJunctionPose"]
-			globalJunctionPose2 = pathDict2["globalJunctionPose"]
-
-
-			originU2 = globalSpline1.findU(globalJunctionPose1)    
-			originU1 = orientedGlobalSpline2.findU(globalJunctionPose1)
-		
-		elif len(closestPairs) > 0:
+		if len(closestPairs) > 0:
 
 			globalJunctionPose1 = pathDict1["globalJunctionPose"]
 			globalJunctionPose2 = pathDict2["globalJunctionPose"]			 
@@ -2457,47 +2255,8 @@ class Paths:
 		
 		
 		resultPose2 = computeOffset(newJuncPose1, alignedJunctionPose2)
-		#resultPose2 = computeOffset(newJuncPose1, junctionPose2)
-		#fooPose2 = computeOffset(junctionPose2, newJuncPose1)
 
 		print "resultPose2:", resultPose2
-
-		#fooPose1 = [0.0,0.0,0.0]
-		" array([[cos(self.estPose[2]), sin(self.estPose[2])],[-sin(self.estPose[2]),cos(self.estPose[2])]])  "
-		#fooPose1[0] = resultPose2[0]*cos(resultPose1[2]) - resultPose2[1]*sin(resultPose1[2])
-		#fooPose1[1] = resultPose2[0]*sin(resultPose1[2]) + resultPose2[1]*cos(resultPose1[2])
-		#fooPose1[2] = resultPose1[2]
-		
-		#print "fooPose1:", fooPose1
-		
-		#fooPose2 = [0.0,0.0,0.0]
-		" array([[cos(self.estPose[2]), sin(self.estPose[2])],[-sin(self.estPose[2]),cos(self.estPose[2])]])  "
-		#fooPose2[0] = resultPose2[0]*cos(resultPose1[2]) + resultPose2[1]*sin(resultPose1[2])
-		#fooPose2[1] = -resultPose2[0]*sin(resultPose1[2]) + resultPose2[1]*cos(resultPose1[2])
-		#fooPose2[2] = resultPose1[2]
-		
-		#print "fooPose2:", fooPose2
-
-		"""
-		alignJuncOrigin2 = Pose(alignedJunctionPose2)
-		
-		newPathSeg2 = []
-		for k in range(len(pathSeg2)):
-			p = pathSeg2[k]
-			p2 = alignJuncOrigin2.convertGlobalToLocal(p)			 
-			#p2 = juncOrigin2.convertGlobalToLocal(p)			 
-			p1 = juncOrigin1.convertLocalToGlobal(p2)
-			newPathSeg2.append(p1)
-
-
-		poseOrigin = Pose(resultPose1)
-		path1 = pair[1]
-		path1_offset = []
-		for p in path1:
-			result = poseOrigin.convertLocalToGlobal(p)
-			path1_offset.append(result)    
-
-		"""
 
 		globalPath1 = self.paths[pathID1]
 		globalPath2 = self.paths[pathID2]
@@ -2606,6 +2365,7 @@ class Paths:
 		globalSpline2Reverse = SplineFit(globalPath2Reverse, smooth=0.1)
 
 
+		"""
 		overlapMatch = []
 		angleSum1 = 0.0
 		angleSum2 = 0.0
@@ -2646,6 +2406,10 @@ class Paths:
 			orientedGlobalPath = globalPath2Reverse
 		else:
 			orientedGlobalPath = globalPath2
+		"""
+
+
+		orientedGlobalPath = orientPath(globalPath2, globalPath1)
 			
 		orientedGlobalSpline2 = SplineFit(orientedGlobalPath, smooth=0.1)
 
@@ -2654,6 +2418,10 @@ class Paths:
 		globalSamples1 = globalSpline1.getUniformSamples(spacing = 0.04)
 
 		
+		globalVar = computePathAngleVariance(globalSamples2)
+		medialVar = computePathAngleVariance(globalSamples1)
+
+		"""
 		globalVar = []
 		medialVar = []
 		
@@ -2716,6 +2484,7 @@ class Paths:
 			varSamp = sum / float(len(localSamp))
 			
 			medialVar.append((meanSamp, varSamp))		 
+		"""
 
 
 		" now lets find closest points and save their local variances "			   
@@ -2781,24 +2550,6 @@ class Paths:
 		
 		if parentID1 == parentID2:
 			
-			"""
-			branchNodeID1 = pathDict1["branchNodeID"]
-			branchNodeID2 = pathDict2["branchNodeID"]
-
-			localJunctionPose1 = pathDict1["localJunctionPose"]
-			localJunctionPose2 = pathDict2["localJunctionPose"]
-			
-			estPose1 = self.nodeHash[branchNodeID1].getEstPose()
-			estPose2 = self.nodeHash[branchNodeID2].getEstPose()
-			
-			poseOrigin1 = Pose(estPose1)
-			poseOrigin2 = Pose(estPose2)
-			
-			globalJunctionPose1 = poseOrigin1.convertLocalOffsetToGlobal(localJunctionPose1)
-			globalJunctionPose2 = poseOrigin2.convertLocalOffsetToGlobal(localJunctionPose2)
-			"""
-
-
 			globalJunctionPose1 = pathDict1["globalJunctionPose"]
 			globalJunctionPose2 = pathDict2["globalJunctionPose"]
 
@@ -2848,24 +2599,6 @@ class Paths:
 		#self.trimPaths(self.paths)		   
 		#self.comparePaths()
 	   
-		"""
-		probDist = {}		 
-		for k in range(self.numPaths):
-			probDist[k] = 0.0
-		
-		" distribute remainder evenly "
-		if self.numPaths > 1:
-			remainder = 1.0 - probA
-			val = remainder/(self.numPaths-1)
-			for k in range(self.numPaths):
-				probDist[k] = val
-
-		probDist[pathID] = probA
-		
-		
-		self.pathProbs[nodeID] = probDist
-		"""
-		
 	@logFunction
 	def delPath(self, pathID, mergeTargetID):
 		
@@ -2876,17 +2609,6 @@ class Paths:
 			
 			self.mergeMapping[pathID] = mergeTargetID
 
-			
-			keys = []
-			
-			for key, val in self.consistency.iteritems():
-				
-				if key[0] == pathID or key[1] == pathID:
-					keys.append(key)
-			
-			for key in keys:		
-				del self.consistency[key]
-				
 			
 			for k, pathClass in self.pathClasses.iteritems():
 				
@@ -2920,24 +2642,6 @@ class Paths:
 		print "newPath", newPathID, "=", self.pathClasses[newPathID]
 
 		self.mergeMapping[newPathID] = None
-		
-		for oldID in oldPaths:
-			
-			path1 = self.getPath(oldID)
-			path2 = self.getPath(newPathID)
-			
-			parentID1 = path1["parentID"]
-			parentID2 = path2["parentID"]
-			
-			if parentID1 != parentID2:
-				self.consistency[(oldID,newPathID)] = 0.0
-			else:
-				self.consistency[(oldID,newPathID)] = 0.5
-		
-		#self.generatePaths()
-		#self.trimPaths(self.paths)		   
-		#self.comparePaths()
-		print "consistency:", self.consistency
 		
 		return newPathID
  
@@ -3036,65 +2740,6 @@ class Paths:
 					
 					medialPointSoup.append(p1)
 
-		if False:
-			pylab.clf()    
-	
-			for nodeID in nodes:
-				estPose1 = self.nodeHash[nodeID].getGlobalGPACPose()		
-		
-				if self.nodeHash[nodeID].isBowtie:			  
-					hull1 = computeBareHull(self.nodeHash[nodeID], sweep = False, static = True)
-				else:
-					hull1 = computeBareHull(self.nodeHash[nodeID], sweep = False)
-		
-		
-				m = hashlib.md5()
-				m.update(repr(hull1))
-				print nodeID, "hull1 =", int(m.digest().encode('hex'),16)
-		
-				" set the origin of pose 1 "
-				poseOrigin = Pose(estPose1)
-		
-				xP = []
-				yP = []    
-				for k in range(len(hull1)):
-	 
-					p = hull1[k]
-					
-					m = hashlib.md5()
-					m.update(repr(p))
-					#print nodeID, "p =", int(m.digest().encode('hex'),16)				 
-					
-					p1 = poseOrigin.convertLocalToGlobal(p)
-					
-					m = hashlib.md5()
-					m.update(repr(p1))
-					#print nodeID, "p1 =", int(m.digest().encode('hex'),16)
-					
-					medialPointSoup.append(p1)
-					xP.append(p1[0])
-					yP.append(p1[1])
-	
-				pylab.scatter(xP,yP)
-	
-			#pylab.xlim(-4,4)
-			#pylab.ylim(-4,4)
-			pylab.title("%d: %s" % (pathID, repr(nodes)))
-			pylab.savefig("plotMedialSoup_%04u.png" % (self.medialSoupCount ))
-
-			saveFile = "medialPointSoup = ["
-			for k in range(len(medialPointSoup)):
-				saveFile += repr(medialPointSoup[k]) + "\n"
-			saveFile += "]\n"
-	
-			f = open("medialSoupSave_%04u.txt" % self.medialSoupCount, 'w')
-			f.write(saveFile)
-			f.close()
-			self.medialSoupCount  += 1
-		
-		#nodeID = self.numNodes - 1
-			
-		#radius = 0.2
 		radius = 0.2
 
 		numPoints = len(medialPointSoup)
@@ -4117,41 +3762,6 @@ class Paths:
 			return [], []
 
 
-		if False:	 
-			for nodeID in nodes:
-				estPose1 = self.nodeHash[nodeID].getGlobalGPACPose()		
-		
-				if self.nodeHash[nodeID].isBowtie:			  
-					hull1 = computeBareHull(self.nodeHash[nodeID], sweep = False, static = True)
-				else:
-					hull1 = computeBareHull(self.nodeHash[nodeID], sweep = False)
-		
-		
-				m = hashlib.md5()
-				m.update(repr(hull1))
-				print nodeID, "hull1 =", int(m.digest().encode('hex'),16)
-		
-				" set the origin of pose 1 "
-				poseOrigin = Pose(estPose1)
-		
-				xP = []
-				yP = []    
-				for k in range(len(hull1)):
-	 
-					p = hull1[k]
-					
-					m = hashlib.md5()
-					m.update(repr(p))
-					#print nodeID, "p =", int(m.digest().encode('hex'),16)				 
-					
-					p1 = poseOrigin.convertLocalToGlobal(p)
-					
-					m = hashlib.md5()
-					m.update(repr(p1))
-					#print nodeID, "p1 =", int(m.digest().encode('hex'),16)
-					
-					medialPointSoup.append(p1)
-
 		if True:
 	
 			pylab.clf()
@@ -4939,6 +4549,7 @@ class Paths:
 		path2Reverse.reverse()
 		path2SplineReverse = SplineFit(path2Reverse, smooth=0.1)
 		
+		"""
 		overlapMatch = []
 		angleSum1 = 0.0
 		angleSum2 = 0.0
@@ -4980,6 +4591,9 @@ class Paths:
 			orientedPath2 = path2Reverse
 		else:
 			orientedPath2 = path2
+		"""
+
+		orientedPath2 = orientPath(path2, path1, dist_thresh=0.1)
 			
 		path2Spline = SplineFit(orientedPath2, smooth=0.1)
 
@@ -5955,28 +5569,11 @@ class Paths:
 
 		plotIter = False
 
-		"""
-		for pathID in pathIDs:
-			
-			path = self.paths[pathID]
-			hull = self.hulls[pathID]
-			overlapCost1 = self.getOverlapCondition(path, nodeID1)
-			overlapCost2 = self.getOverlapCondition(path, nodeID2)
-
-
-			departurePoint1, isInterior1, isExist1 = self.getDeparturePoint(path, nodeID1, hull)
-			departurePoint2, isInterior2, isExist2 = self.getDeparturePoint(path, nodeID2, hull)
-		"""
-
 		node2 = self.nodeHash[nodeID]
 
 		hull2, medial2 = computeHullAxis(nodeID, node2, tailCutOff = False)
 
 		estPose2 = node2.getGlobalGPACPose()		
-			
-		#minMatchDist2 = 0.2
-		#minMatchDist2 = 0.5
-		#minMatchDist2 = 2.0
 			
 		" set the initial guess "
 		poseOrigin = Pose(estPose2)
@@ -6139,9 +5736,9 @@ class Paths:
 				
 				
 		orientedPath1 = orientPath(path1, path2)		   
-		#orientPath(globalPath, medial1, estPose1)
 
-		"Assumption:  one section of the medial axis is closely aligned with the path "
+
+		"""Assumption:  one section of the medial axis is closely aligned with the path """
 		
 		pathSpline2 = SplineFit(path2, smooth=0.1)
 		pathPoints2 = pathSpline2.getUniformSamples()
@@ -6939,9 +6536,6 @@ class Paths:
 		for p in points2:
 			poly2.append([p[0],p[1]])			 
 		
-		" get the circles and radii "
-		radius2, center2 = gen_icp.computeEnclosingCircle(points2)
-				
 		support_pairs = []
 		#for i in range(len(poly2)):
 		for i in range(len(vecPoints2)):
@@ -6949,20 +6543,14 @@ class Paths:
 			p_2 = vecPoints2[i]
 	
 			" for every transformed point of A, find it's closest neighbor in B "
-			#_1, minDist = gen_icp.findClosestPointInB(supportPoints, p_2, [0.0,0.0,0.0])
-
 			try:
 				p_1, minI, minDist = gen_icp.findClosestPointWithAngle(vecPoints1, p_2, math.pi/8.0)
-	
-				#if gen_icp.isInCircle(p_1, radius2, center2):
 	
 				if minDist <= minMatchDist2:
 					C2 = points2[i][2]
 					C1 = supportPoints[minI][2]
-					#C1 = p_1[2]
 	
 					" we store the untransformed point, but the transformed covariance of the A point "
-					#support_pairs.append([points2[i],p_1,C2,C1])
 					support_pairs.append([points2[i],supportPoints[minI],C2,C1])
 			except:
 				pass

@@ -126,9 +126,6 @@ class VisualGraph:
 		#self.poseGraph.paths.comparePaths()
 
 
-		print "consistency:"
-		print self.poseGraph.paths.consistency
-
 		xP1 = []
 		yP1 = []
 		xP2 = []

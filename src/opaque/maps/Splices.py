@@ -588,7 +588,7 @@ def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, node
 	#return departurePoint1, angle1, isInterior1, isExist1, dist1, departurePoint2, angle2, isInterior2, isExist2, dist2
 	return departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2
 
-def orientPath(globalPath, globalRefPath):
+def orientPath(globalPath, globalRefPath, dist_thresh = 0.5):
 	
 	globalPathReverse = deepcopy(globalPath)
 	globalPathReverse.reverse()
@@ -608,7 +608,7 @@ def orientPath(globalPath, globalRefPath):
 	for i in range(0,len(globalRefPath)):
 		p_1 = globalRefPath[i]
 		p_2, j, minDist = findClosestPointInA(globalPath, p_1)
-		if minDist < 0.5:
+		if minDist < dist_thresh: 
 			overlapMatch.append((i,j,minDist))
 
 			pathU1 = refSpline1.findU(p_1)	
