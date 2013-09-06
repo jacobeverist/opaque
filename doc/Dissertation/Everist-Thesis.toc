@@ -1,0 +1,85 @@
+\contentsline {chapter}{Dedication}{ii}
+\contentsline {chapter}{List of Figures}{vi}
+\contentsline {chapter}{List of Tables}{viii}
+\contentsline {chapter}{List of Algorithms}{ix}
+\contentsline {chapter}{Preface}{x}
+\contentsline {chapter}{Abstract}{xi}
+\contentsline {chapter}{\numberline {1}Introduction}{1}
+\contentsline {section}{\numberline {1.1}Problem}{1}
+\contentsline {section}{\numberline {1.2}Related Work}{2}
+\contentsline {section}{\numberline {1.3}Approach}{3}
+\contentsline {subsection}{\numberline {1.3.1}Experimental System}{4}
+\contentsline {section}{\numberline {1.4}Contributions}{8}
+\contentsline {chapter}{\numberline {2}Snake Locomotion without Exteroception}{9}
+\contentsline {section}{\numberline {2.1}Problem}{9}
+\contentsline {section}{\numberline {2.2}Anchoring}{13}
+\contentsline {section}{\numberline {2.3}Curves}{18}
+\contentsline {section}{\numberline {2.4}Behaviors}{18}
+\contentsline {section}{\numberline {2.5}Smooth Motion}{20}
+\contentsline {section}{\numberline {2.6}Behavior Merging}{21}
+\contentsline {section}{\numberline {2.7}Compliant Motion}{25}
+\contentsline {section}{\numberline {2.8}Stability Assurance}{26}
+\contentsline {section}{\numberline {2.9}Adaptive Step}{28}
+\contentsline {subsection}{\numberline {2.9.1}Front-Extend}{30}
+\contentsline {subsection}{\numberline {2.9.2}Front-Anchor}{32}
+\contentsline {subsection}{\numberline {2.9.3}Back-Extend}{35}
+\contentsline {subsection}{\numberline {2.9.4}Back-Anchor}{36}
+\contentsline {section}{\numberline {2.10}Analysis}{38}
+\contentsline {subsection}{\numberline {2.10.1}Case: Snake as a Curve}{38}
+\contentsline {subsection}{\numberline {2.10.2}Case: Snake with Width}{41}
+\contentsline {subsection}{\numberline {2.10.3}Case: Snake with Segments}{42}
+\contentsline {section}{\numberline {2.11}Experimental Results}{43}
+\contentsline {chapter}{\numberline {3}Motion Estimation from Proprioception}{45}
+\contentsline {section}{\numberline {3.1}Problem}{45}
+\contentsline {section}{\numberline {3.2}Immobilizing the Anchors}{46}
+\contentsline {section}{\numberline {3.3}Tracking Motion}{49}
+\contentsline {subsection}{\numberline {3.3.1}Pose and Coordinate Frames}{50}
+\contentsline {subsection}{\numberline {3.3.2}Reference Poses}{53}
+\contentsline {section}{\numberline {3.4}Robot-Centered Coordinate Frame}{57}
+\contentsline {subsection}{\numberline {3.4.1}Gross Posture Approximation Curve (GPAC) }{58}
+\contentsline {subsection}{\numberline {3.4.2}Generation of GPAC Local Frame}{61}
+\contentsline {subsection}{\numberline {3.4.3}Geometric Transform between Poses}{61}
+\contentsline {section}{\numberline {3.5}Results}{62}
+\contentsline {chapter}{\numberline {4}Sensing with Proprioception}{64}
+\contentsline {section}{\numberline {4.1}Problem}{64}
+\contentsline {section}{\numberline {4.2}Behavior}{65}
+\contentsline {section}{\numberline {4.3}Proprioceptive Sensor Data}{68}
+\contentsline {subsection}{\numberline {4.3.1}Data Capture}{68}
+\contentsline {subsection}{\numberline {4.3.2}Data Processing}{74}
+\contentsline {subsubsection}{Convex Hull}{74}
+\contentsline {subsubsection}{Alpha Shape}{76}
+\contentsline {subsubsection}{Medial Axis}{78}
+\contentsline {section}{\numberline {4.4}Failures}{81}
+\contentsline {subsection}{\numberline {4.4.1}Error Prevention}{82}
+\contentsline {subsubsection}{Averaging Reference Poses}{82}
+\contentsline {subsubsection}{Separation of Sweep Maps}{84}
+\contentsline {subsection}{\numberline {4.4.2}Error Mitigation}{84}
+\contentsline {subsubsection}{Reference Stabilization}{85}
+\contentsline {subsubsection}{Minimum Data Reduction}{87}
+\contentsline {section}{\numberline {4.5}Results}{88}
+\contentsline {chapter}{\numberline {5}Building a Map with a Pose Graph}{90}
+\contentsline {section}{\numberline {5.1}Problem}{90}
+\contentsline {section}{\numberline {5.2}Pose Graph Representation}{90}
+\contentsline {section}{\numberline {5.3}Types of Constraints}{94}
+\contentsline {subsection}{\numberline {5.3.1}Motion Constraint}{95}
+\contentsline {subsection}{\numberline {5.3.2}In-Place Constraint}{96}
+\contentsline {subsection}{\numberline {5.3.3}Step Constraint}{99}
+\contentsline {section}{\numberline {5.4}Generalized ICP}{102}
+\contentsline {section}{\numberline {5.5}Results}{102}
+\contentsline {subsection}{\numberline {5.5.1}Compare motion vs. step constraint}{102}
+\contentsline {subsection}{\numberline {5.5.2}Alter estimate of step, show different results}{102}
+\contentsline {chapter}{\numberline {6}Place Recognition and Loop-Closing}{103}
+\contentsline {section}{\numberline {6.1}Problem Definition}{103}
+\contentsline {section}{\numberline {6.2}Backtracking Along a Single Path}{104}
+\contentsline {subsection}{\numberline {6.2.1}Bounding $P_c$ to the Path}{105}
+\contentsline {subsubsection}{Generating the path}{106}
+\contentsline {subsubsection}{Forming the Bounded Pose Guess}{106}
+\contentsline {subsection}{\numberline {6.2.2}Finding nodes that are “Close”}{107}
+\contentsline {subsection}{\numberline {6.2.3}Should nodes be Constrained}{108}
+\contentsline {subsection}{\numberline {6.2.4}Building the Constraint}{108}
+\contentsline {subsection}{\numberline {6.2.5}Accepting or Rejecting Constraint Hypothesis}{110}
+\contentsline {subsection}{\numberline {6.2.6}Results}{110}
+\contentsline {section}{\numberline {6.3}Loop-Closing with Junctions}{111}
+\contentsline {chapter}{\numberline {7}Navigation and Exploration}{113}
+\contentsline {chapter}{\numberline {8}Conclusion}{114}
+\contentsline {chapter}{Bibliography}{115}

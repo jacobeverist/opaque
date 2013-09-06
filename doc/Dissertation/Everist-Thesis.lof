@@ -1,0 +1,64 @@
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {1.1}{\ignorespaces Example environment.}}{5}
+\contentsline {figure}{\numberline {1.2}{\ignorespaces Definitions of snake and pipe parameters.}}{5}
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {2.1}{\ignorespaces Biological Concertina Gait of a Snake in a Confined Space. Image taken from \cite {Gans:1980p775}}}{10}
+\contentsline {figure}{\numberline {2.2}{\ignorespaces Improperly tuned concertina posture using equation 2.1\hbox {}.}}{11}
+\contentsline {figure}{\numberline {2.3}{\ignorespaces One sine period curve}}{12}
+\contentsline {figure}{\numberline {2.4}{\ignorespaces Anchor with not enough segments}}{14}
+\contentsline {figure}{\numberline {2.5}{\ignorespaces Anchor Points}}{15}
+\contentsline {figure}{\numberline {2.6}{\ignorespaces Anchor with amplitude larger than pipe width.}}{16}
+\contentsline {figure}{\numberline {2.7}{\ignorespaces Separation of functionality.}}{19}
+\contentsline {figure}{\numberline {2.8}{\ignorespaces Smooth motion from interpolation of posture.}}{21}
+\contentsline {figure}{\numberline {2.9}{\ignorespaces Discontinuity in behaviors results in clash of functionality.}}{23}
+\contentsline {figure}{\numberline {2.10}{\ignorespaces Splice joint and connecting segments.}}{24}
+\contentsline {figure}{\numberline {2.11}{\ignorespaces Convergence merge.}}{25}
+\contentsline {figure}{\numberline {2.12}{\ignorespaces Compliance merge.}}{26}
+\contentsline {figure}{\numberline {2.13}{\ignorespaces Adaptive Step Concertina Gait}}{29}
+\contentsline {figure}{\numberline {2.14}{\ignorespaces Front-Extend behavior assembly.}}{31}
+\contentsline {figure}{\numberline {2.15}{\ignorespaces Front-Anchor behavior assembly.}}{33}
+\contentsline {figure}{\numberline {2.16}{\ignorespaces Posture that creates a 3-point anchor.}}{35}
+\contentsline {figure}{\numberline {2.17}{\ignorespaces Back-Extend behavior assembly.}}{36}
+\contentsline {figure}{\numberline {2.18}{\ignorespaces Back-Anchor behavior assembly.}}{37}
+\contentsline {figure}{\numberline {2.19}{\ignorespaces Parameterization of 3-point stable anchor in a smooth pipe.}}{39}
+\contentsline {figure}{\numberline {2.20}{\ignorespaces 3-point stable anchor with $w = 0$, $l = 0$, and $n = \infty $.}}{39}
+\contentsline {figure}{\numberline {2.21}{\ignorespaces Plot of snake arc length $L$ for various values of $W$ and $P$.}}{40}
+\contentsline {figure}{\numberline {2.22}{\ignorespaces Plot of snake length $L$ while $P=1$, for various values of $W$ and $w$.}}{42}
+\contentsline {figure}{\numberline {2.23}{\ignorespaces Intersecting circles along the line of the curve. Demonstration of curve fitting algorithm.}}{44}
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {3.1}{\ignorespaces Pose of rigid body with respect to global frame.}}{49}
+\contentsline {figure}{\numberline {3.2}{\ignorespaces Pose of A and B with respect to global frame.}}{50}
+\contentsline {figure}{\numberline {3.3}{\ignorespaces Local coordinate frames attached to segments and described by reference poses.}}{56}
+\contentsline {figure}{\numberline {3.4}{\ignorespaces Robot Posture, Gross Posture Approximation Curve (GPAC), and Local Frame Origin}}{58}
+\contentsline {figure}{\numberline {3.5}{\ignorespaces Estimated Trajectory of Robot through Variable-Width Pipe}}{62}
+\contentsline {figure}{\numberline {3.6}{\ignorespaces Estimated Trajectory of Robot through Fixed-Width Pipe with Junctions}}{63}
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {4.1}{\ignorespaces TODO: Remove the obstacle map. Free space map from PokeWalls behavior.}}{65}
+\contentsline {figure}{\numberline {4.2}{\ignorespaces PokeWalls behavior assembly.}}{66}
+\contentsline {figure}{\numberline {4.3}{\ignorespaces Snapshot of $\mathaccentV {bar}016{\phi _t}$ in local coordinates.}}{73}
+\contentsline {figure}{\numberline {4.4}{\ignorespaces Single forward sweep. }}{73}
+\contentsline {figure}{\numberline {4.5}{\ignorespaces Forward and backward sweep.}}{74}
+\contentsline {figure}{\numberline {4.6}{\ignorespaces Free space data before and after convex hull.}}{75}
+\contentsline {figure}{\numberline {4.7}{\ignorespaces Free space data of curved posture before and after convex hull.}}{76}
+\contentsline {figure}{\numberline {4.8}{\ignorespaces Alpha Shape example from \cite {cgal:d-as2-12b}}}{77}
+\contentsline {figure}{\numberline {4.9}{\ignorespaces Alpha Shape changing radius from \cite {cgal:d-as2-12b}}}{77}
+\contentsline {figure}{\numberline {4.10}{\ignorespaces Alpha hull of free space data.}}{78}
+\contentsline {figure}{\numberline {4.11}{\ignorespaces Process of generating medial axis.}}{79}
+\contentsline {figure}{\numberline {4.12}{\ignorespaces Process of generating medial axis.}}{80}
+\contentsline {figure}{\numberline {4.13}{\ignorespaces Largest set of contiguous reference poses.}}{83}
+\contentsline {figure}{\numberline {4.14}{\ignorespaces Separation of Sweep Maps.}}{85}
+\contentsline {figure}{\numberline {4.15}{\ignorespaces Local map rotational error.}}{86}
+\contentsline {figure}{\numberline {4.16}{\ignorespaces Gross Posture Approximation Curve of sample posture.}}{87}
+\contentsline {figure}{\numberline {4.17}{\ignorespaces Width distribution for detecting a bowtie.}}{88}
+\contentsline {figure}{\numberline {4.18}{\ignorespaces FIXME: Minimum data of anchored position if bowtied: only initial posture.}}{89}
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {5.1}{\ignorespaces Simple Pose Graph}}{91}
+\contentsline {figure}{\numberline {5.2}{\ignorespaces Pose Graph from Paired Poses}}{93}
+\contentsline {figure}{\numberline {5.3}{\ignorespaces Pose Graph with Uncorrected Backtracking}}{94}
+\contentsline {figure}{\numberline {5.4}{\ignorespaces Postures at Nodes in the Graph}}{95}
+\contentsline {figure}{\numberline {5.5}{\ignorespaces Point $I_k$ on Curve $\beta _k$ from Local Origin $O_k$}}{98}
+\contentsline {figure}{\numberline {5.6}{\ignorespaces Iterative Closest Point (ICP), finding angle around $O_0$ and $O_1$}}{99}
+\contentsline {figure}{\numberline {5.7}{\ignorespaces Iterative Closest Point (ICP), finding for $U_v$ and $\theta _v$ in step constraint}}{101}
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }

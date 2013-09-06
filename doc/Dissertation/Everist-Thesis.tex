@@ -1,0 +1,117 @@
+\documentclass{USC-Thesis}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{algorithm}
+%\usepackage{algorithmic}
+%\usepackage{algorithmicx}
+\usepackage{algpseudocode}
+
+
+\let\oldlistofalgorithms = \listofalgorithms
+\renewcommand{\listofalgorithms}{  
+\newpage
+    \addcontentsline{toc}{chapter}{\listalgorithmname}
+    \pagestyle{plain}
+    \begin{singlespace} 
+    \oldlistofalgorithms
+    \end{singlespace}}
+
+\begin{document}
+
+\title{Exploring and Mapping Confined and Sensor-Challenged Environments with Proprioception of a Robotic Snake 
+       }
+
+\author{Jacob Everist}
+\major{Computer Science}
+\month{January}
+\year{2013}
+\maketitle
+
+\dedication
+    \begin{quote}
+        \raggedleft {\em to family}
+    \end{quote}
+
+\tableofcontents 	% Table Of Contents
+
+\listoffigures	% List of figures
+
+\listoftables	% List of tables
+
+\listofalgorithms
+
+\topmatter{Preface}  % Preface with acknowlegements, etc.
+%\input{preface.tex}
+
+\topmatter{Abstract}
+\input{0-abstract.tex}
+
+
+% TODO
+% 1) notation guide, definition of terms (pose, posture, reference)
+% 2) wrap-up, related work, how is best for chapter 2
+% 3) figures for chapter 2
+% 4) introduction of contributions in chapter 1
+% 5) make a better organization and better story of chapter 2
+
+
+% CONVENTIONS:
+% P_k is a pose, p_k is a point
+% joint posture is a vector of joint angle \hat{\phi}
+% segment posture is a vector of poses, each element the pose of the i'th segment in the snake
+% C is a curve
+
+
+% DEFINITIONS:
+% Pipe is a tight space with a tunnel or corridor like topology.  Minimal open space, follows a path.
+% Path is a curve that represents the medial axis of a single traversal of a pipe
+% Junction is a confluence of 3 or more pipes
+% Branching is the event of the curve of the medial axis of a pose differing from another curve by a sharp turn that takes it from tangent to close to orthogonal
+% Curve is either a function or a set of points that describes a curve.  All curves are finite with a start and finish terminals
+
+
+
+
+\mainmatter 		% Begin Body
+
+\chapter{Introduction}
+\input{1-introduction.tex}
+
+
+\chapter{Snake Locomotion without Exteroception}
+\input{2-motion.tex}
+
+
+\chapter{Motion Estimation from Proprioception}
+\input{3-estimation.tex}
+%\input{MSMS/msms.tex}
+
+\chapter{Sensing with Proprioception}
+\input{4-sensing.tex}
+
+\chapter{Building a Map with a Pose Graph}
+\input{5-mapping.tex}
+
+\chapter{Place Recognition and Loop-Closing}
+\input{6-loops.tex}
+
+\chapter{Navigation and Exploration}
+\input{7-nav.tex}
+
+\chapter{Conclusion}
+\input{8-conclusion.tex}
+
+\bibliographystyle{alpha}   
+%\bibliography{references}
+\bibliography{opaque}{}
+
+\appendix    	% appendix is standard from latex report class.
+
+%\input{appendix.tex}
+
+
+
+\end{document}
+
