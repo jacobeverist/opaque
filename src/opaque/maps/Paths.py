@@ -1155,7 +1155,7 @@ class Paths:
 						self.topDict["t%u" % (pathID+1)] = (pathID,len(path)-1)
 
 	@logFunction
-	def findSplice2(self, nodeID):
+	def getOrderedOverlappingPaths(self, nodeID):
 
 		splicePaths, spliceTerms, splicePathIDs = self.getSplicesByNearJunction(nodeID)
 		
@@ -1184,7 +1184,7 @@ class Paths:
 		
 		resultSet = sorted(resultSet, key=itemgetter(12), reverse=True)
 		
-		print "findSplice2 sorted node", nodeID, ":"
+		print "getOrderedOverlappingPaths() sorted node", nodeID, ":"
 		for result in resultSet:
 			print result[15]
 
@@ -5528,13 +5528,6 @@ class Paths:
 		
 		return minPathID
 
-	@logFunction
-	def getOrderedOverlappingPaths(self, nodeID):
-		 
-		ordered1 = self.findSplice2(nodeID)
-		return ordered1
-		
-	
 	@logFunction
 	def getPathPath(self, startPathID, endPathID):
 		" given start pathID and end pathID, what is the series of paths I need to follow to get from start to end "
