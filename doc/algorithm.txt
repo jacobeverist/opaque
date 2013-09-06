@@ -1,0 +1,17 @@
+Jacob Everist
+September 6, 2013
+
+Questions:
+
+Which path or set of paths to fit the pose on?
+Does this pose completely fit on the path splice or does it depart?
+
+
+Where to fit the path?
+Does the pose fit on this path?
+Does the pose cause a branch onto new path?
+
+
+Fitting a pose to a path.
+
+
