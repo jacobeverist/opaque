@@ -8,16 +8,39 @@ MOVE ESTIMATION
 
 MAP INTEGRATION
 
+
+ADD NEW POSES, CREATE NEW PATHS
 - Which path or set of paths does this pose currently overlap?
 	getOrderedOverlappingPaths()
-	- of all splices in local neighborhood, find the best fit based on highest contiguity in initial estimated pose
+	- of all splices in local neighborhood, find the best fit based on highest contiguity with initial estimated pose
 	- in order of best fits, pick the first that overlaps all constituent paths, that is, does not have paths in the splice beyond the range of the pose sensor data
 	- for the constituent path IDs of the chosen splice, order them according to sequence they are overlapped by the pose curve
 	- return the ordered list of path IDs that this pose curve overlaps
 
-- Does this pose completely fit on the path splice or does it depart?
-- Given the departure state of the splice, is the pose departure parameters sufficient for a new branch?
-- Is the proposed new branch sufficiently different from existing branches?
+- Does this pose fit on the path splice or does it depart internally?
+	getDeparturePoint() of orderedPathIDs
+	- get departure state of the front pathID and back pathID with pose curve
+	- if the pose curve does not depart internally, add this node to the leaf path(s)
+
+- If it internally departs, given the departure state of the splice, are the pose departure parameters sufficient for a new branch?
+	- is the proposed new branch sufficiently unique
+		- is the distance from the parent's branch point sufficiently far?  (0.8)
+		- is a path sibling's sufficiently close (0.5) branch point not angled in the same direction (PI/6 tolerance)?
+		- is the pose curve featured?
+		- if all true, then this new branch is sufficiently unique
+
+- If the new branch is sufficiently unique, then create the new branch with the current pose
+- Regenerate the paths with the new node data
+
+TRY TO MERGE PATHS TOGETHER
+
+- select parent and child path pairs
+- select sibling path pairs
+
+- choose spliced pairs of p
+
+
+
 
 
 

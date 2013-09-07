@@ -6712,16 +6712,10 @@ class Paths:
 
 		foreTerm1 = frontInterior1 and frontExist1
 
-		frontAngDiff = 0.0
-
 		pathBranchID = -1
 		isBranch = False
 		isNew = False
 		
-		" 60 degree threshold "
-		ANG_THRESH = 1.047
-		#ANG_THRESH = 0.3
-
 		if foreTerm1:
 
 			isUnique1, duplicatePathID1 = self.checkUniqueBranch(parentPathID1, nodeID1, depAngle1, depPoint1)
