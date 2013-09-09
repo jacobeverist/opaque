@@ -42,7 +42,6 @@ def computeBareHull(node1, sweep = False, static = False):
 		
 		m = hashlib.md5()
 		m.update(repr(a_data))
-		#print "PoseGraph: computeBareHull():", int(m.digest().encode('hex'),16)   
 				
 		a_data = decimatePoints(a_data)
 
@@ -62,7 +61,6 @@ def computeBareHull(node1, sweep = False, static = False):
 
 		m = hashlib.md5()
 		m.update(repr(a_data))
-		#print "PoseGraph: computeBareHull():", int(m.digest().encode('hex'),16)   
 
 		a_data = decimatePoints(a_data)
 		
@@ -102,7 +100,6 @@ def computeHullAxis(nodeID, node2, tailCutOff = False):
 
 def printStack():
 
-	#traceback.print_stack()
 	flist = traceback.format_stack()
 	flist = flist[:-1]
 	
@@ -138,17 +135,8 @@ class PoseGraph:
 		self.commonOriginCount = 0
 		self.multiDepCount = 0
 		
-
-		#self.numPaths = 1
-		#self.paths = {0 : []}
-		#self.hulls = {0 : []}
-		#self.nodeSets = {0 : []}
-		
-		
 		" FIXME:  self.currPath is used but never modified	"
 		self.currPath = 0
-		#self.pathParents = [[None,None,None,None]]
-		#self.pathTermsVisited = {0: False}
 
 		self.trimCount = 0
 		self.spliceCount = 0
@@ -169,8 +157,6 @@ class PoseGraph:
 		
 		for i in range(1000):
 			self.colors.append((random.random(),random.random(),random.random()))
-
-		#self.colors = ['b','r','g','k','y']
 
 		self.E_gnd = matrix([[ 0.00001, 0.0, 0.0 ],
 							[ 0.0, 0.00001, 0.0],
@@ -217,7 +203,6 @@ class PoseGraph:
 	@logFunction
 	def saveState(self):
 
-		#self.nodePoses = {}
 		for k in range(self.numNodes):
 			self.nodePoses[k] = self.nodeHash[k].getGlobalGPACPose()
 					
@@ -225,12 +210,8 @@ class PoseGraph:
 
 		saveFile += "self.walls = " + repr(self.walls) + "\n"
 		saveFile += "self.initPose = " + repr(self.initPose) + "\n"
-		#saveFile += "self.nodeHash = " + repr(self.nodeHash) + "\n"
 		saveFile += "self.numNodes = " + repr(self.numNodes) + "\n"
-		#saveFile += "self.numPaths = " + repr(self.numPaths) + "\n"
-		#saveFile += "self.nodeSets = " + repr(self.nodeSets) + "\n"
 		saveFile += "self.currPath = " + repr(self.currPath) + "\n"
-		#saveFile += "self.pathParents = " + repr(self.pathParents) + "\n"
 		saveFile += "self.allPathConstraints = " + repr(self.allPathConstraints) + "\n"
 
 		saveFile += "self.nodePoses = " + repr(self.nodePoses) + "\n"
@@ -243,31 +224,9 @@ class PoseGraph:
 
 		" SAVE STATE "
 		self.paths.saveState(self.numNodes-1)
-		#self.paths = Paths(self.nodeHash)
 		self.currPath = 0
 		
-		
-		#self.currNode = 0
-					
 
-
-
-
-
-		
-				
-		#self.pathPlotCount = 0
-		#self.overlapPlotCount = 0
-		#self.pathDrawCount = 0
-		
-		#self.paths = {0 : []}
-		#self.hulls = {0 : []}
-		#self.pathTermsVisited = {0: False}
-
-		#self.trimCount = 0
-		#self.spliceCount = 0
-		#self.orderCount = 0		
-	
 		
 	@logFunction
 	def restoreState(self, dirName, numNodes):
@@ -313,8 +272,6 @@ class PoseGraph:
 		node1 = self.nodeHash[nodeID1]
 		node2 = self.nodeHash[nodeID2]
 
-		#hull1, medial1 = computeHullAxis(nodeID1, node1, tailCutOff = True)
-		#hull2, medial2 = computeHullAxis(nodeID2, node2, tailCutOff = True)
 		hull2, medial2 = computeHullAxis(nodeID2, node2, tailCutOff = False)
 		
 		estPose1 = node1.getGlobalGPACPose()		
@@ -442,8 +399,6 @@ class PoseGraph:
 				self.currNode.nodeID = nodeID
 				self.numNodes += 1
 				
-				#self.insertNode(nodeFore, nodeID, initLocation)
-				
 				self.currNode = backNode
 				self.currNode.setEstPose(initLocation)
 				nodeID = self.numNodes
@@ -504,7 +459,6 @@ class PoseGraph:
 				" IF THIS IS THE FIRST NODES IN THE FIRST PATH, JUST ADD THEM AS DEFAULT, DO NOTHING "
 				if len(self.paths.paths[0]) > 0:
 					
-					#self.paths.comparePaths()
 					self.mergePaths()
 	
 					paths = {}
@@ -639,14 +593,6 @@ class PoseGraph:
 						paths[k] = path 
 				self.trimmedPaths = self.paths.trimPaths(paths)
 
-				" perform path constraints only if we have not created a new path "
-				#for pathID in newPaths:
-				#	if orderedPathIDs1.count(pathID) > 0:
-				#		isNew1 = True
-				#	if orderedPathIDs2.count(pathID) > 0:
-				#		isNew2 = True
-				
-	
 				
 				self.drawTrimmedPaths(self.trimmedPaths)
 				print "trimmed paths:", len(self.trimmedPaths)
@@ -698,20 +644,6 @@ class PoseGraph:
 			self.drawPathAndHull()
 
 
-			
-			"""
-			try:
-				self.particleFilter
-			except:
-				self.particleFilter = ParticleFilter(self.paths.paths[0], self.nodeHash)
-			else:
-				#globalFunc = self.particleFilter.update
-				#globalArg = self.paths.paths[0]
-				#cProfile.run('globalFunc(globalArg)', 'prof_sim')
-				#cProfile.runctx('self.particleFilter.update(self.paths.paths[0],nodeID1)', None, locals(), 'icp_prof')
-				#exit()
-				self.particleFilter.update(self.paths.paths[0], nodeID1, isForward = direction)
-			"""
 			if nodeID1 >= 2:
 				newPath = deepcopy(self.paths.paths[0])
 				p0 = newPath[0]
@@ -1305,7 +1237,6 @@ class PoseGraph:
 					pose3 = currPathSpline.getPointOfDist(arcDist3)
 					"""
 					
-					
 					pose2 = initPose2
 					pose3 = initPose3
 					
@@ -1417,6 +1348,7 @@ class PoseGraph:
 		results2 = sorted(results2, key=itemgetter(12), reverse=True)				
 
 
+		""" NOTE:  We only discriminated based on node k but not node k+1 """
 		kIndex = results1[0][15]
 
 		return splicedPaths1[kIndex]
@@ -1452,72 +1384,6 @@ class PoseGraph:
 		medialVar = computePathAngleVariance(globalMedialSamples)
 
 	  
-		"""
-		globalVar = []
-		medialVar = []
-		
-		" compute the local variance of the angle "
-		VAR_WIDTH = 40
-		for i in range(len(globalSamples)):
-			
-			lowK = i - VAR_WIDTH/2
-			if lowK < 0:
-				lowK = 0
-				
-			highK = i + VAR_WIDTH/2
-			if highK >= len(globalSamples):
-				highK = len(globalSamples)-1
-			
-			localSamp = []
-			for k in range(lowK, highK+1):
-				localSamp.append(globalSamples[k][2])
-			
-			sum = 0.0
-			for val in localSamp:
-				sum += val
-				
-			meanSamp = sum / float(len(localSamp))
-			
-
-			sum = 0
-			for k in range(len(localSamp)):
-				sum += (localSamp[k] - meanSamp)*(localSamp[k] - meanSamp)
-		
-			varSamp = sum / float(len(localSamp))
-			
-			globalVar.append((meanSamp, varSamp))		
-
-		for i in range(len(globalMedialSamples)):
-			
-			lowK = i - VAR_WIDTH/2
-			if lowK < 0:
-				lowK = 0
-				
-			highK = i + VAR_WIDTH/2
-			if highK >= len(globalMedialSamples):
-				highK = len(globalMedialSamples)-1
-			
-			localSamp = []
-			for k in range(lowK, highK+1):
-				localSamp.append(globalMedialSamples[k][2])
-			
-			sum = 0.0
-			for val in localSamp:
-				sum += val
-				
-			meanSamp = sum / float(len(localSamp))
-			
-
-			sum = 0
-			for k in range(len(localSamp)):
-				sum += (localSamp[k] - meanSamp)*(localSamp[k] - meanSamp)
-		
-			varSamp = sum / float(len(localSamp))
-			
-			medialVar.append((meanSamp, varSamp))		
-		"""
-
-
 		" now lets find closest points and save their local variances "			
 		closestPairs = []
 		allPairs = []
@@ -1626,14 +1492,6 @@ class PoseGraph:
 	@logFunction
 	def mergeSiblings(self, resultOffset1, resultOffset2, pathID1, pathID2, lastCost, matchCount):
 
-		#tempID = pathID1
-		#pathID1 = pathID2
-		#pathID2 = tempID
-		
-		#tempOffset = resultOffset1
-		#resultOffset1 = resultOffset2
-		#resultOffset2 = tempOffset
-
 		" verify that this path still exists before we try to merge it "
 		allPathIDs = self.paths.getPathIDs()
 		if pathID1 in allPathIDs and pathID2 in allPathIDs:
@@ -1648,11 +1506,6 @@ class PoseGraph:
 			
 			" capture transform between pathID1 and pathID2 under correction "
 	
-			#cOffset = resultOffset1
-			#rootID = pathID1
-			#lessID = pathID2
-			
-			
 			mergeNodes1 = copy(self.paths.getNodes(pathID1))
 			mergeNodes2 = copy(self.paths.getNodes(pathID2))
 			
@@ -1764,25 +1617,7 @@ class PoseGraph:
 				self.statePlotCount += 1
 				self.drawPathAndHull()
 				
-				"""
-				results1 = []		
-				for k in range(len(splicedPaths1)):
-					path = splicedPaths1[k]			
-					result = getMultiDeparturePoint(path, medial, estPose, estPose, orderedPathIDs, nodeID)
-					results1.append(result+(k,))
-		
-		
-				results1 = sorted(results1, key=itemgetter(12))
-				results1 = sorted(results1, key=itemgetter(10), reverse=True)					
-		
-				kIndex = results1[0][13]
-		
-				fitSplice = splicedPaths1[kIndex]
-				"""
-	
-	
-	
-	
+
 			for nodeID in mergeNodes2:
 
 				print "adding node", nodeID, "to path", pathID1
@@ -2176,71 +2011,6 @@ class PoseGraph:
 			globalVar = computePathAngleVariance(globalSamples)
 			medialVar = computePathAngleVariance(globalMedialSamples)
 
-			"""
-			globalVar = []
-			medialVar = []
-			
-			" compute the local variance of the angle "
-			VAR_WIDTH = 40
-			for i in range(len(globalSamples)):
-				
-				lowK = i - VAR_WIDTH/2
-				if lowK < 0:
-					lowK = 0
-					
-				highK = i + VAR_WIDTH/2
-				if highK >= len(globalSamples):
-					highK = len(globalSamples)-1
-				
-				localSamp = []
-				for k in range(lowK, highK+1):
-					localSamp.append(globalSamples[k][2])
-				
-				sum = 0.0
-				for val in localSamp:
-					sum += val
-					
-				meanSamp = sum / float(len(localSamp))
-				
-	
-				sum = 0
-				for k in range(len(localSamp)):
-					sum += (localSamp[k] - meanSamp)*(localSamp[k] - meanSamp)
-			
-				varSamp = sum / float(len(localSamp))
-				
-				globalVar.append((meanSamp, varSamp))		
-	
-			for i in range(len(globalMedialSamples)):
-				
-				lowK = i - VAR_WIDTH/2
-				if lowK < 0:
-					lowK = 0
-					
-				highK = i + VAR_WIDTH/2
-				if highK >= len(globalMedialSamples):
-					highK = len(globalMedialSamples)-1
-				
-				localSamp = []
-				for k in range(lowK, highK+1):
-					localSamp.append(globalMedialSamples[k][2])
-				
-				sum = 0.0
-				for val in localSamp:
-					sum += val
-					
-				meanSamp = sum / float(len(localSamp))
-				
-	
-				sum = 0
-				for k in range(len(localSamp)):
-					sum += (localSamp[k] - meanSamp)*(localSamp[k] - meanSamp)
-			
-				varSamp = sum / float(len(localSamp))
-				
-				medialVar.append((meanSamp, varSamp))		
-			""" 
-	
 			" now lets find closest points and save their local variances "			
 			closestPairs = []
 			TERM_DIST = 20
@@ -2663,72 +2433,6 @@ class PoseGraph:
 		globalVar = computePathAngleVariance(globalSamples)
 		medialVar = computePathAngleVariance(globalMedialSamples)
 		
-		"""
-		globalVar = []
-		medialVar = []
-		
-		" compute the local variance of the angle "
-		VAR_WIDTH = 40
-		for i in range(len(globalSamples)):
-			
-			lowK = i - VAR_WIDTH/2
-			if lowK < 0:
-				lowK = 0
-				
-			highK = i + VAR_WIDTH/2
-			if highK >= len(globalSamples):
-				highK = len(globalSamples)-1
-			
-			localSamp = []
-			for k in range(lowK, highK+1):
-				localSamp.append(globalSamples[k][2])
-			
-			sum = 0.0
-			for val in localSamp:
-				sum += val
-				
-			meanSamp = sum / float(len(localSamp))
-			
-
-			sum = 0
-			for k in range(len(localSamp)):
-				sum += (localSamp[k] - meanSamp)*(localSamp[k] - meanSamp)
-		
-			varSamp = sum / float(len(localSamp))
-			
-			globalVar.append((meanSamp, varSamp))		
-
-		for i in range(len(globalMedialSamples)):
-			
-			lowK = i - VAR_WIDTH/2
-			if lowK < 0:
-				lowK = 0
-				
-			highK = i + VAR_WIDTH/2
-			if highK >= len(globalMedialSamples):
-				highK = len(globalMedialSamples)-1
-			
-			localSamp = []
-			for k in range(lowK, highK+1):
-				localSamp.append(globalMedialSamples[k][2])
-			
-			sum = 0.0
-			for val in localSamp:
-				sum += val
-				
-			meanSamp = sum / float(len(localSamp))
-			
-
-			sum = 0
-			for k in range(len(localSamp)):
-				sum += (localSamp[k] - meanSamp)*(localSamp[k] - meanSamp)
-		
-			varSamp = sum / float(len(localSamp))
-			
-			medialVar.append((meanSamp, varSamp))		
-		"""
-
-
 		" now lets find closest points and save their local variances "			
 		closestPairs = []
 		TERM_DIST = 20

@@ -37,10 +37,38 @@ TRY TO MERGE PATHS TOGETHER
 - select parent and child path pairs
 - select sibling path pairs
 
-- choose spliced pairs of p
+- if sibling pairs,
+	- create a stitched path of parent with section between two child junction points excised and the relative orientations of the junction points are aligned
+	- select common point between parent path and stitched parent path
+	- perform ICP fit between stitched parent and original parent
+	- return the resulting pose offsets for both sibling paths and their relative junction angle
+	- if the angle of both offsets is < 0.5 and the junction angle difference is < PI/4, than we queue the sibilngs to be merged
+	
+
+- if parent-child pairs,
+	- create a set of splices for the parent path and the child path	
+		- if grandparent exists,
+			- generate gparent/parent splices and gparent/parent/child splices
+		- else
+			- generate parent splices and parent/child splices
+	- select common point between parent splice and child splice
+	- perform ICP fit between parent splice and child splice pathOverlapICP()
+	- return the resulting offset between the two
+	- if the resulting offset angle < 0.5 radians
+		- compute the departure state of the two paths given their relative offset getPathDeparture()
+		- if one path does not internally depart from the other
+			- and if the two paths with their relative offset partially overlap getPathOverlapConditionn()
+				- then we queue the child and parent paths for merging
+
+- merge sibling pairs
+
+- merge parent-child pairs
+	- select child nodes
+	- move them by earlier ICP-fitted offset
+	- find the most consistent fit in all set of splices in the node's new neighborhood consistentFit()
 
 
-
+	- change their classification to parent path
 
 
 
