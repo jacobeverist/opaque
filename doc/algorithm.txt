@@ -1,12 +1,12 @@
 Jacob Everist
 September 6, 2013
 
-Questions:
-
 MOVE ESTIMATION
+- estimate position of nodes based on motion estimation from the previous pose
 
 
 MAP INTEGRATION
+- integrate the new pose into the map
 
 
 ADD NEW POSES, CREATE NEW PATHS
@@ -32,11 +32,11 @@ ADD NEW POSES, CREATE NEW PATHS
 - If the new branch is sufficiently unique, then create the new branch with the current pose
 - Regenerate the paths with the new node data
 
-TRY TO MERGE PATHS TOGETHER
 
 - select parent and child path pairs
 - select sibling path pairs
 
+PATH COMPARISONS FOR SIMILARITY
 - if sibling pairs,
 	- create a stitched path of parent with section between two child junction points excised and the relative orientations of the junction points are aligned
 	- select common point between parent path and stitched parent path
@@ -60,23 +60,44 @@ TRY TO MERGE PATHS TOGETHER
 			- and if the two paths with their relative offset partially overlap getPathOverlapConditionn()
 				- then we queue the child and parent paths for merging
 
+MERGE PATHS THAT ARE SIMILAR 
 - merge sibling pairs
+	- for the pair of sibling paths to be merged
+	- transform the nodes in path1 by the offset from the previous ICP fitting
+	- transform the nodes in path2 by the offset from the previous ICP fitting
+	- perform consistentFit() of each node from path2 into best possible splice (NOTE: should be onto a spliced parent-path1 curve)
+	- for each merged node, perform the "ADD NEW POSES, CREATE NEW PATHS" procedure for checking for branching events and classifying nodes into leaf paths
+
+
+
 
 - merge parent-child pairs
 	- select child nodes
 	- move them by earlier ICP-fitted offset
+	- find the most consistent fit of all set of splices in the node's new neighborhood using consistentFit()
+	- change their membership from child path to parent path
+
+
+- Finally, if the node hasn't been made fitted already to its path, do so now using consistentFit()
+
+
+
+FUNCTION
+consistentFit()
 	- find the most consistent fit in all set of splices in the node's new neighborhood consistentFit()
-
-
-	- change their classification to parent path
-
-
-
-Where to fit the path?
-Does the pose fit on this path?
-Does the pose cause a branch onto new path?
-
-
-Fitting a pose to a path.
+		- for each possible splice, find the common point betwen pose curve and splice path
+		- perform 11 guesses of where the pose should be along the length of the splice path curve in the neighborhood of the its starting location
+		- perform ICP between pose curve and path curve for each starting guess
+		- compute the departure state, contiguity, and overlap sum for each final position
+		- discard result if
+			- internal departure exists
+			- terminal departures on both ends of pose curve
+			- contiguity is less than 0.5
+			- the resultant pose is > 3.0 from original estimated pose
+			- difference between starting guess angle and corrected angle is > 0.7 radians
+		- select the splice and fit location with the best utility given by following equation:
+			- utilVal = (0.5-angDiff2)/0.5 + (contigFrac-0.5)/0.5 + (3.0-dist)/3.0 + 1-isDeparture*0.5
+			- weighting angle difference from initial guess, contiguity %, distance from starting estimate, and if any internal or terminal departure exists
+		
 
 
