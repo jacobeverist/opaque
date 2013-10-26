@@ -8,6 +8,9 @@ from math import floor, asin, acos, cos, sin
 from time import time
 from functions import closestAngle
 
+from scipy.spatial import cKDTree
+from numpy import array
+
 class SplineFit:
 
 	def __init__ (self, points, smooth = 0.1, kp = 5):
@@ -102,6 +105,8 @@ class SplineFit:
 		" precomputed points "
 		self.densePoints = []
 		self.distPoints = []
+		self.denseAngles = []
+		self.denseTree = None
 
 
 	def findU(self, point):
@@ -472,6 +477,8 @@ class SplineFit:
 		
 		" 1001 points "
 		self.densePoints = []
+		self.denseAngles = []
+		kdInput = []
 		for i in range(len(out[0])):
 
 			if i == len(out[0])-1:
@@ -492,8 +499,12 @@ class SplineFit:
 			if asin(vec[1]) < 0:
 				angle = -angle
 			
+			kdInput.append([out[0][i],out[1][i]])
 			self.densePoints.append([out[0][i],out[1][i], angle])
-		
+			self.denseAngles.append(angle)
+	
+		self.denseTree = cKDTree(array(kdInput))
+
 		#print "self.densePoints:", self.densePoints
 		
 		" 1000 distances "
@@ -825,8 +836,12 @@ class SplineFit:
 		if len(self.distPoints) == 0:
 			self.precompute()
 
+		" remove angle if it's there "
+		queryPoint = [pos[0],pos[1]]
+
+		minVal, min_i = self.denseTree.query(array(queryPoint))
 		
-		min, min_i = self.findMinDistancePoint(self.densePoints, pos)
+		#minVal, min_i = self.findMinDistancePoint(self.densePoints, pos)
 
 		uVal = min_i/1000.0
 		
@@ -835,55 +850,21 @@ class SplineFit:
 		elif uVal < 0.0:
 			uVal = 0.0
 
-		return min, uVal, self.densePoints[min_i]
-
-		#print min, min_i
-
-		if min_i == 0:
-			# sample above index zero
-			high_u = sample[1]
-			low_u = sample[0]
-
-		elif min_i == len(sample)-1:
-			# sample below index zero 
-			high_u = sample[-1]
-			low_u = sample[-2]
-
-		else:
-			# sample above and below min index
-			high_u = sample[min_i+1]
-			low_u = sample[min_i-1]
-
-		diff = high_u - low_u
-		#print "high_u =", high_u
-		inc = diff/10.0
-		sample2 = scipy.arange(low_u,high_u,inc)
-
-		sample3 = []
-		for samp in sample2:
-			sample3.append(samp)
-		if high_u == 1.0:
-			sample3 += [1.0]
-
-		points2 = self.getUSet(sample3)
-		min, min_i = self.findMinDistancePoint(points2, pos)
-
-		# return distance, u value, and point
-		return min, sample2[min_i], points2[min_i]
+		return minVal, uVal, self.densePoints[min_i]
 
 	def findMinDistancePoint(self, points, pos):
 
 		# compute distances of each point to pos
-		min = 10e9
+		minVal = 10e9
 		min_i = 0
 		for i in range(0,len(points)):
 			p = points[i]
 			dist = sqrt((p[0]-pos[0])**2 + (p[1]-pos[1])**2)
-			if dist < min:
+			if dist < minVal:
 				min_i = i
-				min = dist
+				minVal = dist
 
-		return min, min_i
+		return minVal, min_i
 
 if __name__ == '__main__':
 	
