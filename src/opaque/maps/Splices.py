@@ -10,6 +10,9 @@ from math import pi, sqrt, acos, fabs, cos, sin
 import nelminICP
 from icp import matchPairs
 
+from scipy.spatial import cKDTree
+from numpy import array
+
 renderGlobalPlotCount = 0
 
 def __num_processors():
@@ -213,9 +216,22 @@ def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, node
 	overlapMatch = []
 	angleSum1 = 0.0
 	angleSum2 = 0.0
+
+
+	kdInput = []
+	for j in range(0,len(pathPoints)):
+		p_2 = pathPoints[j]
+		kdInput.append(p_2[0:2])
+	kdTree = cKDTree(array(kdInput))
+	
 	for i in range(0,len(points2_offset)):
 		p_1 = points2_offset[i]
-		p_2, j, minDist = findClosestPointInA(pathPoints, p_1)
+		#p_2, j, minDist = findClosestPointInA(pathPoints, p_1)
+
+		queryPoint = p_1[0:2]
+		minDist, j = kdTree.query(array(queryPoint))
+		p_2 = pathPoints[j]
+
 		if minDist < 0.5:
 			overlapMatch.append((i,j,minDist))
 
@@ -282,9 +298,22 @@ def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, node
 	maxContig = 0
 	distances = []
 	indices = []
+	kdInput = []
+
+
+	for j in range(0,len(pathPoints)):
+		p_1 = pathPoints[j]
+		kdInput.append(p_1[0:2])
+	kdTree = cKDTree(array(kdInput))
+	
 	for i in range(0,len(points2_offset)):
 		p_2 = points2_offset[i]
-		p_1, i_1, minDist = findClosestPointInA(pathPoints, p_2)
+		#p_1, i_1, minDist = findClosestPointInA(pathPoints, p_2)
+
+		queryPoint = p_2[0:2]
+		minDist, i_1 = kdTree.query(array(queryPoint))
+		p_1 = pathPoints[i_1]
+
 		distances.append(minDist)
 		indices.append(i_1)
 		distSum += minDist
@@ -605,9 +634,21 @@ def orientPath(globalPath, globalRefPath, dist_thresh = 0.5):
 	overlapMatch = []
 	angleSum1 = 0.0
 	angleSum2 = 0.0
+
+	kdInput = []
+	for j in range(0,len(globalPath)):
+		p_2 = globalPath[j]
+		kdInput.append(p_2[0:2])
+	kdTree = cKDTree(array(kdInput))
+	
 	for i in range(0,len(globalRefPath)):
 		p_1 = globalRefPath[i]
-		p_2, j, minDist = findClosestPointInA(globalPath, p_1)
+		#p_2, j, minDist = findClosestPointInA(globalPath, p_1)
+
+		queryPoint = p_1[0:2]
+		minDist, j = kdTree.query(array(queryPoint))
+		p_2 = globalPath[j]
+
 		if minDist < dist_thresh: 
 			overlapMatch.append((i,j,minDist))
 
