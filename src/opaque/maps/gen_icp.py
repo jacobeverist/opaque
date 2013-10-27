@@ -84,6 +84,10 @@ globalPool = None
 import nelminICP
 
 
+from scipy.spatial import cKDTree
+from numpy import array
+
+
 def __num_processors():
     
     return 4
@@ -954,6 +958,12 @@ def overlapICP(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1, medi
         points2_offset.append(result)
 
 
+	#kdInput1 = []
+	#for i in range(0,len(points1)):
+	#	p_1 = points1[i]
+	#	kdInput1.append(p_1[0:2])
+	#kdTree1 = cKDTree(array(kdInput1))
+
     
     poly1 = []        
     for p in points1:
@@ -986,7 +996,8 @@ def overlapICP(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1, medi
             if isInCircle(p_2, radius1, center1):
 
                 " for every transformed point of A, find it's closest neighbor in B "
-                p_1, minDist = findClosestPointInB(points1, p_2, [0.0,0.0,0.0])
+                #p_1, minDist = findClosestPointInB(points1, p_2, [0.0,0.0,0.0])
+                p_1, i_1, minDist = findClosestPointInA(points1, p_2)
     
                 if minDist <= minMatchDist:
         
@@ -1401,6 +1412,12 @@ def overlapICP_GPU2(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1,
 
 
     
+	#kdInput1 = []
+	#for i in range(0,len(points1)):
+	#	p_1 = points1[i]
+	#	kdInput1.append(p_1[0:2])
+	#kdTree1 = cKDTree(array(kdInput1))
+
     poly1 = []        
     for p in points1:
         poly1.append([p[0],p[1]])    
@@ -1432,7 +1449,8 @@ def overlapICP_GPU2(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1,
             if isInCircle(p_2, radius1, center1):
 
                 " for every transformed point of A, find it's closest neighbor in B "
-                p_1, minDist = findClosestPointInB(points1, p_2, [0.0,0.0,0.0])
+                #p_1, minDist = findClosestPointInB(points1, p_2, [0.0,0.0,0.0])
+                p_1, i_1, minDist = findClosestPointInA(points1, p_2)
     
                 if minDist <= minMatchDist:
         
@@ -2296,6 +2314,11 @@ def pathOverlapICP(initGuess, globalPath, medialPoints,plotIter = False, n1 = 0,
     for p in globalPoints:
         globalPoly.append([p[0],p[1]])    
     
+	#kdInput1 = []
+	#for i in range(0,len(points1)):
+	#	p_1 = points1[i]
+	#	kdInput1.append(p_1[0:2])
+	#kdTree1 = cKDTree(array(kdInput1))
     
     while True:
         
