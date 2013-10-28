@@ -194,8 +194,6 @@ class PoseGraph:
 							[0.0, 0.0, pi/8.0]])
 
 
-		self.allPathConstraints = []
-		self.hypPlotCount = 0
 
 
 		self.nodePoses = {}
@@ -212,7 +210,6 @@ class PoseGraph:
 		saveFile += "self.initPose = " + repr(self.initPose) + "\n"
 		saveFile += "self.numNodes = " + repr(self.numNodes) + "\n"
 		saveFile += "self.currPath = " + repr(self.currPath) + "\n"
-		saveFile += "self.allPathConstraints = " + repr(self.allPathConstraints) + "\n"
 
 		saveFile += "self.nodePoses = " + repr(self.nodePoses) + "\n"
 
@@ -528,16 +525,28 @@ class PoseGraph:
 
 		" ensure the axes are computed before this check "
 		computeHullAxis(nodeID, newNode, tailCutOff = False)
+
+
+		if nodeID > 0:
+			
+			" ESTIMATE TRAVEL WITH MEDIAL OVERLAP CONSTRAINT OF EVEN NUMBER POSE "
+			if self.numNodes >= 4:
+
+				" Move node along path "
+				self.movePath(nodeID, direction)
+				self.drawConstraints(self.statePlotCount)
+				self.statePlotCount += 1
+				self.drawPathAndHull()
 		
 		
 		" CHECK FOR A BRANCHING EVENT "
 		
-		if self.numNodes >= 4 and self.numNodes % 2 == 0:
+		if self.numNodes >= 2 and self.numNodes % 2 == 0:
 
 			" DETECT BRANCHING EVENTS FOR THE 2 NODES OF LAST STOP "
 			" AFTER ODD-NUMBER OVERLAP OF CURRENT STOP HAS IRONED OUT ERRORS "
-			nodeID1 = self.numNodes-4
-			nodeID2 = self.numNodes-3
+			nodeID1 = self.numNodes-2
+			nodeID2 = self.numNodes-1
 			
 			" if these nodes are already path-classified, return"
 			isContained1 = False
@@ -672,16 +681,6 @@ class PoseGraph:
 				print "arcDistNew, arcDistOld, diff =", arcDistNew, arcDistOld, arcDistNew-arcDistOld
 		
 				
-		if nodeID > 0:
-			
-			" ESTIMATE TRAVEL WITH MEDIAL OVERLAP CONSTRAINT OF EVEN NUMBER POSE "
-			if self.numNodes >= 4:
-
-				" Move node along path "
-				self.movePath(nodeID, direction)
-				self.drawConstraints(self.statePlotCount)
-				self.statePlotCount += 1
-				self.drawPathAndHull()
 				
 
 		for k in range(self.numNodes):
@@ -2510,6 +2509,8 @@ class PoseGraph:
 
 	@logFunction
 	def makeMultiJunctionMedialOverlapConstraint(self, nodeID1, nodeID2, isMove = True, isForward = True, inPlace = False, uRange = 1.5):
+
+		""" FIXME:  remove the direct function call to node.getBareHull() and use standard available hulls """
 
 		def computeOffset(point1, point2, ang1, ang2):
 		

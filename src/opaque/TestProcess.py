@@ -12,6 +12,7 @@ from behaviors.AnchorTransition import AnchorTransition
 from pose.AverageContacts import AverageContacts
 from maps.MapGraph import MapGraph
 from maps.VisualGraph import VisualGraph
+from maps.MapLoader import MapLoader
 
 import numpy
 import sys
@@ -116,7 +117,8 @@ class TestProcess(SnakeControl):
 			
 			" create the mapping object "
 			#self.mapGraph = MapGraph(self.probe, self.contacts, isStable = True)
-			self.mapGraph = VisualGraph(self.probe, self.contacts)
+			#self.mapGraph = VisualGraph(self.probe, self.contacts)
+			self.mapGraph = MapLoader(self.probe, self.contacts)
 
 			# cross - junctions, test 6
 			#wall1 = [[-14.0, -0.2], [-4.0, -0.2], [-4,-4.2], [-3.6,-4.2], [-3.6,-0.2], [2.0,-0.2], [2.0,0.2]]
@@ -274,7 +276,9 @@ class TestProcess(SnakeControl):
 
 
 			#self.mapGraph.restoreSeries("../results/result_2013_08_24_cross", 80)
-			self.mapGraph.restoreSeries("../results/result_2013_08_24_cross", 44)
+			#self.mapGraph.restoreSeries("../results/result_2013_08_24_cross", 44)
+			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 60)
+			self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 6)
 			
 			#self.mapGraph.newNode(0.0, self.direction)
 			#self.mapGraph.forceUpdate(False)
