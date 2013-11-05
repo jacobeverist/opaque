@@ -3,7 +3,7 @@
 from Pose import Pose
 import math
 import sys
-from copy import copy
+from copy import copy, deepcopy
 from functions import *
 import random
 import os
@@ -511,7 +511,7 @@ def computePathAngleVariance(pathSamples):
 
 class MapState:
 	
-	def __init__(self, mapper):
+	def __init__(self, mapper, hypothesisID):
 		
 		self.mapper = mapper
 		
@@ -528,6 +528,7 @@ class MapState:
 		self.gndRawPoses = {}
 
 		self.pathIDs = 0
+		self.hypothesisID = hypothesisID
 
 		self.paths = {0 : []}
 		self.hulls = {0 : []}
@@ -553,17 +554,56 @@ class MapState:
 
 
 
-		self.mergeMapping = {}
-		
 		self.rootPoint = [-3.2, 0.0]
 		
 		self.pathGraph = graph.graph()
 		self.joins = []
+		self.junctions = {}
+		self.terminals = {}
 
 		self.colors = []
 		for i in range(1000):
 			self.colors.append((random.random(),random.random(),random.random()))
-	
+
+	def copy(self, hypothesisID):
+
+		newObj = MapState(self.mapper, hypothesisID)
+
+		newObj.pathClasses = deepcopy(self.pathClasses)
+		newObj.pathTermsVisisted = deepcopy(self.pathTermsVisited)
+		newObj.pathIDs = deepcopy(self.pathIDs)
+		newObj.paths = deepcopy(self.paths)
+		newObj.hulls = deepcopy(self.hulls)
+		newObj.trimmedPaths = deepcopy(self.trimmedPaths)
+		newObj.nodeRawPoses = deepcopy(self.nodeRawPoses)
+		newObj.nodePoses = deepcopy(self.nodePoses)
+		newObj.gndPoses = deepcopy(self.gndPoses)
+		newObj.gndRawPoses = deepcopy(self.gndRawPoses)
+
+		newObj.alphaPlotCount = self.alphaPlotCount
+		newObj.medialCount = self.medialCount
+		newObj.topCount = self.topCount
+		newObj.spliceCount = self.spliceCount
+		newObj.multiDepCount = self.multiDepCount
+		newObj.overlapPlotCount = self.overlapPlotCount
+			
+		newObj.pathPlotCount = self.pathPlotCount
+		newObj.pathPlotCount2 = self.pathPlotCount2
+		newObj.overlapPlotCount2 = self.overlapPlotCount2
+		newObj.medialSouptCount = self.medialSoupCount
+
+		
+		newObj.rootPoint = deepcopy(self.rootPoint)
+		
+		newObj.pathGraph = deepcopy(self.pathGraph)
+		newObj.joins = deepcopy(self.joins)
+		#newObj.junctions = self.junctions
+		#newObj.terminals = self.terminals
+
+
+
+		return newObj
+
 	@logFunction
 	def addBranch(self):
 		pass
@@ -579,28 +619,32 @@ class MapState:
 	
 	""" state save and restore methods """
 	@logFunction
-	def saveState(self, id):
+	def saveState(self, saveCount):
 		
 		saveFile = ""
 		
 		saveFile += "self.pathClasses = " + repr(self.pathClasses) + "\n"
-		
 		saveFile += "self.pathTermsVisited = " + repr(self.pathTermsVisited) + "\n"
 		saveFile += "self.pathIDs = " + repr(self.pathIDs) + "\n"		 
-	
 		saveFile += "self.paths = " + repr(self.paths) + "\n"		 
 		saveFile += "self.hulls = " + repr(self.hulls) + "\n"		 
 		saveFile += "self.trimmedPaths = " + repr(self.trimmedPaths) + "\n"		   
 
-		f = open("pathStateSave_%04u.txt" % id, 'w')
+		saveFile += "self.nodeRawPoses = " + repr(self.nodeRawPoses) + "\n"		 
+		saveFile += "self.nodePoses = " + repr(self.nodePoses) + "\n"		 
+		saveFile += "self.gndPoses = " + repr(self.gndPoses) + "\n"		 
+		saveFile += "self.gndRawPoses = " + repr(self.gndRawPoses) + "\n"		 
+		saveFile += "self.hypothesisID = " + repr(self.hypothesisID) + "\n"
+
+		f = open("mapStateSave_%04u_%04u.txt" % (self.hypothesisID, saveCount), 'w')
 		f.write(saveFile)
 		f.close()
 		
 	@logFunction
 	def restoreState(self, dirName, numNodes):
 		
-		print "loading" + dirName + "/pathStateSave_%04u.txt" % (numNodes-1)
-		f = open(dirName + "/pathStateSave_%04u.txt" % (numNodes-1), 'r')		 
+		print "loading" + dirName + "/mapStateSave_%04u_%04u.txt" % (self.hypothesisID, numNodes-1)
+		f = open(dirName + "/mapStateSave_%04u_%04u.txt" % (self.hypothesisID, numNodes-1), 'r')		 
 		saveStr = f.read()
 		print saveStr
 		f.close()
@@ -646,6 +690,8 @@ class MapState:
 	
 	@logFunction
 	def getAllSplices(self, plotIter = False):
+
+		print "paths:", self.paths
 
 		print "junctions:", self.junctions
 		print "terminals:", self.terminals
@@ -2269,8 +2315,6 @@ class MapState:
 			del self.pathClasses[pathID]
 			del self.pathTermsVisited[pathID]
 			
-			self.mergeMapping[pathID] = mergeTargetID
-
 			
 			for k, pathClass in self.pathClasses.iteritems():
 				
@@ -2303,8 +2347,6 @@ class MapState:
 
 		print "newPath", newPathID, "=", self.pathClasses[newPathID]
 
-		self.mergeMapping[newPathID] = None
-		
 		return newPathID
  
 	@logFunction

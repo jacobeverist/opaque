@@ -49,6 +49,26 @@ class MapLoader:
 			self.mapAlgorithm.saveState()
 		
 
+		#self.drawMap()
+
+
+	def loadDataSeries(self, dirName, num_poses):
+	
+		PIXELSIZE = 0.05
+		for i in range(0, num_poses):
+
+			print "loading node", i		
+			#currNode = LocalNode(self.probe, self.contacts, i, 19, PIXELSIZE)
+
+			#currNode.readFromFile2(dirName, i)
+
+			#self.localNodes.append(currNode)
+			
+
+			self.mapAlgorithm.restoreNode(i)
+			self.mapAlgorithm.saveState()
+		
+
 		self.drawMap()
 
 
