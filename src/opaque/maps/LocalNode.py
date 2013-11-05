@@ -1739,6 +1739,12 @@ class LocalNode:
 			pylab.savefig("spline_%06u.png" % splineCount)
 			splineCount += 1
 			"""
+
+			"""
+			Are we comparing the correct coordinate systems here?
+			realPath is in localGPAC because input alphaHull is in localGPAC
+			posture1 looks to be in localGPAC
+			"""
 			
 			posture1 = self.getStableGPACPosture()
 			curve1 = StableCurve(posture1)

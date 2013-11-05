@@ -1,4 +1,5 @@
 import PoseGraph
+import BayesMapper
 from LocalNode import LocalNode, getLongestPath
 from Pose import Pose
 import pylab
@@ -24,7 +25,7 @@ class MapLoader:
 		self.probe = probe
 		self.contacts = contacts		
 		#self.mapAlgorithm = PoseGraph.PoseGraph(self.probe, self.contacts)	
-		self.mapAlgorithm = BayesMapper.BayesMapper(self.probe, self.contacts)	
+		self.mapAlgorithm = BayesMapper.BayesMapper(self.probe)	
 
 		self.localNodes = []
 
