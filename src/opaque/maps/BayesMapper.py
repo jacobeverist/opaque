@@ -53,9 +53,9 @@ class BayesMapper:
 		self.mapHyps = {}
 		self.mapHyps[self.particleIDs] = MapState(self, self.particleIDs)
 		self.particleIDs += 1
-		self.mapHyps[self.particleIDs] = self.mapHyps[0].copy(self.particleIDs)
+		#self.mapHyps[self.particleIDs] = self.mapHyps[0].copy(self.particleIDs)
 		#self.mapHyps[self.particleIDs] = MapState(self, self.particleIDs)
-		self.particleIDs += 1
+		#self.particleIDs += 1
 
 
 		self.medialAxes = {}
@@ -152,27 +152,40 @@ class BayesMapper:
 	@logFunction
 	def restoreNode(self, dirName, numNodes):
 		
-		print "loading" + dirName + "/stateSave_%04u.txt" % (numNodes-1)
-		f = open(dirName + "/stateSave_%04u.txt" % (numNodes-1), 'r')		
+		print "loading" + dirName + "/stateSave_%04u.txt" % (numNodes)
+		f = open(dirName + "/stateSave_%04u.txt" % (numNodes), 'r')		
 		saveStr = f.read()
 		print saveStr
 		f.close()
 		
 		saveStr = saveStr.replace('\r\n','\n')
-		exec(saveStr)
 
-		nodeID = numNodes - 1
-		
+		nodeID = 'foo'
+
+		existMapHyp = self.mapHyps
+
+		exec(saveStr)
+		self.travelDirs = self.travelDirs[nodeID]
+
+		self.mapHyps = existMapHyp
+		nodeID = numNodes 
+		self.numNodes = numNodes+1
+
+		" get node poses from some map hypothesis "
+		hid = mapHypIDs[0]
+		tempMapState = MapState(self.probe,hid)
+		tempMapState.restoreState(dirName, numNodes)
+
 		""" for each current map hypothesis, integrate the new node """
 		currHyps = self.mapHyps
 		for mid, mapHyp in currHyps.iteritems():
 
-			mapHyp.gndPoses[nodeID] = newNode.getGndGlobalGPACPose()
-			mapHyp.gndRawPoses[nodeID] = newNode.getGndPose()
-			mapHyp.nodePoses[nodeID] = newNode.getGlobalGPACPose()
+			mapHyp.gndPoses[nodeID] = tempMapState.gndPoses[nodeID]
+			mapHyp.gndRawPoses[nodeID] = tempMapState.gndRawPoses[nodeID]
+			mapHyp.nodePoses[nodeID] = tempMapState.nodePoses[nodeID]
 
 			" FIXME:  raw pose does not get updated yet with GPAC pose "
-			mapHyp.nodeRawPoses[nodeID] = newNode.getEstPose()
+			mapHyp.nodeRawPoses[nodeID] = tempMapState.nodeRawPoses[nodeID]
 
 			self.integrateNode(mapHyp, nodeID)
 
@@ -395,7 +408,7 @@ class BayesMapper:
 		saveFile += "self.isNodeFeatureless = " + repr(self.isNodeFeatureless) + "\n"
 		saveFile += "self.frontProbeError = " + repr(self.frontProbeError) + "\n"
 		saveFile += "self.backProbeError = " + repr(self.backProbeError) + "\n"
-		saveFile += "self.travelDirs[nodeID] = " + repr(self.travelDirs) + "\n"
+		saveFile += "self.travelDirs = " + repr(self.travelDirs) + "\n"
 
 		saveFile += "mapHypIDs = " + repr(self.mapHyps.keys()) + "\n"
 
@@ -407,14 +420,14 @@ class BayesMapper:
 
 		" SAVE STATE "
 		for k in self.mapHyps.keys():
-			self.mapHyps[k].saveState(self.numNodes)
+			self.mapHyps[k].saveState(self.numNodes-1)
 
 		
 	@logFunction
 	def restoreState(self, dirName, numNodes):
 		
-		print "loading" + dirName + "/stateSave_%04u.txt" % (numNodes-1)
-		f = open(dirName + "/stateSave_%04u.txt" % (numNodes-1), 'r')		
+		print "loading" + dirName + "/stateSave_%04u.txt" % (numNodes)
+		f = open(dirName + "/stateSave_%04u.txt" % (numNodes), 'r')		
 		saveStr = f.read()
 		print saveStr
 		f.close()

@@ -643,8 +643,8 @@ class MapState:
 	@logFunction
 	def restoreState(self, dirName, numNodes):
 		
-		print "loading" + dirName + "/mapStateSave_%04u_%04u.txt" % (self.hypothesisID, numNodes-1)
-		f = open(dirName + "/mapStateSave_%04u_%04u.txt" % (self.hypothesisID, numNodes-1), 'r')		 
+		print "loading" + dirName + "/mapStateSave_%04u_%04u.txt" % (self.hypothesisID, numNodes+1)
+		f = open(dirName + "/mapStateSave_%04u_%04u.txt" % (self.hypothesisID, numNodes+1), 'r')		 
 		saveStr = f.read()
 		print saveStr
 		f.close()

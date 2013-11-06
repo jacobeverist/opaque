@@ -65,7 +65,7 @@ class MapLoader:
 			#self.localNodes.append(currNode)
 			
 
-			self.mapAlgorithm.restoreNode(i)
+			self.mapAlgorithm.restoreNode(dirName, i)
 			self.mapAlgorithm.saveState()
 		
 
