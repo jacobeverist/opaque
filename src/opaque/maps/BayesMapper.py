@@ -132,7 +132,8 @@ class BayesMapper:
 		self.travelDirs[nodeID] = newNode.travelDir
 
 
-		#hull1 = computeBareHull(newNode, sweep = False, static = True)
+
+		newHyps = {}
 
 		""" for each current map hypothesis, integrate the new node """
 		currHyps = self.mapHyps
@@ -149,6 +150,13 @@ class BayesMapper:
 
 			self.integrateNode(mapHyp, nodeID)
 
+			thisHyps = self.integrateNode(mapHyp, nodeID)
+			for pID, hyp in thisHyps.iteritems():
+				newHyps[pID] = hyp
+
+		for pID, hyp in newHyps.iteritems():
+			self.mapHyps[pID] = hyp
+
 	@logFunction
 	def restoreNode(self, dirName, numNodes):
 		
@@ -163,9 +171,11 @@ class BayesMapper:
 		nodeID = 'foo'
 
 		existMapHyp = self.mapHyps
+		existParticleIDs = self.particleIDs
 
 		exec(saveStr)
 		self.travelDirs = self.travelDirs[nodeID]
+		self.particleIDs = existParticleIDs
 
 		self.mapHyps = existMapHyp
 		nodeID = numNodes 
@@ -175,6 +185,7 @@ class BayesMapper:
 		hid = mapHypIDs[0]
 		tempMapState = MapState(self.probe,hid)
 		tempMapState.restoreState(dirName, numNodes)
+
 
 		""" for each current map hypothesis, integrate the new node """
 		currHyps = self.mapHyps
@@ -187,11 +198,10 @@ class BayesMapper:
 			" FIXME:  raw pose does not get updated yet with GPAC pose "
 			mapHyp.nodeRawPoses[nodeID] = tempMapState.nodeRawPoses[nodeID]
 
-			self.integrateNode(mapHyp, nodeID)
-
+		self.mapHyps = self.integrateNode(currHyps, nodeID)
 
 	@logFunction
-	def integrateNode(self, mapHyp, nodeID):
+	def integrateNode(self, hypSet, nodeID):
 
 		" DIRECTION OF TRAVEL FROM PREVIOUS POSE PAIR "
 		#direction = newNode.travelDir
@@ -200,180 +210,111 @@ class BayesMapper:
 		" ensure the medial axes are computed before this check "
 		#computeHullAxis(nodeID, newNode, tailCutOff = False)
 
+		#currHyps = {}
 
-		print "integrating node", nodeID, "into hypothesis", mapHyp.hypothesisID
+
+
+		print "integrating node", nodeID
 
 		if nodeID > 0:
 			
 			" ESTIMATE TRAVEL WITH MEDIAL OVERLAP CONSTRAINT OF EVEN NUMBER POSE "
 			if self.numNodes >= 4:
 
-				" Move node along path "
-				self.movePath(mapHyp, nodeID, direction)
-				self.drawConstraints(mapHyp, self.statePlotCount)
-				self.statePlotCount += 1
-				self.drawPathAndHull(mapHyp)
+				for pID, mapHyp in hypSet.iteritems():
+					" Move node along path "
+					self.movePath(mapHyp, nodeID, direction)
+					self.drawConstraints(mapHyp, self.statePlotCount)
+					self.statePlotCount += 1
+					self.drawPathAndHull(mapHyp)
 		
 		
 		" CHECK FOR A BRANCHING EVENT "
 		
 		if self.numNodes >= 2 and self.numNodes % 2 == 0:
 
-			print "entering node", nodeID, "from hypothesis", mapHyp.hypothesisID
+			for pID, mapHyp in hypSet.iteritems():
 
-			" DETECT BRANCHING EVENTS FOR THE 2 NODES OF LAST STOP "
-			" AFTER ODD-NUMBER OVERLAP OF CURRENT STOP HAS IRONED OUT ERRORS "
-			nodeID1 = self.numNodes-2
-			nodeID2 = self.numNodes-1
+				print "entering node", nodeID, "from hypothesis", mapHyp.hypothesisID
 
-			print "nodeID1, nodeID2 =", nodeID1, nodeID2
-			
-			" if these nodes are already path-classified, return"
-			isContained1 = False
-			isContained2 = False
-			
-			pathIDs = mapHyp.getPathIDs()
+				" DETECT BRANCHING EVENTS FOR THE 2 NODES OF LAST STOP "
+				" AFTER ODD-NUMBER OVERLAP OF CURRENT STOP HAS IRONED OUT ERRORS "
+				nodeID1 = self.numNodes-2
+				nodeID2 = self.numNodes-1
 
-			print "hypothesis", mapHyp.hypothesisID, "paths =", pathIDs
-
-			for k in pathIDs:
-				if mapHyp.getNodes(k).count(nodeID1) > 0:
-					isContained1 = True
-				if mapHyp.getNodes(k).count(nodeID2) > 0:
-					isContained2 = True
-					
-			
-			if isContained1 or isContained2:
-				return
-
-			print "generating node", nodeID, "from hypothesis", mapHyp.hypothesisID
-
-			" COMPUTE MEDIAL AXIS FROM UNION OF PATH-CLASSIFIED NODES "
-			mapHyp.generatePaths()
-
+				print "nodeID1, nodeID2 =", nodeID1, nodeID2
 				
-			print "drawing node", nodeID, "from hypothesis", mapHyp.hypothesisID
-			self.drawConstraints(mapHyp, self.statePlotCount)
-			self.statePlotCount += 1
-			self.drawPathAndHull(mapHyp)
-
-
-			self.addToPaths(mapHyp, nodeID1, nodeID2)
-
-			" IF THIS IS THE FIRST NODES IN THE FIRST PATH, JUST ADD THEM AS DEFAULT, DO NOTHING "
-			if len(mapHyp.paths[0]) > 0:
+				" if these nodes are already path-classified, return"
+				isContained1 = False
+				isContained2 = False
 				
-				self.mergePaths(mapHyp)
-
-				self.drawConstraints(mapHyp, self.statePlotCount)
-				self.statePlotCount += 1
-				self.drawPathAndHull(mapHyp)
-
-				paths = {}
 				pathIDs = mapHyp.getPathIDs()
 
-
-
-				orderedPathIDs1 = mapHyp.getOrderedOverlappingPaths(nodeID1)
-				print nodeID1, "recompute orderedPathIDs1:", orderedPathIDs1
-
-			
-				orderedPathIDs2 = mapHyp.getOrderedOverlappingPaths(nodeID2)
-				print nodeID2, "recompute orderedPathIDs2:", orderedPathIDs2
-
+				print "hypothesis", mapHyp.hypothesisID, "paths =", pathIDs
 
 				for k in pathIDs:
-					path = mapHyp.paths[k]
-					if len(path) > 0:
-						paths[k] = path 
-
-				trimmedPaths = mapHyp.trimPaths(paths)
-
+					if mapHyp.getNodes(k).count(nodeID1) > 0:
+						isContained1 = True
+					if mapHyp.getNodes(k).count(nodeID2) > 0:
+						isContained2 = True
+						
 				
-				self.drawTrimmedPaths(mapHyp)
-				print "trimmed paths:", len(trimmedPaths)
+				if isContained1 or isContained2:
+					return
 
+				print "generating node", nodeID, "from hypothesis", mapHyp.hypothesisID
 
-
-				"1)  guess pose in front if there is a departure with local and path junction points (not first node) "
-				"2)  guess pose in back if there is a departure with local and path junction points (not first node) "
-				"3)  select choice with the lowest cost "
-				"4)  guess pose with no departure point with guessed control points len(orderedPathIDs) == 1"
-				
-				" nodeID1:	is it in a junction or a single path? "
-				
-				
-				#hull1, medial1 = computeHullAxis(nodeID1, self.nodeHash[nodeID1], tailCutOff = False)
-				#hull2, medial2 = computeHullAxis(nodeID2, self.nodeHash[nodeID2], tailCutOff = False)
-				hull1 = self.aHulls[nodeID1]
-				medial1 = self.medialAxes[nodeID1]
-				hull2 = self.aHulls[nodeID2]
-				medial2 = self.medialAxes[nodeID2]
-
-
-				estPose1 = mapHyp.nodePoses[nodeID1]
-				estPose2 = mapHyp.nodePoses[nodeID2]
-				#estPose1 = mapHyp.nodePoses[nodeID1]
-				#estPose2 = mapHyp.nodePoses[nodeID2]
-				self.currSplicePath = self.selectSplice(mapHyp, nodeID1, nodeID2, medial1, medial2, estPose1, estPose2, orderedPathIDs1, orderedPathIDs2)
-				
+				" COMPUTE MEDIAL AXIS FROM UNION OF PATH-CLASSIFIED NODES "
 				mapHyp.generatePaths()
-				self.drawConstraints(mapHyp, self.statePlotCount)
-				self.statePlotCount += 1
-				self.drawPathAndHull(mapHyp)
 
-				self.drawTrimmedPaths(mapHyp)
-
-				try:
-					self.consistentFit(mapHyp, nodeID1, mapHyp.nodePoses[nodeID1], numGuesses = 11)
-				except IndexError:
-					print "failed to consistentFit node", nodeID1
-					pass
 					
+				print "drawing node", nodeID, "from hypothesis", mapHyp.hypothesisID
 				self.drawConstraints(mapHyp, self.statePlotCount)
 				self.statePlotCount += 1
 				self.drawPathAndHull(mapHyp)
 
-				try:
-					self.consistentFit(mapHyp, nodeID2, mapHyp.nodePoses[nodeID2], numGuesses = 11)
-				except IndexError:
-					print "failed to consistentFit node", nodeID2
-					pass
-
-				self.drawConstraints(mapHyp, self.statePlotCount)
-				self.statePlotCount += 1
-				self.drawPathAndHull(mapHyp)
-				
-			mapHyp.generatePaths()
-			self.drawPathAndHull(mapHyp)
+			#for pID, mapHyp in hypSet.iteritems():
 
 
-			if nodeID1 >= 2:
-				newPath = deepcopy(mapHyp.paths[0])
-				p0 = newPath[0]
-				pN = newPath[-1]
-				
-				rootPose = [-2.0,0.0]
-				
-				dist0 = sqrt((rootPose[0]-p0[0])*(rootPose[0]-p0[0]) + (rootPose[1]-p0[1])*(rootPose[1]-p0[1]))
-				distN = sqrt((rootPose[0]-pN[0])*(rootPose[0]-pN[0]) + (rootPose[1]-pN[1])*(rootPose[1]-pN[1]))
+			hypSet = self.addToPaths(hypSet, nodeID1, nodeID2)
+			#currHyps = self.addToPaths(mapHyp, nodeID1, nodeID2)
+
+			for pID, currHyp in hypSet.iteritems():
+
+				""" LOCALIZE NODE PAIR """
+				self.localizePair(currHyp, nodeID1, nodeID2)
+
+
+				currHyp.generatePaths()
+				self.drawPathAndHull(currHyp)
+
+
+				if nodeID1 >= 2:
+					newPath = deepcopy(currHyp.paths[0])
+					p0 = newPath[0]
+					pN = newPath[-1]
+					
+					rootPose = [-2.0,0.0]
+					
+					dist0 = sqrt((rootPose[0]-p0[0])*(rootPose[0]-p0[0]) + (rootPose[1]-p0[1])*(rootPose[1]-p0[1]))
+					distN = sqrt((rootPose[0]-pN[0])*(rootPose[0]-pN[0]) + (rootPose[1]-pN[1])*(rootPose[1]-pN[1]))
+			
+					if dist0 > distN:
+						newPath.reverse()
+								
+					" new path "
+					newSpline = SplineFit(newPath, smooth = 0.1)
 		
-				if dist0 > distN:
-					newPath.reverse()
-							
-				" new path "
-				newSpline = SplineFit(newPath, smooth = 0.1)
-	
-	
-				posNew = mapHyp.nodePoses[nodeID1]
-				posOld = mapHyp.nodePoses[nodeID1-2]
-				minDist, minU, closestPoint = newSpline.findClosestPoint(posNew)
-				arcDistNew = newSpline.dist(0.0, minU)
-	
-				minDist, minU, closestPoint = newSpline.findClosestPoint(posOld)
-				arcDistOld = newSpline.dist(0.0, minU)
-	
-				print "arcDistNew, arcDistOld, diff =", arcDistNew, arcDistOld, arcDistNew-arcDistOld
+		
+					posNew = currHyp.nodePoses[nodeID1]
+					posOld = currHyp.nodePoses[nodeID1-2]
+					minDist, minU, closestPoint = newSpline.findClosestPoint(posNew)
+					arcDistNew = newSpline.dist(0.0, minU)
+		
+					minDist, minU, closestPoint = newSpline.findClosestPoint(posOld)
+					arcDistOld = newSpline.dist(0.0, minU)
+		
+					print "arcDistNew, arcDistOld, diff =", arcDistNew, arcDistOld, arcDistNew-arcDistOld
 		
 				
 				
@@ -381,7 +322,43 @@ class BayesMapper:
 		#for k in range(self.numNodes):
 		#	mapHyp.nodePoses[k] = self.nodeHash[k].getGlobalGPACPose()
 
+		return hypSet
 
+
+
+	@logFunction
+	def localizePair(self, mapHyp, nodeID1, nodeID2):
+
+		""" LOCALIZE NODE PAIR """
+		if len(mapHyp.paths[0]) > 0:
+			
+			"1)  guess pose in front if there is a departure with local and path junction points (not first node) "
+			"2)  guess pose in back if there is a departure with local and path junction points (not first node) "
+			"3)  select choice with the lowest cost "
+			"4)  guess pose with no departure point with guessed control points len(orderedPathIDs) == 1"
+			
+			" nodeID1:	is it in a junction or a single path? "
+			
+			
+			try:
+				self.consistentFit(mapHyp, nodeID1, mapHyp.nodePoses[nodeID1], numGuesses = 11)
+			except IndexError:
+				print "failed to consistentFit node", nodeID1
+				pass
+				
+			self.drawConstraints(mapHyp, self.statePlotCount)
+			self.statePlotCount += 1
+			self.drawPathAndHull(mapHyp)
+
+			try:
+				self.consistentFit(mapHyp, nodeID2, mapHyp.nodePoses[nodeID2], numGuesses = 11)
+			except IndexError:
+				print "failed to consistentFit node", nodeID2
+				pass
+
+			self.drawConstraints(mapHyp, self.statePlotCount)
+			self.statePlotCount += 1
+			self.drawPathAndHull(mapHyp)
 
 
 
@@ -766,62 +743,56 @@ class BayesMapper:
 
 
 	@logFunction
-	def addToPaths(self, mapHyp, nodeID1, nodeID2):
+	def addToPaths(self, hypSet, nodeID1, nodeID2):
+
+		newHyps = {}
+		tempHyps = {}
+		orderedHypIDs = {}
+
+		departureHyps = {}
+
+
 
 		" IF THIS IS THE FIRST NODES IN THE FIRST PATH, JUST ADD THEM AS DEFAULT, DO NOTHING "
-		if len(mapHyp.paths[0]) == 0:
-			" first nodes in path 0 "								
-			mapHyp.addNode(nodeID1,0)
-			mapHyp.addNode(nodeID2,0)
-	
-			mapHyp.generatePaths()
+		isFirst = False
+		for pID, mapHyp in hypSet.iteritems():
+			if len(mapHyp.paths[0]) == 0:
+				print "this is first nodes, just add them already!"
+				isFirst = True
+
+		if isFirst:
+			for pID, mapHyp in hypSet.iteritems():
+				mapHyp.addNode(nodeID1,0)
+				mapHyp.addNode(nodeID2,0)
+		
+				mapHyp.generatePaths()
 
 
-			"""
-			current splice for quickly referencing where I believe I was last pose
-			needs to be an actual splice instead of a raw path 	
-			"""
-			self.currSplicePath = mapHyp.paths[0]
-	
-			" NOT THE FIRST, NOW CHECK FOR BRANCHING FROM PATHS "			
-		else:
-			
-			" departure events for node 1 "
-			departures1 = []
-			interiors1 = []
-			depPoints1 = []
-			distances1 = []
-			depAngles1 = []
-			contig1 = []
-	
-			" departure events for node 2 "
-			departures2 = []
-			interiors2 = []
-			depPoints2 = []
-			distances2 = []
-			depAngles2 = []
-			contig2 = []
-	
-			
+			return hypSet
+
+		" NOT THE FIRST, NOW CHECK FOR BRANCHING FROM PATHS "			
+		
+		
+		for pID, mapHyp in hypSet.iteritems():
 			" raw medial axis of union of path nodes "
 			paths = {}
 			pathIDs = mapHyp.getPathIDs()
-	
+
 			for k in pathIDs:
 				path = mapHyp.paths[k]
 				if len(path) > 0:
 					paths[k] = path
-	
+
 			print "paths:", len(paths)
 			for k in pathIDs:
 				print k, len(paths[k])
-	
-	
+
+
 			" TRIM THE RAW PATHS TO ONLY EXTRUDE FROM THEIR BRANCHING POINT "
 			trimmedPaths = mapHyp.trimPaths(paths)
 			self.drawTrimmedPaths(mapHyp)
 			print "trimmed paths:", len(trimmedPaths)
-	
+
 			
 			" GET THE ORDERED LIST OF OVERLAPPING PATHS FOR EACH NODE "
 			
@@ -829,112 +800,141 @@ class BayesMapper:
 			orderedPathIDs1 = mapHyp.getOrderedOverlappingPaths(nodeID1)
 			orderedPathIDs2 = mapHyp.getOrderedOverlappingPaths(nodeID2)
 			
+			departureHyps[pID] = [orderedPathIDs1, orderedPathIDs2, {}, {}]
+
+			mapHyp.orderedPathIDs1 = orderedPathIDs1
+			mapHyp.orderedPathIDs2 = orderedPathIDs2
+
 			print nodeID1, "orderedPathIDs1:", orderedPathIDs1
 			print nodeID2, "orderedPathIDs2:", orderedPathIDs2
-			
+
+			" departure events for node 1 "
+			mapHyp.departures1 = []
+			mapHyp.interiors1 = []
+			mapHyp.depPoints1 = []
+			mapHyp.distances1 = []
+			mapHyp.depAngles1 = []
+			mapHyp.contig1 = []
+
+			" departure events for node 2 "
+			mapHyp.departures2 = []
+			mapHyp.interiors2 = []
+			mapHyp.depPoints2 = []
+			mapHyp.distances2 = []
+			mapHyp.depAngles2 = []
+			mapHyp.contig2 = []
+
 			
 			" COMPUTE DEPARTURE EVENTS FOR EACH OVERLAPPING PATH SECTION "
 			for pathID in orderedPathIDs1:
-				departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = mapHyp.getDeparturePoint(mapHyp.trimmedPaths[pathID], nodeID1, plotIter = True)
-				departures1.append([isExist1,isExist2])
-				interiors1.append([isInterior1, isInterior2])
-				depPoints1.append([departurePoint1, departurePoint2])
-				distances1.append([discDist1, discDist2])
-				depAngles1.append([depAngle1, depAngle2])
-				contig1.append((contigFrac, overlapSum))
-		
+				resultSet = mapHyp.getDeparturePoint(mapHyp.trimmedPaths[pathID], nodeID1, plotIter = True)
+				mapHyp.departureResultSet1 = resultSet
+
+				departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = resultSet
+				mapHyp.departures1.append([isExist1,isExist2])
+				mapHyp.interiors1.append([isInterior1, isInterior2])
+				mapHyp.depPoints1.append([departurePoint1, departurePoint2])
+				mapHyp.distances1.append([discDist1, discDist2])
+				mapHyp.depAngles1.append([depAngle1, depAngle2])
+				mapHyp.contig1.append((contigFrac, overlapSum))
+
 			for pathID in orderedPathIDs2:
-				departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = mapHyp.getDeparturePoint(mapHyp.trimmedPaths[pathID], nodeID2, plotIter = True)
-				departures2.append([isExist1,isExist2])
-				interiors2.append([isInterior1, isInterior2])
-				depPoints2.append([departurePoint1, departurePoint2])
-				distances2.append([discDist1, discDist2])
-				depAngles2.append([depAngle1, depAngle2])
-				contig2.append((contigFrac, overlapSum))
-				
-			print "node departures", nodeID1, ":", departures1
-			print "node  interiors", nodeID1, ":", interiors1
-			print "node departures", nodeID2, ":", departures2
-			print "node  interiors", nodeID2, ":", interiors2
-	
-			print "node contiguity", nodeID1, ":", contig1
-			print "node contiguity", nodeID2, ":", contig2
-	
+				resultSet = mapHyp.getDeparturePoint(mapHyp.trimmedPaths[pathID], nodeID2, plotIter = True)
+				mapHyp.departureResultSet2 = resultSet
+
+				departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = resultSet
+				mapHyp.departures2.append([isExist1,isExist2])
+				mapHyp.interiors2.append([isInterior1, isInterior2])
+				mapHyp.depPoints2.append([departurePoint1, departurePoint2])
+				mapHyp.distances2.append([discDist1, discDist2])
+				mapHyp.depAngles2.append([depAngle1, depAngle2])
+				mapHyp.contig2.append((contigFrac, overlapSum))
+
+
+			print "node departures", nodeID1, ":", mapHyp.departures1
+			print "node  interiors", nodeID1, ":", mapHyp.interiors1
+			print "node departures", nodeID2, ":", mapHyp.departures2
+			print "node  interiors", nodeID2, ":", mapHyp.interiors2
+			print "node contiguity", nodeID1, ":", mapHyp.contig1
+			print "node contiguity", nodeID2, ":", mapHyp.contig2
+
+		"""
+
+		foreAngle1 = depAngles1[0][0]
+		backAngle1 = depAngles1[-1][1]
+
+		foreAngle2 = depAngles2[0][0]
+		backAngle2 = depAngles2[-1][1]
+
+		frontAngDiff = diffAngle(foreAngle1, foreAngle2)
+		backAngDiff = diffAngle(backAngle1, backAngle2)
+
+		discForeTerm1 = distances1[0][0] > DISC_THRESH
+		discBackTerm1 = distances1[-1][1] > DISC_THRESH
+
+		discForeTerm2 = distances2[0][0] > DISC_THRESH
+		discBackTerm2 = distances2[-1][1] > DISC_THRESH
+
+		TODO: USE THIS LATER FOR CONSISTENCY COMPUTATION
+		" check for the cases that internal departure may have a departure point discrepancy, "
+		" then we should perform a pose adjustment and recompute departures "
+		print "checking discrepancy in departure:", nodeID1, nodeID2, foreTerm1, discForeTerm1, backTerm1, discBackTerm1, foreTerm2, discForeTerm2, backTerm2, discBackTerm2
+
+		if contig1[0][0] < 0.4 or contig1[-1][0] < 0.4:
+			adjustPose1 = True
+		else:
+			adjustPose1 = False
+
+		if contig2[0][0] < 0.4 or contig2[-1][0] < 0.4:
+			adjustPose2 = True
+		else:
+			adjustPose2 = False
+
+		if foreTerm1 and discForeTerm1 or backTerm1 and discBackTerm1 or foreTerm2 and discForeTerm2 or backTerm2 and discBackTerm2 or adjustPose1 or adjustPose2:
+			print "reporting discrepancy"
+			print "adjusting pose guess of node because of discrepancy:", nodeID1, nodeID2
+
+		print "frontAngDiff:", frontAngDiff
+		print "backAngDiff:", backAngDiff
+
+		"""
+
+		
+		
+		" 60 degree threshold "
+		ANG_THRESH = 1.047
+
+
+
+
+		for pID, mapHyp in hypSet.iteritems():
 			" new junction finding logic "
 			" if terminal departures for each medial axis are None or exterior, than we stay on existing paths "
 			" if a terminal departure exists that is internal, than we have a new junction "
-			DISC_THRESH = 0.2
-	
+
 			" NODE1: CHECK FRONT AND BACK FOR BRANCHING EVENTS "
-			frontExist1 = departures1[0][0]
-			backExist1 =  departures1[-1][1]
-			frontInterior1 = interiors1[0][0]
-			backInterior1 = interiors1[-1][1]
-	
-			foreTerm1 = frontInterior1 and frontExist1
-			backTerm1 = backInterior1 and backExist1
-			
+			frontExist1 = mapHyp.departures1[0][0]
+			frontInterior1 = mapHyp.interiors1[0][0]
+			foreTerm1 = frontExist1 and frontInterior1
+
 			" DISCREPANCY BETWEEN TIP-CLOSEST and DEPARTURE-CLOSEST POINT ON PATH "				
-			discForeTerm1 = distances1[0][0] > DISC_THRESH
-			discBackTerm1 = distances1[-1][1] > DISC_THRESH
-			
-			foreAngle1 = depAngles1[0][0]
-			backAngle1 = depAngles1[-1][1]
 			
 			" NODE2: CHECK FRONT AND BACK FOR BRANCHING EVENTS "
-			frontExist2 = departures2[0][0]
-			backExist2 =  departures2[-1][1]
-			frontInterior2 = interiors2[0][0]
-			backInterior2 = interiors2[-1][1]
-	
-			foreTerm2 = frontInterior2 and frontExist2
-			backTerm2 = backInterior2 and backExist2
-	
-	
-			discForeTerm2 = distances2[0][0] > DISC_THRESH
-			discBackTerm2 = distances2[-1][1] > DISC_THRESH
-	
-			foreAngle2 = depAngles2[0][0]
-			backAngle2 = depAngles2[-1][1]
-	
-			frontAngDiff = diffAngle(foreAngle1, foreAngle2)
-			backAngDiff = diffAngle(backAngle1, backAngle2)
-	
-			if contig1[0][0] < 0.4 or contig1[-1][0] < 0.4:
-				adjustPose1 = True
-			else:
-				adjustPose1 = False
-	
-			if contig2[0][0] < 0.4 or contig2[-1][0] < 0.4:
-				adjustPose2 = True
-			else:
-				adjustPose2 = False
-				
-			print "integrate pass1:", frontExist1, backExist1, frontInterior1, backInterior1, foreTerm1, backTerm1, discForeTerm1, discBackTerm1, foreAngle1, backAngle1, contig1[0][0], contig1[-1][0]
-			print "integrate pass1:", frontExist2, backExist2, frontInterior2, backInterior2, foreTerm2, backTerm2, discForeTerm2, discBackTerm2, foreAngle2, backAngle2, contig2[0][0], contig2[-1][0]
+			frontExist2 = mapHyp.departures2[0][0]
+			frontInterior2 = mapHyp.interiors2[0][0]
+			foreTerm2 = frontExist2 and frontInterior2
+
+			depAngle1 = mapHyp.depAngles1[0][0]
+			depAngle2 = mapHyp.depAngles2[0][0]
+
+			frontAngDiff = diffAngle(depAngle1, depAngle2)
 			
-			" check for the cases that internal departure may have a departure point discrepancy, "
-			" then we should perform a pose adjustment and recompute departures "
-			print "checking discrepancy in departure:", nodeID1, nodeID2, foreTerm1, discForeTerm1, backTerm1, discBackTerm1, foreTerm2, discForeTerm2, backTerm2, discBackTerm2
-	
-			if foreTerm1 and discForeTerm1 or backTerm1 and discBackTerm1 or foreTerm2 and discForeTerm2 or backTerm2 and discBackTerm2 or adjustPose1 or adjustPose2:
-				print "reporting discrepancy"
-				print "adjusting pose guess of node because of discrepancy:", nodeID1, nodeID2
-	
+			depPoint1 = mapHyp.depPoints1[0][0]
+			depPoint2 = mapHyp.depPoints2[0][0]
 			
-			print "frontAngDiff:", frontAngDiff
-			print "backAngDiff:", backAngDiff
-			
-			
-			depAngle1 = depAngles1[0][0]
-			depAngle2 = depAngles2[0][0]
-			
-			depPoint1 = depPoints1[0][0]
-			depPoint2 = depPoints2[0][0]
-			
-			parentPathID1 = orderedPathIDs1[0]
-			parentPathID2 = orderedPathIDs2[0]
-	
+			parentPathID1 = mapHyp.orderedPathIDs1[0]
+			parentPathID2 = mapHyp.orderedPathIDs2[0]
+
 			isFront1 = self.faceDirs[nodeID1]
 			isFront2 = self.faceDirs[nodeID2]
 			if isFront1 and not isFront2:
@@ -944,44 +944,106 @@ class BayesMapper:
 			else:
 				print isFront1, isFront2
 				raise	
-	
-			isBranch, pathBranchIDs, isNew = mapHyp.determineBranchPair(nodeID1, nodeID2, frontExist1, frontExist2, frontInterior1, frontInterior2, depAngle1, depAngle2, depPoint1, depPoint2, parentPathID1, parentPathID2, dirFlag)
-	
+
+
+			isUnique1, duplicatePathID1 = mapHyp.checkUniqueBranch(parentPathID1, nodeID1, depAngle1, depPoint1)
+			isUnique2, duplicatePathID2 = mapHyp.checkUniqueBranch(parentPathID2, nodeID2, depAngle2, depPoint2)
+
+			isBranched = False
+			if foreTerm1 and foreTerm2:
+				if fabs(frontAngDiff) < ANG_THRESH:
+					if isUnique1 and isUnique2:
+						isBranched = True
+					if isUnique1 and not isUnique2:
+						if dirFlag == 0:
+							isBranched = True
+					if not isUnique1 and isUnique2:
+						if dirFlag == 1:
+							isBranched = True
+				else:
+					if isUnique1 and isUnique2:
+						if dirFlag == 0:
+							isBranched = True
+						if dirFlag == 1:
+							isBranched = True
+					if isUnique1 and not isUnique2:
+						if dirFlag == 0:
+							isBranched = True
+					if not isUnique1 and isUnique2:
+						if dirFlag == 1:
+							isBranched = True
+			elif foreTerm1 and not foreTerm2:
+				if isUnique1:
+					if frontExist2 and fabs(frontAngDiff) < ANG_THRESH:
+						isBranched = True
+					else:
+						if dirFlag == 0:
+							isBranched = True
+			elif foreTerm2 and not foreTerm1:
+				if isUnique2:
+					if frontExist1 and fabs(frontAngDiff) < ANG_THRESH:
+						isBranched = True
+					else:
+						if dirFlag == 1:		
+							isBranched = True
+
+
+			#if isUnique1 or isUnique2:
+			if isBranched:
+				" createa a new map state where a branch decision is not made "
+
+				newHyps[self.particleIDs] = mapHyp.copy(self.particleIDs)
+				print "creating hyp", self.particleIDs, "from hyp", mapHyp.hypothesisID, ", len(paths) =", len(mapHyp.pathClasses)
+				self.particleIDs += 1
+
+
+			isBranch, pathBranchIDs, isNew = mapHyp.determineBranchPair(nodeID1, nodeID2, frontExist1, frontExist2, frontInterior1, frontInterior2, depAngle1, depAngle2, depPoint1, depPoint2, parentPathID1, parentPathID2, dirFlag, isUnique1, isUnique2, duplicatePathID1, duplicatePathID2)
+
+
 			print "determineBranchPair:"
 			print isBranch
 			print pathBranchIDs
-	
-			isNew1 = isNew[0]
-			isNew2 = isNew[1]
-	
+
 			if isBranch[0]:
-				orderedPathIDs1.insert(0,pathBranchIDs[0])
-				departures1.insert(0, [False, False])
-				interiors1.insert(0, [False, False])
-				depPoints1.insert(0, [None, None])
-	
+				mapHyp.orderedPathIDs1.insert(0,pathBranchIDs[0])
+				mapHyp.departures1.insert(0, [False, False])
+				mapHyp.interiors1.insert(0, [False, False])
+				mapHyp.depPoints1.insert(0, [None, None])
+
 			if isBranch[1]:
-				orderedPathIDs2.insert(0,pathBranchIDs[1])
-				departures2.insert(0, [False, False])
-				interiors2.insert(0, [False, False])
-				depPoints2.insert(0, [None, None])
-	
-	
-			backExist1 = departures1[-1][1]
-			backInterior1 = interiors1[-1][1]
-	
-			backExist2 = departures2[-1][1]
-			backInterior2 = interiors2[-1][1]
+				mapHyp.orderedPathIDs2.insert(0,pathBranchIDs[1])
+				mapHyp.departures2.insert(0, [False, False])
+				mapHyp.interiors2.insert(0, [False, False])
+				mapHyp.depPoints2.insert(0, [None, None])
+
+
+
+		hypSet.update(newHyps)
+		newHyps = {}
+
+
+
+		for pID, mapHyp in hypSet.iteritems():
+
+			backExist1 = mapHyp.departures1[-1][1]
+			backInterior1 = mapHyp.interiors1[-1][1]
+			backTerm1 = backExist1 and backInterior1
+
+			backExist2 = mapHyp.departures2[-1][1]
+			backInterior2 = mapHyp.interiors2[-1][1]
+			backTerm2 = backExist2 and backInterior2
 			
-			depAngle1 = depAngles1[-1][1]
-			depAngle2 = depAngles2[-1][1]
+			depAngle1 = mapHyp.depAngles1[-1][1]
+			depAngle2 = mapHyp.depAngles2[-1][1]
 			
-			depPoint1 = depPoints1[-1][1]
-			depPoint2 = depPoints2[-1][1]
-	
-			parentPathID1 = orderedPathIDs1[-1]
-			parentPathID2 = orderedPathIDs2[-1]
-	
+			backAngDiff = diffAngle(depAngle1, depAngle2)
+
+			depPoint1 = mapHyp.depPoints1[-1][1]
+			depPoint2 = mapHyp.depPoints2[-1][1]
+
+			parentPathID1 = mapHyp.orderedPathIDs1[-1]
+			parentPathID2 = mapHyp.orderedPathIDs2[-1]
+
 			isFront1 = self.faceDirs[nodeID1]
 			isFront2 = self.faceDirs[nodeID2]
 			if isFront1 and not isFront2:
@@ -991,35 +1053,99 @@ class BayesMapper:
 			else:
 				print isFront1, isFront2
 				raise	
-	
-			isBranch, pathBranchIDs, isNew = mapHyp.determineBranchPair(nodeID1, nodeID2, backExist1, backExist2, backInterior1, backInterior2, depAngle1, depAngle2, depPoint1, depPoint2, parentPathID1, parentPathID2, dirFlag)
+
+			isUnique1, duplicatePathID1 = mapHyp.checkUniqueBranch(parentPathID1, nodeID1, depAngle1, depPoint1)
+			isUnique2, duplicatePathID2 = mapHyp.checkUniqueBranch(parentPathID2, nodeID2, depAngle2, depPoint2)
+
+			isBranched = False
+			if backTerm1 and backTerm2:
+				if fabs(backAngDiff) < ANG_THRESH:
+					if isUnique1 and isUnique2:
+						isBranched = True
+					if isUnique1 and not isUnique2:
+						if dirFlag == 0:
+							isBranched = True
+					if not isUnique1 and isUnique2:
+						if dirFlag == 1:
+							isBranched = True
+				else:
+					if isUnique1 and isUnique2:
+						if dirFlag == 0:
+							isBranched = True
+						if dirFlag == 1:
+							isBranched = True
+					if isUnique1 and not isUnique2:
+						if dirFlag == 0:
+							isBranched = True
+					if not isUnique1 and isUnique2:
+						if dirFlag == 1:
+							isBranched = True
+			elif backTerm1 and not backTerm2:
+				if isUnique1:
+					if frontExist2 and fabs(backAngDiff) < ANG_THRESH:
+						isBranched = True
+					else:
+						if dirFlag == 0:
+							isBranched = True
+			elif backTerm2 and not backTerm1:
+				if isUnique2:
+					if frontExist1 and fabs(backAngDiff) < ANG_THRESH:
+						isBranched = True
+					else:
+						if dirFlag == 1:		
+							isBranched = True
+
+
+			#if isUnique1 or isUnique2:
+			if isBranched:
+				" create a new map state where a branch decision is not made "
+				newHyps[self.particleIDs] = mapHyp.copy(self.particleIDs)
+				self.particleIDs += 1
+
+			isBranch, pathBranchIDs, isNew = mapHyp.determineBranchPair(nodeID1, nodeID2, backExist1, backExist2, backInterior1, backInterior2, depAngle1, depAngle2, depPoint1, depPoint2, parentPathID1, parentPathID2, dirFlag, isUnique1, isUnique2, duplicatePathID1, duplicatePathID2)
 			print "determineBranchPair:"
 			print isBranch
 			print pathBranchIDs
-	
-			isNew1 = isNew1 or isNew[0]
-			isNew2 = isNew2 or isNew[1]
-	
+
+			#isNew1 = isNew1 or isNew[0]
+			#isNew2 = isNew2 or isNew[1]
+
 			if isBranch[0]:
-				orderedPathIDs1.append(pathBranchIDs[0])
-				departures1.append([False, False])
-				interiors1.append([False, False])
-				depPoints1.append([None, None])
-	
+				mapHyp.orderedPathIDs1.append(pathBranchIDs[0])
+				mapHyp.departures1.append([False, False])
+				mapHyp.interiors1.append([False, False])
+				mapHyp.depPoints1.append([None, None])
+
 			if isBranch[1]:
-				orderedPathIDs2.append(pathBranchIDs[1])
-				departures2.append([False, False])
-				interiors2.append([False, False])
-				depPoints2.append([None, None])
-	
+				mapHyp.orderedPathIDs2.append(pathBranchIDs[1])
+				mapHyp.departures2.append([False, False])
+				mapHyp.interiors2.append([False, False])
+				mapHyp.depPoints2.append([None, None])
+
+
+		hypSet.update(newHyps)
+		newHyps = {}
+
+		#tempHyps = copy(newHyps)
+		#tempHyps[mapHyp.hypothesisID] = mapHyp
+		#orderedHypIDs[mapHyp.hypothesisID] = (copy(orderedPathIDs1), copy(orderedPathIDs2))
+
+
+		for pID, currHyp in hypSet.iteritems():
+
+			# orderedPathIDs1, orderedPathIDs2 = orderedHypIDs[pID]
+
+			orderedPathIDs1 = currHyp.orderedPathIDs1
+			orderedPathIDs2 = currHyp.orderedPathIDs2
+
 			" determine which paths are leaves "
-			pathIDs = mapHyp.getPathIDs()
+			pathIDs = currHyp.getPathIDs()
 			isAParent = {}
 			for k in pathIDs:
 				isAParent[k] = False
 			for k in orderedPathIDs1:
 				print "index:", k
-				currPath = mapHyp.getPath(k)
+				currPath = currHyp.getPath(k)
 				currParent = currPath["parentID"]
 				if currParent != None:
 					isAParent[currParent] = True
@@ -1028,29 +1154,29 @@ class BayesMapper:
 			"add nodes to paths that are the leaves "
 			for pathID in orderedPathIDs1:
 				if not isAParent[pathID]:				
-					mapHyp.addNode(nodeID1,pathID)
+					currHyp.addNode(nodeID1,pathID)
 	
-			pathIDs = mapHyp.getPathIDs()
+			pathIDs = currHyp.getPathIDs()
 			isAParent = {}
 			for k in pathIDs:
 				isAParent[k] = False
 			for k in orderedPathIDs2:
 				print "index:", k
-				currPath = mapHyp.getPath(k)
+				currPath = currHyp.getPath(k)
 				currParent = currPath["parentID"]
 				if currParent != None:
 					isAParent[currParent] = True
 	
 			for pathID in orderedPathIDs2:
 				if not isAParent[pathID]:				
-					mapHyp.addNode(nodeID2,pathID)
+					currHyp.addNode(nodeID2,pathID)
 	
 	
-			mapHyp.generatePaths()
-			trimmedPaths = mapHyp.trimPaths(mapHyp.paths)		
-			self.drawTrimmedPaths(mapHyp)
+			currHyp.generatePaths()
+			trimmedPaths = currHyp.trimPaths(currHyp.paths)		
+			self.drawTrimmedPaths(currHyp)
 						
-		
+		return hypSet
 
 
 	@logFunction
