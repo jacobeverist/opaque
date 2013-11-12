@@ -64,7 +64,7 @@ def multiFitSplice(initGuess, orientedPath, medialAxis, initPose, pathIDs, nodeI
 	#self.nodeHash[nodeID].setGPACPose(resultPose)
 	
 	#pathPlotCount = 0
-	resultArgs = getMultiDeparturePoint(orientedPath, medialAxis, initPose, resultPose, pathIDs, nodeID, pathPlotCount, plotIter = True)
+	resultArgs = getMultiDeparturePoint(orientedPath, medialAxis, initPose, resultPose, pathIDs, nodeID, pathPlotCount, plotIter = False)
 
 	isExist1 = resultArgs[3]
 	isExist2 = resultArgs[9]

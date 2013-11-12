@@ -526,6 +526,9 @@ class MapState:
 		self.nodePoses = {}
 		self.gndPoses = {}
 		self.gndRawPoses = {}
+		self.origPoses = {}
+
+		self.utility = 0.0
 
 		self.pathIDs = 0
 		self.hypothesisID = hypothesisID
@@ -538,6 +541,9 @@ class MapState:
 		self.pathClasses[0] = {"parentID" : None, "branchNodeID" : None, "localJunctionPose" : None, 
 							"sameProb" : {}, "nodeSet" : [], "globalJunctionPose" : None}
 		self.pathIDs += 1
+
+		self.medialLongPaths = {}
+		self.theoryMedialLongPaths = {}
 
 		self.alphaPlotCount = 0
 		self.medialCount = 0
@@ -586,6 +592,8 @@ class MapState:
 		newObj.nodePoses = deepcopy(self.nodePoses)
 		newObj.gndPoses = deepcopy(self.gndPoses)
 		newObj.gndRawPoses = deepcopy(self.gndRawPoses)
+		newObj.origPoses = deepcopy(self.origPoses)
+		newObj.utility = deepcopy(self.utility)
 
 		newObj.alphaPlotCount = self.alphaPlotCount
 		newObj.medialCount = self.medialCount
@@ -604,8 +612,8 @@ class MapState:
 		
 		newObj.pathGraph = deepcopy(self.pathGraph)
 		newObj.joins = deepcopy(self.joins)
-		#newObj.junctions = self.junctions
-		#newObj.terminals = self.terminals
+		newObj.junctions = self.junctions
+		newObj.terminals = self.terminals
 
 		newObj.orderedPathIDs1 = deepcopy(self.orderedPathIDs1)
 		newObj.orderedPathIDs2 = deepcopy(self.orderedPathIDs2)
@@ -629,7 +637,69 @@ class MapState:
 		newObj.departureResultSet1 = deepcopy(self.departureResultSet1)  
 		newObj.departureResultSet2 = deepcopy(self.departureResultSet2)
 
+		newObj.medialLongPaths = deepcopy(self.medialLongPaths)
+		newObj.theoryMedialLongPaths = deepcopy(self.theoryMedialLongPaths) 
+
 		return newObj
+
+	@logFunction
+	def computeEval(self):
+
+		utilSum = 0.0
+
+		for nodeID1, estPose1 in self.nodePoses.iteritems():
+	
+			orderedPathIDs1 = self.getOrderedOverlappingPaths(nodeID1)
+			print nodeID1, "recompute orderedPathIDs1:", orderedPathIDs1
+
+			hull1 = self.mapper.aHulls[nodeID1]
+			medial1 = self.mapper.medialAxes[nodeID1]
+			origPose1 = self.origPoses[nodeID1]
+			#estPose1 = self.nodePoses[nodeID1]
+				
+			splicedPaths1 = self.splicePathIDs(orderedPathIDs1)
+
+			#print "received", len(splicedPaths1), "spliced paths from path IDs", orderedPathIDs1
+
+			" departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2 |"
+
+			results1 = []		
+			for k in range(len(splicedPaths1)):
+				path = splicedPaths1[k]			
+				result = getMultiDeparturePoint(path, medial1, origPose1, estPose1, orderedPathIDs1, nodeID1)
+				results1.append(result+(k,))
+
+			results1 = sorted(results1, key=itemgetter(14))
+			results1 = sorted(results1, key=itemgetter(12), reverse=True)				
+
+			#kIndex = results1[0][15]
+
+			angDiff2 = results1[0][14]
+			contigFrac = results1[0][12]
+			#dist = results1[0][17]
+			dist = sqrt((origPose1[0]-estPose1[0])**2 + (origPose1[1] - estPose1[1])**2)
+			
+			#isDeparture = results1[0][15]
+			isDeparture = results1[0][2] and results1[0][3] or results1[0][8] and results1[0][9]
+			#utilVal = (0.5-angDiff2)/0.5 + (contigFrac-0.5)/0.5 + (3.0-dist)/3.0 + 1-isDeparture*0.5
+
+			maxFront = results1[0][5]
+			maxBack = results1[0][11]
+
+			#utilVal = contigFrac - 2*isDeparture
+
+			utilVal = maxFront + maxBack
+
+			print "util:", nodeID1, maxFront, maxBack, angDiff2, contigFrac, dist, isDeparture, utilVal
+				
+
+			utilSum += utilVal
+			#return splicedPaths1[kIndex]
+
+		self.utility = utilSum
+
+		return utilSum
+
 
 	@logFunction
 	def addBranch(self):
@@ -1032,7 +1102,7 @@ class MapState:
 				parentPathID = self.pathClasses[pathID]["parentID"]
 				childPathID = pathID
 
-				globJuncPose = self.getBranchPoint(parentPathID, childPathID, self.paths, plotIter = True)
+				globJuncPose = self.getBranchPoint(parentPathID, childPathID, self.paths, plotIter = False)
 				print "generated globJuncPose:",  globJuncPose
 				
 				self.pathClasses[childPathID]["globalJunctionPose"] = globJuncPose
@@ -1183,7 +1253,7 @@ class MapState:
 			
 			currPath = splicePaths[k]
 			pathIDs = splicePathIDs[k]
-			results = getMultiDeparturePoint(currPath, medial2, estPose2, estPose2, pathIDs, nodeID, pathPlotCount = self.multiDepCount, plotIter = True)
+			results = getMultiDeparturePoint(currPath, medial2, estPose2, estPose2, pathIDs, nodeID, pathPlotCount = self.multiDepCount, plotIter = False)
 
 			self.multiDepCount += 1
 
@@ -1209,7 +1279,7 @@ class MapState:
 			print "checking overlap of", overlappedPathIDs
 			isNotOverlapped = False
 			for pathID in overlappedPathIDs:
-				sum1 = self.getOverlapCondition(self.trimmedPaths[pathID], nodeID, plotIter = True)
+				sum1 = self.getOverlapCondition(self.trimmedPaths[pathID], nodeID, plotIter = False)
 
 				print "pathID", pathID, "returned", sum1, "for splice", spliceIndex
 				if sum1 > 1e10:
@@ -1230,7 +1300,7 @@ class MapState:
 	@logFunction
 	def getSplicesByNearJunction(self, nodeID):
 		
-		allSplices, terminals, junctions = self.getAllSplices(plotIter = True)
+		allSplices, terminals, junctions = self.getAllSplices(plotIter = False)
 
 		#initPose2 = self.nodeHash[nodeID].getGlobalGPACPose()
 		initPose2 = self.nodePoses[nodeID]
@@ -1320,7 +1390,7 @@ class MapState:
 	@logFunction
 	def comparePaths(self):
  
-		allSplices, terminals, junctions = self.getAllSplices(plotIter = True)
+		allSplices, terminals, junctions = self.getAllSplices(plotIter = False)
 		
 		toBeMerged = []
 		
@@ -1673,7 +1743,7 @@ class MapState:
 					if pair[0] == None:
 						
 						print "comparing sibling paths", pathID1, pathID2
-						resultPose0, resultPose1, lastCost0, matchCount0, juncAngDiff = self.makeSiblingPathCompare(pathID1, pathID2, parentID1, plotIter = True)
+						resultPose0, resultPose1, lastCost0, matchCount0, juncAngDiff = self.makeSiblingPathCompare(pathID1, pathID2, parentID1, plotIter = False)
 						
 						print "sibling compare result:", resultPose0, resultPose1, lastCost0, matchCount0, juncAngDiff
 						
@@ -1687,7 +1757,7 @@ class MapState:
 						print "comparing paths", pathID1, pathID2
 						print pair[1][0], pair[0][0]
 						print pair[1][-1], pair[0][-1]
-						resultPose0, lastCost0, matchCount0 = self.makePathCompare(pair[1], pair[0], pathID2, pathID1, plotIter = True)
+						resultPose0, lastCost0, matchCount0 = self.makePathCompare(pair[1], pair[0], pathID2, pathID1, plotIter = False)
 					
 						if fabs(resultPose0[2]) < 0.5:
 		
@@ -1698,7 +1768,7 @@ class MapState:
 								result = poseOrigin.convertLocalToGlobal(p)
 								path1_offset.append(result)					   
 							
-							result0 = self.getPathDeparture(pair[0], path1_offset, pathID1, pathID2, plotIter = True)
+							result0 = self.getPathDeparture(pair[0], path1_offset, pathID1, pathID2, plotIter = False)
 							print "getPathDeparture() = ", result0
 		
 							isInterior1 = result0[2]
@@ -1721,7 +1791,7 @@ class MapState:
 									currNode = shortestPathSpanTree[currNode]
 								path0.append(self.pathGraph.get_node_attributes(currNode))
 								
-								cost = self.getPathOverlapCondition(path0, path1_offset, pathID1, pathID2, plotIter = True)				   
+								cost = self.getPathOverlapCondition(path0, path1_offset, pathID1, pathID2, plotIter = False)				   
 								print "getPathOverlapCondition() =", cost
 								
 								if cost < 1e10:
@@ -2341,6 +2411,8 @@ class MapState:
 		try: 
 			del self.pathClasses[pathID]
 			del self.pathTermsVisited[pathID]
+			del self.theoryMedialLongPaths[pathID]
+			del self.medialLongPaths[pathID]
 			
 			
 			for k, pathClass in self.pathClasses.iteritems():
@@ -2381,6 +2453,9 @@ class MapState:
 		
 		random.seed(0)		  
  
+		self.theoryMedialLongPaths[pathID] = []
+		self.medialLongPaths[pathID] = []
+
 		print "caseA"
 		sys.stdout.flush()
 		nodes = self.getNodes(pathID)
@@ -2804,7 +2879,7 @@ class MapState:
 
 
 		if junctionNodeID != None:
-			theoryMedialLongPaths = []
+			#theoryMedialLongPaths = []
 			theoryPaths = []
 			print "theoryPaths:"
 			for leaf1 in leaves:
@@ -2912,7 +2987,7 @@ class MapState:
 				if isIntersect2:
 					medial2.append(point2)
 	
-				theoryMedialLongPaths.append(deepcopy(medial2))
+				self.theoryMedialLongPaths[pathID].append(deepcopy(medial2))
 
 
 
@@ -2958,7 +3033,7 @@ class MapState:
 			longPaths[k] = realPath
 					
 
-		medialLongPaths = []
+		#self.medialLongPaths = []
 		juncAngSet = []
 			
 		print len(longPaths), "long paths"
@@ -3050,7 +3125,7 @@ class MapState:
 			if isIntersect2:
 				medial2.append(point2)
 
-			medialLongPaths.append(deepcopy(medial2))
+			self.medialLongPaths[pathID].append(deepcopy(medial2))
 
 			print "globalJunctionPoint:", globalJunctionPoint
 			print "juncIndices:", juncIndices[n]
@@ -3127,10 +3202,10 @@ class MapState:
 		for junc in allJunctions:
 			juncDists.append(junc[2])
 		
-		if True:
+		if False:
 			pylab.clf()
 	
-			for path in medialLongPaths:
+			for path in self.medialLongPaths[pathID]:
 				xP = []
 				yP = []
 				for p in path:
@@ -3142,7 +3217,7 @@ class MapState:
 	
 			if junctionNodeID != None:
 	
-				for path in theoryMedialLongPaths:
+				for path in self.theoryMedialLongPaths[pathID]:
 					xP = []
 					yP = []
 					for p in path:
@@ -3239,11 +3314,11 @@ class MapState:
 				if fabs(minDiff) < 1.047:
 
 					print "returning bestFit:", bestFit, minDiff
-					return medialLongPaths[bestFit], vertices
+					return self.medialLongPaths[pathID][bestFit], vertices
 
 				else:
 					print "returning bestFit theory:", theoryJunc
-					return theoryMedialLongPaths[0], vertices
+					return self.theoryMedialLongPaths[pathID][0], vertices
 			
 			else:
 				print "not returning bestFit"
@@ -3372,8 +3447,9 @@ class MapState:
 		return medial2, vertices
 
 	@logFunction
-	def trimPaths(self, paths):
+	def trimPaths(self, foo = None):
 
+		paths = self.paths
 		trimmedPaths = {}
 		
 		print "path lengths:"
@@ -3410,7 +3486,7 @@ class MapState:
 				
 
 
-				secP1, secP2 = self.getOverlapDeparture(parentPathID, childPathID, paths, plotIter = True)				 
+				secP1, secP2 = self.getOverlapDeparture(parentPathID, childPathID, paths, plotIter = False)				 
 
 				minI_1 = 0		  
 				minI_2 = 0
@@ -5827,44 +5903,6 @@ class MapState:
 				raise
 		"""	
 		
-
-		if foreTerm1 and foreTerm2:
-			if fabs(frontAngDiff) < ANG_THRESH:
-				if isUnique1 and isUnique2:
-					pass
-				if isUnique1 and not isUnique2:
-					if dirFlag == 0:
-						pass
-				if not isUnique1 and isUnique2:
-					if dirFlag == 1:
-						pass
-			else:
-				if isUnique1 and isUnique2:
-					if dirFlag == 0:
-						pass
-					if dirFlag == 1:
-						pass
-				if isUnique1 and not isUnique2:
-					if dirFlag == 0:
-						pass
-				if not isUnique1 and isUnique2:
-					if dirFlag == 1:
-						pass
-		elif foreTerm1 and not foreTerm2:
-			if isUnique1:
-				if frontExist2 and fabs(frontAngDiff) < ANG_THRESH:
-					pass
-				else:
-					if dirFlag == 0:
-						pass
-		elif foreTerm2 and not foreTerm1:
-			if isUnique2:
-				if frontExist1 and fabs(frontAngDiff) < ANG_THRESH:
-					pass
-				else:
-					if dirFlag == 1:		
-						pass
-
 		return isBranch, pathBranchIDs, isNew
 		
 		

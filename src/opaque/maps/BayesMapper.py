@@ -17,6 +17,7 @@ import math
 
 from Splices import batchGlobalMultiFit, getMultiDeparturePoint, orientPath
 import pylab
+import matplotlib.pyplot as plt
 import graph
 
 from MapState import MapState
@@ -85,12 +86,20 @@ class BayesMapper:
 		#self.commonOriginCount = 0
 
 		self.colors = []
+		self.colors.append([0, 0, 255])
+		self.colors.append([0, 255, 0])
+		self.colors.append([255, 0, 0])
+		self.colors.append([255, 0, 255])
+		self.colors.append([255, 255, 0])
+		self.colors.append([0, 255, 255])
+		"""
 		self.colors.append([215, 48, 39])
 		self.colors.append([252, 141, 89])
 		self.colors.append([254, 224, 144])
 		self.colors.append([224, 243, 248])
 		self.colors.append([145, 191, 219])
 		self.colors.append([69, 117, 180])
+		"""
 
 		for color in self.colors:
 			color[0] = float(color[0])/256.0
@@ -172,10 +181,12 @@ class BayesMapper:
 
 		existMapHyp = self.mapHyps
 		existParticleIDs = self.particleIDs
+		existWalls = self.walls
 
 		exec(saveStr)
 		self.travelDirs = self.travelDirs[nodeID]
 		self.particleIDs = existParticleIDs
+		self.walls = existWalls
 
 		self.mapHyps = existMapHyp
 		nodeID = numNodes 
@@ -224,7 +235,7 @@ class BayesMapper:
 				for pID, mapHyp in hypSet.iteritems():
 					" Move node along path "
 					self.movePath(mapHyp, nodeID, direction)
-					self.drawConstraints(mapHyp, self.statePlotCount)
+					#self.drawConstraints(mapHyp, self.statePlotCount)
 					self.statePlotCount += 1
 					self.drawPathAndHull(mapHyp)
 		
@@ -269,7 +280,7 @@ class BayesMapper:
 
 					
 				print "drawing node", nodeID, "from hypothesis", mapHyp.hypothesisID
-				self.drawConstraints(mapHyp, self.statePlotCount)
+				#self.drawConstraints(mapHyp, self.statePlotCount)
 				self.statePlotCount += 1
 				self.drawPathAndHull(mapHyp)
 
@@ -286,7 +297,7 @@ class BayesMapper:
 
 
 				currHyp.generatePaths()
-				self.drawPathAndHull(currHyp)
+				self.drawPathAndHull2(currHyp)
 
 
 				if nodeID1 >= 2:
@@ -341,22 +352,30 @@ class BayesMapper:
 			
 			
 			try:
-				self.consistentFit(mapHyp, nodeID1, mapHyp.nodePoses[nodeID1], numGuesses = 11)
+
+				mapHyp.origPoses[nodeID1] = mapHyp.nodePoses[nodeID1]
+				result = self.consistentFit(mapHyp, nodeID1, mapHyp.nodePoses[nodeID1], numGuesses = 11)
+
 			except IndexError:
 				print "failed to consistentFit node", nodeID1
 				pass
+
 				
-			self.drawConstraints(mapHyp, self.statePlotCount)
+			#self.drawConstraints(mapHyp, self.statePlotCount)
 			self.statePlotCount += 1
 			self.drawPathAndHull(mapHyp)
 
 			try:
+				mapHyp.origPoses[nodeID2] = mapHyp.nodePoses[nodeID2]
 				self.consistentFit(mapHyp, nodeID2, mapHyp.nodePoses[nodeID2], numGuesses = 11)
+
 			except IndexError:
 				print "failed to consistentFit node", nodeID2
 				pass
 
-			self.drawConstraints(mapHyp, self.statePlotCount)
+			mapHyp.computeEval()
+
+			#self.drawConstraints(mapHyp, self.statePlotCount)
 			self.statePlotCount += 1
 			self.drawPathAndHull(mapHyp)
 
@@ -620,7 +639,7 @@ class BayesMapper:
 					trimmedPaths = self.paths.trimPaths(paths)
 	
 					
-					self.drawTrimmedPaths(trimmedPaths)
+					#self.drawTrimmedPaths(trimmedPaths)
 					print "trimmed paths:", len(trimmedPaths)
 	
 	
@@ -645,7 +664,7 @@ class BayesMapper:
 					
 					self.paths.generatePaths()
 					self.drawPathAndHull(mapHyp)
-					self.drawTrimmedPaths(trimmedPaths)
+					#self.drawTrimmedPaths(trimmedPaths)
 
 			
 			self.paths.generatePaths()
@@ -790,7 +809,7 @@ class BayesMapper:
 
 			" TRIM THE RAW PATHS TO ONLY EXTRUDE FROM THEIR BRANCHING POINT "
 			trimmedPaths = mapHyp.trimPaths(paths)
-			self.drawTrimmedPaths(mapHyp)
+			#self.drawTrimmedPaths(mapHyp)
 			print "trimmed paths:", len(trimmedPaths)
 
 			
@@ -827,7 +846,7 @@ class BayesMapper:
 			
 			" COMPUTE DEPARTURE EVENTS FOR EACH OVERLAPPING PATH SECTION "
 			for pathID in orderedPathIDs1:
-				resultSet = mapHyp.getDeparturePoint(mapHyp.trimmedPaths[pathID], nodeID1, plotIter = True)
+				resultSet = mapHyp.getDeparturePoint(mapHyp.trimmedPaths[pathID], nodeID1, plotIter = False)
 				mapHyp.departureResultSet1 = resultSet
 
 				departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = resultSet
@@ -839,7 +858,7 @@ class BayesMapper:
 				mapHyp.contig1.append((contigFrac, overlapSum))
 
 			for pathID in orderedPathIDs2:
-				resultSet = mapHyp.getDeparturePoint(mapHyp.trimmedPaths[pathID], nodeID2, plotIter = True)
+				resultSet = mapHyp.getDeparturePoint(mapHyp.trimmedPaths[pathID], nodeID2, plotIter = False)
 				mapHyp.departureResultSet2 = resultSet
 
 				departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = resultSet
@@ -1100,6 +1119,7 @@ class BayesMapper:
 			if isBranched:
 				" create a new map state where a branch decision is not made "
 				newHyps[self.particleIDs] = mapHyp.copy(self.particleIDs)
+				print "creating hyp", self.particleIDs, "from hyp", mapHyp.hypothesisID, ", len(paths) =", len(mapHyp.pathClasses)
 				self.particleIDs += 1
 
 			isBranch, pathBranchIDs, isNew = mapHyp.determineBranchPair(nodeID1, nodeID2, backExist1, backExist2, backInterior1, backInterior2, depAngle1, depAngle2, depPoint1, depPoint2, parentPathID1, parentPathID2, dirFlag, isUnique1, isUnique2, duplicatePathID1, duplicatePathID2)
@@ -1174,7 +1194,7 @@ class BayesMapper:
 	
 			currHyp.generatePaths()
 			trimmedPaths = currHyp.trimPaths(currHyp.paths)		
-			self.drawTrimmedPaths(currHyp)
+			#self.drawTrimmedPaths(currHyp)
 						
 		return hypSet
 
@@ -1234,7 +1254,7 @@ class BayesMapper:
 				medial3 = self.medialAxes[nodeID]
 				
 				print "hypothesis", mapHyp.hypothesisID, len(mapHyp.paths[0])
-				allSplices, terminals, junctions = mapHyp.getAllSplices(plotIter = True)
+				allSplices, terminals, junctions = mapHyp.getAllSplices(plotIter = False)
 				print "hypothesis", mapHyp.hypothesisID, terminals, junctions
 
 
@@ -1402,14 +1422,14 @@ class BayesMapper:
 					print "input: uMedialOrigin3, u3, pose3:", uMedialOrigin3, u3, pose3
 	
 					
-					resultPose2, lastCost2, matchCount2, currAng2 = gen_icp.globalPathToNodeOverlapICP2([u2, uMedialOrigin2, 0.0], orientedSplicePath, medial2, plotIter = True, n1 = nodeID-1, n2 = -1, arcLimit = 0.1)
-					resultPose3, lastCost3, matchCount3, currAng3 = gen_icp.globalPathToNodeOverlapICP2([u3, uMedialOrigin3, 0.0], orientedSplicePath, medial3, plotIter = True, n1 = nodeID, n2 = -1, arcLimit = 0.1)
+					resultPose2, lastCost2, matchCount2, currAng2 = gen_icp.globalPathToNodeOverlapICP2([u2, uMedialOrigin2, 0.0], orientedSplicePath, medial2, plotIter = False, n1 = nodeID-1, n2 = -1, arcLimit = 0.1)
+					resultPose3, lastCost3, matchCount3, currAng3 = gen_icp.globalPathToNodeOverlapICP2([u3, uMedialOrigin3, 0.0], orientedSplicePath, medial3, plotIter = False, n1 = nodeID, n2 = -1, arcLimit = 0.1)
 					
 					print "resultPoses:", resultPose2, resultPose3
 
-					result2 = getMultiDeparturePoint(orientedSplicePath, medial2, pose2, resultPose2, [], nodeID-1, pathPlotCount = self.multiDepCount, plotIter = True)
+					result2 = getMultiDeparturePoint(orientedSplicePath, medial2, pose2, resultPose2, [], nodeID-1, pathPlotCount = self.multiDepCount, plotIter = False)
 					self.multiDepCount += 1
-					result3 = getMultiDeparturePoint(orientedSplicePath, medial3, pose3, resultPose3, [], nodeID, pathPlotCount = self.multiDepCount, plotIter = True)
+					result3 = getMultiDeparturePoint(orientedSplicePath, medial3, pose3, resultPose3, [], nodeID, pathPlotCount = self.multiDepCount, plotIter = False)
 					self.multiDepCount += 1
 					
 					#results1.append(result+(k,))
@@ -1695,7 +1715,7 @@ class BayesMapper:
 			
 			" capture transform between pathID2 and member nodes "
 			" add compute new node locations under corrected transform "
-			self.drawConstraints(mapHyp, self.statePlotCount)
+			#self.drawConstraints(mapHyp, self.statePlotCount)
 			self.statePlotCount += 1
 			self.drawPathAndHull(mapHyp)
 						
@@ -1710,7 +1730,7 @@ class BayesMapper:
 					#self.nodeHash[nodeID].setGPACPose(guessPose)
 					mapHyp.nodePoses[nodeID] = guessPose
 					
-					self.drawConstraints(mapHyp, self.statePlotCount)
+					#self.drawConstraints(mapHyp, self.statePlotCount)
 					self.statePlotCount += 1
 					self.drawPathAndHull(mapHyp)
 					
@@ -1727,7 +1747,7 @@ class BayesMapper:
 					#self.nodeHash[nodeID].setGPACPose(guessPose)
 					mapHyp.nodePoses[nodeID] = guessPose
 					
-					self.drawConstraints(mapHyp, self.statePlotCount)
+					#self.drawConstraints(mapHyp, self.statePlotCount)
 					self.statePlotCount += 1
 					self.drawPathAndHull(mapHyp)
 
@@ -1735,10 +1755,10 @@ class BayesMapper:
 
 			mapHyp.generatePaths()
 
-			self.drawConstraints(mapHyp, self.statePlotCount)
+			#self.drawConstraints(mapHyp, self.statePlotCount)
 			self.statePlotCount += 1
 			self.drawPathAndHull(mapHyp)
-			self.drawTrimmedPaths(mapHyp)
+			#self.drawTrimmedPaths(mapHyp)
 
 
 			for nodeID in mergeNodes2:
@@ -1763,7 +1783,7 @@ class BayesMapper:
 				#self.consistentFit(nodeID, estPose, excludePathIDs = [pathID2])
 		
 
-				self.drawConstraints(mapHyp, self.statePlotCount)
+				#self.drawConstraints(mapHyp, self.statePlotCount)
 				self.statePlotCount += 1
 				self.drawPathAndHull(mapHyp)
 				
@@ -1788,10 +1808,10 @@ class BayesMapper:
 
 			print "C: mapHyp.pathClasses[" + str(pathID1) + "] = " + repr(mapHyp.pathClasses[pathID1])
 
-			self.drawConstraints(mapHyp, self.statePlotCount)
+			#self.drawConstraints(mapHyp, self.statePlotCount)
 			self.statePlotCount += 1
 			self.drawPathAndHull(mapHyp)
-			self.drawTrimmedPaths(mapHyp)
+			#self.drawTrimmedPaths(mapHyp)
 
 
 			""" Now we check to see if any branch events have occurred from this merge """
@@ -1813,7 +1833,7 @@ class BayesMapper:
 
 				" COMPUTE DEPARTURE EVENTS FOR EACH OVERLAPPING PATH SECTION "
 				for pathID in orderedPathIDs1:
-					departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = mapHyp.getDeparturePoint(mapHyp.trimmedPaths[pathID], nodeID1, plotIter = True)
+					departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = mapHyp.getDeparturePoint(mapHyp.trimmedPaths[pathID], nodeID1, plotIter = False)
 					departures1.append([isExist1,isExist2])
 					interiors1.append([isInterior1, isInterior2])
 					depPoints1.append([departurePoint1, departurePoint2])
@@ -1926,10 +1946,10 @@ class BayesMapper:
 				mapHyp.generatePaths()
 				mapHyp.trimPaths(mapHyp.paths)						
 
-				self.drawConstraints(mapHyp, self.statePlotCount)
+				#self.drawConstraints(mapHyp, self.statePlotCount)
 				self.statePlotCount += 1
 				self.drawPathAndHull(mapHyp)
-				self.drawTrimmedPaths(mapHyp)
+				#self.drawTrimmedPaths(mapHyp)
 
 			#for k, v in hasMoved.iteritems():
 			#	 pass
@@ -2019,7 +2039,7 @@ class BayesMapper:
 				
 				" capture transform between pathID2 and member nodes "
 				" add compute new node locations under corrected transform "
-				self.drawConstraints(mapHyp, self.statePlotCount)
+				#self.drawConstraints(mapHyp, self.statePlotCount)
 				self.statePlotCount += 1
 				self.drawPathAndHull(mapHyp)
 				
@@ -2035,7 +2055,7 @@ class BayesMapper:
 					#self.nodeHash[nodeID].setGPACPose(guessPose)
 					mapHyp.nodePoses[nodeID] = guessPose
 					
-					self.drawConstraints(mapHyp, self.statePlotCount)
+					#self.drawConstraints(mapHyp, self.statePlotCount)
 					self.statePlotCount += 1
 					self.drawPathAndHull(mapHyp)
 					
@@ -2063,7 +2083,7 @@ class BayesMapper:
 						print "failed to consistentFit node", nodeID
 						pass
 
-					self.drawConstraints(mapHyp, self.statePlotCount)
+					#self.drawConstraints(mapHyp, self.statePlotCount)
 					self.statePlotCount += 1
 					self.drawPathAndHull(mapHyp)
 
@@ -2080,13 +2100,13 @@ class BayesMapper:
 					mapHyp.generatePaths()
 					
 
-					self.drawConstraints(mapHyp, self.statePlotCount)
+					#self.drawConstraints(mapHyp, self.statePlotCount)
 					self.statePlotCount += 1
 					self.drawPathAndHull(mapHyp)
 
 
 				print "relaxed constraints",  self.statePlotCount
-				self.drawConstraints(mapHyp, self.statePlotCount)
+				#self.drawConstraints(mapHyp, self.statePlotCount)
 				self.statePlotCount += 1
 				self.drawPathAndHull(mapHyp)
 
@@ -2098,7 +2118,7 @@ class BayesMapper:
 	
 				mapHyp.generatePaths()
 				
-				self.drawConstraints(mapHyp, self.statePlotCount)
+				#self.drawConstraints(mapHyp, self.statePlotCount)
 				self.statePlotCount += 1
 				self.drawPathAndHull(mapHyp)
 			
@@ -2261,14 +2281,18 @@ class BayesMapper:
 			contigFrac = result[15]
 			angDiff2 = result[17]
 			spliceIndex = result[19]
-			dist = sqrt((estPose1[0]-resultPose[0])**2 + (estPose1[1] - resultPose[1])**2)
+			#spliceIndex = result[21]
+
+			#result[18] is isDepartureExists True/False
+			dist = result[20]
+			#dist = sqrt((estPose1[0]-resultPose[0])**2 + (estPose1[1] - resultPose[1])**2)
 			lastCost = result[1]
 			matchCount = result[2]
 			overlapSum = result[16]
 			print spliceIndex, [int(isInterior1), int(isInterior2), int(isExist1), int(isExist2)], contigFrac, dist, angDiff2, lastCost, matchCount, overlapSum, spliceTerms[spliceIndex], splicePathIDs[spliceIndex], resultPose
 
 		
-		" resultPose, lastCost, matchCount, departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2, isDeparture, spliceIndex "
+		" resultPose, lastCost, matchCount, departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2, isDeparture, dist, spliceIndex "
 
 
 		"""
@@ -2407,6 +2431,7 @@ class BayesMapper:
 			result = sortedResults[k]
 			utilSort.append((result[22],result[21]))
 		
+
 		
 		print "contigSort:", contigSort
 		print "distSort:", distSort
@@ -2422,6 +2447,7 @@ class BayesMapper:
 		#self.nodeHash[nodeID].setGPACPose(guessPose)
 		mapHyp.nodePoses[nodeID] = guessPose
 
+		return filteredResults[0]
 	
 	@logFunction
 	def computeMedialError(self, i, j, offset, minMatchDist = 2.0, tail1=0, tail2=0):
@@ -3235,11 +3261,12 @@ class BayesMapper:
 
 
 	@logFunction
-	def plotEnv(self):
+	def plotEnv(self, axes=0):
 		
 		#walls = self.probe.getWalls()
 		walls = self.walls
 	
+		"""
 		for wall in walls:
 			xP = []
 			yP = []
@@ -3249,8 +3276,34 @@ class BayesMapper:
 				yP.append(p[1])
 	
 			pylab.plot(xP,yP, linewidth=2, color = 'g', zorder=0)
+		"""
 			
-	
+
+		if axes == 0:
+		
+			for wall in walls:
+				xP = []
+				yP = []
+				for i in range(len(wall)):
+					p = copy(wall[i])
+					xP.append(p[0])
+					yP.append(p[1])
+		
+				pylab.plot(xP,yP, linewidth=2, color = 'g', zorder=0)
+
+		else:
+
+			for wall in walls:
+				xP = []
+				yP = []
+				for i in range(len(wall)):
+					p = copy(wall[i])
+					xP.append(p[0])
+					yP.append(p[1])
+		
+				axes.plot(xP,yP, linewidth=2, color = 'g',zorder=0)
+			
+			
 	@logFunction
 	def drawConstraints(self, mapHyp, id = []):
 		
@@ -3365,8 +3418,290 @@ class BayesMapper:
 
 
 	@logFunction
+	def drawPathAndHull2(self, mapHyp):
+		
+		" 1) plot the pose of local splines and postures "
+		" 2) plot the alpha shape of the union of pose alpha shapes and medial axis tree "
+		" 3) plot the alpha shape of the union of pose alpha shapes and the long medial axis "
+		" 4) plot the trimmed path "
+
+		#fig = plt.figure()
+		fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, sharex=True, sharey=True)
+		#fig, (ax1, ax2) = plt.subplots(2,  sharex=True, sharey=True)
+		fig.set_size_inches(16,12)
+		fig.tight_layout(pad=1.1)
+
+		#fig = plt.figure()
+		#ax1 = fig.add_subplot(2,1,1)
+		#ax1.plot(range(10), 'b-')
+
+		#ax2 = fig.add_subplot(2,1,2)
+		#ax2.plot(range(20), 'r^')
+
+		#ax1.plot(x)
+		#ax1.set_xlim(-4, 4)                    
+		#ax1.set_ylim(-3, 3)
+		ax1.set_xlim(-10, 10)
+		ax1.set_aspect("equal")
+
+		#ax3 = ax2
+		#ax4 = ax3
+
+		#fig.savefig("foo.png")
+
+		poses = []
+		for i in range(self.numNodes):
+			poses.append(mapHyp.nodePoses[i])
+
+		#pylab.clf()
+		for i in range(self.numNodes):
+
+			hull = self.aHulls[i]
+			currPose = mapHyp.nodePoses[i]
+
+			currProfile = Pose(currPose)
+			posture1 = self.correctedPostures[i]
+
+			posture_trans = []
+			for p in posture1:
+				posture_trans.append(gen_icp.dispOffset(p, currPose))	
+
+			hull_trans = []
+			for p in hull:
+				hull_trans.append(gen_icp.dispOffset(p, currPose))	
+			
+			xP = []
+			yP = []
+			for p in posture_trans:
+				xP.append(p[0])
+				yP.append(p[1])
+			#ax1.plot(xP,yP, color=(255/256.,182/256.,193/256.))	
+			#ax1.plot(xP,yP, color=(112/256.,147/256.,219/256.))	
+			ax1.plot(xP,yP, color='b')	
+
+			xP = []
+			yP = []
+			for p in hull_trans:
+				xP.append(p[0])
+				yP.append(p[1])
+			#ax1.plot(xP,yP, color=(112/256.,147/256.,219/256.))	
+			#ax2.plot(xP,yP, color=(112/256.,147/256.,219/256.))	
+			ax2.plot(xP,yP, color='b')	
+
+
+		xP = []
+		yP = []
+		for pose in poses:
+			xP.append(pose[0])
+			yP.append(pose[1])		
+		ax1.scatter(xP,yP, color='k', linewidth=1, zorder=10)
+
+		#self.plotEnv()
+
+		ax1.set_title("%d Poses" % self.numNodes)
+		ax2.set_title("%d Poses" % self.numNodes)
+		#pylab.xlim(-10,10)
+		#pylab.ylim(-10,10)
+
+
+		" plot 3" 
+			
+		pathIDs = mapHyp.getPathIDs()
+
+		allNodes = []
+		for k in pathIDs:
+			nodeSet = mapHyp.getNodes(k)
+			allNodes += copy(nodeSet)
+		
+		allNodes.sort() 
+		
+		if len(allNodes) > 0:
+			highestNodeID = allNodes[-1]
+		else:
+			highestNodeID = 1e100		
+			
+
+
+		"""
+		for path in mapHyp.theoryMedialLongPaths:
+			xP = []
+			yP = []
+			for p in path:
+				xP.append(p[0])
+				yP.append(p[1])
+
+			pylab.plot(xP,yP, color='k')
+
+			globJuncPose = self.getGlobalJunctionPose(pathID)
+			if globJuncPose != None:
+				pylab.scatter([globJuncPose[0],], [globJuncPose[1],], color='k')
+
+		"""
+
+		"""
+		
+		xP = []
+		yP = []
+		for p in vertices:
+			xP.append(p[0])
+			yP.append(p[1])
+		pylab.plot(xP,yP, color='r')
+		
+		sizes = []
+		for path in longPaths:
+			sizes.append(len(path))
+		
+		bufStr1 = ""
+		for dist in juncDists:
+			if dist != None:
+				bufStr1 += "%1.2f " % dist
+
+
+		bufStr2 = ""
+		for juncAngs in juncAngSet:
+			for angs in juncAngs:
+				if angs != None:
+					bufStr2 += "%1.2f %1.2f " % (angs[0],angs[1])
+		
+		pylab.axis("equal")
+		pylab.title("Path %d %s %s %s" % (pathID, sizes,bufStr1,bufStr2))
+		pylab.savefig("medialOut2_%04u.png" % self.topCount)
+		print "saving medialOut2_%04u.png" % self.topCount
+		self.topCount += 1
+		"""
+
+
+
+		for k in pathIDs:
+			"""
+			xP = []
+			yP = []
+			
+			for p in mapHyp.paths[k]:
+				xP.append(p[0])
+				yP.append(p[1])
+			ax3.plot(xP,yP, color=self.colors[k], linewidth=4)
+			"""
+
+			for path in mapHyp.medialLongPaths[k]:
+				xP = []
+				yP = []
+				for p in path:
+					xP.append(p[0])
+					yP.append(p[1])
+
+				ax3.plot(xP,yP, color=self.colors[k], linewidth=4)
+
+
+			nodeSet = mapHyp.getNodes(k)
+
+			print "drawing pathID", k, "for nodes:", nodeSet
+			"""
+			for nodeID in nodeSet:
+				xP = []
+				yP = []
+
+				estPose1 = mapHyp.nodePoses[nodeID]
+		
+				if self.isBowties[nodeID]:			
+					hull1 = self.aHulls[nodeID]
+					#medial1 = self.medialAxes[nodeID]
+					#hull1 = computeBareHull(self.nodeHash[nodeID], sweep = False, static = True)
+				else:
+					#hull1 = computeBareHull(self.nodeHash[nodeID], sweep = False)
+					hull1 = self.aHulls[nodeID]
+		
+				" set the origin of pose 1 "
+				poseOrigin = Pose(estPose1)
+		
+				points = []
+				for p in hull1:
+					p1 = poseOrigin.convertLocalToGlobal(p)
+					points.append(p1)
+				
+				for p in points:
+					xP.append(p[0])
+					yP.append(p[1])
+				
+				if nodeID == highestNodeID:
+					ax3.plot(xP,yP, color=(0,0,0))
+				elif nodeID == highestNodeID-1:
+					ax3.plot(xP,yP, color=(0.5,0.5,0.5))
+				else:
+					ax3.plot(xP,yP, color=self.colors[k])
+			"""
+					
+			
+			xP = []
+			yP = []
+			for p in mapHyp.hulls[k]:
+				xP.append(p[0])
+				yP.append(p[1])
+				
+			#ax3.plot(xP,yP, '--', color=self.colors[k], linewidth=4)
+			#ax4.plot(xP,yP, '--', color=self.colors[k], linewidth=4)
+			ax3.plot(xP,yP, color=self.colors[k], linewidth=1)
+			#ax4.plot(xP,yP, color=self.colors[k], linewidth=4)
+
+		for k in pathIDs:
+
+			globJuncPose = mapHyp.getGlobalJunctionPose(k)
+			if globJuncPose != None:
+				ax3.scatter([globJuncPose[0],], [globJuncPose[1],], color='k', zorder=10)
+
+
+		trimmedPaths = mapHyp.trimmedPaths
+		
+		#for k in range(len(trimmedPaths)):
+		for k,path in trimmedPaths.iteritems():
+			#path = trimmedPaths[k]
+			print "path has", len(path), "points"
+			xP = []
+			yP = []
+			for p in path:
+				xP.append(p[0])
+				yP.append(p[1])
+
+			ax4.plot(xP,yP, color = self.colors[k], linewidth=4)
+
+			globJuncPose = mapHyp.getGlobalJunctionPose(k)
+			if globJuncPose != None:
+				ax4.scatter([globJuncPose[0],], [globJuncPose[1],], color='k')
+			
+		#pylab.xlim(-4,4)
+
+		#self.plotEnv()
+		self.plotEnv(ax1)
+		self.plotEnv(ax2)
+		self.plotEnv(ax3)
+		self.plotEnv(ax4)
+		
+		print "pathAndHull2:", self.pathDrawCount
+		printStack()
+
+		#pylab.xlim(-10, 12)
+		#pylab.ylim(-10, 10)
+		ax3.set_title("paths: %s numNodes: %d %d, hyp %d %3.2f" % (repr(mapHyp.getPathIDs()), self.numNodes, highestNodeID, mapHyp.hypothesisID, mapHyp.utility))
+		ax4.set_title("paths: %s numNodes: %d %d, hyp %d %3.2f" % (repr(mapHyp.getPathIDs()), self.numNodes, highestNodeID, mapHyp.hypothesisID, mapHyp.utility))
+		plt.savefig("quadPath_%04u_%04u.png" % (self.pathDrawCount, mapHyp.hypothesisID))
+
+		plt.clf()
+		plt.close()
+
+		self.pathDrawCount += 1
+			
+
+	@logFunction
 	def drawPathAndHull(self, mapHyp):
 		
+		" 1) plot the pose of local splines and postures "
+		" 2) plot the alpha shape of the union of pose alpha shapes and medial axis tree "
+		" 3) plot the alpha shape of the union of pose alpha shapes and the long medial axis "
+		" 4) plot the trimmed path "
+
+		#fig = plt.figure()
+		#fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, sharex=True, sharey=True)
+		#ax1.plot(x)
 		
 		pylab.clf()
 		pathIDs = mapHyp.getPathIDs()
@@ -3392,10 +3727,6 @@ class BayesMapper:
 				xP.append(p[0])
 				yP.append(p[1])
 			pylab.plot(xP,yP, color=self.colors[k], linewidth=4)
-
-
-
-
 
 
 			nodeSet = mapHyp.getNodes(k)
@@ -3457,8 +3788,8 @@ class BayesMapper:
 		pylab.axis("equal")
 		#pylab.xlim(-10, 12)
 		#pylab.ylim(-10, 10)
-		pylab.title("paths: %s numNodes: %d %d, hyp %d" % (repr(mapHyp.getPathIDs()), self.numNodes, highestNodeID, mapHyp.hypothesisID))
-		pylab.savefig("pathAndHull_%04u_%04u.png" % (mapHyp.hypothesisID, self.pathDrawCount))
+		pylab.title("paths: %s numNodes: %d %d, hyp %d %3.2f" % (repr(mapHyp.getPathIDs()), self.numNodes, highestNodeID, mapHyp.hypothesisID, mapHyp.utility))
+		pylab.savefig("pathAndHull_%04u_%04u.png" % (self.pathDrawCount, mapHyp.hypothesisID))
 
 		self.pathDrawCount += 1
 			

@@ -1555,7 +1555,7 @@ def overlapICP_GPU2(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1,
         
         numIterations += 1
 
-    if True:
+    if False:
 
         " set the origin of pose 1 "
         poseOrigin = Pose(estPose1)
@@ -2082,6 +2082,9 @@ def globalPathToNodeOverlapICP2(initGuess, globalPath, medialPoints, plotIter = 
         numIterations += 1
         
         
+        doPoseOffset = Pose(currPose)
+        unPoseOffset = doPoseOffset.doInverse(currPose)
+        doUnPoseOffset = Pose(unPoseOffset)
             
         " draw final position "
         if plotIter:
@@ -2103,9 +2106,9 @@ def globalPathToNodeOverlapICP2(initGuess, globalPath, medialPoints, plotIter = 
             
             figPlot, (ax1, ax2) = plt.subplots(2, sharex=True, sharey=True)
             
-            doPoseOffset = Pose(currPose)
-            unPoseOffset = doPoseOffset.doInverse(currPose)
-            doUnPoseOffset = Pose(unPoseOffset)
+            #doPoseOffset = Pose(currPose)
+            #unPoseOffset = doPoseOffset.doInverse(currPose)
+            #doUnPoseOffset = Pose(unPoseOffset)
             
             " transform the target Hull with the latest offset "
             localPathPoints_offset = []
