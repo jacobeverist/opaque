@@ -236,9 +236,13 @@ class BayesMapper:
 					" Move node along path "
 					self.movePath(mapHyp, nodeID, direction)
 					#self.drawConstraints(mapHyp, self.statePlotCount)
-					self.statePlotCount += 1
-					self.drawPathAndHull(mapHyp)
+					#self.statePlotCount += 1
+					#self.drawPathAndHull(mapHyp)
 		
+		nodeID1 = self.numNodes-2
+		nodeID2 = self.numNodes-1
+
+		print "nodeID1, nodeID2 =", nodeID1, nodeID2
 		
 		" CHECK FOR A BRANCHING EVENT "
 		
@@ -250,28 +254,10 @@ class BayesMapper:
 
 				" DETECT BRANCHING EVENTS FOR THE 2 NODES OF LAST STOP "
 				" AFTER ODD-NUMBER OVERLAP OF CURRENT STOP HAS IRONED OUT ERRORS "
-				nodeID1 = self.numNodes-2
-				nodeID2 = self.numNodes-1
-
-				print "nodeID1, nodeID2 =", nodeID1, nodeID2
-				
-				" if these nodes are already path-classified, return"
-				isContained1 = False
-				isContained2 = False
 				
 				pathIDs = mapHyp.getPathIDs()
 
 				print "hypothesis", mapHyp.hypothesisID, "paths =", pathIDs
-
-				for k in pathIDs:
-					if mapHyp.getNodes(k).count(nodeID1) > 0:
-						isContained1 = True
-					if mapHyp.getNodes(k).count(nodeID2) > 0:
-						isContained2 = True
-						
-				
-				if isContained1 or isContained2:
-					return
 
 				print "generating node", nodeID, "from hypothesis", mapHyp.hypothesisID
 
@@ -281,8 +267,8 @@ class BayesMapper:
 					
 				print "drawing node", nodeID, "from hypothesis", mapHyp.hypothesisID
 				#self.drawConstraints(mapHyp, self.statePlotCount)
-				self.statePlotCount += 1
-				self.drawPathAndHull(mapHyp)
+				#self.statePlotCount += 1
+				#self.drawPathAndHull(mapHyp)
 
 			#for pID, mapHyp in hypSet.iteritems():
 
@@ -300,6 +286,7 @@ class BayesMapper:
 				self.drawPathAndHull2(currHyp)
 
 
+				"""
 				if nodeID1 >= 2:
 					newPath = deepcopy(currHyp.paths[0])
 					p0 = newPath[0]
@@ -326,6 +313,7 @@ class BayesMapper:
 					arcDistOld = newSpline.dist(0.0, minU)
 		
 					print "arcDistNew, arcDistOld, diff =", arcDistNew, arcDistOld, arcDistNew-arcDistOld
+				"""
 		
 				
 				
@@ -362,8 +350,8 @@ class BayesMapper:
 
 				
 			#self.drawConstraints(mapHyp, self.statePlotCount)
-			self.statePlotCount += 1
-			self.drawPathAndHull(mapHyp)
+			#self.statePlotCount += 1
+			#self.drawPathAndHull(mapHyp)
 
 			try:
 				mapHyp.origPoses[nodeID2] = mapHyp.nodePoses[nodeID2]
@@ -376,8 +364,8 @@ class BayesMapper:
 			mapHyp.computeEval()
 
 			#self.drawConstraints(mapHyp, self.statePlotCount)
-			self.statePlotCount += 1
-			self.drawPathAndHull(mapHyp)
+			#self.statePlotCount += 1
+			#self.drawPathAndHull(mapHyp)
 
 
 
@@ -609,7 +597,7 @@ class BayesMapper:
 				" COMPUTE MEDIAL AXIS FROM UNION OF PATH-CLASSIFIED NODES "
 				self.paths.generatePaths()
 	
-				self.drawPathAndHull(mapHyp)
+				#self.drawPathAndHull(mapHyp)
 				
 	
 				self.addToPaths(mapHyp, nodeID1, nodeID2)
@@ -663,12 +651,12 @@ class BayesMapper:
 					self.currSplicePath = self.selectSplice(mapHyp, nodeID1, nodeID2, medial1, medial2, estPose1, estPose2, orderedPathIDs1, orderedPathIDs2)
 					
 					self.paths.generatePaths()
-					self.drawPathAndHull(mapHyp)
+					#self.drawPathAndHull(mapHyp)
 					#self.drawTrimmedPaths(trimmedPaths)
 
 			
 			self.paths.generatePaths()
-			self.drawPathAndHull(mapHyp)
+			#self.drawPathAndHull(mapHyp)
 
 
 		" ESTIMATE TRAVEL WITH MEDIAL OVERLAP CONSTRAINT OF EVEN NUMBER POSE "
@@ -2630,10 +2618,10 @@ class BayesMapper:
 
 		for k in range(len(self.medialLongPaths[nodeID1])):
 			#medial1 = node1.medialLongPaths[k]
-			medial1 = self.medialLongPaths[nodeID1][k]
+			medial1 = mapHyp.medialLongPaths[nodeID1][k]
 			for l in range(len(self.medialLongPaths[nodeID2])):
 				#medial2 = node2.medialLongPaths[l]
-				medial2 = self.medialLongPaths[nodeID2][l]
+				medial2 = mapHyp.medialLongPaths[nodeID2][l]
 				
 
 				if isMove:
@@ -3429,7 +3417,7 @@ class BayesMapper:
 		fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, sharex=True, sharey=True)
 		#fig, (ax1, ax2) = plt.subplots(2,  sharex=True, sharey=True)
 		fig.set_size_inches(16,12)
-		fig.tight_layout(pad=1.1)
+		fig.tight_layout(pad=4.0)
 
 		#fig = plt.figure()
 		#ax1 = fig.add_subplot(2,1,1)
@@ -3681,8 +3669,16 @@ class BayesMapper:
 
 		#pylab.xlim(-10, 12)
 		#pylab.ylim(-10, 10)
-		ax3.set_title("paths: %s numNodes: %d %d, hyp %d %3.2f" % (repr(mapHyp.getPathIDs()), self.numNodes, highestNodeID, mapHyp.hypothesisID, mapHyp.utility))
-		ax4.set_title("paths: %s numNodes: %d %d, hyp %d %3.2f" % (repr(mapHyp.getPathIDs()), self.numNodes, highestNodeID, mapHyp.hypothesisID, mapHyp.utility))
+		#ax3.set_title("paths: %s numNodes: %d %d, hyp %d %3.2f" % (repr(mapHyp.getPathIDs()), self.numNodes, highestNodeID, mapHyp.hypothesisID, mapHyp.utility))
+		#ax4.set_title("paths: %s numNodes: %d %d, hyp %d %3.2f" % (repr(mapHyp.getPathIDs()), self.numNodes, highestNodeID, mapHyp.hypothesisID, mapHyp.utility))
+
+		ax1.set_title("Pose Robot Static Postures")
+		ax2.set_title("Pose Alpha Shapes")
+		ax3.set_title("Pose Union Medial Axes")
+		ax4.set_title("Trimmed Paths")
+
+		#foo = "paths: %s, nodeID: %d, hyp %d %3.2f" % (repr(mapHyp.getPathIDs()), highestNodeID, mapHyp.hypothesisID, mapHyp.utility)
+		fig.suptitle("paths: %s, nodeID: %d, hyp %d %3.2f" % (repr(mapHyp.getPathIDs()), highestNodeID, mapHyp.hypothesisID, mapHyp.utility), fontsize=18, y=0.99)
 		plt.savefig("quadPath_%04u_%04u.png" % (self.pathDrawCount, mapHyp.hypothesisID))
 
 		plt.clf()
