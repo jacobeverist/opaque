@@ -79,6 +79,25 @@ but not properly merged or constrained.
 
 """
 
+" 1) splice is signified by the paired terminals (t0,t1) "
+" 2) splice can only change by one terminal.  (t0,t1) -> (t0,t2) "
+" assume at most 3 paths for possible splice states "
+
+" junctions indexed by their pathID "
+" terminals indexed by pathID+1,  root is 0 and 1 "
+" t%u % (pathID+1) dictionary returns pathID and index "
+" j%u % (pathID) dictionary returns pathID and index "
+
+" 3) splice state for node0 and node1 are same or separate by one terminal delta "
+" 4) splice state for node2 and node3 are at most one delta away from node0 and node1 "
+" 5) generate possible splice states for node2 given splice state of node0 "
+" 6) apply displacement of node2 from node0's position for every given splice "
+" 7) compute its fit according to getMultiDeparture(), classifying by matchCount, cost, and contiguity (or ICP?) (see selectSplice function)"
+" 8) select its most likely splice state "
+" 9) repeat for node1 and node3 "
+" 10) difference of splice state between node2 and node3 is at most 1, but usually zero "
+
+			
 " FIXME: branch from set of ordered overlap pathIDs (0,2) selects 2 as the parent, but should really be 0 "
 " How did it overlap with 2 in the first place?  It departed from 0, but selected 2 as parent since it's the terminating pathID "
 " 2 was marked positive by overlapCondition since it was parallel to 2 within the minMatchDist of 1.0 "
@@ -424,7 +443,7 @@ def getTangentIntersections(path1, path2, frontDepI, backDepI, path1FrontDepI, p
 
 
 
-	if True:
+	if False:
 		pylab.clf()
 		xP = []
 		yP = []
@@ -511,9 +530,9 @@ def computePathAngleVariance(pathSamples):
 
 class MapState:
 	
-	def __init__(self, mapper, hypothesisID):
+	def __init__(self, poseData, hypothesisID):
 		
-		self.mapper = mapper
+		self.poseData = deepcopy(poseData)
 		
 
 		#poseInfo = {}
@@ -571,6 +590,10 @@ class MapState:
 		for i in range(1000):
 			self.colors.append((random.random(),random.random(),random.random()))
 
+	def updatePoseData(self, poseData):
+		self.poseData = deepcopy(poseData)
+		print "updated poseData:", poseData.numNodes, self.poseData.numNodes
+
 	def copy(self, hypothesisID):
 
 		print "creating hypothesis", hypothesisID
@@ -580,7 +603,7 @@ class MapState:
 
 		#return newObj
 
-		newObj = MapState(self.mapper, hypothesisID)
+		newObj = MapState(self.poseData, hypothesisID)
 
 		newObj.pathClasses = deepcopy(self.pathClasses)
 		newObj.pathTermsVisisted = deepcopy(self.pathTermsVisited)
@@ -652,8 +675,8 @@ class MapState:
 			orderedPathIDs1 = self.getOrderedOverlappingPaths(nodeID1)
 			print nodeID1, "recompute orderedPathIDs1:", orderedPathIDs1
 
-			hull1 = self.mapper.aHulls[nodeID1]
-			medial1 = self.mapper.medialAxes[nodeID1]
+			hull1 = self.poseData.aHulls[nodeID1]
+			medial1 = self.poseData.medialAxes[nodeID1]
 			origPose1 = self.origPoses[nodeID1]
 			#estPose1 = self.nodePoses[nodeID1]
 				
@@ -1238,8 +1261,8 @@ class MapState:
 		#node2 = self.nodeHash[nodeID]
 
 		#hull2, medial2 = computeHullAxis(nodeID, node2, tailCutOff = False)
-		hull2 = self.mapper.aHulls[nodeID]
-		medial2 = self.mapper.medialAxes[nodeID]
+		hull2 = self.poseData.aHulls[nodeID]
+		medial2 = self.poseData.medialAxes[nodeID]
 
 		#estPose2 = node2.getGlobalGPACPose()		
 		estPose2 = self.nodePoses[nodeID]
@@ -2468,7 +2491,7 @@ class MapState:
 		
 			print "junctionNodeID:", junctionNodeID
 			#print "nodes:", self.nodeHash.keys()
-			print "nodes:", [k for k in range(self.mapper.numNodes)]
+			print "nodes:", [k for k in range(self.poseData.numNodes)]
 			
 			globalJunctionPoint = self.getGlobalJunctionPose(pathID) 
 
@@ -2528,7 +2551,7 @@ class MapState:
 				#else:
 				#	hull1 = computeBareHull(self.nodeHash[nodeID], sweep = False)
 		
-				hull1 = self.mapper.aHulls[nodeID]
+				hull1 = self.poseData.aHulls[nodeID]
 		
 				m = hashlib.md5()
 				m.update(repr(hull1))
@@ -4487,8 +4510,8 @@ class MapState:
 		#node2 = self.nodeHash[nodeID]
 
 		#hull2, medial2 = computeHullAxis(nodeID, node2, tailCutOff = False)
-		hull2 = self.mapper.aHulls[nodeID]
-		medial2 = self.mapper.medialAxes[nodeID]
+		hull2 = self.poseData.aHulls[nodeID]
+		medial2 = self.poseData.medialAxes[nodeID]
 
 		#estPose2 = node2.getGlobalGPACPose()		
 		estPose2 = self.nodePoses[nodeID]
@@ -4933,8 +4956,8 @@ class MapState:
 		#node2 = self.nodeHash[nodeID]
 
 		#hull2, medial2 = computeHullAxis(nodeID, node2, tailCutOff = False)
-		hull2 = self.mapper.aHulls[nodeID]
-		medial2 = self.mapper.medialAxes[nodeID]
+		hull2 = self.poseData.aHulls[nodeID]
+		medial2 = self.poseData.medialAxes[nodeID]
 
 		#estPose2 = node2.getGlobalGPACPose()		
 		estPose2 = self.nodePoses[nodeID]
@@ -5365,8 +5388,8 @@ class MapState:
 		#node2 = self.nodeHash[nodeID]
 
 		#hull2, medial2 = computeHullAxis(nodeID, node2, tailCutOff = False)
-		hull2 = self.mapper.aHulls[nodeID]
-		medial2 = self.mapper.medialAxes[nodeID]
+		hull2 = self.poseData.aHulls[nodeID]
+		medial2 = self.poseData.medialAxes[nodeID]
 
 		#estPose2 = node2.getGlobalGPACPose()		
 		estPose2 = self.nodePoses[nodeID]
@@ -5541,7 +5564,7 @@ class MapState:
 				print "result = ", junctionNodeID, dist, angDiff
 		
 				#isNodeFeatureless = self.nodeHash[nodeID1].getIsFeatureless()
-				isNodeFeatureless = self.mapper.isNodeFeatureless[nodeID1]
+				isNodeFeatureless = self.poseData.isNodeFeatureless[nodeID1]
 				print "node", nodeID1, "is featureless =", isNodeFeatureless
 		
 				if dist < DISC_THRESH:

@@ -4,7 +4,9 @@ from StableCurve import StableCurve
 from SplineFit import SplineFit
 from ParticleFilter import ParticleFilter
 from Pose import Pose
-from Paths import Paths, computePathAngleVariance
+from Paths import computePathAngleVariance
+from PoseData import PoseData
+from MapProcess import movePath
 import gen_icp
 from functions import *
 import scsgp
@@ -44,34 +46,33 @@ class BayesMapper:
 		self.probe = probe
 		
 		self.walls = self.probe.getWalls()
+
+		self.poseData = PoseData()
 		
-		#self.nodeHash = {}
-		self.numNodes = 0
+		self.poseData.numNodes = 0
 
 
 		""" initialize to a single map hypothesis """
 		self.particleIDs = 0
 		self.mapHyps = {}
-		self.mapHyps[self.particleIDs] = MapState(self, self.particleIDs)
+		self.mapHyps[self.particleIDs] = MapState(self.poseData, self.particleIDs)
 		self.particleIDs += 1
 		#self.mapHyps[self.particleIDs] = self.mapHyps[0].copy(self.particleIDs)
-		#self.mapHyps[self.particleIDs] = MapState(self, self.particleIDs)
+		#self.mapHyps[self.particleIDs] = MapState(self.poseData, self.particleIDs)
 		#self.particleIDs += 1
 
 
-		self.medialAxes = {}
-		self.aHulls = {}
-		#self.staticAHulls = {}
-		self.isBowties = {}
-		#self.staticMedialAxes = {}
-		self.faceDirs = {}
-		self.travelDirs = {}
-		self.medialLongPaths = {}
-		self.numLeafs = {}
-		self.correctedPostures = {}
-		self.isNodeFeatureless = {}
-		self.frontProbeError = {}
-		self.backProbeError = {}
+		self.poseData.medialAxes = {}
+		self.poseData.aHulls = {}
+		self.poseData.isBowties = {}
+		self.poseData.faceDirs = {}
+		self.poseData.travelDirs = {}
+		self.poseData.medialLongPaths = {}
+		self.poseData.numLeafs = {}
+		self.poseData.correctedPostures = {}
+		self.poseData.isNodeFeatureless = {}
+		self.poseData.frontProbeError = {}
+		self.poseData.backProbeError = {}
 
 	
 		self.pathDrawCount = 0
@@ -119,30 +120,65 @@ class BayesMapper:
 							[ 0.0, 0.0, pi/16.0 ]])
 
 
+	"""
+	def __getattr__(self, name):
+
+		if name == "numNodes":
+			return self.poseData.numNodes
+
+		if name == "medialAxes":
+			return self.poseData.medialAxes
+		if name == "aHulls":
+			return self.poseData.aHulls
+		if name == "isBowties":
+			return self.poseData.isBowties
+		if name == "faceDirs":
+			return self.poseData.faceDirs
+		if name == "travelDirs":
+			return self.poseData.travelDirs
+		if name == "medialLongPaths":
+			return self.poseData.medialLongPaths
+		if name == "numLeafs":
+			return self.poseData.numLeafs
+		if name == "correctedPostures":
+			return self.poseData.correctedPostures
+		if name == "isNodeFeatureless":
+			return self.poseData.isNodeFeatureless
+		if name == "frontProbeError":
+			return self.poseData.frontProbeError
+		if name == "backProbeError":
+			return self.poseData.backProbeError
+
+	"""
+
 	@logFunction
 	def loadNewNode(self, newNode):
 
 		#self.currNode = newNode
-		nodeID = self.numNodes
+		nodeID = self.poseData.numNodes
 		#self.nodeHash[nodeID] = self.currNode
-		self.numNodes += 1
+
+		print "incrementing numNodes"
+		print self.poseData.numNodes
+		self.poseData.numNodes += 1
+		print self.poseData.numNodes
 		
 		hull1, medial1 = computeHullAxis(nodeID, newNode, tailCutOff = False)
-		self.aHulls[nodeID] = hull1
-		self.medialAxes[nodeID] = medial1
-		self.numLeafs[nodeID] = newNode.getNumLeafs()
-		self.faceDirs[nodeID] = newNode.faceDir
-		self.isBowties[nodeID] = newNode.isBowtie			
-		self.medialLongPaths[nodeID] = newNode.medialLongPaths
-		self.correctedPostures[nodeID] = newNode.getStableGPACPosture()
-		self.isNodeFeatureless[nodeID] = newNode.getIsFeatureless()
-		self.frontProbeError[nodeID] = newNode.frontProbeError
-		self.backProbeError[nodeID] = newNode.backProbeError
-		self.travelDirs[nodeID] = newNode.travelDir
+		self.poseData.aHulls[nodeID] = hull1
+		self.poseData.medialAxes[nodeID] = medial1
+		self.poseData.numLeafs[nodeID] = newNode.getNumLeafs()
+		self.poseData.faceDirs[nodeID] = newNode.faceDir
+		self.poseData.isBowties[nodeID] = newNode.isBowtie			
+		self.poseData.medialLongPaths[nodeID] = newNode.medialLongPaths
+		self.poseData.correctedPostures[nodeID] = newNode.getStableGPACPosture()
+		self.poseData.isNodeFeatureless[nodeID] = newNode.getIsFeatureless()
+		self.poseData.frontProbeError[nodeID] = newNode.frontProbeError
+		self.poseData.backProbeError[nodeID] = newNode.backProbeError
+		self.poseData.travelDirs[nodeID] = newNode.travelDir
 
 
-
-		newHyps = {}
+		for mid, mapHyp in self.mapHyps.iteritems():
+			mapHyp.updatePoseData(self.poseData)
 
 		""" for each current map hypothesis, integrate the new node """
 		currHyps = self.mapHyps
@@ -157,14 +193,8 @@ class BayesMapper:
 			" FIXME:  raw pose does not get updated yet with GPAC pose "
 			mapHyp.nodeRawPoses[nodeID] = newNode.getEstPose()
 
-			self.integrateNode(mapHyp, nodeID)
+		self.mapHyps = self.integrateNode(currHyps, nodeID)
 
-			thisHyps = self.integrateNode(mapHyp, nodeID)
-			for pID, hyp in thisHyps.iteritems():
-				newHyps[pID] = hyp
-
-		for pID, hyp in newHyps.iteritems():
-			self.mapHyps[pID] = hyp
 
 	@logFunction
 	def restoreNode(self, dirName, numNodes):
@@ -184,19 +214,21 @@ class BayesMapper:
 		existWalls = self.walls
 
 		exec(saveStr)
-		self.travelDirs = self.travelDirs[nodeID]
+		self.poseData.travelDirs = self.poseData.travelDirs[nodeID]
 		self.particleIDs = existParticleIDs
 		self.walls = existWalls
 
 		self.mapHyps = existMapHyp
 		nodeID = numNodes 
-		self.numNodes = numNodes+1
+		self.poseData.numNodes = numNodes+1
 
 		" get node poses from some map hypothesis "
 		hid = mapHypIDs[0]
-		tempMapState = MapState(self.probe,hid)
+		tempMapState = MapState(self.poseData, hid)
 		tempMapState.restoreState(dirName, numNodes)
 
+		for mid, mapHyp in self.mapHyps.iteritems():
+			mapHyp.updatePoseData(self.poseData)
 
 		""" for each current map hypothesis, integrate the new node """
 		currHyps = self.mapHyps
@@ -216,7 +248,7 @@ class BayesMapper:
 
 		" DIRECTION OF TRAVEL FROM PREVIOUS POSE PAIR "
 		#direction = newNode.travelDir
-		direction = self.travelDirs[nodeID]
+		direction = self.poseData.travelDirs[nodeID]
 
 		" ensure the medial axes are computed before this check "
 		#computeHullAxis(nodeID, newNode, tailCutOff = False)
@@ -230,23 +262,24 @@ class BayesMapper:
 		if nodeID > 0:
 			
 			" ESTIMATE TRAVEL WITH MEDIAL OVERLAP CONSTRAINT OF EVEN NUMBER POSE "
-			if self.numNodes >= 4:
+			if self.poseData.numNodes >= 4:
 
 				for pID, mapHyp in hypSet.iteritems():
 					" Move node along path "
-					self.movePath(mapHyp, nodeID, direction)
+					#self.movePath(mapHyp, nodeID, direction)
+					movePath(mapHyp, nodeID, direction)
 					#self.drawConstraints(mapHyp, self.statePlotCount)
 					#self.statePlotCount += 1
 					#self.drawPathAndHull(mapHyp)
 		
-		nodeID1 = self.numNodes-2
-		nodeID2 = self.numNodes-1
+		nodeID1 = self.poseData.numNodes-2
+		nodeID2 = self.poseData.numNodes-1
 
 		print "nodeID1, nodeID2 =", nodeID1, nodeID2
 		
 		" CHECK FOR A BRANCHING EVENT "
 		
-		if self.numNodes >= 2 and self.numNodes % 2 == 0:
+		if self.poseData.numNodes >= 2 and self.poseData.numNodes % 2 == 0:
 
 			for pID, mapHyp in hypSet.iteritems():
 
@@ -318,7 +351,7 @@ class BayesMapper:
 				
 				
 
-		#for k in range(self.numNodes):
+		#for k in range(self.poseData.numNodes):
 		#	mapHyp.nodePoses[k] = self.nodeHash[k].getGlobalGPACPose()
 
 		return hypSet
@@ -372,31 +405,32 @@ class BayesMapper:
 	@logFunction
 	def saveState(self):
 
-		#for k in range(self.numNodes):
+		#for k in range(self.poseData.numNodes):
 		#	self.nodePoses[k] = self.nodeHash[k].getGlobalGPACPose()
+
 					
 		saveFile = ""
 
 		saveFile += "self.walls = " + repr(self.walls) + "\n"
 
 
-		saveFile += "self.numNodes = " + repr(self.numNodes) + "\n"
+		saveFile += "self.poseData.numNodes = " + repr(self.poseData.numNodes) + "\n"
 		saveFile += "self.particleIDs = " + repr(self.particleIDs) + "\n"
-		saveFile += "self.medialAxes = " + repr(self.medialAxes) + "\n"
-		saveFile += "self.aHulls = " + repr(self.aHulls) + "\n"
-		saveFile += "self.isBowties = " + repr(self.isBowties) + "\n"
-		saveFile += "self.faceDirs = " + repr(self.faceDirs) + "\n"
-		saveFile += "self.medialLongPaths = " + repr(self.medialLongPaths) + "\n"
-		saveFile += "self.numLeafs = " + repr(self.numLeafs) + "\n"
-		saveFile += "self.correctedPostures = " + repr(self.correctedPostures) + "\n"
-		saveFile += "self.isNodeFeatureless = " + repr(self.isNodeFeatureless) + "\n"
-		saveFile += "self.frontProbeError = " + repr(self.frontProbeError) + "\n"
-		saveFile += "self.backProbeError = " + repr(self.backProbeError) + "\n"
-		saveFile += "self.travelDirs = " + repr(self.travelDirs) + "\n"
+		saveFile += "self.poseData.medialAxes = " + repr(self.poseData.medialAxes) + "\n"
+		saveFile += "self.poseData.aHulls = " + repr(self.poseData.aHulls) + "\n"
+		saveFile += "self.poseData.isBowties = " + repr(self.poseData.isBowties) + "\n"
+		saveFile += "self.poseData.faceDirs = " + repr(self.poseData.faceDirs) + "\n"
+		saveFile += "self.poseData.medialLongPaths = " + repr(self.poseData.medialLongPaths) + "\n"
+		saveFile += "self.poseData.numLeafs = " + repr(self.poseData.numLeafs) + "\n"
+		saveFile += "self.poseData.correctedPostures = " + repr(self.poseData.correctedPostures) + "\n"
+		saveFile += "self.poseData.isNodeFeatureless = " + repr(self.poseData.isNodeFeatureless) + "\n"
+		saveFile += "self.poseData.frontProbeError = " + repr(self.poseData.frontProbeError) + "\n"
+		saveFile += "self.poseData.backProbeError = " + repr(self.poseData.backProbeError) + "\n"
+		saveFile += "self.poseData.travelDirs = " + repr(self.poseData.travelDirs) + "\n"
 
 		saveFile += "mapHypIDs = " + repr(self.mapHyps.keys()) + "\n"
 
-		f = open("stateSave_%04u.txt" % (self.numNodes-1), 'w')
+		f = open("stateSave_%04u.txt" % (self.poseData.numNodes-1), 'w')
 		f.write(saveFile)
 		f.close()		
 
@@ -404,7 +438,7 @@ class BayesMapper:
 
 		" SAVE STATE "
 		for k in self.mapHyps.keys():
-			self.mapHyps[k].saveState(self.numNodes-1)
+			self.mapHyps[k].saveState(self.poseData.numNodes-1)
 
 		
 	@logFunction
@@ -418,10 +452,11 @@ class BayesMapper:
 		
 		saveStr = saveStr.replace('\r\n','\n')
 		
+		self.poseData = PoseData()
 		exec(saveStr)
 		
 		for hid in mapHypIDs:
-			self.mapHyps[hid] = MapState(probe,hid)
+			self.mapHyps[hid] = MapState(self.poseData, hid)
 			self.mapHyps[hid].restoreState(dirName, numNodes)
 
 		
@@ -430,8 +465,8 @@ class BayesMapper:
 	def checkSupport(self, mapHyp, nodeID1, nodeID2, offset, supportLine):
 
 		#hull2, medial2 = computeHullAxis(nodeID2, node2, tailCutOff = False)
-		hull2 = self.aHulls[nodeID2]
-		medial2 = self.medialAxes[nodeID2]
+		hull2 = self.poseData.aHulls[nodeID2]
+		medial2 = self.poseData.medialAxes[nodeID2]
 		
 		estPose1 = mapHyp.nodePoses[nodeID1]		
 		
@@ -520,9 +555,9 @@ class BayesMapper:
 	def addNode(self, newNode):
 		
 		#self.currNode = newNode
-		nodeID = self.numNodes
+		nodeID = self.poseData.numNodes
 		self.nodeHash[nodeID] = newNode
-		self.numNodes += 1
+		self.poseData.numNodes += 1
 
 
 	@logFunction
@@ -535,22 +570,22 @@ class BayesMapper:
 		for abc in range(0,2):
 			
 			if abc == 0:
-				nodeID1 = self.numNodes-2
-				nodeID2 = self.numNodes-1
+				nodeID1 = self.poseData.numNodes-2
+				nodeID2 = self.poseData.numNodes-1
 			else:
 				self.currNode = foreNode
 				self.currNode.setEstPose(initLocation)
-				nodeID = self.numNodes
+				nodeID = self.poseData.numNodes
 				self.nodeHash[nodeID] = self.currNode
 				self.currNode.nodeID = nodeID
-				self.numNodes += 1
+				self.poseData.numNodes += 1
 				
 				self.currNode = backNode
 				self.currNode.setEstPose(initLocation)
-				nodeID = self.numNodes
+				nodeID = self.poseData.numNodes
 				self.nodeHash[nodeID] = self.currNode
 				self.currNode.nodeID = nodeID
-				self.numNodes += 1
+				self.poseData.numNodes += 1
 		
 				foreNode.setPartnerNodeID(backNode.nodeID)
 				backNode.setPartnerNodeID(foreNode.nodeID)
@@ -641,10 +676,10 @@ class BayesMapper:
 	
 					#hull1, medial1 = computeHullAxis(nodeID1, self.nodeHash[nodeID1], tailCutOff = False)
 					#hull2, medial2 = computeHullAxis(nodeID2, self.nodeHash[nodeID2], tailCutOff = False)
-					hull1 = self.aHulls[nodeID1]
-					medial1 = self.medialAxes[nodeID1]
-					hull2 = self.aHulls[nodeID2]
-					medial2 = self.medialAxes[nodeID2]
+					hull1 = self.poseData.aHulls[nodeID1]
+					medial1 = self.poseData.medialAxes[nodeID1]
+					hull2 = self.poseData.aHulls[nodeID2]
+					medial2 = self.poseData.medialAxes[nodeID2]
 
 					estPose1 = mapHyp.nodePoses[nodeID1]
 					estPose2 = mapHyp.nodePoses[nodeID2]
@@ -660,11 +695,11 @@ class BayesMapper:
 
 
 		" ESTIMATE TRAVEL WITH MEDIAL OVERLAP CONSTRAINT OF EVEN NUMBER POSE "
-		if self.numNodes >= 4:
+		if self.poseData.numNodes >= 4:
 			pass
 		
 
-		#for k in range(self.numNodes):
+		#for k in range(self.poseData.numNodes):
 		#	self.nodePoses[k] = self.nodeHash[k].getGlobalGPACPose()
 
 
@@ -685,9 +720,9 @@ class BayesMapper:
 		else:
 			resultSum1 = self.checkSupport(mapHyp, nodeID1, nodeID2, offset1, supportLine)
 		
-		#self.numLeafs[nodeID]
+		#self.poseData.numLeafs[nodeID]
 
-		if self.numLeafs[nodeID1] > 2 or self.numLeafs[nodeID2] > 2:
+		if self.poseData.numLeafs[nodeID1] > 2 or self.poseData.numLeafs[nodeID2] > 2:
 			transform, covE, overHist = self.makeMultiJunctionMedialOverlapConstraint(mapHyp, nodeID1, nodeID2, isMove = False, inPlace = False, isForward = direction )
 		else:
 			transform, covE, overHist = self.makeMedialOverlapConstraint(mapHyp, nodeID1, nodeID2, isMove = False, inPlace = True, isForward = direction)
@@ -721,7 +756,7 @@ class BayesMapper:
 		" ESTIMATE TRAVEL WITH MEDIAL OVERLAP CONSTRAINT OF EVEN NUMBER POSE "
 		if nodeID >= 2:
 			
-			if self.numLeafs[nodeID-2] > 2 or self.numLeafs[nodeID] > 2:
+			if self.poseData.numLeafs[nodeID-2] > 2 or self.poseData.numLeafs[nodeID] > 2:
 				transform, covE, hist1 = self.makeMultiJunctionMedialOverlapConstraint(mapHyp, nodeID-2, nodeID, isMove = True, isForward = direction )
 			else:			
 				transform1, covE1, hist1 = self.makeMedialOverlapConstraint(mapHyp, nodeID-2, nodeID, isMove = True, isForward = direction )
@@ -942,8 +977,8 @@ class BayesMapper:
 			parentPathID1 = mapHyp.orderedPathIDs1[0]
 			parentPathID2 = mapHyp.orderedPathIDs2[0]
 
-			isFront1 = self.faceDirs[nodeID1]
-			isFront2 = self.faceDirs[nodeID2]
+			isFront1 = self.poseData.faceDirs[nodeID1]
+			isFront2 = self.poseData.faceDirs[nodeID2]
 			if isFront1 and not isFront2:
 				dirFlag = 0
 			elif not isFront1 and isFront2:
@@ -1051,8 +1086,8 @@ class BayesMapper:
 			parentPathID1 = mapHyp.orderedPathIDs1[-1]
 			parentPathID2 = mapHyp.orderedPathIDs2[-1]
 
-			isFront1 = self.faceDirs[nodeID1]
-			isFront2 = self.faceDirs[nodeID2]
+			isFront1 = self.poseData.faceDirs[nodeID1]
+			isFront2 = self.poseData.faceDirs[nodeID2]
 			if isFront1 and not isFront2:
 				dirFlag = 1
 			elif not isFront1 and isFront2:
@@ -1231,15 +1266,15 @@ class BayesMapper:
 				"""
 				
 			" ESTIMATE TRAVEL WITH MEDIAL OVERLAP CONSTRAINT OF EVEN NUMBER POSE "
-			if self.numNodes >= 4 and nodeID % 2 == 1:
+			if self.poseData.numNodes >= 4 and nodeID % 2 == 1:
 				
 				" 1) get spliced path that the previous node is on "
 				#hull2, medial2 = computeHullAxis(nodeID-1, self.nodeHash[nodeID-1], tailCutOff = False)
 				#hull3, medial3 = computeHullAxis(nodeID, self.nodeHash[nodeID], tailCutOff = False)
-				hull2 = self.aHulls[nodeID-1]
-				medial2 = self.medialAxes[nodeID-1]
-				hull3 = self.aHulls[nodeID]
-				medial3 = self.medialAxes[nodeID]
+				hull2 = self.poseData.aHulls[nodeID-1]
+				medial2 = self.poseData.medialAxes[nodeID-1]
+				hull3 = self.poseData.aHulls[nodeID]
+				medial3 = self.poseData.medialAxes[nodeID]
 				
 				print "hypothesis", mapHyp.hypothesisID, len(mapHyp.paths[0])
 				allSplices, terminals, junctions = mapHyp.getAllSplices(plotIter = False)
@@ -1344,8 +1379,8 @@ class BayesMapper:
 	
 					" FIXME:  make sure path is oriented correctly wrt node medial axis "
 					#hull0, medial0 = computeHullAxis(nodeID-3, self.nodeHash[nodeID-3], tailCutOff = False)
-					hull0 = self.aHulls[nodeID-3]
-					medial0 = self.medialAxes[nodeID-3]
+					hull0 = self.poseData.aHulls[nodeID-3]
+					medial0 = self.poseData.medialAxes[nodeID-3]
 					
 					poseOrigin0 = Pose(pose0)
 					globalMedial0 = []
@@ -1752,8 +1787,8 @@ class BayesMapper:
 			for nodeID in mergeNodes2:
 	
 				#hull, medial = computeHullAxis(nodeID, self.nodeHash[nodeID], tailCutOff = False)
-				hull = self.aHulls[nodeID]
-				medial = self.medialAxes[nodeID]
+				hull = self.poseData.aHulls[nodeID]
+				medial = self.poseData.medialAxes[nodeID]
 				estPose = mapHyp.nodePoses[nodeID]
 	
 				orderedPathIDs = [parentID1, pathID1]
@@ -1862,7 +1897,7 @@ class BayesMapper:
 				foreAngle1 = depAngles1[0][0]
 				backAngle1 = depAngles1[-1][1]
 				
-				isFront1 = self.faceDirs[nodeID1]
+				isFront1 = self.poseData.faceDirs[nodeID1]
 				if isFront1:
 					dirFlag = 0
 				elif not isFront1:
@@ -1891,7 +1926,7 @@ class BayesMapper:
 				depPoint1 = depPoints1[-1][1]
 				parentPathID1 = orderedPathIDs1[-1]
 
-				isFront1 = self.faceDirs[nodeID1]
+				isFront1 = self.poseData.faceDirs[nodeID1]
 				if isFront1:
 					dirFlag = 1
 				elif not isFront1:
@@ -2124,8 +2159,8 @@ class BayesMapper:
 		
 		#node1 = self.nodeHash[nodeID]
 		#hull1, medial1 = computeHullAxis(nodeID, node1, tailCutOff = False)
-		hull1 = self.aHulls[nodeID]
-		medial1 = self.medialAxes[nodeID]
+		hull1 = self.poseData.aHulls[nodeID]
+		medial1 = self.poseData.medialAxes[nodeID]
 		medialSpline1 = SplineFit(medial1, smooth=0.1)
 
 		estPose1 = mapHyp.nodePoses[nodeID]		
@@ -2448,8 +2483,8 @@ class BayesMapper:
 		#hull1, medial1 = computeHullAxis(i, node1, tailCutOff = True)
 		#hull2, medial2 = computeHullAxis(j, node2, tailCutOff = True)
 		
-		medial1 = self.medialLongPaths[i][tail1]
-		medial2 = self.medialLongPaths[j][tail2]
+		medial1 = self.poseData.medialLongPaths[i][tail1]
+		medial2 = self.poseData.medialLongPaths[j][tail2]
 		#medial1 = node1.medialLongPaths[tail1]
 		#medial2 = node2.medialLongPaths[tail2]
 		
@@ -2597,12 +2632,12 @@ class BayesMapper:
 		#hull1 = node1.getBareHull()
 		#hull1.append(hull1[0])
 		#hull1, medial1 = computeHullAxis(nodeID1, node1, tailCutOff = False)
-		hull1 = self.aHulls[nodeID1]
+		hull1 = self.poseData.aHulls[nodeID1]
 
 		#hull2 = node2.getBareHull()
 		#hull2.append(hull2[0])
 		#hull2, medial2 = computeHullAxis(nodeID2, node2, tailCutOff = False)
-		hull2 = self.aHulls[nodeID2]
+		hull2 = self.poseData.aHulls[nodeID2]
 
 		estPose1 = mapHyp.nodePoses[nodeID1]		
 		estPose2 = mapHyp.nodePoses[nodeID2]
@@ -2616,10 +2651,10 @@ class BayesMapper:
 
 		results = []
 
-		for k in range(len(self.medialLongPaths[nodeID1])):
+		for k in range(len(self.poseData.medialLongPaths[nodeID1])):
 			#medial1 = node1.medialLongPaths[k]
 			medial1 = mapHyp.medialLongPaths[nodeID1][k]
-			for l in range(len(self.medialLongPaths[nodeID2])):
+			for l in range(len(self.poseData.medialLongPaths[nodeID2])):
 				#medial2 = node2.medialLongPaths[l]
 				medial2 = mapHyp.medialLongPaths[nodeID2][l]
 				
@@ -2697,10 +2732,10 @@ class BayesMapper:
 						moveDist = 0.3
 							
 
-						if len(self.frontProbeError[nodeID2]) > 0:
+						if len(self.poseData.frontProbeError[nodeID2]) > 0:
 			
 							frontSum = 0.0
-							frontProbeError = self.frontProbeError[nodeID2]
+							frontProbeError = self.poseData.frontProbeError[nodeID2]
 							for n in frontProbeError:
 								frontSum += n
 							foreAvg = frontSum / len(frontProbeError)
@@ -2978,16 +3013,16 @@ class BayesMapper:
 		#posture1 = node1.getStableGPACPosture()
 		#posture2 = node2.getStableGPACPosture()
 
-		posture1 = self.correctedPostures[i]
-		posture2 = self.correctedPostures[j]
+		posture1 = self.poseData.correctedPostures[i]
+		posture2 = self.poseData.correctedPostures[j]
 
 
 		#hull1, medial1 = computeHullAxis(i, node1, tailCutOff = False)
 		#hull2, medial2 = computeHullAxis(j, node2, tailCutOff = False)
-		hull1 = self.aHulls[i]
-		medial1 = self.medialAxes[i]
-		hull2 = self.aHulls[j]
-		medial2 = self.medialAxes[j]
+		hull1 = self.poseData.aHulls[i]
+		medial1 = self.poseData.medialAxes[i]
+		hull2 = self.poseData.aHulls[j]
+		medial2 = self.poseData.medialAxes[j]
 
 		#estPose1 = node1.getGlobalGPACPose()		
 		#estPose2 = node2.getGlobalGPACPose()
@@ -3028,10 +3063,10 @@ class BayesMapper:
 			
 			if isForward:
 				
-				if len(self.frontProbeError[j]) > 0:
+				if len(self.poseData.frontProbeError[j]) > 0:
 	
 					frontSum = 0.0
-					frontProbeError = self.frontProbeError[j]
+					frontProbeError = self.poseData.frontProbeError[j]
 					for n in frontProbeError:
 						frontSum += n
 					foreAvg = frontSum / len(frontProbeError)
@@ -3047,10 +3082,10 @@ class BayesMapper:
 
 				#u2 = medialSpline2.getUOfDist(originU2, -0.3, distIter = 0.001)
 
-				if len(self.backProbeError[j]) > 0:
+				if len(self.poseData.backProbeError[j]) > 0:
 	
 					backSum = 0.0
-					backProbeError = self.backProbeError[j]
+					backProbeError = self.poseData.backProbeError[j]
 					for n in backProbeError:
 						backSum += n
 					backAvg = backSum / len(backProbeError)
@@ -3136,7 +3171,7 @@ class BayesMapper:
 
 		#originPosture = node1.localPosture
 		#originPosture = node1.correctedPosture
-		originPosture = self.correctedPostures[nodeID1]
+		originPosture = self.poseData.correctedPostures[nodeID1]
 		originCurve = StableCurve(originPosture)
 		originForePose, originBackPose = originCurve.getPoses()
 		
@@ -3152,7 +3187,7 @@ class BayesMapper:
 
 		#newPosture = node2.localPosture
 		#newPosture = node2.correctedPosture
-		newPosture = self.correctedPostures[nodeID2]
+		newPosture = self.poseData.correctedPostures[nodeID2]
 		#newPosture = []
 		#for j in range(self.probe.numSegs-1):
 		#	newPosture.append(self.probe.getJointPose([0.0,0.0,0.0], node1.rootNode, j))
@@ -3291,119 +3326,6 @@ class BayesMapper:
 		
 				axes.plot(xP,yP, linewidth=2, color = 'g',zorder=0)
 			
-			
-	@logFunction
-	def drawConstraints(self, mapHyp, id = []):
-		
-		poses = []
-		for i in range(self.numNodes):
-			poses.append(mapHyp.nodePoses[i])
-
-		pylab.clf()
-		for i in range(self.numNodes):
-
-
-			#hull = computeBareHull(self.nodeHash[i], sweep = False)
-			#hull.append(hull[0])
-
-			hull = self.aHulls[i]
-
-			#node1 = self.nodeHash[i]
-
-			#currPose = node1.getGlobalGPACPose()
-
-			currPose = mapHyp.nodePoses[i]
-
-			currProfile = Pose(currPose)
-			#posture1 = node1.getStableGPACPosture()
-
-			posture1 = self.correctedPostures[i]
-
-
-			posture_trans = []
-			for p in posture1:
-				posture_trans.append(gen_icp.dispOffset(p, currPose))	
-
-			hull_trans = []
-			for p in hull:
-				hull_trans.append(gen_icp.dispOffset(p, currPose))	
-			
-			xP = []
-			yP = []
-			for p in posture_trans:
-				xP.append(p[0])
-				yP.append(p[1])
-			pylab.plot(xP,yP, color=(255/256.,182/256.,193/256.))	
-
-			xP = []
-			yP = []
-			for p in hull_trans:
-				xP.append(p[0])
-				yP.append(p[1])
-			pylab.plot(xP,yP, color=(112/256.,147/256.,219/256.))	
-
-
-		xP = []
-		yP = []
-		for pose in poses:
-			xP.append(pose[0])
-			yP.append(pose[1])		
-		pylab.scatter(xP,yP, color='k', linewidth=1, zorder=10)
-
-		self.plotEnv()
-
-		#pylab.title("Corner Constraint %d ---> %d" % (id1, id2))
-		#pylab.xlim(-4,4)
-		#pylab.ylim(-4,4)
-
-		pylab.title("%d Poses" % self.numNodes)
-		pylab.xlim(-10,10)
-		pylab.ylim(-10,10)
-
-			
-		if id == []:
-			print "plotEstimate:", self.numNodes
-			printStack()
-			pylab.savefig("plotEstimate%04u.png" % self.numNodes)
-		else:
-			print "plotEstimate:", id
-			printStack()
-			pylab.savefig("plotEstimate%04u.png" % id)
-
-	@logFunction
-	def drawTrimmedPaths(self, mapHyp):
-		
-		pylab.clf()
-
-		trimmedPaths = mapHyp.trimmedPaths
-		
-		#for k in range(len(trimmedPaths)):
-		for k,path in trimmedPaths.iteritems():
-			#path = trimmedPaths[k]
-			print "path has", len(path), "points"
-			xP = []
-			yP = []
-			for p in path:
-				xP.append(p[0])
-				yP.append(p[1])
-
-			pylab.plot(xP,yP, color = self.colors[k])
-
-			globJuncPose = mapHyp.getGlobalJunctionPose(k)
-			if globJuncPose != None:
-				pylab.scatter([globJuncPose[0],], [globJuncPose[1],], color='k')
-			
-		#pylab.xlim(-4,4)
-		#pylab.ylim(-4,4)
-
-		self.plotEnv()
-
-
-		print "saving trimmedPath_%04u.png" % self.trimCount
-		pylab.title("Trimmed Paths, numNodes = %d" % self.numNodes)
-		pylab.savefig("trimmedPath_%04u.png" % self.trimCount)
-		self.trimCount += 1
-
 
 	@logFunction
 	def drawPathAndHull2(self, mapHyp):
@@ -3438,17 +3360,17 @@ class BayesMapper:
 		#fig.savefig("foo.png")
 
 		poses = []
-		for i in range(self.numNodes):
+		for i in range(self.poseData.numNodes):
 			poses.append(mapHyp.nodePoses[i])
 
 		#pylab.clf()
-		for i in range(self.numNodes):
+		for i in range(self.poseData.numNodes):
 
-			hull = self.aHulls[i]
+			hull = self.poseData.aHulls[i]
 			currPose = mapHyp.nodePoses[i]
 
 			currProfile = Pose(currPose)
-			posture1 = self.correctedPostures[i]
+			posture1 = self.poseData.correctedPostures[i]
 
 			posture_trans = []
 			for p in posture1:
@@ -3486,8 +3408,8 @@ class BayesMapper:
 
 		#self.plotEnv()
 
-		ax1.set_title("%d Poses" % self.numNodes)
-		ax2.set_title("%d Poses" % self.numNodes)
+		ax1.set_title("%d Poses" % self.poseData.numNodes)
+		ax2.set_title("%d Poses" % self.poseData.numNodes)
 		#pylab.xlim(-10,10)
 		#pylab.ylim(-10,10)
 
@@ -3591,13 +3513,13 @@ class BayesMapper:
 
 				estPose1 = mapHyp.nodePoses[nodeID]
 		
-				if self.isBowties[nodeID]:			
-					hull1 = self.aHulls[nodeID]
-					#medial1 = self.medialAxes[nodeID]
+				if self.poseData.isBowties[nodeID]:			
+					hull1 = self.poseData.aHulls[nodeID]
+					#medial1 = self.poseData.medialAxes[nodeID]
 					#hull1 = computeBareHull(self.nodeHash[nodeID], sweep = False, static = True)
 				else:
 					#hull1 = computeBareHull(self.nodeHash[nodeID], sweep = False)
-					hull1 = self.aHulls[nodeID]
+					hull1 = self.poseData.aHulls[nodeID]
 		
 				" set the origin of pose 1 "
 				poseOrigin = Pose(estPose1)
@@ -3669,8 +3591,8 @@ class BayesMapper:
 
 		#pylab.xlim(-10, 12)
 		#pylab.ylim(-10, 10)
-		#ax3.set_title("paths: %s numNodes: %d %d, hyp %d %3.2f" % (repr(mapHyp.getPathIDs()), self.numNodes, highestNodeID, mapHyp.hypothesisID, mapHyp.utility))
-		#ax4.set_title("paths: %s numNodes: %d %d, hyp %d %3.2f" % (repr(mapHyp.getPathIDs()), self.numNodes, highestNodeID, mapHyp.hypothesisID, mapHyp.utility))
+		#ax3.set_title("paths: %s numNodes: %d %d, hyp %d %3.2f" % (repr(mapHyp.getPathIDs()), self.poseData.numNodes, highestNodeID, mapHyp.hypothesisID, mapHyp.utility))
+		#ax4.set_title("paths: %s numNodes: %d %d, hyp %d %3.2f" % (repr(mapHyp.getPathIDs()), self.poseData.numNodes, highestNodeID, mapHyp.hypothesisID, mapHyp.utility))
 
 		ax1.set_title("Pose Robot Static Postures")
 		ax2.set_title("Pose Alpha Shapes")
@@ -3734,13 +3656,13 @@ class BayesMapper:
 
 				estPose1 = mapHyp.nodePoses[nodeID]
 		
-				if self.isBowties[nodeID]:			
-					hull1 = self.aHulls[nodeID]
-					#medial1 = self.medialAxes[nodeID]
+				if self.poseData.isBowties[nodeID]:			
+					hull1 = self.poseData.aHulls[nodeID]
+					#medial1 = self.poseData.medialAxes[nodeID]
 					#hull1 = computeBareHull(self.nodeHash[nodeID], sweep = False, static = True)
 				else:
 					#hull1 = computeBareHull(self.nodeHash[nodeID], sweep = False)
-					hull1 = self.aHulls[nodeID]
+					hull1 = self.poseData.aHulls[nodeID]
 		
 				" set the origin of pose 1 "
 				poseOrigin = Pose(estPose1)
@@ -3784,7 +3706,7 @@ class BayesMapper:
 		pylab.axis("equal")
 		#pylab.xlim(-10, 12)
 		#pylab.ylim(-10, 10)
-		pylab.title("paths: %s numNodes: %d %d, hyp %d %3.2f" % (repr(mapHyp.getPathIDs()), self.numNodes, highestNodeID, mapHyp.hypothesisID, mapHyp.utility))
+		pylab.title("paths: %s numNodes: %d %d, hyp %d %3.2f" % (repr(mapHyp.getPathIDs()), self.poseData.numNodes, highestNodeID, mapHyp.hypothesisID, mapHyp.utility))
 		pylab.savefig("pathAndHull_%04u_%04u.png" % (self.pathDrawCount, mapHyp.hypothesisID))
 
 		self.pathDrawCount += 1

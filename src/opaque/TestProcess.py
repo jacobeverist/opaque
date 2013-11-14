@@ -262,7 +262,8 @@ class TestProcess(SnakeControl):
 			" Y-junction, test 1"				 
 			#walls = [[[-8.0, -0.20000000000000001], [2.0, -0.20000000000000001], [5.5, -6.2621779441833496]], [[5.5, 6.2621779441833496], [2.0, 0.20000000000000001], [-8.0, 0.20000000000000001]], [[5.846409797668457, -6.0621781349182129], [2.3464102745056152, 0.0], [5.846409797668457, 6.0621781349182129], [5.5, 6.2621779441833496]], [[5.5, -6.2621779441833496], [5.846409797668457, -6.0621781349182129]], [[-8.0, 0.20000000000000001], [-8.0, -0.20000000000000001]]]
 
-			targetMapFile = "../mapLibrary/cross_junction.py"
+			#targetMapFile = "../mapLibrary/cross_junction.py"
+			targetMapFile = "../mapLibrary/Y_junction.py"
 			#targetMapFile = "mapFile0002.txt"
 			f = open(targetMapFile, 'r')
 			str_f = f.read()
@@ -278,10 +279,12 @@ class TestProcess(SnakeControl):
 			#self.mapGraph.restoreSeries("../results/result_2013_08_24_cross", 80)
 			#self.mapGraph.restoreSeries("../results/result_2013_08_24_cross", 44)
 			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 6)
-			#self.mapGraph.loadSeries("../results/result_2013_08_16_Y_junction_complete", 60)
+
 			#self.mapGraph.loadDataSeries("../results/result_2013_11_04_cross", 40)
 			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 60)
-			self.mapGraph.loadDataSeries("../results/result_2013_11_04_Y_junction", 60)
+
+			#self.mapGraph.loadDataSeries("../results/result_2013_11_04_Y_junction", 60)
+			self.mapGraph.loadSeries("../results/result_2013_08_16_Y_junction_complete", 60)
 			
 			#self.mapGraph.newNode(0.0, self.direction)
 			#self.mapGraph.forceUpdate(False)
