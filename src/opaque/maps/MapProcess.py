@@ -9,8 +9,25 @@ from StableCurve import StableCurve
 from Paths import computePathAngleVariance
 import math
 from operator import itemgetter
+import time
 
 renderGlobalPlotCount = 0
+
+qin_move = None
+qout_move =  None
+pool_move = []
+
+qin_eval = None
+qout_eval =  None
+pool_eval = []
+
+qin_localize = None
+qout_localize = None
+pool_localize = []
+
+qin_generate = None
+qout_generate =  None
+pool_generate = []
 
 def __num_processors():
 	
@@ -24,7 +41,7 @@ def __num_processors():
 		get_nprocs.argtypes = []
 		return get_nprocs()
 
-def __remote_multiMovePath(rank, qin, qout, nodeID, direction, distEst):
+def __remote_multiGenerate(rank, qin, qout):
 
 	print "started __remote_multiMovePath"
 
@@ -37,7 +54,7 @@ def __remote_multiMovePath(rank, qin, qout, nodeID, direction, distEst):
 		results = []
 		for arg in args:
 			mapHyp = arg[0]
-			movePath(mapHyp, nodeID, direction, distEst = distEst)
+			generateMap(mapHyp)
 			results.append(mapHyp)
 						   
 		# write to output queue
@@ -45,23 +62,22 @@ def __remote_multiMovePath(rank, qin, qout, nodeID, direction, distEst):
 
 
 
-#def batchMovePath(, splices, medial, initPose, pathIDs, nodeID):
-def batchMovePath(mapHyps, nodeID, direction, distEst = 1.0):
+def batchGenerate(mapHyps):
 
 
 	global renderGlobalPlotCount
+	global pool_generate
+	global qin_generate
+	global qout_generate
 
-
-	#initGuess
-
-	#arg = [initGuess, initPose, pathID, nodeID]
 
 	ndata = len(mapHyps)
 	
 	args = []
+	keys = mapHyps.keys()
 	
 	for k in range(ndata):
-		arg = [mapHyps[k], k + renderGlobalPlotCount]
+		arg = [mapHyps[keys[k]], k + renderGlobalPlotCount]
 		args.append(arg)
 	
 	renderGlobalPlotCount += len(mapHyps)
@@ -81,14 +97,17 @@ def batchMovePath(mapHyps, nodeID, direction, distEst = 1.0):
 	print "chunk_size =", chunk_size
 	print "max_size =", ndata/chunk_size
 	
-	# set up a pool of processes
-	qin = processing.Queue(maxsize=ndata/chunk_size)
-	qout = processing.Queue(maxsize=ndata/chunk_size)
-	#__remote_multiMovePath(rank, qin, qout, nodeID, direction, distEst):
-	pool = [processing.Process(target=__remote_multiMovePath,
-				args=(rank, qin, qout, nodeID, direction, distEst))
-					for rank in range(nproc)]
-	for p in pool: p.start()
+
+	if len(pool_generate) == 0:
+		# set up a pool of processes and data queues
+
+		" make infinite size queues so we don't have to worry about specifying max size "
+		qin_generate = processing.Queue(maxsize=0)   
+		qout_generate = processing.Queue(maxsize=0)
+		pool_generate = [processing.Process(target=__remote_multiGenerate,
+					args=(rank, qin_generate, qout_generate))
+						for rank in range(nproc)]
+		for p in pool_generate: p.start()
 	
 	# put data chunks in input queue
 	cur, nc = 0, 0
@@ -101,7 +120,7 @@ def batchMovePath(mapHyps, nodeID, direction, distEst = 1.0):
 		print "cur =", cur
 		if len(_data) == 0: break
 		print "put(", (nc,_data), ")"
-		qin.put((nc,_data))
+		qin_generate.put((nc,_data))
 		print "DONE"
 		cur += chunk_size
 		nc += 1
@@ -112,7 +131,7 @@ def batchMovePath(mapHyps, nodeID, direction, distEst = 1.0):
 	# read output queue
 	knn = []
 	while len(knn) < nc:
-		knn += [qout.get()]
+		knn += [qout_generate.get()]
 	
 	print "received output:", knn
 		
@@ -125,16 +144,452 @@ def batchMovePath(mapHyps, nodeID, direction, distEst = 1.0):
 	print "sorted output:", knn
 		
 
-	print "terminating pool"
+	#print "terminating pool"
 	# terminate workers
-	for p in pool:
-		print "terminate"
-		p.terminate()
-		print "terminated"
+	#for p in pool:
+	#	print "terminate"
+	#	p.terminate()
+	#	print "terminated"
+
+	hypSet = {}
+	for hyp in knn:
+		hypSet[hyp.hypothesisID] = hyp
 		
 	print "returning"
-	return knn
+	return hypSet
 
+
+def __remote_multiEval(rank, qin, qout):
+
+	print "started __remote_multiEval"
+
+	while 1:
+		# read input queue (block until data arrives)
+		nc, args = qin.get()
+		print rank, "received", nc, args
+		# process data
+		results = []
+		for arg in args:
+			mapHyp = arg[0]
+			nodeID = arg[1]
+			utilVal = computeEvalNode(mapHyp, nodeID)
+			results.append(utilVal)
+						   
+		# write to output queue
+		qout.put((nc,results))
+
+
+
+def batchEval(mapHyps):
+
+
+	global renderGlobalPlotCount
+	global pool_eval
+	global qin_eval
+	global qout_eval
+
+	for hid, mapHyp in mapHyps.iteritems():
+
+		poseData = mapHyps[0].poseData
+
+		ndata = len(mapHyp.nodePoses)
+
+		args = []
+		keys = mapHyp.nodePoses.keys()
+
+		for k in range(ndata):
+			nodeID = keys[k]
+			arg = [mapHyp, nodeID, k + renderGlobalPlotCount]
+			args.append(arg)
+		
+		renderGlobalPlotCount += len(mapHyp.nodePoses)
+
+		nproc = __num_processors()
+		
+		nproc *= 2
+		
+		# compute chunk size
+		chunk_size = ndata / nproc
+		chunk_size = 2 if chunk_size < 2 else chunk_size
+		
+		print "chunk_size =", chunk_size
+		print "max_size =", ndata/chunk_size
+		
+		if len(pool_eval) == 0:
+			# set up a pool of processes and data queues
+
+			" make infinite size queues so we don't have to worry about specifying max size "
+			qin_eval = processing.Queue(maxsize=0)   
+			qout_eval = processing.Queue(maxsize=0)
+			pool_eval = [processing.Process(target=__remote_multiEval,
+						args=(rank, qin_eval, qout_eval))
+							for rank in range(nproc)]
+			for p in pool_eval: p.start()
+		
+		# put data chunks in input queue
+		cur, nc = 0, 0
+		print "args =", args
+		while 1:
+			#_data = data[:,cur:cur+chunk_size]
+			_data = args[cur:cur+chunk_size]
+			print "_data =", _data
+			print "nc = ", nc
+			print "cur =", cur
+			if len(_data) == 0: break
+			print "put(", (nc,_data), ")"
+			qin_eval.put((nc,_data))
+			print "DONE"
+			cur += chunk_size
+			nc += 1
+		
+		print "BATCH FINISHED"
+		
+		
+		# read output queue
+		knn = []
+		while len(knn) < nc:
+			knn += [qout_eval.get()]
+		
+		print "received output:", knn
+			
+		# avoid race condition
+		_knn = [n for i,n in sorted(knn)]
+		knn = []
+		for tmp in _knn:
+			knn += tmp
+
+		print "sorted output:", knn
+			
+
+		#print "terminating pool"
+		# terminate workers
+		#for p in pool:
+		#	print "terminate"
+		#	p.terminate()
+		#	print "terminated"
+
+		utilSum = 0.0
+		for utilVal in knn:
+			utilSum += utilVal
+
+		mapHyp.utility = utilSum
+
+	print "returning"
+	#return hypSet
+
+
+def computeEvalNode(mapHyp, nodeID1):
+
+	poseData = mapHyp.poseData
+
+	print "mapHyp:", mapHyp
+	print "nodeID1:", nodeID1
+	print "mapHyp.nodePoses:", mapHyp.nodePoses
+
+	estPose1 = mapHyp.nodePoses[nodeID1]
+
+	utilVal = 0.0
+
+	orderedPathIDs1 = mapHyp.getOrderedOverlappingPaths(nodeID1)
+	print nodeID1, "recompute orderedPathIDs1:", orderedPathIDs1
+
+	hull1 = poseData.aHulls[nodeID1]
+	medial1 = poseData.medialAxes[nodeID1]
+	origPose1 = mapHyp.origPoses[nodeID1]
+		
+	splicedPaths1 = mapHyp.splicePathIDs(orderedPathIDs1)
+
+	#print "received", len(splicedPaths1), "spliced paths from path IDs", orderedPathIDs1
+
+	" departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2 |"
+
+	results1 = []		
+	for k in range(len(splicedPaths1)):
+		path = splicedPaths1[k]			
+		result = getMultiDeparturePoint(path, medial1, origPose1, estPose1, orderedPathIDs1, nodeID1)
+		results1.append(result+(k,))
+
+	results1 = sorted(results1, key=itemgetter(14))
+	results1 = sorted(results1, key=itemgetter(12), reverse=True)				
+
+	#kIndex = results1[0][15]
+
+	angDiff2 = results1[0][14]
+	contigFrac = results1[0][12]
+	#dist = results1[0][17]
+	dist = sqrt((origPose1[0]-estPose1[0])**2 + (origPose1[1] - estPose1[1])**2)
+	
+	#isDeparture = results1[0][15]
+	isDeparture = results1[0][2] and results1[0][3] or results1[0][8] and results1[0][9]
+	#utilVal = (0.5-angDiff2)/0.5 + (contigFrac-0.5)/0.5 + (3.0-dist)/3.0 + 1-isDeparture*0.5
+
+	maxFront = results1[0][5]
+	maxBack = results1[0][11]
+
+	#utilVal = contigFrac - 2*isDeparture
+
+	utilVal = maxFront + maxBack
+
+	print "util:", nodeID1, maxFront, maxBack, angDiff2, contigFrac, dist, isDeparture, utilVal
+		
+
+	return utilVal
+
+
+
+
+
+def __remote_multiMovePath(rank, qin, qout):
+
+	print "started __remote_multiMovePath"
+
+	while 1:
+		# read input queue (block until data arrives)
+		nc, args = qin.get()
+		print rank, "received", nc, args
+		# process data
+		#knn = __do_nothing(data, nc, someArg2, someArg3)
+		results = []
+		for arg in args:
+			mapHyp = arg[0]
+			nodeID = arg[1]
+			direction = arg[2]
+			distEst = arg[3]
+			movePath(mapHyp, nodeID, direction, distEst = distEst)
+			results.append(mapHyp)
+						   
+		# write to output queue
+		qout.put((nc,results))
+
+
+
+def batchMovePath(mapHyps, nodeID, direction, distEst = 1.0):
+
+
+	global renderGlobalPlotCount
+	global pool_move 
+	global qin_move 
+	global qout_move 
+
+
+	#initGuess
+
+	#arg = [initGuess, initPose, pathID, nodeID]
+
+	ndata = len(mapHyps)
+	
+	args = []
+	keys = mapHyps.keys()
+	
+	for k in range(ndata):
+		arg = [mapHyps[keys[k]], nodeID, direction, distEst, k + renderGlobalPlotCount]
+		args.append(arg)
+	
+	renderGlobalPlotCount += len(mapHyps)
+	
+	
+	nproc = __num_processors()
+	
+	nproc *= 2
+	print "nproc =", nproc
+	
+	# compute chunk size
+	#chunk_size = ceil(float(ndata) / float(nproc))
+	#chunk_size = int(chunk_size)
+	chunk_size = ndata / nproc
+	chunk_size = 2 if chunk_size < 2 else chunk_size
+	
+	print "chunk_size =", chunk_size
+	print "max_size =", ndata/chunk_size
+	
+	#__remote_multiMovePath(rank, qin, qout, nodeID, direction, distEst):
+
+	if len(pool_move) == 0:
+		# set up a pool of processes and data queues
+		#qin = processing.Queue(maxsize=ndata/chunk_size)
+		#qout = processing.Queue(maxsize=ndata/chunk_size)
+
+		" make infinite size queues so we don't have to worry about specifying max size "
+		qin_move = processing.Queue(maxsize=0)   
+		qout_move = processing.Queue(maxsize=0)
+		pool_move = [processing.Process(target=__remote_multiMovePath,
+					args=(rank, qin_move, qout_move))
+						for rank in range(nproc)]
+		for p in pool_move: p.start()
+	
+	# put data chunks in input queue
+	cur, nc = 0, 0
+	print "args =", args
+	while 1:
+		#_data = data[:,cur:cur+chunk_size]
+		_data = args[cur:cur+chunk_size]
+		print "_data =", _data
+		print "nc = ", nc
+		print "cur =", cur
+		if len(_data) == 0: break
+		print "put(", (nc,_data), ")"
+		qin_move.put((nc,_data))
+		print "DONE"
+		cur += chunk_size
+		nc += 1
+	
+	print "BATCH FINISHED"
+	
+	
+	# read output queue
+	knn = []
+	while len(knn) < nc:
+		knn += [qout_move.get()]
+	
+	print "received output:", knn
+		
+	# avoid race condition
+	_knn = [n for i,n in sorted(knn)]
+	knn = []
+	for tmp in _knn:
+		knn += tmp
+
+	print "sorted output:", knn
+		
+
+	#print "terminating pool"
+	# terminate workers
+	#for p in pool:
+	#	print "terminate"
+	#	p.terminate()
+	#	print "terminated"
+
+	hypSet = {}
+	for hyp in knn:
+		hypSet[hyp.hypothesisID] = hyp
+		
+	print "returning"
+	return hypSet
+
+
+def __remote_multiLocalize(rank, qin, qout):
+
+	print "started __remote_multiMovePath"
+
+	while 1:
+		# read input queue (block until data arrives)
+		nc, args = qin.get()
+		print rank, "received", nc, args
+		# process data
+		#knn = __do_nothing(data, nc, someArg2, someArg3)
+		results = []
+		for arg in args:
+			mapHyp = arg[0]
+			nodeID1 = arg[1]
+			nodeID2 = arg[2]
+			localizePair(mapHyp, nodeID1, nodeID2)
+			results.append(mapHyp)
+						   
+		# write to output queue
+		qout.put((nc,results))
+
+
+def batchLocalizePair(mapHyps, nodeID1, nodeID2):
+
+
+	global renderGlobalPlotCount
+	global pool_localize
+	global qin_localize
+	global qout_localize
+
+	#initGuess
+
+	#arg = [initGuess, initPose, pathID, nodeID]
+
+	ndata = len(mapHyps)
+	
+	args = []
+	keys = mapHyps.keys()
+	
+	for k in range(ndata):
+		arg = [mapHyps[keys[k]], nodeID1, nodeID2, k + renderGlobalPlotCount]
+		args.append(arg)
+	
+	renderGlobalPlotCount += len(mapHyps)
+	
+	
+	nproc = __num_processors()
+	
+	nproc *= 2
+	print "nproc =", nproc
+	
+	# compute chunk size
+	#chunk_size = ceil(float(ndata) / float(nproc))
+	#chunk_size = int(chunk_size)
+	chunk_size = ndata / nproc
+	chunk_size = 2 if chunk_size < 2 else chunk_size
+	
+	print "chunk_size =", chunk_size
+	print "max_size =", ndata/chunk_size
+	
+	if len(pool_localize) == 0:
+		# set up a pool of processes
+		#qin = processing.Queue(maxsize=ndata/chunk_size)
+		#qout = processing.Queue(maxsize=ndata/chunk_size)
+
+		" make infinite size queues so we don't have to worry about specifying max size "
+		qin_localize = processing.Queue(maxsize=0)   
+		qout_localize = processing.Queue(maxsize=0)
+
+		pool_localize = [processing.Process(target=__remote_multiLocalize,
+					args=(rank, qin_localize, qout_localize))
+						for rank in range(nproc)]
+
+		for p in pool_localize: p.start()
+		
+	# put data chunks in input queue
+	cur, nc = 0, 0
+	print "args =", args
+	while 1:
+		#_data = data[:,cur:cur+chunk_size]
+		_data = args[cur:cur+chunk_size]
+		print "_data =", _data
+		print "nc = ", nc
+		print "cur =", cur
+		if len(_data) == 0: break
+		print "put(", (nc,_data), ")"
+		qin_localize.put((nc,_data))
+		print "DONE"
+		cur += chunk_size
+		nc += 1
+	
+	print "BATCH FINISHED"
+	
+	
+	# read output queue
+	knn = []
+	while len(knn) < nc:
+		knn += [qout_localize.get()]
+	
+	print "received output:", knn
+		
+	# avoid race condition
+	_knn = [n for i,n in sorted(knn)]
+	knn = []
+	for tmp in _knn:
+		knn += tmp
+
+	print "sorted output:", knn
+		
+
+	#print "terminating pool"
+	# terminate workers
+	#for p in pool:
+	#	print "terminate"
+	#	p.terminate()
+	#	print "terminated"
+
+	hypSet = {}
+	for hyp in knn:
+		hypSet[hyp.hypothesisID] = hyp
+		
+	print "returning"
+	return hypSet
 
 	
 
@@ -1372,5 +1827,777 @@ def selectLocalCommonOrigin(globalPath, medial1, estPose1):
 	
 	return u1, u2
 		
+
+
+@logFunction
+def generateAll(hypSet):
+	for pID, mapHyp in hypSet.iteritems():
+		generateMap(mapHyp)
+
+def generateMap(mapHyp):
+
+	mapHyp.generatePaths()
+	" TRIM THE RAW PATHS TO ONLY EXTRUDE FROM THEIR BRANCHING POINT "
+	mapHyp.trimPaths()
+
+
+def computeLocalDivergence(hypSet, nodeID1, nodeID2):
+
+	poseData = hypSet[0].poseData
+
+	for pID, mapHyp in hypSet.iteritems():
+
+		
+		" GET THE ORDERED LIST OF OVERLAPPING PATHS FOR EACH NODE "
+		
+		" the overlapping paths are computed from the initial guess of position "
+		orderedPathIDs1 = mapHyp.getOrderedOverlappingPaths(nodeID1)
+		orderedPathIDs2 = mapHyp.getOrderedOverlappingPaths(nodeID2)
+		
+		mapHyp.orderedPathIDs1 = orderedPathIDs1
+		mapHyp.orderedPathIDs2 = orderedPathIDs2
+
+		print nodeID1, "orderedPathIDs1:", orderedPathIDs1
+		print nodeID2, "orderedPathIDs2:", orderedPathIDs2
+
+		" departure events for node 1 "
+		mapHyp.departures1 = []
+		mapHyp.interiors1 = []
+		mapHyp.depPoints1 = []
+		mapHyp.distances1 = []
+		mapHyp.depAngles1 = []
+		mapHyp.contig1 = []
+
+		" departure events for node 2 "
+		mapHyp.departures2 = []
+		mapHyp.interiors2 = []
+		mapHyp.depPoints2 = []
+		mapHyp.distances2 = []
+		mapHyp.depAngles2 = []
+		mapHyp.contig2 = []
+
+		
+		" COMPUTE DEPARTURE EVENTS FOR EACH OVERLAPPING PATH SECTION "
+		for pathID in orderedPathIDs1:
+			resultSet = mapHyp.getDeparturePoint(mapHyp.trimmedPaths[pathID], nodeID1, plotIter = False)
+			mapHyp.departureResultSet1 = resultSet
+
+			departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = resultSet
+			mapHyp.departures1.append([isExist1,isExist2])
+			mapHyp.interiors1.append([isInterior1, isInterior2])
+			mapHyp.depPoints1.append([departurePoint1, departurePoint2])
+			mapHyp.distances1.append([discDist1, discDist2])
+			mapHyp.depAngles1.append([depAngle1, depAngle2])
+			mapHyp.contig1.append((contigFrac, overlapSum))
+
+		for pathID in orderedPathIDs2:
+			resultSet = mapHyp.getDeparturePoint(mapHyp.trimmedPaths[pathID], nodeID2, plotIter = False)
+			mapHyp.departureResultSet2 = resultSet
+
+			departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = resultSet
+			mapHyp.departures2.append([isExist1,isExist2])
+			mapHyp.interiors2.append([isInterior1, isInterior2])
+			mapHyp.depPoints2.append([departurePoint1, departurePoint2])
+			mapHyp.distances2.append([discDist1, discDist2])
+			mapHyp.depAngles2.append([depAngle1, depAngle2])
+			mapHyp.contig2.append((contigFrac, overlapSum))
+
+
+		print "node departures", nodeID1, ":", mapHyp.departures1
+		print "node  interiors", nodeID1, ":", mapHyp.interiors1
+		print "node departures", nodeID2, ":", mapHyp.departures2
+		print "node  interiors", nodeID2, ":", mapHyp.interiors2
+		print "node contiguity", nodeID1, ":", mapHyp.contig1
+		print "node contiguity", nodeID2, ":", mapHyp.contig2
+
+
+
+def checkForeBranch(hypSet, nodeID1, nodeID2, particleIDs):
+	
+	" 60 degree threshold "
+	ANG_THRESH = 1.047
+
+	newHyps = {}
+	poseData = hypSet[0].poseData
+
+
+	for pID, mapHyp in hypSet.iteritems():
+		" new junction finding logic "
+		" if terminal departures for each medial axis are None or exterior, than we stay on existing paths "
+		" if a terminal departure exists that is internal, than we have a new junction "
+
+		" NODE1: CHECK FRONT AND BACK FOR BRANCHING EVENTS "
+		frontExist1 = mapHyp.departures1[0][0]
+		frontInterior1 = mapHyp.interiors1[0][0]
+		foreTerm1 = frontExist1 and frontInterior1
+
+		" DISCREPANCY BETWEEN TIP-CLOSEST and DEPARTURE-CLOSEST POINT ON PATH "				
+		
+		" NODE2: CHECK FRONT AND BACK FOR BRANCHING EVENTS "
+		frontExist2 = mapHyp.departures2[0][0]
+		frontInterior2 = mapHyp.interiors2[0][0]
+		foreTerm2 = frontExist2 and frontInterior2
+
+		depAngle1 = mapHyp.depAngles1[0][0]
+		depAngle2 = mapHyp.depAngles2[0][0]
+
+		frontAngDiff = diffAngle(depAngle1, depAngle2)
+		
+		depPoint1 = mapHyp.depPoints1[0][0]
+		depPoint2 = mapHyp.depPoints2[0][0]
+		
+		parentPathID1 = mapHyp.orderedPathIDs1[0]
+		parentPathID2 = mapHyp.orderedPathIDs2[0]
+
+		isFront1 = poseData.faceDirs[nodeID1]
+		isFront2 = poseData.faceDirs[nodeID2]
+		if isFront1 and not isFront2:
+			dirFlag = 0
+		elif not isFront1 and isFront2:
+			dirFlag = 1
+		else:
+			print isFront1, isFront2
+			raise	
+
+
+		isUnique1, duplicatePathID1 = mapHyp.checkUniqueBranch(parentPathID1, nodeID1, depAngle1, depPoint1)
+		isUnique2, duplicatePathID2 = mapHyp.checkUniqueBranch(parentPathID2, nodeID2, depAngle2, depPoint2)
+
+		isBranched = False
+		if foreTerm1 and foreTerm2:
+			if fabs(frontAngDiff) < ANG_THRESH:
+				if isUnique1 and isUnique2:
+					isBranched = True
+				if isUnique1 and not isUnique2:
+					if dirFlag == 0:
+						isBranched = True
+				if not isUnique1 and isUnique2:
+					if dirFlag == 1:
+						isBranched = True
+			else:
+				if isUnique1 and isUnique2:
+					if dirFlag == 0:
+						isBranched = True
+					if dirFlag == 1:
+						isBranched = True
+				if isUnique1 and not isUnique2:
+					if dirFlag == 0:
+						isBranched = True
+				if not isUnique1 and isUnique2:
+					if dirFlag == 1:
+						isBranched = True
+		elif foreTerm1 and not foreTerm2:
+			if isUnique1:
+				if frontExist2 and fabs(frontAngDiff) < ANG_THRESH:
+					isBranched = True
+				else:
+					if dirFlag == 0:
+						isBranched = True
+		elif foreTerm2 and not foreTerm1:
+			if isUnique2:
+				if frontExist1 and fabs(frontAngDiff) < ANG_THRESH:
+					isBranched = True
+				else:
+					if dirFlag == 1:		
+						isBranched = True
+
+
+		#if isUnique1 or isUnique2:
+		if isBranched:
+			" createa a new map state where a branch decision is not made "
+
+			newHyps[particleIDs] = mapHyp.copy(particleIDs)
+			print "creating hyp", particleIDs, "from hyp", mapHyp.hypothesisID, ", len(paths) =", len(mapHyp.pathClasses)
+			particleIDs += 1
+
+
+		isBranch, pathBranchIDs, isNew = mapHyp.determineBranchPair(nodeID1, nodeID2, frontExist1, frontExist2, frontInterior1, frontInterior2, depAngle1, depAngle2, depPoint1, depPoint2, parentPathID1, parentPathID2, dirFlag, isUnique1, isUnique2, duplicatePathID1, duplicatePathID2)
+
+
+		print "determineBranchPair:"
+		print isBranch
+		print pathBranchIDs
+
+		if isBranch[0]:
+			mapHyp.orderedPathIDs1.insert(0,pathBranchIDs[0])
+			mapHyp.departures1.insert(0, [False, False])
+			mapHyp.interiors1.insert(0, [False, False])
+			mapHyp.depPoints1.insert(0, [None, None])
+
+		if isBranch[1]:
+			mapHyp.orderedPathIDs2.insert(0,pathBranchIDs[1])
+			mapHyp.departures2.insert(0, [False, False])
+			mapHyp.interiors2.insert(0, [False, False])
+			mapHyp.depPoints2.insert(0, [None, None])
+
+
+	hypSet.update(newHyps)
+
+	return hypSet, particleIDs
+
+def checkBackBranch(hypSet, nodeID1, nodeID2, particleIDs):
+
+	" 60 degree threshold "
+	ANG_THRESH = 1.047
+
+	newHyps = {}
+	poseData = hypSet[0].poseData
+
+	for pID, mapHyp in hypSet.iteritems():
+
+		backExist1 = mapHyp.departures1[-1][1]
+		backInterior1 = mapHyp.interiors1[-1][1]
+		backTerm1 = backExist1 and backInterior1
+
+		backExist2 = mapHyp.departures2[-1][1]
+		backInterior2 = mapHyp.interiors2[-1][1]
+		backTerm2 = backExist2 and backInterior2
+		
+		depAngle1 = mapHyp.depAngles1[-1][1]
+		depAngle2 = mapHyp.depAngles2[-1][1]
+		
+		backAngDiff = diffAngle(depAngle1, depAngle2)
+
+		depPoint1 = mapHyp.depPoints1[-1][1]
+		depPoint2 = mapHyp.depPoints2[-1][1]
+
+		parentPathID1 = mapHyp.orderedPathIDs1[-1]
+		parentPathID2 = mapHyp.orderedPathIDs2[-1]
+
+		isFront1 = poseData.faceDirs[nodeID1]
+		isFront2 = poseData.faceDirs[nodeID2]
+		if isFront1 and not isFront2:
+			dirFlag = 1
+		elif not isFront1 and isFront2:
+			dirFlag = 0
+		else:
+			print isFront1, isFront2
+			raise	
+
+		isUnique1, duplicatePathID1 = mapHyp.checkUniqueBranch(parentPathID1, nodeID1, depAngle1, depPoint1)
+		isUnique2, duplicatePathID2 = mapHyp.checkUniqueBranch(parentPathID2, nodeID2, depAngle2, depPoint2)
+
+		isBranched = False
+		if backTerm1 and backTerm2:
+			if fabs(backAngDiff) < ANG_THRESH:
+				if isUnique1 and isUnique2:
+					isBranched = True
+				if isUnique1 and not isUnique2:
+					if dirFlag == 0:
+						isBranched = True
+				if not isUnique1 and isUnique2:
+					if dirFlag == 1:
+						isBranched = True
+			else:
+				if isUnique1 and isUnique2:
+					if dirFlag == 0:
+						isBranched = True
+					if dirFlag == 1:
+						isBranched = True
+				if isUnique1 and not isUnique2:
+					if dirFlag == 0:
+						isBranched = True
+				if not isUnique1 and isUnique2:
+					if dirFlag == 1:
+						isBranched = True
+		elif backTerm1 and not backTerm2:
+			if isUnique1:
+				if backExist2 and fabs(backAngDiff) < ANG_THRESH:
+					isBranched = True
+				else:
+					if dirFlag == 0:
+						isBranched = True
+		elif backTerm2 and not backTerm1:
+			if isUnique2:
+				if backExist1 and fabs(backAngDiff) < ANG_THRESH:
+					isBranched = True
+				else:
+					if dirFlag == 1:		
+						isBranched = True
+
+
+		#if isUnique1 or isUnique2:
+		if isBranched:
+			" create a new map state where a branch decision is not made "
+			newHyps[particleIDs] = mapHyp.copy(particleIDs)
+			print "creating hyp", particleIDs, "from hyp", mapHyp.hypothesisID, ", len(paths) =", len(mapHyp.pathClasses)
+			particleIDs += 1
+
+		isBranch, pathBranchIDs, isNew = mapHyp.determineBranchPair(nodeID1, nodeID2, backExist1, backExist2, backInterior1, backInterior2, depAngle1, depAngle2, depPoint1, depPoint2, parentPathID1, parentPathID2, dirFlag, isUnique1, isUnique2, duplicatePathID1, duplicatePathID2)
+		print "determineBranchPair:"
+		print isBranch
+		print pathBranchIDs
+
+		#isNew1 = isNew1 or isNew[0]
+		#isNew2 = isNew2 or isNew[1]
+
+		if isBranch[0]:
+			mapHyp.orderedPathIDs1.append(pathBranchIDs[0])
+			mapHyp.departures1.append([False, False])
+			mapHyp.interiors1.append([False, False])
+			mapHyp.depPoints1.append([None, None])
+
+		if isBranch[1]:
+			mapHyp.orderedPathIDs2.append(pathBranchIDs[1])
+			mapHyp.departures2.append([False, False])
+			mapHyp.interiors2.append([False, False])
+			mapHyp.depPoints2.append([None, None])
+
+
+	hypSet.update(newHyps)
+	
+	return hypSet, particleIDs
+
+@logFunction
+def addToPaths(particleIDs, hypSet, nodeID1, nodeID2):
+
+	poseData = hypSet[0].poseData
+
+	newHyps = {}
+
+	#generateAll(hypSet)
+	hypSet = batchGenerate(hypSet)
+
+	" IF THIS IS THE FIRST NODES IN THE FIRST PATH, JUST ADD THEM AS DEFAULT, DO NOTHING "
+	isFirst = False
+	for pID, mapHyp in hypSet.iteritems():
+		if len(mapHyp.paths[0]) == 0:
+			print "this is first nodes, just add them already!"
+			isFirst = True
+
+	if isFirst:
+		for pID, mapHyp in hypSet.iteritems():
+			mapHyp.addNode(nodeID1,0)
+			mapHyp.addNode(nodeID2,0)
+	
+			mapHyp.generatePaths()
+			mapHyp.trimPaths()
+
+
+		return particleIDs, hypSet
+
+
+	""" check branching of local spline from member path """
+	computeLocalDivergence(hypSet, nodeID1, nodeID2)
+
+
+	""" check for branching conditions from path, spawn new hypotheses """
+	hypSet, particleIDs = checkForeBranch(hypSet, nodeID1, nodeID2, particleIDs)
+
+	hypSet, particleIDs = checkBackBranch(hypSet, nodeID1, nodeID2, particleIDs)
+
+
+	for pID, currHyp in hypSet.iteritems():
+
+		orderedPathIDs1 = currHyp.orderedPathIDs1
+		orderedPathIDs2 = currHyp.orderedPathIDs2
+
+		" determine which paths are leaves "
+		pathIDs = currHyp.getPathIDs()
+		isAParent = {}
+		for k in pathIDs:
+			isAParent[k] = False
+		for k in orderedPathIDs1:
+			print "index:", k
+			currPath = currHyp.getPath(k)
+			currParent = currPath["parentID"]
+			if currParent != None:
+				isAParent[currParent] = True
+
+		
+		"add nodes to paths that are the leaves "
+		for pathID in orderedPathIDs1:
+			if not isAParent[pathID]:				
+				currHyp.addNode(nodeID1,pathID)
+
+		pathIDs = currHyp.getPathIDs()
+		isAParent = {}
+		for k in pathIDs:
+			isAParent[k] = False
+		for k in orderedPathIDs2:
+			print "index:", k
+			currPath = currHyp.getPath(k)
+			currParent = currPath["parentID"]
+			if currParent != None:
+				isAParent[currParent] = True
+
+		for pathID in orderedPathIDs2:
+			if not isAParent[pathID]:				
+				currHyp.addNode(nodeID2,pathID)
+
+	#generateAll(hypSet)
+	hypSet = batchGenerate(hypSet)
+					
+	return particleIDs, hypSet
+
+
+
+
+@logFunction
+def localizePair(mapHyp, nodeID1, nodeID2):
+
+	poseData = mapHyp.poseData
+
+	""" LOCALIZE NODE PAIR """
+	if len(mapHyp.paths[0]) > 0:
+		
+		"1)  guess pose in front if there is a departure with local and path junction points (not first node) "
+		"2)  guess pose in back if there is a departure with local and path junction points (not first node) "
+		"3)  select choice with the lowest cost "
+		"4)  guess pose with no departure point with guessed control points len(orderedPathIDs) == 1"
+		
+		" nodeID1:	is it in a junction or a single path? "
+		
+		
+		try:
+
+			mapHyp.origPoses[nodeID1] = mapHyp.nodePoses[nodeID1]
+			result = consistentFit(mapHyp, nodeID1, mapHyp.nodePoses[nodeID1], numGuesses = 11)
+
+		except IndexError:
+			print "failed to consistentFit node", nodeID1
+			pass
+
+			
+		#self.drawConstraints(mapHyp, self.statePlotCount)
+		#self.statePlotCount += 1
+		#self.drawPathAndHull(mapHyp)
+
+		try:
+			mapHyp.origPoses[nodeID2] = mapHyp.nodePoses[nodeID2]
+			consistentFit(mapHyp, nodeID2, mapHyp.nodePoses[nodeID2], numGuesses = 11)
+
+		except IndexError:
+			print "failed to consistentFit node", nodeID2
+			pass
+
+
+		#mapHyp.computeEval()
+
+		mapHyp.generatePaths()
+
+		#self.drawConstraints(mapHyp, self.statePlotCount)
+		#self.statePlotCount += 1
+		#self.drawPathAndHull(mapHyp)
+
+
+@logFunction
+def consistentFit(mapHyp, nodeID, estPose, numGuesses = 11, excludePathIDs = []):
+
+	poseData = mapHyp.poseData
+
+	splicedPaths1, spliceTerms, splicePathIDs = mapHyp.getSplicesByNearJunction(nodeID)
+
+
+	print "consistentFit(", nodeID
+
+	initGuesses = []
+	orientedPaths = []
+	
+	hull1 = poseData.aHulls[nodeID]
+	medial1 = poseData.medialAxes[nodeID]
+	medialSpline1 = SplineFit(medial1, smooth=0.1)
+
+	estPose1 = mapHyp.nodePoses[nodeID]		
+	poseOrigin = Pose(estPose1)
+	
+	globalMedial = []
+	for p in medial1:
+		globalMedial.append(poseOrigin.convertLocalToGlobal(p))
+
+	globalMedialSpline1 = SplineFit(globalMedial, smooth=0.1)
+				
+	originU1 = medialSpline1.findU([0.0,0.0])	
+
+	resultsBySplice = []
+
+	for spliceIndex in range(len(splicedPaths1)):
+		
+		path = splicedPaths1[spliceIndex]
+
+
+		pathSpline = SplineFit(path, smooth=0.1)
+		pathU1 = pathSpline.findU(estPose1[:2])
+		pathForeU = pathSpline.getUOfDist(originU1, 1.0, distIter = 0.001)
+		pathBackU = pathSpline.getUOfDist(originU1, -1.0, distIter = 0.001)
+		
+		orientedPath = orientPath(path, globalMedial)
+		orientedPathSpline = SplineFit(orientedPath, smooth=0.1)
+
+		#medialSpline1 = SplineFit(medial1, smooth=0.1)
+
+
+		globalSamples = orientedPathSpline.getUniformSamples(spacing = 0.04)
+		medialSamples = medialSpline1.getUniformSamples(spacing = 0.04)
+		
+		globalMedialSamples = []
+		for p in medialSamples:
+			result = poseOrigin.convertLocalOffsetToGlobal(p)	
+			globalMedialSamples.append(result)
+		
+		
+		globalVar = computePathAngleVariance(globalSamples)
+		medialVar = computePathAngleVariance(globalMedialSamples)
+
+		" now lets find closest points and save their local variances "			
+		closestPairs = []
+		TERM_DIST = 20
+		
+		for i in range(TERM_DIST, len(globalSamples)-TERM_DIST):
+			pG = globalSamples[i]
+			minDist = 1e100
+			minJ = -1
+			for j in range(TERM_DIST, len(globalMedialSamples)-TERM_DIST):
+				pM = globalMedialSamples[j]
+				dist = math.sqrt((pG[0]-pM[0])**2 + (pG[1]-pM[1])**2)
+				
+				if dist < minDist:
+					minDist = dist
+					minJ = j
+					
+			if minDist < 0.1:
+				closestPairs.append((i,minJ,minDist,globalVar[i][0],medialVar[minJ][0],globalVar[i][1],medialVar[minJ][1]))
+
+		for j in range(TERM_DIST, len(globalMedialSamples)-TERM_DIST):
+			pM = globalMedialSamples[j]
+			minDist = 1e100
+			minI = -1
+			for i in range(TERM_DIST, len(globalSamples)-TERM_DIST):
+				pG = globalSamples[i]
+				dist = math.sqrt((pG[0]-pM[0])**2 + (pG[1]-pM[1])**2)
+				
+				if dist < minDist:
+					minDist = dist
+					minI = i
+					
+			if minDist < 0.1:
+				closestPairs.append((minI,j,minDist,globalVar[minI][0],medialVar[j][0],globalVar[minI][1],medialVar[j][1]))
+
+		" remove duplicates "
+		closestPairs = list(set(closestPairs))
+		
+		" sort by lowest angular variance"
+		closestPairs = sorted(closestPairs, key=itemgetter(5,6))
+		print len(closestPairs), "closest pairs"
+
+
+		if len(closestPairs) > 0:
+			originU2 = medialSpline1.findU(medialSamples[closestPairs[0][1]])	
+			pathU1 = orientedPathSpline.findU(globalSamples[closestPairs[0][0]])
+
+		else:
+		
+			originU2 = medialSpline1.findU([0.0,0.0])
+			pathU1 = orientedPathSpline.findU(estPose1[:2])
+		
+
+		time1 = time.time()
+
+		" add guesses in the neighborhood of the closest pathU "
+		" 5 forward, 5 backward "
+		
+
+		" while loop "
+		halfNum = numGuesses/2
+		dists = [(k-halfNum)*0.2 for k in range(numGuesses)]	
+		for dist in dists:
+			
+			
+			#pathUGuess = i*0.05
+			pathUGuess = orientedPathSpline.getUOfDist(pathU1, dist)
+			initGuesses.append([pathUGuess, originU2, 0.0, spliceIndex])
+			
+		orientedPaths.append(orientedPath)
+
+	print len(orientedPaths), "orientedPaths"
+	print len(initGuesses), "initGuesses"
+	results = batchGlobalMultiFit(initGuesses, orientedPaths, medial1, estPose1, [], nodeID)
+
+	time2 = time.time()
+	print "time:", time2 - time1
+
+	resultsBySplice += results
+	
+	print "consistentFit node", nodeID
+	
+	print len(resultsBySplice), "results"
+	
+	for k in range(len(resultsBySplice)):
+		result = resultsBySplice[k]
+		resultPose = result[0]
+		dist = sqrt((estPose1[0]-resultPose[0])**2 + (estPose1[1] - resultPose[1])**2)
+		resultsBySplice[k] = result + (dist, k,)
+
+
+	print "unfilteredResults:"
+	for result in resultsBySplice:
+		resultPose = result[0]
+		isInterior1 = result[5]
+		isExist1 = result[6]
+		isInterior2 = result[11]
+		isExist2 = result[12]
+		contigFrac = result[15]
+		angDiff2 = result[17]
+		spliceIndex = result[19]
+		#spliceIndex = result[21]
+
+		#result[18] is isDepartureExists True/False
+		dist = result[20]
+		#dist = sqrt((estPose1[0]-resultPose[0])**2 + (estPose1[1] - resultPose[1])**2)
+		lastCost = result[1]
+		matchCount = result[2]
+		overlapSum = result[16]
+		print spliceIndex, [int(isInterior1), int(isInterior2), int(isExist1), int(isExist2)], contigFrac, dist, angDiff2, lastCost, matchCount, overlapSum, spliceTerms[spliceIndex], splicePathIDs[spliceIndex], resultPose
+
+	
+	" resultPose, lastCost, matchCount, departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2, isDeparture, dist, spliceIndex "
+
+
+	"""
+	1) departures:	(0,0) good, (1,0) okay, (1,1) bad 
+	2) contigFrac:	1.0 good, 0.9 okay, 0.5 bad, 0.0 reject
+	3) dist:   0.0 great, 0.5 good, 1.0 okay, 2.0 bad, 3.0 reject
+	4) angDiff2:  0.0 great, 0.2 good, 0.5 bad/reject
+	5) splicePathIDs:  exID in REJECT, currPathID in GOOD
+	"""
+	
+	#(0.5-angDiff2)/0.5 + (contigFrac-0.5)/0.5 + (3.0-dist)/3.0 + 1-isDeparture*0.5
+	
+	filteredResults = []
+	for result in resultsBySplice:
+		resultPose = result[0]
+		isInterior1 = result[5]
+		isExist1 = result[6]
+		isInterior2 = result[11]
+		isExist2 = result[12]
+		contigFrac = result[15]
+		angDiff2 = result[17]
+		isDeparture = result[18]
+		spliceIndex = result[19]
+		dist = result[20]
+		
+		
+		" rejection filter "
+		isReject = False
+		
+		if isInterior1 or isInterior2:
+			isReject = True
+		
+
+		if isExist1 and isExist2:
+			isReject = True
+		
+		for exID in excludePathIDs:
+			if exID in splicePathIDs[spliceIndex]:
+				isReject = True
+	
+		if contigFrac <= 0.5:
+			isReject = True
+			
+		if dist >= 3.0:
+			isReject = True
+		
+		if angDiff2 > 0.7:
+			isReject = True
+			
+		if not isReject:
+			filteredResults.append(result)
+
+		"""			
+		if isExist1 or isExist2:
+			depVal = 50.0
+		else:
+			depVal = 100.0
+		
+		
+		if not isInterior1 and not isInterior2 and not isExist1 and not isExist2:
+			exclude = False
+			for exID in excludePathIDs:
+				if exID in splicePathIDs[spliceIndex]:
+					exclude = True
+			
+			if dist < 3.0 and contigFrac > 0.7 and angDiff2 < 0.5 and not exclude:
+				filteredResults.append(result)
+		"""
+		
+
+	print "filteredResults:"
+	for result in filteredResults:
+		resultPose = result[0]
+		isInterior1 = result[5]
+		isExist1 = result[6]
+		isInterior2 = result[11]
+		isExist2 = result[12]
+		contigFrac = result[15]
+		angDiff2 = result[17]
+		spliceIndex = result[19]
+		dist = result[20]
+		lastCost = result[1]
+		matchCount = result[2]
+		overlapSum = result[16]
+		resultIndex = result[21]
+		print resultIndex, spliceIndex, [int(isInterior1), int(isInterior2), int(isExist1), int(isExist2)], contigFrac, dist, angDiff2, lastCost, matchCount, overlapSum, spliceTerms[spliceIndex], splicePathIDs[spliceIndex], resultPose
+
+
+
+	utilResults = []
+	for k in range(len(filteredResults)):
+		result = filteredResults[k]
+		angDiff2 = result[17]
+		contigFrac = result[15]
+		dist = result[20]
+		isDeparture = result[18]
+		utilVal = (0.5-angDiff2)/0.5 + (contigFrac-0.5)/0.5 + (3.0-dist)/3.0 + 1-isDeparture*0.5
+		
+		filteredResults[k] = result + (utilVal,)
+		
+
+	sortedResults = sorted(filteredResults, key=itemgetter(15), reverse=True)
+	contigSort = []
+	for k in range(len(sortedResults)):
+		result = sortedResults[k]
+		contigSort.append((result[15],result[21]))
+	
+	sortedResults = sorted(filteredResults, key=itemgetter(20))
+	distSort = []
+	for k in range(len(sortedResults)):
+		result = sortedResults[k]
+		distSort.append((result[20],result[21]))
+	
+	sortedResults = sorted(filteredResults, key=itemgetter(17))
+	angSort = []
+	for k in range(len(sortedResults)):
+		result = sortedResults[k]
+		angSort.append((result[17],result[21]))
+	
+	sortedResults = sorted(filteredResults, key=itemgetter(18))
+	depSort = []
+	for k in range(len(sortedResults)):
+		result = sortedResults[k]
+		depSort.append((result[18],result[21]))
+
+
+	sortedResults = sorted(filteredResults, key=itemgetter(22), reverse = True)
+	utilSort = []
+	for k in range(len(sortedResults)):
+		result = sortedResults[k]
+		utilSort.append((result[22],result[21]))
+	
+
+	
+	print "contigSort:", contigSort
+	print "distSort:", distSort
+	print "angSort:", angSort
+	print "depSort:", depSort
+	print "utilSort:", utilSort
+
+
+	#filteredResults = sorted(filteredResults, key=itemgetter(16))
+	filteredResults = sorted(filteredResults, key=itemgetter(22), reverse=True)
+
+	guessPose = filteredResults[0][0]
+	mapHyp.nodePoses[nodeID] = guessPose
+
+	return filteredResults[0]
 
 
