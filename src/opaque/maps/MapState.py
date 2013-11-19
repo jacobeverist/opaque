@@ -548,6 +548,7 @@ class MapState:
 		self.origPoses = {}
 
 		self.utility = 0.0
+		self.mapOverlapSum = 0.0
 
 		self.pathIDs = 0
 		self.hypothesisID = hypothesisID
@@ -668,6 +669,23 @@ class MapState:
 	@logFunction
 	def computeEval(self):
 
+		keys = self.trimmedPaths.keys()
+		keys.sort()
+
+		totalSum = 0.0
+		for j in keys:
+			path1 = self.trimmedPaths[j]
+			for k in keys:
+				path2 = self.trimmedPaths[k]
+
+				if j < k:
+					resultSum = self.getPathOverlapSum(path1, path2, j, k, plotIter = True)
+					print "computing sum of", j, "and", k, "=", resultSum
+					totalSum += resultSum
+
+		self.mapOverlapSum = totalSum
+		return totalSum
+	
 		utilSum = 0.0
 
 		for nodeID1, estPose1 in self.nodePoses.iteritems():
@@ -1276,7 +1294,7 @@ class MapState:
 			
 			currPath = splicePaths[k]
 			pathIDs = splicePathIDs[k]
-			results = getMultiDeparturePoint(currPath, medial2, estPose2, estPose2, pathIDs, nodeID, pathPlotCount = self.multiDepCount, plotIter = False)
+			results = getMultiDeparturePoint(currPath, medial2, estPose2, estPose2, pathIDs, nodeID, pathPlotCount = self.multiDepCount, hypID = self.hypothesisID, plotIter = False)
 
 			self.multiDepCount += 1
 
@@ -3888,10 +3906,10 @@ class MapState:
 	
 			pylab.xlim(-5,10)
 			pylab.ylim(-8,8)
-			pylab.title("%d %d %d %d %d %3.2f %3.2f %3.2f %d %3.2f %3.2f %3.2f" % ( isExist1, isExist2, isInterior1, isInterior2, matchCount1, overlapSum1, angleSum1, juncDist1, matchCount2, overlapSum2, angleSum2, juncDist2))
-			pylab.savefig("trimDeparture_%04u.png" % self.pathPlotCount)
+			pylab.title("hyp %d nodeID %d, %d %d %d %d %d %3.2f %3.2f %3.2f %d %3.2f %3.2f %3.2f" % ( self.hypothesisID, self.poseData.numNodes, isExist1, isExist2, isInterior1, isInterior2, matchCount1, overlapSum1, angleSum1, juncDist1, matchCount2, overlapSum2, angleSum2, juncDist2))
+			pylab.savefig("trimDeparture_%04u_%04u.png" % (self.hypothesisID, self.pathPlotCount))
 
-			print "saving trimDeparture_%04u.png" % self.pathPlotCount
+			print "saving trimDeparture_%04u_%04u.png" % (self.hypothesisID, self.pathPlotCount)
 			
 			self.pathPlotCount += 1
 
@@ -5251,7 +5269,7 @@ class MapState:
 			pylab.xlim(-5,10)
 			pylab.ylim(-8,8)
 			pylab.title("%d: %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, [%d,%d] [%d,%d]" % (nodeID, maxFront, maxBack, dist1, dist2, matchVar1, matchVar2, angle1, angle2, isExist1, isExist2, isInterior1, isInterior2))
-			pylab.savefig("departure_%04u.png" % self.pathPlotCount)
+			pylab.savefig("departure_%04u_%04u.png" % (self.hypothesisID, self.pathPlotCount))
 			
 			self.pathPlotCount += 1
 		
@@ -5375,6 +5393,120 @@ class MapState:
 		
 		if len(support_pairs) == 0:
 			return 1e100
+
+		return cost
+
+
+	@logFunction
+	def getPathOverlapSum(self, path1, path2, pathID1, pathID2, plotIter = False):
+
+
+		if len(path1) == 0:
+			return 0.0
+	
+		medial2 = path2
+			   
+		minMatchDist2 = 0.2
+					
+	
+		supportSpline = SplineFit(path1, smooth=0.1)		
+		vecPoints1 = supportSpline.getUniformSamples()
+		supportPoints = gen_icp.addGPACVectorCovariance(vecPoints1,high_var=0.05, low_var = 0.001)
+			
+		medialSpline2 = SplineFit(medial2, smooth=0.1)
+		vecPoints2 = medialSpline2.getUniformSamples()
+		points2 = gen_icp.addGPACVectorCovariance(vecPoints2,high_var=0.05, low_var = 0.001)
+
+		" transformed points without associated covariance "
+		poly2 = []
+		for p in points2:
+			poly2.append([p[0],p[1]])			 
+		
+		support_pairs = []
+		for i in range(len(vecPoints2)):
+			
+			p_2 = vecPoints2[i]
+	
+			try:
+				p_1, minI, minDist = gen_icp.findClosestPointWithAngle(vecPoints1, p_2, math.pi/8.0)
+	
+				if minDist <= minMatchDist2:
+					C2 = points2[i][2]
+					C1 = supportPoints[minI][2]
+	
+					" we store the untransformed point, but the transformed covariance of the A point "
+					support_pairs.append([points2[i],supportPoints[minI],C2,C1])
+			except:
+				pass
+
+		cost = 0.0
+		if len(support_pairs) == 0:
+			cost = 0.0
+		else:
+			vals = []
+			sum1 = 0.0
+			for pair in support_pairs:
+		
+				a = pair[0]
+				b = pair[1]
+				Ca = pair[2]
+				Cb = pair[3]
+		
+				ax = a[0]
+				ay = a[1]		 
+				bx = b[0]
+				by = b[1]
+		
+				c11 = Ca[0][0]
+				c12 = Ca[0][1]
+				c21 = Ca[1][0]
+				c22 = Ca[1][1]
+						
+				b11 = Cb[0][0]
+				b12 = Cb[0][1]
+				b21 = Cb[1][0]
+				b22 = Cb[1][1]	  
+			
+				val = gen_icp.computeMatchErrorP([0.0,0.0,0.0], [ax,ay], [bx,by], [c11,c12,c21,c22], [b11,b12,b21,b22])
+				
+				vals.append(val)
+				sum1 += val
+				
+			#cost = sum1 / len(support_pairs)
+			cost = sum1
+			
+
+		if plotIter:
+			pylab.clf()
+			xP = []
+			yP = []
+			for p in supportPoints:
+				xP.append(p[0])
+				yP.append(p[1])
+			pylab.plot(xP,yP, color='b')
+	
+			xP = []
+			yP = []
+			for p in poly2:
+				xP.append(p[0])
+				yP.append(p[1])
+			pylab.plot(xP,yP, color='r')
+			
+			for pair in support_pairs:
+				p1 = pair[0]
+				p2 = pair[1]
+				xP = [p1[0],p2[0]]
+				yP = [p1[1],p2[1]]
+				pylab.plot(xP,yP)
+			
+			pylab.xlim(-5,10)
+			pylab.ylim(-8,8)
+			pylab.title("%d %d cost = %f, count = %d" % (pathID1, pathID2, cost, len(support_pairs)))
+			pylab.savefig("pathOverlapCost_%04u.png" % self.overlapPlotCount)
+			self.overlapPlotCount += 1
+		
+		if len(support_pairs) == 0:
+			return 0.0
 
 		return cost
 

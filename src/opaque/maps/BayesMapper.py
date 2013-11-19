@@ -192,7 +192,7 @@ class BayesMapper:
 		self.poseData.numNodes = numNodes+1
 
 		" get node poses from some map hypothesis "
-		hid = mapHypIDs[0]
+		hid = mapHypIDs.values()[0]
 		tempMapState = MapState(self.poseData, hid)
 		tempMapState.restoreState(dirName, numNodes)
 
@@ -284,10 +284,12 @@ class BayesMapper:
 			#scurrHyps = self.addToPaths(mapHyp, nodeID1, nodeID2)
 
 			hypSet = batchLocalizePair(hypSet, nodeID1, nodeID2)
-			batchEval(hypSet)
+			#batchEval(hypSet)
 			
 
 			for pID, currHyp in hypSet.iteritems():
+
+				currHyp.computeEval()
 
 				""" LOCALIZE NODE PAIR """
 				#localizePair(currHyp, nodeID1, nodeID2)
@@ -326,8 +328,15 @@ class BayesMapper:
 					print "arcDistNew, arcDistOld, diff =", arcDistNew, arcDistOld, arcDistNew-arcDistOld
 				"""
 		
+		""" remove defective maps """
+		toDelete = []
+		for pID, currHyp in hypSet.iteritems():
+			print pID, "mapOverlapSum =", currHyp.mapOverlapSum
+			if currHyp.mapOverlapSum > 0.0:
+				toDelete.append(pID)	
 				
-				
+		for pID in toDelete:
+			del hypSet[pID]
 
 		#for k in range(self.poseData.numNodes):
 		#	mapHyp.nodePoses[k] = self.nodeHash[k].getGlobalGPACPose()
@@ -1380,7 +1389,7 @@ class BayesMapper:
 		ax4.set_title("Trimmed Paths")
 
 		#foo = "paths: %s, nodeID: %d, hyp %d %3.2f" % (repr(mapHyp.getPathIDs()), highestNodeID, mapHyp.hypothesisID, mapHyp.utility)
-		fig.suptitle("paths: %s, nodeID: %d, hyp %d %3.2f" % (repr(mapHyp.getPathIDs()), highestNodeID, mapHyp.hypothesisID, mapHyp.utility), fontsize=18, y=0.99)
+		fig.suptitle("paths: %s, nodeID: %d, hyp %d %3.2f" % (repr(mapHyp.getPathIDs()), highestNodeID, mapHyp.hypothesisID, mapHyp.mapOverlapSum), fontsize=18, y=0.99)
 		plt.savefig("quadPath_%04u_%04u.png" % (self.pathDrawCount, mapHyp.hypothesisID))
 
 		plt.clf()

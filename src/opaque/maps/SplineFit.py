@@ -42,8 +42,10 @@ class SplineFit:
 					dist = sqrt((p0[0]-p1[0])**2 + (p0[1]-p1[1])**2)
 		
 					vec = [p1[0]-p0[0], p1[1]-p0[1]]
-					vec[0] /= dist
-					vec[1] /= dist
+
+					if dist > 0.0:
+						vec[0] /= dist
+						vec[1] /= dist
 					
 					#print "dist=", repr(dist), repr(max_spacing)
 					

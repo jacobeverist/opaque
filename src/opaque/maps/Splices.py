@@ -167,7 +167,10 @@ def batchGlobalMultiFit(initGuesses, splices, medial, initPose, pathIDs, nodeID)
 
 
 
-def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, nodeID, pathPlotCount = 0, plotIter = False):
+def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, nodeID, pathPlotCount = 0, hypID = 0, plotIter = False):
+
+	CONTIG_DIST = 0.2
+	ORI_DIST = 0.5
 	
 	isExist1 = False
 	isInterior1 = False
@@ -232,7 +235,7 @@ def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, node
 		minDist, j = kdTree.query(array(queryPoint))
 		p_2 = pathPoints[j]
 
-		if minDist < 0.5:
+		if minDist < ORI_DIST:
 			overlapMatch.append((i,j,minDist))
 
 			pathU1 = globalMedialSpline.findU(p_1)	
@@ -318,7 +321,7 @@ def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, node
 		indices.append(i_1)
 		distSum += minDist
 		
-		if minDist < 0.2:
+		if minDist < CONTIG_DIST:
 			contigCount += 1
 			if contigCount > maxContig:
 				maxContig = contigCount
@@ -328,7 +331,12 @@ def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, node
 	overlapSum = distSum / float(len(points2_offset))
 	
 	#print "maxContig,overlapSum:", maxContig, overlapSum
+
+	DEP_THRESH = 0.3
+	DEP_DIST = 0.1
+	DEP_ANG = pi/6.0
 	
+
 	" Compute the front and back departure points by finding the inflection point on the distance curve "
 	" these indices become frontDepI and backDepI respectively "
 	maxFront = distances[0]
@@ -347,7 +355,7 @@ def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, node
 
 
 	frontAngleRefI = frontDepI
-	while distances[frontAngleRefI] < 0.1:
+	while distances[frontAngleRefI] < DEP_DIST:
 		frontAngleRefI -= 1
 		
 		if frontAngleRefI < 0:
@@ -361,7 +369,7 @@ def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, node
 	foreDiffAngle = diffAngle(angle1, forePathAngle)
 	
 	newFrontDepI = 4
-	while fabs(diffAngle(normalizeAngle(points2_offset[newFrontDepI][2]+pi), forePathAngle)) > pi/6.0:
+	while fabs(diffAngle(normalizeAngle(points2_offset[newFrontDepI][2]+pi), forePathAngle)) > DEP_ANG:
 		
 		if newFrontDepI < frontDepI:
 			newFrontDepI += 1
@@ -384,7 +392,7 @@ def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, node
 	backPoint = [backDepI, distances[backDepI]]
 
 	backAngleRefI = backDepI
-	while distances[backAngleRefI] < 0.1:
+	while distances[backAngleRefI] < DEP_DIST:
 		backAngleRefI += 1
 		
 		if backAngleRefI >= len(distances):
@@ -397,7 +405,7 @@ def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, node
 	backDiffAngle = diffAngle(angle2, backPathAngle)
 	
 	newBackDepI = len(distances)-5
-	while fabs(diffAngle(points2_offset[newBackDepI][2], backPathAngle)) > pi/6.0:
+	while fabs(diffAngle(points2_offset[newBackDepI][2], backPathAngle)) > DEP_ANG:
 		
 		if newBackDepI > backDepI:
 			newBackDepI -= 1
@@ -458,7 +466,6 @@ def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, node
 	dist2 = sqrt((tipMatch2[0]-pathPoints[max2][0])**2 + (tipMatch2[1] - pathPoints[max2][1])**2)
 
 
-	DEP_THRESH = 0.3
 
 	if maxFront > DEP_THRESH:
 		departurePoint1 = pathPoints[max1]
@@ -592,7 +599,8 @@ def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, node
 
 		xP = []
 		yP = []
-		for p in currPath:
+		#for p in currPath:
+		for p in pathPoints:
 			xP.append(p[0])
 			yP.append(p[1])
 		pylab.plot(xP,yP, color='r')
@@ -603,7 +611,7 @@ def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, node
 		#pylab.title("nodeID %d: %d %d" % (nodeID, isInterior, isExist))
 		#pylab.title("%d: %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, [%d,%d] [%d,%d]" % (nodeID, maxFront, maxBack, dist1, dist2, matchVar1, matchVar2, angle1, angle2, isExist1, isExist2, isInterior1, isInterior2))
 		pylab.title("%d %s: [%d,%d] [%d,%d] %1.2f %1.2f" % (nodeID, repr(pathIDs), isExist1, isExist2, isInterior1, isInterior2, contigFrac, angDiff2))
-		pylab.savefig("multi_departure_%04u.png" % pathPlotCount)
+		pylab.savefig("multi_departure_%04u_%04u.png" % (hypID, pathPlotCount))
 			
 	print "multi_departure %d: %1.2f %1.2f %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, [%d,%d] [%d,%d], [%d,%d]" % (nodeID, angDiff2, contigFrac, maxFront, maxBack, dist1, dist2, matchVar1, matchVar2, angle1, angle2, isExist1, isExist2, isInterior1, isInterior2, frontDepI, backDepI)
 	

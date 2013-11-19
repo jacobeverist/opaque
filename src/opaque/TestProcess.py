@@ -282,9 +282,11 @@ class TestProcess(SnakeControl):
 
 			#self.mapGraph.loadDataSeries("../results/result_2013_11_04_cross", 40)
 			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 60)
+			self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 238)
 
 			#self.mapGraph.loadDataSeries("../results/result_2013_11_04_Y_junction", 60)
-			self.mapGraph.loadSeries("../results/result_2013_08_16_Y_junction_complete", 60)
+			#self.mapGraph.loadSeries("../results/result_2013_08_16_Y_junction_complete", 60)
+			#self.mapGraph.loadSeries("../results/result_2013_08_16_Y_junction_complete", 290)
 			
 			#self.mapGraph.newNode(0.0, self.direction)
 			#self.mapGraph.forceUpdate(False)

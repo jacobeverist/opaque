@@ -1,5 +1,5 @@
 import multiprocessing as processing
-import ctypes, os
+import ctypes, os, sys
 from SplineFit import SplineFit
 import gen_icp
 from Pose import Pose
@@ -43,6 +43,12 @@ def __num_processors():
 
 def __remote_multiGenerate(rank, qin, qout):
 
+	sys.stdout = open("gen_" + str(os.getpid()) + ".out", "w")
+	sys.stderr = open("gen_" + str(os.getpid()) + ".err", "w")
+	print 'module name:', __name__
+	print 'parent process:', os.getppid()
+	print 'process id:', os.getpid()
+
 	print "started __remote_multiMovePath"
 
 	while 1:
@@ -69,6 +75,7 @@ def batchGenerate(mapHyps):
 	global pool_generate
 	global qin_generate
 	global qout_generate
+
 
 
 	ndata = len(mapHyps)
@@ -160,6 +167,12 @@ def batchGenerate(mapHyps):
 
 
 def __remote_multiEval(rank, qin, qout):
+
+	sys.stdout = open("eval_" + str(os.getpid()) + ".out", "w")
+	sys.stderr = open("eval_" + str(os.getpid()) + ".err", "w")
+	print 'module name:', __name__
+	print 'parent process:', os.getppid()
+	print 'process id:', os.getpid()
 
 	print "started __remote_multiEval"
 
@@ -296,7 +309,7 @@ def computeEvalNode(mapHyp, nodeID1):
 	hull1 = poseData.aHulls[nodeID1]
 	medial1 = poseData.medialAxes[nodeID1]
 	origPose1 = mapHyp.origPoses[nodeID1]
-		
+
 	splicedPaths1 = mapHyp.splicePathIDs(orderedPathIDs1)
 
 	#print "received", len(splicedPaths1), "spliced paths from path IDs", orderedPathIDs1
@@ -340,6 +353,12 @@ def computeEvalNode(mapHyp, nodeID1):
 
 
 def __remote_multiMovePath(rank, qin, qout):
+
+	sys.stdout = open("move_" + str(os.getpid()) + ".out", "w")
+	sys.stderr = open("move_" + str(os.getpid()) + ".err", "w")
+	print 'module name:', __name__
+	print 'parent process:', os.getppid()
+	print 'process id:', os.getpid()
 
 	print "started __remote_multiMovePath"
 
@@ -469,6 +488,12 @@ def batchMovePath(mapHyps, nodeID, direction, distEst = 1.0):
 
 def __remote_multiLocalize(rank, qin, qout):
 
+	sys.stdout = open("localize_" + str(os.getpid()) + ".out", "w")
+	sys.stderr = open("localize_" + str(os.getpid()) + ".err", "w")
+	print 'module name:', __name__
+	print 'parent process:', os.getppid()
+	print 'process id:', os.getpid()
+
 	print "started __remote_multiMovePath"
 
 	while 1:
@@ -496,6 +521,7 @@ def batchLocalizePair(mapHyps, nodeID1, nodeID2):
 	global pool_localize
 	global qin_localize
 	global qout_localize
+
 
 	#initGuess
 
@@ -1243,9 +1269,9 @@ def makeMultiJunctionMedialOverlapConstraint(mapHyp, nodeID1, nodeID2, isMove = 
 	results = []
 
 	for k in range(len(poseData.medialLongPaths[nodeID1])):
-		medial1 = mapHyp.medialLongPaths[nodeID1][k]
+		medial1 = poseData.medialLongPaths[nodeID1][k]
 		for l in range(len(poseData.medialLongPaths[nodeID2])):
-			medial2 = mapHyp.medialLongPaths[nodeID2][l]
+			medial2 = poseData.medialLongPaths[nodeID2][l]
 			
 
 			if isMove:
@@ -1397,7 +1423,8 @@ def makeMultiJunctionMedialOverlapConstraint(mapHyp, nodeID1, nodeID2, isMove = 
 					overlapSum /= matchCount
 		
 		
-				medialError, matchCount = computeMedialError(nodeID1, nodeID2, offset, minMatchDist = 0.5, tail1=k, tail2=l)
+				#medialError, matchCount = computeMedialError(nodeID1, nodeID2, offset, minMatchDist = 0.5, tail1=k, tail2=l)
+				medialError, matchCount = computeMedialError(mapHyp, nodeID1, nodeID2, offset, minMatchDist = 0.5, tail1=k, tail2=l)
 
 		
 				" None result used to be covariance matrix "
@@ -1843,7 +1870,7 @@ def generateMap(mapHyp):
 
 def computeLocalDivergence(hypSet, nodeID1, nodeID2):
 
-	poseData = hypSet[0].poseData
+	poseData = hypSet.values()[0].poseData
 
 	for pID, mapHyp in hypSet.iteritems():
 
@@ -1879,7 +1906,7 @@ def computeLocalDivergence(hypSet, nodeID1, nodeID2):
 		
 		" COMPUTE DEPARTURE EVENTS FOR EACH OVERLAPPING PATH SECTION "
 		for pathID in orderedPathIDs1:
-			resultSet = mapHyp.getDeparturePoint(mapHyp.trimmedPaths[pathID], nodeID1, plotIter = False)
+			resultSet = mapHyp.getDeparturePoint(mapHyp.trimmedPaths[pathID], nodeID1, plotIter = True)
 			mapHyp.departureResultSet1 = resultSet
 
 			departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = resultSet
@@ -1891,7 +1918,7 @@ def computeLocalDivergence(hypSet, nodeID1, nodeID2):
 			mapHyp.contig1.append((contigFrac, overlapSum))
 
 		for pathID in orderedPathIDs2:
-			resultSet = mapHyp.getDeparturePoint(mapHyp.trimmedPaths[pathID], nodeID2, plotIter = False)
+			resultSet = mapHyp.getDeparturePoint(mapHyp.trimmedPaths[pathID], nodeID2, plotIter = True)
 			mapHyp.departureResultSet2 = resultSet
 
 			departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = resultSet
@@ -1918,7 +1945,7 @@ def checkForeBranch(hypSet, nodeID1, nodeID2, particleIDs):
 	ANG_THRESH = 1.047
 
 	newHyps = {}
-	poseData = hypSet[0].poseData
+	poseData = hypSet.values()[0].poseData
 
 
 	for pID, mapHyp in hypSet.iteritems():
@@ -2041,7 +2068,7 @@ def checkBackBranch(hypSet, nodeID1, nodeID2, particleIDs):
 	ANG_THRESH = 1.047
 
 	newHyps = {}
-	poseData = hypSet[0].poseData
+	poseData = hypSet.values()[0].poseData
 
 	for pID, mapHyp in hypSet.iteritems():
 
@@ -2151,7 +2178,7 @@ def checkBackBranch(hypSet, nodeID1, nodeID2, particleIDs):
 @logFunction
 def addToPaths(particleIDs, hypSet, nodeID1, nodeID2):
 
-	poseData = hypSet[0].poseData
+	poseData = hypSet.values()[0].poseData
 
 	newHyps = {}
 
