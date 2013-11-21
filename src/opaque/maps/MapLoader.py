@@ -25,7 +25,7 @@ class MapLoader:
 		self.probe = probe
 		self.contacts = contacts		
 		#self.mapAlgorithm = PoseGraph.PoseGraph(self.probe, self.contacts)	
-		self.mapAlgorithm = BayesMapper.BayesMapper(self.probe)	
+		self.mapAlgorithm = BayesMapper.BayesMapper(self.probe.getWalls())	
 
 		self.localNodes = []
 

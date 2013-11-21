@@ -488,6 +488,7 @@ def getTangentIntersections(path1, path2, frontDepI, backDepI, path1FrontDepI, p
 		return i_f, i_b, juncForeAng, juncBackAng
 
 
+@logFunction
 def computePathAngleVariance(pathSamples):
 	pathVar = []
 	
@@ -591,10 +592,12 @@ class MapState:
 		for i in range(1000):
 			self.colors.append((random.random(),random.random(),random.random()))
 
+	@logFunction
 	def updatePoseData(self, poseData):
 		self.poseData = deepcopy(poseData)
 		print "updated poseData:", poseData.numNodes, self.poseData.numNodes
 
+	@logFunction
 	def copy(self, hypothesisID):
 
 		print "creating hypothesis", hypothesisID
@@ -813,16 +816,20 @@ class MapState:
 
 		return globJuncPose
 			
+	@logFunction
 	def getNodes(self, pathID):
 		return self.pathClasses[pathID]["nodeSet"]
 	
+	@logFunction
 	def getPathIDs(self):
 		return self.pathClasses.keys()
 	
+	@logFunction
 	def getParentPathID(self, pathID):
 		parentID = self.pathClasses[pathID]["parentID"]
 		return parentID
 	
+	@logFunction
 	def getPath(self, pathID):
 		return self.pathClasses[pathID]
 	
@@ -3680,6 +3687,7 @@ class MapState:
 
 
 	" get the trimmed version of child and parent paths that are overlapping in some fashion "
+	@logFunction
 	def getOverlapDeparture(self, parentPathID, childPathID, paths, plotIter = False):
 
 		"Assumption:  one section of the medial axis is closely aligned with the path "		   

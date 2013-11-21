@@ -41,11 +41,12 @@ def printStack():
 
 class BayesMapper:
 
-	def __init__(self, probe):
+	def __init__(self, walls):
 		
-		self.probe = probe
+		#self.probe = probe
 		
-		self.walls = self.probe.getWalls()
+		#self.walls = self.probe.getWalls()
+		self.walls = walls
 
 		self.poseData = PoseData()
 		
