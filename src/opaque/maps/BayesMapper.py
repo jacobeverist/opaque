@@ -82,6 +82,9 @@ class BayesMapper:
 		self.trimCount = 0
 		self.multiDepCount = 0
 
+
+		self.tempCount = 0
+
 		#self.overlapPlotCount = 0
 		#self.pathDrawCount = 0
 		#self.candidateCount = 0
@@ -295,6 +298,7 @@ class BayesMapper:
 				""" LOCALIZE NODE PAIR """
 				#localizePair(currHyp, nodeID1, nodeID2)
 
+				self.propagateBranchStates(currHyp, nodeID1)
 
 				#currHyp.generatePaths()
 				self.drawPathAndHull2(currHyp)
@@ -343,6 +347,78 @@ class BayesMapper:
 		#	mapHyp.nodePoses[k] = self.nodeHash[k].getGlobalGPACPose()
 
 		return hypSet
+
+
+	@logFunction
+	def propagateBranchStates(self, mapHyp, nodeID, numGuesses = 11, excludePathIDs = []):
+
+		poseData = mapHyp.poseData
+
+		allSplices, terminals, junctions = self.getAllSplices(plotIter = False)
+
+		for pathID, pathDesc in mapHyp.pathClasses.iteritems():
+			if pathID != 0:
+				"""
+				this is a branching path,
+				now we need hypotheses about where it's branching from.
+
+				pathDesc = {"parentID" : parentID,
+						"branchNodeID" : branchNodeID,
+						"localJunctionPose" : localJunctionPose,
+						"sameProb" : {},
+						"nodeSet" : [],
+						"globalJunctionPose" : globalJunctionPose }		
+				"""
+				pathSpline = SplineFit(self.paths[pathID])
+				globalPoint = pathDesc["globalJunctionPose"]
+				minDist, uVal, splinePoint = pathSpline.findClosestPoint(globalPoint)
+				arcDist = pathSpline.dist_u(uVal)
+				totalDist = pathSpline.dist_u(1.0)
+				initialPart = [pathDesc["parentID"], pathDesc["globalJunctionPose"], arcDist]
+
+				particles = []
+				for k in range(numGuesses):
+					newArcDist = random.gauss(arcDist,totalDist)
+					if newArcDist <= totalDist and newArcDist >= 0.0:
+						" NOTE:  angle is the tangent angle, not branch angle "
+						newJuncPose = pathSpline.getPointOfDist(newArcDist)
+						particles.append([initialPart[0], newJuncPose, newArcDist])
+
+						trimmedPaths = mapHyp.trimmedPaths
+						
+						#for k in range(len(trimmedPaths)):
+						for k,path in trimmedPaths.iteritems():
+							#path = trimmedPaths[k]
+							print "path has", len(path), "points"
+							xP = []
+							yP = []
+							for p in path:
+								xP.append(p[0])
+								yP.append(p[1])
+
+							ax4.plot(xP,yP, color = self.colors[k], linewidth=4)
+
+							globJuncPose = mapHyp.getGlobalJunctionPose(k)
+							if globJuncPose != None:
+								pylab.scatter([globJuncPose[0],], [globJuncPose[1],], color='k')
+							
+						self.plotEnv()			
+							
+						pylab.savefig("bayes_plot_%04u.png" % self.tempCount )
+						self.tempCount += 1
+
+						" draw env "
+						" draw trimmed path "
+						" draw points "
+
+		" initial distribution of particles representing branching point, angle, and parent path "
+		" do the particles first. "
+
+
+
+		" now do the fitting of the path super-axis to the different splices "
+
+		return
 
 
 	@logFunction
