@@ -354,7 +354,7 @@ class BayesMapper:
 
 		poseData = mapHyp.poseData
 
-		allSplices, terminals, junctions = self.getAllSplices(plotIter = False)
+		allSplices, terminals, junctions = mapHyp.getAllSplices(plotIter = False)
 
 		for pathID, pathDesc in mapHyp.pathClasses.iteritems():
 			if pathID != 0:
@@ -369,7 +369,9 @@ class BayesMapper:
 						"nodeSet" : [],
 						"globalJunctionPose" : globalJunctionPose }		
 				"""
-				pathSpline = SplineFit(self.paths[pathID])
+				parentID = pathDesc["parentID"]
+
+				pathSpline = SplineFit(mapHyp.paths[parentID])
 				globalPoint = pathDesc["globalJunctionPose"]
 				minDist, uVal, splinePoint = pathSpline.findClosestPoint(globalPoint)
 				arcDist = pathSpline.dist_u(uVal)
@@ -378,38 +380,49 @@ class BayesMapper:
 
 				particles = []
 				for k in range(numGuesses):
-					newArcDist = random.gauss(arcDist,totalDist)
+					#newArcDist = random.gauss(arcDist,totalDist)
+					#newArcDist = random.gauss(arcDist,1.0)
+
+					newArcDist = (k / float(numGuesses-1)) * totalDist
+
 					if newArcDist <= totalDist and newArcDist >= 0.0:
 						" NOTE:  angle is the tangent angle, not branch angle "
 						newJuncPose = pathSpline.getPointOfDist(newArcDist)
 						particles.append([initialPart[0], newJuncPose, newArcDist])
 
-						trimmedPaths = mapHyp.trimmedPaths
-						
-						#for k in range(len(trimmedPaths)):
-						for k,path in trimmedPaths.iteritems():
-							#path = trimmedPaths[k]
-							print "path has", len(path), "points"
-							xP = []
-							yP = []
-							for p in path:
-								xP.append(p[0])
-								yP.append(p[1])
+				trimmedPaths = mapHyp.trimmedPaths
+				
+				pylab.clf() 
+				#for k in range(len(trimmedPaths)):
+				for k,path in trimmedPaths.iteritems():
+					#path = trimmedPaths[k]
+					print "path has", len(path), "points"
+					xP = []
+					yP = []
+					for p in path:
+						xP.append(p[0])
+						yP.append(p[1])
 
-							ax4.plot(xP,yP, color = self.colors[k], linewidth=4)
+					pylab.plot(xP,yP, color = self.colors[k], linewidth=4)
 
-							globJuncPose = mapHyp.getGlobalJunctionPose(k)
-							if globJuncPose != None:
-								pylab.scatter([globJuncPose[0],], [globJuncPose[1],], color='k')
-							
-						self.plotEnv()			
-							
-						pylab.savefig("bayes_plot_%04u.png" % self.tempCount )
-						self.tempCount += 1
+				xP = []
+				yP = []
+				for part in particles:
+					globJuncPose = part[1]
+					xP.append(globJuncPose[0])
+					yP.append(globJuncPose[1])
 
-						" draw env "
-						" draw trimmed path "
-						" draw points "
+
+				pylab.scatter(xP, yP, color='k', zorder=10)
+					
+				self.plotEnv()			
+					
+				pylab.savefig("bayes_plot_%04u.png" % self.tempCount )
+				self.tempCount += 1
+
+				" draw env "
+				" draw trimmed path "
+				" draw points "
 
 		" initial distribution of particles representing branching point, angle, and parent path "
 		" do the particles first. "
@@ -1576,5 +1589,3 @@ class BayesMapper:
 		pylab.savefig("pathAndHull_%04u_%04u.png" % (self.pathDrawCount, mapHyp.hypothesisID))
 
 		self.pathDrawCount += 1
-			
-
