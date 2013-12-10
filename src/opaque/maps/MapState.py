@@ -2725,7 +2725,10 @@ class MapState:
 		def gridToReal(indices):
 			i = indices[0]
 			j = indices[1]
-			point = [(i - numPixel/2 - 1)*(pixelSize/2.0) + pixelSize/2.0, (j - numPixel/2 - 1)*(pixelSize/2.0) + pixelSize/2.0]
+			pX = (i - numPixel/2 - 1)*(pixelSize/2.0) + pixelSize/2.0
+			pY = (j - numPixel/2 - 1)*(pixelSize/2.0) + pixelSize/2.0
+			#point = ((i - numPixel/2 - 1)*(pixelSize/2.0) + pixelSize/2.0, (j - numPixel/2 - 1)*(pixelSize/2.0) + pixelSize/2.0)
+			point = (pX,pY)
 			return point
 	
 		" CONVERT HULL TO GRID COORDINATES "
@@ -2865,7 +2868,7 @@ class MapState:
 			theoryLeaf = []
 			leafMag = 0.02
 			for i in range(5):
-				newPoint = [theoryVec[0]*leafMag + theoryJuncPoint[0], theoryVec[1]*leafMag + theoryJuncPoint[1]]
+				newPoint = (theoryVec[0]*leafMag + theoryJuncPoint[0], theoryVec[1]*leafMag + theoryJuncPoint[1])
 				theoryLeaf.append(newPoint)
 				leafMag += 0.02
 
@@ -2920,6 +2923,106 @@ class MapState:
 		leafSegments, internalSegments = computePathSegments(junctions, leaves, uni_mst)
 
 		print "computePathSegments:", len(leafSegments), len(internalSegments), "paths from", len(junctions), "junctions and", len(leaves), "leaves", [len(pMem) for pMem in leafSegments], [len(pMem) for pMem in internalSegments]
+
+
+		"""
+		1) convert to real
+		2) get theory leaf as well
+		3) extrapolate the leaf segments to the boundary of the hull
+		4) spline smooth
+		5) convert to oriented points
+		6) return set of points based on return condition
+		"""
+
+		realLeafSegments = []
+		realInternalSegments = []
+		for seg in leafSegments:
+			newSeg = []
+			for p in seg:
+				newSeg.append(gridToReal(p))
+
+			realLeafSegments.append(newSeg)
+
+		for seg in internalSegments:
+			newSeg = []
+			for p in seg:
+				newSeg.append(gridToReal(p))
+			realInternalSegments.append(newSeg)
+
+		longLeafSegments = []
+		for seg in realLeafSegments:
+
+			backVec = [0.,0.]
+			indic = range(3)
+			indic.reverse()
+			
+			for i in indic:
+				if i+2 < len(seg):
+					p1 = seg[-i-3]
+					p2 = seg[-i-1]
+					vec = [p2[0]-p1[0], p2[1]-p1[1]]
+					backVec[0] += vec[0]
+					backVec[1] += vec[1]
+		
+			backMag = math.sqrt(backVec[0]*backVec[0] + backVec[1]*backVec[1])
+		
+			backVec[0] /= backMag
+			backVec[1] /= backMag
+		
+			newP2 = (seg[-1][0] + backVec[0]*10, seg[-1][1] + backVec[1]*10)
+		
+			realSeg = deepcopy(seg)
+
+			realSeg.append(newP2)
+			
+	
+			" take the long length segments at tips of medial axis"
+			edge2 = realSeg[-2:]
+			
+			backVec = [edge2[1][0]-edge2[0][0], edge2[1][1]-edge2[0][1]]
+			backMag = math.sqrt(backVec[0]*backVec[0] + backVec[1]*backVec[1])
+			
+			backVec[0] /= backMag
+			backVec[1] /= backMag
+			
+			" make a smaller version of these edges "
+			newP2 = (edge2[0][0] + backVec[0]*2, edge2[0][1] + backVec[1]*2)
+	
+			edge2 = [edge2[0], newP2]
+
+			" find the intersection points with the hull "
+			hull = vertices
+			interPoints = []
+			for k in range(len(hull)-1):
+				hullEdge = [hull[k],hull[k+1]]
+				isIntersect2, point2 = Intersect(edge2, hullEdge)
+				if isIntersect2:
+					interPoints.append(point2)
+					break
+			
+			" replace the extended edges with a termination point at the hull edge "			
+			realSeg = realSeg[:-2]
+			
+			if isIntersect2:
+				realSeg.append(point2)
+	
+			longLeafSegments.append(realSeg)
+
+
+		smoothLeafSegments = []
+		smoothInternalSegments = []
+
+		for seg in longLeafSegments:
+			leafSpline = SplineFit(seg, smooth=0.1)
+			leafPoints = leafSpline.getUniformSamples()
+			smoothLeafSegments.append(leafPoints)
+
+		for seg in realInternalSegments:
+			internalSpline = SplineFit(seg, smooth=0.1)
+			internalPoints = internalSpline.getUniformSamples()
+			smoothInternalSegments.append(internalPoints)
+
+
 		
 
 		" FOR EVERY PAIR OF LEAVES, SAVE ITS PATH IF ITS LONG ENOUGH "
@@ -3058,10 +3161,10 @@ class MapState:
 
 
 
-	
 
 
-		
+
+
 		print "longPaths:"
 		for longPath in longPaths:
 			print longPath[2]
@@ -3079,7 +3182,8 @@ class MapState:
 			juncInds = longPaths[k][2]
 			jGrids = []
 			for index in juncInds:
-				jGrids.append(longPaths[k][1][index])
+				if index != None:
+					jGrids.append(longPaths[k][1][index])
 			juncGrids.append(jGrids)
 
 			longPathLengths.append(longPaths[k][0])
@@ -3113,7 +3217,8 @@ class MapState:
 			juncInds = juncIndices[k]
 			jReals = []
 			for index in juncInds:
-				jReals.append(copy(longPaths[k][index]))
+				if index != None:
+					jReals.append(copy(longPaths[k][index]))
 			juncReals.append(jReals)
 					
 
@@ -3314,13 +3419,15 @@ class MapState:
 			jIndices = []
 
 			for jPoint in jReals:
+				index = mLongPath.index(jPoint)
+				jIndices.append(index)
 
+				"""
 				try:
-					index = mLongPath.index(jPoint)
 				except:
 					jIndices.append(None)
 				else:
-					jIndices.append(index)
+				"""
 					
 			juncLongIndices.append(jIndices)
 
@@ -3342,6 +3449,10 @@ class MapState:
 
 
 		self.longPathJunctions[pathID]["juncLongIndices"] = juncLongIndices
+
+		self.longPathJunctions[pathID]["leafSegments"] = smoothLeafSegments
+		self.longPathJunctions[pathID]["internalSegments"] = smoothInternalSegments
+
 
 		juncPoints = []
 		juncArmPoints = []

@@ -220,7 +220,9 @@ def computePathSegments(juncIDs, leafIDs, tree):
 			isVisited[jID] = 1
 
 			for childNode in tree[jID]:
-				retPaths.append(getSegPaths(childNode, otherJuncIDs, leafIDs, [jID], tree, isVisited))
+				resultPath = getSegPaths(childNode, otherJuncIDs, leafIDs, [jID], tree, isVisited)
+				if len(resultPath) > 2:
+					retPaths.append(resultPath)
 	else:
 		isVisited = {}
 		for k, v in tree.items():
@@ -232,7 +234,9 @@ def computePathSegments(juncIDs, leafIDs, tree):
 		isVisited[lID] = 1
 
 		for childNode in tree[lID]:
-			retPaths.append(getSegPaths(childNode, juncIDs, otherLeafIDs, [lID], tree, isVisited))
+			resultPath = getSegPaths(childNode, juncIDs, otherLeafIDs, [lID], tree, isVisited)
+			if len(resultPath) > 2:
+				retPaths.append(resultPath)
 	
 	for path in retPaths:
 		if path[0] in leafIDs:
@@ -250,6 +254,28 @@ def computePathSegments(juncIDs, leafIDs, tree):
 			raise
 
 
+	" remove duplicate internal path segments "
+	savedSegments = []
+	for j in range(len(internalSegments)):
+		thisSegment = internalSegments[j]	
+
+		thisP0 = thisSegment[0]
+		thisP1 = thisSegment[-1]
+
+		isUnique = True
+		for k in range(len(savedSegments)):
+			savedSeg = savedSegments[k]
+			
+			p0 = savedSeg[0]
+			p1 = savedSeg[-1]
+
+			if thisP0 == p0 and thisP1 == p1 or thisP0 == p1 and thisP1 == p0:
+				isUnique = False
+				
+		if isUnique:
+			savedSegments.append(thisSegment)
+
+	internalSegments = savedSegments
 
 	return leafSegments, internalSegments
 

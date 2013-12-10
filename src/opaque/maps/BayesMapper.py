@@ -419,7 +419,8 @@ class BayesMapper:
 
 				junctionDetails = mapHyp.longPathJunctions[pathID]
 
-				print "junction details:", pathID, junctionDetails
+				#print "junction details:", pathID, junctionDetails
+
 
 
 
@@ -440,6 +441,17 @@ class BayesMapper:
 						localLongPath.append(p1)
 
 					localMedialLongPath.append(localLongPath)
+
+				localPathSegs = []
+				smoothPathSegs = junctionDetails["leafSegments"] + junctionDetails["internalSegments"]
+				for k in range(len(smoothPathSegs)):
+					pathSeg = smoothPathSegs[k]
+					localSeg = []
+					for p in pathSeg:
+						p1 = origJuncOrigin.convertGlobalToLocal(p)
+						localSeg.append(p1)
+
+					localPathSegs.append(localSeg)
 
 				"""
 				xP = []
@@ -471,6 +483,7 @@ class BayesMapper:
 
 					offsetOrigin1 = Pose(modJuncPose)
 
+					"""
 					for k in range(len(localMedialLongPath)):
 						localLongPath = localMedialLongPath[k]
 						xP1 = []
@@ -480,8 +493,20 @@ class BayesMapper:
 							xP1.append(p1[0])
 							yP1.append(p1[1])
 						pylab.plot(xP1,yP1,color=(0.5,0.5,0.5), zorder=8)
+					"""
 
-				pylab.scatter(xP, yP, color='k', zorder=10)
+					for k in range(len(localPathSegs)):
+						localSeg = localPathSegs[k]
+						xP1 = []
+						yP1 = []
+						for p in localSeg:
+							p1 = offsetOrigin1.convertLocalToGlobal(p)
+							xP1.append(p1[0])
+							yP1.append(p1[1])
+						pylab.plot(xP1,yP1,color=(0.5,0.5,0.5), zorder=9)
+
+				pylab.scatter(xP, yP, color='k', zorder=8)
+				pylab.title("pathID: %d, localPathSegs %d" % (pathID, len(localPathSegs)))
 					
 				self.plotEnv()			
 					
