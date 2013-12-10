@@ -167,6 +167,94 @@ def computeHullAxis(nodeID, node2, tailCutOff = False):
 	return hull2, medial2
 """
 
+def getSegPaths(node, juncIDs, leafIDs, currPath, tree, isVisited):
+
+	if node in juncIDs:
+		isVisited[node] = 1
+		nextPath = copy(currPath) + [node]
+		return nextPath
+
+	if node in leafIDs:
+		isVisited[node] = 1
+		nextPath = copy(currPath) + [node]
+		return nextPath
+
+	isVisited[node] = 1
+	nextPath = copy(currPath) + [node]
+
+	for childNode in tree[node]:
+		" if we're not going backwards "
+		if not isVisited[childNode]:
+			return getSegPaths(childNode, juncIDs, leafIDs, nextPath, tree, isVisited)
+
+	#allPaths = []
+	#for childNode in tree[node]:
+	#	thesePaths = getSegPaths(childNode, juncIDs, leafIDs, nextPath, tree, isVisited)
+	#	allPaths += thesePaths
+	
+	" should never reach, defective data or algorithm"
+
+	print "nextPath:", nextPath
+	print "juncIDs:", juncIDs
+	print "leafIDs:", leafIDs
+	raise
+	return nextPath
+
+def computePathSegments(juncIDs, leafIDs, tree):
+
+	leafSegments = []
+	internalSegments = []
+
+	retPaths = []
+
+	if len(juncIDs) > 0:
+
+		for i in range(len(juncIDs)): 
+			isVisited = {}
+			for k, v in tree.items():
+				isVisited[k] = 0
+
+			jID = juncIDs[i]
+			otherJuncIDs = copy(juncIDs)
+			otherJuncIDs.remove(jID)
+			isVisited[jID] = 1
+
+			for childNode in tree[jID]:
+				retPaths.append(getSegPaths(childNode, otherJuncIDs, leafIDs, [jID], tree, isVisited))
+	else:
+		isVisited = {}
+		for k, v in tree.items():
+			isVisited[k] = 0
+
+		lID = leafIDs[0]
+		otherLeafIDs = copy(leafIDs)
+		otherLeafIDs.remove(lID)
+		isVisited[lID] = 1
+
+		for childNode in tree[lID]:
+			retPaths.append(getSegPaths(childNode, juncIDs, otherLeafIDs, [lID], tree, isVisited))
+	
+	for path in retPaths:
+		if path[0] in leafIDs:
+			path.reverse()
+			leafSegments.append(path)
+
+		elif path[-1] in leafIDs:
+			leafSegments.append(path)
+
+		elif path[0] in juncIDs and path[-1] in juncIDs:
+			internalSegments.append(path)
+
+		else:
+			print len(path), path[0], path[-1], juncIDs, leafIDs
+			raise
+
+
+
+	return leafSegments, internalSegments
+
+
+
 def getLongestPath(node, currSum, currPath, tree, isVisited, nodePath, nodeSum):
 
 	if isVisited[node]:

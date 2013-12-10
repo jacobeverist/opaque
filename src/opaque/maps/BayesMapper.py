@@ -371,6 +371,8 @@ class BayesMapper:
 				"""
 				parentID = pathDesc["parentID"]
 
+
+
 				pathSpline = SplineFit(mapHyp.paths[parentID])
 				globalPoint = pathDesc["globalJunctionPose"]
 				minDist, uVal, splinePoint = pathSpline.findClosestPoint(globalPoint)
@@ -388,7 +390,7 @@ class BayesMapper:
 					if newArcDist <= totalDist and newArcDist >= 0.0:
 						" NOTE:  angle is the tangent angle, not branch angle "
 						newJuncPose = pathSpline.getPointOfDist(newArcDist)
-						particles.append([initialPart[0], newJuncPose, newArcDist])
+						particles.append([initialPart[0], newJuncPose, newArcDist, pathID])
 
 				trimmedPaths = mapHyp.trimmedPaths
 				
@@ -405,13 +407,79 @@ class BayesMapper:
 
 					pylab.plot(xP,yP, color = self.colors[k], linewidth=4)
 
+				"""
+				1) point that has the junction
+				2) direction of junction
+				3) set of long paths that include junction path  (only 2)
+
+				"""
+
+
+				medialLongPath = mapHyp.medialLongPaths[pathID]
+
+				junctionDetails = mapHyp.longPathJunctions[pathID]
+
+				print "junction details:", pathID, junctionDetails
+
+
+
+				globalPath1 = mapHyp.paths[pathID]
+				origJuncPose = mapHyp.pathClasses[pathID]["globalJunctionPose"]
+				origJuncOrigin = Pose(origJuncPose)
+				localPath1 = []
+				for p in globalPath1:
+					p1 = origJuncOrigin.convertGlobalToLocal(p)
+					localPath1.append(p1)
+
+				localMedialLongPath = []
+				for k in range(len(medialLongPath)):
+					longPath = medialLongPath[k]
+					localLongPath = []
+					for p in longPath:
+						p1 = origJuncOrigin.convertGlobalToLocal(p)
+						localLongPath.append(p1)
+
+					localMedialLongPath.append(localLongPath)
+
+				"""
+				xP = []
+				yP = []
+				for p in globalPath1:
+					xP.append(p[0])
+					yP.append(p[1])
+				pylab.plot(xP,yP,color=(0.5,1.0,0.5), zorder=8)
+
+				xP = []
+				yP = []
+				for p in localPath1:
+					xP.append(p[0])
+					yP.append(p[1])
+				pylab.plot(xP,yP,color=(1.0,0.5,0.5), zorder=8)
+				"""
+
 				xP = []
 				yP = []
 				for part in particles:
+					#pathID1 = part[3]
 					globJuncPose = part[1]
 					xP.append(globJuncPose[0])
 					yP.append(globJuncPose[1])
 
+					modJuncPose = copy(globJuncPose)
+					modJuncPose[2] = origJuncPose[2]
+
+
+					offsetOrigin1 = Pose(modJuncPose)
+
+					for k in range(len(localMedialLongPath)):
+						localLongPath = localMedialLongPath[k]
+						xP1 = []
+						yP1 = []
+						for p in localLongPath:
+							p1 = offsetOrigin1.convertLocalToGlobal(p)
+							xP1.append(p1[0])
+							yP1.append(p1[1])
+						pylab.plot(xP1,yP1,color=(0.5,0.5,0.5), zorder=8)
 
 				pylab.scatter(xP, yP, color='k', zorder=10)
 					
@@ -745,7 +813,7 @@ class BayesMapper:
 			#self.drawConstraints(mapHyp, self.statePlotCount)
 			self.statePlotCount += 1
 			self.drawPathAndHull(mapHyp)
-						
+			
 			" offset between paths "
 			for nodeID in mergeNodes1:
 	

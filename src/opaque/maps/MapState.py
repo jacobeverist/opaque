@@ -11,7 +11,7 @@ from subprocess import Popen, PIPE
 import Image
 from medialaxis import computeMedialAxis
 import graph
-from LocalNode import getLongestPath
+from LocalNode import getLongestPath, computePathSegments
 import gen_icp
 from SplineFit import SplineFit
 import pylab
@@ -563,6 +563,7 @@ class MapState:
 							"sameProb" : {}, "nodeSet" : [], "globalJunctionPose" : None}
 		self.pathIDs += 1
 
+		self.longPathJunctions = {}
 		self.medialLongPaths = {}
 		self.theoryMedialLongPaths = {}
 
@@ -2503,6 +2504,7 @@ class MapState:
  
 		self.theoryMedialLongPaths[pathID] = []
 		self.medialLongPaths[pathID] = []
+		self.longPathJunctions[pathID] = {}
 
 		print "caseA"
 		sys.stdout.flush()
@@ -2870,6 +2872,13 @@ class MapState:
 
 			print "theoryLeaf:", theoryLeaf
 			
+
+			"""
+			If there is a node of degree > 2, use these nodes as the junction points.
+			If there is no nodes of degree > 2, find the closest node to the theoretical junction point and use this as the junction index 
+			"""
+
+
 			if len(junctions) > 0:
 				
 				for junc in junctions:
@@ -2902,7 +2911,16 @@ class MapState:
 	
 			" SAVE THE RESULTING PATH DATA STRUCTURE "
 			nodePaths[leaf] = nodePath
-			
+
+		#leafSegments = []
+		#internalSegments = []
+		#isVisited = {}
+		#nodeSum = {}
+		#nodePath = {}
+		leafSegments, internalSegments = computePathSegments(junctions, leaves, uni_mst)
+
+		print "computePathSegments:", len(leafSegments), len(internalSegments), "paths from", len(junctions), "junctions and", len(leaves), "leaves", [len(pMem) for pMem in leafSegments], [len(pMem) for pMem in internalSegments]
+		
 
 		" FOR EVERY PAIR OF LEAVES, SAVE ITS PATH IF ITS LONG ENOUGH "
 		" should have X choose 2 combinations"
@@ -3052,9 +3070,19 @@ class MapState:
 		longPaths.sort(reverse=True)
 		
 		" REMOVE SIZE FROM TUPLE  "
+		juncGrids = []
 		juncIndices = []
+		longPathLengths = []
 		for k in range(len(longPaths)):
 			juncIndices.append(longPaths[k][2])
+
+			juncInds = longPaths[k][2]
+			jGrids = []
+			for index in juncInds:
+				jGrids.append(longPaths[k][1][index])
+			juncGrids.append(jGrids)
+
+			longPathLengths.append(longPaths[k][0])
 			longPaths[k] = longPaths[k][1]
 		
 		print "juncIndices:", juncIndices
@@ -3072,6 +3100,7 @@ class MapState:
 		
 		print "leafPairs:", leafPairs
 
+		juncReals = []
 		for k in range(len(longPaths)):
 			path = longPaths[k]
 			realPath = []
@@ -3079,11 +3108,18 @@ class MapState:
 				realPath.append(gridToReal(p))
 			
 			longPaths[k] = realPath
+			#juncReals.append(longPaths[k][juncIndices[k]])
+
+			juncInds = juncIndices[k]
+			jReals = []
+			for index in juncInds:
+				jReals.append(copy(longPaths[k][index]))
+			juncReals.append(jReals)
 					
 
 		#self.medialLongPaths = []
 		juncAngSet = []
-			
+
 		print len(longPaths), "long paths"
 		for n in range(len(longPaths)):
 			
@@ -3178,22 +3214,39 @@ class MapState:
 			print "globalJunctionPoint:", globalJunctionPoint
 			print "juncIndices:", juncIndices[n]
 
+			
+			jReals = juncReals[n]
+			mLongPath = self.medialLongPaths[pathID][n]
+			jIndices = []
+
+			for jPoint in jReals:
+
+				try:
+					index = mLongPath.index(jPoint)
+				except:
+					jIndices.append(None)
+				else:
+					jIndices.append(index)
+					
+
+
 			juncAngs = []
 			if globalJunctionPoint != None:
-				for juncInd in juncIndices[n]:
+				for juncInd in jIndices:
 					if juncInd != None:
+
 						frontVec = [0.,0.]
 						backVec = [0.,0.]
 						indic = range(3)
 						indic.reverse()
 						
-						print "len(longPath):", len(longPath)
+						print "len(mLongPath):", len(mLongPath)
 						print "juncInd:", juncInd
 
 						highIndex = juncInd+4
 						highMod = highIndex
-						if highIndex+4 >= len(longPath):
-							highMod = len(longPath) - 5
+						if highIndex+4 >= len(mLongPath):
+							highMod = len(mLongPath) - 5
 						
 						lowIndex = juncInd-4
 						lowMod = lowIndex
@@ -3205,14 +3258,14 @@ class MapState:
 						
 						
 						for i in indic:
-							p1 = longPath[i+highMod]
-							p2 = longPath[i+2+highMod]
+							p1 = mLongPath[i+highMod]
+							p2 = mLongPath[i+2+highMod]
 							vec = [p2[0]-p1[0], p2[1]-p1[1]]
 							frontVec[0] += vec[0]
 							frontVec[1] += vec[1]
 					
-							p1 = longPath[-i+lowMod]
-							p2 = longPath[-i+lowMod-2]
+							p1 = mLongPath[-i+lowMod]
+							p2 = mLongPath[-i+lowMod-2]
 							vec = [p2[0]-p1[0], p2[1]-p1[1]]
 							backVec[0] += vec[0]
 							backVec[1] += vec[1]
@@ -3245,10 +3298,93 @@ class MapState:
 					else:
 						juncAngs.append(None)
 			juncAngSet.append(juncAngs)
+
+
 		
 		juncDists = []
 		for junc in allJunctions:
 			juncDists.append(junc[2])
+
+		juncLongIndices = []
+		for k in range(len(self.medialLongPaths[pathID])):
+			
+			jReals = juncReals[k]
+			mLongPath = self.medialLongPaths[pathID][k]
+
+			jIndices = []
+
+			for jPoint in jReals:
+
+				try:
+					index = mLongPath.index(jPoint)
+				except:
+					jIndices.append(None)
+				else:
+					jIndices.append(index)
+					
+			juncLongIndices.append(jIndices)
+
+		juncMedialReals = []
+		for k in range(len(self.medialLongPaths[pathID])):
+			juncInds = juncLongIndices[k]
+			jMedialReals = []
+			for index in juncInds:
+				jMedialReals.append(copy(self.medialLongPaths[pathID][k][index]))
+			juncMedialReals.append(jMedialReals)
+
+		self.longPathJunctions[pathID]["juncIndices"] = juncIndices
+		self.longPathJunctions[pathID]["juncAngSet"] = juncAngSet
+		self.longPathJunctions[pathID]["juncDists"] = juncDists
+		self.longPathJunctions[pathID]["longPathLengths"] = longPathLengths
+		self.longPathJunctions[pathID]["juncMedialReals"] = juncMedialReals
+		self.longPathJunctions[pathID]["juncReals"] = juncReals
+		self.longPathJunctions[pathID]["juncGrids"] = juncGrids
+
+
+		self.longPathJunctions[pathID]["juncLongIndices"] = juncLongIndices
+
+		juncPoints = []
+		juncArmPoints = []
+		juncDesc = {}
+		for k in range(len(juncLongIndices)):
+			juncInds = juncLongIndices[k]
+			juncPnts = []
+			juncArmPnts = []
+			for index in juncInds:
+				jPnt = copy(self.medialLongPaths[pathID][k][index])
+
+				jaPnt1 = self.medialLongPaths[pathID][k][index+1]
+				jaPnt2 = self.medialLongPaths[pathID][k][index-1]
+
+				jPnt = tuple(jPnt)
+				jaPnt1 = tuple(jaPnt1)
+				jaPnt2 = tuple(jaPnt2)
+
+				juncPnts.append(jPnt)
+				juncArmPnts.append((jaPnt1, jaPnt2))
+
+				try:
+					juncDesc[jPnt].append(jaPnt1)
+					juncDesc[jPnt].append(jaPnt2)
+				except:
+					juncDesc[jPnt] = []
+					juncDesc[jPnt].append(jaPnt1)
+					juncDesc[jPnt].append(jaPnt2)
+
+
+			juncPoints.append(juncPnts)
+			juncArmPoints.append(juncArmPnts)
+
+		for k, v in juncDesc.iteritems():
+			v1 = set(v)
+			juncDesc[k] = list(v1)
+
+					
+
+		self.longPathJunctions[pathID]["juncPoints"] = juncPoints
+		self.longPathJunctions[pathID]["juncArmPoints"] = juncArmPoints
+		self.longPathJunctions[pathID]["juncDesc"] = juncDesc
+
 		
 		if False:
 			pylab.clf()
@@ -3327,18 +3463,28 @@ class MapState:
 		
 		print "pathCands:", pathCands
 		
+
+		" TODO: find longest path going to right, longest path going to left through the junction "
+
+
 		
 		" FIXME:  Verify that leaf path exists for the junction point "
 		
 		" select longest path that has the best angle fit "
+		branchArm = None
 		if globalJunctionPoint != None:
 			bestFit = -1
 			minDiff = 1e100
 			for cand in pathCands:
 				k = cand[1]
 				juncAngs = juncAngSet[k]
+				jlIndices = juncLongIndices[k]
 				
-				for angs in juncAngs:
+				#for angs in juncAngs:
+				for l in range(len(juncAngs)):
+
+					angs = juncAngs[l]
+					jIndex = jlIndices[l]
 
 					if angs != None:
 						angDiff1 = angs[0]
@@ -3349,12 +3495,15 @@ class MapState:
 						if fabs(angDiff1) < minDiff:
 							minDiff = fabs(angDiff1)
 							bestFit = k
+							branchArm = self.medialLongPaths[pathID][bestFit][jIndex+1]
 	
 						if fabs(angDiff2) < minDiff:
 							minDiff = fabs(angDiff2)
 							bestFit = k
+							branchArm = self.medialLongPaths[pathID][bestFit][jIndex-1]
 
 				pass
+
 
 
 			if bestFit != -1:
@@ -3362,16 +3511,37 @@ class MapState:
 				if fabs(minDiff) < 1.047:
 
 					print "returning bestFit:", bestFit, minDiff
+					self.longPathJunctions[pathID]["bestFit"] = bestFit
+					self.longPathJunctions[pathID]["branchArm"] = branchArm
 					return self.medialLongPaths[pathID][bestFit], vertices
 
 				else:
+					" FIXME:  return theory junction information if this is selected "
 					print "returning bestFit theory:", theoryJunc
+					self.longPathJunctions[pathID]["bestFit"] = 0
+					self.longPathJunctions[pathID]["branchArm"] = branchArm
 					return self.theoryMedialLongPaths[pathID][0], vertices
 			
 			else:
 				print "not returning bestFit"
 
 		print "returning longest fit"
+
+		maxIndex = 0
+		maxLen = 0
+		for k in range(len(longPathLengths)):
+			if longPathLengths[k] > maxLen:
+				maxIndex = k
+				maxLen = longPathLengths[k]
+
+		self.longPathJunctions[pathID]["bestFit"] = maxIndex
+
+
+		" FIXME: change from selecting any old junction point since "
+		#jIndex = juncLongIndices[maxIndex][0]
+		self.longPathJunctions[pathID]["branchArm"] = self.medialLongPaths[pathID][maxIndex][1]
+
+		return self.medialLongPaths[pathID][maxIndex], vertices
 				
 
 		" find the longest path from each leaf"
