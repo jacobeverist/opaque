@@ -3149,7 +3149,7 @@ class MapState:
 						break
 				
 				" replace the extended edges with a termination point at the hull edge "			
-				medial2 = medial2[1:-2]
+				medial2 = medial2[1:-1]
 				
 				if isIntersect1:
 					medial2.insert(0, point1)
@@ -3230,6 +3230,7 @@ class MapState:
 			
 			longPath = longPaths[n]
 			print "longPath:", len(longPath)
+			print longPath
 			
 			leafPath = deepcopy(longPath)
 			
@@ -3265,12 +3266,14 @@ class MapState:
 		
 			leafPath.insert(0,newP1)
 			leafPath.append(newP2)
+			print "leafPath:", leafPath
 			
 			medial2 = deepcopy(leafPath)
 	
 			" take the long length segments at tips of medial axis"
 			edge1 = medial2[0:2]
 			edge2 = medial2[-2:]
+			print "edge1, edge2 =", edge1, edge2
 			
 			frontVec = [edge1[0][0]-edge1[1][0], edge1[0][1]-edge1[1][1]]
 			backVec = [edge2[1][0]-edge2[0][0], edge2[1][1]-edge2[0][1]]
@@ -3289,6 +3292,8 @@ class MapState:
 			edge1 = [newP1, edge1[1]]
 			edge2 = [edge2[0], newP2]
 
+			print "edge1, edge2 =", edge1, edge2
+
 			" find the intersection points with the hull "
 			hull = vertices
 			interPoints = []
@@ -3306,13 +3311,17 @@ class MapState:
 					interPoints.append(point2)
 					break
 			
+			print isIntersect1, isIntersect2, interPoints
 			" replace the extended edges with a termination point at the hull edge "			
-			medial2 = medial2[1:-2]
+			medial2 = medial2[1:-1]
+
 			
 			if isIntersect1:
 				medial2.insert(0, point1)
 			if isIntersect2:
 				medial2.append(point2)
+
+			print "medial2:", medial2
 
 			self.medialLongPaths[pathID].append(deepcopy(medial2))
 
@@ -3333,6 +3342,7 @@ class MapState:
 				else:
 					jIndices.append(index)
 					
+			print "jIndices:", jIndices
 
 
 			juncAngs = []
@@ -3419,8 +3429,21 @@ class MapState:
 			jIndices = []
 
 			for jPoint in jReals:
-				index = mLongPath.index(jPoint)
-				jIndices.append(index)
+				try:
+					index = mLongPath.index(jPoint)
+				except:
+					print "index failure!"
+					print "jPoint:", jPoint
+					print "jReals:", jReals
+					print "mLongPath:", mLongPath
+					print "juncReals:", juncReals
+					print "juncAngSet:", juncAngSet
+					print "allJunctions:", allJunctions
+					print "juncIndices:", juncIndices
+					print "juncDists:", juncDists
+					raise
+				else:
+					jIndices.append(index)
 
 				"""
 				try:
@@ -3764,7 +3787,7 @@ class MapState:
 				break
 		
 		" replace the extended edges with a termination point at the hull edge "			
-		medial2 = medial2[1:-2]
+		medial2 = medial2[1:-1]
 
 
 		
