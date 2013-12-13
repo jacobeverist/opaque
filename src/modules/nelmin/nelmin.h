@@ -112,8 +112,8 @@
 void nelmin ( int n, double start[], double xmin[], 
 	      double *ynewlo, double reqmin, double step[], int konvge, int kcount, 
 	      int *icount, int *numres, int *ifault,
-	      int numPoses, int numPairs, double *d_matchPairs, double *d_offset, double *d_sum, double *poses_1, double *poses_2,
-	      double uHigh, double uLow, double u1
+	      int numPoses, int numPairs, double *d_matchPairs, double *d_offset, double *d_sum, double *pose1, double *poses_2,
+	      double uHigh, double uLow
 	      )
 {
 
@@ -175,7 +175,7 @@ void nelmin ( int n, double start[], double xmin[],
 
     //y[n] = (*fn)( start );
 
-    y[n] = objFunc(start, d_matchPairs, d_offset, d_sum, numPairs, poses_1, poses_2, numPoses, uHigh, uLow, u1, offset); 
+    y[n] = objFunc(start, d_matchPairs, d_offset, d_sum, numPairs, pose1, poses_2, numPoses, uHigh, uLow, offset); 
 	//printf("y[%d] = %lf\n", n, y[n]);
 
     *icount = *icount + 1;
@@ -191,7 +191,7 @@ void nelmin ( int n, double start[], double xmin[],
       }
 
       //y[j] = (*fn)( start );
-      y[j] = objFunc(start, d_matchPairs, d_offset, d_sum, numPairs, poses_1, poses_2, numPoses, uHigh, uLow, u1, offset);
+      y[j] = objFunc(start, d_matchPairs, d_offset, d_sum, numPairs, pose1, poses_2, numPoses, uHigh, uLow, offset);
 	  //printf("y[%d] = %lf\n", j, y[j]);
       *icount = *icount + 1;
       start[j] = x;
@@ -237,7 +237,7 @@ void nelmin ( int n, double start[], double xmin[],
 
       // CHECK4
       //ystar = (*fn)( &pstar[0] );
-      ystar = objFunc(&pstar[0], d_matchPairs, d_offset, d_sum, numPairs, poses_1, poses_2, numPoses, uHigh, uLow, u1, offset); 
+      ystar = objFunc(&pstar[0], d_matchPairs, d_offset, d_sum, numPairs, pose1, poses_2, numPoses, uHigh, uLow, offset); 
       *icount = *icount + 1;
       //  Successful reflection, so extension.
       if ( ystar < ylo ) {
@@ -245,7 +245,7 @@ void nelmin ( int n, double start[], double xmin[],
           p2star[i] = pbar[i] + ecoeff * ( pstar[i] - pbar[i] );
         }
         //y2star = (*fn)( &p2star[0] );
-        y2star = objFunc(&p2star[0], d_matchPairs, d_offset, d_sum, numPairs, poses_1, poses_2, numPoses, uHigh, uLow, u1, offset); 
+        y2star = objFunc(&p2star[0], d_matchPairs, d_offset, d_sum, numPairs, pose1, poses_2, numPoses, uHigh, uLow, offset); 
         *icount = *icount + 1;
 	//  Check extension.
         if ( ystar < y2star ) {
@@ -271,7 +271,7 @@ void nelmin ( int n, double start[], double xmin[],
             p2star[i] = pbar[i] + ccoeff * ( p[i+ihi*n] - pbar[i] );
           }
           //y2star = (*fn)( &p2star[0] );
-          y2star = objFunc(&p2star[0], d_matchPairs, d_offset, d_sum, numPairs, poses_1, poses_2, numPoses, uHigh, uLow, u1, offset); 
+          y2star = objFunc(&p2star[0], d_matchPairs, d_offset, d_sum, numPairs, pose1, poses_2, numPoses, uHigh, uLow, offset); 
           *icount = *icount + 1;
 	  //  Contract the whole simplex.
           if ( y[ihi] < y2star ) {
@@ -281,7 +281,7 @@ void nelmin ( int n, double start[], double xmin[],
                 xmin[i] = p[i+j*n];
               }
               //y[j] = (*fn)( xmin );
-              y[j] = objFunc(xmin, d_matchPairs, d_offset, d_sum, numPairs, poses_1, poses_2, numPoses, uHigh, uLow, u1, offset); 
+              y[j] = objFunc(xmin, d_matchPairs, d_offset, d_sum, numPairs, pose1, poses_2, numPoses, uHigh, uLow, offset); 
               *icount = *icount + 1;
             }
             ylo = y[0];
@@ -306,7 +306,7 @@ void nelmin ( int n, double start[], double xmin[],
             p2star[i] = pbar[i] + ccoeff * ( pstar[i] - pbar[i] );
           }
           //y2star = (*fn)( &p2star[0] );
-          y2star = objFunc(&p2star[0], d_matchPairs, d_offset, d_sum, numPairs, poses_1, poses_2, numPoses, uHigh, uLow, u1, offset); 
+          y2star = objFunc(&p2star[0], d_matchPairs, d_offset, d_sum, numPairs, pose1, poses_2, numPoses, uHigh, uLow, offset); 
           *icount = *icount + 1;
 	  //
 	  //  Retain reflection?
@@ -354,12 +354,12 @@ void nelmin ( int n, double start[], double xmin[],
       del = step[i] * eps;
       xmin[i] = xmin[i] + del;
       //z = (*fn)( xmin );
-      z = objFunc(xmin, d_matchPairs, d_offset, d_sum, numPairs, poses_1, poses_2, numPoses, uHigh, uLow, u1, offset); 
+      z = objFunc(xmin, d_matchPairs, d_offset, d_sum, numPairs, pose1, poses_2, numPoses, uHigh, uLow, offset); 
       *icount = *icount + 1;
       if ( z < *ynewlo ) { *ifault = 2; break; }
       xmin[i] = xmin[i] - del - del;
       //z = (*fn)( xmin );
-      z = objFunc(xmin, d_matchPairs, d_offset, d_sum, numPairs, poses_1, poses_2, numPoses, uHigh, uLow, u1, offset); 
+      z = objFunc(xmin, d_matchPairs, d_offset, d_sum, numPairs, pose1, poses_2, numPoses, uHigh, uLow, offset); 
       *icount = *icount + 1;
       if ( z < *ynewlo ) { *ifault = 2; break; }
       xmin[i] = xmin[i] + del;

@@ -26,9 +26,29 @@ def ICPcost(matchPairs, int numPairs, initGuess, uHigh, uLow, poses_1, poses_2, 
 	cdef double resultParam[2]
 	cdef double resultSum[1]
 	cdef double resultOffset[3]
+	cdef double u1 = initGuess[0]
+	cdef double c_pose1[3]
+	c_pose1[0] = 0.0
+	c_pose1[1] = 0.0
+	c_pose1[2] = 0.0
+
+
+	if u1 >= 1.0:
+		c_pose1[0] = poses_1[3*(numPoses-1)+0]
+		c_pose1[1] = poses_1[3*(numPoses-1)+1]
+		c_pose1[2] = poses_1[3*(numPoses-1)+2]
+	elif u1 < 0.0:
+		c_pose1[0] = poses_1[0+0]
+		c_pose1[1] = poses_1[0+1]
+		c_pose1[2] = poses_1[0+2]
+	else:
+		c_pose1[0] = poses_1[3*int(u1*(numPoses-1))+0]
+		c_pose1[1] = poses_1[3*int(u1*(numPoses-1))+1]
+		c_pose1[2] = poses_1[3*int(u1*(numPoses-1))+2]
+
+
 	
-	
-	doCost(c_matchPairs, numPairs, c_initGuess, uHigh, uLow, c_poses_1, c_poses_2, numPoses, resultParam, resultSum, resultOffset)	
+	doCost(c_matchPairs, numPairs, c_initGuess, uHigh, uLow, c_pose1, c_poses_2, numPoses, resultParam, resultSum, resultOffset)	
 	
 	free(c_matchPairs)
 	free(c_initGuess)
@@ -59,9 +79,28 @@ def ICPmin(matchPairs, int numPairs, initGuess, uHigh, uLow, poses_1, poses_2, i
 
 	cdef double resultParam[2]
 	cdef double resultSum[1]
-	
+	cdef double u1 = initGuess[0]
+	cdef double c_pose1[3]
+	c_pose1[0] = 0.0
+	c_pose1[1] = 0.0
+	c_pose1[2] = 0.0
 
-	doTest(c_matchPairs, numPairs, c_initGuess, uHigh, uLow, c_poses_1, c_poses_2, numPoses, resultParam, resultSum)	
+
+	if u1 >= 1.0:
+		c_pose1[0] = poses_1[3*(numPoses-1)+0]
+		c_pose1[1] = poses_1[3*(numPoses-1)+1]
+		c_pose1[2] = poses_1[3*(numPoses-1)+2]
+	elif u1 < 0.0:
+		c_pose1[0] = poses_1[0+0]
+		c_pose1[1] = poses_1[0+1]
+		c_pose1[2] = poses_1[0+2]
+	else:
+		c_pose1[0] = poses_1[3*int(u1*(numPoses-1))+0]
+		c_pose1[1] = poses_1[3*int(u1*(numPoses-1))+1]
+		c_pose1[2] = poses_1[3*int(u1*(numPoses-1))+2]
+
+
+	doTest(c_matchPairs, numPairs, c_initGuess, uHigh, uLow, c_pose1, c_poses_2, numPoses, resultParam, resultSum)	
 
 	free(c_matchPairs)
 	free(c_initGuess)

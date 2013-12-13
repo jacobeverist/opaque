@@ -3,7 +3,7 @@
 #include <math.h>
 #include "runNelmin.h"
 
-double objFunc(double *params, double *d_matchPairs, double *d_offset, double *d_sum, int N, double *poses_1, double *poses_2, int numPoses, double uHigh, double uLow, double u1, double *resultOffset);
+double objFunc(double *params, double *d_matchPairs, double *d_offset, double *d_sum, int N, double *pose1, double *poses_2, int numPoses, double uHigh, double uLow, double *resultOffset);
 
 #include "nelmin.h"
 
@@ -135,13 +135,14 @@ __inline void buildMatrix(double *R, double ang, int isForward) {
 }
 
 //newSum = objFunc(&start[0], d_matchPairs, d_offset, d_sum, numPairs, poses_1, poses_2, numPoses, uHigh, uLow, u1, offset);
-double objFunc(double *params, double *d_matchPairs, double *d_offset, double *d_sum, int N, double *poses_1, double *poses_2, int numPoses, double uHigh, double uLow, double u1, double *resultOffset) {
+//double objFunc(double *params, double *d_matchPairs, double *d_offset, double *d_sum, int N, double *poses_1, double *poses_2, int numPoses, double uHigh, double uLow, double u1, double *resultOffset) {
+double objFunc(double *params, double *d_matchPairs, double *d_offset, double *d_sum, int N, double *pose1, double *poses_2, int numPoses, double uHigh, double uLow, double *resultOffset) {
 
 
 	double currU = params[0];
 	double currAng = params[1];
 
-	double pose1[3] = {0.0,0.0,0.0};
+	// double pose1[3] = {0.0,0.0,0.0};
 	double pose2[3] = {0.0,0.0,0.0};
 	double point1[2];
 	double point2[2];
@@ -203,6 +204,7 @@ double objFunc(double *params, double *d_matchPairs, double *d_offset, double *d
 	//printf("u1 = %lf\n", u1);
 
 	// compute the point and angles from the parameters 
+	/* 
 	if ( u1 >= 1.0 ) {
 		double *ptr = &(poses_1[3*(numPoses-1)]);
 		pose1[0] = ptr[0];
@@ -222,6 +224,7 @@ double objFunc(double *params, double *d_matchPairs, double *d_offset, double *d
 		pose1[1] = ptr[1];
 		pose1[2] = ptr[2];
 	}
+	*/
 
 	if (currU >= 1.0) {
 		double *ptr = &(poses_2[3*(numPoses-1)]);
@@ -769,7 +772,8 @@ double objFunc2(double *params, double *d_matchPairs, double *d_offset, double *
 }
 */
 
-void doTest(double *h_matchPairs, int numPairs, double *initGuess, double uHigh, double uLow, double *poses_1, double *poses_2, int numPoses, double *resultParam, double *resultSum) {
+//void doTest(double *h_matchPairs, int numPairs, double *initGuess, double uHigh, double uLow, double *poses_1, double *poses_2, int numPoses, double *resultParam, double *resultSum) {
+void doTest(double *h_matchPairs, int numPairs, double *initGuess, double uHigh, double uLow, double *pose1, double *poses_2, int numPoses, double *resultParam, double *resultSum) {
 
 	double* d_matchPairs;
 	double* d_offset;
@@ -794,6 +798,8 @@ void doTest(double *h_matchPairs, int numPairs, double *initGuess, double uHigh,
 
 	//double u1, u2, uHigh, uLow, currU, currAng;
 	double u1, u2, currU, currAng;
+
+	//double pose1[3] = {0.0,0.0,0.0};
 
 	//int blocksPerGrid = (numPairs + threadsPerBlock - 1) / threadsPerBlock;
 
@@ -838,11 +844,39 @@ void doTest(double *h_matchPairs, int numPairs, double *initGuess, double uHigh,
 	}
 	*/
 
+	/*
+	if ( u1 >= 1.0 ) {
+		double *ptr = &(poses_1[3*(numPoses-1)]);
+		pose1[0] = ptr[0];
+		pose1[1] = ptr[1];
+		pose1[2] = ptr[2];
+		//printf("foo %d %d\n", numPoses, 3*(numPoses-1));
+	}
+	else if (u1 < 0.0) {
+		double *ptr = &(poses_1[0]);
+		pose1[0] = ptr[0];
+		pose1[1] = ptr[1];
+		pose1[2] = ptr[2];
+	}
+	else {
+		double *ptr = &(poses_1[3*(int)(u1*(numPoses-1))]);
+		pose1[0] = ptr[0];
+		pose1[1] = ptr[1];
+		pose1[2] = ptr[2];
+	}
+	*/
 
+	/*
 	nelmin(nParam, &start[0], &xmin[0], &ynewlo, reqmin, &step[0],
 		konvge, kcount, &icount, &numres, &ifault,
 		numPoses, numPairs, d_matchPairs, d_offset, d_sum, poses_1, poses_2,
 		uHigh, uLow, u1);
+	*/
+
+	nelmin(nParam, &start[0], &xmin[0], &ynewlo, reqmin, &step[0],
+		konvge, kcount, &icount, &numres, &ifault,
+		numPoses, numPairs, d_matchPairs, d_offset, d_sum, pose1, poses_2,
+		uHigh, uLow);
 
 	resultSum[0] = ynewlo;
 	resultParam[0] = xmin[0];
@@ -869,7 +903,8 @@ void doTest(double *h_matchPairs, int numPairs, double *initGuess, double uHigh,
 }
 
 
-void doCost(double *h_matchPairs, int numPairs, double *initGuess, double uHigh, double uLow, double *poses_1, double *poses_2, int numPoses, double *resultParam, double *resultSum, double *resultOffset) {
+//void doCost(double *h_matchPairs, int numPairs, double *initGuess, double uHigh, double uLow, double *poses_1, double *poses_2, int numPoses, double *resultParam, double *resultSum, double *resultOffset) {
+void doCost(double *h_matchPairs, int numPairs, double *initGuess, double uHigh, double uLow, double *pose1, double *poses_2, int numPoses, double *resultParam, double *resultSum, double *resultOffset) {
 
 	double* d_matchPairs;
 	double* d_offset;
@@ -896,6 +931,8 @@ void doCost(double *h_matchPairs, int numPairs, double *initGuess, double uHigh,
 	double u1, u2, currU, currAng;
 	double offset[3];
 	double newSum;
+
+	//double pose1[3] = {0.0,0.0,0.0};
 
 	size = 3 * sizeof(double);
 	size2 = numPairs * 12 * sizeof(double);
@@ -928,6 +965,28 @@ void doCost(double *h_matchPairs, int numPairs, double *initGuess, double uHigh,
 		d_matchPairs[i] = h_matchPairs[i];
 	}
 
+	/*
+	if ( u1 >= 1.0 ) {
+		double *ptr = &(poses_1[3*(numPoses-1)]);
+		pose1[0] = ptr[0];
+		pose1[1] = ptr[1];
+		pose1[2] = ptr[2];
+	}
+	else if (u1 < 0.0) {
+		double *ptr = &(poses_1[0]);
+		pose1[0] = ptr[0];
+		pose1[1] = ptr[1];
+		pose1[2] = ptr[2];
+	}
+	else {
+		double *ptr = &(poses_1[3*(int)(u1*(numPoses-1))]);
+		pose1[0] = ptr[0];
+		pose1[1] = ptr[1];
+		pose1[2] = ptr[2];
+	}
+	*/
+
+
 	// Copy vectors from host memory to device memory
 
 	//nelmin(nParam, &start[0], &xmin[0], &ynewlo, reqmin, &step[0],
@@ -938,7 +997,9 @@ void doCost(double *h_matchPairs, int numPairs, double *initGuess, double uHigh,
 	//double offset[3];
 
 	//double newSum = objFunc2(&start[0], d_matchPairs, d_offset, d_sum, numPairs, poses_1, poses_2, numPoses, uHigh, uLow, u1, offset);
-	newSum = objFunc(&start[0], d_matchPairs, d_offset, d_sum, numPairs, poses_1, poses_2, numPoses, uHigh, uLow, u1, offset);
+	//newSum = objFunc(&start[0], d_matchPairs, d_offset, d_sum, numPairs, poses_1, poses_2, numPoses, uHigh, uLow, u1, offset);
+	newSum = objFunc(&start[0], d_matchPairs, d_offset, d_sum, numPairs, pose1, poses_2, numPoses, uHigh, uLow, offset);
+
 
 	resultSum[0] = newSum;
 	resultParam[0] = currU;
