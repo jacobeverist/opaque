@@ -1436,6 +1436,72 @@ class MapState:
 
 		return splicePaths, spliceTerms, splicePathIDs
 
+
+	
+	@logFunction
+	def localizeBranchPoint(self, orientedPathSoup, junctionPose1, parentPathID, pathID1, plotIter = False):
+
+		parentPath = self.paths[parentPathID]
+
+		#junctionPose1 = self.pathClasses[pathID1]["globalJunctionPose"]
+		
+		""" get closest point index onto the parent path to the child junctions """
+		minDist_1 = 1e100
+		minK_1 = 0
+		for k in range(len(parentPath)):
+			p = parentPath[k]
+		
+			dist1 = sqrt((p[0]-junctionPose1[0])**2 + (p[1]-junctionPose1[1])**2)
+		
+			if dist1 < minDist_1:
+				minDist_1 = dist1
+				minK_1 = k
+
+		
+		"""
+		select which path segments to use by
+		checking if the other child path's junction point is contained within
+
+		excise portion of parent path between the two junction points 
+		"""
+		
+		juncOrigin1 = Pose(junctionPose1)
+		
+		" curves of both paths "
+		#orientedPointSoup = []
+		#for path in orientedPathSoup:
+		#	for p in path:
+		#		orientedPointSoup.append(p)
+
+		globalPath2 = parentPath
+
+		globalSpline2 = SplineFit(globalPath2, smooth=0.1)
+		globalSamples2 = globalSpline2.getUniformSamples(spacing = 0.04)
+		originU2 = globalSpline2.findU(junctionPose1)
+		minDist, originU2, uPoint = globalSpline2.findClosestPoint(junctionPose1)
+		
+		u2 = originU2
+		u1 = 0.5  # value is meaningless since data is not a spline curve
+		#angGuess = 0.0
+		angGuess = -uPoint[2] + junctionPose1[2]
+		
+		resultPose1, lastCost1, matchCount1 = gen_icp.branchEstimateICP([u1,u2,angGuess], junctionPose1, orientedPathSoup, globalPath2, plotIter = plotIter, n1 = pathID1, n2 = parentPathID)
+
+		print "matchCount,cost,result:", matchCount1, lastCost1, resultPose1
+
+		
+
+
+
+
+
+		return resultPose1, lastCost1, matchCount1
+	 
+
+
+
+
+
 	@logFunction
 	def comparePaths(self):
  
@@ -1985,17 +2051,8 @@ class MapState:
 
 
 		
-		globalPath1Reverse = deepcopy(globalPath1)
-		globalPath1Reverse.reverse()
-		
-		globalPath2Reverse = deepcopy(globalPath2)
-		globalPath2Reverse.reverse()
-
 		globalSpline1 = SplineFit(globalPath1, smooth=0.1)
-		globalSpline1Reverse = SplineFit(globalPath1Reverse, smooth=0.1)
 		globalSpline2 = SplineFit(globalPath2, smooth=0.1)
-		globalSpline2Reverse = SplineFit(globalPath2Reverse, smooth=0.1)
-
 			
 		orientedGlobalPath = orientPath(globalPath2, globalPath1)
 
@@ -2114,7 +2171,7 @@ class MapState:
 			originU2 = globalSpline1.findU(globalJunctionPose1)    
 			originU1 = orientedGlobalSpline2.findU(globalJunctionPose1)
 			isFound = False
-						
+			
 			for pair in closestPairs:
 				juncDist = pair[7]
 				
@@ -2138,7 +2195,7 @@ class MapState:
 		u2 = originU2
 		u1 = originU1
 		angGuess = 0.0
-		
+
 
 		resultPose1, lastCost1, matchCount1 = gen_icp.pathOverlapICP([u1,u2,angGuess], orientedGlobalPath, globalPath1, plotIter = plotIter, n1 = pathID1, n2 = pathID2)
 

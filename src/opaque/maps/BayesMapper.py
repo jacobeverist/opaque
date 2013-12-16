@@ -389,23 +389,16 @@ class BayesMapper:
 
 					if newArcDist <= totalDist and newArcDist >= 0.0:
 						" NOTE:  angle is the tangent angle, not branch angle "
+
+						origJuncPose = copy( mapHyp.pathClasses[pathID]["globalJunctionPose"])
 						newJuncPose = pathSpline.getPointOfDist(newArcDist)
-						particles.append([initialPart[0], newJuncPose, newArcDist, pathID])
+						modJuncPose = copy(newJuncPose)
+						modJuncPose[2] = origJuncPose[2]
+
+						particles.append([initialPart[0], modJuncPose, newArcDist, pathID])
 
 				trimmedPaths = mapHyp.trimmedPaths
 				
-				pylab.clf() 
-				#for k in range(len(trimmedPaths)):
-				for k,path in trimmedPaths.iteritems():
-					#path = trimmedPaths[k]
-					print "path has", len(path), "points"
-					xP = []
-					yP = []
-					for p in path:
-						xP.append(p[0])
-						yP.append(p[1])
-
-					pylab.plot(xP,yP, color = self.colors[k], linewidth=4)
 
 				"""
 				1) point that has the junction
@@ -425,7 +418,7 @@ class BayesMapper:
 
 
 				globalPath1 = mapHyp.paths[pathID]
-				origJuncPose = mapHyp.pathClasses[pathID]["globalJunctionPose"]
+				origJuncPose = copy(mapHyp.pathClasses[pathID]["globalJunctionPose"])
 				origJuncOrigin = Pose(origJuncPose)
 				localPath1 = []
 				for p in globalPath1:
@@ -444,75 +437,85 @@ class BayesMapper:
 
 				localPathSegs = []
 				smoothPathSegs = junctionDetails["leafSegments"] + junctionDetails["internalSegments"]
+
+				print "path segs:", len(junctionDetails["leafSegments"]), "+", len(junctionDetails["internalSegments"]), "=", len(smoothPathSegs)
+
 				for k in range(len(smoothPathSegs)):
 					pathSeg = smoothPathSegs[k]
 					localSeg = []
 					for p in pathSeg:
-						p1 = origJuncOrigin.convertGlobalToLocal(p)
+						p1 = origJuncOrigin.convertGlobalPoseToLocal(p)
 						localSeg.append(p1)
 
 					localPathSegs.append(localSeg)
 
-				"""
 				xP = []
 				yP = []
-				for p in globalPath1:
-					xP.append(p[0])
-					yP.append(p[1])
-				pylab.plot(xP,yP,color=(0.5,1.0,0.5), zorder=8)
+				for part in particles:
+					modJuncPose = copy(part[1])
+					offsetOrigin1 = Pose(modJuncPose)
 
-				xP = []
-				yP = []
-				for p in localPath1:
-					xP.append(p[0])
-					yP.append(p[1])
-				pylab.plot(xP,yP,color=(1.0,0.5,0.5), zorder=8)
-				"""
+					placedPathSegs = []
+					for k in range(len(localPathSegs)):
+						localSeg = localPathSegs[k]
+						placedSeg = []
+						for p in localSeg:
+							p1 = offsetOrigin1.convertLocalOffsetToGlobal(p)
+							placedSeg.append(p1)
+						placedPathSegs.append(placedSeg)
+
+					resultPose1, lastCost1, matchCount1 = mapHyp.localizeBranchPoint(placedPathSegs, modJuncPose, parentID, pathID, plotIter = False)
+
+					poseOrigin = Pose(resultPose1)
+
+					inversePose = poseOrigin.doInverse(resultPose1)
+					poseOrigin = Pose(inversePose)
+
+					finalPose = poseOrigin.convertLocalOffsetToGlobal(modJuncPose)
+					poseOrigin2 = Pose(finalPose)
+					part[1] = finalPose
+					
+				pylab.clf() 
+				for k,path in trimmedPaths.iteritems():
+					print "path has", len(path), "points"
+					xP = []
+					yP = []
+					for p in path:
+						xP.append(p[0])
+						yP.append(p[1])
+
+					pylab.plot(xP,yP, color = self.colors[k], linewidth=4)
 
 				xP = []
 				yP = []
 				for part in particles:
-					#pathID1 = part[3]
 					globJuncPose = part[1]
 					xP.append(globJuncPose[0])
 					yP.append(globJuncPose[1])
 
-					modJuncPose = copy(globJuncPose)
-					modJuncPose[2] = origJuncPose[2]
-
-
-					offsetOrigin1 = Pose(modJuncPose)
-
-					"""
-					for k in range(len(localMedialLongPath)):
-						localLongPath = localMedialLongPath[k]
-						xP1 = []
-						yP1 = []
-						for p in localLongPath:
-							p1 = offsetOrigin1.convertLocalToGlobal(p)
-							xP1.append(p1[0])
-							yP1.append(p1[1])
-						pylab.plot(xP1,yP1,color=(0.5,0.5,0.5), zorder=8)
-					"""
+					offsetOrigin1 = Pose(globJuncPose)
 
 					for k in range(len(localPathSegs)):
 						localSeg = localPathSegs[k]
 						xP1 = []
 						yP1 = []
 						for p in localSeg:
-							p1 = offsetOrigin1.convertLocalToGlobal(p)
+							p1 = offsetOrigin1.convertLocalOffsetToGlobal(p)
 							xP1.append(p1[0])
 							yP1.append(p1[1])
 						pylab.plot(xP1,yP1,color=(0.5,0.5,0.5), zorder=9)
 
 				pylab.scatter(xP, yP, color='k', zorder=8)
-				pylab.title("pathID: %d, localPathSegs %d" % (pathID, len(localPathSegs)))
+				pylab.title("hyp: %d, pathID: %d, localPathSegs %d" % (mapHyp.hypothesisID, pathID, len(localPathSegs)))
+				#print "path segs:", len(junctionDetails["leafSegments"], "+", len(junctionDetails["internalSegments"], "=", len(smoothPathSegs)
 					
 				self.plotEnv()			
-					
-				pylab.savefig("bayes_plot_%04u.png" % self.tempCount )
+				
+				pylab.savefig("bayes_plot_%04u_%04u.png" % (mapHyp.hypothesisID, self.tempCount) )
 				self.tempCount += 1
 
+
+		
 				" draw env "
 				" draw trimmed path "
 				" draw points "
