@@ -100,7 +100,7 @@ def __num_processors():
 		get_nprocs.argtypes = []
 		return get_nprocs()
 
-def __remote_ICP(rank, qin, qout, globalPath, medial):
+def __remote_ICP(rank, qin, qout):
 
 	while 1:
 		# read input queue (block until data arrives)
@@ -110,13 +110,24 @@ def __remote_ICP(rank, qin, qout, globalPath, medial):
 		#knn = __do_nothing(data, nc, someArg2, someArg3)
 		results = []
 		for arg in args:
-			resultPose, lastCost, matchCount = globalOverlapICP_GPU2(arg, globalPath, medial)
+			u1 = arg[1]
+			u2 = arg[2]
+			angGuess = arg[3]
+			junctionPose1 = arg[4]
+			orientedPathSoup = arg[5]
+			globalPath2 = arg[6]
+			plotIter = arg[7]
+			pathID1 = arg[8]
+			parentID = arg[9]
+
+			resultPose, lastCost, matchCount = branchEstimateICP([u1,u2,angGuess], junctionPose1, orientedPathSoup, globalPath2, plotIter = plotIter, n1 = pathID1, n2 = parentID)
+			
 			results.append([resultPose, lastCost, matchCount])
 		# write to output queue
 		qout.put((nc,results))
 
 
-def batchGlobalICP(globalPath, medial, args):
+def batchGlobalICP(args):
 
  
 
@@ -136,7 +147,7 @@ def batchGlobalICP(globalPath, medial, args):
 	qin = processing.Queue(maxsize=ndata/chunk_size)
 	qout = processing.Queue(maxsize=ndata/chunk_size)
 	pool = [processing.Process(target=__remote_ICP,
-				args=(rank, qin, qout, globalPath, medial))
+				args=(rank, qin, qout))
 					for rank in range(nproc)]
 	for p in pool: p.start()
 	
@@ -2256,13 +2267,13 @@ def branchEstimateICP(initGuess, junctionPose, pathSoup, globalPath, plotIter = 
 
 	uHigh = u2 + 0.2
 	uLow = u2 - 0.2
-	angLimit = pi/8.0
 
 	currU = u2
 	currAng = initGuess[2]
 
 	angNom = currAng
-	angLim = pi/8.0
+	angLim = pi/4.0
+	#angLim = pi/64.0
 	
 	startU2 = u2
 	

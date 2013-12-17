@@ -536,6 +536,33 @@ class MapState:
 		self.poseData = deepcopy(poseData)
 		
 
+		" branch point particles "
+		self.numParticles = 20
+		self.juncParticles = {}
+
+
+		"""
+		juncParts = {}
+		juncParts["numParticles"] = self.numParticles
+		juncParts["updateCount"] = 0
+		juncParts["snapshots"] = {}
+
+		snapshotParticles = []
+		for k in range(self.numParticles):
+			part = [parentID, modJuncPose, newArcDist, pathID]
+			snapshotParticles.append(part)
+
+		juncParts["snapshots"][juncParts["updateCount"]] = snapshotParticles
+
+		self.juncParticles[childPathID] = juncParts
+		#for k, v in self.pathClasses.iteritems():
+		#	self.pathClasses[0] = {"parentID" : None, "branchNodeID" : None, "localJunctionPose" : None, 
+		"""
+
+
+
+		
+
 		#poseInfo = {}
 		#poseInfo["estPose"] = [0.0,0.0,0.0]
 		#poseInfo["globalGPACPose"] = [0.0,0.0,0.0]
@@ -573,6 +600,7 @@ class MapState:
 		self.spliceCount = 0
 		self.multiDepCount = 0
 		self.overlapPlotCount = 0
+		self.tempCount = 0
 			
 
 		self.pathPlotCount = 0
@@ -610,6 +638,8 @@ class MapState:
 
 		newObj = MapState(self.poseData, hypothesisID)
 
+		newObj.numParticles = deepcopy(self.numParticles)
+		newObj.juncParticles = deepcopy(self.juncParticles)
 		newObj.pathClasses = deepcopy(self.pathClasses)
 		newObj.pathTermsVisisted = deepcopy(self.pathTermsVisited)
 		newObj.pathIDs = deepcopy(self.pathIDs)
@@ -1443,35 +1473,9 @@ class MapState:
 
 		parentPath = self.paths[parentPathID]
 
-		#junctionPose1 = self.pathClasses[pathID1]["globalJunctionPose"]
-		
-		""" get closest point index onto the parent path to the child junctions """
-		minDist_1 = 1e100
-		minK_1 = 0
-		for k in range(len(parentPath)):
-			p = parentPath[k]
-		
-			dist1 = sqrt((p[0]-junctionPose1[0])**2 + (p[1]-junctionPose1[1])**2)
-		
-			if dist1 < minDist_1:
-				minDist_1 = dist1
-				minK_1 = k
-
-		
-		"""
-		select which path segments to use by
-		checking if the other child path's junction point is contained within
-
-		excise portion of parent path between the two junction points 
-		"""
-		
 		juncOrigin1 = Pose(junctionPose1)
 		
 		" curves of both paths "
-		#orientedPointSoup = []
-		#for path in orientedPathSoup:
-		#	for p in path:
-		#		orientedPointSoup.append(p)
 
 		globalPath2 = parentPath
 
@@ -1498,7 +1502,329 @@ class MapState:
 		return resultPose1, lastCost1, matchCount1
 	 
 
+	@logFunction
+	def updateParticles(self, pathID):
 
+		#self.pathClasses[0] = {"parentID" : None, "branchNodeID" : None, "localJunctionPose" : None, 
+		#					"sameProb" : {}, "nodeSet" : [], "globalJunctionPose" : None}
+		#juncParts["numParticles"] = self.numParticles
+		#juncParts["updateCount"] = 0
+		#juncParts["snapshots"] = {}
+		#	juncParts["snapshots"][juncParts["updateCount"]] = snapshotParticles
+
+		if self.pathClasses[pathID]["parentID"] != None: 
+
+			" path information "
+			pathDesc = self.pathClasses[pathID]
+			parentID = pathDesc["parentID"]
+
+			" junction particle information "
+			juncParts = self.juncParticles[pathID]
+			updateCount = juncParts["updateCount"]
+			snapshots = juncParts["snapshots"]
+			numParticles = juncParts["numParticles"]
+
+
+			pathSpline = SplineFit(self.paths[parentID])
+
+			" initial position of junction "
+			origJuncPose = pathDesc["globalJunctionPose"]
+			minDist, uVal, splinePoint = pathSpline.findClosestPoint(origJuncPose)
+			arcDist = pathSpline.dist_u(uVal)
+
+			totalDist = pathSpline.dist_u(1.0)
+
+			" initialize if this is the first time "
+			if len(snapshots[0]) == 0:
+				particles = []
+				for k in range(numParticles):
+					#newArcDist = random.gauss(arcDist,totalDist)
+					#newArcDist = random.gauss(arcDist,1.0)
+
+					newArcDist = (k / float(numParticles-1)) * totalDist
+
+					" NOTE:  angle is the tangent angle, not branch angle "
+
+					newJuncPose = pathSpline.getPointOfDist(newArcDist)
+					modJuncPose = copy(newJuncPose)
+					modJuncPose[2] = origJuncPose[2]
+
+					initMatchCount = 0
+					initCost = 0.0
+					initProb = 0.0
+					initDist = 0.0
+					initAngDiff = 0.0
+
+					particles.append([parentID, modJuncPose, newArcDist, pathID, initMatchCount, initCost, initDist, initAngDiff, initProb])
+
+				self.juncParticles[pathID]["snapshots"][updateCount] = particles
+
+			particles = deepcopy(self.juncParticles[pathID]["snapshots"][updateCount])
+
+			trimmedPaths = self.trimmedPaths
+			
+
+			"""
+			1) point that has the junction
+			2) direction of junction
+			3) set of long paths that include junction path  (only 2)
+
+			"""
+
+
+			medialLongPath = self.medialLongPaths[pathID]
+
+			junctionDetails = self.longPathJunctions[pathID]
+
+			#print "junction details:", pathID, junctionDetails
+
+
+
+
+			globalPath1 = self.paths[pathID]
+			origJuncPose = copy(self.pathClasses[pathID]["globalJunctionPose"])
+			origJuncOrigin = Pose(origJuncPose)
+			localPath1 = []
+			for p in globalPath1:
+				p1 = origJuncOrigin.convertGlobalToLocal(p)
+				localPath1.append(p1)
+
+			localMedialLongPath = []
+			for k in range(len(medialLongPath)):
+				longPath = medialLongPath[k]
+				localLongPath = []
+				for p in longPath:
+					p1 = origJuncOrigin.convertGlobalToLocal(p)
+					localLongPath.append(p1)
+
+				localMedialLongPath.append(localLongPath)
+
+			localPathSegs = []
+			smoothPathSegs = junctionDetails["leafSegments"] + junctionDetails["internalSegments"]
+
+			print "path segs:", len(junctionDetails["leafSegments"]), "+", len(junctionDetails["internalSegments"]), "=", len(smoothPathSegs)
+
+			for k in range(len(smoothPathSegs)):
+				pathSeg = smoothPathSegs[k]
+				localSeg = []
+				for p in pathSeg:
+					p1 = origJuncOrigin.convertGlobalPoseToLocal(p)
+					localSeg.append(p1)
+
+				localPathSegs.append(localSeg)
+
+			args = []
+			xP = []
+			yP = []
+			for k in range(len(particles)):
+				part = particles[k]
+				modJuncPose = copy(part[1])
+				offsetOrigin1 = Pose(modJuncPose)
+
+				placedPathSegs = []
+				for k in range(len(localPathSegs)):
+					localSeg = localPathSegs[k]
+					placedSeg = []
+					for p in localSeg:
+						p1 = offsetOrigin1.convertLocalOffsetToGlobal(p)
+						placedSeg.append(p1)
+					placedPathSegs.append(placedSeg)
+
+
+				parentPath = self.paths[parentID]
+				juncOrigin1 = Pose(modJuncPose)
+
+				" curves of both paths "
+				globalPath2 = parentPath
+
+				globalSpline2 = SplineFit(globalPath2, smooth=0.1)
+				globalSamples2 = globalSpline2.getUniformSamples(spacing = 0.04)
+				originU2 = globalSpline2.findU(modJuncPose)
+				minDist, originU2, uPoint = globalSpline2.findClosestPoint(modJuncPose)
+				
+				u2 = originU2
+				u1 = 0.5  # value is meaningless since data is not a spline curve
+				angGuess = -uPoint[2] + modJuncPose[2]
+				
+				#resultPose1, lastCost1, matchCount1 = gen_icp.branchEstimateICP([u1,u2,angGuess], junctionPose1, orientedPathSoup, globalPath2, plotIter = plotIter, n1 = pathID1, n2 = parentPathID)
+
+				arg = []
+				arg.append(k)
+				arg.append(u1)
+				arg.append(u2)
+				arg.append(angGuess)
+				arg.append(modJuncPose)
+				arg.append(placedPathSegs)
+				arg.append(globalPath2)
+				arg.append(False)
+				arg.append(pathID)
+				arg.append(parentID)
+
+				args.append(arg)
+
+
+			#resultPose1, lastCost1, matchCount1 = self.localizeBranchPoint(placedPathSegs, modJuncPose, parentID, pathID, plotIter = False)
+
+			results = gen_icp.batchGlobalICP(args)
+
+			for k in range(len(particles)):
+				part = particles[k]
+				modJuncPose = copy(part[1])
+
+				resultPose1 = results[k][0]
+				lastCost1 = results[k][1]
+				matchCount1 = results[k][2]
+
+				poseOrigin = Pose(resultPose1)
+
+				inversePose = poseOrigin.doInverse(resultPose1)
+				poseOrigin = Pose(inversePose)
+
+				finalPose = poseOrigin.convertLocalOffsetToGlobal(modJuncPose)
+				poseOrigin2 = Pose(finalPose)
+
+				#[parentID, modJuncPose, newArcDist, pathID, initMatchCount, initCost, initDist, initAngDiff, initProb]
+
+				part[1] = finalPose
+				part[4] = matchCount1
+				part[5] = lastCost1
+
+				origJuncPose = pathDesc["globalJunctionPose"]
+				part[6] = sqrt((finalPose[0]-origJuncPose[0])**2 + (finalPose[1]-origJuncPose[1]**2))
+				part[7] = fabs(normalizeAngle(finalPose[2]-origJuncPose[2]))
+
+			" get the maximum value for each of our features "
+			maxCost = -1e100
+			maxMatchCount = -1000
+			maxDist = -1e100
+			maxAngDiff = -1e100
+
+			for k in range(len(particles)):
+				part = particles[k]
+				matchCount = part[4]
+				lastCost = part[5]
+				dist = part[6]
+				angDiff = part[7]
+
+				if matchCount > maxMatchCount:
+					maxMatchCount = matchCount
+
+				if lastCost > maxCost:
+					maxCost = lastCost
+
+				if dist > maxDist:
+					maxDist = dist
+
+				if angDiff > maxAngDiff:
+					maxAngDiff = angDiff
+
+			" invert the distance, angDiff and cost features "
+			totalProbSum = 0.0
+			for k in range(len(particles)):
+				part = particles[k]
+				lastCost = part[5]
+				dist = part[6]
+				angDiff = part[7]
+				part[5] = (maxCost-lastCost)/maxCost
+				part[6] = (maxDist-dist)/maxDist
+				#part[7] = (maxAngDiff-angDiff)/maxAngDiff
+
+				" angDiff feature times matchCount times dist "
+				probVal = part[4]*part[6]
+				part[8] = probVal
+				totalProbSum += probVal
+
+
+
+			" normalize the probability values "
+			for k in range(len(particles)):
+				part = particles[k]
+				part[8] = part[8] / totalProbSum
+
+				print "particle", k, particles[k][2:]
+
+			newParticles = []
+			for j in range(numParticles-10):
+				roll = random.random()
+				probTotal = 0.0
+
+				partFound = False
+
+				for k in range(len(particles)):
+					probTotal += particles[k][8]
+
+					if probTotal > roll:
+						newParticles.append(deepcopy(particles[k]))
+						partFound = True
+
+					if partFound:
+						break
+
+				if not partFound:
+					newParticles.append(deepcopy(particles[-1]))
+
+			randomParticles = []
+
+			for k in range(10):
+				roll = random.random()
+				newArcDist = roll * totalDist
+
+				" NOTE:  angle is the tangent angle, not branch angle "
+
+				newJuncPose = pathSpline.getPointOfDist(newArcDist)
+				modJuncPose = copy(newJuncPose)
+				modJuncPose[2] = origJuncPose[2]
+
+				initMatchCount = 0
+				initCost = 0.0
+				initProb = 0.0
+				initDist = 0.0
+				initAngDiff = 0.0
+
+				randomParticles.append([parentID, modJuncPose, newArcDist, pathID, initMatchCount, initCost, initDist, initAngDiff, initProb])
+			newParticles += randomParticles
+
+			self.juncParticles[pathID]["updateCount"] = updateCount + 1
+			self.juncParticles[pathID]["snapshots"][updateCount+1] = newParticles
+
+			pylab.clf() 
+			for k,path in trimmedPaths.iteritems():
+				print "path has", len(path), "points"
+				xP = []
+				yP = []
+				for p in path:
+					xP.append(p[0])
+					yP.append(p[1])
+
+				pylab.plot(xP,yP, color = self.colors[k], linewidth=4)
+
+			xP = []
+			yP = []
+			for part in newParticles:
+				globJuncPose = part[1]
+				xP.append(globJuncPose[0])
+				yP.append(globJuncPose[1])
+
+				offsetOrigin1 = Pose(globJuncPose)
+
+				for k in range(len(localPathSegs)):
+					localSeg = localPathSegs[k]
+					xP1 = []
+					yP1 = []
+					for p in localSeg:
+						p1 = offsetOrigin1.convertLocalOffsetToGlobal(p)
+						xP1.append(p1[0])
+						yP1.append(p1[1])
+					pylab.plot(xP1,yP1,color=(0.5,0.5,0.5), zorder=9)
+
+			pylab.scatter(xP, yP, color='k', zorder=8)
+			pylab.title("hyp: %d, pathID: %d, localPathSegs %d" % (self.hypothesisID, pathID, len(localPathSegs)))
+			#print "path segs:", len(junctionDetails["leafSegments"], "+", len(junctionDetails["internalSegments"], "=", len(smoothPathSegs)
+			
+			#self.plotEnv()			
+			
+			pylab.savefig("bayes_plot_%04u_%04u.png" % (self.hypothesisID, self.tempCount) )
+			self.tempCount += 1
 
 
 
@@ -2548,6 +2874,14 @@ class MapState:
 		self.pathTermsVisited[newPathID] = False
 		
 		self.pathIDs += 1
+
+
+		juncParts = {}
+		juncParts["numParticles"] = self.numParticles
+		juncParts["updateCount"] = 0
+		juncParts["snapshots"] = {0 : []}
+		self.juncParticles[newPathID] = juncParts
+
 
 
 		print "newPath", newPathID, "=", self.pathClasses[newPathID]
@@ -3734,127 +4068,6 @@ class MapState:
 
 		return self.medialLongPaths[pathID][maxIndex], vertices
 				
-
-		" find the longest path from each leaf"
-		maxPairDist = 0
-		maxPair = None
-		maxPath = []
-		for leaf in leaves:
-	
-			isVisited = {}
-			nodeSum = {}
-			nodePath = {}
-			for k, v in uni_mst.items():
-				isVisited[k] = 0
-				nodeSum[k] = 0
-				nodePath[k] = []
-	
-			getLongestPath(leaf, 0, [], uni_mst, isVisited, nodePath, nodeSum)
-	
-			maxDist = 0
-			maxNode = None
-			for k, v in nodeSum.items():
-				if v > maxDist:
-					maxNode = k
-					maxDist = v
-	
-			if maxDist > maxPairDist:
-				maxPairDist = maxDist
-				maxPair = [leaf, maxNode]
-				maxPath = nodePath[maxNode]
-
-		" convert path points to real "
-		realPath = []
-		for p in maxPath:
-			realPath.append(gridToReal(p))
-
-
-		leafPath = deepcopy(realPath)
-		
-		frontVec = [0.,0.]
-		backVec = [0.,0.]
-		indic = range(3)
-		indic.reverse()
-	
-		for i in indic:
-			p1 = leafPath[i+2]
-			p2 = leafPath[i]
-			vec = [p2[0]-p1[0], p2[1]-p1[1]]
-			frontVec[0] += vec[0]
-			frontVec[1] += vec[1]
-	
-			p1 = leafPath[-i-3]
-			p2 = leafPath[-i-1]
-			vec = [p2[0]-p1[0], p2[1]-p1[1]]
-			backVec[0] += vec[0]
-			backVec[1] += vec[1]
-	
-		frontMag = math.sqrt(frontVec[0]*frontVec[0] + frontVec[1]*frontVec[1])
-		backMag = math.sqrt(backVec[0]*backVec[0] + backVec[1]*backVec[1])
-	
-		frontVec[0] /= frontMag
-		frontVec[1] /= frontMag
-		backVec[0] /= backMag
-		backVec[1] /= backMag
-	
-		newP1 = (leafPath[0][0] + frontVec[0]*10, leafPath[0][1] + frontVec[1]*10)
-		newP2 = (leafPath[-1][0] + backVec[0]*10, leafPath[-1][1] + backVec[1]*10)
-	
-		leafPath.insert(0,newP1)
-		leafPath.append(newP2)
-
-		medial2 = deepcopy(leafPath)
-
-		" take the long length segments at tips of medial axis"
-		edge1 = medial2[0:2]
-		edge2 = medial2[-2:]
-		
-		frontVec = [edge1[0][0]-edge1[1][0], edge1[0][1]-edge1[1][1]]
-		backVec = [edge2[1][0]-edge2[0][0], edge2[1][1]-edge2[0][1]]
-		frontMag = math.sqrt(frontVec[0]*frontVec[0] + frontVec[1]*frontVec[1])
-		backMag = math.sqrt(backVec[0]*backVec[0] + backVec[1]*backVec[1])
-		
-		frontVec[0] /= frontMag
-		frontVec[1] /= frontMag
-		backVec[0] /= backMag
-		backVec[1] /= backMag
-		
-		" make a smaller version of these edges "
-		newP1 = (edge1[1][0] + frontVec[0]*2, edge1[1][1] + frontVec[1]*2)
-		newP2 = (edge2[0][0] + backVec[0]*2, edge2[0][1] + backVec[1]*2)
-
-		edge1 = [newP1, edge1[1]]
-		edge2 = [edge2[0], newP2]
-	
-		" find the intersection points with the hull "
-		hull = vertices
-		interPoints = []
-		for k in range(len(hull)-1):
-			hullEdge = [hull[k],hull[k+1]]
-			isIntersect1, point1 = Intersect(edge1, hullEdge)
-			if isIntersect1:
-				interPoints.append(point1)
-				break
-
-		for k in range(len(hull)-1):
-			hullEdge = [hull[k],hull[k+1]]
-			isIntersect2, point2 = Intersect(edge2, hullEdge)
-			if isIntersect2:
-				interPoints.append(point2)
-				break
-		
-		" replace the extended edges with a termination point at the hull edge "			
-		medial2 = medial2[1:-1]
-
-
-		
-		if isIntersect1:
-			medial2.insert(0, point1)
-		if isIntersect2:
-			medial2.append(point2)
-
-		return medial2, vertices
-
 	@logFunction
 	def trimPaths(self, foo = None):
 
