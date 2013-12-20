@@ -1487,7 +1487,8 @@ class MapState:
 		u2 = originU2
 		u1 = 0.5  # value is meaningless since data is not a spline curve
 		#angGuess = 0.0
-		angGuess = -uPoint[2] + junctionPose1[2]
+		#angGuess = -uPoint[2] + junctionPose1[2]
+		angGuess = junctionPose1[2]
 		
 		resultPose1, lastCost1, matchCount1 = gen_icp.branchEstimateICP([u1,u2,angGuess], junctionPose1, orientedPathSoup, globalPath2, plotIter = plotIter, n1 = pathID1, n2 = parentPathID)
 
@@ -1725,8 +1726,15 @@ class MapState:
 				lastCost = part[5]
 				dist = part[6]
 				angDiff = part[7]
-				part[5] = (maxCost-lastCost)/maxCost
-				part[6] = (maxDist-dist)/maxDist
+				if maxCost > 0.0:
+					part[5] = (maxCost-lastCost)/maxCost
+				else:
+					part[5] = 0.0
+
+				if maxDist > 0.0:
+					part[6] = (maxDist-dist)/maxDist
+				else:
+					part[6] = 0.0
 				#part[7] = (maxAngDiff-angDiff)/maxAngDiff
 
 				" angDiff feature times matchCount times dist "
@@ -1739,9 +1747,14 @@ class MapState:
 			" normalize the probability values "
 			for k in range(len(particles)):
 				part = particles[k]
-				part[8] = part[8] / totalProbSum
 
-				print "particle", k, particles[k][2:]
+				if totalProbSum > 0.0:
+					part[8] = part[8] / totalProbSum
+				else:
+					part[8] = 0.0
+
+				print "particle %02u %1.4f %03u %1.4f %1.4f %1.4f %1.4f" % (k, part[1][2], part[4], part[5], part[6], part[7], part[8])
+			print "particle"
 
 			newParticles = []
 			for j in range(numParticles-10):

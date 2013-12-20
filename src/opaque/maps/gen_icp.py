@@ -2301,7 +2301,7 @@ def branchEstimateICP(initGuess, junctionPose, pathSoup, globalPath, plotIter = 
 	minMatchDist = 0.5
 	minMatchDist2 = 0.5
 	lastCost = 1e100
-	matchAngTol = math.pi/16.0
+	matchAngTol = math.pi/4.0
 	
 	startIteration = numIterations
 
@@ -2474,7 +2474,8 @@ def branchEstimateICP(initGuess, junctionPose, pathSoup, globalPath, plotIter = 
 		ang1 = junctionPose[2]
 		ang2 = pose2[2]
 	
-		currPose = computeOffset(point1, point2, ang1, ang2 + currAng)
+		#currPose = computeOffset(point1, point2, ang1, ang2 + currAng)
+		currPose = computeOffset(point1, point2, ang1, ang1)
 
 		# check for convergence condition, different between last and current cost is below threshold
 		
