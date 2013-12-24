@@ -537,7 +537,7 @@ class MapState:
 		
 
 		" branch point particles "
-		self.numParticles = 20
+		self.numParticles = 50
 		self.juncParticles = {}
 
 
@@ -1529,14 +1529,17 @@ class MapState:
 			pathSpline = SplineFit(self.paths[parentID])
 
 			" initial position of junction "
-			origJuncPose = pathDesc["globalJunctionPose"]
+			origJuncPose = copy(pathDesc["globalJunctionPose"])
+			origJuncPose[2] = 0.0
+
 			minDist, uVal, splinePoint = pathSpline.findClosestPoint(origJuncPose)
 			arcDist = pathSpline.dist_u(uVal)
 
 			totalDist = pathSpline.dist_u(1.0)
 
 			" initialize if this is the first time "
-			if len(snapshots[0]) == 0:
+			#if len(snapshots[0]) == 0:
+			if True:
 				particles = []
 				for k in range(numParticles):
 					#newArcDist = random.gauss(arcDist,totalDist)
@@ -1584,6 +1587,8 @@ class MapState:
 
 			globalPath1 = self.paths[pathID]
 			origJuncPose = copy(self.pathClasses[pathID]["globalJunctionPose"])
+			origJuncPose[2] = 0.0
+
 			origJuncOrigin = Pose(origJuncPose)
 			localPath1 = []
 			for p in globalPath1:
@@ -1666,7 +1671,14 @@ class MapState:
 
 			#resultPose1, lastCost1, matchCount1 = self.localizeBranchPoint(placedPathSegs, modJuncPose, parentID, pathID, plotIter = False)
 
-			results = gen_icp.batchGlobalICP(args)
+			#results = gen_icp.batchGlobalICP(args)
+
+			results = []
+			for arg in args:
+				initGuess = [arg[1], arg[2], arg[3]]
+				resultPose, lastCost, matchCount = gen_icp.branchEstimateCost(initGuess, arg[4], arg[5], arg[6], plotIter = False, n1 = arg[8], n2 = arg[9])
+				results.append((resultPose, lastCost, matchCount))	
+
 
 			for k in range(len(particles)):
 				part = particles[k]
@@ -1686,11 +1698,13 @@ class MapState:
 
 				#[parentID, modJuncPose, newArcDist, pathID, initMatchCount, initCost, initDist, initAngDiff, initProb]
 
-				part[1] = finalPose
+				#part[1] = finalPose
+				part[1] = modJuncPose
 				part[4] = matchCount1
 				part[5] = lastCost1
 
-				origJuncPose = pathDesc["globalJunctionPose"]
+				origJuncPose = copy(pathDesc["globalJunctionPose"])
+				origJuncPose[2] = 0.0
 				part[6] = sqrt((finalPose[0]-origJuncPose[0])**2 + (finalPose[1]-origJuncPose[1]**2))
 				part[7] = fabs(normalizeAngle(finalPose[2]-origJuncPose[2]))
 
@@ -1699,6 +1713,8 @@ class MapState:
 			maxMatchCount = -1000
 			maxDist = -1e100
 			maxAngDiff = -1e100
+
+			maxDist = 10.0
 
 			for k in range(len(particles)):
 				part = particles[k]
@@ -1737,25 +1753,34 @@ class MapState:
 					part[6] = 0.0
 				#part[7] = (maxAngDiff-angDiff)/maxAngDiff
 
+				matchCount = part[4]
+				matchCost = part[5]
+				nomDist = part[6]
+
 				" angDiff feature times matchCount times dist "
-				probVal = part[4]*part[6]
+				#probVal = part[4]*part[6]
+				probVal = matchCount*matchCost + nomDist/4.0
 				part[8] = probVal
 				totalProbSum += probVal
 
 
-
+			maxProb = 0.0
 			" normalize the probability values "
 			for k in range(len(particles)):
 				part = particles[k]
 
 				if totalProbSum > 0.0:
 					part[8] = part[8] / totalProbSum
+					if part[8] > maxProb:
+						maxProb = part[8]
 				else:
 					part[8] = 0.0
 
 				print "particle %02u %1.4f %03u %1.4f %1.4f %1.4f %1.4f" % (k, part[1][2], part[4], part[5], part[6], part[7], part[8])
 			print "particle"
 
+
+			"""
 			newParticles = []
 			for j in range(numParticles-10):
 				roll = random.random()
@@ -1796,9 +1821,11 @@ class MapState:
 
 				randomParticles.append([parentID, modJuncPose, newArcDist, pathID, initMatchCount, initCost, initDist, initAngDiff, initProb])
 			newParticles += randomParticles
+			"""
 
 			self.juncParticles[pathID]["updateCount"] = updateCount + 1
-			self.juncParticles[pathID]["snapshots"][updateCount+1] = newParticles
+			#self.juncParticles[pathID]["snapshots"][updateCount+1] = newParticles
+			self.juncParticles[pathID]["snapshots"][updateCount+1] = particles
 
 			pylab.clf() 
 			for k,path in trimmedPaths.iteritems():
@@ -1813,7 +1840,7 @@ class MapState:
 
 			xP = []
 			yP = []
-			for part in newParticles:
+			for part in particles:
 				globJuncPose = part[1]
 				xP.append(globJuncPose[0])
 				yP.append(globJuncPose[1])
@@ -1828,7 +1855,7 @@ class MapState:
 						p1 = offsetOrigin1.convertLocalOffsetToGlobal(p)
 						xP1.append(p1[0])
 						yP1.append(p1[1])
-					pylab.plot(xP1,yP1,color=(0.5,0.5,0.5), zorder=9)
+					pylab.plot(xP1,yP1,color='k', zorder=9, alpha=part[8]/maxProb)
 
 			pylab.scatter(xP, yP, color='k', zorder=8)
 			pylab.title("hyp: %d, pathID: %d, localPathSegs %d" % (self.hypothesisID, pathID, len(localPathSegs)))

@@ -2257,6 +2257,218 @@ def globalPathToNodeOverlapICP2(initGuess, globalPath, medialPoints, plotIter = 
 
 
 @logFunction
+def branchEstimateCost(initGuess, junctionPose, pathSoup, globalPath, plotIter = False, n1 = 0, n2 = 0):
+
+	global numIterations
+	global globalPlotCount
+	
+	u1 = initGuess[0]
+	u2 = initGuess[1]
+
+	uHigh = u2 + 0.2
+	uLow = u2 - 0.2
+
+	currU = u2
+	currAng = initGuess[2]
+
+	angNom = currAng
+	angLim = pi/4.0
+	#angLim = pi/64.0
+	
+	startU2 = u2
+	
+	globalSpline = SplineFit(globalPath, smooth=0.1)
+	
+
+	uSet = [i*0.01 for i in range(100)]
+	poses_2 = globalSpline.getUVecSet(uSet)
+	
+	if currU >= 1.0:
+		pose2 = poses_2[-1]
+	elif currU < 0.0:
+		pose2 = poses_2[0]
+	else:
+		pose2 = poses_2[int(currU*100)]
+	
+	point1 = [junctionPose[0],junctionPose[1]]
+	point2 = [pose2[0],pose2[1]]
+	ang1 = junctionPose[2]
+	ang2 = pose2[2]
+
+	currPose = computeOffset(point1, point2, ang1, ang2 + currAng)
+
+	costThresh = 0.004
+	minMatchDist = 0.5
+	minMatchDist2 = 0.5
+	lastCost = 1e100
+	matchAngTol = math.pi/4.0
+	
+	startIteration = numIterations
+
+	" set the initial guess "
+	poseOrigin = Pose(currPose)
+	
+	" sample a series of points from the medial curves "
+	" augment points with point-to-line covariances "
+	" treat the points with the point-to-line constraint "
+	globalVecPoints = globalSpline.getUniformSamples()
+	#globalCovPoints = addGPACVectorCovariance(globalVecPoints,high_var=0.50, low_var = 0.10)
+	globalCovPoints = addGPACVectorCovariance(globalVecPoints,high_var=1.00, low_var = 1.00)
+
+	pointCovSoup = []
+	pointVecSoup = []
+	for path in pathSoup:
+		#points = addGPACVectorCovariance(path, high_var=0.50, low_var = 0.10)
+		points = addGPACVectorCovariance(path, high_var=1.00, low_var = 1.00)
+		pointCovSoup += deepcopy(points)
+		pointVecSoup += deepcopy(path)
+	
+	" transform pose 2 by initial offset guess "	
+	" transform the new pose "
+
+	
+	" find the matching pairs "
+	match_pairs = []
+
+	" transform the target Hull with the latest offset "
+	poseOrigin = Pose(currPose)
+	globalVecPoints_offset = []
+	for p in globalVecPoints:
+		result = poseOrigin.convertLocalOffsetToGlobal(p)
+		globalVecPoints_offset.append(result)
+
+
+	" get the circles and radii "
+	match_pairs = []
+
+	for i in range(len(globalVecPoints)):
+		p_1 = globalVecPoints_offset[i]
+
+		try:
+			p_2, i_2, minDist = findClosestPointWithAngle(pointVecSoup, p_1, matchAngTol)
+
+			if minDist <= minMatchDist:
+	
+				" add to the list of match pairs less than 1.0 distance apart "
+				" keep A points and covariances untransformed "
+				C1 = globalCovPoints[i][2]
+				C2 = pointCovSoup[i_2][2]
+
+				" we store the untransformed point, but the transformed covariance of the A point "
+				match_pairs.append([globalVecPoints[i],pointVecSoup[i_2],C1,C2])
+
+		except:
+			pass
+
+	for i in range(len(pointVecSoup)):
+		p_1 = pointVecSoup[i]
+
+		try:
+			p_2, i_2, minDist = findClosestPointWithAngle(globalVecPoints_offset, p_1, matchAngTol)
+
+			if minDist <= minMatchDist2:
+	
+				" add to the list of match pairs less than 1.0 distance apart "
+				" keep A points and covariances untransformed "
+				C1 = globalCovPoints[i_2][2]	 
+				C2 = pointCovSoup[i][2]						 
+
+				" we store the untransformed point, but the transformed covariance of the A point "
+				match_pairs.append([globalVecPoints[i_2],pointVecSoup[i],C1,C2])
+		except:
+			pass
+
+	flatMatchPairs = []
+	for pair in match_pairs:
+		p1 = pair[0]
+		p2 = pair[1]
+		C1 = pair[2]
+		C2 = pair[3]
+
+		flatMatchPairs.append(p1[0])
+		flatMatchPairs.append(p1[1])
+		flatMatchPairs.append(C1[0][0])
+		flatMatchPairs.append(C1[0][1])
+		flatMatchPairs.append(C1[1][0])
+		flatMatchPairs.append(C1[1][1])
+		flatMatchPairs.append(p2[0])
+		flatMatchPairs.append(p2[1])
+		flatMatchPairs.append(C2[0][0])
+		flatMatchPairs.append(C2[0][1])
+		flatMatchPairs.append(C2[1][0])
+		flatMatchPairs.append(C2[1][1])
+
+	c_pose1 = junctionPose
+	c_poses_2 = [item for sublist in poses_2 for item in sublist]
+	numPoses = len(poses_2)
+
+
+	newCost, newParam, newOffset  = nelminICP.pointCost(flatMatchPairs, len(match_pairs), [u1,currU,currAng], angNom, angLim, uHigh, uLow, c_pose1, c_poses_2, numPoses)
+
+	#newParam, newCost = nelminICP.ICPbyPose(flatMatchPairs, len(match_pairs), [u1,currU,currAng], angNom, angLim, uHigh, uLow, c_pose1, c_poses_2, numPoses)
+
+
+
+	" draw final position "
+	if plotIter:
+		
+		" set the origin of pose 1 "
+		poseOrigin = Pose(currPose)
+		
+		pylab.clf()
+		pylab.axes()
+		match_global = []
+		
+		for pair in match_pairs:
+			p1 = pair[0]
+			p2 = pair[1]
+			
+			p1_o = dispOffset(p1, currPose)
+			
+			p1_g = p1_o
+			p2_g = p2
+			match_global.append([p1_g,p2_g])
+
+		draw_matches(match_global, [0.0,0.0,0.0])
+
+		
+		for path in pathSoup:
+			xP = []
+			yP = []
+			for p in path:
+				xP.append(p[0])	
+				yP.append(p[1])
+
+			pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+
+		pylab.scatter([junctionPose[0]],[junctionPose[1]],color=(0.0,0.0,1.0))
+
+		xP = []
+		yP = []
+		for b in globalVecPoints:
+			p = [b[0],b[1]]
+			p1 = dispOffset(p,currPose)
+			
+			xP.append(p1[0])	
+			yP.append(p1[1])
+
+		pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
+
+		plotEnv()		 
+		pylab.title("%u -- %s u1 = %1.3f, u2 = %1.3f, ang = %1.3f, %.1f, %d %d F" % (n1, repr(n2), u1, currU, currAng, newCost, len(match_pairs), numIterations))
+
+		pylab.xlim(-6, 10)					  
+		pylab.ylim(-8, 8)
+		pylab.savefig("ICP_plot_%06u.png" % globalPlotCount)
+		pylab.clf()
+		
+		" save inputs "
+		globalPlotCount += 1
+
+	return currPose, newCost, len(match_pairs)
+
+
+@logFunction
 def branchEstimateICP(initGuess, junctionPose, pathSoup, globalPath, plotIter = False, n1 = 0, n2 = 0):
 
 	global numIterations
