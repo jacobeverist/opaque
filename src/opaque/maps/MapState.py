@@ -540,6 +540,11 @@ class MapState:
 		self.numParticles = 50
 		self.juncParticles = {}
 
+		self.poseParticles = {}
+		self.poseParticles["numParticles"] = 40
+		self.poseParticles["updateCount"] = 0
+		self.poseParticles["snapshots"] = {0 : ()}
+
 
 		"""
 		juncParts = {}
@@ -640,6 +645,7 @@ class MapState:
 
 		newObj.numParticles = deepcopy(self.numParticles)
 		newObj.juncParticles = deepcopy(self.juncParticles)
+		newObj.poseParticles = deepcopy(self.poseParticles)
 		newObj.pathClasses = deepcopy(self.pathClasses)
 		newObj.pathTermsVisisted = deepcopy(self.pathTermsVisited)
 		newObj.pathIDs = deepcopy(self.pathIDs)

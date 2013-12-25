@@ -14,6 +14,9 @@ from scipy.spatial import cKDTree
 from numpy import array
 
 renderGlobalPlotCount = 0
+qin_multi = None
+qout_multi =  None
+pool_multi = []
 
 def __num_processors():
 	
@@ -77,6 +80,9 @@ def multiFitSplice(initGuess, orientedPath, medialAxis, initPose, pathIDs, nodeI
 def batchGlobalMultiFit(initGuesses, splices, medial, initPose, pathIDs, nodeID):
 
 	global renderGlobalPlotCount
+	global pool_multi
+	global qin_multi
+	global qout_multi
 
 
 	#initGuess
@@ -109,12 +115,14 @@ def batchGlobalMultiFit(initGuesses, splices, medial, initPose, pathIDs, nodeID)
 	print "max_size =", ndata/chunk_size
 	
 	# set up a pool of processes
-	qin = processing.Queue(maxsize=ndata/chunk_size)
-	qout = processing.Queue(maxsize=ndata/chunk_size)
-	pool = [processing.Process(target=__remote_multiFit,
-				args=(rank, qin, qout, splices, medial, initPose, pathIDs, nodeID))
+	if len(pool_multi) == 0:
+
+		qin_multi = processing.Queue(maxsize=ndata/chunk_size)
+		qout_multi = processing.Queue(maxsize=ndata/chunk_size)
+		pool_multi = [processing.Process(target=__remote_multiFit,
+				args=(rank, qin_multi, qout_multi, splices, medial, initPose, pathIDs, nodeID))
 					for rank in range(nproc)]
-	for p in pool: p.start()
+		for p in pool_multi: p.start()
 	
 	# put data chunks in input queue
 	cur, nc = 0, 0
@@ -127,7 +135,7 @@ def batchGlobalMultiFit(initGuesses, splices, medial, initPose, pathIDs, nodeID)
 		print "cur =", cur
 		if len(_data) == 0: break
 		print "put(", (nc,_data), ")"
-		qin.put((nc,_data))
+		qin_multi.put((nc,_data))
 		print "DONE"
 		cur += chunk_size
 		nc += 1
@@ -138,7 +146,7 @@ def batchGlobalMultiFit(initGuesses, splices, medial, initPose, pathIDs, nodeID)
 	# read output queue
 	knn = []
 	while len(knn) < nc:
-		knn += [qout.get()]
+		knn += [qout_multi.get()]
 	
 	print "received output:", knn
 		
@@ -151,12 +159,12 @@ def batchGlobalMultiFit(initGuesses, splices, medial, initPose, pathIDs, nodeID)
 	print "sorted output:", knn
 		
 
-	print "terminating pool"
+	#print "terminating pool"
 	# terminate workers
-	for p in pool:
-		print "terminate"
-		p.terminate()
-		print "terminated"
+	#for p in pool_multi:
+	#	print "terminate"
+	#	p.terminate()
+	#	print "terminated"
 		
 	print "returning"
 	return knn
