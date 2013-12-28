@@ -30,7 +30,8 @@ def __num_processors():
 		get_nprocs.argtypes = []
 		return get_nprocs()
 
-def __remote_multiFit(rank, qin, qout, splices, medial, initPose, pathIDs, nodeID):
+#def __remote_multiFit(rank, qin, qout, splices, medial, initPose, pathIDs, nodeID):
+def __remote_multiFit(rank, qin, qout):
 
 	print "started __remote_multiFit"
 
@@ -43,7 +44,11 @@ def __remote_multiFit(rank, qin, qout, splices, medial, initPose, pathIDs, nodeI
 		results = []
 		for arg in args:
 			print "multiFitSplice(", arg
-			globalPath = splices[arg[0][3]]
+			globalPath = arg[0][4]
+			medial = arg[0][5]
+			initPose = arg[0][6]
+			pathIDs = arg[0][7]
+			nodeID = arg[0][8]
 			results.append(multiFitSplice(arg[0][0:3], globalPath, medial, initPose, pathIDs, nodeID, arg[1]) + (arg[0][3],))
 						   
 			#resultPose, lastCost, matchCount = globalOverlapICP_GPU2(arg, globalPath, medial)
@@ -120,7 +125,8 @@ def batchGlobalMultiFit(initGuesses, splices, medial, initPose, pathIDs, nodeID)
 		qin_multi = processing.Queue(maxsize=ndata/chunk_size)
 		qout_multi = processing.Queue(maxsize=ndata/chunk_size)
 		pool_multi = [processing.Process(target=__remote_multiFit,
-				args=(rank, qin_multi, qout_multi, splices, medial, initPose, pathIDs, nodeID))
+				#args=(rank, qin_multi, qout_multi, splices, medial, initPose, pathIDs, nodeID))
+				args=(rank, qin_multi, qout_multi))
 					for rank in range(nproc)]
 		for p in pool_multi: p.start()
 	

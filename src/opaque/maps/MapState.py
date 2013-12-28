@@ -625,6 +625,11 @@ class MapState:
 		self.colors = []
 		for i in range(1000):
 			self.colors.append((random.random(),random.random(),random.random()))
+	
+	@logFunction
+	def initializePoseParticles(self):
+		pass
+
 
 	@logFunction
 	def updatePoseData(self, poseData):
@@ -1711,7 +1716,7 @@ class MapState:
 
 				origJuncPose = copy(pathDesc["globalJunctionPose"])
 				origJuncPose[2] = 0.0
-				part[6] = sqrt((finalPose[0]-origJuncPose[0])**2 + (finalPose[1]-origJuncPose[1]**2))
+				part[6] = sqrt((finalPose[0]-origJuncPose[0])**2 + (finalPose[1]-origJuncPose[1])**2)
 				part[7] = fabs(normalizeAngle(finalPose[2]-origJuncPose[2]))
 
 			" get the maximum value for each of our features "

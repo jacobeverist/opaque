@@ -10,6 +10,7 @@ from Paths import computePathAngleVariance
 import math
 from operator import itemgetter
 import time
+import pylab
 
 renderGlobalPlotCount = 0
 
@@ -634,15 +635,25 @@ def movePath(mapHyp, nodeID, direction, distEst = 1.0):
 	if nodeID > 0:
 		
 		if nodeID % 2 == 1:
+			" the guess process gives a meaningful guess for these node's poses "
+			" before this, it is meaningless "
 			getStepGuess(mapHyp, nodeID-1, direction)
 			getInPlaceGuess(mapHyp, nodeID-1, nodeID, direction)
+
+
 		else:
 			print "movePath:  DO NOTHING"
 		
-		" guess path state from these guesses "
-			
-		" ESTIMATE TRAVEL WITH MEDIAL OVERLAP CONSTRAINT OF EVEN NUMBER POSE "
-		if poseData.numNodes >= 4 and nodeID % 2 == 1:
+		" now we fit the guessed pose to a splice of the paths "
+		" this constrains it to the previously explored environment "
+		" all possible splices are used, and they are filtered to determine the best result "
+		
+		if poseData.numNodes == 2 and nodeID % 2 == 1:
+			""" initialize pose particles """
+			mapHyp.initializePoseParticles()
+
+
+		elif poseData.numNodes >= 4 and nodeID % 2 == 1:
 			
 			" 1) get spliced path that the previous node is on "
 			hull2 = poseData.aHulls[nodeID-1]
@@ -676,10 +687,12 @@ def movePath(mapHyp, nodeID, direction, distEst = 1.0):
 				print "dist3 =", dist3
 				
 				if dist2 < 3.0:
-					junctions2.append((pathID,params[2][0]))
+					pID = params[2][0]
+					junctions2.append((pathID,pID))
 
 				if dist3 < 3.0:
-					junctions3.append((pathID,params[2][0]))
+					pID = params[2][0]
+					junctions3.append((pathID,pID))
 						
 				
 			closePathID2 = mapHyp.getClosestPath(initPose2)
@@ -694,6 +707,7 @@ def movePath(mapHyp, nodeID, direction, distEst = 1.0):
 			print "junctions2:", junctions2
 			print "junctions3:", junctions3
 
+			" add the parent and the child path ID connected to this junction "
 			for junc in junctionSet:
 				pathSet2.append(junc[0])
 				pathSet2.append(junc[1])
@@ -706,6 +720,8 @@ def movePath(mapHyp, nodeID, direction, distEst = 1.0):
 
 			print "pathSet2:", pathSet2
 			
+
+			" find the terminals for each path ID that we have selected "
 			termSet2 = []
 			for pathID in pathSet2:
 				if pathID == 0:
@@ -714,6 +730,7 @@ def movePath(mapHyp, nodeID, direction, distEst = 1.0):
 				else:
 					termSet2.append(terminals[pathID+1][0])
 					
+			" add the parent path ID for each path ID that we have selected "
 			for pathID in pathSet2:
 				parentID = mapHyp.getParentPathID(pathID)
 
@@ -832,10 +849,10 @@ def movePath(mapHyp, nodeID, direction, distEst = 1.0):
 				" NOTE:  guess pose is now the inter-nodal estimate instead of path-based estimate "
 				if angDiff2 < 0.5:
 					#resultMoves2.append((resultPose2,lastCost2,matchCount2,fabs(currAng2)) + result2)
-					resultMoves2.append((resultPose2,lastCost2,matchCount2,fabs(0.0)) + result2)
+					resultMoves2.append((resultPose2,lastCost2,matchCount2,fabs(0.0)) + result2 + (orientedSplicePath,))
 				if angDiff3 < 0.5:
 					#resultMoves3.append((resultPose3,lastCost3,matchCount3,fabs(currAng3)) + result3)				
-					resultMoves3.append((resultPose3,lastCost3,matchCount3,fabs(0.0)) + result3)				
+					resultMoves3.append((resultPose3,lastCost3,matchCount3,fabs(0.0)) + result3 + (orientedSplicePath,))				
 			
 			
 			
@@ -852,17 +869,96 @@ def movePath(mapHyp, nodeID, direction, distEst = 1.0):
 			for res in resultMoves3:
 				print res
 
+
+
+			" select the best pose for each node "
+			" record the splice used for the fit "
+			currSplice2 = []
+			currSplice3 = []
 			if len(resultMoves2) > 0:
 				mapHyp.nodePoses[nodeID-1] = resultMoves2[0][0]
+				currSplice2 = resultMoves2[0][19]
 			else:
 				print "node", nodeID-1, "not movePathed because no valid pose"
+
 			if len(resultMoves3) > 0:
 				mapHyp.nodePoses[nodeID] = resultMoves3[0][0]
+				currSplice3 = resultMoves3[0][19]
 			else:
 				print "node", nodeID, "not movePathed because no valid pose"
 
+			if len(currSplice2) == 0 and len(currSplice3) > 0:
+				currSplice2 = currSplice3
+
+			if len(currSplice3) == 0 and len(currSplice2) > 0:
+				currSplice3 = currSplice2
+
+			" default to the 1st splice, no particular meaning "
+			" FIXME: default to previous pose's splice configuration "
+			if len(currSplice2) == 0:
+				currSplice2 = splicePaths[0]
+			if len(currSplice3) == 0:
+				currSplice3 = splicePaths[0]
+
+			" move the pose particles along their paths "	
 
 
+			"FIXME:  choose a splice that is common to the paired old and new poses "
+			orientedPathSpline2 = SplineFit(currSplice2, smooth=0.1)
+			orientedPathSpline3 = SplineFit(currSplice3, smooth=0.1)
+
+			oldPose0 = mapHyp.nodePoses[nodeID-3]
+			minDist0, oldU0, oldP0 = orientedPathSpline2.findClosestPoint(oldPose0)
+			#oldP0, oldI0, minDist0 = gen_icp.findClosestPointInA(currSplice2, oldPose0)
+
+			oldPose1 = mapHyp.nodePoses[nodeID-2]
+			minDist1, oldU1, oldP1 = orientedPathSpline3.findClosestPoint(oldPose1)
+			#oldP1, oldI1, minDist1 = gen_icp.findClosestPointInA(currSplice3, oldPose1)
+
+
+			newPose2 = mapHyp.nodePoses[nodeID-1]
+			minDist2, newU2, newP2 = orientedPathSpline2.findClosestPoint(newPose2)
+			#newP2, newI2, minDist2 = gen_icp.findClosestPointInA(currSplice2, newPose2)
+
+			newPose3 = mapHyp.nodePoses[nodeID]
+			minDist3, newU3, newP3 = orientedPathSpline3.findClosestPoint(newPose3)
+			#newP3, newI3, minDist3 = gen_icp.findClosestPointInA(currSplice3, newPose3)
+
+			travelDist2 = orientedPathSpline2.dist(oldU0, newU2)
+			if oldU0 > newU2:
+				travelDist2 = -travelDist2
+			travelDist3 = orientedPathSpline3.dist(oldU1, newU3)
+			if oldU1 > newU3:
+				travelDist3 = -travelDist3
+	
+			orientedPoints2 = orientedPathSpline2.getUniformSamples()
+			orientedPoints3 = orientedPathSpline3.getUniformSamples()
+
+			pylab.clf()
+
+			xP = []
+			yP = []
+			for p in orientedPoints2:
+				xP.append(p[0])
+				yP.append(p[1])
+			pylab.plot(xP,yP, color='k')
+
+			xP = []
+			yP = []
+			for p in orientedPoints3:
+				xP.append(p[0])
+				yP.append(p[1])
+			pylab.plot(xP,yP, color='k')
+
+			pylab.scatter([oldPose0[0],oldPose1[0]], [oldPose0[1],oldPose1[1]], color='r')
+			pylab.scatter([newPose2[0],newPose3[0]], [newPose2[1],newPose3[1]], color='b')
+			
+			pylab.xlim(-5,10)
+			pylab.ylim(-8,8)
+			pylab.title("%1.3f %1.3f" % (travelDist2, travelDist3))
+			pylab.savefig("moveEstimate_%04u_%04u.png" % (nodeID, mapHyp.hypothesisID))
+			
+			
 
 @logFunction
 def getInPlaceGuess(mapHyp, nodeID1, nodeID2, direction):
@@ -1874,7 +1970,8 @@ def generateMap(mapHyp):
 
 	mapHyp.generatePaths()
 	" TRIM THE RAW PATHS TO ONLY EXTRUDE FROM THEIR BRANCHING POINT "
-	mapHyp.trimPaths()
+	# redundant
+	#mapHyp.trimPaths()
 
 
 @logFunction
@@ -2444,12 +2541,15 @@ def consistentFit(mapHyp, nodeID, estPose, numGuesses = 11, excludePathIDs = [])
 			
 			#pathUGuess = i*0.05
 			pathUGuess = orientedPathSpline.getUOfDist(pathU1, dist)
-			initGuesses.append([pathUGuess, originU2, 0.0, spliceIndex])
+			#initGuesses.append([pathUGuess, originU2, 0.0, spliceIndex])
+			initGuesses.append([pathUGuess, originU2, 0.0, spliceIndex, orientedPath, medial1, estPose1, [], nodeID])
 			
 		orientedPaths.append(orientedPath)
 
-	print len(orientedPaths), "orientedPaths"
+
+	print len(orientedPaths), "orientedPaths", len(splicedPaths1), "splicedPaths", [ initGuesses[guessIndex][3] for guessIndex in range(len(initGuesses))]
 	print len(initGuesses), "initGuesses"
+	#results = batchGlobalMultiFit(initGuesses, orientedPaths, medial1, estPose1, [], nodeID)
 	results = batchGlobalMultiFit(initGuesses, orientedPaths, medial1, estPose1, [], nodeID)
 
 	time2 = time.time()
