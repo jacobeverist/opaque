@@ -776,6 +776,84 @@ double objFunc2(double *params, double *d_matchPairs, double *d_offset, double *
 }
 */
 
+void doPointCost(double *h_matchPairs, int numPairs, double *initGuess, double angNom, double angLim, double uHigh, double uLow, double *pose1, double *poses_2, int numPoses, double *resultParam, double *resultSum, double *resultOffset) {
+
+	double* d_matchPairs;
+	double* d_offset;
+	double* d_sum;
+	double* h_sum;
+	int nParam = 1;
+	int icount, ifault, numres;
+	double reqmin = 1.0E-18;
+	int konvge = 10;
+	int kcount = 5000;
+	double start[2] = {0.0,0.0};
+	double step[2] = {1.5, 0.3};
+	double xmin[2] = {0.0,0.0};
+	double ynewlo = 0.0;
+
+	size_t size;
+	size_t size2;
+	size_t size3;
+
+	int i, j;
+
+	double u1, u2, currU, currAng;
+	double offset[3];
+	double newSum;
+
+	size = 3 * sizeof(double);
+	size2 = numPairs * 12 * sizeof(double);
+	size3 = sizeof(double);
+
+	h_sum = (double*)malloc(size3);
+
+	u1 = initGuess[0];
+	u2 = initGuess[1];
+	currU = u2;
+	currAng = initGuess[2];
+
+	start[0] = currU;
+	start[1] = currAng;
+
+	d_offset = (double*)malloc(size);
+	d_matchPairs = (double*)malloc(size2);
+	d_sum = (double*)malloc(size3);
+
+	// Copy vectors from host memory to device memory
+
+	for ( i = 0 ; i < 12*numPairs ; i++ ) {
+		d_matchPairs[i] = h_matchPairs[i];
+	}
+
+	newSum = objFuncIndAngle(&start[0], d_matchPairs, d_offset, d_sum, numPairs, pose1, poses_2, numPoses, angNom, angLim, uHigh, uLow, offset);
+
+	resultSum[0] = newSum;
+	resultParam[0] = currU;
+	resultParam[1] = currAng;
+
+	resultOffset[0] = offset[0];
+	resultOffset[1] = offset[1];
+	resultOffset[2] = offset[2];
+
+	// Free device memory
+	if (d_matchPairs)
+		free(d_matchPairs);
+	if (d_offset)
+		free(d_offset);
+	if (d_sum)
+		free(d_sum);
+
+	// Free host memory
+	//if (h_matchPairs)
+	//	free(h_matchPairs);
+	if (h_sum)
+		free(h_sum);
+
+
+}
+
+
 void doICPIndAngle(double *h_matchPairs, int numPairs, double *initGuess, double angNom, double angLim, double uHigh, double uLow, double *pose1, double *poses_2, int numPoses, double *resultParam, double *resultSum) {
 
 	double* d_matchPairs;

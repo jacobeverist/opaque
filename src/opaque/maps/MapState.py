@@ -20,6 +20,7 @@ from operator import itemgetter
 import hashlib
 from Splices import batchGlobalMultiFit, getMultiDeparturePoint, orientPath, getTipAngles
 from MapProcess import selectLocalCommonOrigin
+import time
 import traceback
 
 import alphamod
@@ -529,6 +530,42 @@ def computePathAngleVariance(pathSamples):
 
 
 
+def multiParticleFitSplice(initGuess, orientedPath, medialAxis, initPose, pathIDs, nodeID, pathPlotCount = 0):
+	
+	u1 = initGuess[0]
+	u2 = initGuess[1]
+	angGuess = initGuess[2]
+
+	#minMedialDist0, oldMedialU0, oldMedialP0 = medialSpline.findClosestPoint([0.0,0.0,0.0])
+
+	#uPath1, uMedialOrigin1 = selectLocalCommonOrigin(orientedSplicePath, medial1, pose1)
+	#u1 = uPath1
+	#resultPose0, lastCost0, matchCount0, currAng0, currU0 = gen_icp.globalPathToNodeOverlapICP2([uPath0, uMedialOrigin0, 0.0], currSplice0, medial0, plotIter = False, n1 = nodeID0, n2 = -1, arcLimit = 0.01)
+
+	#localizeJobs.append([originU2, pathU1, 0.0, spliceIndex, orientedPath, medial1, hypPose, [], nodeID, particleIndex])
+
+	resultPose0, lastCost0, matchCount0, currAng0, currU0 = gen_icp.globalPathToNodeOverlapICP2([u1, u2, angGuess], orientedPath, medialAxis, plotIter = False, n1 = nodeID, n2 = -1, arcLimit = 0.01, origPose = initPose)
+
+
+	icpDist = sqrt((resultPose0[0]-initPose[0])**2 + (resultPose0[1]-initPose[1])**2)
+	#print "nodeID:", nodeID0, nodeID1
+	#print "travelDist:", thisDist, travelDist0, travelDist1
+	print "icpDist:", nodeID, pathPlotCount, icpDist, currU0, u1, currAng0, angGuess, u2
+
+	#resultPose, lastCost, matchCount = globalOverlapICP_GPU2([u1,u2,angGuess], orientedPath, medialAxis, globalPlotCount = pathPlotCount, plotIter = False, n1 = nodeID, n2 = -1)
+	#print "ICP done"
+
+	resultArgs = getMultiDeparturePoint(orientedPath, medialAxis, initPose, resultPose0, pathIDs, nodeID, pathPlotCount, plotIter = True)
+
+	isExist1 = resultArgs[3]
+	isExist2 = resultArgs[9]
+	
+	" departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2 "
+
+	return (resultPose0, lastCost0, matchCount0) + resultArgs + (isExist1 or isExist2,)
+
+
+
 
 class MapState:
 	
@@ -624,6 +661,27 @@ class MapState:
 		self.terminals = {}
 
 		self.colors = []
+
+		self.colors.append([0, 0, 255])
+		self.colors.append([0, 255, 0])
+		self.colors.append([255, 0, 0])
+		self.colors.append([255, 0, 255])
+		self.colors.append([255, 255, 0])
+		self.colors.append([0, 255, 255])
+		"""
+		self.colors.append([215, 48, 39])
+		self.colors.append([252, 141, 89])
+		self.colors.append([254, 224, 144])
+		self.colors.append([224, 243, 248])
+		self.colors.append([145, 191, 219])
+		self.colors.append([69, 117, 180])
+		"""
+
+		for color in self.colors:
+			color[0] = float(color[0])/256.0
+			color[1] = float(color[1])/256.0
+			color[2] = float(color[2])/256.0
+
 		for i in range(1000):
 			self.colors.append((random.random(),random.random(),random.random()))
 	
@@ -733,10 +791,13 @@ class MapState:
 			oldAng0 = hypPose[2]
 
 			newPose = copy(newP0)
-			newPose[2] = oldAng0
+			#newPose[2] = oldAng0
 
-			uPath0, uMedialOrigin0 = selectLocalCommonOrigin(currSplice0, medial0, newPose)
+			newPart = (newPose, 0, newDist0, ('t0', 't1'))
 
+			#uPath0, uMedialOrigin0 = selectLocalCommonOrigin(currSplice0, medial0, newPose)
+
+			"""
 			minMedialDist0, oldMedialU0, oldMedialP0 = medialSpline.findClosestPoint([0.0,0.0,0.0])
 
 			#uPath1, uMedialOrigin1 = selectLocalCommonOrigin(orientedSplicePath, medial1, pose1)
@@ -755,11 +816,265 @@ class MapState:
 			#minDist0, oldU0, oldP0 = pathSpline.findClosestPoint(hypPose)
 
 			newPart = (resultPose0, 0, newDist0, ('t0', 't1'))
+			"""
 
 			newPartDist.append(newPart)
 
 
 		self.poseParticles["snapshots"][updateCount] = newPartDist
+
+	@logFunction
+	def localizePoseParticles(self, nodeID0, nodeID1):
+
+		updateCount = self.poseParticles["updateCount"] 
+		particleDist = self.poseParticles["snapshots"][updateCount]
+		poseData = self.poseData
+
+
+		nodeID = nodeID0
+
+		splicedPaths1, spliceTerms, splicePathIDs = self.getSplicesByNearJunction(nodeID)
+
+		orientedPaths = []
+		
+		hull1 = poseData.aHulls[nodeID]
+		medial1 = poseData.medialAxes[nodeID]
+
+		medialSpline1 = SplineFit(medial1, smooth=0.1)
+		medialSamples = medialSpline1.getUniformSamples(spacing = 0.04)
+		#originU2 = medialSpline1.findU([0.0,0.0])	
+		minMedialDist0, oldMedialU0, oldMedialP0 = medialSpline1.findClosestPoint([0.0,0.0,0.0])
+		originU2 = oldMedialU0
+
+					
+
+
+		#orientedPaths = []
+		#orientedPaths.append(orientedPath)
+
+		localizeJobs = []
+
+		for particleIndex in range(len(particleDist)):
+
+			part = particleDist[particleIndex]
+
+			hypPose = part[0]
+			pathID = part[1]
+			hypDist = part[2]
+			spliceID = part[3]
+			poseOrigin = Pose(hypPose)
+
+			globalMedial = []
+			for p in medial1:
+				globalMedial.append(poseOrigin.convertLocalToGlobal(p))
+			#globalMedialSpline1 = SplineFit(globalMedial, smooth=0.1)
+
+			globalMedialSamples = []
+			for p in medialSamples:
+				result = poseOrigin.convertLocalOffsetToGlobal(p)	
+				globalMedialSamples.append(result)
+
+			medialVar = computePathAngleVariance(globalMedialSamples)
+
+			globalMedialP0 = poseOrigin.convertLocalOffsetToGlobal(oldMedialP0)	
+
+			resultsBySplice = []
+
+			for spliceIndex in range(len(splicedPaths1)):
+				
+				path = splicedPaths1[spliceIndex]
+
+
+				pathSpline = SplineFit(path, smooth=0.1)
+				#pathU1 = pathSpline.findU(hypPose[:2])
+				#pathU1 = pathSpline.findU(globalMedialP0)
+				#pathForeU = pathSpline.getUOfDist(originU1, 1.0, distIter = 0.001)
+				#pathBackU = pathSpline.getUOfDist(originU1, -1.0, distIter = 0.001)
+				
+				orientedPath = orientPath(path, globalMedial)
+				orientedPathSpline = SplineFit(orientedPath, smooth=0.1)
+				pathU1 = orientedPathSpline.findU(globalMedialP0)
+
+				#globalSamples = orientedPathSpline.getUniformSamples(spacing = 0.04)
+				#globalVar = computePathAngleVariance(globalSamples)
+
+				" now lets find closest points and save their local variances "			
+				"""
+				closestPairs = []
+				TERM_DIST = 20
+				
+				for i in range(TERM_DIST, len(globalSamples)-TERM_DIST):
+					pG = globalSamples[i]
+					minDist = 1e100
+					minJ = -1
+					for j in range(TERM_DIST, len(globalMedialSamples)-TERM_DIST):
+						pM = globalMedialSamples[j]
+						dist = math.sqrt((pG[0]-pM[0])**2 + (pG[1]-pM[1])**2)
+						
+						if dist < minDist:
+							minDist = dist
+							minJ = j
+							
+					if minDist < 0.1:
+						closestPairs.append((i,minJ,minDist,globalVar[i][0],medialVar[minJ][0],globalVar[i][1],medialVar[minJ][1]))
+
+				for j in range(TERM_DIST, len(globalMedialSamples)-TERM_DIST):
+					pM = globalMedialSamples[j]
+					minDist = 1e100
+					minI = -1
+					for i in range(TERM_DIST, len(globalSamples)-TERM_DIST):
+						pG = globalSamples[i]
+						dist = math.sqrt((pG[0]-pM[0])**2 + (pG[1]-pM[1])**2)
+						
+						if dist < minDist:
+							minDist = dist
+							minI = i
+							
+					if minDist < 0.1:
+						closestPairs.append((minI,j,minDist,globalVar[minI][0],medialVar[j][0],globalVar[minI][1],medialVar[j][1]))
+
+				" remove duplicates "
+				closestPairs = list(set(closestPairs))
+				
+				" sort by lowest angular variance"
+				closestPairs = sorted(closestPairs, key=itemgetter(5,6))
+				print len(closestPairs), "closest pairs"
+
+				if len(closestPairs) > 0:
+					originU2 = medialSpline1.findU(medialSamples[closestPairs[0][1]])	
+					pathU1 = orientedPathSpline.findU(globalSamples[closestPairs[0][0]])
+
+				else:
+				
+					originU2 = medialSpline1.findU([0.0,0.0])
+					pathU1 = orientedPathSpline.findU(hypPose[:2])
+				"""
+				
+
+				time1 = time.time()
+
+				" add guesses in the neighborhood of the closest pathU "
+				" 5 forward, 5 backward "
+				
+				localizeJobs.append([pathU1, originU2, 0.0, spliceIndex, orientedPath, medial1, hypPose, [], nodeID, particleIndex])
+
+
+		
+		results = []
+		for k in range(len(localizeJobs)):
+
+			job = localizeJobs[k]
+
+			globalPath = job[4]
+			medial = job[5]
+			initPose = job[6]
+			pathIDs = job[7]
+			nodeID = job[8]
+			particleIndex = job[9]
+			params = [job[0], job[1], job[2]]
+
+
+			results.append(multiParticleFitSplice(params, globalPath, medial, initPose, pathIDs, nodeID, self.pathPlotCount2) + (params,particleIndex))
+			self.pathPlotCount2 += 1
+
+		return
+
+		print len(orientedPaths), "orientedPaths", len(splicedPaths1), "splicedPaths", [ initGuesses[guessIndex][3] for guessIndex in range(len(initGuesses))]
+		print len(initGuesses), "initGuesses"
+		#results = batchGlobalMultiFit(initGuesses, orientedPaths, medial1, estPose1, [], nodeID)
+		results = batchGlobalMultiFit(initGuesses, orientedPaths, medial1, estPose1, [], nodeID)
+
+		time2 = time.time()
+		print "time:", time2 - time1
+
+		resultsBySplice += results
+		
+		print "consistentFit node", nodeID
+		
+		print len(resultsBySplice), "results"
+		
+		for k in range(len(resultsBySplice)):
+			result = resultsBySplice[k]
+			resultPose = result[0]
+			dist = sqrt((estPose1[0]-resultPose[0])**2 + (estPose1[1] - resultPose[1])**2)
+			resultsBySplice[k] = result + (dist, k,)
+
+
+		print "unfilteredResults:"
+		for result in resultsBySplice:
+			resultPose = result[0]
+			isInterior1 = result[5]
+			isExist1 = result[6]
+			isInterior2 = result[11]
+			isExist2 = result[12]
+			contigFrac = result[15]
+			angDiff2 = result[17]
+			spliceIndex = result[19]
+			#spliceIndex = result[21]
+
+			#result[18] is isDepartureExists True/False
+			dist = result[20]
+			#dist = sqrt((estPose1[0]-resultPose[0])**2 + (estPose1[1] - resultPose[1])**2)
+			lastCost = result[1]
+			matchCount = result[2]
+			overlapSum = result[16]
+			print spliceIndex, [int(isInterior1), int(isInterior2), int(isExist1), int(isExist2)], contigFrac, dist, angDiff2, lastCost, matchCount, overlapSum, spliceTerms[spliceIndex], splicePathIDs[spliceIndex], resultPose
+
+		
+		" resultPose, lastCost, matchCount, departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2, isDeparture, dist, spliceIndex "
+
+
+		"""
+		1) departures:	(0,0) good, (1,0) okay, (1,1) bad 
+		2) contigFrac:	1.0 good, 0.9 okay, 0.5 bad, 0.0 reject
+		3) dist:   0.0 great, 0.5 good, 1.0 okay, 2.0 bad, 3.0 reject
+		4) angDiff2:  0.0 great, 0.2 good, 0.5 bad/reject
+		5) splicePathIDs:  exID in REJECT, currPathID in GOOD
+		"""
+		
+		#(0.5-angDiff2)/0.5 + (contigFrac-0.5)/0.5 + (3.0-dist)/3.0 + 1-isDeparture*0.5
+		
+		filteredResults = []
+		for result in resultsBySplice:
+			resultPose = result[0]
+			isInterior1 = result[5]
+			isExist1 = result[6]
+			isInterior2 = result[11]
+			isExist2 = result[12]
+			contigFrac = result[15]
+			angDiff2 = result[17]
+			isDeparture = result[18]
+			spliceIndex = result[19]
+			dist = result[20]
+			
+			
+			" rejection filter "
+			isReject = False
+			
+			if isInterior1 or isInterior2:
+				isReject = True
+			
+
+			if isExist1 and isExist2:
+				isReject = True
+			
+			for exID in excludePathIDs:
+				if exID in splicePathIDs[spliceIndex]:
+					isReject = True
+		
+			if contigFrac <= 0.5:
+				isReject = True
+				
+			if dist >= 3.0:
+				isReject = True
+			
+			if angDiff2 > 0.7:
+				isReject = True
+				
+			if not isReject:
+				filteredResults.append(result)
+
+			
 	
 	@logFunction
 	def drawPoseParticles(self):

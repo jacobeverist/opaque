@@ -1888,7 +1888,7 @@ def globalOverlapICP_GPU2(initGuess, globalPath, medialPoints,plotIter = False, 
 	return currPose, newCost, len(match_pairs)
 
 @logFunction
-def globalPathToNodeOverlapICP2(initGuess, globalPath, medialPoints, plotIter = False, n1 = 0, n2 = 0, minMatchDist = 1.0, arcLimit = 0.5):
+def globalPathToNodeOverlapICP2(initGuess, globalPath, medialPoints, plotIter = False, n1 = 0, n2 = 0, minMatchDist = 1.0, arcLimit = 0.5, origPose = [0.0,0.0,0.0]):
 
 	global numIterations
 	global globalPlotCount
@@ -2103,54 +2103,72 @@ def globalPathToNodeOverlapICP2(initGuess, globalPath, medialPoints, plotIter = 
 		doUnPoseOffset = Pose(unPoseOffset)
 			
 
+		if plotIter:
+
+			trueCost = shapeCostC(currPose, match_pairs)
+			numPairs = len(match_pairs)
+			numPoses = len(poses_3)
+			trueCost2, resultParam, resultOffset = nelminICP.ICPcost(flatMatchPairs, numPairs, [u2,currU,currAng], uHigh, uLow, c_poses_2, c_poses_3, numPoses)
+			trueCost3 = shapeCostC(resultOffset, match_pairs)
+
+			pylab.clf()
+
+			pLocal = doUnPoseOffset.convertLocalOffsetToGlobal([0.0,0.0,0.0])
+			resultPose = p3Restore.convertLocalOffsetToGlobal(pLocal)
+
+			xP = []
+			yP = []
+			for b in medialPoly:
+				p1 = dispOffset(b, resultPose)
+				xP.append(p1[0])	
+				yP.append(p1[1])
+			
+
+			pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
+
+			xP = []
+			yP = []
+			for b in medialPoly:
+				p1 = dispOffset(b, origPose)
+				xP.append(p1[0])	
+				yP.append(p1[1])
+
+			pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0), alpha=0.5)
+
+			
+			if currU >= 1.0:
+				newPose1 = poses_1[-1]
+			elif currU < 0.0:
+				newPose1 = poses_1[0]
+			else:
+				newPose1 = poses_1[int(currU*100)]
+
+			pylab.scatter([resultPose[0]],[resultPose[1]],color=(0.0,0.0,1.0))
+			pylab.scatter([newPose1[0]],[newPose1[1]],color='k')
+
+			zeroPose = dispOffset([0.0,0.0,0.0], resultPose)
+			pylab.scatter([zeroPose[0]],[zeroPose[1]],color='y')
+			
+			xP = []
+			yP = []
+			for b in globalPath:
+				xP.append(b[0])    
+				yP.append(b[1])
+			
+			pylab.title("(%u,%u) u2 = %1.3f, u3 = %1.3f, ang = %1.3f, iter = %d" % (n1, n2, u2, currU, currAng, numIterations))
+			pylab.xlim(-5, 10)					   
+			pylab.ylim(-8, 8)					   
+			
+			pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))	
+			pylab.savefig("ICP_plot_%06u_000.png" % globalPlotCount)
+
+			globalPlotCount += 1
 
 		if isTerminate:
 			break
 
-	if plotIter:
 
-		trueCost = shapeCostC(currPose, match_pairs)
-		numPairs = len(match_pairs)
-		numPoses = len(poses_3)
-		trueCost2, resultParam, resultOffset = nelminICP.ICPcost(flatMatchPairs, numPairs, [u2,currU,currAng], uHigh, uLow, c_poses_2, c_poses_3, numPoses)
-		trueCost3 = shapeCostC(resultOffset, match_pairs)
-
-		pylab.clf()
-
-		pLocal = doUnPoseOffset.convertLocalOffsetToGlobal([0.0,0.0,0.0])
-		resultPose = p3Restore.convertLocalOffsetToGlobal(pLocal)
-
-		xP = []
-		yP = []
-		for b in medialPoly:
-			p1 = dispOffset(b, resultPose)
-			xP.append(p1[0])	
-			yP.append(p1[1])
-		
-
-		pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
-		
-		pose1 = poses_1[int(currU*100)]
-
-		pylab.scatter([resultPose[0]],[resultPose[1]],color=(0.0,0.0,1.0))
-		pylab.scatter([pose1[0]],[pose1[1]],color='k')
-
-		zeroPose = dispOffset([0.0,0.0,0.0], resultPose)
-		pylab.scatter([zeroPose[0]],[zeroPose[1]],color='y')
-		
-		xP = []
-		yP = []
-		for b in globalPath:
-			xP.append(b[0])    
-			yP.append(b[1])
-		
-		pylab.title("(%u,%u) u2 = %1.3f, u3 = %1.3f, ang = %1.3f, iter = %d" % (n1, n2, u2, currU, currAng, numIterations))
-		pylab.xlim(-5, 10)					   
-		pylab.ylim(-8, 8)					   
-		
-		pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))	
-		pylab.savefig("ICP_plot_%06u_000.png" % globalPlotCount)
-
+	if False:
 
 		if False:
 

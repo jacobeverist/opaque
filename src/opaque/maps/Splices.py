@@ -56,7 +56,6 @@ def __remote_multiFit(rank, qin, qout):
 		# write to output queue
 		qout.put((nc,results))
 
-
 def multiFitSplice(initGuess, orientedPath, medialAxis, initPose, pathIDs, nodeID, pathPlotCount = 0):
 	
 	u1 = initGuess[0]

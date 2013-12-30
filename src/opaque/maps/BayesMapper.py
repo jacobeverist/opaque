@@ -290,6 +290,9 @@ class BayesMapper:
 			hypSet = batchLocalizePair(hypSet, nodeID1, nodeID2)
 			#batchEval(hypSet)
 			
+			for pID, mapHyp in hypSet.iteritems():
+				mapHyp.localizePoseParticles(nodeID1, nodeID2)
+				mapHyp.drawPoseParticles()
 
 			for pID, currHyp in hypSet.iteritems():
 
