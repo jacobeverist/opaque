@@ -647,13 +647,8 @@ def movePath(mapHyp, nodeID, direction, distEst = 1.0):
 		" now we fit the guessed pose to a splice of the paths "
 		" this constrains it to the previously explored environment "
 		" all possible splices are used, and they are filtered to determine the best result "
-		
-		if poseData.numNodes == 2 and nodeID % 2 == 1:
-			""" initialize pose particles """
-			mapHyp.initializePoseParticles()
 
-
-		elif poseData.numNodes >= 4 and nodeID % 2 == 1:
+		if poseData.numNodes >= 4 and nodeID % 2 == 1:
 			
 			" 1) get spliced path that the previous node is on "
 			hull2 = poseData.aHulls[nodeID-1]
@@ -823,8 +818,8 @@ def movePath(mapHyp, nodeID, direction, distEst = 1.0):
 				print "input: uMedialOrigin3, u3, pose3:", uMedialOrigin3, u3, pose3
 
 				
-				resultPose2, lastCost2, matchCount2, currAng2 = gen_icp.globalPathToNodeOverlapICP2([u2, uMedialOrigin2, 0.0], orientedSplicePath, medial2, plotIter = False, n1 = nodeID-1, n2 = -1, arcLimit = 0.1)
-				resultPose3, lastCost3, matchCount3, currAng3 = gen_icp.globalPathToNodeOverlapICP2([u3, uMedialOrigin3, 0.0], orientedSplicePath, medial3, plotIter = False, n1 = nodeID, n2 = -1, arcLimit = 0.1)
+				resultPose2, lastCost2, matchCount2, currAng2, currU2 = gen_icp.globalPathToNodeOverlapICP2([u2, uMedialOrigin2, 0.0], orientedSplicePath, medial2, plotIter = False, n1 = nodeID-1, n2 = -1, arcLimit = 0.1)
+				resultPose3, lastCost3, matchCount3, currAng3, currU3 = gen_icp.globalPathToNodeOverlapICP2([u3, uMedialOrigin3, 0.0], orientedSplicePath, medial3, plotIter = False, n1 = nodeID, n2 = -1, arcLimit = 0.1)
 				
 				print "resultPoses:", resultPose2, resultPose3
 
@@ -930,9 +925,11 @@ def movePath(mapHyp, nodeID, direction, distEst = 1.0):
 			travelDist3 = orientedPathSpline3.dist(oldU1, newU3)
 			if oldU1 > newU3:
 				travelDist3 = -travelDist3
-	
+			
 			orientedPoints2 = orientedPathSpline2.getUniformSamples()
 			orientedPoints3 = orientedPathSpline3.getUniformSamples()
+
+			mapHyp.displacePoseParticles(nodeID-1, nodeID, newPose2, newPose3, travelDist2, travelDist3, currSplice2, currSplice3)
 
 			pylab.clf()
 
@@ -958,6 +955,8 @@ def movePath(mapHyp, nodeID, direction, distEst = 1.0):
 			pylab.title("%1.3f %1.3f" % (travelDist2, travelDist3))
 			pylab.savefig("moveEstimate_%04u_%04u.png" % (nodeID, mapHyp.hypothesisID))
 			
+
+			mapHyp.drawPoseParticles()
 			
 
 @logFunction
@@ -2308,6 +2307,8 @@ def addToPaths(particleIDs, hypSet, nodeID1, nodeID2):
 	
 			mapHyp.generatePaths()
 			mapHyp.trimPaths()
+
+			mapHyp.initializePoseParticles()
 
 
 		return particleIDs, hypSet

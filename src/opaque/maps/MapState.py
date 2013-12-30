@@ -19,6 +19,7 @@ import numpy
 from operator import itemgetter
 import hashlib
 from Splices import batchGlobalMultiFit, getMultiDeparturePoint, orientPath, getTipAngles
+from MapProcess import selectLocalCommonOrigin
 import traceback
 
 import alphamod
@@ -628,8 +629,209 @@ class MapState:
 	
 	@logFunction
 	def initializePoseParticles(self):
-		pass
+	
+		pose0 = self.nodePoses[0]
+		pose1 = self.nodePoses[1]
 
+		path0 = deepcopy(self.paths[0])
+
+		termPoint = self.terminals[0][1]
+
+		termDist0 = sqrt((path0[0][0]-termPoint[0])**2 + (path0[0][1]-termPoint[1])**2)
+		termDistN = sqrt((path0[-1][0]-termPoint[0])**2 + (path0[-1][1]-termPoint[1])**2)
+
+		if termDist0 > termDistN: 
+			path0.reverse()
+
+		pathSpline = SplineFit(path0, smooth=0.1)
+
+		minDist0, newU0, newP0 = pathSpline.findClosestPoint(pose0)
+		minDist1, newU1, newP1 = pathSpline.findClosestPoint(pose1)
+
+		dist0 = pathSpline.dist_u(newU0)
+		dist1 = pathSpline.dist_u(newU1)
+
+		#newAng0 = pathSpline.angle_u(newU0)
+		#newAng1 = pathSpline.angle_u(newU1)
+		newAng0 = pose0[2]
+		newAng1 = pose1[2]
+
+		totalLen = pathSpline.length()
+
+		pathID = 0
+		avgDist = (dist0 + dist1)/2.0
+		spliceID = ('t0', 't1')
+
+		#pID, pathI = self.topDict["t%u" % (pathID+1)]
+
+		part = (pathID, avgDist, ('t0','t1'))
+
+		#self.poseParticles = {}
+		#self.poseParticles["numParticles"] = 40
+		#self.poseParticles["updateCount"] = 0
+		#self.poseParticles["snapshots"] = {0 : ()}
+
+		numParticles = self.poseParticles["numParticles"]
+		initDist = []
+
+		" create the initial particle distibution "
+		while len(initDist) < numParticles:
+			hypDist = random.gauss(avgDist, 0.5)
+
+			if hypDist > 0.0 and hypDist <= totalLen:
+				hypPoint = pathSpline.getPointOfDist(hypDist)
+				hypPose = copy(hypPoint)
+				hypPose[2] = newAng0
+				initDist.append((hypPose, pathID, hypDist, ('t0', 't1')))
+
+		print "setting pose particles", len(initDist), initDist
+		self.poseParticles["snapshots"][0] = initDist
+
+	@logFunction
+	def displacePoseParticles(self, nodeID0, nodeID1, newPose0, newPose1, travelDist0, travelDist1, currSplice0, currSplice1):
+
+		updateCount = self.poseParticles["updateCount"] 
+		particleDist = self.poseParticles["snapshots"][updateCount]
+		updateCount += 1
+		self.poseParticles["updateCount"] = updateCount
+
+		medial0 = self.poseData.medialAxes[nodeID0]
+		medial1 = self.poseData.medialAxes[nodeID1]
+
+	
+
+		pathSpline = SplineFit(currSplice0, smooth=0.1)
+		medialSpline = SplineFit(medial0, smooth=0.1)
+
+		newPartDist = []
+		for part in particleDist:
+			hypPose = part[0]
+			pathID = part[1]
+			hypDist = part[2]
+			spliceID = part[3]
+
+			minDist0, oldU0, oldP0 = pathSpline.findClosestPoint(hypPose)
+
+			thisDist = travelDist0
+
+			moveChance = random.random()
+			" 80% chance we move forward, 20% we move backward "    
+			if moveChance >= 0.1:
+				thisDist = travelDist0
+			else:
+				thisDist = -travelDist0
+
+			thisDist = random.gauss(thisDist,0.2)
+
+
+			#newU0 = pathSpline.getUOfDist(oldU0, travelDist0)
+			newU0 = pathSpline.getUOfDist(oldU0, thisDist)
+
+			newDist0 = pathSpline.dist_u(newU0)
+			newP0 = pathSpline.point_u(newU0)
+			newAng0 = pathSpline.angle_u(newU0)
+			oldAng0 = hypPose[2]
+
+			newPose = copy(newP0)
+			newPose[2] = oldAng0
+
+			uPath0, uMedialOrigin0 = selectLocalCommonOrigin(currSplice0, medial0, newPose)
+
+			minMedialDist0, oldMedialU0, oldMedialP0 = medialSpline.findClosestPoint([0.0,0.0,0.0])
+
+			#uPath1, uMedialOrigin1 = selectLocalCommonOrigin(orientedSplicePath, medial1, pose1)
+			#u1 = uPath1
+			#resultPose0, lastCost0, matchCount0, currAng0, currU0 = gen_icp.globalPathToNodeOverlapICP2([uPath0, uMedialOrigin0, 0.0], currSplice0, medial0, plotIter = False, n1 = nodeID0, n2 = -1, arcLimit = 0.01)
+			resultPose0, lastCost0, matchCount0, currAng0, currU0 = gen_icp.globalPathToNodeOverlapICP2([newU0, oldMedialU0, 0.0], currSplice0, medial0, plotIter = False, n1 = nodeID0, n2 = -1, arcLimit = 0.01)
+
+			icpDist = sqrt((resultPose0[0]-newPose[0])**2 + (resultPose0[1]-newPose[1])**2)
+			print "nodeID:", nodeID0, nodeID1
+			print "travelDist:", thisDist, travelDist0, travelDist1
+			print "icpDist:", icpDist, currU0, newU0, currAng0
+
+			#resultPose1, lastCost1, matchCount1, currAng1, currU1 = gen_icp.globalPathToNodeOverlapICP2([uPath1, uMedialOrigin1, 0.0], orientedSplicePath, medial1, plotIter = False, n1 = nodeID, n2 = -1, arcLimit = 0.1)
+
+			#newDist0 = pathSpline.dist_u(currU0)
+			#minDist0, oldU0, oldP0 = pathSpline.findClosestPoint(hypPose)
+
+			newPart = (resultPose0, 0, newDist0, ('t0', 't1'))
+
+			newPartDist.append(newPart)
+
+
+		self.poseParticles["snapshots"][updateCount] = newPartDist
+	
+	@logFunction
+	def drawPoseParticles(self):
+
+		updateCount = self.poseParticles["updateCount"] 
+		particleDist = self.poseParticles["snapshots"][updateCount]
+
+
+		print "particles:", particleDist
+
+		pylab.clf()
+
+		for k,path in  self.trimmedPaths.iteritems():
+			print "path has", len(path), "points"
+			xP = []
+			yP = []
+			for p in path:
+				xP.append(p[0])
+				yP.append(p[1])
+
+			pylab.plot(xP,yP, color = self.colors[k], linewidth=4)
+
+
+		#self.drawWalls()
+
+		"""
+		xP = []
+		yP = []
+		for p in orientedPoints2:
+			xP.append(p[0])
+			yP.append(p[1])
+		pylab.plot(xP,yP, color='k')
+
+		xP = []
+		yP = []
+		for p in orientedPoints3:
+			xP.append(p[0])
+			yP.append(p[1])
+		pylab.plot(xP,yP, color='k')
+		"""
+
+		nodeID = self.poseData.numNodes-1
+		medial0 = self.poseData.medialAxes[nodeID]
+
+		hypPointsX = []
+		hypPointsY = []
+		for part in particleDist:
+			hypPose = part[0]
+			pathID = part[1]
+			hypDist = part[2]
+			spliceID = part[3]
+			hypPointsX.append(hypPose[0])
+			hypPointsY.append(hypPose[1])
+
+
+			poseOrigin = Pose(hypPose)
+
+			xP = []
+			yP = []
+			for p in medial0:
+				p1 = poseOrigin.convertLocalToGlobal(p)
+				xP.append(p1[0])
+				yP.append(p1[1])
+
+			pylab.plot(xP,yP, color = 'k', alpha = 0.2, zorder=9)
+
+		pylab.scatter(hypPointsX, hypPointsY, color='r')
+		
+		pylab.xlim(-5,10)
+		pylab.ylim(-8,8)
+		pylab.title("%d particles" % len(particleDist))
+		pylab.savefig("moveEstimate2_%04u_%04u.png" % (self.poseData.numNodes-1, self.hypothesisID))
 
 	@logFunction
 	def updatePoseData(self, poseData):

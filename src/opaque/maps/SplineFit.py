@@ -14,6 +14,8 @@ from numpy import array
 class SplineFit:
 
 	def __init__ (self, points, smooth = 0.1, kp = 5):
+
+		rState = random.getstate()
 		
 		random.seed(0)		
 
@@ -110,6 +112,7 @@ class SplineFit:
 		self.denseAngles = []
 		self.denseTree = None
 
+		random.setstate(rState)
 
 	def findU(self, point):
 
@@ -470,6 +473,35 @@ class SplineFit:
 		#print "returning", self.distPoints[indInt]
 		return self.distPoints[indInt]
 
+	def point_u(self, u):
+		if len(self.densePoints) == 0:
+			self.precompute()
+
+		if u <= 0.0:
+			return self.densePoints[0]
+		
+		if u >= 1.0:
+			return self.densePoints[-1]
+		
+		ind = u * 1000.
+		indInt = int(ind)
+
+		return self.densePoints[indInt]
+
+	def angle_u(self, u):
+		if len(self.denseAngles) == 0:
+			self.precompute()
+
+		if u <= 0.0:
+			return self.denseAngles[0]
+		
+		if u >= 1.0:
+			return self.denseAngles[-1]
+		
+		ind = u * 1000.
+		indInt = int(ind)
+
+		return self.denseAngles[indInt]
 
 	def precompute(self):
 		
