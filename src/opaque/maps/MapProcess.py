@@ -124,11 +124,11 @@ def batchGenerate(mapHyps):
 	while 1:
 		#_data = data[:,cur:cur+chunk_size]
 		_data = args[cur:cur+chunk_size]
-		print "_data =", _data
+		#print "_data =", _data
 		print "nc = ", nc
 		print "cur =", cur
 		if len(_data) == 0: break
-		print "put(", (nc,_data), ")"
+		#print "put(", (nc,_data), ")"
 		qin_generate.put((nc,_data))
 		print "DONE"
 		cur += chunk_size
@@ -248,11 +248,11 @@ def batchEval(mapHyps):
 		while 1:
 			#_data = data[:,cur:cur+chunk_size]
 			_data = args[cur:cur+chunk_size]
-			print "_data =", _data
+			#print "_data =", _data
 			print "nc = ", nc
 			print "cur =", cur
 			if len(_data) == 0: break
-			print "put(", (nc,_data), ")"
+			#print "put(", (nc,_data), ")"
 			qin_eval.put((nc,_data))
 			print "DONE"
 			cur += chunk_size
@@ -447,11 +447,11 @@ def batchMovePath(mapHyps, nodeID, direction, distEst = 1.0):
 	while 1:
 		#_data = data[:,cur:cur+chunk_size]
 		_data = args[cur:cur+chunk_size]
-		print "_data =", _data
+		#print "_data =", _data
 		print "nc = ", nc
 		print "cur =", cur
 		if len(_data) == 0: break
-		print "put(", (nc,_data), ")"
+		#print "put(", (nc,_data), ")"
 		qin_move.put((nc,_data))
 		print "DONE"
 		cur += chunk_size
@@ -580,11 +580,11 @@ def batchLocalizePair(mapHyps, nodeID1, nodeID2):
 	while 1:
 		#_data = data[:,cur:cur+chunk_size]
 		_data = args[cur:cur+chunk_size]
-		print "_data =", _data
+		#print "_data =", _data
 		print "nc = ", nc
 		print "cur =", cur
 		if len(_data) == 0: break
-		print "put(", (nc,_data), ")"
+		#print "put(", (nc,_data), ")"
 		qin_localize.put((nc,_data))
 		print "DONE"
 		cur += chunk_size
@@ -956,7 +956,7 @@ def movePath(mapHyp, nodeID, direction, distEst = 1.0):
 			pylab.savefig("moveEstimate_%04u_%04u.png" % (nodeID, mapHyp.hypothesisID))
 			
 
-			#mapHyp.drawPoseParticles()
+			mapHyp.drawPoseParticles()
 			
 
 @logFunction

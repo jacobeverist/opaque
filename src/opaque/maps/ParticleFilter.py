@@ -1,3 +1,4 @@
+import multiprocessing as processing
 import random
 from copy import deepcopy
 from SplineFit import SplineFit
@@ -7,7 +8,9 @@ from Pose import Pose
 import gen_icp
 from math import acos, asin
 from numpy import array
+import ctypes, os, sys
 
+from Splices import getMultiDeparturePoint
 
 from scipy.spatial import KDTree, cKDTree
 from scipy.cluster.hierarchy import fclusterdata, fcluster
@@ -16,6 +19,61 @@ from matplotlib.pyplot import show, savefig, clf
 from scipy.spatial.distance import pdist
 from scipy.cluster.hierarchy import linkage, dendrogram
 from numpy.random import rand
+
+renderGlobalPlotCount = 0
+
+qin_posePart = None
+qout_posePart =  None
+pool_posePart = []
+
+def __num_processors():
+	
+	return 4
+	
+	if os.name == 'nt': # Windows
+		return int(os.getenv('NUMBER_OF_PROCESSORS'))
+	else: # glibc (Linux, *BSD, Apple)
+		get_nprocs = ctypes.cdll.libc.get_nprocs
+		get_nprocs.restype = ctypes.c_int
+		get_nprocs.argtypes = []
+		return get_nprocs()
+
+def __remote_multiParticle(rank, qin, qout):
+
+	sys.stdout = open("multi_" + str(os.getpid()) + ".out", "w")
+	sys.stderr = open("multi_" + str(os.getpid()) + ".err", "w")
+	print 'module name:', __name__
+	print 'parent process:', os.getppid()
+	print 'process id:', os.getpid()
+
+	print "started __remote_multiGenerate"
+
+	while 1:
+		# read input queue (block until data arrives)
+		nc, args = qin.get()
+		#print rank, "received", nc, args
+		# process data
+		#knn = __do_nothing(data, nc, someArg2, someArg3)
+		results = []
+		for job in args:
+
+			globalPath = job[4]
+			medial = job[5]
+			initPose = job[6]
+			pathIDs = job[7]
+			nodeID = job[8]
+			particleIndex = job[9]
+			pathPlotCount = job[10]
+			pathU1 = job[0]
+			originU2 = job[1]
+			angGuess = job[2]
+			params = [pathU1, originU2, angGuess]
+
+			result = multiParticleFitSplice(params, globalPath, medial, initPose, pathIDs, nodeID, particleIndex, pathPlotCount = pathPlotCount)
+			results.append(result)
+						   
+		# write to output queue
+		qout.put((nc,results))
 
 """
 def mysum(lvals):
@@ -34,6 +92,145 @@ var = (s2 - (s*s) / N ) / N
 mean = s / N
 
 """
+
+#result = multiParticleFitSplice(initGuess, orientedPath, medialAxis, initPose, pathIDs, nodeID, pathPlotCount = pathPlotCount)
+#def batchParticle(initGuesses, splices, medial, initPose, pathIDs, nodeID):
+def batchParticle(localizeJobs):
+
+	global renderGlobalPlotCount
+	global pool_posePart
+	global qin_posePart
+	global qout_posePart
+
+
+
+	#initGuess
+
+	#arg = [initGuess, initPose, pathID, nodeID]
+
+	ndata = len(localizeJobs)
+	
+	args = []
+	
+	for k in range(ndata):
+		arg = localizeJobs[k]
+		args.append(arg)
+	
+	nproc = __num_processors()
+	
+	nproc *= 2
+	print "nproc =", nproc
+	
+	# compute chunk size
+	#chunk_size = ceil(float(ndata) / float(nproc))
+	#chunk_size = int(chunk_size)
+	chunk_size = ndata / nproc
+	chunk_size = 2 if chunk_size < 2 else chunk_size
+	
+	print "chunk_size =", chunk_size
+	print "max_size =", ndata/chunk_size
+	
+	# set up a pool of processes
+	if len(pool_posePart) == 0:
+
+		qin_posePart = processing.Queue(maxsize=ndata/chunk_size)
+		qout_posePart = processing.Queue(maxsize=ndata/chunk_size)
+		pool_posePart = [processing.Process(target=__remote_multiParticle,
+				#args=(rank, qin_posePart, qout_posePart, splices, medial, initPose, pathIDs, nodeID))
+				args=(rank, qin_posePart, qout_posePart))
+					for rank in range(nproc)]
+		for p in pool_posePart: p.start()
+	
+	# put data chunks in input queue
+	cur, nc = 0, 0
+	#print "args =", args
+	while 1:
+		#_data = data[:,cur:cur+chunk_size]
+		_data = args[cur:cur+chunk_size]
+		#print "_data =", _data
+		print "nc = ", nc
+		print "cur =", cur
+		if len(_data) == 0: break
+		#print "put(", (nc,_data), ")"
+		qin_posePart.put((nc,_data))
+		print "DONE"
+		cur += chunk_size
+		nc += 1
+	
+	print "BATCH FINISHED"
+	
+	
+	# read output queue
+	knn = []
+	while len(knn) < nc:
+		knn += [qout_posePart.get()]
+	
+	print "received output:", knn
+		
+	# avoid race condition
+	_knn = [n for i,n in sorted(knn)]
+	knn = []
+	for tmp in _knn:
+		knn += tmp
+
+	print "sorted output:", knn
+		
+
+	#print "terminating pool"
+	# terminate workers
+	#for p in pool_posePart:
+	#	print "terminate"
+	#	p.terminate()
+	#	print "terminated"
+		
+	print "returning"
+	return knn
+
+
+
+def multiParticleFitSplice(initGuess, orientedPath, medialAxis, initPose, pathIDs, nodeID, particleIndex, pathPlotCount = 0):
+	
+	u1 = initGuess[0]
+	u2 = initGuess[1]
+	angGuess = initGuess[2]
+
+	#minMedialDist0, oldMedialU0, oldMedialP0 = medialSpline.findClosestPoint([0.0,0.0,0.0])
+
+	#uPath1, uMedialOrigin1 = selectLocalCommonOrigin(orientedSplicePath, medial1, pose1)
+	#u1 = uPath1
+	#resultPose0, lastCost0, matchCount0, currAng0, currU0 = gen_icp.globalPathToNodeOverlapICP2([uPath0, uMedialOrigin0, 0.0], currSplice0, medial0, plotIter = False, n1 = nodeID0, n2 = -1, arcLimit = 0.01)
+
+	#localizeJobs.append([originU2, pathU1, 0.0, spliceIndex, orientedPath, medial1, hypPose, [], nodeID, particleIndex])
+
+	resultPose0, lastCost0, matchCount0, currAng0, currU0 = gen_icp.globalPathToNodeOverlapICP2([u1, u2, angGuess], orientedPath, medialAxis, plotIter = False, n1 = nodeID, n2 = -1, arcLimit = 0.01, origPose = initPose)
+
+
+	icpDist = sqrt((resultPose0[0]-initPose[0])**2 + (resultPose0[1]-initPose[1])**2)
+	#print "nodeID:", nodeID0, nodeID1
+	#print "travelDist:", thisDist, travelDist0, travelDist1
+	#print "icpDist:", nodeID, pathPlotCount, icpDist, currU0, u1, currAng0, angGuess, u2
+
+	resultArgs = getMultiDeparturePoint(orientedPath, medialAxis, initPose, resultPose0, pathIDs, nodeID, pathPlotCount, plotIter = False)
+	#resultArgs = ([0.0, 0.0],  0.0, False, False, 0.0, 0.0, [0.0, 0.0], 0.0, False, False, 0.0, 0.0, 1.0, 0.0, 0.0)
+
+	isExist1 = resultArgs[3]
+	isExist2 = resultArgs[9]
+
+	" departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2 "
+
+	icpDist = sqrt((resultPose0[0]-initPose[0])**2 + (resultPose0[1]-initPose[1])**2)
+
+	#resultArgs = (particleIndex, icpDist) + resultArgs
+
+	#print "particleJob:", params, len(globalPath), len(medial), initPose, pathIDs, nodeID, self.pathPlotCount2
+	#print "icpDist:", nodeID, self.pathPlotCount2, icpDist, currU0, pathU1, currAng0, angGuess, originU2, len(resultArgs)
+			#return (resultPose0, lastCost0, matchCount0, currAng0, currU0) + resultArgs + (isExist1 or isExist2,)
+			#return (resultPose0, lastCost0, matchCount0) + resultArgs + (isExist1 or isExist2,)
+			#jresults.append(resultArgs)
+			#self.pathPlotCount2 += 1
+
+	return (particleIndex, icpDist, resultPose0, lastCost0, matchCount0, currAng0, currU0) + resultArgs + (isExist1 or isExist2,)
+
 
 
 
@@ -205,9 +402,9 @@ class ParticleFilter:
         globalPath = newPath
         globalPathReverse = deepcopy(globalPath)
         globalPathReverse.reverse()
-        
+     
 
-        
+     
         estPose1 = node1.getGlobalGPACPose()        
         poseOrigin = Pose(estPose1)
  

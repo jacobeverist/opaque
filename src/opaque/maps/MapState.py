@@ -20,6 +20,7 @@ from operator import itemgetter
 import hashlib
 from Splices import batchGlobalMultiFit, getMultiDeparturePoint, orientPath, getTipAngles
 from MapProcess import selectLocalCommonOrigin
+from ParticleFilter import multiParticleFitSplice, batchParticle
 import time
 import traceback
 
@@ -550,19 +551,17 @@ def multiParticleFitSplice(initGuess, orientedPath, medialAxis, initPose, pathID
 	icpDist = sqrt((resultPose0[0]-initPose[0])**2 + (resultPose0[1]-initPose[1])**2)
 	#print "nodeID:", nodeID0, nodeID1
 	#print "travelDist:", thisDist, travelDist0, travelDist1
-	print "icpDist:", nodeID, pathPlotCount, icpDist, currU0, u1, currAng0, angGuess, u2
+	#print "icpDist:", nodeID, pathPlotCount, icpDist, currU0, u1, currAng0, angGuess, u2
 
-	#resultPose, lastCost, matchCount = globalOverlapICP_GPU2([u1,u2,angGuess], orientedPath, medialAxis, globalPlotCount = pathPlotCount, plotIter = False, n1 = nodeID, n2 = -1)
-	#print "ICP done"
-
-	resultArgs = getMultiDeparturePoint(orientedPath, medialAxis, initPose, resultPose0, pathIDs, nodeID, pathPlotCount, plotIter = True)
+	resultArgs = getMultiDeparturePoint(orientedPath, medialAxis, initPose, resultPose0, pathIDs, nodeID, pathPlotCount, plotIter = False)
+	#resultArgs = ([0.0, 0.0],  0.0, False, False, 0.0, 0.0, [0.0, 0.0], 0.0, False, False, 0.0, 0.0, 1.0, 0.0, 0.0)
 
 	isExist1 = resultArgs[3]
 	isExist2 = resultArgs[9]
-	
+
 	" departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2 "
 
-	return (resultPose0, lastCost0, matchCount0) + resultArgs + (isExist1 or isExist2,)
+	return (resultPose0, lastCost0, matchCount0, currAng0, currU0) + resultArgs + (isExist1 or isExist2,)
 
 
 
@@ -575,11 +574,11 @@ class MapState:
 		
 
 		" branch point particles "
-		self.numParticles = 50
+		self.numParticles = 100
 		self.juncParticles = {}
 
 		self.poseParticles = {}
-		self.poseParticles["numParticles"] = 40
+		self.poseParticles["numParticles"] = self.numParticles
 		self.poseParticles["updateCount"] = 0
 		self.poseParticles["snapshots"] = {0 : ()}
 
@@ -662,12 +661,12 @@ class MapState:
 
 		self.colors = []
 
-		self.colors.append([0, 0, 255])
-		self.colors.append([0, 255, 0])
-		self.colors.append([255, 0, 0])
-		self.colors.append([255, 0, 255])
-		self.colors.append([255, 255, 0])
-		self.colors.append([0, 255, 255])
+		self.colors.append([127, 127, 255])
+		self.colors.append([127, 255, 127])
+		self.colors.append([255, 127, 127])
+		self.colors.append([255, 127, 255])
+		self.colors.append([255, 255, 127])
+		self.colors.append([127, 255, 255])
 		"""
 		self.colors.append([215, 48, 39])
 		self.colors.append([252, 141, 89])
@@ -740,7 +739,7 @@ class MapState:
 				hypPoint = pathSpline.getPointOfDist(hypDist)
 				hypPose = copy(hypPoint)
 				hypPose[2] = newAng0
-				initDist.append((hypPose, pathID, hypDist, ('t0', 't1')))
+				initDist.append((hypPose, pathID, hypDist, ('t0', 't1'), 0.0))
 
 		print "setting pose particles", len(initDist), initDist
 		self.poseParticles["snapshots"][0] = initDist
@@ -779,7 +778,7 @@ class MapState:
 			else:
 				thisDist = -travelDist0
 
-			thisDist = random.gauss(thisDist,0.2)
+			thisDist = random.gauss(thisDist,0.3)
 
 
 			#newU0 = pathSpline.getUOfDist(oldU0, travelDist0)
@@ -793,7 +792,7 @@ class MapState:
 			newPose = copy(newP0)
 			#newPose[2] = oldAng0
 
-			newPart = (newPose, 0, newDist0, ('t0', 't1'))
+			newPart = (newPose, 0, newDist0, ('t0', 't1'), 0.0)
 
 			#uPath0, uMedialOrigin0 = selectLocalCommonOrigin(currSplice0, medial0, newPose)
 
@@ -956,10 +955,15 @@ class MapState:
 				" add guesses in the neighborhood of the closest pathU "
 				" 5 forward, 5 backward "
 				
-				localizeJobs.append([pathU1, originU2, 0.0, spliceIndex, orientedPath, medial1, hypPose, [], nodeID, particleIndex])
+				localizeJobs.append([pathU1, originU2, 0.0, spliceIndex, deepcopy(orientedPath), deepcopy(medial1), deepcopy(hypPose), [], nodeID, particleIndex, self.pathPlotCount2])
+				self.pathPlotCount2 += 1
 
 
+		results = batchParticle(localizeJobs)
+		#for k in range(len(results)):
+		#	resultArgs = results[k]
 		
+		"""
 		results = []
 		for k in range(len(localizeJobs)):
 
@@ -971,11 +975,100 @@ class MapState:
 			pathIDs = job[7]
 			nodeID = job[8]
 			particleIndex = job[9]
-			params = [job[0], job[1], job[2]]
+			pathU1 = job[0]
+			originU2 = job[1]
+			angGuess = job[2]
+			params = [pathU1, originU2, angGuess]
 
 
-			results.append(multiParticleFitSplice(params, globalPath, medial, initPose, pathIDs, nodeID, self.pathPlotCount2) + (params,particleIndex))
+			
+			#results.append(multiParticleFitSplice(params, globalPath, medial, initPose, pathIDs, nodeID, self.pathPlotCount2) + (params,particleIndex))
+			#(resultPose0, lastCost0, matchCount0) + resultArgs + (isExist1 or isExist2,)
+			resultArgs = multiParticleFitSplice(params, globalPath, medial, initPose, pathIDs, nodeID, self.pathPlotCount2) + (params,)
+			resultPose0 = resultArgs[0]
+			currAng0 = resultArgs[3]
+			currU0 = resultArgs[4]
+
+			icpDist = sqrt((resultPose0[0]-initPose[0])**2 + (resultPose0[1]-initPose[1])**2)
+
+			resultArgs = (particleIndex, icpDist) + resultArgs
+
+			print "particleJob:", params, len(globalPath), len(medial), initPose, pathIDs, nodeID, self.pathPlotCount2
+			print "icpDist:", nodeID, self.pathPlotCount2, icpDist, currU0, pathU1, currAng0, angGuess, originU2, len(resultArgs)
+			#return (resultPose0, lastCost0, matchCount0, currAng0, currU0) + resultArgs + (isExist1 or isExist2,)
+			#return (resultPose0, lastCost0, matchCount0) + resultArgs + (isExist1 or isExist2,)
+			results.append(resultArgs)
 			self.pathPlotCount2 += 1
+		"""
+
+
+		#results.sort
+		sortedResults = sorted(results, key=itemgetter(0,1), reverse=False)
+
+		print "particle sort"
+		thisParticleID = -1
+		distMin = 1e100
+		filteredParticles = []
+		for res in sortedResults:
+			if res[0] != thisParticleID:
+				thisParticleID = res[0]
+				distMin = res[1]
+				filteredParticles.append(res)
+
+		print "len(filteredParticles) =", len(filteredParticles)
+
+		newParticleDist = deepcopy(particleDist)
+
+		for particleIndex in range(len(filteredParticles)):
+			part = filteredParticles[particleIndex]
+			newPose = part[2]
+			newDist0 = 0.5
+
+			contigFrac = part[19]
+
+			oldPart = newParticleDist[particleIndex]
+			newPart = (newPose, 0, newDist0, ('t0', 't1'), contigFrac)
+			newParticleDist[particleIndex] = newPart
+
+
+		updateCount += 1
+		self.poseParticles["updateCount"] = updateCount
+		self.poseParticles["snapshots"][updateCount] = newParticleDist
+
+
+		" now resample the particles "
+		particleDist = self.poseParticles["snapshots"][updateCount]
+		fracSum = 0.0
+		for part in particleDist:
+			contigFrac = part[4]
+			" probability is the contigFrac squared " 
+			fracSum += contigFrac * contigFrac
+		
+		probParticles = []
+		for k in range(len(particleDist)):
+			part = particleDist[k]
+			probParticles.append(part[4]/fracSum)
+
+
+		" now resample "
+		resampledParticles = []
+		numParticles = self.poseParticles["numParticles"]
+		for i in range(numParticles):
+			sampVal = random.random()
+
+			k = 0
+			probSum = probParticles[k]
+
+			while sampVal > probSum:
+				k += 1
+				probSum += probParticles[k]
+
+			newPart = deepcopy(particleDist[k])
+			resampledParticles.append(newPart)
+
+		updateCount += 1
+		self.poseParticles["updateCount"] = updateCount
+		self.poseParticles["snapshots"][updateCount] = resampledParticles
 
 		return
 
@@ -1146,7 +1239,7 @@ class MapState:
 		pylab.xlim(-5,10)
 		pylab.ylim(-8,8)
 		pylab.title("%d particles" % len(particleDist))
-		pylab.savefig("moveEstimate2_%04u_%04u.png" % (self.poseData.numNodes-1, self.hypothesisID))
+		pylab.savefig("moveEstimate2_%04u_%04u.png" % (updateCount, self.hypothesisID))
 
 	@logFunction
 	def updatePoseData(self, poseData):
