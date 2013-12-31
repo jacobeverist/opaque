@@ -574,7 +574,7 @@ class MapState:
 		
 
 		" branch point particles "
-		self.numParticles = 100
+		self.numParticles = 40
 		self.juncParticles = {}
 
 		self.poseParticles = {}
@@ -873,7 +873,7 @@ class MapState:
 				result = poseOrigin.convertLocalOffsetToGlobal(p)	
 				globalMedialSamples.append(result)
 
-			medialVar = computePathAngleVariance(globalMedialSamples)
+			#medialVar = computePathAngleVariance(globalMedialSamples)
 
 			globalMedialP0 = poseOrigin.convertLocalOffsetToGlobal(oldMedialP0)	
 
@@ -1024,30 +1024,63 @@ class MapState:
 			newPose = part[2]
 			newDist0 = 0.5
 
+			isInterior1 = part[9]
+			isExist1 = part[10]
+			isInterior2 = part[15]
+			isExist2 = part[16]
 			contigFrac = part[19]
 
+			isReject = False
+
+			" divergence is prohibited "
+			if isInterior1 or isInterior2:
+				isReject = True
+
+			" only a single extension is permitted, but not two "
+			if isExist1 and isExist2:
+				isReject = True
+			
+			" horrifically low contiguity is rejected out of hand "
+			if contigFrac <= 0.5:
+				isReject = True
+				
+			" probability is the contigFrac squared " 
+			newProb = 0.0
+			if not isReject:
+				newProb = contigFrac*contigFrac
+
+			" departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2 "
+			" return (particleIndex, icpDist, resultPose0, lastCost0, matchCount0, currAng0, currU0) + resultArgs + (isExist1 or isExist2,) "
+
+
 			oldPart = newParticleDist[particleIndex]
-			newPart = (newPose, 0, newDist0, ('t0', 't1'), contigFrac)
+			newPart = (newPose, 0, newDist0, ('t0', 't1'), newProb)
 			newParticleDist[particleIndex] = newPart
 
 
 		updateCount += 1
 		self.poseParticles["updateCount"] = updateCount
 		self.poseParticles["snapshots"][updateCount] = newParticleDist
+		numParticles = self.poseParticles["numParticles"]
 
 
 		" now resample the particles "
 		particleDist = self.poseParticles["snapshots"][updateCount]
-		fracSum = 0.0
+		probSum = 0.0
 		for part in particleDist:
-			contigFrac = part[4]
-			" probability is the contigFrac squared " 
-			fracSum += contigFrac * contigFrac
+			probVal = part[4]
+			probSum += probVal
+
+			
 		
 		probParticles = []
 		for k in range(len(particleDist)):
 			part = particleDist[k]
-			probParticles.append(part[4]/fracSum)
+			" if all 0.0 probabilities, make uniform distribution "
+			if probSum > 0.0:
+				probParticles.append(part[4]/probSum)
+			else:
+				probParticles.append(float(1/numParticles))
 
 
 		" now resample "
