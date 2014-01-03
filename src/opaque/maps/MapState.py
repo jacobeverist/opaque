@@ -643,7 +643,6 @@ class MapState:
 		self.multiDepCount = 0
 		self.overlapPlotCount = 0
 		self.tempCount = 0
-			
 
 		self.pathPlotCount = 0
 		self.pathPlotCount2 = 0
@@ -1019,6 +1018,7 @@ class MapState:
 
 		newParticleDist = deepcopy(particleDist)
 
+		print "particle evaluation:"
 		for particleIndex in range(len(filteredParticles)):
 			part = filteredParticles[particleIndex]
 			newPose = part[2]
@@ -1030,8 +1030,8 @@ class MapState:
 			isExist2 = part[16]
 			contigFrac = part[19]
 
-			isReject = False
 
+			isReject = False
 			" divergence is prohibited "
 			if isInterior1 or isInterior2:
 				isReject = True
@@ -1048,6 +1048,8 @@ class MapState:
 			newProb = 0.0
 			if not isReject:
 				newProb = contigFrac*contigFrac
+
+			print particleIndex, newProb, contigFrac, isInterior1, isInterior2, isExist1, isExist2
 
 			" departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2 "
 			" return (particleIndex, icpDist, resultPose0, lastCost0, matchCount0, currAng0, currU0) + resultArgs + (isExist1 or isExist2,) "
@@ -1080,7 +1082,7 @@ class MapState:
 			if probSum > 0.0:
 				probParticles.append(part[4]/probSum)
 			else:
-				probParticles.append(float(1/numParticles))
+				probParticles.append(float(1)/float(numParticles))
 
 
 		" now resample "
@@ -1271,7 +1273,8 @@ class MapState:
 		
 		pylab.xlim(-5,10)
 		pylab.ylim(-8,8)
-		pylab.title("%d particles" % len(particleDist))
+		#pylab.title("%d particles" % len(particleDist))
+		pylab.title("nodeID %d hypID %d" % (nodeID, self.hypothesisID))
 		pylab.savefig("moveEstimate2_%04u_%04u.png" % (updateCount, self.hypothesisID))
 
 	@logFunction

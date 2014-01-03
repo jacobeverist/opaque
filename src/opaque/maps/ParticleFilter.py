@@ -20,6 +20,9 @@ from scipy.spatial.distance import pdist
 from scipy.cluster.hierarchy import linkage, dendrogram
 from numpy.random import rand
 
+import traceback 
+import cProfile
+
 renderGlobalPlotCount = 0
 
 qin_posePart = None
@@ -38,10 +41,23 @@ def __num_processors():
 		get_nprocs.argtypes = []
 		return get_nprocs()
 
+def __remote_prof_multiParticle(rank, qin, qout):
+
+	try:
+		pid = os.getpid()
+		" while loop "		
+		#cProfile.run('__remote_multiParticle(rank, qin, qout)', "particle_%d.prof" % pid )
+		cProfile.runctx("__remote_multiParticle(rank, qin, qout)", globals(), locals(), "particle_%d.prof" % pid)	
+	
+	except:
+		traceback.print_exc()
+		print "Exception:", sys.exc_info()[0]
+
+
 def __remote_multiParticle(rank, qin, qout):
 
-	sys.stdout = open("multi_" + str(os.getpid()) + ".out", "w")
-	sys.stderr = open("multi_" + str(os.getpid()) + ".err", "w")
+	sys.stdout = open("particle_" + str(os.getpid()) + ".out", "w")
+	sys.stderr = open("particle_" + str(os.getpid()) + ".err", "w")
 	print 'module name:', __name__
 	print 'parent process:', os.getppid()
 	print 'process id:', os.getpid()
@@ -136,6 +152,7 @@ def batchParticle(localizeJobs):
 		qin_posePart = processing.Queue(maxsize=ndata/chunk_size)
 		qout_posePart = processing.Queue(maxsize=ndata/chunk_size)
 		pool_posePart = [processing.Process(target=__remote_multiParticle,
+		#pool_posePart = [processing.Process(target=__remote_prof_multiParticle,
 				#args=(rank, qin_posePart, qout_posePart, splices, medial, initPose, pathIDs, nodeID))
 				args=(rank, qin_posePart, qout_posePart))
 					for rank in range(nproc)]
@@ -194,21 +211,11 @@ def multiParticleFitSplice(initGuess, orientedPath, medialAxis, initPose, pathID
 	u2 = initGuess[1]
 	angGuess = initGuess[2]
 
-	#minMedialDist0, oldMedialU0, oldMedialP0 = medialSpline.findClosestPoint([0.0,0.0,0.0])
-
-	#uPath1, uMedialOrigin1 = selectLocalCommonOrigin(orientedSplicePath, medial1, pose1)
-	#u1 = uPath1
-	#resultPose0, lastCost0, matchCount0, currAng0, currU0 = gen_icp.globalPathToNodeOverlapICP2([uPath0, uMedialOrigin0, 0.0], currSplice0, medial0, plotIter = False, n1 = nodeID0, n2 = -1, arcLimit = 0.01)
-
 	#localizeJobs.append([originU2, pathU1, 0.0, spliceIndex, orientedPath, medial1, hypPose, [], nodeID, particleIndex])
 
-	resultPose0, lastCost0, matchCount0, currAng0, currU0 = gen_icp.globalPathToNodeOverlapICP2([u1, u2, angGuess], orientedPath, medialAxis, plotIter = False, n1 = nodeID, n2 = -1, arcLimit = 0.01, origPose = initPose)
+	#resultPose0, lastCost0, matchCount0, currAng0, currU0 = gen_icp.globalPathToNodeOverlapICP2([u1, u2, angGuess], orientedPath, medialAxis, plotIter = False, n1 = nodeID, n2 = -1, arcLimit = 0.01, origPose = initPose)
+	resultPose0, lastCost0, matchCount0, currAng0, currU0 = gen_icp.globalPathToNodeOverlapICP2([u1, u2, angGuess], orientedPath, medialAxis, plotIter = False, n1 = nodeID, n2 = -1, arcLimit = 0.5, origPose = initPose)
 
-
-	icpDist = sqrt((resultPose0[0]-initPose[0])**2 + (resultPose0[1]-initPose[1])**2)
-	#print "nodeID:", nodeID0, nodeID1
-	#print "travelDist:", thisDist, travelDist0, travelDist1
-	#print "icpDist:", nodeID, pathPlotCount, icpDist, currU0, u1, currAng0, angGuess, u2
 
 	resultArgs = getMultiDeparturePoint(orientedPath, medialAxis, initPose, resultPose0, pathIDs, nodeID, pathPlotCount, plotIter = False)
 	#resultArgs = ([0.0, 0.0],  0.0, False, False, 0.0, 0.0, [0.0, 0.0], 0.0, False, False, 0.0, 0.0, 1.0, 0.0, 0.0)
@@ -217,17 +224,7 @@ def multiParticleFitSplice(initGuess, orientedPath, medialAxis, initPose, pathID
 	isExist2 = resultArgs[9]
 
 	" departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2 "
-
 	icpDist = sqrt((resultPose0[0]-initPose[0])**2 + (resultPose0[1]-initPose[1])**2)
-
-	#resultArgs = (particleIndex, icpDist) + resultArgs
-
-	#print "particleJob:", params, len(globalPath), len(medial), initPose, pathIDs, nodeID, self.pathPlotCount2
-	#print "icpDist:", nodeID, self.pathPlotCount2, icpDist, currU0, pathU1, currAng0, angGuess, originU2, len(resultArgs)
-			#return (resultPose0, lastCost0, matchCount0, currAng0, currU0) + resultArgs + (isExist1 or isExist2,)
-			#return (resultPose0, lastCost0, matchCount0) + resultArgs + (isExist1 or isExist2,)
-			#jresults.append(resultArgs)
-			#self.pathPlotCount2 += 1
 
 	return (particleIndex, icpDist, resultPose0, lastCost0, matchCount0, currAng0, currU0) + resultArgs + (isExist1 or isExist2,)
 

@@ -12,6 +12,9 @@ from operator import itemgetter
 import time
 import pylab
 
+import traceback 
+import cProfile
+
 renderGlobalPlotCount = 0
 
 qin_move = None
@@ -42,6 +45,7 @@ def __num_processors():
 		get_nprocs.argtypes = []
 		return get_nprocs()
 
+
 def __remote_multiGenerate(rank, qin, qout):
 
 	sys.stdout = open("gen_" + str(os.getpid()) + ".out", "w")
@@ -67,6 +71,17 @@ def __remote_multiGenerate(rank, qin, qout):
 		# write to output queue
 		qout.put((nc,results))
 
+
+def __remote_prof_multiGenerate(rank, qin, qout):
+
+	try:
+		pid = os.getpid()
+		" while loop "		
+		#cProfile.run('__remote_multiGenerate(rank, qin, qout)', "gen_%d.prof" % pid )
+		cProfile.runctx("__remote_multiGenerate(rank, qin, qout)", globals(), locals(), "gen_%d.prof" % pid)	
+	except:
+		traceback.print_exc()
+		print "Exception:", sys.exc_info()[0]
 
 
 @logFunction
@@ -114,6 +129,7 @@ def batchGenerate(mapHyps):
 		qin_generate = processing.Queue(maxsize=0)   
 		qout_generate = processing.Queue(maxsize=0)
 		pool_generate = [processing.Process(target=__remote_multiGenerate,
+		#pool_generate = [processing.Process(target=__remote_prof_multiGenerate,
 					args=(rank, qin_generate, qout_generate))
 						for rank in range(nproc)]
 		for p in pool_generate: p.start()
@@ -166,6 +182,19 @@ def batchGenerate(mapHyps):
 		
 	print "returning"
 	return hypSet
+
+def __remote_prof_multiEval(rank, qin, qout):
+
+	try:
+		pid = os.getpid()
+		" while loop "		
+		#cProfile.run('__remote_multiEval(rank, qin, qout)', "eval_%d.prof" % pid )
+		cProfile.runctx("__remote_multiEval(rank, qin, qout)", globals(), locals(), "eval_%d.prof" % pid)	
+	
+	except:
+		traceback.print_exc()
+		print "Exception:", sys.exc_info()[0]
+
 
 
 def __remote_multiEval(rank, qin, qout):
@@ -238,6 +267,7 @@ def batchEval(mapHyps):
 			qin_eval = processing.Queue(maxsize=0)   
 			qout_eval = processing.Queue(maxsize=0)
 			pool_eval = [processing.Process(target=__remote_multiEval,
+			#pool_eval = [processing.Process(target=__remote_prof_multiEval,
 						args=(rank, qin_eval, qout_eval))
 							for rank in range(nproc)]
 			for p in pool_eval: p.start()
@@ -353,6 +383,18 @@ def computeEvalNode(mapHyp, nodeID1):
 	return utilVal
 
 
+def __remote_prof_multiMovePath(rank, qin, qout):
+
+	try:
+		pid = os.getpid()
+		" while loop "		
+		#cProfile.run('__remote_multiMovePath(rank, qin, qout)', "move_%d.prof" % pid )
+		cProfile.runctx("__remote_multiMovePath(rank, qin, qout)", globals(), locals(), "move_%d.prof" % pid)	
+	
+	except:
+		traceback.print_exc()
+		print "Exception:", sys.exc_info()[0]
+
 
 
 
@@ -437,6 +479,7 @@ def batchMovePath(mapHyps, nodeID, direction, distEst = 1.0):
 		qin_move = processing.Queue(maxsize=0)   
 		qout_move = processing.Queue(maxsize=0)
 		pool_move = [processing.Process(target=__remote_multiMovePath,
+		#pool_move = [processing.Process(target=__remote_prof_multiMovePath,
 					args=(rank, qin_move, qout_move))
 						for rank in range(nproc)]
 		for p in pool_move: p.start()
@@ -489,6 +532,18 @@ def batchMovePath(mapHyps, nodeID, direction, distEst = 1.0):
 		
 	print "returning"
 	return hypSet
+
+def __remote_prof_multiLocalize(rank, qin, qout):
+
+	try:
+		pid = os.getpid()
+		" while loop "		
+		#cProfile.run('__remote_multiLocalize(rank, qin, qout)', "localize_%d.prof" % pid )
+		cProfile.runctx("__remote_multiLocalize(rank, qin, qout)", globals(), locals(), "localize_%d.prof" % pid)	
+	
+	except:
+		traceback.print_exc()
+		print "Exception:", sys.exc_info()[0]
 
 
 def __remote_multiLocalize(rank, qin, qout):
@@ -569,6 +624,7 @@ def batchLocalizePair(mapHyps, nodeID1, nodeID2):
 		qout_localize = processing.Queue(maxsize=0)
 
 		pool_localize = [processing.Process(target=__remote_multiLocalize,
+		#pool_localize = [processing.Process(target=__remote_prof_multiLocalize,
 					args=(rank, qin_localize, qout_localize))
 						for rank in range(nproc)]
 
