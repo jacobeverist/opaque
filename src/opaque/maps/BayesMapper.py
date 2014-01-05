@@ -292,7 +292,7 @@ class BayesMapper:
 			
 			for pID, mapHyp in hypSet.iteritems():
 				mapHyp.localizePoseParticles(nodeID1, nodeID2)
-				mapHyp.drawPoseParticles()
+				#mapHyp.drawPoseParticles()
 
 			for pID, currHyp in hypSet.iteritems():
 

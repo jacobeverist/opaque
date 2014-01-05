@@ -1005,7 +1005,29 @@ def movePath(mapHyp, nodeID, direction, distEst = 1.0):
 
 			pylab.scatter([oldPose0[0],oldPose1[0]], [oldPose0[1],oldPose1[1]], color='r')
 			pylab.scatter([newPose2[0],newPose3[0]], [newPose2[1],newPose3[1]], color='b')
-			
+
+			medial2 = poseData.medialAxes[nodeID-1]
+			poseOrigin2 = Pose(newPose2)
+			xP = []
+			yP = []
+			for p in medial2:
+				p1 = poseOrigin2.convertLocalToGlobal(p)
+				xP.append(p1[0])
+				yP.append(p1[1])
+
+			pylab.plot(xP,yP, color = 'b', alpha = 0.2, zorder=9)	
+
+			medial3 = poseData.medialAxes[nodeID]
+			poseOrigin3 = Pose(newPose3)
+			xP = []
+			yP = []
+			for p in medial3:
+				p1 = poseOrigin3.convertLocalToGlobal(p)
+				xP.append(p1[0])
+				yP.append(p1[1])
+
+			pylab.plot(xP,yP, color = 'b', alpha = 0.2, zorder=9)	
+
 			pylab.xlim(-5,10)
 			pylab.ylim(-8,8)
 			pylab.title("%1.3f %1.3f" % (travelDist2, travelDist3))

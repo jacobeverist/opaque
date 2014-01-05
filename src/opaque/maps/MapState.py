@@ -574,7 +574,7 @@ class MapState:
 		
 
 		" branch point particles "
-		self.numParticles = 40
+		self.numParticles = 20
 		self.juncParticles = {}
 
 		self.poseParticles = {}
@@ -736,9 +736,12 @@ class MapState:
 
 			if hypDist > 0.0 and hypDist <= totalLen:
 				hypPoint = pathSpline.getPointOfDist(hypDist)
-				hypPose = copy(hypPoint)
-				hypPose[2] = newAng0
-				initDist.append((hypPose, pathID, hypDist, ('t0', 't1'), 0.0))
+				hypPose0 = copy(hypPoint)
+				hypPose0[2] = newAng0
+				hypPose1 = copy(hypPoint)
+				hypPose1[2] = newAng1
+				#initDist.append((hypPose, pathID, hypDist, ('t0', 't1'), 0.0))
+				initDist.append((hypPose0, hypPose1, pathID, hypDist, ('t0', 't1'), 0.0))
 
 		print "setting pose particles", len(initDist), initDist
 		self.poseParticles["snapshots"][0] = initDist
@@ -754,44 +757,80 @@ class MapState:
 		medial0 = self.poseData.medialAxes[nodeID0]
 		medial1 = self.poseData.medialAxes[nodeID1]
 
-	
+
+		"""
+		globalMedial0 = []
+		poseOrigin0 = Pose(newPose0)
+		xP = []
+		yP = []
+		for p in medial0:
+			p1 = poseOrigin0.convertLocalToGlobal(p)
+			globalMedial0.append(p1)
+
+		globalMedial1 = []
+		poseOrigin1 = Pose(newPose1)
+		xP = []
+		yP = []
+		for p in medial1:
+			p1 = poseOrigin1.convertLocalToGlobal(p)
+			globalMedial1.append(p1)
+
+		p_1, i_1, minDist = gen_icp.findClosestPointInA(globalMedial1, globalMedial0[-1])
+
+		newGlobalMedial0 = deepcopy(globalMedial0) + deepcopy(globalMedial1[i_1:])
+		"""
+
+
 
 		pathSpline = SplineFit(currSplice0, smooth=0.1)
 		medialSpline = SplineFit(medial0, smooth=0.1)
 
 		newPartDist = []
 		for part in particleDist:
-			hypPose = part[0]
-			pathID = part[1]
-			hypDist = part[2]
-			spliceID = part[3]
+			hypPose0 = part[0]
+			hypPose1 = part[1]
+			pathID = part[2]
+			hypDist = part[3]
+			spliceID = part[4]
 
-			minDist0, oldU0, oldP0 = pathSpline.findClosestPoint(hypPose)
+			minDist0, oldU0, oldP0 = pathSpline.findClosestPoint(hypPose0)
+			minDist1, oldU1, oldP1 = pathSpline.findClosestPoint(hypPose1)
 
-			thisDist = travelDist0
+			thisDist0 = travelDist0
+			thisDist1 = travelDist1
 
 			moveChance = random.random()
 			" 80% chance we move forward, 20% we move backward "    
 			if moveChance >= 0.1:
-				thisDist = travelDist0
+				thisDist0 = travelDist0
+				thisDist1 = travelDist1
 			else:
-				thisDist = -travelDist0
+				thisDist0 = -travelDist0
+				thisDist1 = -travelDist1
 
-			thisDist = random.gauss(thisDist,0.3)
+			thisDist0 = random.gauss(thisDist0,0.6)
+			thisDist1 = random.gauss(thisDist1,0.6)
 
 
 			#newU0 = pathSpline.getUOfDist(oldU0, travelDist0)
-			newU0 = pathSpline.getUOfDist(oldU0, thisDist)
+			newU0 = pathSpline.getUOfDist(oldU0, thisDist0)
+			newU1 = pathSpline.getUOfDist(oldU1, thisDist1)
 
 			newDist0 = pathSpline.dist_u(newU0)
 			newP0 = pathSpline.point_u(newU0)
 			newAng0 = pathSpline.angle_u(newU0)
-			oldAng0 = hypPose[2]
-
-			newPose = copy(newP0)
+			oldAng0 = hypPose0[2]
+			newPose0 = copy(newP0)
 			#newPose[2] = oldAng0
 
-			newPart = (newPose, 0, newDist0, ('t0', 't1'), 0.0)
+			newDist1 = pathSpline.dist_u(newU1)
+			newP1 = pathSpline.point_u(newU1)
+			newAng1 = pathSpline.angle_u(newU1)
+			oldAng1 = hypPose1[2]
+			newPose1 = copy(newP1)
+			#newPose[2] = oldAng0
+
+			newPart = (newPose0, newPose1, 0, newDist0, ('t0', 't1'), 0.0)
 
 			#uPath0, uMedialOrigin0 = selectLocalCommonOrigin(currSplice0, medial0, newPose)
 
@@ -829,22 +868,27 @@ class MapState:
 		poseData = self.poseData
 
 
-		nodeID = nodeID0
+		#nodeID = nodeID0
 
-		splicedPaths1, spliceTerms, splicePathIDs = self.getSplicesByNearJunction(nodeID)
+		splicedPaths, spliceTerms, splicePathIDs = self.getSplicesByNearJunction(nodeID0)
 
 		orientedPaths = []
 		
-		hull1 = poseData.aHulls[nodeID]
-		medial1 = poseData.medialAxes[nodeID]
+		medial0 = poseData.medialAxes[nodeID0]
+		medial1 = poseData.medialAxes[nodeID1]
 
+		
+		medialSpline0 = SplineFit(medial0, smooth=0.1)
 		medialSpline1 = SplineFit(medial1, smooth=0.1)
-		medialSamples = medialSpline1.getUniformSamples(spacing = 0.04)
-		#originU2 = medialSpline1.findU([0.0,0.0])	
-		minMedialDist0, oldMedialU0, oldMedialP0 = medialSpline1.findClosestPoint([0.0,0.0,0.0])
-		originU2 = oldMedialU0
+		medialSamples0 = medialSpline0.getUniformSamples(spacing = 0.04)
+		medialSamples1 = medialSpline1.getUniformSamples(spacing = 0.04)
 
-					
+		#originU2 = medialSpline1.findU([0.0,0.0])	
+		minMedialDist0, oldMedialU0, oldMedialP0 = medialSpline0.findClosestPoint([0.0,0.0,0.0])
+		minMedialDist1, oldMedialU1, oldMedialP1 = medialSpline1.findClosestPoint([0.0,0.0,0.0])
+		#originU2 = oldMedialU0
+
+
 
 
 		#orientedPaths = []
@@ -856,31 +900,42 @@ class MapState:
 
 			part = particleDist[particleIndex]
 
-			hypPose = part[0]
-			pathID = part[1]
-			hypDist = part[2]
-			spliceID = part[3]
-			poseOrigin = Pose(hypPose)
+			hypPose0 = part[0]
+			hypPose1 = part[1]
+			pathID = part[2]
+			hypDist = part[3]
+			spliceID = part[4]
+			poseOrigin = Pose(hypPose0)
 
-			globalMedial = []
-			for p in medial1:
-				globalMedial.append(poseOrigin.convertLocalToGlobal(p))
+			globalMedial0 = []
+			for p in medial0:
+				globalMedial0.append(poseOrigin.convertLocalToGlobal(p))
 			#globalMedialSpline1 = SplineFit(globalMedial, smooth=0.1)
 
-			globalMedialSamples = []
-			for p in medialSamples:
+			globalMedial1 = []
+			for p in medial1:
+				globalMedial1.append(poseOrigin.convertLocalToGlobal(p))
+
+			globalMedialSamples0 = []
+			for p in medialSamples0:
 				result = poseOrigin.convertLocalOffsetToGlobal(p)	
-				globalMedialSamples.append(result)
+				globalMedialSamples0.append(result)
+
+			globalMedialSamples1 = []
+			for p in medialSamples1:
+				result = poseOrigin.convertLocalOffsetToGlobal(p)	
+				globalMedialSamples1.append(result)
 
 			#medialVar = computePathAngleVariance(globalMedialSamples)
 
 			globalMedialP0 = poseOrigin.convertLocalOffsetToGlobal(oldMedialP0)	
+			globalMedialP1 = poseOrigin.convertLocalOffsetToGlobal(oldMedialP1)	
 
 			resultsBySplice = []
 
-			for spliceIndex in range(len(splicedPaths1)):
+			for spliceIndex in range(len(splicedPaths)):
 				
-				path = splicedPaths1[spliceIndex]
+				path = splicedPaths[spliceIndex]
 
 
 				pathSpline = SplineFit(path, smooth=0.1)
@@ -889,9 +944,10 @@ class MapState:
 				#pathForeU = pathSpline.getUOfDist(originU1, 1.0, distIter = 0.001)
 				#pathBackU = pathSpline.getUOfDist(originU1, -1.0, distIter = 0.001)
 				
-				orientedPath = orientPath(path, globalMedial)
-				orientedPathSpline = SplineFit(orientedPath, smooth=0.1)
-				pathU1 = orientedPathSpline.findU(globalMedialP0)
+				orientedPath0 = orientPath(path, globalMedial0)
+				orientedPathSpline0 = SplineFit(orientedPath0, smooth=0.1)
+				pathU0 = orientedPathSpline0.findU(globalMedialP0)
+				pathU1 = orientedPathSpline0.findU(globalMedialP1)
 
 				#globalSamples = orientedPathSpline.getUniformSamples(spacing = 0.04)
 				#globalVar = computePathAngleVariance(globalSamples)
@@ -954,11 +1010,13 @@ class MapState:
 				" add guesses in the neighborhood of the closest pathU "
 				" 5 forward, 5 backward "
 				
-				localizeJobs.append([pathU1, originU2, 0.0, spliceIndex, deepcopy(orientedPath), deepcopy(medial1), deepcopy(hypPose), [], nodeID, particleIndex, self.pathPlotCount2])
+				#localizeJobs.append([pathU1, originU2, 0.0, spliceIndex, deepcopy(orientedPath), deepcopy(medial0), deepcopy(hypPose), [], nodeID, particleIndex, self.pathPlotCount2])
+				localizeJobs.append([pathU0, oldMedialU0, 0.0, pathU1, oldMedialU1, 0.0, spliceIndex, deepcopy(orientedPath0), deepcopy(medial0), deepcopy(medial1), deepcopy(hypPose0), deepcopy(hypPose1), [], nodeID0, nodeID1, particleIndex, updateCount, self.hypothesisID])
 				self.pathPlotCount2 += 1
 
 
 		results = batchParticle(localizeJobs)
+		print len(results[0]), "result arguments"
 		#for k in range(len(results)):
 		#	resultArgs = results[k]
 		
@@ -1002,7 +1060,8 @@ class MapState:
 
 
 		#results.sort
-		sortedResults = sorted(results, key=itemgetter(0,1), reverse=False)
+		#sortedResults = sorted(results, key=itemgetter(0,1), reverse=False)
+		sortedResults = sorted(results, key=itemgetter(0,45), reverse=False)
 
 		print "particle sort"
 		thisParticleID = -1
@@ -1018,45 +1077,59 @@ class MapState:
 
 		newParticleDist = deepcopy(particleDist)
 
-		print "particle evaluation:"
+		print "particle evaluation:", nodeID0, self.hypothesisID, updateCount
 		for particleIndex in range(len(filteredParticles)):
 			part = filteredParticles[particleIndex]
-			newPose = part[2]
+			newPose0 = part[2]
 			newDist0 = 0.5
 
-			isInterior1 = part[9]
-			isExist1 = part[10]
-			isInterior2 = part[15]
-			isExist2 = part[16]
-			contigFrac = part[19]
+			isInterior1_0 = part[9]
+			isExist1_0 = part[10]
+			isInterior2_0 = part[15]
+			isExist2_0 = part[16]
+			contigFrac_0 = part[19]
+			overlapSum_0 = part[20]
+
+			# return departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2
+			# return (particleIndex, icpDist0, resultPose0, lastCost0, matchCount0, currAng0, currU0) + resultArgs0 + (isExist1_0 or isExist2_0,) + (icpDist1, resultPose1, lastCost1, matchCount1, currAng1, currU1) + resultArgs1 + (isExist1_1 or isExist2_1,)
+
+			newPose1 = part[24]
+			isInterior1_1 = part[31]
+			isExist1_1 = part[32]
+			isInterior2_1 = part[37]
+			isExist2_1 = part[38]
+			contigFrac_1 = part[41]
+			overlapSum_1 = part[42]
 
 
 			isReject = False
 			" divergence is prohibited "
-			if isInterior1 or isInterior2:
+			if isInterior1_0 or isInterior2_0 or isInterior1_1 or isInterior2_1:
 				isReject = True
 
 			" only a single extension is permitted, but not two "
-			if isExist1 and isExist2:
+			if isExist1_0 and isExist2_0 or isExist1_1 and isExist2_1:
 				isReject = True
 			
 			" horrifically low contiguity is rejected out of hand "
-			if contigFrac <= 0.5:
+			if contigFrac_0 <= 0.5 or contigFrac_1 <= 0.5:
 				isReject = True
 				
 			" probability is the contigFrac squared " 
 			newProb = 0.0
 			if not isReject:
-				newProb = contigFrac*contigFrac
+				newProb = contigFrac_0 * contigFrac_0 / overlapSum_0
+				#utilVal0 = (1.0-contigFrac_0) + (isExist1_0 or isExist2_0) + (1.0-contigFrac_1) + (isExist1_1 or isExist2_1)
+				
 
-			print particleIndex, newProb, contigFrac, isInterior1, isInterior2, isExist1, isExist2
+			print "%d %1.2f %1.2f %1.2f %d %d %d %d %1.2f %1.2f %d %d %d %d" % (particleIndex, newProb, contigFrac_0, overlapSum_0, isInterior1_0, isInterior2_0, isExist1_0, isExist2_0, contigFrac_1, overlapSum_1, isInterior1_1, isInterior2_1, isExist1_1, isExist2_1)
 
 			" departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2 "
 			" return (particleIndex, icpDist, resultPose0, lastCost0, matchCount0, currAng0, currU0) + resultArgs + (isExist1 or isExist2,) "
 
 
 			oldPart = newParticleDist[particleIndex]
-			newPart = (newPose, 0, newDist0, ('t0', 't1'), newProb)
+			newPart = (newPose0, newPose1, 0, newDist0, ('t0', 't1'), newProb)
 			newParticleDist[particleIndex] = newPart
 
 
@@ -1065,12 +1138,13 @@ class MapState:
 		self.poseParticles["snapshots"][updateCount] = newParticleDist
 		numParticles = self.poseParticles["numParticles"]
 
+		self.drawPoseParticles()
 
 		" now resample the particles "
 		particleDist = self.poseParticles["snapshots"][updateCount]
 		probSum = 0.0
 		for part in particleDist:
-			probVal = part[4]
+			probVal = part[5]
 			probSum += probVal
 
 			
@@ -1080,7 +1154,7 @@ class MapState:
 			part = particleDist[k]
 			" if all 0.0 probabilities, make uniform distribution "
 			if probSum > 0.0:
-				probParticles.append(part[4]/probSum)
+				probParticles.append(part[5]/probSum)
 			else:
 				probParticles.append(float(1)/float(numParticles))
 
@@ -1088,6 +1162,8 @@ class MapState:
 		" now resample "
 		resampledParticles = []
 		numParticles = self.poseParticles["numParticles"]
+
+		print "particle evaluation:", nodeID0, self.hypothesisID, updateCount
 		for i in range(numParticles):
 			sampVal = random.random()
 
@@ -1099,11 +1175,14 @@ class MapState:
 				probSum += probParticles[k]
 
 			newPart = deepcopy(particleDist[k])
+			print "resampling particle", k, probParticles[k]
 			resampledParticles.append(newPart)
 
 		updateCount += 1
 		self.poseParticles["updateCount"] = updateCount
 		self.poseParticles["snapshots"][updateCount] = resampledParticles
+
+		self.drawPoseParticles()
 
 		return
 
@@ -1244,37 +1323,58 @@ class MapState:
 		pylab.plot(xP,yP, color='k')
 		"""
 
-		nodeID = self.poseData.numNodes-1
-		medial0 = self.poseData.medialAxes[nodeID]
+		nodeID0 = self.poseData.numNodes-2
+		nodeID1 = self.poseData.numNodes-1
+		medial0 = self.poseData.medialAxes[nodeID0]
+		medial1 = self.poseData.medialAxes[nodeID1]
 
-		hypPointsX = []
-		hypPointsY = []
+		# newPart = (newPose0, newPose1, 0, newDist0, ('t0', 't1'), newProb)
+		hypPointsX_0 = []
+		hypPointsY_0 = []
+		hypPointsX_1 = []
+		hypPointsY_1 = []
 		for part in particleDist:
-			hypPose = part[0]
-			pathID = part[1]
-			hypDist = part[2]
-			spliceID = part[3]
-			hypPointsX.append(hypPose[0])
-			hypPointsY.append(hypPose[1])
+			hypPose0 = part[0]
+			hypPose1 = part[1]
+			#pathID = part[1]
+			#hypDist = part[2]
+			#spliceID = part[3]
+			hypPointsX_0.append(hypPose0[0])
+			hypPointsY_0.append(hypPose0[1])
+			hypPointsX_1.append(hypPose1[0])
+			hypPointsY_1.append(hypPose1[1])
 
 
-			poseOrigin = Pose(hypPose)
+			poseOrigin0 = Pose(hypPose0)
 
 			xP = []
 			yP = []
 			for p in medial0:
-				p1 = poseOrigin.convertLocalToGlobal(p)
+				p1 = poseOrigin0.convertLocalToGlobal(p)
 				xP.append(p1[0])
 				yP.append(p1[1])
 
-			pylab.plot(xP,yP, color = 'k', alpha = 0.2, zorder=9)
+			pylab.plot(xP,yP, color = 'r', alpha = 0.2, zorder=9)
 
-		pylab.scatter(hypPointsX, hypPointsY, color='r')
+			poseOrigin1 = Pose(hypPose1)
+
+			xP = []
+			yP = []
+			for p in medial1:
+				p1 = poseOrigin1.convertLocalToGlobal(p)
+				xP.append(p1[0])
+				yP.append(p1[1])
+
+			pylab.plot(xP,yP, color = 'b', alpha = 0.2, zorder=9)
+
+		pylab.scatter(hypPointsX_0, hypPointsY_0, color='r', linewidth=1, zorder=10, alpha=0.2)
+		pylab.scatter(hypPointsX_1, hypPointsY_1, color='b', linewidth=1, zorder=10, alpha=0.2)
 		
-		pylab.xlim(-5,10)
-		pylab.ylim(-8,8)
+		#pylab.xlim(-5,10)
+		#pylab.ylim(-8,8)
+		pylab.axis("equal")
 		#pylab.title("%d particles" % len(particleDist))
-		pylab.title("nodeID %d hypID %d" % (nodeID, self.hypothesisID))
+		pylab.title("nodeIDs %d %d hypID %d" % (nodeID0, nodeID1, self.hypothesisID))
 		pylab.savefig("moveEstimate2_%04u_%04u.png" % (updateCount, self.hypothesisID))
 
 	@logFunction

@@ -73,19 +73,32 @@ def __remote_multiParticle(rank, qin, qout):
 		results = []
 		for job in args:
 
-			globalPath = job[4]
-			medial = job[5]
-			initPose = job[6]
-			pathIDs = job[7]
-			nodeID = job[8]
-			particleIndex = job[9]
-			pathPlotCount = job[10]
-			pathU1 = job[0]
-			originU2 = job[1]
-			angGuess = job[2]
-			params = [pathU1, originU2, angGuess]
+			#localizeJobs.append([pathU0, oldMedialU0, 0.0, pathU1, oldMedialU1, 0.0, spliceIndex, deepcopy(orientedPath0), deepcopy(medial0), deepcopy(medial1), deepcopy(hypPose0), deepcopy(hypPose1), [], nodeID0, particleIndex, updateCount, self.hypothesisID])
 
-			result = multiParticleFitSplice(params, globalPath, medial, initPose, pathIDs, nodeID, particleIndex, pathPlotCount = pathPlotCount)
+			spliceIndex = job[6]
+			globalPath = job[7]
+			medial0 = job[8]
+			medial1 = job[9]
+			initPose0 = job[10]
+			initPose1 = job[11]
+			pathIDs = job[12]
+			nodeID0 = job[13]
+			nodeID1 = job[14]
+			particleIndex = job[15]
+			updateCount = job[16]
+			hypID = job[17]
+
+			pathU0 = job[0]
+			oldMedialU0 = job[1]
+			angGuess0 = job[2]
+			pathU1 = job[3]
+			oldMedialU1 = job[4]
+			angGuess1 = job[5]
+
+			params0 = [pathU0, oldMedialU0, angGuess0]
+			params1 = [pathU1, oldMedialU1, angGuess1]
+
+			result = multiParticleFitSplice(params0, params1, globalPath, medial0, medial1, initPose0, initPose1, pathIDs, nodeID0, nodeID1, particleIndex, hypID = hypID, pathPlotCount = updateCount, spliceIndex = spliceIndex)
 			results.append(result)
 						   
 		# write to output queue
@@ -205,28 +218,45 @@ def batchParticle(localizeJobs):
 
 
 
-def multiParticleFitSplice(initGuess, orientedPath, medialAxis, initPose, pathIDs, nodeID, particleIndex, pathPlotCount = 0):
+#multiParticleFitSplice(params0, params1, globalPath, medial0, medial1, initPose0, initPose1, pathIDs, nodeID0, nodeID1, particleIndex, hypID = hypID, pathPlotCount = updateCount, spliceIndex = spliceIndex)
+def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, medialAxis1, initPose0, initPose1, pathIDs, nodeID0, nodeID1, particleIndex, hypID = 0, pathPlotCount = 0, spliceIndex = 0):
 	
-	u1 = initGuess[0]
-	u2 = initGuess[1]
-	angGuess = initGuess[2]
+	u1 = initGuess0[0]
+	u2 = initGuess0[1]
+	angGuess = initGuess0[2]
 
 	#localizeJobs.append([originU2, pathU1, 0.0, spliceIndex, orientedPath, medial1, hypPose, [], nodeID, particleIndex])
 
 	#resultPose0, lastCost0, matchCount0, currAng0, currU0 = gen_icp.globalPathToNodeOverlapICP2([u1, u2, angGuess], orientedPath, medialAxis, plotIter = False, n1 = nodeID, n2 = -1, arcLimit = 0.01, origPose = initPose)
-	resultPose0, lastCost0, matchCount0, currAng0, currU0 = gen_icp.globalPathToNodeOverlapICP2([u1, u2, angGuess], orientedPath, medialAxis, plotIter = False, n1 = nodeID, n2 = -1, arcLimit = 0.5, origPose = initPose)
+	resultPose0, lastCost0, matchCount0, currAng0, currU0 = gen_icp.globalPathToNodeOverlapICP2([u1, u2, angGuess], orientedPath, medialAxis0, plotIter = False, n1 = nodeID0, n2 = -1, arcLimit = 0.5, origPose = initPose0)
+
+	u1 = initGuess1[0]
+	u2 = initGuess1[1]
+	angGuess = initGuess1[2]
+	resultPose1, lastCost1, matchCount1, currAng1, currU1 = gen_icp.globalPathToNodeOverlapICP2([u1, u2, angGuess], orientedPath, medialAxis1, plotIter = False, n1 = nodeID1, n2 = -1, arcLimit = 0.5, origPose = initPose1)
 
 
-	resultArgs = getMultiDeparturePoint(orientedPath, medialAxis, initPose, resultPose0, pathIDs, nodeID, pathPlotCount, plotIter = False)
+	resultArgs0 = getMultiDeparturePoint(orientedPath, medialAxis0, initPose0, resultPose0, pathIDs, nodeID0, pathPlotCount = pathPlotCount, hypID = hypID, particleIndex = particleIndex, spliceIndex = spliceIndex, plotIter = True)
+
+	resultArgs1 = getMultiDeparturePoint(orientedPath, medialAxis1, initPose1, resultPose1, pathIDs, nodeID1, pathPlotCount = pathPlotCount, hypID = hypID, particleIndex = particleIndex, spliceIndex = spliceIndex, plotIter = True)
 	#resultArgs = ([0.0, 0.0],  0.0, False, False, 0.0, 0.0, [0.0, 0.0], 0.0, False, False, 0.0, 0.0, 1.0, 0.0, 0.0)
 
-	isExist1 = resultArgs[3]
-	isExist2 = resultArgs[9]
+	isExist1_0 = resultArgs0[3]
+	isExist2_0 = resultArgs0[9]
+	contigFrac0 = resultArgs0[12]
+
+	isExist1_1 = resultArgs1[3]
+	isExist2_1 = resultArgs1[9]
+	contigFrac1 = resultArgs1[12]
 
 	" departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2 "
-	icpDist = sqrt((resultPose0[0]-initPose[0])**2 + (resultPose0[1]-initPose[1])**2)
+	icpDist0 = sqrt((resultPose0[0]-initPose0[0])**2 + (resultPose0[1]-initPose0[1])**2)
+	icpDist1 = sqrt((resultPose1[0]-initPose1[0])**2 + (resultPose1[1]-initPose1[1])**2)
 
-	return (particleIndex, icpDist, resultPose0, lastCost0, matchCount0, currAng0, currU0) + resultArgs + (isExist1 or isExist2,)
+	utilVal0 = (1.0-contigFrac0) + (isExist1_0 or isExist2_0) + (1.0-contigFrac1) + (isExist1_1 or isExist2_1)
+
+	#return (particleIndex, icpDist0, resultPose0, lastCost0, matchCount0, currAng0, currU0) + resultArgs0 + (isExist1_0 or isExist2_0,)
+	return (particleIndex, icpDist0, resultPose0, lastCost0, matchCount0, currAng0, currU0) + resultArgs0 + (isExist1_0 or isExist2_0,) + (icpDist1, resultPose1, lastCost1, matchCount1, currAng1, currU1) + resultArgs1 + (isExist1_1 or isExist2_1,) + (utilVal0,)
 
 
 
