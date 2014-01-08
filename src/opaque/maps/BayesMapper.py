@@ -291,6 +291,7 @@ class BayesMapper:
 			#batchEval(hypSet)
 			
 			for pID, mapHyp in hypSet.iteritems():
+				self.propagateBranchStates(mapHyp, nodeID1)
 				mapHyp.localizePoseParticles(nodeID1, nodeID2)
 				#mapHyp.drawPoseParticles()
 
@@ -301,7 +302,7 @@ class BayesMapper:
 				""" LOCALIZE NODE PAIR """
 				#localizePair(currHyp, nodeID1, nodeID2)
 
-				self.propagateBranchStates(currHyp, nodeID1)
+				#self.propagateBranchStates(currHyp, nodeID1)
 
 				#currHyp.generatePaths()
 				self.drawPathAndHull2(currHyp)

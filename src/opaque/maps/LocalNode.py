@@ -3707,7 +3707,7 @@ class LocalNode:
 	def computeAlpha2(self, points, radius = 0.2):
 		
 		global alphaPlotCount
-		plotIter = True
+		plotIter = False
 		
 		random.seed(0)		
 		

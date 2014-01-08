@@ -2090,7 +2090,7 @@ def computeLocalDivergence(hypSet, nodeID1, nodeID2):
 		
 		" COMPUTE DEPARTURE EVENTS FOR EACH OVERLAPPING PATH SECTION "
 		for pathID in orderedPathIDs1:
-			resultSet = mapHyp.getDeparturePoint(mapHyp.trimmedPaths[pathID], nodeID1, plotIter = True)
+			resultSet = mapHyp.getDeparturePoint(mapHyp.trimmedPaths[pathID], nodeID1, plotIter = False)
 			mapHyp.departureResultSet1 = resultSet
 
 			departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = resultSet
@@ -2102,7 +2102,7 @@ def computeLocalDivergence(hypSet, nodeID1, nodeID2):
 			mapHyp.contig1.append((contigFrac, overlapSum))
 
 		for pathID in orderedPathIDs2:
-			resultSet = mapHyp.getDeparturePoint(mapHyp.trimmedPaths[pathID], nodeID2, plotIter = True)
+			resultSet = mapHyp.getDeparturePoint(mapHyp.trimmedPaths[pathID], nodeID2, plotIter = False)
 			mapHyp.departureResultSet2 = resultSet
 
 			departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = resultSet
