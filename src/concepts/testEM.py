@@ -225,7 +225,7 @@ for t in range(1,len(Obs)):
 
 
 	print currAct, currZ
-	#print probState
+	print probState
 	print probFeature
 	#print probSum, newState
 	#print newAlpha
@@ -235,6 +235,8 @@ for t in range(1,len(Obs)):
 	alphas.append(newAlpha)
 	PI.append(newState)
 
+
+#exit()
 
 
 " beta initialized to 1.0 "
@@ -246,6 +248,7 @@ betas.insert(0,newBeta)
 times = range(1,len(Obs))
 #times = range(len(Acts))
 times.reverse()
+
 
 
 for t in times:
@@ -326,29 +329,176 @@ for t in range(1,len(alphas)):
 				newEpsilonSum = 0.0
 				for k in range(3):
 					for l in range(3):
-						newEpsilon[i*3+j, k*3+l] += currAlpha[i,j] * PHI_f[i*3+j, k*3+l] * THETA[k*3+l, currZ] * currBeta[k,l] / P_O_AMC
+						newEpsilon[i*3+j, k*3+l] = currAlpha[i,j] * PHI_f[i*3+j, k*3+l] * THETA[k*3+l, currZ] * currBeta[k,l] / P_O_AMC
 
 	elif currAct == 'b':
 		for i in range(3):
 			for j in range(3):
 				for k in range(3):
 					for l in range(3):
-						newEpsilon[i*3+j, k*3+l] += currAlpha[i,j] * PHI_b[i*3+j, k*3+l] * THETA[k*3+l, currZ] * currBeta[k,l] / P_O_AMC
+						newEpsilon[i*3+j, k*3+l] = currAlpha[i,j] * PHI_b[i*3+j, k*3+l] * THETA[k*3+l, currZ] * currBeta[k,l] / P_O_AMC
 
 	else:
 		raise
 
 	epsilons.append(newEpsilon)
 
-for t in range(0,len(gammas)):
+times = range(1,len(Obs))
+
+denom_gamma_f = np.zeros([3,3])
+denom_gamma_b = np.zeros([3,3])
+denom_gamma = np.zeros([3,3])
+
+currGamma = gammas[0]
+for i in range(3):
+	for j in range(3):
+		denom_gamma[i,j] += currGamma[i,j]
+
+for t in range(1,len(gammas)):
+
+	currAct = Acts[t-1]
 	currGamma = gammas[t]
 
-for t in range(1,len(alphas)):
-	currEpsilon = epsilons[t-1]
+	for i in range(3):
+		for j in range(3):
+			denom_gamma[i,j] += currGamma[i,j]
+
+	if currAct == 'f':
+		for i in range(3):
+			for j in range(3):
+				denom_gamma_f[i,j] += currGamma[i,j]
+
+	elif currAct == 'b':
+		for i in range(3):
+			for j in range(3):
+				denom_gamma_b[i,j] += currGamma[i,j]
+
+	else:
+		raise
+
+print denom_gamma_f
+print denom_gamma_b
+print denom_gamma
+
+#currGamma = gammas[-1]
+#for i in range(3):
+#	for j in range(3):
+#		denom_gamma[i,j] += currGamma[i,j]
 
 new_PHI_f = np.zeros([9,9])
 new_PHI_b = np.zeros([9,9])
+for t in range(0,len(epsilons)):
+
+	currAct = Acts[t]
+
+	currGamma = gammas[t]
+	currEpsilon = epsilons[t]
 
 
+	if currAct == 'f':
+		for i in range(3):
+			for j in range(3):
+				for k in range(3):
+					for l in range(3):
+						new_PHI_f[i*3+j, k*3+l] = currEpsilon[i*3+j,k*3+l] / denom_gamma_f[i,j]
+
+	elif currAct == 'b':
+		for i in range(3):
+			for j in range(3):
+				for k in range(3):
+					for l in range(3):
+						new_PHI_b[i*3+j, k*3+l] = currEpsilon[i*3+j,k*3+l] / denom_gamma_b[i,j]
+
+	else:
+		raise
+
+new_THETA = np.zeros([9,2])
+
+for t in range(0,len(alphas)):
+
+	currZ = Obs[t]
+
+	for i in range(3):
+		for j in range(3):
+			new_THETA[i*3+j, currZ] += THETA[i*3+j, currZ] / denom_gamma[i,j]
+
+
+print new_PHI_f
+print new_PHI_b
+print new_THETA
+
+print "G_1:", gammas[0]
+
+
+new_PIs = []
+new_PIs.append(deepcopy(gammas[0]))
+
+for t in range(1,len(Obs)):
+
+	newState = np.zeros([3,3])
+	prevState = deepcopy(new_PIs[t-1])
+
+	currAct = Acts[t-1]
+	prevZ = Obs[t-1]
+	currZ = Obs[t]
+
+	if currAct == 'f':
+		denomSum = 0.0
+		for i in range(3):  # s_i  (t+1)
+			for j in range(3):  # f_j  (t+1)
+				numerSum = 0.0
+				for k in range(3):  # s_k  (t)
+					for l in range(3):  # f_l  (t)
+						numerSum += prevState[k,l] * new_THETA[k*3+l, prevZ] * new_PHI_f[k*3+l,i*3+j]
+						denomSum += prevState[k,l] * new_THETA[k*3+l, prevZ] * new_PHI_f[k*3+l,i*3+j] * new_THETA[i*3+j, currZ]
+
+				newAlpha[i,j] = newAlphaSum 
+				newState[i,j] = new_THETA[i*3+j, currZ] * numerSum
+
+		for i in range(3):  # s_i  (t+1)
+			for j in range(3):  # f_j  (t+1)
+				newState[i,j] /= denomSum
+
+		#print "go forward"
+
+	elif currAct == 'b':
+		denomSum = 0.0
+		for i in range(3):
+			for j in range(3):
+				numerSum = 0.0
+				for k in range(3):
+					for l in range(3):
+						numerSum += prevState[k,l] * new_THETA[k*3+l, prevZ] * new_PHI_b[k*3+l,i*3+j]
+						denomSum += prevState[k,l] * new_THETA[k*3+l, prevZ] * new_PHI_b[k*3+l,i*3+j] * new_THETA[i*3+j, currZ]
+
+				newAlpha[i,j] = newAlphaSum
+				newState[i,j] = new_THETA[i*3+j, currZ] * numerSum
+
+		for i in range(3):  # s_i  (t+1)
+			for j in range(3):  # f_j  (t+1)
+				newState[i,j] /= denomSum
+
+		#print "go backward"
+	else:
+		raise
+
+
+	probState = [0.0,0.0,0.0]
+	probFeature = [0.0,0.0,0.0]
+
+	for i in range(3):
+		probState[i] = newState[i,0]+newState[i,1]+newState[i,2]
+		probFeature[i] = newState[0,i]+newState[1,i]+newState[2,i]
+
+	probSum = 0.0
+	for i in range(3):  
+		for j in range(3): 
+			probSum += newState[i,j] 
+
+
+	#print probState
+	#print probFeature
+
+	new_PIs.append(newState)
 
 
