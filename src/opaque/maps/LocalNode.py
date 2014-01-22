@@ -82,91 +82,6 @@ def computeHullAxis(nodeID, node2, tailCutOff = False):
 	
 	return hull2, medial2
 
-"""
-def computeHullAxis(nodeID, node2, tailCutOff = False):
-	
-	if node2.isBowtie:			
-		hull2 = computeBareHull(node2, sweep = False, static = True)
-		hull2.append(hull2[0])
-		medial2 = node2.getStaticMedialAxis()
-
-	else:
-		hull2 = computeBareHull(node2, sweep = False)
-		hull2.append(hull2[0])
-		medial2 = node2.getMedialAxis(sweep = False)
-
-	" take the long length segments at tips of medial axis"
-	edge1 = medial2[0:2]
-	edge2 = medial2[-2:]
-	
-	frontVec = [edge1[0][0]-edge1[1][0], edge1[0][1]-edge1[1][1]]
-	backVec = [edge2[1][0]-edge2[0][0], edge2[1][1]-edge2[0][1]]
-	frontMag = math.sqrt(frontVec[0]*frontVec[0] + frontVec[1]*frontVec[1])
-	backMag = math.sqrt(backVec[0]*backVec[0] + backVec[1]*backVec[1])
-	
-	frontVec[0] /= frontMag
-	frontVec[1] /= frontMag
-	backVec[0] /= backMag
-	backVec[1] /= backMag
-	
-	" make a smaller version of these edges "
-	newP1 = (edge1[1][0] + frontVec[0]*2, edge1[1][1] + frontVec[1]*2)
-	newP2 = (edge2[0][0] + backVec[0]*2, edge2[0][1] + backVec[1]*2)
-
-	edge1 = [newP1, edge1[1]]
-	edge2 = [edge2[0], newP2]
-
-	
-	" find the intersection points with the hull "
-	interPoints = []
-	for k in range(len(hull2)-1):
-		hullEdge = [hull2[k],hull2[k+1]]
-		isIntersect1, point1 = Intersect(edge1, hullEdge)
-		if isIntersect1:
-			interPoints.append(point1)
-			break
-
-	for k in range(len(hull2)-1):
-		hullEdge = [hull2[k],hull2[k+1]]
-		isIntersect2, point2 = Intersect(edge2, hullEdge)
-		if isIntersect2:
-			interPoints.append(point2)
-			break
-	
-	" replace the extended edges with a termination point at the hull edge "			
-	medial2 = medial2[1:-2]
-	if isIntersect1:
-		medial2.insert(0, point1)
-	if isIntersect2:
-		medial2.append(point2)
-	
-
-	" cut off the tail of the non-sweeping side "
-	TAILDIST = 0.5
-
-	if tailCutOff:
-		
-		if nodeID % 2 == 0:
-			termPoint = medial2[-1]
-			for k in range(len(medial2)):
-				candPoint = medial2[-k-1]
-				dist = sqrt((termPoint[0]-candPoint[0])**2 + (termPoint[1]-candPoint[1])**2)
-				if dist > TAILDIST:
-					break
-			medial2 = medial2[:-k-1]
-	
-		else:
-			termPoint = medial2[0]
-			for k in range(len(medial2)):
-				candPoint = medial2[k]
-				dist = sqrt((termPoint[0]-candPoint[0])**2 + (termPoint[1]-candPoint[1])**2)
-				if dist > TAILDIST:
-					break
-			medial2 = medial2[k:]
-			
-	return hull2, medial2
-"""
-
 def getSegPaths(node, juncIDs, leafIDs, currPath, tree, isVisited):
 
 	if node in juncIDs:
@@ -805,6 +720,18 @@ class LocalNode:
 		newEstPose = newProfile.convertLocalOffsetToGlobal(localOffset)
 		
 		self.setEstPose(newEstPose)
+
+	def convertGPACtoRawPose(self, newPose):
+
+		gpacProfile = Pose(self.getGlobalGPACPose())
+		
+		localOffset = gpacProfile.convertGlobalPoseToLocal(self.estPose)
+		
+		" go back and convert this from GPAC pose to estPose "
+		newProfile = Pose(newPose)
+		newEstPose = newProfile.convertLocalOffsetToGlobal(localOffset)
+		
+		return newEstPose
 
 	def getGndGlobalGPACPose(self):
 

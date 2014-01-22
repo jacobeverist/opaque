@@ -259,7 +259,53 @@ def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, me
 	return (particleIndex, icpDist0, resultPose0, lastCost0, matchCount0, currAng0, currU0) + resultArgs0 + (isExist1_0 or isExist2_0,) + (icpDist1, resultPose1, lastCost1, matchCount1, currAng1, currU1) + resultArgs1 + (isExist1_1 or isExist2_1,) + (utilVal0, spliceIndex)
 
 
+class Particle:
 
+	def __init__(self,pose0, pose1, pathID, hypDist, spliceName, weightVal, mapStateID):
+		
+		" converted to arc distance on-the-fly as needed "
+		" remains invariant to regenerating paths "
+		#self.pose0 = (0.0,0.0,0.0)
+		#self.pose1 = (0.0,0.0,0.0)
+		self.pose0 = deepcopy(pose0)
+		self.pose1 = deepcopy(pose1)
+
+		" classification or correspondence as member of path "
+		self.memberPaths = []
+		self.memberPaths.append(pathID)
+
+		" junction description data "
+		self.junctionData = {}
+		
+		" a currently undiagnosed necessary evil. "
+		" do I make splice a correspondence problem as well? "
+		" pose0 and pose1 splices may be different "
+		self.spliceName = ('t0', 't1')
+		
+		self.nodeCorrespondence = {}
+
+		" temporary values, computed on-the-fly for each evaluation "
+
+		self.hypDist = hypDist
+
+		self.weightVal = weightVal
+
+		self.mapStateID = mapStateID
+
+	def addPath(self, pathID, parentID, branchNodeID, localJunctionPose, globalJunctionPose):
+		self.junctionData[pathID] = {"parentID" : parentID, "branchNodeID" : branchNodeID, "localJunctionPose" : localJunctionPose, 
+							"globalJunctionPose" : globalJunctionPose }		
+
+	def addNode(self, nodeID, pathID):
+		self.nodeCorrespondence[nodeID] = pathID
+
+	def copy(self):
+		newParticle = Particle(deepcopy(self.pose0), deepcopy(self.pose1), 0, self.hypDist, self.spliceName, self.weightVal, self.mapStateID)
+		newParticle.nodeCorrespondence = deepcopy(self.nodeCorrespondence)
+		newParticle.memberPaths = deepcopy(self.memberPaths)
+		newParticle.junctionData = deepcopy(self.junctionData)
+
+		return newParticle
 
 class ParticleFilter:
 
