@@ -291,9 +291,15 @@ class BayesMapper:
 			#batchEval(hypSet)
 			
 			for pID, mapHyp in hypSet.iteritems():
+				time1 = time.time()
+
 				#self.propagateBranchStates(mapHyp, nodeID1)
 				mapHyp.localizePoseParticles(nodeID1, nodeID2)
 				#mapHyp.drawPoseParticles()
+
+				time2 = time.time()
+
+				print "localizePoseParticles time", pID, time2-time1
 
 			for pID, currHyp in hypSet.iteritems():
 
@@ -340,8 +346,8 @@ class BayesMapper:
 		""" remove defective maps """
 		toDelete = []
 		for pID, currHyp in hypSet.iteritems():
-			print pID, "mapOverlapSum =", currHyp.mapOverlapSum
-			if currHyp.mapOverlapSum > 0.0:
+			print pID, "mapOverlapSum =", currHyp.mapOverlapSum, "isNoLocalize =", currHyp.isNoLocalize
+			if currHyp.mapOverlapSum > 0.0 or currHyp.isNoLocalize:
 				toDelete.append(pID)	
 				
 		for pID in toDelete:

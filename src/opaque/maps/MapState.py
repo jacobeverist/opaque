@@ -591,7 +591,10 @@ class MapState:
 		self.origPoses = {}
 
 		self.utility = 0.0
+
+		" criteria for rejecting this map state "
 		self.mapOverlapSum = 0.0
+		self.isNoLocalize = False
 
 		self.pathIDs = 0
 		self.hypothesisID = hypothesisID
@@ -849,6 +852,9 @@ class MapState:
 	@logFunction
 	def localizePoseParticles(self, nodeID0, nodeID1):
 
+
+		self.isNoLocalize = False
+
 		updateCount = self.poseParticles["updateCount"] 
 		particleDist2 = self.poseParticles["snapshots2"][updateCount]
 		poseData = self.poseData
@@ -861,35 +867,11 @@ class MapState:
 		pathIDs = self.getPathIDs()
 
 		splicedPaths = []
-		"""
-		for pathID in pathIDs:
-			if pathID != 0:
-
-				juncSamps = self.juncSamples[pathID]
-				snapshots = juncSamps["snapshots"]
-				numSamples = juncSamps["numParticles"]
-				juncUpdateCount = juncSamps["updateCount"]
-				currSamples = juncSamps["snapshots"][juncUpdateCount]
-
-				for k in range(len(currSamples)):
-					thisSplices = currSamples[k][9]
-
-					for j in range(len(thisSplices)):
-						splice = thisSplices[j]
-						splicedPaths.append((k, deepcopy(splice)))
-
-		"""
-
-		#orderedIDs = sPath['orderedPathIDs']
-		#if len(orderedIDs) == 2:
 		for k in range(len(staticSplicePathIDs)):
 			if len(staticSplicePathIDs[k]) == 1:
 				splicedPaths.append((None, deepcopy(staticSplicedPaths[k])))
 
 	
-		#for path in staticSplicedPaths:
-		#	splicedPaths.append(path)
-
 		orientedPaths = []
 		
 		medial0 = poseData.medialAxes[nodeID0]
@@ -901,13 +883,12 @@ class MapState:
 		medialSamples0 = medialSpline0.getUniformSamples(spacing = 0.04)
 		medialSamples1 = medialSpline1.getUniformSamples(spacing = 0.04)
 
-		#originU2 = medialSpline1.findU([0.0,0.0])	
 		minMedialDist0, oldMedialU0, oldMedialP0 = medialSpline0.findClosestPoint([0.0,0.0,0.0])
 		minMedialDist1, oldMedialU1, oldMedialP1 = medialSpline1.findClosestPoint([0.0,0.0,0.0])
-		#originU2 = oldMedialU0
 
 
 		""" let's cache the trimBranch results so we don't compute more than once """
+		"""
 		trimBranchCache = {}
 		for particleIndex in range(len(particleDist2)):
 
@@ -926,13 +907,15 @@ class MapState:
 					#for j in range(len(branchSplices)):
 					#	splice = branchSplices[j]
 					#	thisSplicedPaths.append((0, deepcopy(splice)))
-
+		"""
 
 
 		#orientedPaths = []
 		#orientedPaths.append(orientedPath)
 
 		localizeJobs = []
+		allSplicedPaths = []
+		spliceCount = 0
 
 		for particleIndex in range(len(particleDist2)):
 
@@ -979,19 +962,43 @@ class MapState:
 					globJuncPose = part.junctionData[pathID]["globalJunctionPose"]
 					#newPath3, newGlobJuncPose, juncDiscDist, juncDiscAngle, branchSplices =  self.trimBranch(pathID, globJuncPose)
 
-					branchSplices = trimBranchCache[repr(globJuncPose)] 
+					#branchSplices = trimBranchCache[repr(globJuncPose)] 
+					time1 = time.time()
 
-					for j in range(len(branchSplices)):
-						splice = branchSplices[j]
-						thisSplicedPaths.append((0, deepcopy(splice)))
+					samples = self.updateParticles(pathID, globJuncPose)
+
+					time2 = time.time()
+					print "updateParticles time", self.hypothesisID, particleIndex, pathID, time2-time1
+					#part2 = (part[0], part[1], part[2], part[3], part[4], part[5], part[6], part[7], newProbVal, newSplices)
+
+					#for j in range(len(branchSplices)):
+					for j in range(len(samples)):
+
+						#return (particleIndex, icpDist0, resultPose0, lastCost0, matchCount0, currAng0, currU0) + resultArgs0 + (isExist1_0 or isExist2_0,) + (icpDist1, resultPose1, lastCost1, matchCount1, currAng1, currU1) + resultArgs1 + (isExist1_1 or isExist2_1,) + (utilVal0, spliceIndex)
+
+						#splice = branchSplices[j]
+						numSplices = len(samples[j][9])
+						probVal = samples[j][8]
+						for k in range(numSplices):
+
+							#splice = branchSplices[j]
+							splice = samples[j][9][k]
+							thisSplicedPaths.append((j, probVal, deepcopy(splice)))
+
 
 			for k in range(len(staticSplicePathIDs)):
 				if len(staticSplicePathIDs[k]) == 1:
-					thisSplicedPaths.append((None, deepcopy(staticSplicedPaths[k])))
+					" static splices have 1.0 probability "
+					thisSplicedPaths.append((None, 1.0, deepcopy(staticSplicedPaths[k])))
 
-			for spliceIndex in range(len(splicedPaths)):
+			#for spliceIndex in range(len(splicedPaths)):
+			for spliceIndex in range(len(thisSplicedPaths)):
 				
-				path = splicedPaths[spliceIndex][1]
+				#path = splicedPaths[spliceIndex][1]
+				branchSampleIndex = thisSplicedPaths[spliceIndex][0]
+				probVal = thisSplicedPaths[spliceIndex][1]
+				
+				path = thisSplicedPaths[spliceIndex][2]
 				
 				orientedPath0 = orientPath(path, globalMedial0)
 				orientedPathSpline0 = SplineFit(orientedPath0, smooth=0.1)
@@ -999,118 +1006,36 @@ class MapState:
 				pathU1 = orientedPathSpline0.findU(globalMedialP1)
 
 
-				" now lets find closest points and save their local variances "			
-				"""
-				globalSamples = orientedPathSpline.getUniformSamples(spacing = 0.04)
-				globalVar = computePathAngleVariance(globalSamples)
-
-				closestPairs = []
-				TERM_DIST = 20
-				
-				for i in range(TERM_DIST, len(globalSamples)-TERM_DIST):
-					pG = globalSamples[i]
-					minDist = 1e100
-					minJ = -1
-					for j in range(TERM_DIST, len(globalMedialSamples)-TERM_DIST):
-						pM = globalMedialSamples[j]
-						dist = math.sqrt((pG[0]-pM[0])**2 + (pG[1]-pM[1])**2)
-						
-						if dist < minDist:
-							minDist = dist
-							minJ = j
-							
-					if minDist < 0.1:
-						closestPairs.append((i,minJ,minDist,globalVar[i][0],medialVar[minJ][0],globalVar[i][1],medialVar[minJ][1]))
-
-				for j in range(TERM_DIST, len(globalMedialSamples)-TERM_DIST):
-					pM = globalMedialSamples[j]
-					minDist = 1e100
-					minI = -1
-					for i in range(TERM_DIST, len(globalSamples)-TERM_DIST):
-						pG = globalSamples[i]
-						dist = math.sqrt((pG[0]-pM[0])**2 + (pG[1]-pM[1])**2)
-						
-						if dist < minDist:
-							minDist = dist
-							minI = i
-							
-					if minDist < 0.1:
-						closestPairs.append((minI,j,minDist,globalVar[minI][0],medialVar[j][0],globalVar[minI][1],medialVar[j][1]))
-
-				" remove duplicates "
-				closestPairs = list(set(closestPairs))
-				
-				" sort by lowest angular variance"
-				closestPairs = sorted(closestPairs, key=itemgetter(5,6))
-				print len(closestPairs), "closest pairs"
-
-				if len(closestPairs) > 0:
-					originU2 = medialSpline1.findU(medialSamples[closestPairs[0][1]])	
-					pathU1 = orientedPathSpline.findU(globalSamples[closestPairs[0][0]])
-
-				else:
-				
-					originU2 = medialSpline1.findU([0.0,0.0])
-					pathU1 = orientedPathSpline.findU(hypPose[:2])
-				"""
-				
-
-				time1 = time.time()
 
 				" add guesses in the neighborhood of the closest pathU "
 				" 5 forward, 5 backward "
 				
 				#localizeJobs.append([pathU1, originU2, 0.0, spliceIndex, deepcopy(orientedPath), deepcopy(medial0), deepcopy(hypPose), [], nodeID, particleIndex, self.pathPlotCount2])
-				localizeJobs.append([pathU0, oldMedialU0, 0.0, pathU1, oldMedialU1, 0.0, spliceIndex, deepcopy(orientedPath0), deepcopy(medial0), deepcopy(medial1), deepcopy(hypPose0), deepcopy(hypPose1), [], nodeID0, nodeID1, particleIndex, updateCount, self.hypothesisID])
+				#localizeJobs.append([pathU0, oldMedialU0, 0.0, pathU1, oldMedialU1, 0.0, spliceIndex, deepcopy(orientedPath0), deepcopy(medial0), deepcopy(medial1), deepcopy(hypPose0), deepcopy(hypPose1), [], nodeID0, nodeID1, particleIndex, updateCount, self.hypothesisID])
+				localizeJobs.append([pathU0, oldMedialU0, 0.0, pathU1, oldMedialU1, 0.0, branchSampleIndex, spliceCount, deepcopy(orientedPath0), deepcopy(medial0), deepcopy(medial1), deepcopy(hypPose0), deepcopy(hypPose1), [], nodeID0, nodeID1, particleIndex, updateCount, self.hypothesisID])
 				self.pathPlotCount2 += 1
+				spliceCount += 1
 
+
+
+			allSplicedPaths += thisSplicedPaths
+
+		time1 = time.time()
 
 		results = batchParticle(localizeJobs)
+
+		time2 = time.time()
+
+		print "batch localize for map hypothesis", self.hypothesisID, "=", time2-time1 
 		print len(results[0]), "result arguments"
 		#for k in range(len(results)):
 		#	resultArgs = results[k]
 
-		"""
-		results = []
-		for k in range(len(localizeJobs)):
-
-			job = localizeJobs[k]
-
-			globalPath = job[4]
-			medial = job[5]
-			initPose = job[6]
-			pathIDs = job[7]
-			nodeID = job[8]
-			particleIndex = job[9]
-			pathU1 = job[0]
-			originU2 = job[1]
-			angGuess = job[2]
-			params = [pathU1, originU2, angGuess]
-
-
-			
-			#results.append(multiParticleFitSplice(params, globalPath, medial, initPose, pathIDs, nodeID, self.pathPlotCount2) + (params,particleIndex))
-			#(resultPose0, lastCost0, matchCount0) + resultArgs + (isExist1 or isExist2,)
-			resultArgs = multiParticleFitSplice(params, globalPath, medial, initPose, pathIDs, nodeID, self.pathPlotCount2) + (params,)
-			resultPose0 = resultArgs[0]
-			currAng0 = resultArgs[3]
-			currU0 = resultArgs[4]
-
-			icpDist = sqrt((resultPose0[0]-initPose[0])**2 + (resultPose0[1]-initPose[1])**2)
-
-			resultArgs = (particleIndex, icpDist) + resultArgs
-
-			print "particleJob:", params, len(globalPath), len(medial), initPose, pathIDs, nodeID, self.pathPlotCount2
-			print "icpDist:", nodeID, self.pathPlotCount2, icpDist, currU0, pathU1, currAng0, angGuess, originU2, len(resultArgs)
-			#return (resultPose0, lastCost0, matchCount0, currAng0, currU0) + resultArgs + (isExist1 or isExist2,)
-			#return (resultPose0, lastCost0, matchCount0) + resultArgs + (isExist1 or isExist2,)
-			results.append(resultArgs)
-			self.pathPlotCount2 += 1
-		"""
-
 
 		#results.sort
 		#sortedResults = sorted(results, key=itemgetter(0,1), reverse=False)
+
+		" sort by pose particle index followed by utility value "
 		sortedResults = sorted(results, key=itemgetter(0,45), reverse=False)
 
 		print "particle sort"
@@ -1130,6 +1055,12 @@ class MapState:
 		print "particle evaluation:", nodeID0, self.hypothesisID, updateCount
 		for particleIndex in range(len(filteredParticles)):
 			part = filteredParticles[particleIndex]
+
+			utilVal = part[45]
+			spliceIndex = part[47]
+			branchProbVal = allSplicedPaths[spliceIndex][1]
+
+
 			newPose0 = part[2]
 			newDist0 = 0.5
 
@@ -1158,6 +1089,7 @@ class MapState:
 				isReject = True
 
 			" only a single extension is permitted, but not two "
+			#if isExist1_0 and isExist2_0 or isExist1_1 and isExist2_1:
 			if isExist1_0 and isExist2_0 or isExist1_1 and isExist2_1:
 				isReject = True
 			
@@ -1169,10 +1101,12 @@ class MapState:
 			newProb = 0.0
 			if not isReject:
 				newProb = contigFrac_0 * contigFrac_0 / overlapSum_0
+				#newProb *= branchProbVal
 				#utilVal0 = (1.0-contigFrac_0) + (isExist1_0 or isExist2_0) + (1.0-contigFrac_1) + (isExist1_1 or isExist2_1)
 				
+			print "%d %d %d branchProbVal, utilVal, poseProbValue:" % (self.hypothesisID, particleIndex, spliceIndex), branchProbVal, utilVal, newProb
 
-			print "%d %1.2f %1.2f %1.2f %d %d %d %d %1.2f %1.2f %d %d %d %d" % (particleIndex, newProb, contigFrac_0, overlapSum_0, isInterior1_0, isInterior2_0, isExist1_0, isExist2_0, contigFrac_1, overlapSum_1, isInterior1_1, isInterior2_1, isExist1_1, isExist2_1)
+			#print "%d %1.2f %1.2f %1.2f %d %d %d %d %1.2f %1.2f %d %d %d %d" % (particleIndex, newProb, contigFrac_0, overlapSum_0, isInterior1_0, isInterior2_0, isExist1_0, isExist2_0, contigFrac_1, overlapSum_1, isInterior1_1, isInterior2_1, isExist1_1, isExist2_1)
 
 			" departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2 "
 			" return (particleIndex, icpDist, resultPose0, lastCost0, matchCount0, currAng0, currU0) + resultArgs + (isExist1 or isExist2,) "
@@ -1204,11 +1138,37 @@ class MapState:
 		probParticles = []
 		for k in range(len(particleDist2)):
 			part = particleDist2[k]
-			" if all 0.0 probabilities, make uniform distribution "
+
+			poseProbVal = part.weightVal
+
+			" if all 0.0 probabilities, make uniform distribution, set no localization flag "
 			if probSum > 0.0:
-				probParticles.append(part.weightVal/probSum)
+				probParticles.append(poseProbVal/probSum)
 			else:
 				probParticles.append(float(1)/float(numParticles))
+				self.isNoLocalize = True
+
+
+		" apply branch probability "
+		probSum2 = 0.0
+		for k in range(len(probParticles)):
+			#part = particleDist2[k]
+			part = filteredParticles[particleIndex]
+
+			" branch probability "
+			spliceIndex = part[47]
+			branchProbVal = allSplicedPaths[spliceIndex][1]
+
+			probParticles[k] *= branchProbVal
+
+			probSum2 += probParticles[k]
+
+		" renormalize "
+		for k in range(len(probParticles)):
+			if probSum2 > 0.0:
+				probParticles[k] /= probSum2
+			else:
+				probParticles[k] = float(1)/float(numParticles)
 
 		" now resample "
 		resampledParticles2 = []
@@ -1240,6 +1200,7 @@ class MapState:
 		self.poseParticles["snapshots2"][updateCount] = resampledParticles2
 
 		self.drawPoseParticles()
+
 
 		return
 
@@ -2554,14 +2515,7 @@ class MapState:
 
 
 	@logFunction
-	def updateParticles(self, pathID):
-
-		#self.pathClasses[0] = {"parentID" : None, "branchNodeID" : None, "localJunctionPose" : None, 
-		#					"sameProb" : {}, "nodeSet" : [], "globalJunctionPose" : None}
-		#juncSamps["numParticles"] = self.numParticles
-		#juncSamps["updateCount"] = 0
-		#juncSamps["snapshots"] = {}
-		#	juncSamps["snapshots"][juncSamps["updateCount"]] = snapshotParticles
+	def updateParticles(self, pathID, estJuncPose):
 
 		if self.pathClasses[pathID]["parentID"] != None: 
 
@@ -2569,55 +2523,43 @@ class MapState:
 			pathDesc = self.pathClasses[pathID]
 			parentID = pathDesc["parentID"]
 
-			" junction particle information "
-			juncSamps = self.juncSamples[pathID]
-			updateCount = juncSamps["updateCount"]
-			snapshots = juncSamps["snapshots"]
-			numParticles = juncSamps["numParticles"]
-
-
 			pathSpline = SplineFit(self.paths[parentID])
 
 			" initial position of junction "
 			origJuncPose = copy(pathDesc["globalJunctionPose"])
 			origJuncPose[2] = 0.0
 
-			minDist, uVal, splinePoint = pathSpline.findClosestPoint(origJuncPose)
+			#minDist, uVal, splinePoint = pathSpline.findClosestPoint(origJuncPose)
+			#arcDist = pathSpline.dist_u(uVal)
+			minDist, uVal, splinePoint = pathSpline.findClosestPoint(estJuncPose)
 			arcDist = pathSpline.dist_u(uVal)
+
+			arcHigh = arcDist + 0.5
+			arcLow = arcDist - 0.5
 
 			totalDist = pathSpline.dist_u(1.0)
 
 			" initialize if this is the first time "
-			#if len(snapshots[0]) == 0:
-			if True:
-				particles = []
-				for k in range(numParticles):
-					#newArcDist = random.gauss(arcDist,totalDist)
-					#newArcDist = random.gauss(arcDist,1.0)
+			particles = []
+			for k in range(11):
+				#newArcDist = (k / float(numParticles-1)) * totalDist
+				newArcDist = arcLow + (arcHigh-arcLow)*k/10
 
-					newArcDist = (k / float(numParticles-1)) * totalDist
+				" NOTE:  angle is the tangent angle, not branch angle "
 
-					" NOTE:  angle is the tangent angle, not branch angle "
+				newJuncPose = pathSpline.getPointOfDist(newArcDist)
+				modJuncPose = copy(newJuncPose)
+				modJuncPose[2] = origJuncPose[2]
 
-					newJuncPose = pathSpline.getPointOfDist(newArcDist)
-					modJuncPose = copy(newJuncPose)
-					modJuncPose[2] = origJuncPose[2]
+				initMatchCount = 0
+				initCost = 0.0
+				initProb = 0.0
+				initDist = 0.0
+				initAngDiff = 0.0
+				juncSplices = []
 
-					initMatchCount = 0
-					initCost = 0.0
-					initProb = 0.0
-					initDist = 0.0
-					initAngDiff = 0.0
-					juncSplices = []
+				particles.append((parentID, modJuncPose, newArcDist, pathID, initMatchCount, initCost, initDist, initAngDiff, initProb, juncSplices))
 
-					particles.append((parentID, modJuncPose, newArcDist, pathID, initMatchCount, initCost, initDist, initAngDiff, initProb, juncSplices))
-
-				self.juncSamples[pathID]["snapshots"][updateCount] = particles
-
-			particles = deepcopy(self.juncSamples[pathID]["snapshots"][updateCount])
-
-			trimmedPaths = self.trimmedPaths
-			
 
 			"""
 			1) point that has the junction
@@ -2768,11 +2710,11 @@ class MapState:
 			" get the maximum value for each of our features "
 			maxCost = -1e100
 			maxMatchCount = -1000
-			maxDist = -1e100
+			#maxDist = -1e100
 			maxAngDiff = -1e100
-
 			maxDist = 10.0
 
+			" find maximum values for each metric "
 			for k in range(len(particles)):
 				part = particles[k]
 				matchCount = part[4]
@@ -2795,114 +2737,55 @@ class MapState:
 			" invert the distance, angDiff and cost features "
 			totalProbSum = 0.0
 			for k in range(len(particles)):
+
 				part = particles[k]
+
 				lastCost = part[5]
 				dist = part[6]
 				angDiff = part[7]
+
 				matchCost = 0.0
 				if maxCost > 0.0:
-					#part[5] = (maxCost-lastCost)/maxCost
 					matchCost = (maxCost-lastCost)/maxCost
 				else:
-					#part[5] = 0.0
 					matchCost = 0.0
 
 				nomDist = 0.0
 				if maxDist > 0.0:
-					#part[6] = (maxDist-dist)/maxDist
 					nomDist = (maxDist-dist)/maxDist
 				else:
-					#part[6] = 0.0
 					nomDist = 0.0
 
-				#part[7] = (maxAngDiff-angDiff)/maxAngDiff
-
 				matchCount = part[4]
-				#matchCost = part[5]
-				#nomDist = part[6]
 
 				" angDiff feature times matchCount times dist "
-				#probVal = part[4]*part[6]
 				probVal = matchCount*matchCost + nomDist/4.0
-				#part[8] = probVal
 				totalProbSum += probVal
 
 				part2 = (part[0], part[1], part[2], part[3], part[4], matchCost, nomDist, part[7], probVal, part[9])
-				#part2 = (part[0], modJuncPose, part[2], part[3], matchCount1, lastCost1, distDisc, angDisc, part[8], part[9])
-				# (parentID, modJuncPose, newArcDist, pathID, initMatchCount, initCost, initDist, initAngDiff, initProb, juncSplices))
 				particles[k] = part2
 
-			maxProb = 0.0
 			" normalize the probability values "
+			maxProb = 0.0
 			for k in range(len(particles)):
 				part = particles[k]
 
 				probVal = 0.0
 
 				if totalProbSum > 0.0:
-					#part[8] = part[8] / totalProbSum
+
 					probVal = part[8] / totalProbSum
-					#if part[8] > maxProb:
+
 					if probVal > maxProb:
-						#maxProb = part[8]
 						maxProb = probVal
 				else:
-					#part[8] = 0.0
 					probVal = 0.0
 
 				part2 = (part[0], part[1], part[2], part[3], part[4], part[5], part[6], part[7], probVal, part[9])
 				particles[k] = part2
 
-				print "particle %02u %1.4f %03u %1.4f %1.4f %1.4f %1.4f %d" % (k, part[1][2], part[4], part[5], part[6], part[7], part[8], len(part[9]))
+				print "particle %02u %1.4f %03u %1.4f %1.4f %1.4f %1.4f %d" % (k, part2[1][2], part2[4], part2[5], part2[6], part2[7], part2[8], len(part2[9]))
 			print "particle"
-
-
-			"""
-			newParticles = []
-			for j in range(numParticles-10):
-				roll = random.random()
-				probTotal = 0.0
-
-				partFound = False
-
-				for k in range(len(particles)):
-					probTotal += particles[k][8]
-
-					if probTotal > roll:
-						newParticles.append(deepcopy(particles[k]))
-						partFound = True
-
-					if partFound:
-						break
-
-				if not partFound:
-					newParticles.append(deepcopy(particles[-1]))
-
-			randomParticles = []
-
-			for k in range(10):
-				roll = random.random()
-				newArcDist = roll * totalDist
-
-				" NOTE:  angle is the tangent angle, not branch angle "
-
-				newJuncPose = pathSpline.getPointOfDist(newArcDist)
-				modJuncPose = copy(newJuncPose)
-				modJuncPose[2] = origJuncPose[2]
-
-				initMatchCount = 0
-				initCost = 0.0
-				initProb = 0.0
-				initDist = 0.0
-				initAngDiff = 0.0
-
-				randomParticles.append([parentID, modJuncPose, newArcDist, pathID, initMatchCount, initCost, initDist, initAngDiff, initProb])
-			newParticles += randomParticles
-			"""
-
-			self.juncSamples[pathID]["updateCount"] = updateCount + 1
-			#self.juncSamples[pathID]["snapshots"][updateCount+1] = newParticles
-			self.juncSamples[pathID]["snapshots"][updateCount+1] = particles
 
 			" cartesian distance "
 			DISC_THRESH = 0.5
@@ -2910,30 +2793,27 @@ class MapState:
 			" 60 degree threshold "
 			ANG_THRESH = 0.523 # pi/6
 
-			#for part in particles:
+			
+			" get splices for new branch position " 
+			" reject branch locations whose branch angle discrepancy is too high " 
 			for k in range(len(particles)):
 				part = particles[k]
-				#newPath3, newGlobJuncPose, juncDiscDist, juncDiscAngle, splicedPaths =  self.trimBranch(part)
 
 				thisPathID = part[3]
 				globJuncPose = part[1]
 				newPath3, newGlobJuncPose, juncDiscDist, juncDiscAngle, splicedPaths =  self.trimBranch(thisPathID, globJuncPose)
-				#parentPathID = branchPart[0]
-				#pathID = branchPart[3]
 
-
-				#particles[k][9] = deepcopy(splicedPaths)
 				newSplices = deepcopy(splicedPaths)
 				newProbVal = particles[k][8] 
-				if juncDiscDist > DISC_THRESH or fabs(juncDiscAngle) > ANG_THRESH:
-					#particles[k][8] = 0.0
+
+				if fabs(juncDiscAngle) > ANG_THRESH:
 					newProbVal = 0.0
 
 				part2 = (part[0], part[1], part[2], part[3], part[4], part[5], part[6], part[7], newProbVal, newSplices)
 				particles[k] = part2
 
 			pylab.clf() 
-			for k,path in trimmedPaths.iteritems():
+			for k,path in self.trimmedPaths.iteritems():
 				print "path has", len(path), "points"
 				xP = []
 				yP = []
@@ -2965,13 +2845,13 @@ class MapState:
 
 			pylab.scatter(xP, yP, color='k', zorder=8)
 			pylab.title("hyp: %d, pathID: %d, localPathSegs %d" % (self.hypothesisID, pathID, len(localPathSegs)))
-			#print "path segs:", len(junctionDetails["leafSegments"], "+", len(junctionDetails["internalSegments"], "=", len(smoothPathSegs)
 			
 			#self.plotEnv()			
 			
 			pylab.savefig("bayes_plot_%04u_%04u.png" % (self.hypothesisID, self.tempCount) )
 			self.tempCount += 1
 
+		return particles
 
 	@logFunction
 	def getJuncSample(self, pathID, sampleIndex):
@@ -4391,6 +4271,9 @@ class MapState:
 		updateCount = self.poseParticles["updateCount"] 
 		particleDist2 = self.poseParticles["snapshots2"][updateCount]
 
+
+		pathSpline = SplineFit(self.paths[parentID])
+
 		" add new path to particles "
 		for part in particleDist2:
 
@@ -4409,9 +4292,18 @@ class MapState:
 
 			#nodePose = part.pose0
 			nodeOrigin = Pose(newEstPose)
-			globalJunctionPose = nodeOrigin.convertLocalOffsetToGlobal(localJunctionPose)
+			newGlobalJunctionPose = nodeOrigin.convertLocalOffsetToGlobal(localJunctionPose)
 
-			part.addPath(newPathID, parentID, branchNodeID, localJunctionPose, globalJunctionPose)
+			minDist, uVal, newJuncPose = pathSpline.findClosestPoint(newGlobalJunctionPose)
+			#minDist, uVal, splinePoint = pathSpline.findClosestPoint(globalJunctionPose)
+			#arcDist = pathSpline.dist_u(uVal)
+
+			#newJuncPose = pathSpline.getPointOfDist(newArcDist)
+			modJuncPose = copy(newJuncPose)
+			modJuncPose[2] = globalJunctionPose[2]
+
+			#part.addPath(newPathID, parentID, branchNodeID, localJunctionPose, globalJunctionPose)
+			part.addPath(newPathID, parentID, branchNodeID, localJunctionPose, modJuncPose)
 
 		print "newPath", newPathID, "=", self.pathClasses[newPathID]
 		#self.drawPoseParticles()

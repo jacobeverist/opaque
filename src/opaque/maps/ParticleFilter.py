@@ -75,18 +75,19 @@ def __remote_multiParticle(rank, qin, qout):
 
 			#localizeJobs.append([pathU0, oldMedialU0, 0.0, pathU1, oldMedialU1, 0.0, spliceIndex, deepcopy(orientedPath0), deepcopy(medial0), deepcopy(medial1), deepcopy(hypPose0), deepcopy(hypPose1), [], nodeID0, particleIndex, updateCount, self.hypothesisID])
 
-			spliceIndex = job[6]
-			globalPath = job[7]
-			medial0 = job[8]
-			medial1 = job[9]
-			initPose0 = job[10]
-			initPose1 = job[11]
-			pathIDs = job[12]
-			nodeID0 = job[13]
-			nodeID1 = job[14]
-			particleIndex = job[15]
-			updateCount = job[16]
-			hypID = job[17]
+			branchIndex = job[6]
+			spliceIndex = job[7]
+			globalPath = job[8]
+			medial0 = job[9]
+			medial1 = job[10]
+			initPose0 = job[11]
+			initPose1 = job[12]
+			pathIDs = job[13]
+			nodeID0 = job[14]
+			nodeID1 = job[15]
+			particleIndex = job[16]
+			updateCount = job[17]
+			hypID = job[18]
 
 			pathU0 = job[0]
 			oldMedialU0 = job[1]
@@ -98,7 +99,7 @@ def __remote_multiParticle(rank, qin, qout):
 			params0 = [pathU0, oldMedialU0, angGuess0]
 			params1 = [pathU1, oldMedialU1, angGuess1]
 
-			result = multiParticleFitSplice(params0, params1, globalPath, medial0, medial1, initPose0, initPose1, pathIDs, nodeID0, nodeID1, particleIndex, hypID = hypID, pathPlotCount = updateCount, spliceIndex = spliceIndex)
+			result = multiParticleFitSplice(params0, params1, globalPath, medial0, medial1, initPose0, initPose1, pathIDs, nodeID0, nodeID1, particleIndex, hypID = hypID, pathPlotCount = updateCount, branchIndex = branchIndex, spliceIndex = spliceIndex)
 			results.append(result)
 						   
 		# write to output queue
@@ -219,7 +220,7 @@ def batchParticle(localizeJobs):
 
 
 #multiParticleFitSplice(params0, params1, globalPath, medial0, medial1, initPose0, initPose1, pathIDs, nodeID0, nodeID1, particleIndex, hypID = hypID, pathPlotCount = updateCount, spliceIndex = spliceIndex)
-def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, medialAxis1, initPose0, initPose1, pathIDs, nodeID0, nodeID1, particleIndex, hypID = 0, pathPlotCount = 0, spliceIndex = 0):
+def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, medialAxis1, initPose0, initPose1, pathIDs, nodeID0, nodeID1, particleIndex, hypID = 0, pathPlotCount = 0, branchIndex =0, spliceIndex = 0):
 	
 	u1 = initGuess0[0]
 	u2 = initGuess0[1]
@@ -256,12 +257,12 @@ def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, me
 	utilVal0 = (1.0-contigFrac0) + (isExist1_0 or isExist2_0) + (1.0-contigFrac1) + (isExist1_1 or isExist2_1)
 
 	#return (particleIndex, icpDist0, resultPose0, lastCost0, matchCount0, currAng0, currU0) + resultArgs0 + (isExist1_0 or isExist2_0,)
-	return (particleIndex, icpDist0, resultPose0, lastCost0, matchCount0, currAng0, currU0) + resultArgs0 + (isExist1_0 or isExist2_0,) + (icpDist1, resultPose1, lastCost1, matchCount1, currAng1, currU1) + resultArgs1 + (isExist1_1 or isExist2_1,) + (utilVal0, spliceIndex)
+	return (particleIndex, icpDist0, resultPose0, lastCost0, matchCount0, currAng0, currU0) + resultArgs0 + (isExist1_0 or isExist2_0,) + (icpDist1, resultPose1, lastCost1, matchCount1, currAng1, currU1) + resultArgs1 + (isExist1_1 or isExist2_1,) + (utilVal0, branchIndex, spliceIndex)
 
 
 class Particle:
 
-	def __init__(self,pose0, pose1, pathID, hypDist, spliceName, weightVal, mapStateID):
+	def __init__(self, pose0, pose1, pathID, hypDist, spliceName, weightVal, mapStateID):
 		
 		" converted to arc distance on-the-fly as needed "
 		" remains invariant to regenerating paths "
@@ -294,7 +295,7 @@ class Particle:
 
 	def addPath(self, pathID, parentID, branchNodeID, localJunctionPose, globalJunctionPose):
 		self.junctionData[pathID] = {"parentID" : parentID, "branchNodeID" : branchNodeID, "localJunctionPose" : localJunctionPose, 
-							"globalJunctionPose" : globalJunctionPose }		
+							"globalJunctionPose" : globalJunctionPose, "bayesField" : [ 1.0 / 11.0 for k in range(11) ] }		
 
 	def addNode(self, nodeID, pathID):
 		self.nodeCorrespondence[nodeID] = pathID
