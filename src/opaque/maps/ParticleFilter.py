@@ -308,6 +308,12 @@ class Particle:
 
 		return newParticle
 
+	def __str__(self):
+		return str(self.__dict__)
+
+	def __eq__(self, other): 
+		return self.__dict__ == other.__dict__
+
 class ParticleFilter:
 
     def __init__(self, initPath, nodeHash):
