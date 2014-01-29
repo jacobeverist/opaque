@@ -281,7 +281,8 @@ class Particle:
 		" a currently undiagnosed necessary evil. "
 		" do I make splice a correspondence problem as well? "
 		" pose0 and pose1 splices may be different "
-		self.spliceName = ('t0', 't1')
+		#self.spliceName = ('t0', 't1')
+		self.spliceName = spliceName
 		
 		self.nodeCorrespondence = {}
 
@@ -312,7 +313,10 @@ class Particle:
 		return str(self.__dict__)
 
 	def __eq__(self, other): 
-		return self.__dict__ == other.__dict__
+		resultVal = self.__dict__ == other.__dict__
+		#print "compare equals", resultVal, self.__dict__, other.__dict__
+		return resultVal
+		#return self.__dict__ == other.__dict__
 
 class ParticleFilter:
 
