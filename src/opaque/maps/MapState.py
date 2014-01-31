@@ -880,7 +880,8 @@ class MapState:
 
 		#nodeID = nodeID0
 
-		staticSplicedPaths, spliceTerms, staticSplicePathIDs = self.getSplicesByNearJunction(nodeID0)
+		nodePose0 = self.nodePoses[nodeID0]
+		staticSplicedPaths, spliceTerms, staticSplicePathIDs = self.getSplicesByNearJunction(nodePose0)
 
 		pathIDs = self.getPathIDs()
 
@@ -1007,22 +1008,34 @@ class MapState:
 
 					samples = self.evaluateBranches(pathID, globJuncPose)
 
+					probDist = []
+					branchPoseDist = []
+					for branchSamp in samples:
+						probDist.append(branchSamp[8])
+						branchPoseDist.append(branchSamp[1])
+
+					probStr = ""
+					for probVal in probDist:
+						probStr += "%1.2f " % probVal
+
+					print self.hypothesisID, particleIndex, pathID, "branch probDist:", probStr
+
+					self.poseParticles["snapshots2"][updateCount][particleIndex].branchDist[pathID] = {}
+					self.poseParticles["snapshots2"][updateCount][particleIndex].branchDist[pathID]["probDist"] = probDist
+					self.poseParticles["snapshots2"][updateCount][particleIndex].branchDist[pathID]["branchPoseDist"] = branchPoseDist
+
+
 					time2 = time.time()
 					print "evaluateBranches time", self.hypothesisID, particleIndex, pathID, time2-time1
-					#part2 = (part[0], part[1], part[2], part[3], part[4], part[5], part[6], part[7], newProbVal, newSplices)
 
-					#for j in range(len(branchSplices)):
 					for j in range(len(samples)):
 
-						#return (particleIndex, icpDist0, resultPose0, lastCost0, matchCount0, currAng0, currU0) + resultArgs0 + (isExist1_0 or isExist2_0,) + (icpDist1, resultPose1, lastCost1, matchCount1, currAng1, currU1) + resultArgs1 + (isExist1_1 or isExist2_1,) + (utilVal0, spliceIndex)
-
-						#splice = branchSplices[j]
-						numSplices = len(samples[j][9])
 						probVal = samples[j][8]
+						branchSplices = samples[j][9]
+						numSplices = len(branchSplices)
 						for k in range(numSplices):
 
-							#splice = branchSplices[j]
-							splice = samples[j][9][k]
+							splice = branchSplices[k]
 							thisSplicedPaths.append((j, probVal, deepcopy(splice)))
 
 
@@ -1031,10 +1044,8 @@ class MapState:
 					" static splices have 1.0 probability "
 					thisSplicedPaths.append((None, 1.0, deepcopy(staticSplicedPaths[k])))
 
-			#for spliceIndex in range(len(splicedPaths)):
 			for spliceIndex in range(len(thisSplicedPaths)):
 				
-				#path = splicedPaths[spliceIndex][1]
 				branchSampleIndex = thisSplicedPaths[spliceIndex][0]
 				probVal = thisSplicedPaths[spliceIndex][1]
 				
@@ -1050,9 +1061,8 @@ class MapState:
 				" add guesses in the neighborhood of the closest pathU "
 				" 5 forward, 5 backward "
 				
-				#localizeJobs.append([pathU1, originU2, 0.0, spliceIndex, deepcopy(orientedPath), deepcopy(medial0), deepcopy(hypPose), [], nodeID, particleIndex, self.pathPlotCount2])
-				#localizeJobs.append([pathU0, oldMedialU0, 0.0, pathU1, oldMedialU1, 0.0, spliceIndex, deepcopy(orientedPath0), deepcopy(medial0), deepcopy(medial1), deepcopy(hypPose0), deepcopy(hypPose1), [], nodeID0, nodeID1, particleIndex, updateCount, self.hypothesisID])
 				localizeJobs.append([pathU0, oldMedialU0, 0.0, pathU1, oldMedialU1, 0.0, branchSampleIndex, spliceCount, deepcopy(orientedPath0), deepcopy(medial0), deepcopy(medial1), deepcopy(hypPose0), deepcopy(hypPose1), [], nodeID0, nodeID1, particleIndex, updateCount, self.hypothesisID])
+
 				self.pathPlotCount2 += 1
 				spliceCount += 1
 
@@ -1103,6 +1113,9 @@ class MapState:
 			spliceIndex = part[47]
 			branchProbVal = allSplicedPaths[spliceIndex][1]
 
+			initPose0 = part[48]
+			initPose0 = part[49]
+
 
 			newPose0 = part[2]
 			newDist0 = 0.5
@@ -1143,7 +1156,7 @@ class MapState:
 			" probability is the contigFrac squared " 
 			newProb = 0.0
 			if not isReject:
-				newProb = contigFrac_0 * contigFrac_0 / overlapSum_0
+				newProb = (pi-fabs(diffAngle(initPose0[2],newPose0[2])) ) * contigFrac_0 * contigFrac_0 / overlapSum_0
 				#newProb *= branchProbVal
 				#utilVal0 = (1.0-contigFrac_0) + (isExist1_0 or isExist2_0) + (1.0-contigFrac_1) + (isExist1_1 or isExist2_1)
 				
@@ -1448,7 +1461,25 @@ class MapState:
 
 
 			if 1 in self.getPathIDs():
-				modPose0 = deepcopy(part.junctionData[1]["globalJunctionPose"])
+
+				if 1 in part.branchDist.keys():
+
+					probDist = part.branchDist[1]["probDist"]
+					branchPoseDist = part.branchDist[1]["branchPoseDist"]
+
+
+					maxProb = -1e100
+					maxIndex = 0
+					for k in range(len(probDist)):
+						if probDist[k] > maxProb:
+							maxProb = probDist[k]
+							maxIndex = k
+
+
+					modPose0 = deepcopy(branchPoseDist[maxIndex])
+				else:
+					modPose0 = deepcopy(part.junctionData[1]["globalJunctionPose"])
+
 				modPose0[2] = 0.0
 				modOrigin0 = Pose(modPose0)
 				for k in range(len(localPathSegs)):
@@ -2368,8 +2399,8 @@ class MapState:
 
 		terminals[parentPathID] = [(parentPathID, 0), path2[0]]
 		terminals[parentPathID+1] = [(parentPathID, len(path2)-1), path2[len(path2)-1]]
-		topDict["t%u" % 0] = terminals[0][0]
-		topDict["t%u" % 1] = terminals[1][0]
+		topDict["t%u" % 0] = terminals[parentPathID][0]
+		topDict["t%u" % 1] = terminals[parentPathID+1][0]
 			
 		minI1 = junctions[pathID][4]
 		
@@ -2621,16 +2652,6 @@ class MapState:
 			modJuncPose = copy(newJuncPose)
 			modJuncPose[2] = origJuncPose[2]
 
-			initMatchCount = 0
-			initCost = 0.0
-			initProb = 0.0
-			initDist = 0.0
-			initAngDiff = 0.0
-			juncSplices = []
-
-			particle = (parentID, modJuncPose, newArcDist, pathID, initMatchCount, initCost, initDist, initAngDiff, initProb, juncSplices)
-
-
 			"""
 			1) point that has the junction
 			2) direction of junction
@@ -2667,8 +2688,6 @@ class MapState:
 			xP = []
 			yP = []
 
-			part = particle
-			modJuncPose = copy(part[1])
 			offsetOrigin1 = Pose(modJuncPose)
 
 			placedPathSegs = []
@@ -2696,34 +2715,10 @@ class MapState:
 			u1 = 0.5  # value is meaningless since data is not a spline curve
 			angGuess = -uPoint[2] + modJuncPose[2]
 			
-			#resultPose1, lastCost1, matchCount1 = gen_icp.branchEstimateICP([u1,u2,angGuess], junctionPose1, orientedPathSoup, globalPath2, plotIter = plotIter, n1 = pathID1, n2 = parentPathID)
-
-			arg = []
-			arg.append(0)
-			arg.append(u1)
-			arg.append(u2)
-			arg.append(angGuess)
-			arg.append(modJuncPose)
-			arg.append(placedPathSegs)
-			arg.append(globalPath2)
-			arg.append(False)
-			arg.append(pathID)
-			arg.append(parentID)
-
-			#resultPose1, lastCost1, matchCount1 = self.localizeBranchPoint(placedPathSegs, modJuncPose, parentID, pathID, plotIter = False)
-
-			#results = gen_icp.batchGlobalICP(args)
-
-			#initGuess = [arg[1], arg[2], arg[3]]
-			initGuess = [arg[1], arg[2], arg[3]]
-			resultPose, lastCost, matchCount = gen_icp.branchEstimateCost(initGuess, arg[4], arg[5], arg[6], plotIter = False, n1 = arg[8], n2 = arg[9])
+			initGuess = [u1,u2,angGuess]
+			resultPose, lastCost, matchCount = gen_icp.branchEstimateCost(initGuess, modJuncPose, placedPathSegs, globalPath2, plotIter = False, n1 = pathID, n2 = parentID)
 			result = (resultPose, lastCost, matchCount)	
 	
-
-			part = particle
-
-			modJuncPose = copy(part[1])
-
 			resultPose1 = result[0]
 			lastCost1 = result[1]
 			matchCount1 = result[2]
@@ -2738,20 +2733,22 @@ class MapState:
 
 			origJuncPose = copy(pathDesc["globalJunctionPose"])
 			origJuncPose[2] = 0.0
-			distDisc = sqrt((finalPose[0]-origJuncPose[0])**2 + (finalPose[1]-origJuncPose[1])**2)
+			#distDisc = sqrt((finalPose[0]-origJuncPose[0])**2 + (finalPose[1]-origJuncPose[1])**2)
+			distDisc = 0.0
 			angDisc = fabs(normalizeAngle(finalPose[2]-origJuncPose[2]))
 
 			newPath3, newGlobJuncPose, juncDiscDist, juncDiscAngle, splicedPaths =  self.trimBranch(pathID, modJuncPose)
 			newSplices = deepcopy(splicedPaths)
 
-			part2 = (part[0], modJuncPose, part[2], part[3], matchCount1, lastCost1, distDisc, angDisc, part[8], newSplices, juncDiscAngle)
-			# (parentID, modJuncPose, newArcDist, pathID, initMatchCount, initCost, initDist, initAngDiff, initProb, juncSplices))
+			initProb = 0.0
+
+			part2 = (parentID, modJuncPose, newArcDist, pathID, matchCount1, lastCost1, distDisc, angDisc, initProb, newSplices, juncDiscAngle)
 
 			currBranchSpace[thisKey] = part2
 
 			print "completed precomputation of branch", thisKey
+
 			return deepcopy(currBranchSpace[thisKey])
-			#return thisKey
 
 	@logFunction
 	def evaluateBranches(self, pathID, estJuncPose):
@@ -2778,174 +2775,11 @@ class MapState:
 
 			totalDist = pathSpline.dist_u(1.0)
 
-			" initialize if this is the first time "
-			"""
-			particles = []
-			for k in range(11):
-				#newArcDist = (k / float(numParticles-1)) * totalDist
-				newArcDist = arcLow + (arcHigh-arcLow)*k/10
-
-				#particle = self.computeBranch(pathID, newArcDist)
-				" NOTE:  angle is the tangent angle, not branch angle "
-
-				newJuncPose = pathSpline.getPointOfDist(newArcDist)
-				modJuncPose = copy(newJuncPose)
-				modJuncPose[2] = origJuncPose[2]
-
-				initMatchCount = 0
-				initCost = 0.0
-				initProb = 0.0
-				initDist = 0.0
-				initAngDiff = 0.0
-				juncSplices = []
-
-				particles.append((parentID, modJuncPose, newArcDist, pathID, initMatchCount, initCost, initDist, initAngDiff, initProb, juncSplices))
-
-
 			#1) point that has the junction
 			#2) direction of junction
 			#3) set of long paths that include junction path  (only 2)
 
-
-			medialLongPath = self.medialLongPaths[pathID]
-
-			junctionDetails = self.longPathJunctions[pathID]
-
-			#print "junction details:", pathID, junctionDetails
-
-
-
-
-			globalPath1 = self.paths[pathID]
-			origJuncPose = copy(self.pathClasses[pathID]["globalJunctionPose"])
-			origJuncPose[2] = 0.0
-
-			origJuncOrigin = Pose(origJuncPose)
-			localPath1 = []
-			for p in globalPath1:
-				p1 = origJuncOrigin.convertGlobalToLocal(p)
-				localPath1.append(p1)
-
-			localMedialLongPath = []
-			for k in range(len(medialLongPath)):
-				longPath = medialLongPath[k]
-				localLongPath = []
-				for p in longPath:
-					p1 = origJuncOrigin.convertGlobalToLocal(p)
-					localLongPath.append(p1)
-
-				localMedialLongPath.append(localLongPath)
-
-			localPathSegs = []
-			smoothPathSegs = junctionDetails["leafSegments"] + junctionDetails["internalSegments"]
-
-			print "path segs:", len(junctionDetails["leafSegments"]), "+", len(junctionDetails["internalSegments"]), "=", len(smoothPathSegs)
-
-			for k in range(len(smoothPathSegs)):
-				pathSeg = smoothPathSegs[k]
-				localSeg = []
-				for p in pathSeg:
-					p1 = origJuncOrigin.convertGlobalPoseToLocal(p)
-					localSeg.append(p1)
-
-				localPathSegs.append(localSeg)
-
-			args = []
-			xP = []
-			yP = []
-			for k in range(len(particles)):
-				part = particles[k]
-				modJuncPose = copy(part[1])
-				offsetOrigin1 = Pose(modJuncPose)
-
-				placedPathSegs = []
-				for k in range(len(localPathSegs)):
-					localSeg = localPathSegs[k]
-					placedSeg = []
-					for p in localSeg:
-						p1 = offsetOrigin1.convertLocalOffsetToGlobal(p)
-						placedSeg.append(p1)
-					placedPathSegs.append(placedSeg)
-
-
-				parentPath = self.paths[parentID]
-				juncOrigin1 = Pose(modJuncPose)
-
-				" curves of both paths "
-				globalPath2 = parentPath
-
-				globalSpline2 = SplineFit(globalPath2, smooth=0.1)
-				globalSamples2 = globalSpline2.getUniformSamples(spacing = 0.04)
-				originU2 = globalSpline2.findU(modJuncPose)
-				minDist, originU2, uPoint = globalSpline2.findClosestPoint(modJuncPose)
-				
-				u2 = originU2
-				u1 = 0.5  # value is meaningless since data is not a spline curve
-				angGuess = -uPoint[2] + modJuncPose[2]
-				
-				#resultPose1, lastCost1, matchCount1 = gen_icp.branchEstimateICP([u1,u2,angGuess], junctionPose1, orientedPathSoup, globalPath2, plotIter = plotIter, n1 = pathID1, n2 = parentPathID)
-
-				arg = []
-				arg.append(k)
-				arg.append(u1)
-				arg.append(u2)
-				arg.append(angGuess)
-				arg.append(modJuncPose)
-				arg.append(placedPathSegs)
-				arg.append(globalPath2)
-				arg.append(False)
-				arg.append(pathID)
-				arg.append(parentID)
-
-				args.append(arg)
-
-
-			#resultPose1, lastCost1, matchCount1 = self.localizeBranchPoint(placedPathSegs, modJuncPose, parentID, pathID, plotIter = False)
-
-			#results = gen_icp.batchGlobalICP(args)
-
-			results = []
-			for arg in args:
-				initGuess = [arg[1], arg[2], arg[3]]
-				resultPose, lastCost, matchCount = gen_icp.branchEstimateCost(initGuess, arg[4], arg[5], arg[6], plotIter = False, n1 = arg[8], n2 = arg[9])
-				results.append((resultPose, lastCost, matchCount))	
-
-
-			for k in range(len(particles)):
-				part = particles[k]
-				modJuncPose = copy(part[1])
-
-				resultPose1 = results[k][0]
-				lastCost1 = results[k][1]
-				matchCount1 = results[k][2]
-
-				poseOrigin = Pose(resultPose1)
-
-				inversePose = poseOrigin.doInverse(resultPose1)
-				poseOrigin = Pose(inversePose)
-
-				finalPose = poseOrigin.convertLocalOffsetToGlobal(modJuncPose)
-				poseOrigin2 = Pose(finalPose)
-
-				#[parentID, modJuncPose, newArcDist, pathID, initMatchCount, initCost, initDist, initAngDiff, initProb]
-
-				#part[1] = finalPose
-				#part[1] = modJuncPose
-				#part[4] = matchCount1
-				#part[5] = lastCost1
-
-				origJuncPose = copy(pathDesc["globalJunctionPose"])
-				origJuncPose[2] = 0.0
-				#part[6] = sqrt((finalPose[0]-origJuncPose[0])**2 + (finalPose[1]-origJuncPose[1])**2)
-				distDisc = sqrt((finalPose[0]-origJuncPose[0])**2 + (finalPose[1]-origJuncPose[1])**2)
-				#part[7] = fabs(normalizeAngle(finalPose[2]-origJuncPose[2]))
-				angDisc = fabs(normalizeAngle(finalPose[2]-origJuncPose[2]))
-
-				part2 = (part[0], modJuncPose, part[2], part[3], matchCount1, lastCost1, distDisc, angDisc, part[8], part[9])
-				# (parentID, modJuncPose, newArcDist, pathID, initMatchCount, initCost, initDist, initAngDiff, initProb, juncSplices))
-				particles[k] = part2
-			"""
-
+			" initialize if this is the first time "
 			particles = []
 			for k in range(11):
 				newArcDist = arcLow + (arcHigh-arcLow)*k/10
@@ -3004,7 +2838,8 @@ class MapState:
 				matchCount = part[4]
 
 				" angDiff feature times matchCount times dist "
-				probVal = matchCount*matchCost + nomDist/4.0
+				#probVal = matchCount*matchCost + nomDist/4.0
+				probVal = matchCount*matchCost
 				totalProbSum += probVal
 
 				part2 = (part[0], part[1], part[2], part[3], part[4], matchCost, nomDist, part[7], probVal, part[9], part[10])
@@ -3316,7 +3151,8 @@ class MapState:
 	@logFunction
 	def getOrderedOverlappingPaths(self, nodeID):
 
-		splicePaths, spliceTerms, splicePathIDs = self.getSplicesByNearJunction(nodeID)
+		nodePose = self.nodePoses[nodeID]
+		splicePaths, spliceTerms, splicePathIDs = self.getSplicesByNearJunction(nodePose)
 		
 		#node2 = self.nodeHash[nodeID]
 
@@ -3381,12 +3217,12 @@ class MapState:
 		
 
 	@logFunction
-	def getSplicesByNearJunction(self, nodeID):
+	def getSplicesByNearJunction(self, initPose2):
 		
 		allSplices, terminals, junctions = self.getAllSplices(plotIter = False)
 
 		#initPose2 = self.nodeHash[nodeID].getGlobalGPACPose()
-		initPose2 = self.nodePoses[nodeID]
+		#initPose2 = self.nodePoses[nodeID]
 
 		
 		print "junctions:", junctions

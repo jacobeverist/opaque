@@ -257,7 +257,7 @@ def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, me
 	utilVal0 = (1.0-contigFrac0) + (isExist1_0 or isExist2_0) + (1.0-contigFrac1) + (isExist1_1 or isExist2_1)
 
 	#return (particleIndex, icpDist0, resultPose0, lastCost0, matchCount0, currAng0, currU0) + resultArgs0 + (isExist1_0 or isExist2_0,)
-	return (particleIndex, icpDist0, resultPose0, lastCost0, matchCount0, currAng0, currU0) + resultArgs0 + (isExist1_0 or isExist2_0,) + (icpDist1, resultPose1, lastCost1, matchCount1, currAng1, currU1) + resultArgs1 + (isExist1_1 or isExist2_1,) + (utilVal0, branchIndex, spliceIndex)
+	return (particleIndex, icpDist0, resultPose0, lastCost0, matchCount0, currAng0, currU0) + resultArgs0 + (isExist1_0 or isExist2_0,) + (icpDist1, resultPose1, lastCost1, matchCount1, currAng1, currU1) + resultArgs1 + (isExist1_1 or isExist2_1,) + (utilVal0, branchIndex, spliceIndex, initPose0, initPose1)
 
 
 class Particle:
@@ -277,6 +277,8 @@ class Particle:
 
 		" junction description data "
 		self.junctionData = {}
+
+		self.branchDist = {}
 		
 		" a currently undiagnosed necessary evil. "
 		" do I make splice a correspondence problem as well? "
@@ -306,6 +308,7 @@ class Particle:
 		newParticle.nodeCorrespondence = deepcopy(self.nodeCorrespondence)
 		newParticle.memberPaths = deepcopy(self.memberPaths)
 		newParticle.junctionData = deepcopy(self.junctionData)
+		newParticle.branchDist = deepcopy(self.branchDist)
 
 		return newParticle
 
