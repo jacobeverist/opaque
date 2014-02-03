@@ -1,13 +1,21 @@
 // BulletTestApp.cpp : Defines the entry point for the console application.
 //
 
+#ifdef _WIN32
 #include "stdafx.h"
+#endif
+
 #include <iostream>
 #include <btBulletDynamicsCommon.h>
 #include "BulletSnake.h"
 
 
+#ifdef _WIN32
 int _tmain(int argc, _TCHAR* argv[])
+#else
+int main(int argc, char argv[])
+#endif
+
 {
 	///std::cout << "Hello World!" << std::endl;
 

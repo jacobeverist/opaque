@@ -11,6 +11,7 @@ if os.name == 'posix':
 	ext_modules = [Extension("bulletsnakeprobe",
 			["bulletsnakeprobe.pyx", "BulletSnake.cpp"],
 			language="c++",
+			#extra_compile_args=['-fPIC'],
 			include_dirs=[BULLET_DIR],
 			libraries=["BulletDynamics", "LinearMath", "BulletCollision"],
 								)]
