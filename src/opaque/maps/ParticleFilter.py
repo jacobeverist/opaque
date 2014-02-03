@@ -262,7 +262,7 @@ def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, me
 
 class Particle:
 
-	def __init__(self, pose0, pose1, pathID, hypDist, spliceName, weightVal, mapStateID):
+	def __init__(self, pose0, pose1, pathID, hypDist, weightVal, mapStateID):
 		
 		" converted to arc distance on-the-fly as needed "
 		" remains invariant to regenerating paths "
@@ -278,13 +278,12 @@ class Particle:
 		" junction description data "
 		self.junctionData = {}
 
-		self.branchDist = {}
-		
 		" a currently undiagnosed necessary evil. "
 		" do I make splice a correspondence problem as well? "
 		" pose0 and pose1 splices may be different "
-		#self.spliceName = ('t0', 't1')
-		self.spliceName = spliceName
+		self.spliceName = ('t0', 't1')
+		#self.spliceName = spliceName
+		self.spliceCurve = None
 		
 		self.nodeCorrespondence = {}
 
@@ -297,18 +296,29 @@ class Particle:
 		self.mapStateID = mapStateID
 
 	def addPath(self, pathID, parentID, branchNodeID, localJunctionPose, globalJunctionPose):
-		self.junctionData[pathID] = {"parentID" : parentID, "branchNodeID" : branchNodeID, "localJunctionPose" : localJunctionPose, 
-							"globalJunctionPose" : globalJunctionPose, "bayesField" : [ 1.0 / 11.0 for k in range(11) ] }		
+
+		self.junctionData[pathID] = {
+									"parentID" : parentID,
+									"branchNodeID" : branchNodeID,
+									"localJunctionPose" : localJunctionPose, 
+									"globalJunctionPose" : globalJunctionPose,
+									"probDist" : [ 1.0 / 11.0 for k in range(11) ],
+									"branchPoseDist" : [deepcopy(globalJunctionPose) for k in range(11)],
+									"maxLikelihoodBranch" : 0
+									}		
+
 
 	def addNode(self, nodeID, pathID):
 		self.nodeCorrespondence[nodeID] = pathID
 
 	def copy(self):
-		newParticle = Particle(deepcopy(self.pose0), deepcopy(self.pose1), 0, self.hypDist, self.spliceName, self.weightVal, self.mapStateID)
+		newParticle = Particle(deepcopy(self.pose0), deepcopy(self.pose1), 0, self.hypDist, self.weightVal, self.mapStateID)
 		newParticle.nodeCorrespondence = deepcopy(self.nodeCorrespondence)
 		newParticle.memberPaths = deepcopy(self.memberPaths)
 		newParticle.junctionData = deepcopy(self.junctionData)
-		newParticle.branchDist = deepcopy(self.branchDist)
+
+		newParticle.spliceName = deepcopy(self.spliceName)
+		newParticle.spliceCurve = deepcopy(self.spliceCurve)
 
 		return newParticle
 

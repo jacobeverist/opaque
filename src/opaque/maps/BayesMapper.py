@@ -26,6 +26,8 @@ from MapState import MapState
 
 import random
 
+from guppy import hpy
+
 
 def printStack():
 
@@ -355,6 +357,9 @@ class BayesMapper:
 
 		#for k in range(self.poseData.numNodes):
 		#	mapHyp.nodePoses[k] = self.nodeHash[k].getGlobalGPACPose()
+
+		hp = hpy()
+		print hp.heap()
 
 		return hypSet
 

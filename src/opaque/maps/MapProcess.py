@@ -985,7 +985,8 @@ def movePath(mapHyp, nodeID, direction, distEst = 1.0):
 			orientedPoints2 = orientedPathSpline2.getUniformSamples()
 			orientedPoints3 = orientedPathSpline3.getUniformSamples()
 
-			mapHyp.displacePoseParticles(nodeID-1, nodeID, newPose2, newPose3, travelDist2, travelDist3, currSplice2, currSplice3)
+			#mapHyp.displacePoseParticles(nodeID-1, nodeID, newPose2, newPose3, travelDist2, travelDist3, currSplice2, currSplice3)
+			mapHyp.displacePoseParticles(nodeID-1, nodeID, newPose2, newPose3, travelDist2, travelDist3)
 
 			pylab.clf()
 
@@ -2504,7 +2505,7 @@ def consistentFit(mapHyp, nodeID, estPose, numGuesses = 11, excludePathIDs = [])
 
 	poseData = mapHyp.poseData
 
-	splicedPaths1, spliceTerms, splicePathIDs = mapHyp.getSplicesByNearJunction(nodeID)
+	splicedPaths1, spliceTerms, splicePathIDs = mapHyp.getSplicesByNearJunction(estPose)
 
 
 	print "consistentFit(", nodeID
@@ -2827,7 +2828,7 @@ def consistentParticleFit(mapHyp, nodeID, estPose, excludePathIDs = []):
 
 	poseData = mapHyp.poseData
 
-	splicedPaths1, spliceTerms, splicePathIDs = mapHyp.getSplicesByNearJunction(nodeID)
+	splicedPaths1, spliceTerms, splicePathIDs = mapHyp.getSplicesByNearJunction(estPose)
 
 
 	print "consistentFit(", nodeID
