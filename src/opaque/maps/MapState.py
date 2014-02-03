@@ -528,8 +528,1204 @@ def computePathAngleVariance(pathSamples):
 
 	return pathVar
 
+" get the trimmed version of child and parent paths that are overlapping in some fashion "
+@logFunction
+def getOverlapDeparture(globalJunctionPoint, parentPathID, childPathID, path1, path2, plotIter = False):
+
+	"Assumption:  one section of the medial axis is closely aligned with the path "		   
+		
+	print "getOverlapDeparture():"
+	
+	isExist1 = False
+	isInterior1 = False
+	departurePoint1 = 0
+	isExist2 = False
+	isInterior2 = False
+	departurePoint2 = 0
+
+	" orienting the medial axis of the branch node correctly "
+	
+	" return exception if we receive an invalid path "		  
+	if len(path1) == 0:
+		print "path1 has zero length"
+		raise
 
 
+	" make sure the overlap of both paths are oriented the same way "
+	path1Spline = SplineFit(path1, smooth=0.1)
+	path2Spline = SplineFit(path2, smooth=0.1)
+
+	path2Reverse = deepcopy(path2)
+	path2Reverse.reverse()
+	path2SplineReverse = SplineFit(path2Reverse, smooth=0.1)
+	
+	orientedPath2 = orientPath(path2, path1, dist_thresh=0.1)
+		
+	path2Spline = SplineFit(orientedPath2, smooth=0.1)
+
+
+
+	" for each point on the child path, find its closest pair on the parent path "
+	
+	pathPoints1 = path1Spline.getUniformSamples()
+	pathPoints2 = path2Spline.getUniformSamples()
+
+	distances = []
+	indices = []
+	for i in range(0,len(pathPoints2)):
+		p_2 = pathPoints2[i]
+		p_1, i_1, minDist = gen_icp.findClosestPointInA(pathPoints1, p_2)
+		
+		" keep the distance information "
+		distances.append(minDist)
+		" and the associated index of the point on the parent path "
+		indices.append(i_1)
+
+	" match distances of the tip points of child path "		   
+	maxFront = distances[0]
+	maxBack = distances[-1]
+	print "match distances of tip points:", maxFront, maxBack
+
+	" walk back from tip point until we have a non-monotic increase in match distance "
+	" this becomes our departure point "
+	
+	"TODO:	why is there a 3-offset in this comparison? "
+	currI = 1
+	try:
+		while distances[currI+3] < maxFront:
+			maxFront = distances[currI]
+			currI += 1
+	except:
+		pass
+	
+	" departure index on child path "
+	frontDepI = currI
+	
+	" departure index of child path and match distance "
+	frontPoint = [frontDepI, distances[frontDepI]]
+
+	" FIXME:  index out of bounds case "
+	currI = 2
+	try:
+		while distances[-currI-3] < maxBack:
+			maxBack = distances[-currI]
+			currI += 1
+	except:
+		pass
+
+	" departure index on child path "
+	backDepI = len(distances) - currI
+
+	" departure index of child path and match distance "
+	backPoint = [backDepI, distances[backDepI]]
+
+	print "lengths of parent and child paths:", len(pathPoints1), len(pathPoints2)
+	print "non monotonic departures:", maxFront, maxBack, frontPoint, backPoint
+
+
+	"reset to the tip match distance "
+	maxFront = distances[0]
+	maxBack = distances[-1]
+	
+	
+	" count the number of times a matched point on the parent path is used "
+	foo = indices[0:frontDepI+1]
+	d1 = {}
+	for i in set(foo):
+		d1[i] = foo.count(i)
+
+	foo = indices[backDepI:]
+	d2 = {}
+	for i in set(foo):
+		d2[i] = foo.count(i)
+
+	" select the match point that is used the most on the parent path "
+	max1 = max(d1, key=d1.get)
+	max2 = max(d2, key=d2.get)
+
+
+	" NOTE:  This guarantees detection of a departure.	We've assumed that there exists a"
+	" departure between these two paths "
+	
+	" compute two candidate departure points "
+	
+	" NOTE:  departure point on parent path is not used here "
+	if True:
+
+		#departurePoint1 = pathPoints1[max1]
+		isExist1 = True
+
+		" if the highest match point is either of the tips of the parent path, then this is an external departure "
+		if max1 == 0 or max1 == len(pathPoints1)-1:
+			isInterior1 = False
+		else:
+			isInterior1 = True
+
+	if True:
+		
+		#departurePoint2 = pathPoints1[max2]
+		isExist2 = True
+
+		" if the highest match point is either of the tips of the parent path, then this is an external departure "
+		if max2 == 0 or max2 == len(pathPoints1)-1:
+			isInterior2 = False
+		else:
+			isInterior2 = True
+
+	print "isExist1 =", isExist1, "isInterior1 =", isInterior1
+	print "isExist2 =", isExist2, "isInterior2 =", isInterior2
+
+	" sum of closest points on front and back "
+	" select the one with minimal cost "		
+	
+	" now we compare our candidates to the known direction and location of the branching point "
+	angleSum1 = 0.0
+	overlapSum1 = 0.0
+	matchCount1 = 0
+	
+	" path section for our front departure hypothesis "
+	pathSec1 = pathPoints2[:frontDepI+1]
+	pathSec1.reverse()
+	
+	angleSum2 = 0.0
+	overlapSum2 = 0.0
+	matchCount2 = 0
+	
+	" path section for our back departure hypothesis "
+	pathSec2 = pathPoints2[backDepI:]
+
+	print "pathSec1 hypothesis angle and overlap sum and match count:", angleSum1, overlapSum1, matchCount1
+	print "pathSec2 hypothesis angle and overlap sum and match count:", angleSum2, overlapSum2, matchCount2
+
+	" distance of departure point from known junction point "
+	p0 = pathSec1[0]
+	juncDist1 = sqrt((globalJunctionPoint[0]-p0[0])**2 + (globalJunctionPoint[1]-p0[1])**2)
+
+	p0 = pathSec2[0]
+	juncDist2 = sqrt((globalJunctionPoint[0]-p0[0])**2 + (globalJunctionPoint[1]-p0[1])**2)
+
+	print "pathSec1 hypothesis discrepancy distance:", juncDist1
+	print "pathSec2 hypothesis discrepancy distance:", juncDist2
+
+	#if plotIter:
+	if False:
+
+		hypothesisID = 0
+		numNodes = 0
+		pathPlotCount = 0
+
+		pylab.clf()
+		xP = []
+		yP = []
+		for p in path2:
+			xP.append(p[0])
+			yP.append(p[1])
+		pylab.plot(xP,yP, color=(0.5,0.5,1.0))
+
+		if True:	
+			P1 = pathPoints2[0]
+			P2 = pathPoints2[frontDepI]
+			
+			P3 = pathPoints2[backDepI]
+			P4 = pathPoints2[-1]
+
+			" 0, frontDepI "
+			xP = [P1[0], P2[0]]
+			yP = [P1[1], P2[1]]
+			pylab.scatter(xP,yP, color='b')		   
+
+			" backDepI, -1 "
+			xP = [P3[0], P4[0]]
+			yP = [P3[1], P4[1]]
+			pylab.scatter(xP,yP, color='g')		   
+
+			
+		pylab.scatter([globalJunctionPoint[0]],[globalJunctionPoint[1]], color='r')		   
+
+		xP = []
+		yP = []
+		for p in path1:
+			xP.append(p[0])
+			yP.append(p[1])
+		pylab.plot(xP,yP, color=(1.0,0.5,0.5))
+
+		pylab.xlim(-5,10)
+		pylab.ylim(-8,8)
+		pylab.title("hyp %d nodeID %d, %d %d %d %d %d %3.2f %3.2f %3.2f %d %3.2f %3.2f %3.2f" % ( hypothesisID, numNodes, isExist1, isExist2, isInterior1, isInterior2, matchCount1, overlapSum1, angleSum1, juncDist1, matchCount2, overlapSum2, angleSum2, juncDist2))
+		pylab.savefig("trimDeparture_%04u_%04u.png" % (hypothesisID, pathPlotCount))
+
+		print "saving trimDeparture_%04u_%04u.png" % (hypothesisID, pathPlotCount)
+		
+		pathPlotCount += 1
+
+	secP1 = []
+	secP2 = []
+
+	"""
+	cases
+	1) near-zero length of path section, never departs, not the path, high juncDist
+	2) near-zero length, no match count, low juncDist, correct path
+	3) high path length, high match count, low juncDist, incorrect path 
+	4) no match count, high junc dist, incorrect
+	5) no match count, low junc dist, correct
+	"""
+	
+	if juncDist1 < juncDist2:
+		
+		" FIXME: if [0,frontDepI] has high overlap compared to total length, then we reject it "
+		
+		secP1 = pathPoints2[0]
+		secP2 = pathPoints2[frontDepI]
+	else:
+		" FIXME: if [backDepI,len(distances)-1] has high overlap compared to total length, then we reject it "
+		secP1 = pathPoints2[backDepI]
+		secP2 = pathPoints2[len(distances)-1]
+
+	if len(secP1) == 0:
+		print "no departures found"
+		raise
+		
+	
+	return secP1, secP2
+
+
+@logFunction
+def getBranchPoint(globalJunctionPoint, parentPathID, childPathID, path1, path2, plotIter = False):
+	""" get the trimmed version of child and parent paths that are overlapping in some fashion """
+
+	"Assumption:  one section of the medial axis is closely aligned with the path "		   
+	
+	pathPlotCount = 0
+	print "getBranchPoint():"
+	
+	" return exception if we receive an invalid path "		  
+	if len(path1) == 0:
+		print "path1 has zero length"
+		raise
+	
+	" make sure the overlap of both paths are oriented the same way "
+	orientedPath2 = orientPath(path2, path1)
+	
+	path1Spline = SplineFit(path1, smooth=0.1)			  
+	path2Spline = SplineFit(orientedPath2, smooth=0.1)
+
+
+	" for each point on the child path, find its closest pair on the parent path "
+	
+	pathPoints1 = path1Spline.getUniformSamples(interpAngle=True)
+	pathPoints2 = path2Spline.getUniformSamples(interpAngle=True)
+
+	distances = []
+	indices = []
+	juncDists = []
+
+	minDist2 = 1e100
+	juncI = 0		 
+
+	for i in range(0,len(pathPoints2)):
+		p_2 = pathPoints2[i]
+		p_1, i_1, minDist = gen_icp.findClosestPointInA(pathPoints1, p_2)
+		
+		" keep the distance information "
+		distances.append(minDist)
+		" and the associated index of the point on the parent path "
+		indices.append(i_1)
+		
+		juncDist = sqrt((p_2[0]-globalJunctionPoint[0])**2 + (p_2[1]-globalJunctionPoint[1])**2)
+
+		if juncDist < minDist2:
+			minDist2 = juncDist
+			juncI = i
+
+		juncDists.append(juncDist)
+
+
+	frontInd = 0
+	backInd = len(pathPoints2)-1
+
+	path2Indices = range(0,len(pathPoints2))
+		
+	frontFound = False
+	backFound = False
+	for k in path2Indices:
+		if not frontFound and juncDists[k] <= 1.0:
+			frontInd = k
+			frontFound = True
+
+	path2Indices.reverse()
+	for k in path2Indices:
+		if not backFound and juncDists[k] <= 1.0:
+			backFound = k
+			backFound = True
+
+	print "frontFound, backFound:", frontFound, backFound
+	print "frontInd, backInd:", frontInd, backInd
+
+	print "minDist2, juncI:", minDist2, juncI
+
+	" match distances of the tip points of child path "		   
+	maxFront = distances[frontInd]
+	maxBack = distances[backInd]
+	print "match distances of tip points:", maxFront, maxBack
+
+	" walk back from tip point until we have a non-monotic increase in match distance "
+	" this becomes our departure point "
+	
+	"TODO:	why is there a 3-offset in this comparison? "
+	currI = frontInd + 1
+	try:
+		while distances[currI+3] < maxFront or distances[currI+3] > 0.1:
+			maxFront = distances[currI]
+			currI += 1
+	except:
+		pass
+	
+	" departure index on child path "
+	frontDepI = currI
+
+	if frontDepI+3 >= len(pathPoints2)-1:
+		frontDepI = juncI
+
+	
+	" departure index of child path and match distance "
+	frontPoint = [frontDepI, distances[frontDepI]]
+
+
+	frontAngleRefI = frontDepI
+	while distances[frontAngleRefI] < 0.1:
+		frontAngleRefI -= 1
+		
+		if frontAngleRefI < 0:
+			frontAngleRefI = 0
+			break
+					
+	forePathIndex = indices[frontAngleRefI]
+	forePathAngle = pathPoints1[forePathIndex][2]
+	forePathAngle = normalizeAngle(forePathAngle + pi)
+	
+	newFrontDepI = frontDepI - 40
+	if newFrontDepI < 4:
+		newFrontDepI = 4
+
+	while fabs(diffAngle(normalizeAngle(pathPoints2[newFrontDepI][2]+pi), forePathAngle)) > pi/3.0:
+		
+		if newFrontDepI < frontDepI:
+			newFrontDepI += 1
+		else:
+			break
+
+
+	" FIXME:  index out of bounds case "
+	currI = 1 + len(pathPoints2) - backInd
+	try:
+		while distances[-currI-3] < maxBack or distances[-currI-3] > 0.1:
+			maxBack = distances[-currI]
+			currI += 1
+	except:
+		pass
+
+	" departure index on child path "
+	backDepI = len(distances) - currI
+
+	if backDepI-3 <= 0: 
+		backDepI = juncI
+
+	" departure index of child path and match distance "
+	backPoint = [backDepI, distances[backDepI]]
+
+
+	backAngleRefI = backDepI
+	while distances[backAngleRefI] < 0.1:
+		backAngleRefI += 1
+		
+		if backAngleRefI >= len(distances):
+			backAngleRefI = len(distances)-1
+			break
+	
+	backPathIndex = indices[backAngleRefI]
+	backPathAngle = pathPoints1[backPathIndex][2]
+	
+
+
+	newBackDepI = backDepI + 40
+	if newBackDepI > len(distances)-5:
+		newBackDepI = len(distances)-5
+
+	while fabs(diffAngle(pathPoints2[newBackDepI][2], backPathAngle)) > pi/3.0:
+		
+		if newBackDepI > backDepI:
+			newBackDepI -= 1
+		else:
+			break		 
+	
+
+	frontDiffAngles = []
+	for k in range(len(pathPoints2)):
+		if k == newFrontDepI:
+			frontDiffAngles.append(None)
+		else:
+			frontDiffAngles.append(fabs(diffAngle(normalizeAngle(pathPoints2[k][2]+pi), forePathAngle)))
+
+	backDiffAngles = []
+	for k in range(len(pathPoints2)):
+		if k == newBackDepI:
+			backDiffAngles.append(None)
+		else:
+			backDiffAngles.append(fabs(diffAngle(normalizeAngle(pathPoints2[k][2]), backPathAngle)))
+
+
+	print "frontDepI, backDepI:", frontDepI, backDepI
+	print "frontAngleRefI, backAngleRefI:", frontAngleRefI, backAngleRefI
+	print "forePathAngle, backPathAngle:", forePathAngle, backPathAngle
+	print "newFrontDepI, newBackDepI:", newFrontDepI, newBackDepI
+	print "foreDiff, backDiff:", diffAngle(normalizeAngle(pathPoints2[newFrontDepI][2]+pi), forePathAngle), diffAngle(normalizeAngle(pathPoints2[newBackDepI][2]), backPathAngle)
+
+	print "frontDiffAngles:", frontDiffAngles
+	print "backDiffAngles:", backDiffAngles
+
+
+	print "lengths of parent and child paths:", len(pathPoints1), len(pathPoints2)
+	print "non monotonic departures:", maxFront, maxBack, frontPoint, backPoint
+
+
+	"reset to the tip match distance "
+	maxFront = distances[frontInd]
+	maxBack = distances[backInd]
+	
+	
+	" sum of closest points on front and back "
+	" select the one with minimal cost "		
+
+	" path section for our front departure hypothesis "
+	pathSec1 = pathPoints2[:frontDepI+1]
+	pathSec1.reverse()
+
+	" path section for our back departure hypothesis "
+	pathSec2 = pathPoints2[backDepI:]
+	
+	" distance of departure point from known junction point "
+	#juncDist1 = -1
+	#juncDist2 = -1
+	#if len(pathSec1) > 0:
+	p0 = pathSec1[0]
+	juncDist1 = sqrt((globalJunctionPoint[0]-p0[0])**2 + (globalJunctionPoint[1]-p0[1])**2)
+
+	#if len(pathSec2) > 0:
+	p0 = pathSec2[0]
+	juncDist2 = sqrt((globalJunctionPoint[0]-p0[0])**2 + (globalJunctionPoint[1]-p0[1])**2)
+
+	print "pathSec1 hypothesis discrepancy distance:", juncDist1
+	print "pathSec2 hypothesis discrepancy distance:", juncDist2
+
+
+	secP1 = []
+	secP2 = []
+
+	"""
+	cases
+	1) near-zero length of path section, never departs, not the path, high juncDist
+	2) near-zero length, no match count, low juncDist, correct path
+	3) high path length, high match count, low juncDist, incorrect path 
+	4) no match count, high junc dist, incorrect
+	5) no match count, low junc dist, correct
+	"""
+
+
+	junctionPoint = globalJunctionPoint		 
+	minDist2 = 1e100
+	juncI = 0		 
+	for i in range(len(pathPoints2)):
+		pnt = pathPoints2[i]
+		dist = sqrt((pnt[0]-junctionPoint[0])**2 + (pnt[1]-junctionPoint[1])**2)
+	
+		if dist < minDist2:
+			minDist2 = dist
+			juncI = i
+	
+	
+	
+	if juncDist1 < juncDist2:
+		" FIXME: if [0,frontDepI] has high overlap compared to total length, then we reject it "
+		secP1 = pathPoints2[0]
+		secP2 = pathPoints2[frontDepI]
+		
+		newPath2 = pathPoints2[:newFrontDepI]
+		newPath2.reverse()
+
+	else:
+		" FIXME: if [backDepI,len(distances)-1] has high overlap compared to total length, then we reject it "
+		secP1 = pathPoints2[backDepI]
+		secP2 = pathPoints2[len(distances)-1]
+
+		newPath2 = pathPoints2[newBackDepI:]
+
+	if len(secP1) == 0:
+		print "no departures found"
+		raise
+	
+	" convert path so that the points are uniformly distributed "
+	
+	
+	max_spacing = 0.08
+	newPath3 = []
+
+	" make sure path is greater than 5 points "
+	while len(newPath3) <= 5:
+
+		max_spacing /= 2
+		print "max_spacing =", max_spacing
+		
+		newPath3 = [copy(newPath2[0])]
+							
+		for i in range(len(newPath2)-1):
+			p0 = newPath2[i]
+			p1 = newPath2[(i+1)]
+			dist = sqrt((p0[0]-p1[0])**2 + (p0[1]-p1[1])**2)
+
+			vec = [p1[0]-p0[0], p1[1]-p0[1]]
+			vec[0] /= dist
+			vec[1] /= dist
+			
+			
+			if dist > max_spacing:
+				" cut into pieces max_spacing length or less "
+				numCount = int(floor(dist / max_spacing))
+				
+				for j in range(1, numCount+1):
+					newP = [j*max_spacing*vec[0] + p0[0], j*max_spacing*vec[1] + p0[1]]
+					newPath3.append(newP)
+
+			newPath3.append(copy(p1))			 
+	
+
+
+	leafPath = deepcopy(newPath3)
+	
+	frontVec = [0.,0.]
+	backVec = [0.,0.]
+	indic = range(3)
+	indic.reverse()
+	
+	for i in indic:
+		if i+2 < len(leafPath):
+			p1 = leafPath[i+2]
+			p2 = leafPath[i]
+			vec = [p2[0]-p1[0], p2[1]-p1[1]]
+			frontVec[0] += vec[0]
+			frontVec[1] += vec[1]
+
+
+	frontMag = math.sqrt(frontVec[0]*frontVec[0] + frontVec[1]*frontVec[1])
+
+	frontVec[0] /= frontMag
+	frontVec[1] /= frontMag
+
+
+	newP1 = (leafPath[0][0] + frontVec[0]*10, leafPath[0][1] + frontVec[1]*10)
+
+	leafPath.insert(0,newP1)
+	
+	medial2 = deepcopy(leafPath)
+
+	" take the long length segments at tips of medial axis"
+	edge1 = medial2[0:2]
+	
+	frontVec = [edge1[0][0]-edge1[1][0], edge1[0][1]-edge1[1][1]]
+	frontMag = math.sqrt(frontVec[0]*frontVec[0] + frontVec[1]*frontVec[1])
+	
+	frontVec[0] /= frontMag
+	frontVec[1] /= frontMag
+	
+	" make a smaller version of these edges "
+	newP1 = (edge1[1][0] + frontVec[0]*2, edge1[1][1] + frontVec[1]*2)
+
+	edge1 = [newP1, edge1[1]]
+
+	" find the intersection points with the hull "
+	interPoints = []
+	for k in range(len(path1)-1):
+		hullEdge = [path1[k],path1[k+1]]
+		isIntersect1, point1 = Intersect(edge1, hullEdge)
+		if isIntersect1:
+			interPoints.append(point1)
+			break
+
+	
+	" replace the extended edges with a termination point at the hull edge "			
+	medial2 = medial2[1:]
+	
+	if isIntersect1:
+		medial2.insert(0, point1)
+
+
+	juncAng = acos(-frontVec[0])
+	if -frontVec[1] < 0.0:
+		juncAng = -juncAng
+	
+	
+
+	try:
+		foreIntI, backIntI, juncForeAng, juncBackAng = getTangentIntersections(pathPoints1, pathPoints2, frontDepI, backDepI, indices[frontDepI], indices[backDepI], juncI, indices[juncI], pathPlotCount)
+		print "foreIntI, backIntII:", foreIntI, backIntI
+
+		""" junction distances are equal if both of the indices selected juncI as the departure point on path2'
+			occurs if path2 does not come close enough to path1 to get under distance 0.1
+		"""
+		print "juncDist1, juncDist2 =", juncDist1, juncDist2
+		if juncDist1 == juncDist2:
+
+			juncDist2 = sqrt((globalJunctionPoint[0]-p0[0])**2 + (globalJunctionPoint[1]-p0[1])**2)
+
+			foreDist = sqrt((pathPoints1[foreIntI][0]-globalJunctionPoint[0])**2 +  (pathPoints1[foreIntI][1]-globalJunctionPoint[1])**2)
+			backDist = sqrt((pathPoints1[backIntI][0]-globalJunctionPoint[0])**2 +  (pathPoints1[backIntI][1]-globalJunctionPoint[1])**2)
+
+			print "foreDist, backDist =", foreDist, backDist
+
+			if foreDist < backDist:
+				globJuncPose = [pathPoints1[foreIntI][0], pathPoints1[foreIntI][1], juncForeAng]
+			else:
+				globJuncPose = [pathPoints1[backIntI][0], pathPoints1[backIntI][1], juncBackAng]
+	
+		elif juncDist1 < juncDist2:
+			globJuncPose = [pathPoints1[foreIntI][0], pathPoints1[foreIntI][1], juncForeAng]
+		else:
+			globJuncPose = [pathPoints1[backIntI][0], pathPoints1[backIntI][1], juncBackAng]
+
+		print "globJuncPose =", globJuncPose
+
+	except:
+		print "getTangentIntersections() failed!"
+		globJuncPose = [medial2[0][0], medial2[0][1], juncAng]
+	
+	" last junction point is the intersection point "
+
+	#if plotIter:
+	if False:
+
+		pylab.clf()
+		xP = []
+		yP = []
+		for p in path2:
+			xP.append(p[0])
+			yP.append(p[1])
+		pylab.plot(xP,yP, color=(0.5,0.5,1.0))
+
+		if True:	
+			P1 = pathPoints2[frontInd]
+			P2 = pathPoints2[frontDepI]
+
+			
+			P3 = pathPoints2[backDepI]
+			P4 = pathPoints2[backInd]
+
+			" 0, frontDepI "
+			xP = [P1[0], P2[0]]
+			yP = [P1[1], P2[1]]
+			pylab.scatter(xP,yP, color='b')		   
+
+			" backDepI, -1 "
+			xP = [P3[0], P4[0]]
+			yP = [P3[1], P4[1]]
+			pylab.scatter(xP,yP, color='g')		   
+
+			" angle references "
+			PF = pathPoints1[forePathIndex]
+			xP = [PF[0],]
+			yP = [PF[1],]
+			pylab.scatter(xP,yP, color='b', alpha=0.5, zorder=100)		  
+
+			PB = pathPoints1[backPathIndex]
+			xP = [PB[0],]
+			yP = [PB[1],]
+			pylab.scatter(xP,yP, color='g', alpha=0.5, zorder=100)		  
+
+
+			
+		pylab.scatter([globalJunctionPoint[0]],[globalJunctionPoint[1]], color='r')		   
+		pylab.scatter([globJuncPose[0]],[globJuncPose[1]], color='k')		 
+
+		xP = []
+		yP = []
+		for p in path1:
+			xP.append(p[0])
+			yP.append(p[1])
+		pylab.plot(xP,yP, color=(1.0,0.5,0.5))
+
+
+		xP = []
+		yP = []
+		cutMedial = medial2[1:]
+		for p in cutMedial:
+			xP.append(p[0])
+			yP.append(p[1])
+		pylab.plot(xP,yP, color='k')
+
+		print "trimDeparture:", pathPlotCount
+		printStack()				 
+
+		pylab.title("%3.2f %3.2f %3.2f" % (juncDist1, juncDist2, juncAng))
+		pylab.savefig("trimDeparture_%04u.png" % pathPlotCount)
+		
+		pathPlotCount += 1
+
+
+	
+	return globJuncPose
+
+@logFunction
+def trimBranch(pathID, parentPathID, globJuncPose, origGlobJuncPose, childPath, parentPath, trimmedParent, smoothPathSegs):
+
+	origJuncPose = copy(origGlobJuncPose)
+	origJuncPose[2] = 0.0
+
+	origJuncOrigin = Pose(origJuncPose)
+
+	localPathSegs = []
+
+	for k in range(len(smoothPathSegs)):
+		pathSeg = smoothPathSegs[k]
+		localSeg = []
+		for p in pathSeg:
+			p1 = origJuncOrigin.convertGlobalPoseToLocal(p)
+			localSeg.append(p1)
+
+		localPathSegs.append(localSeg)
+
+
+	offsetOrigin1 = Pose(globJuncPose)
+	
+	partPathSegs = []
+
+	for k in range(len(localPathSegs)):
+		localSeg = localPathSegs[k]
+		for p in localSeg:
+			p1 = offsetOrigin1.convertLocalOffsetToGlobal(p)
+
+	path1 = parentPath
+	path2 = childPath
+
+	localPath2 = []
+	for p in path2:
+		p1 = origJuncOrigin.convertGlobalToLocal(p)
+		localPath2.append(p1)
+
+	particlePath2 = []
+	for p in localPath2:
+		p1 = offsetOrigin1.convertLocalToGlobal(p)
+		particlePath2.append(p1)
+
+	" get departing sections of overlapped curves "
+	secP1, secP2 = getOverlapDeparture(globJuncPose, parentPathID, pathID, path1, particlePath2, plotIter = False)				 
+
+	minI_1 = 0		  
+	minI_2 = 0
+	minDist_1 = 1e100
+	minDist_2 = 1e100		 
+	for i in range(len(particlePath2)):
+		pnt = particlePath2[i]
+		dist1 = sqrt((pnt[0]-secP1[0])**2 + (pnt[1]-secP1[1])**2)
+		dist2 = sqrt((pnt[0]-secP2[0])**2 + (pnt[1]-secP2[1])**2)
+	
+		if dist1 < minDist_1:
+			minDist_1 = dist1
+			minI_1 = i
+
+		if dist2 < minDist_2:
+			minDist_2 = dist2
+			minI_2 = i
+
+	term0 = particlePath2[0]
+	termN = particlePath2[-1]
+
+	" smallest distance is the terminal point "
+	dist0_1 = sqrt((term0[0]-secP1[0])**2 + (term0[1]-secP1[1])**2)
+	distN_1 = sqrt((termN[0]-secP1[0])**2 + (termN[1]-secP1[1])**2)
+	dist0_2 = sqrt((term0[0]-secP2[0])**2 + (term0[1]-secP2[1])**2)
+	distN_2 = sqrt((termN[0]-secP2[0])**2 + (termN[1]-secP2[1])**2)
+	print "terminal distances:", dist0_1, distN_1, dist0_2, distN_2
+	
+	distList = [dist0_1, distN_1, dist0_2, distN_2]
+	
+	minI = -1
+	minDist = 1e100
+	for i in range(len(distList)):
+		if distList[i] < minDist:
+			minDist = distList[i]
+			minI = i
+	
+	if minDist_1 < minDist_2:
+		junctionPoint_K = secP1
+		juncI_K = minI_1
+	else:
+		junctionPoint_K = secP2
+		juncI_K = minI_2
+	
+	minDist2 = 1e100
+	juncI = 0		 
+	for i in range(len(particlePath2)):
+		pnt = particlePath2[i]
+		dist = sqrt((pnt[0]-globJuncPose[0])**2 + (pnt[1]-globJuncPose[1])**2)
+	
+		if dist < minDist2:
+			minDist2 = dist
+			juncI = i
+	 
+	 
+	
+	print "len(path1):", len(path1)
+	print "len(particlePath2):", len(particlePath2)
+	print "juncI:", juncI
+	print "minDist:", minDist_1, minDist_2
+	
+	" now we have closest point to departure point. "
+	" Which side is the departing side? "	 
+
+			
+	if minI == 0:
+		"secP1 is terminal 0"
+		index = juncI-10
+		if index < 1:
+			index = 1
+
+		
+		newPath2 = particlePath2[:index+1]
+		newPath2.reverse()
+	
+	elif minI == 1:
+		"secP1 is terminal N"
+		index = juncI+10
+		if index >= len(particlePath2)-1:
+			
+			" ensure at least 2 elements in path "
+			index = len(particlePath2)-2
+
+		newPath2 = particlePath2[index:]
+
+		
+	elif minI == 2:
+		"secP2 is terminal 0"
+		index = juncI-10
+		if index < 1:
+			index = 1
+
+		newPath2 = particlePath2[:index+1]
+		newPath2.reverse()
+		
+	elif minI == 3:
+		"secP2 is terminal N"
+		index = juncI+10
+		if index >= len(particlePath2)-1:
+			" ensure at least 2 elements in path "
+			index = len(particlePath2)-2
+		
+		newPath2 = particlePath2[index:]
+	
+	else:
+		print "no terminal found"
+		raise
+					
+	" convert path so that the points are uniformly distributed "
+	
+	
+	max_spacing = 0.08
+	newPath3 = []
+
+	" make sure path is greater than 5 points "
+	while len(newPath3) <= 5:
+
+		max_spacing /= 2
+		print "max_spacing =", max_spacing
+		
+		newPath3 = [copy(newPath2[0])]
+							
+		for i in range(len(newPath2)-1):
+			p0 = newPath2[i]
+			p1 = newPath2[(i+1)]
+			dist = sqrt((p0[0]-p1[0])**2 + (p0[1]-p1[1])**2)
+
+			vec = [p1[0]-p0[0], p1[1]-p0[1]]
+			vec[0] /= dist
+			vec[1] /= dist
+			
+			
+			if dist > max_spacing:
+				" cut into pieces max_spacing length or less "
+				numCount = int(floor(dist / max_spacing))
+				
+				for j in range(1, numCount+1):
+					newP = [j*max_spacing*vec[0] + p0[0], j*max_spacing*vec[1] + p0[1]]
+					newPath3.append(newP)
+
+			newPath3.append(copy(p1))			 
+
+	deepcopy(newPath3)
+
+	newGlobJuncPose = getBranchPoint(globJuncPose, parentPathID, pathID, path1, particlePath2, plotIter = False)
+
+	" junction discrepency distance "
+	origJuncPose = copy(origGlobJuncPose)
+	juncDiscDist = sqrt((newGlobJuncPose[0]-globJuncPose[0])**2 + (newGlobJuncPose[1]-globJuncPose[1])**2)
+	juncDiscAngle = normalizeAngle(origJuncPose[2]-newGlobJuncPose[2])
+
+
+
+
+	" for each path, attempt to join with its parent path "
+	junctionPoint = [newGlobJuncPose[0],newGlobJuncPose[1]]
+
+	path1 = newPath3
+	path2 = trimmedParent
+	
+	minDist1 = 1e100
+	minI1 = 0		 
+	for i in range(len(path1)):
+		pnt = path1[i]
+		dist = sqrt((pnt[0]-junctionPoint[0])**2 + (pnt[1]-junctionPoint[1])**2)
+	
+		if dist < minDist1:
+			minDist1 = dist
+			minI1 = i
+
+	minDist2 = 1e100
+	minI2 = 0		 
+	for i in range(len(path2)):
+		pnt = path2[i]
+		dist = sqrt((pnt[0]-junctionPoint[0])**2 + (pnt[1]-junctionPoint[1])**2)
+	
+		if dist < minDist2:
+			minDist2 = dist
+			minI2 = i
+	
+	joins = []
+	joins.append([(pathID, minI1),(parentPathID, minI2), junctionPoint])
+
+
+	" get junctions " 
+	
+	junctions = {}
+	junctions[pathID] = [0, newGlobJuncPose, (parentPathID,minI2), path2[minI2], minI1]
+
+
+	" create a tree with the node IDs and then stitch them together with joins "
+	pathGraph = graph.graph()
+
+	for k in range(len(path1)):
+		pathGraph.add_node((pathID, k), path1[k])
+	for k in range(len(path1)-1):
+		pathGraph.add_edge((pathID, k), (pathID, k+1))
+	
+	for k in range(len(path2)):
+		pathGraph.add_node((parentPathID, k), path2[k])
+	for k in range(len(path2)-1):
+		pathGraph.add_edge((parentPathID, k), (parentPathID, k+1))
+
+	" join with the junction in between the join points "
+	for k in range(len(joins)):
+		join = joins[k]
+		pathGraph.add_edge(join[0], join[1])
+
+	" get terminals "
+	topDict = {}
+	terminals = {}
+
+
+	" parent is either the root path or some sub path "
+	" we only care about the two terminals of our immediate parent "
+
+
+	terminals[parentPathID] = [(parentPathID, 0), path2[0]]
+	terminals[parentPathID+1] = [(parentPathID, len(path2)-1), path2[len(path2)-1]]
+	topDict["t%u" % 0] = terminals[parentPathID][0]
+	topDict["t%u" % 1] = terminals[parentPathID+1][0]
+		
+	minI1 = junctions[pathID][4]
+	
+	" get the two terminals of the current pathID path "
+	" determine which side is junction and which side is terminal"
+	if minI1 > len(path1)-1 - minI1:    
+		terminals[pathID+1] = [(pathID,0), path1[0]]
+		topDict["t%u" % (pathID+1)] = (pathID,0)
+	else:
+		terminals[pathID+1] = [(pathID,len(path1)-1), path1[len(path1)-1]]
+		topDict["t%u" % (pathID+1)] = (pathID,len(path1)-1)
+
+
+
+	" determine which paths are leaves "
+	isAParent = {}
+	parents = {}
+	pathIDGraph = graph.graph()
+
+	isAParent[pathID] = False
+	pathIDGraph.add_node(pathID, [])
+
+	isAParent[parentPathID] = True
+	pathIDGraph.add_node(parentPathID, [])
+	pathIDGraph.add_edge(pathID, parentPathID)
+	
+	leafCount = 1
+
+	" build topological graph "
+	topGraph = graph.graph()
+	
+	" add topological nodes to the graph "
+	topNodes = []
+	for k, term in terminals.iteritems():
+		topGraph.add_node(term[0], term[1])
+		topNodes.append(term[0])
+	for k, junc in junctions.iteritems():
+		topGraph.add_node(junc[2], junc[3])
+		topNodes.append(junc[2])
+
+	topGraph.add_edge(terminals[parentPathID][0], junctions[pathID][2])
+	topGraph.add_edge(terminals[parentPathID+1][0], junctions[pathID][2])
+	topGraph.add_edge(terminals[pathID+1][0], junctions[pathID][2])
+
+
+
+	startKey1 = terminals[parentPathID][0]
+	endKey1 = terminals[pathID+1][0]
+
+	startKey2 = terminals[parentPathID+1][0]
+	endKey2 = terminals[pathID+1][0]
+
+	joinPairs = []
+	shortestPathSpanTree, shortestDist = pathGraph.shortest_path(endKey1)
+	currNode = shortestPathSpanTree[startKey1]					 
+	splicedPath = []
+	while currNode != endKey1:
+		splicedPath.append(pathGraph.get_node_attributes(currNode))
+		nextNode = shortestPathSpanTree[currNode]
+		
+		for join in joins:
+			if join[0] == currNode and join[1] == nextNode:
+				joinPairs.append((len(splicedPath)-1,len(splicedPath)))
+			elif join[1] == currNode and join[0] == nextNode:
+				joinPairs.append((len(splicedPath)-1,len(splicedPath)))
+			
+		currNode = nextNode
+		
+	splicedPath.append(pathGraph.get_node_attributes(currNode))
+
+	" if there are any joins, we must interpolate a smooth transition "
+	lastIndex = 0
+	newSplicePath1 = []
+	for pair in joinPairs:
+		index1 = pair[0]
+		index2 = pair[1]
+		cPoints = [splicedPath[index1-1], splicedPath[index1], splicedPath[index2], splicedPath[index2+1]]				 
+		spline = SplineFit(cPoints, smooth=0.0, kp=3)
+		points = spline.getUniformSamples(spacing = 0.1)
+		
+		newSplicePath1 += splicedPath[lastIndex:index1]
+		newSplicePath1 += points
+		
+		lastIndex = index2+2
+
+	newSplicePath1 += splicedPath[lastIndex:]
+
+
+
+
+	joinPairs = []
+	shortestPathSpanTree, shortestDist = pathGraph.shortest_path(endKey2)
+	currNode = shortestPathSpanTree[startKey2]					 
+	splicedPath = []
+	while currNode != endKey2:
+		splicedPath.append(pathGraph.get_node_attributes(currNode))
+		nextNode = shortestPathSpanTree[currNode]
+		
+		for join in joins:
+			if join[0] == currNode and join[1] == nextNode:
+				joinPairs.append((len(splicedPath)-1,len(splicedPath)))
+			elif join[1] == currNode and join[0] == nextNode:
+				joinPairs.append((len(splicedPath)-1,len(splicedPath)))
+			
+		currNode = nextNode
+		
+	splicedPath.append(pathGraph.get_node_attributes(currNode))
+
+	" if there are any joins, we must interpolate a smooth transition "
+	lastIndex = 0
+	newSplicePath2 = []
+	for pair in joinPairs:
+		index1 = pair[0]
+		index2 = pair[1]
+		cPoints = [splicedPath[index1-1], splicedPath[index1], splicedPath[index2], splicedPath[index2+1]]				 
+		spline = SplineFit(cPoints, smooth=0.0, kp=3)
+		points = spline.getUniformSamples(spacing = 0.1)
+		
+		newSplicePath2 += splicedPath[lastIndex:index1]
+		newSplicePath2 += points
+		
+		lastIndex = index2+2
+
+	newSplicePath2 += splicedPath[lastIndex:]
+
+
+	spliceSpline1 = SplineFit(newSplicePath1, smooth=0.1)
+	spliceSpline2 = SplineFit(newSplicePath2, smooth=0.1)
+
+	splicePoints1 = spliceSpline1.getUniformSamples()
+	splicePoints2 = spliceSpline2.getUniformSamples()
+
+	splicedPaths = []
+	splicedPaths.append(newSplicePath1)
+	splicedPaths.append(newSplicePath2)
+
+
+	#if plotIter:
+	if False:
+			
+		hypothesisID = 0
+		numNodes = 0
+		pathPlotCount = 0
+
+		
+		pylab.clf()
+		xP = []
+		yP = []
+		for p in newPath3:
+			xP.append(p[0])
+			yP.append(p[1])
+		pylab.plot(xP,yP, color=(0.5,0.5,1.0))
+
+		xP = []
+		yP = []
+		for p in path1:
+			xP.append(p[0])
+			yP.append(p[1])
+		pylab.plot(xP,yP, color=(1.0,0.5,0.5))
+
+		
+		pylab.scatter([newGlobJuncPose[0],], [newGlobJuncPose[1],], color='r')
+		pylab.scatter([globJuncPose[0],], [globJuncPose[1],], color='b')
+
+		xP = []
+		yP = []
+		for p in splicePoints1:
+			xP.append(p[0])
+			yP.append(p[1])
+		pylab.plot(xP,yP, color='k', alpha=0.3)
+
+		xP = []
+		yP = []
+		for p in splicePoints2:
+			xP.append(p[0])
+			yP.append(p[1])
+		pylab.plot(xP,yP, color='k', alpha=0.3)
+
+
+		pylab.axis("equal")
+		pylab.title("hyp %d nodeID %d %1.3f %1.3f %1.3f %1.3f" % ( hypothesisID, numNodes, juncDiscDist, juncDiscAngle, origJuncPose[2], newGlobJuncPose[2]))
+		pylab.savefig("trimDeparture_%04u_%04u.png" % (hypothesisID, pathPlotCount))
+
+		print "saving trimDeparture_%04u_%04u.png" % (hypothesisID, pathPlotCount)
+		
+		pathPlotCount += 1
+
+
+	return newPath3, newGlobJuncPose, juncDiscDist, juncDiscAngle, splicedPaths
 
 def multiParticleFitSplice(initGuess, orientedPath, medialAxis, initPose, pathIDs, nodeID, pathPlotCount = 0):
 	
@@ -2097,501 +3293,6 @@ class MapState:
 	 
 
 	@logFunction
-	#def trimBranch(self, branchPart):
-	def trimBranch(self, pathID, globJuncPose):
-
-		# branchPart = [parentID, modJuncPose, newArcDist, pathID, initMatchCount, initCost, initDist, initAngDiff, initProb]
-
-		#parentPathID = branchPart[0]
-		#pathID = branchPart[3]
-		parentPathID = self.getParentPathID(pathID)
-
-		junctionDetails = self.longPathJunctions[pathID]
-
-		origJuncPose = copy(self.pathClasses[pathID]["globalJunctionPose"])
-		origJuncPose[2] = 0.0
-
-		origJuncOrigin = Pose(origJuncPose)
-
-		localPathSegs = []
-		smoothPathSegs = junctionDetails["leafSegments"] + junctionDetails["internalSegments"]
-
-		print "path segs:", len(junctionDetails["leafSegments"]), "+", len(junctionDetails["internalSegments"]), "=", len(smoothPathSegs)
-
-		for k in range(len(smoothPathSegs)):
-			pathSeg = smoothPathSegs[k]
-			localSeg = []
-			for p in pathSeg:
-				p1 = origJuncOrigin.convertGlobalPoseToLocal(p)
-				localSeg.append(p1)
-
-			localPathSegs.append(localSeg)
-
-
-		#globJuncPose = branchPart[1]
-		offsetOrigin1 = Pose(globJuncPose)
-		
-		partPathSegs = []
-
-		for k in range(len(localPathSegs)):
-			localSeg = localPathSegs[k]
-			for p in localSeg:
-				p1 = offsetOrigin1.convertLocalOffsetToGlobal(p)
-
-		path1 = self.paths[parentPathID]
-		path2 = self.paths[pathID]
-
-		localPath2 = []
-		for p in path2:
-			p1 = origJuncOrigin.convertGlobalToLocal(p)
-			localPath2.append(p1)
-
-		particlePath2 = []
-		for p in localPath2:
-			p1 = offsetOrigin1.convertLocalToGlobal(p)
-			particlePath2.append(p1)
-
-		#branchNodeID = self.pathClasses[childPathID]["branchNodeID"]
-		#branchNodePose = self.nodePoses[branchNodeID]
-		#globalJunctionPoint = self.getGlobalJunctionPose(childPathID)
-
-		#secP1, secP2 = self.getOverlapDeparture(globalJunctionPoint, parentPathID, childPathID, path1, particlePath2, plotIter = False)				 
-		secP1, secP2 = self.getOverlapDeparture(globJuncPose, parentPathID, pathID, path1, particlePath2, plotIter = False)				 
-
-		minI_1 = 0		  
-		minI_2 = 0
-		minDist_1 = 1e100
-		minDist_2 = 1e100		 
-		for i in range(len(particlePath2)):
-			pnt = particlePath2[i]
-			dist1 = sqrt((pnt[0]-secP1[0])**2 + (pnt[1]-secP1[1])**2)
-			dist2 = sqrt((pnt[0]-secP2[0])**2 + (pnt[1]-secP2[1])**2)
-		
-			if dist1 < minDist_1:
-				minDist_1 = dist1
-				minI_1 = i
-
-			if dist2 < minDist_2:
-				minDist_2 = dist2
-				minI_2 = i
-
-		term0 = particlePath2[0]
-		termN = particlePath2[-1]
-
-		" smallest distance is the terminal point "
-		dist0_1 = sqrt((term0[0]-secP1[0])**2 + (term0[1]-secP1[1])**2)
-		distN_1 = sqrt((termN[0]-secP1[0])**2 + (termN[1]-secP1[1])**2)
-		dist0_2 = sqrt((term0[0]-secP2[0])**2 + (term0[1]-secP2[1])**2)
-		distN_2 = sqrt((termN[0]-secP2[0])**2 + (termN[1]-secP2[1])**2)
-		print "terminal distances:", dist0_1, distN_1, dist0_2, distN_2
-		
-		distList = [dist0_1, distN_1, dist0_2, distN_2]
-		
-		minI = -1
-		minDist = 1e100
-		for i in range(len(distList)):
-			if distList[i] < minDist:
-				minDist = distList[i]
-				minI = i
-		
-		#junctionPoint = self.getGlobalJunctionPose(pathID)
-		
-		if minDist_1 < minDist_2:
-			junctionPoint_K = secP1
-			juncI_K = minI_1
-		else:
-			junctionPoint_K = secP2
-			juncI_K = minI_2
-		
-		minDist2 = 1e100
-		juncI = 0		 
-		for i in range(len(particlePath2)):
-			pnt = particlePath2[i]
-			dist = sqrt((pnt[0]-globJuncPose[0])**2 + (pnt[1]-globJuncPose[1])**2)
-		
-			if dist < minDist2:
-				minDist2 = dist
-				juncI = i
-		 
-		 
-		
-		print "len(path1):", len(path1)
-		print "len(particlePath2):", len(particlePath2)
-		print "juncI:", juncI
-		print "minDist:", minDist_1, minDist_2
-		
-		" now we have closest point to departure point. "
-		" Which side is the departing side? "	 
-
-				
-		if minI == 0:
-			"secP1 is terminal 0"
-			index = juncI-10
-			if index < 1:
-				index = 1
-
-			
-			newPath2 = particlePath2[:index+1]
-			newPath2.reverse()
-		
-		elif minI == 1:
-			"secP1 is terminal N"
-			index = juncI+10
-			if index >= len(particlePath2)-1:
-				
-				" ensure at least 2 elements in path "
-				index = len(particlePath2)-2
-
-			newPath2 = particlePath2[index:]
-
-			
-		elif minI == 2:
-			"secP2 is terminal 0"
-			index = juncI-10
-			if index < 1:
-				index = 1
-
-			newPath2 = particlePath2[:index+1]
-			newPath2.reverse()
-			
-		elif minI == 3:
-			"secP2 is terminal N"
-			index = juncI+10
-			if index >= len(particlePath2)-1:
-				" ensure at least 2 elements in path "
-				index = len(particlePath2)-2
-			
-			newPath2 = particlePath2[index:]
-		
-		else:
-			print "no terminal found"
-			raise
-						
-		" convert path so that the points are uniformly distributed "
-		
-		
-		max_spacing = 0.08
-		newPath3 = []
-
-		" make sure path is greater than 5 points "
-		while len(newPath3) <= 5:
-
-			max_spacing /= 2
-			print "max_spacing =", max_spacing
-			
-			newPath3 = [copy(newPath2[0])]
-								
-			for i in range(len(newPath2)-1):
-				p0 = newPath2[i]
-				p1 = newPath2[(i+1)]
-				dist = sqrt((p0[0]-p1[0])**2 + (p0[1]-p1[1])**2)
-	
-				vec = [p1[0]-p0[0], p1[1]-p0[1]]
-				vec[0] /= dist
-				vec[1] /= dist
-				
-				
-				if dist > max_spacing:
-					" cut into pieces max_spacing length or less "
-					numCount = int(floor(dist / max_spacing))
-					
-					for j in range(1, numCount+1):
-						newP = [j*max_spacing*vec[0] + p0[0], j*max_spacing*vec[1] + p0[1]]
-						newPath3.append(newP)
-
-				newPath3.append(copy(p1))			 
-
-		deepcopy(newPath3)
-
-		newGlobJuncPose = self.getBranchPoint(globJuncPose, parentPathID, pathID, path1, particlePath2, plotIter = False)
-
-		" junction discrepency distance "
-		origJuncPose = copy(self.pathClasses[pathID]["globalJunctionPose"])
-		juncDiscDist = sqrt((newGlobJuncPose[0]-globJuncPose[0])**2 + (newGlobJuncPose[1]-globJuncPose[1])**2)
-		juncDiscAngle = normalizeAngle(origJuncPose[2]-newGlobJuncPose[2])
-
-
-
-
-		" for each path, attempt to join with its parent path "
-		#path1 = self.paths[parentPathID]
-
-
-		#cPath = self.getPath(pathID)
-		#parentPathID = cPath["parentID"]
-		
-		# " parent does not concern us "
-		#if parentPathID == None:
-		#	continue
-		
-		#junctionPose = self.getGlobalJunctionPose(pathID)
-		#return newPath3, newGlobJuncPose, juncDiscDist, juncDiscAngle
-		junctionPoint = [newGlobJuncPose[0],newGlobJuncPose[1]]
-
-		#path1 = self.trimmedPaths[pathID]
-		path1 = newPath3
-		path2 = self.trimmedPaths[parentPathID]
-		
-		minDist1 = 1e100
-		minI1 = 0		 
-		for i in range(len(path1)):
-			pnt = path1[i]
-			dist = sqrt((pnt[0]-junctionPoint[0])**2 + (pnt[1]-junctionPoint[1])**2)
-		
-			if dist < minDist1:
-				minDist1 = dist
-				minI1 = i
-
-		minDist2 = 1e100
-		minI2 = 0		 
-		for i in range(len(path2)):
-			pnt = path2[i]
-			dist = sqrt((pnt[0]-junctionPoint[0])**2 + (pnt[1]-junctionPoint[1])**2)
-		
-			if dist < minDist2:
-				minDist2 = dist
-				minI2 = i
-		
-		joins = []
-		joins.append([(pathID, minI1),(parentPathID, minI2), junctionPoint])
-
-
-		" get junctions " 
-		#branchNodeID = cPath["branchNodeID"]
-		
-		junctions = {}
-		junctions[pathID] = [0, newGlobJuncPose, (parentPathID,minI2), path2[minI2], minI1]
-
-		# path1 = newPath3
-		# path2 = self.trimmedPaths[parentPathID]
-
-		" create a tree with the node IDs and then stitch them together with joins "
-		pathGraph = graph.graph()
-
-		for k in range(len(path1)):
-			pathGraph.add_node((pathID, k), path1[k])
-		for k in range(len(path1)-1):
-			pathGraph.add_edge((pathID, k), (pathID, k+1))
-		
-		for k in range(len(path2)):
-			pathGraph.add_node((parentPathID, k), path2[k])
-		for k in range(len(path2)-1):
-			pathGraph.add_edge((parentPathID, k), (parentPathID, k+1))
-
-		" join with the junction in between the join points "
-		for k in range(len(joins)):
-			join = joins[k]
-			pathGraph.add_edge(join[0], join[1])
-
-			#pID1, k1 = join[0]
-			#pID2, k2 = join[1]
-
-
-		
-		
-		" get terminals "
-		topDict = {}
-		terminals = {}
-
-
-		" parent is either the root path or some sub path "
-		" we only care about the two terminals of our immediate parent "
-
-
-		terminals[parentPathID] = [(parentPathID, 0), path2[0]]
-		terminals[parentPathID+1] = [(parentPathID, len(path2)-1), path2[len(path2)-1]]
-		topDict["t%u" % 0] = terminals[parentPathID][0]
-		topDict["t%u" % 1] = terminals[parentPathID+1][0]
-			
-		minI1 = junctions[pathID][4]
-		
-		" get the two terminals of the current pathID path "
-		" determine which side is junction and which side is terminal"
-		if minI1 > len(path1)-1 - minI1:    
-			terminals[pathID+1] = [(pathID,0), path1[0]]
-			topDict["t%u" % (pathID+1)] = (pathID,0)
-		else:
-			terminals[pathID+1] = [(pathID,len(path1)-1), path1[len(path1)-1]]
-			topDict["t%u" % (pathID+1)] = (pathID,len(path1)-1)
-
-
-
-		" determine which paths are leaves "
-		isAParent = {}
-		parents = {}
-		pathIDGraph = graph.graph()
-
-		isAParent[pathID] = False
-		pathIDGraph.add_node(pathID, [])
-
-		isAParent[parentPathID] = True
-		pathIDGraph.add_node(parentPathID, [])
-		pathIDGraph.add_edge(pathID, parentPathID)
-		
-		leafCount = 1
-
-		" build topological graph "
-		topGraph = graph.graph()
-		
-		" add topological nodes to the graph "
-		topNodes = []
-		for k, term in terminals.iteritems():
-			topGraph.add_node(term[0], term[1])
-			print "add_node", term[0], term[1]
-			topNodes.append(term[0])
-		for k, junc in junctions.iteritems():
-			topGraph.add_node(junc[2], junc[3])
-			print "add_node", junc[2], junc[3]
-			topNodes.append(junc[2])
-
-		topGraph.add_edge(terminals[parentPathID][0], junctions[pathID][2])
-		topGraph.add_edge(terminals[parentPathID+1][0], junctions[pathID][2])
-		topGraph.add_edge(terminals[pathID+1][0], junctions[pathID][2])
-
-
-
-		startKey1 = terminals[parentPathID][0]
-		endKey1 = terminals[pathID+1][0]
-
-		startKey2 = terminals[parentPathID+1][0]
-		endKey2 = terminals[pathID+1][0]
-
-		joinPairs = []
-		shortestPathSpanTree, shortestDist = pathGraph.shortest_path(endKey1)
-		currNode = shortestPathSpanTree[startKey1]					 
-		splicedPath = []
-		while currNode != endKey1:
-			splicedPath.append(pathGraph.get_node_attributes(currNode))
-			nextNode = shortestPathSpanTree[currNode]
-			
-			for join in joins:
-				if join[0] == currNode and join[1] == nextNode:
-					joinPairs.append((len(splicedPath)-1,len(splicedPath)))
-				elif join[1] == currNode and join[0] == nextNode:
-					joinPairs.append((len(splicedPath)-1,len(splicedPath)))
-				
-			currNode = nextNode
-			
-		splicedPath.append(pathGraph.get_node_attributes(currNode))
-
-		" if there are any joins, we must interpolate a smooth transition "
-		lastIndex = 0
-		newSplicePath1 = []
-		for pair in joinPairs:
-			index1 = pair[0]
-			index2 = pair[1]
-			cPoints = [splicedPath[index1-1], splicedPath[index1], splicedPath[index2], splicedPath[index2+1]]				 
-			spline = SplineFit(cPoints, smooth=0.0, kp=3)
-			points = spline.getUniformSamples(spacing = 0.1)
-			
-			newSplicePath1 += splicedPath[lastIndex:index1]
-			newSplicePath1 += points
-			
-			lastIndex = index2+2
-
-		newSplicePath1 += splicedPath[lastIndex:]
-
-
-
-
-		joinPairs = []
-		shortestPathSpanTree, shortestDist = pathGraph.shortest_path(endKey2)
-		currNode = shortestPathSpanTree[startKey2]					 
-		splicedPath = []
-		while currNode != endKey2:
-			splicedPath.append(pathGraph.get_node_attributes(currNode))
-			nextNode = shortestPathSpanTree[currNode]
-			
-			for join in joins:
-				if join[0] == currNode and join[1] == nextNode:
-					joinPairs.append((len(splicedPath)-1,len(splicedPath)))
-				elif join[1] == currNode and join[0] == nextNode:
-					joinPairs.append((len(splicedPath)-1,len(splicedPath)))
-				
-			currNode = nextNode
-			
-		splicedPath.append(pathGraph.get_node_attributes(currNode))
-
-		" if there are any joins, we must interpolate a smooth transition "
-		lastIndex = 0
-		newSplicePath2 = []
-		for pair in joinPairs:
-			index1 = pair[0]
-			index2 = pair[1]
-			cPoints = [splicedPath[index1-1], splicedPath[index1], splicedPath[index2], splicedPath[index2+1]]				 
-			spline = SplineFit(cPoints, smooth=0.0, kp=3)
-			points = spline.getUniformSamples(spacing = 0.1)
-			
-			newSplicePath2 += splicedPath[lastIndex:index1]
-			newSplicePath2 += points
-			
-			lastIndex = index2+2
-
-		newSplicePath2 += splicedPath[lastIndex:]
-
-
-		spliceSpline1 = SplineFit(newSplicePath1, smooth=0.1)
-		spliceSpline2 = SplineFit(newSplicePath2, smooth=0.1)
-
-		splicePoints1 = spliceSpline1.getUniformSamples()
-		splicePoints2 = spliceSpline2.getUniformSamples()
-
-		splicedPaths = []
-		splicedPaths.append(newSplicePath1)
-		splicedPaths.append(newSplicePath2)
-
-
-		#if plotIter:
-		if False:
-			pylab.clf()
-			xP = []
-			yP = []
-			for p in newPath3:
-				xP.append(p[0])
-				yP.append(p[1])
-			pylab.plot(xP,yP, color=(0.5,0.5,1.0))
-	
-			xP = []
-			yP = []
-			for p in path1:
-				xP.append(p[0])
-				yP.append(p[1])
-			pylab.plot(xP,yP, color=(1.0,0.5,0.5))
-
-			
-			pylab.scatter([newGlobJuncPose[0],], [newGlobJuncPose[1],], color='r')
-			pylab.scatter([globJuncPose[0],], [globJuncPose[1],], color='b')
-
-			xP = []
-			yP = []
-			for p in splicePoints1:
-				xP.append(p[0])
-				yP.append(p[1])
-			pylab.plot(xP,yP, color='k', alpha=0.3)
-
-			xP = []
-			yP = []
-			for p in splicePoints2:
-				xP.append(p[0])
-				yP.append(p[1])
-			pylab.plot(xP,yP, color='k', alpha=0.3)
-
-	
-			pylab.axis("equal")
-			#pylab.xlim(-5,10)
-			#pylab.ylim(-8,8)
-			pylab.title("hyp %d nodeID %d %1.3f %1.3f %1.3f %1.3f" % ( self.hypothesisID, self.poseData.numNodes, juncDiscDist, juncDiscAngle, origJuncPose[2], newGlobJuncPose[2]))
-			pylab.savefig("trimDeparture_%04u_%04u.png" % (self.hypothesisID, self.pathPlotCount))
-
-			print "saving trimDeparture_%04u_%04u.png" % (self.hypothesisID, self.pathPlotCount)
-			
-			self.pathPlotCount += 1
-
-
-		#return newPath3, newGlobJuncPose, juncDiscDist, juncDiscAngle, joins, junctions, terminals, topDict, splicedPaths
-		return newPath3, newGlobJuncPose, juncDiscDist, juncDiscAngle, splicedPaths
-
-	@logFunction
 	def resetBranches(self):
 
 		self.branchEvaluations = {}
@@ -2738,7 +3439,11 @@ class MapState:
 			distDisc = 0.0
 			angDisc = fabs(normalizeAngle(finalPose[2]-origJuncPose[2]))
 
-			newPath3, newGlobJuncPose, juncDiscDist, juncDiscAngle, splicedPaths =  self.trimBranch(pathID, modJuncPose)
+			junctionDetails = self.longPathJunctions[pathID]
+			smoothPathSegs = junctionDetails["leafSegments"] + junctionDetails["internalSegments"]
+
+			newPath3, newGlobJuncPose, juncDiscDist, juncDiscAngle, splicedPaths =  trimBranch(pathID, parentID, modJuncPose, pathDesc["globalJunctionPose"], self.paths[pathID], self.paths[parentID], self.trimmedPaths[parentID], smoothPathSegs)
+
 			newSplices = deepcopy(splicedPaths)
 
 			initProb = 0.0
@@ -2891,7 +3596,6 @@ class MapState:
 
 				thisPathID = part[3]
 				globJuncPose = part[1]
-				#newPath3, newGlobJuncPose, juncDiscDist, juncDiscAngle, splicedPaths =  self.trimBranch(thisPathID, globJuncPose)
 
 				#newSplices = deepcopy(splicedPaths)
 				newProbVal = particles[k][8] 
@@ -2996,7 +3700,7 @@ class MapState:
 		#poseOrigin2 = Pose(self.nodeRawPoses[branchNodeID])
 		#globalJunctionPoint = poseOrigin2.convertLocalToGlobal(localJunctionPoint)
 
-		#globJuncPose = self.getBranchPoint(globalJunctionPoint, parentPathID, childPathID, path1, path2, plotIter = False)
+		#globJuncPose = getBranchPoint(globalJunctionPoint, parentPathID, childPathID, path1, path2, plotIter = False)
 		#print "generated globJuncPose:",  globJuncPose
 
 		return samplePath2
@@ -3029,8 +3733,8 @@ class MapState:
 				poseOrigin2 = Pose(self.nodeRawPoses[branchNodeID])
 				globalJunctionPoint = poseOrigin2.convertLocalToGlobal(localJunctionPoint)
 
-				globJuncPose = self.getBranchPoint(globalJunctionPoint, parentPathID, childPathID, path1, path2, plotIter = False)
-				#globJuncPose = self.getBranchPoint(parentPathID, childPathID, self.paths, plotIter = False)
+				globJuncPose = getBranchPoint(globalJunctionPoint, parentPathID, childPathID, path1, path2, plotIter = False)
+				#globJuncPose = getBranchPoint(parentPathID, childPathID, self.paths, plotIter = False)
 				print "generated globJuncPose:",  globJuncPose
 				
 				self.pathClasses[childPathID]["globalJunctionPose"] = globJuncPose
@@ -5662,13 +6366,14 @@ class MapState:
 				
 
 
-				#secP1, secP2 = self.getOverlapDeparture(parentPathID, childPathID, paths, plotIter = False)				 
+				#secP1, secP2 = getOverlapDeparture(parentPathID, childPathID, paths, plotIter = False)				 
 
 				branchNodeID = self.pathClasses[childPathID]["branchNodeID"]
 				branchNodePose = self.nodePoses[branchNodeID]
 				globalJunctionPoint = self.getGlobalJunctionPose(childPathID)
 
-				secP1, secP2 = self.getOverlapDeparture(globalJunctionPoint, parentPathID, childPathID, path1, path2, plotIter = False)				 
+				#secP1, secP2 = getOverlapDeparture(globalJunctionPoint, parentPathID, childPathID, path1, path2, plotIter = False)				 
+				secP1, secP2 = getOverlapDeparture(globalJunctionPoint, parentPathID, childPathID, path1, path2, plotIter = False)				 
 
 				minI_1 = 0		  
 				minI_2 = 0
@@ -5820,275 +6525,6 @@ class MapState:
 		return trimmedPaths
 
 
-	" get the trimmed version of child and parent paths that are overlapping in some fashion "
-	@logFunction
-	def getOverlapDeparture(self, globalJunctionPoint, parentPathID, childPathID, path1, path2, plotIter = False):
-
-		"Assumption:  one section of the medial axis is closely aligned with the path "		   
-			
-		print "getOverlapDeparture():"
-		
-		#path1 = paths[parentPathID]
-		#path2 = paths[childPathID]
-		
-		
-		isExist1 = False
-		isInterior1 = False
-		departurePoint1 = 0
-		isExist2 = False
-		isInterior2 = False
-		departurePoint2 = 0
-
-
-		#branchNodeID = self.pathClasses[childPathID]["branchNodeID"]
-		#poseOrigin = Pose(self.nodePoses[branchNodeID])
-		#poseOrigin = Pose(branchNodePose)
-		
-		#globalJunctionPoint = self.getGlobalJunctionPose(childPathID)
-		
-		" orienting the medial axis of the branch node correctly "
-		
-		" return exception if we receive an invalid path "		  
-		if len(path1) == 0:
-			print "path1 has zero length"
-			raise
-
-
-		" make sure the overlap of both paths are oriented the same way "
-		path1Spline = SplineFit(path1, smooth=0.1)
-		path2Spline = SplineFit(path2, smooth=0.1)
-
-		path2Reverse = deepcopy(path2)
-		path2Reverse.reverse()
-		path2SplineReverse = SplineFit(path2Reverse, smooth=0.1)
-		
-		orientedPath2 = orientPath(path2, path1, dist_thresh=0.1)
-			
-		path2Spline = SplineFit(orientedPath2, smooth=0.1)
-
-
-
-		" for each point on the child path, find its closest pair on the parent path "
-		
-		pathPoints1 = path1Spline.getUniformSamples()
-		pathPoints2 = path2Spline.getUniformSamples()
-
-		distances = []
-		indices = []
-		for i in range(0,len(pathPoints2)):
-			p_2 = pathPoints2[i]
-			p_1, i_1, minDist = gen_icp.findClosestPointInA(pathPoints1, p_2)
-			
-			" keep the distance information "
-			distances.append(minDist)
-			" and the associated index of the point on the parent path "
-			indices.append(i_1)
-
-		" match distances of the tip points of child path "		   
-		maxFront = distances[0]
-		maxBack = distances[-1]
-		print "match distances of tip points:", maxFront, maxBack
-
-		" walk back from tip point until we have a non-monotic increase in match distance "
-		" this becomes our departure point "
-		
-		"TODO:	why is there a 3-offset in this comparison? "
-		currI = 1
-		try:
-			while distances[currI+3] < maxFront:
-				maxFront = distances[currI]
-				currI += 1
-		except:
-			pass
-		
-		" departure index on child path "
-		frontDepI = currI
-		
-		" departure index of child path and match distance "
-		frontPoint = [frontDepI, distances[frontDepI]]
-
-		" FIXME:  index out of bounds case "
-		currI = 2
-		try:
-			while distances[-currI-3] < maxBack:
-				maxBack = distances[-currI]
-				currI += 1
-		except:
-			pass
-
-		" departure index on child path "
-		backDepI = len(distances) - currI
-
-		" departure index of child path and match distance "
-		backPoint = [backDepI, distances[backDepI]]
-
-		print "lengths of parent and child paths:", len(pathPoints1), len(pathPoints2)
-		print "non monotonic departures:", maxFront, maxBack, frontPoint, backPoint
-
-
-		"reset to the tip match distance "
-		maxFront = distances[0]
-		maxBack = distances[-1]
-		
-		
-		" count the number of times a matched point on the parent path is used "
-		foo = indices[0:frontDepI+1]
-		d1 = {}
-		for i in set(foo):
-			d1[i] = foo.count(i)
-
-		foo = indices[backDepI:]
-		d2 = {}
-		for i in set(foo):
-			d2[i] = foo.count(i)
-
-		" select the match point that is used the most on the parent path "
-		max1 = max(d1, key=d1.get)
-		max2 = max(d2, key=d2.get)
-
-
-		" NOTE:  This guarantees detection of a departure.	We've assumed that there exists a"
-		" departure between these two paths "
-		
-		" compute two candidate departure points "
-		
-		" NOTE:  departure point on parent path is not used here "
-		if True:
-
-			#departurePoint1 = pathPoints1[max1]
-			isExist1 = True
-
-			" if the highest match point is either of the tips of the parent path, then this is an external departure "
-			if max1 == 0 or max1 == len(pathPoints1)-1:
-				isInterior1 = False
-			else:
-				isInterior1 = True
-
-		if True:
-			
-			#departurePoint2 = pathPoints1[max2]
-			isExist2 = True
-
-			" if the highest match point is either of the tips of the parent path, then this is an external departure "
-			if max2 == 0 or max2 == len(pathPoints1)-1:
-				isInterior2 = False
-			else:
-				isInterior2 = True
-
-		print "isExist1 =", isExist1, "isInterior1 =", isInterior1
-		print "isExist2 =", isExist2, "isInterior2 =", isInterior2
-
-		" sum of closest points on front and back "
-		" select the one with minimal cost "		
-		
-		" now we compare our candidates to the known direction and location of the branching point "
-		angleSum1 = 0.0
-		overlapSum1 = 0.0
-		matchCount1 = 0
-		
-		" path section for our front departure hypothesis "
-		pathSec1 = pathPoints2[:frontDepI+1]
-		pathSec1.reverse()
-		
-		angleSum2 = 0.0
-		overlapSum2 = 0.0
-		matchCount2 = 0
-		
-		" path section for our back departure hypothesis "
-		pathSec2 = pathPoints2[backDepI:]
-
-		print "pathSec1 hypothesis angle and overlap sum and match count:", angleSum1, overlapSum1, matchCount1
-		print "pathSec2 hypothesis angle and overlap sum and match count:", angleSum2, overlapSum2, matchCount2
-
-		" distance of departure point from known junction point "
-		p0 = pathSec1[0]
-		juncDist1 = sqrt((globalJunctionPoint[0]-p0[0])**2 + (globalJunctionPoint[1]-p0[1])**2)
-
-		p0 = pathSec2[0]
-		juncDist2 = sqrt((globalJunctionPoint[0]-p0[0])**2 + (globalJunctionPoint[1]-p0[1])**2)
-
-		print "pathSec1 hypothesis discrepancy distance:", juncDist1
-		print "pathSec2 hypothesis discrepancy distance:", juncDist2
-
-		if plotIter:
-			pylab.clf()
-			xP = []
-			yP = []
-			for p in path2:
-				xP.append(p[0])
-				yP.append(p[1])
-			pylab.plot(xP,yP, color=(0.5,0.5,1.0))
-	
-			if True:	
-				P1 = pathPoints2[0]
-				P2 = pathPoints2[frontDepI]
-				
-				P3 = pathPoints2[backDepI]
-				P4 = pathPoints2[-1]
-
-				" 0, frontDepI "
-				xP = [P1[0], P2[0]]
-				yP = [P1[1], P2[1]]
-				pylab.scatter(xP,yP, color='b')		   
-
-				" backDepI, -1 "
-				xP = [P3[0], P4[0]]
-				yP = [P3[1], P4[1]]
-				pylab.scatter(xP,yP, color='g')		   
-	
-				
-			pylab.scatter([globalJunctionPoint[0]],[globalJunctionPoint[1]], color='r')		   
-	
-			xP = []
-			yP = []
-			for p in path1:
-				xP.append(p[0])
-				yP.append(p[1])
-			pylab.plot(xP,yP, color=(1.0,0.5,0.5))
-	
-			pylab.xlim(-5,10)
-			pylab.ylim(-8,8)
-			pylab.title("hyp %d nodeID %d, %d %d %d %d %d %3.2f %3.2f %3.2f %d %3.2f %3.2f %3.2f" % ( self.hypothesisID, self.poseData.numNodes, isExist1, isExist2, isInterior1, isInterior2, matchCount1, overlapSum1, angleSum1, juncDist1, matchCount2, overlapSum2, angleSum2, juncDist2))
-			pylab.savefig("trimDeparture_%04u_%04u.png" % (self.hypothesisID, self.pathPlotCount))
-
-			print "saving trimDeparture_%04u_%04u.png" % (self.hypothesisID, self.pathPlotCount)
-			
-			self.pathPlotCount += 1
-
-		secP1 = []
-		secP2 = []
-
-		"""
-		cases
-		1) near-zero length of path section, never departs, not the path, high juncDist
-		2) near-zero length, no match count, low juncDist, correct path
-		3) high path length, high match count, low juncDist, incorrect path 
-		4) no match count, high junc dist, incorrect
-		5) no match count, low junc dist, correct
-		"""
-		
-		if juncDist1 < juncDist2:
-			
-			" FIXME: if [0,frontDepI] has high overlap compared to total length, then we reject it "
-			
-			secP1 = pathPoints2[0]
-			secP2 = pathPoints2[frontDepI]
-		else:
-			" FIXME: if [backDepI,len(distances)-1] has high overlap compared to total length, then we reject it "
-			secP1 = pathPoints2[backDepI]
-			secP2 = pathPoints2[len(distances)-1]
-
-		if len(secP1) == 0:
-			print "no departures found"
-			raise
-		
-
-			
-		
-		return secP1, secP2
-
-
-
 	@logFunction
 	def getBranchPoint(self, globalJunctionPoint, parentPathID, childPathID, path1, path2, plotIter = False):
 		""" get the trimmed version of child and parent paths that are overlapping in some fashion """
@@ -6097,16 +6533,6 @@ class MapState:
 		
 		print "getBranchPoint():"
 		
-		#path1 = paths[parentPathID]
-		#path2 = paths[childPathID]
-  
-		#branchNodeID = self.pathClasses[childPathID]["branchNodeID"]
-		#localJunctionPoint = self.pathClasses[childPathID]["localJunctionPose"]
-		
-		#poseOrigin2 = Pose(self.nodeRawPoses[branchNodeID])
-		#globalJunctionPoint = poseOrigin2.convertLocalToGlobal(localJunctionPoint)
-					
-
 		" return exception if we receive an invalid path "		  
 		if len(path1) == 0:
 			print "path1 has zero length"
