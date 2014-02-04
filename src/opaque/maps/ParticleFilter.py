@@ -10,7 +10,7 @@ from math import acos, asin
 from numpy import array
 import ctypes, os, sys
 
-from Splices import getMultiDeparturePoint
+from Splices import getMultiDeparturePoint, orientPath
 
 from scipy.spatial import KDTree, cKDTree
 from scipy.cluster.hierarchy import fclusterdata, fcluster
@@ -28,6 +28,10 @@ renderGlobalPlotCount = 0
 qin_posePart = None
 qout_posePart =  None
 pool_posePart = []
+
+qin_branch = None
+qout_branch =  None
+pool_branch = []
 
 def __num_processors():
 	
@@ -62,7 +66,7 @@ def __remote_multiParticle(rank, qin, qout):
 	print 'parent process:', os.getppid()
 	print 'process id:', os.getpid()
 
-	print "started __remote_multiGenerate"
+	print "started __remote_multiParticle"
 
 	while 1:
 		# read input queue (block until data arrives)
@@ -89,17 +93,42 @@ def __remote_multiParticle(rank, qin, qout):
 			updateCount = job[17]
 			hypID = job[18]
 
-			pathU0 = job[0]
+			oldMedialP0 = job[0]
 			oldMedialU0 = job[1]
 			angGuess0 = job[2]
-			pathU1 = job[3]
+			oldMedialP1 = job[3]
 			oldMedialU1 = job[4]
 			angGuess1 = job[5]
+
+			#medialSpline0 = SplineFit(medial0, smooth=0.1)
+			#medialSpline1 = SplineFit(medial1, smooth=0.1)
+			#minMedialDist0, oldMedialU0, oldMedialP0 = medialSpline0.findClosestPoint([0.0,0.0,0.0])
+			#minMedialDist1, oldMedialU1, oldMedialP1 = medialSpline1.findClosestPoint([0.0,0.0,0.0])
+
+			poseOrigin = Pose(initPose0)
+			
+			globalMedial0 = []
+			for p in medial0:
+				globalMedial0.append(poseOrigin.convertLocalToGlobal(p))
+			
+			globalMedial1 = []
+			for p in medial1:
+				globalMedial1.append(poseOrigin.convertLocalToGlobal(p))
+
+			globalMedialP0 = poseOrigin.convertLocalOffsetToGlobal(oldMedialP0)	
+			globalMedialP1 = poseOrigin.convertLocalOffsetToGlobal(oldMedialP1)	
+
+			orientedPath0 = orientPath(globalPath, globalMedial0)
+			orientedPathSpline0 = SplineFit(orientedPath0, smooth=0.1)
+			pathU0 = orientedPathSpline0.findU(globalMedialP0)
+			pathU1 = orientedPathSpline0.findU(globalMedialP1)
+
+			#localizeJobs.append([globalMedialP0, oldMedialU0, 0.0, globalMedialP1, oldMedialU1, 0.0, branchSampleIndex, spliceCount, path, medial0, medial1, deepcopy(hypPose0), deepcopy(hypPose1), [], nodeID0, nodeID1, particleIndex, updateCount, self.hypothesisID])
 
 			params0 = [pathU0, oldMedialU0, angGuess0]
 			params1 = [pathU1, oldMedialU1, angGuess1]
 
-			result = multiParticleFitSplice(params0, params1, globalPath, medial0, medial1, initPose0, initPose1, pathIDs, nodeID0, nodeID1, particleIndex, hypID = hypID, pathPlotCount = updateCount, branchIndex = branchIndex, spliceIndex = spliceIndex)
+			result = multiParticleFitSplice(params0, params1, orientedPath0, medial0, medial1, initPose0, initPose1, pathIDs, nodeID0, nodeID1, particleIndex, hypID = hypID, pathPlotCount = updateCount, branchIndex = branchIndex, spliceIndex = spliceIndex)
 			results.append(result)
 						   
 		# write to output queue
@@ -123,20 +152,12 @@ mean = s / N
 
 """
 
-#result = multiParticleFitSplice(initGuess, orientedPath, medialAxis, initPose, pathIDs, nodeID, pathPlotCount = pathPlotCount)
-#def batchParticle(initGuesses, splices, medial, initPose, pathIDs, nodeID):
 def batchParticle(localizeJobs):
 
 	global renderGlobalPlotCount
 	global pool_posePart
 	global qin_posePart
 	global qout_posePart
-
-
-
-	#initGuess
-
-	#arg = [initGuess, initPose, pathID, nodeID]
 
 	ndata = len(localizeJobs)
 	
@@ -152,8 +173,6 @@ def batchParticle(localizeJobs):
 	print "nproc =", nproc
 	
 	# compute chunk size
-	#chunk_size = ceil(float(ndata) / float(nproc))
-	#chunk_size = int(chunk_size)
 	chunk_size = ndata / nproc
 	chunk_size = 2 if chunk_size < 2 else chunk_size
 	
@@ -218,9 +237,16 @@ def batchParticle(localizeJobs):
 	return knn
 
 
-
 #multiParticleFitSplice(params0, params1, globalPath, medial0, medial1, initPose0, initPose1, pathIDs, nodeID0, nodeID1, particleIndex, hypID = hypID, pathPlotCount = updateCount, spliceIndex = spliceIndex)
 def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, medialAxis1, initPose0, initPose1, pathIDs, nodeID0, nodeID1, particleIndex, hypID = 0, pathPlotCount = 0, branchIndex =0, spliceIndex = 0):
+
+
+	#orientedPath0 = orientPath(path, globalMedial0)
+	#orientedPathSpline0 = SplineFit(orientedPath0, smooth=0.1)
+	#pathU0 = orientedPathSpline0.findU(globalMedialP0)
+	#pathU1 = orientedPathSpline0.findU(globalMedialP1)
+
+
 	
 	u1 = initGuess0[0]
 	u2 = initGuess0[1]

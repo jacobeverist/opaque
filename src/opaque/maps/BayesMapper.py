@@ -16,6 +16,7 @@ import cProfile
 import time
 import traceback
 import math
+import cProfile
 
 from Splices import batchGlobalMultiFit, getMultiDeparturePoint, orientPath
 import pylab
@@ -83,6 +84,7 @@ class BayesMapper:
 		self.statePlotCount = 0
 		self.trimCount = 0
 		self.multiDepCount = 0
+		self.profCount = 0
 
 
 		self.tempCount = 0
@@ -240,6 +242,8 @@ class BayesMapper:
 			if self.poseData.numNodes >= 4:
 
 				hypSet = batchMovePath(hypSet, nodeID, direction)
+				for pID, currHyp in hypSet.iteritems():
+					currHyp.drawPoseParticles()
 
 				"""
 				for pID, mapHyp in hypSet.iteritems():
@@ -282,11 +286,13 @@ class BayesMapper:
 				#self.statePlotCount += 1
 				#self.drawPathAndHull(mapHyp)
 
-			#for pID, mapHyp in hypSet.iteritems():
 
 
 			#hypSet = self.addToPaths(hypSet, nodeID1, nodeID2)
 			self.particleIDs, hypSet = addToPaths(self.particleIDs, hypSet, nodeID1, nodeID2)
+			for pID, currHyp in hypSet.iteritems():
+				currHyp.drawPoseParticles()
+
 			#scurrHyps = self.addToPaths(mapHyp, nodeID1, nodeID2)
 
 			hypSet = batchLocalizePair(hypSet, nodeID1, nodeID2)
@@ -296,6 +302,10 @@ class BayesMapper:
 				time1 = time.time()
 
 				#self.propagateBranchStates(mapHyp, nodeID1)
+
+				#cProfile.runctx("mapHyp.localizePoseParticles(nodeID1,nodeID2)", globals(), locals(), "localizeParticles_%d.prof" % self.profCount)	
+				#self.profCount += 1
+				
 				mapHyp.localizePoseParticles(nodeID1, nodeID2)
 				#mapHyp.drawPoseParticles()
 

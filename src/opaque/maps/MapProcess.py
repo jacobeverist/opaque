@@ -986,7 +986,8 @@ def movePath(mapHyp, nodeID, direction, distEst = 1.0):
 			orientedPoints3 = orientedPathSpline3.getUniformSamples()
 
 			#mapHyp.displacePoseParticles(nodeID-1, nodeID, newPose2, newPose3, travelDist2, travelDist3, currSplice2, currSplice3)
-			mapHyp.displacePoseParticles(nodeID-1, nodeID, newPose2, newPose3, travelDist2, travelDist3)
+			#mapHyp.displacePoseParticles(nodeID-1, nodeID, newPose2, newPose3, travelDist2, travelDist3)
+			mapHyp.displacePoseParticles(nodeID-1, nodeID, travelDist2, travelDist3)
 
 			pylab.clf()
 
@@ -1035,7 +1036,7 @@ def movePath(mapHyp, nodeID, direction, distEst = 1.0):
 			pylab.savefig("moveEstimate_%04u_%04u.png" % (nodeID, mapHyp.hypothesisID))
 			
 
-			mapHyp.drawPoseParticles()
+			#mapHyp.drawPoseParticles()
 			
 
 @logFunction
