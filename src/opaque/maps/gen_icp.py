@@ -519,6 +519,8 @@ def findClosestPointInA(a_trans, b):
 
 def findClosestPointWithAngle(points1, pnt, angleThresh):
 
+	#print "findClosestPointWithAngle:", len(points1), pnt, angleThresh
+
 	ax = pnt[0]
 	ay = pnt[1]    
 	a_theta = pnt[2]
@@ -532,6 +534,7 @@ def findClosestPointWithAngle(points1, pnt, angleThresh):
 		p = points1[i]
 		
 		angDiff = abs(functions.normalizeAngle(a_theta-p[2]))
+
 		if angleThresh > angDiff or (math.pi - angleThresh) < angDiff:
 	
 			dist = math.sqrt((p[0]-ax)**2 + (p[1]-ay)**2)

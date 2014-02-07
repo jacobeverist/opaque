@@ -2445,8 +2445,8 @@ def addToPaths(particleIDs, hypSet, nodeID1, nodeID2):
 	#generateAll(hypSet)
 	hypSet = batchGenerate(hypSet)
 
-	for pID, currHyp in hypSet.iteritems():
-		currHyp.drawPoseParticles()
+	#for pID, currHyp in hypSet.iteritems():
+	#	currHyp.drawPoseParticles()
 					
 	return particleIDs, hypSet
 

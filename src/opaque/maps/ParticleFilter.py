@@ -10,7 +10,7 @@ from math import acos, asin
 from numpy import array
 import ctypes, os, sys
 
-from Splices import getMultiDeparturePoint, orientPath
+from Splices import getMultiDeparturePoint, orientPath, getCurveOverlap
 
 from scipy.spatial import KDTree, cKDTree
 from scipy.cluster.hierarchy import fclusterdata, fcluster
@@ -86,12 +86,18 @@ def __remote_multiParticle(rank, qin, qout):
 			medial1 = job[10]
 			initPose0 = job[11]
 			initPose1 = job[12]
-			pathIDs = job[13]
-			nodeID0 = job[14]
-			nodeID1 = job[15]
-			particleIndex = job[16]
-			updateCount = job[17]
-			hypID = job[18]
+
+			prevMedial0 = job[13]
+			prevMedial1 = job[14]
+			prevPose0 = job[15]
+			prevPose1 = job[16]
+
+			pathIDs = job[17]
+			nodeID0 = job[18]
+			nodeID1 = job[19]
+			particleIndex = job[20]
+			updateCount = job[21]
+			hypID = job[22]
 
 			oldMedialP0 = job[0]
 			oldMedialU0 = job[1]
@@ -100,20 +106,16 @@ def __remote_multiParticle(rank, qin, qout):
 			oldMedialU1 = job[4]
 			angGuess1 = job[5]
 
-			#medialSpline0 = SplineFit(medial0, smooth=0.1)
-			#medialSpline1 = SplineFit(medial1, smooth=0.1)
-			#minMedialDist0, oldMedialU0, oldMedialP0 = medialSpline0.findClosestPoint([0.0,0.0,0.0])
-			#minMedialDist1, oldMedialU1, oldMedialP1 = medialSpline1.findClosestPoint([0.0,0.0,0.0])
-
 			poseOrigin = Pose(initPose0)
 			
 			globalMedial0 = []
 			for p in medial0:
 				globalMedial0.append(poseOrigin.convertLocalToGlobal(p))
 			
-			globalMedial1 = []
-			for p in medial1:
-				globalMedial1.append(poseOrigin.convertLocalToGlobal(p))
+			#globalMedial1 = []
+			#for p in medial1:
+			#@	globalMedial1.append(poseOrigin.convertLocalToGlobal(p))
+
 
 			globalMedialP0 = poseOrigin.convertLocalOffsetToGlobal(oldMedialP0)	
 			globalMedialP1 = poseOrigin.convertLocalOffsetToGlobal(oldMedialP1)	
@@ -123,12 +125,11 @@ def __remote_multiParticle(rank, qin, qout):
 			pathU0 = orientedPathSpline0.findU(globalMedialP0)
 			pathU1 = orientedPathSpline0.findU(globalMedialP1)
 
-			#localizeJobs.append([globalMedialP0, oldMedialU0, 0.0, globalMedialP1, oldMedialU1, 0.0, branchSampleIndex, spliceCount, path, medial0, medial1, deepcopy(hypPose0), deepcopy(hypPose1), [], nodeID0, nodeID1, particleIndex, updateCount, self.hypothesisID])
 
 			params0 = [pathU0, oldMedialU0, angGuess0]
 			params1 = [pathU1, oldMedialU1, angGuess1]
 
-			result = multiParticleFitSplice(params0, params1, orientedPath0, medial0, medial1, initPose0, initPose1, pathIDs, nodeID0, nodeID1, particleIndex, hypID = hypID, pathPlotCount = updateCount, branchIndex = branchIndex, spliceIndex = spliceIndex)
+			result = multiParticleFitSplice(params0, params1, orientedPath0, medial0, medial1, initPose0, initPose1, prevMedial0, prevMedial1, prevPose0, prevPose1, pathIDs, nodeID0, nodeID1, particleIndex, hypID = hypID, pathPlotCount = updateCount, branchIndex = branchIndex, spliceIndex = spliceIndex)
 			results.append(result)
 						   
 		# write to output queue
@@ -238,23 +239,13 @@ def batchParticle(localizeJobs):
 
 
 #multiParticleFitSplice(params0, params1, globalPath, medial0, medial1, initPose0, initPose1, pathIDs, nodeID0, nodeID1, particleIndex, hypID = hypID, pathPlotCount = updateCount, spliceIndex = spliceIndex)
-def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, medialAxis1, initPose0, initPose1, pathIDs, nodeID0, nodeID1, particleIndex, hypID = 0, pathPlotCount = 0, branchIndex =0, spliceIndex = 0):
+def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, medialAxis1, initPose0, initPose1, prevMedialAxis0, prevMedialAxis1, prevPose0, prevPose1, pathIDs, nodeID0, nodeID1, particleIndex, hypID = 0, pathPlotCount = 0, branchIndex =0, spliceIndex = 0):
 
 
-	#orientedPath0 = orientPath(path, globalMedial0)
-	#orientedPathSpline0 = SplineFit(orientedPath0, smooth=0.1)
-	#pathU0 = orientedPathSpline0.findU(globalMedialP0)
-	#pathU1 = orientedPathSpline0.findU(globalMedialP1)
-
-
-	
 	u1 = initGuess0[0]
 	u2 = initGuess0[1]
 	angGuess = initGuess0[2]
 
-	#localizeJobs.append([originU2, pathU1, 0.0, spliceIndex, orientedPath, medial1, hypPose, [], nodeID, particleIndex])
-
-	#resultPose0, lastCost0, matchCount0, currAng0, currU0 = gen_icp.globalPathToNodeOverlapICP2([u1, u2, angGuess], orientedPath, medialAxis, plotIter = False, n1 = nodeID, n2 = -1, arcLimit = 0.01, origPose = initPose)
 	resultPose0, lastCost0, matchCount0, currAng0, currU0 = gen_icp.globalPathToNodeOverlapICP2([u1, u2, angGuess], orientedPath, medialAxis0, plotIter = False, n1 = nodeID0, n2 = -1, arcLimit = 0.5, origPose = initPose0)
 
 	u1 = initGuess1[0]
@@ -276,6 +267,25 @@ def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, me
 	isExist2_1 = resultArgs1[9]
 	contigFrac1 = resultArgs1[12]
 
+	currPoseOrigin = Pose(resultPose0)
+	prevPoseOrigin = Pose(prevPose0)
+
+	print "curr/prev pose:", resultPose0, prevPose0
+
+	currGlobalMedial0 = []
+	for p in medialAxis0:
+		currGlobalMedial0.append(currPoseOrigin.convertLocalToGlobal(p))
+
+	if prevMedialAxis0 != None:
+		prevGlobalMedial0 = []
+		for p in prevMedialAxis0:
+			prevGlobalMedial0.append(prevPoseOrigin.convertLocalToGlobal(p))
+
+		#currSum = getCurveOverlap(currGlobalMedial0, prevGlobalMedial0, plotIter = True, overlapPlotCount = pathPlotCount*20+particleIndex)
+		currSum = getCurveOverlap(currGlobalMedial0, prevGlobalMedial0)
+	else:
+		currSum = None
+
 	" departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2 "
 	icpDist0 = sqrt((resultPose0[0]-initPose0[0])**2 + (resultPose0[1]-initPose0[1])**2)
 	icpDist1 = sqrt((resultPose1[0]-initPose1[0])**2 + (resultPose1[1]-initPose1[1])**2)
@@ -283,7 +293,7 @@ def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, me
 	utilVal0 = (1.0-contigFrac0) + (isExist1_0 or isExist2_0) + (1.0-contigFrac1) + (isExist1_1 or isExist2_1)
 
 	#return (particleIndex, icpDist0, resultPose0, lastCost0, matchCount0, currAng0, currU0) + resultArgs0 + (isExist1_0 or isExist2_0,)
-	return (particleIndex, icpDist0, resultPose0, lastCost0, matchCount0, currAng0, currU0) + resultArgs0 + (isExist1_0 or isExist2_0,) + (icpDist1, resultPose1, lastCost1, matchCount1, currAng1, currU1) + resultArgs1 + (isExist1_1 or isExist2_1,) + (utilVal0, branchIndex, spliceIndex, initPose0, initPose1)
+	return (particleIndex, icpDist0, resultPose0, lastCost0, matchCount0, currAng0, currU0) + resultArgs0 + (isExist1_0 or isExist2_0,) + (icpDist1, resultPose1, lastCost1, matchCount1, currAng1, currU1) + resultArgs1 + (isExist1_1 or isExist2_1,) + (utilVal0, branchIndex, spliceIndex, initPose0, initPose1, currSum)
 
 
 class Particle:
@@ -296,6 +306,9 @@ class Particle:
 		#self.pose1 = (0.0,0.0,0.0)
 		self.pose0 = deepcopy(pose0)
 		self.pose1 = deepcopy(pose1)
+
+		self.prevPose0 = deepcopy(pose0)
+		self.prevPose1 = deepcopy(pose1)
 
 		" classification or correspondence as member of path "
 		self.memberPaths = []
@@ -320,6 +333,14 @@ class Particle:
 		self.weightVal = weightVal
 
 		self.mapStateID = mapStateID
+	
+	def displacePose(self, pose0, pose1):
+
+		self.prevPose0 = self.pose0
+		self.prevPose1 = self.pose1
+
+		self.pose0 = deepcopy(pose0)
+		self.pose1 = deepcopy(pose1)
 
 	def addPath(self, pathID, parentID, branchNodeID, localJunctionPose, globalJunctionPose):
 
@@ -328,8 +349,10 @@ class Particle:
 									"branchNodeID" : branchNodeID,
 									"localJunctionPose" : localJunctionPose, 
 									"globalJunctionPose" : globalJunctionPose,
-									"probDist" : [ 1.0 / 11.0 for k in range(11) ],
-									"branchPoseDist" : [deepcopy(globalJunctionPose) for k in range(11)],
+									#"probDist" : [ 1.0 / 11.0 for k in range(11) ],
+									"probDist" : [ 1.0 / 6.0 for k in range(6) ],
+									#"branchPoseDist" : [deepcopy(globalJunctionPose) for k in range(11)],
+									"branchPoseDist" : [deepcopy(globalJunctionPose) for k in range(6)],
 									"maxLikelihoodBranch" : 0
 									}		
 
@@ -345,6 +368,9 @@ class Particle:
 
 		newParticle.spliceName = deepcopy(self.spliceName)
 		newParticle.spliceCurve = deepcopy(self.spliceCurve)
+
+		newParticle.prevPose0 = deepcopy(self.prevPose0)
+		newParticle.prevPose1 = deepcopy(self.prevPose1)
 
 		return newParticle
 

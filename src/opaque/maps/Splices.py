@@ -2,7 +2,8 @@ import pylab
 import numpy
 import multiprocessing as processing
 import ctypes, os
-from functions import normalizeAngle, diffAngle
+from gen_icp import findClosestPointWithAngle, computeMatchErrorP
+from functions import normalizeAngle, diffAngle, logFunction
 from copy import copy, deepcopy
 from SplineFit import SplineFit
 from Pose import Pose
@@ -1160,6 +1161,122 @@ def findClosestPointInA(a_trans, b):
 		return minPoint, min_i, minDist
 	else:
 		raise
+
+#@logFunction
+def getCurveOverlap(curve1, curve2, plotIter = False, overlapPlotCount = 0):
+
+	#print "getCurveOverlap paths:", len(curve1), len(curve2)
+
+	if len(curve1) == 0 or len(curve2) == 0:
+		return 1e100
+
+	minMatchDist2 = 0.2
+		
+	curveSpline1 = SplineFit(curve1, smooth=0.1)		   
+	vecPoints1 = curveSpline1.getUniformSamples()
+	curveSpline2 = SplineFit(curve2, smooth=0.1)		   
+	vecPoints2 = curveSpline2.getUniformSamples()
+
+
+	curvePoints1 = addGPACVectorCovariance(vecPoints1,high_var=0.05, low_var = 0.001)
+	curvePoints2 = addGPACVectorCovariance(vecPoints2,high_var=0.05, low_var = 0.001)
+		
+	support_pairs = []
+	for i in range(len(vecPoints2)):
+
+
+		
+		p_2 = vecPoints2[i]
+
+		#print "call", i, vecPoints2
+
+		" for every transformed point of A, find it's closest neighbor in B "
+		try:
+			p_1, minI, minDist = findClosestPointWithAngle(vecPoints1, p_2, pi/8.0)
+			#print "findClosest:", p_1, minI, minDist
+
+			if minDist <= minMatchDist2:
+				C2 = curvePoints2[i][2]
+				C1 = curvePoints1[minI][2]
+
+				" we store the untransformed point, but the transformed covariance of the A point "
+				support_pairs.append([curvePoints2[i],curvePoints1[minI],C2,C1])
+		except:
+			pass
+	
+	#print "numPairs:", len(support_pairs)
+
+	cost = 0.0
+	if len(support_pairs) == 0:
+		cost = 1e100
+	else:
+		vals = []
+		sum1 = 0.0
+		for pair in support_pairs:
+	
+			a = pair[0]
+			b = pair[1]
+			Ca = pair[2]
+			Cb = pair[3]
+	
+			ax = a[0]
+			ay = a[1]		 
+			bx = b[0]
+			by = b[1]
+	
+			c11 = Ca[0][0]
+			c12 = Ca[0][1]
+			c21 = Ca[1][0]
+			c22 = Ca[1][1]
+					
+			b11 = Cb[0][0]
+			b12 = Cb[0][1]
+			b21 = Cb[1][0]
+			b22 = Cb[1][1]	  
+		
+			val = computeMatchErrorP([0.0,0.0,0.0], [ax,ay], [bx,by], [c11,c12,c21,c22], [b11,b12,b21,b22])
+			
+			vals.append(val)
+			sum1 += val
+			
+		cost = sum1 / len(support_pairs)
+		
+
+	if plotIter:
+		pylab.clf()
+
+		xP = []
+		yP = []
+		for p in vecPoints1:
+			xP.append(p[0])
+			yP.append(p[1])
+		pylab.plot(xP,yP, color='r')
+
+		xP = []
+		yP = []
+		for p in vecPoints2:
+			xP.append(p[0])
+			yP.append(p[1])
+		pylab.plot(xP,yP, color='b')
+		
+		for pair in support_pairs:
+			p1 = pair[0]
+			p2 = pair[1]
+			xP = [p1[0],p2[0]]
+			yP = [p1[1],p2[1]]
+			pylab.plot(xP,yP)
+				
+		pylab.xlim(-5,10)
+		pylab.ylim(-8,8)
+		pylab.title("cost = %f, count = %d" % (cost, len(support_pairs)))
+		pylab.savefig("overlapCost_%04u.png" % overlapPlotCount)
+		#overlapPlotCount += 1
+	
+	if len(support_pairs) == 0:
+		return 1e100
+
+	return cost
+
 
 
 

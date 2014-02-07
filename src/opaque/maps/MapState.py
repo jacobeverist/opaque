@@ -938,6 +938,128 @@ def getOverlapDeparture(globalJunctionPoint, parentPathID, childPathID, path1, p
 
 
 @logFunction
+def getOverlapCondition(medial2, estPose2, supportLine, nodeID, plotIter = False, overlapPlotCount = 0):
+
+	if len(supportLine) == 0:
+		return 1e100
+
+	#medial2 = self.poseData.medialAxes[nodeID]
+
+	#estPose2 = self.nodePoses[nodeID]
+	
+	minMatchDist2 = 0.2
+		
+	" set the initial guess "
+	poseOrigin = Pose(estPose2)
+	
+	localSupport = []
+	for pnt in supportLine:
+		localSupport.append(poseOrigin.convertGlobalToLocal(pnt))
+
+	supportSpline = SplineFit(localSupport, smooth=0.1)		   
+	vecPoints1 = supportSpline.getUniformSamples()
+	supportPoints = gen_icp.addGPACVectorCovariance(vecPoints1,high_var=0.05, low_var = 0.001)
+		
+	medialSpline2 = SplineFit(medial2, smooth=0.1)
+	vecPoints2 = medialSpline2.getUniformSamples()
+	points2 = gen_icp.addGPACVectorCovariance(vecPoints2,high_var=0.05, low_var = 0.001)
+
+	" transformed points without associated covariance "
+	poly2 = []
+	for p in points2:
+		poly2.append([p[0],p[1]])			 
+	
+	support_pairs = []
+	for i in range(len(vecPoints2)):
+		
+		p_2 = vecPoints2[i]
+
+		" for every transformed point of A, find it's closest neighbor in B "
+		try:
+			p_1, minI, minDist = gen_icp.findClosestPointWithAngle(vecPoints1, p_2, math.pi/8.0)
+
+			if minDist <= minMatchDist2:
+				C2 = points2[i][2]
+				C1 = supportPoints[minI][2]
+
+				" we store the untransformed point, but the transformed covariance of the A point "
+				support_pairs.append([points2[i],supportPoints[minI],C2,C1])
+		except:
+			pass
+
+	cost = 0.0
+	if len(support_pairs) == 0:
+		cost = 1e100
+	else:
+		vals = []
+		sum1 = 0.0
+		for pair in support_pairs:
+	
+			a = pair[0]
+			b = pair[1]
+			Ca = pair[2]
+			Cb = pair[3]
+	
+			ax = a[0]
+			ay = a[1]		 
+			bx = b[0]
+			by = b[1]
+	
+			c11 = Ca[0][0]
+			c12 = Ca[0][1]
+			c21 = Ca[1][0]
+			c22 = Ca[1][1]
+					
+			b11 = Cb[0][0]
+			b12 = Cb[0][1]
+			b21 = Cb[1][0]
+			b22 = Cb[1][1]	  
+		
+			val = gen_icp.computeMatchErrorP([0.0,0.0,0.0], [ax,ay], [bx,by], [c11,c12,c21,c22], [b11,b12,b21,b22])
+			
+			vals.append(val)
+			sum1 += val
+			
+		cost = sum1 / len(support_pairs)
+		
+
+	if plotIter:
+		pylab.clf()
+		xP = []
+		yP = []
+		for p in supportPoints:
+			xP.append(p[0])
+			yP.append(p[1])
+		pylab.plot(xP,yP, color='b')
+
+		xP = []
+		yP = []
+		for p in poly2:
+			xP.append(p[0])
+			yP.append(p[1])
+		pylab.plot(xP,yP, color='r')
+		
+		for pair in support_pairs:
+			p1 = pair[0]
+			p2 = pair[1]
+			xP = [p1[0],p2[0]]
+			yP = [p1[1],p2[1]]
+			pylab.plot(xP,yP)
+				
+		pylab.xlim(-5,10)
+		pylab.ylim(-8,8)
+		pylab.title("nodeID %d, cost = %f, count = %d" % (nodeID, cost, len(support_pairs)))
+		pylab.savefig("overlapCost_%04u.png" % overlapPlotCount)
+		#overlapPlotCount += 1
+	
+	if len(support_pairs) == 0:
+		return 1e100
+
+	return cost
+
+
+
+@logFunction
 def getBranchPoint(globalJunctionPoint, parentPathID, childPathID, path1, path2, plotIter = False):
 	""" get the trimmed version of child and parent paths that are overlapping in some fashion """
 
@@ -2095,6 +2217,7 @@ class MapState:
 		self.pathPlotCount2 = 0
 		self.overlapPlotCount2 = 0
 		self.medialSoupCount = 0
+		self.posePlotCount = 0
 
 
 
@@ -2288,8 +2411,9 @@ class MapState:
 
 			#particleObj = Particle(newPose0, newPose1, 0, newDist0, ('t0', 't1'), 0.0)
 			particleObj = part.copy()
-			particleObj.pose0 = newPose0
-			particleObj.pose1 = newPose1
+			#particleObj.pose0 = newPose0
+			#particleObj.pose1 = newPose1
+			particleObj.displacePose(newPose0, newPose1)
 			particleObj.newDist0 = newDist0
 
 			#uPath0, uMedialOrigin0 = selectLocalCommonOrigin(currSplice0, medial0, newPose)
@@ -2342,6 +2466,13 @@ class MapState:
 
 		medial0 = poseData.medialAxes[nodeID0]
 		medial1 = poseData.medialAxes[nodeID1]
+
+		if nodeID0-2 >= 0:
+			prevMedial0 = poseData.medialAxes[nodeID0-2]
+			prevMedial1 = poseData.medialAxes[nodeID1-2]
+		else:
+			prevMedial0 = None
+			prevMedial1 = None
 
 
 		#medialSamples0 = medialSpline0.getUniformSamples(spacing = 0.04)
@@ -2421,7 +2552,6 @@ class MapState:
 		for particleIndex in range(len(particleDist2)):
 
 			time1 = time.time()
-			#if duplicateMatches[particleIndex] == particleIndex:
 
 			part = particleDist2[particleIndex]
 
@@ -2429,32 +2559,8 @@ class MapState:
 			hypPose1 = part.pose1
 			pathID = part.memberPaths[0]
 			hypDist = part.hypDist
-			#spliceID = part.spliceName
-
-			#poseOrigin = Pose(hypPose0)
-
-			#globalMedial0 = []
-			#for p in medial0:
-			#	globalMedial0.append(poseOrigin.convertLocalToGlobal(p))
-
-			#globalMedial1 = []
-			#for p in medial1:
-			#	globalMedial1.append(poseOrigin.convertLocalToGlobal(p))
-
-			#globalMedialSamples0 = []
-			#for p in medialSamples0:
-			#	result = poseOrigin.convertLocalOffsetToGlobal(p)	
-			#	globalMedialSamples0.append(result)
-
-			#globalMedialSamples1 = []
-			#for p in medialSamples1:
-			#	result = poseOrigin.convertLocalOffsetToGlobal(p)	
-			#	globalMedialSamples1.append(result)
-
-			#medialVar = computePathAngleVariance(globalMedialSamples)
-
-			#globalMedialP0 = poseOrigin.convertLocalOffsetToGlobal(oldMedialP0)	
-			#globalMedialP1 = poseOrigin.convertLocalOffsetToGlobal(oldMedialP1)	
+			prevHypPose0 = part.prevPose0
+			prevHypPose1 = part.prevPose1
 
 			resultsBySplice = []
 
@@ -2546,7 +2652,7 @@ class MapState:
 				" 5 forward, 5 backward "
 				
 			
-				localizeJobs.append([oldMedialP0, oldMedialU0, 0.0, oldMedialP1, oldMedialU1, 0.0, branchSampleIndex, spliceCount, path, medial0, medial1, deepcopy(hypPose0), deepcopy(hypPose1), [], nodeID0, nodeID1, particleIndex, updateCount, self.hypothesisID])
+				localizeJobs.append([oldMedialP0, oldMedialU0, 0.0, oldMedialP1, oldMedialU1, 0.0, branchSampleIndex, spliceCount, path, medial0, medial1, deepcopy(hypPose0), deepcopy(hypPose1), prevMedial0, prevMedial1, prevHypPose0, prevHypPose1, [], nodeID0, nodeID1, particleIndex, updateCount, self.hypothesisID])
 				#localizeJobs.append([pathU0, oldMedialU0, 0.0, pathU1, oldMedialU1, 0.0, branchSampleIndex, spliceCount, orientedPath0, medial0, medial1, deepcopy(hypPose0), deepcopy(hypPose1), [], nodeID0, nodeID1, particleIndex, updateCount, self.hypothesisID])
 
 				self.pathPlotCount2 += 1
@@ -2608,6 +2714,8 @@ class MapState:
 			initPose0 = part[48]
 			initPose0 = part[49]
 
+			overlapSum = part[50]
+
 
 			newPose0 = part[2]
 			newDist0 = 0.5
@@ -2644,15 +2752,19 @@ class MapState:
 			" horrifically low contiguity is rejected out of hand "
 			if contigFrac_0 <= 0.5 or contigFrac_1 <= 0.5:
 				isReject = True
+
+			" contiguity between current and previous pose "
+			if overlapSum > 1e10:
+				isReject = True
 				
 			" probability is the contigFrac squared " 
 			newProb = 0.0
 			if not isReject:
 				newProb = (pi-fabs(diffAngle(initPose0[2],newPose0[2])) ) * contigFrac_0 * contigFrac_0 / overlapSum_0
-				#newProb *= branchProbVal
+				newProb *= branchProbVal
 				#utilVal0 = (1.0-contigFrac_0) + (isExist1_0 or isExist2_0) + (1.0-contigFrac_1) + (isExist1_1 or isExist2_1)
 				
-			print "%d %d %d branchProbVal, utilVal, poseProbValue:" % (self.hypothesisID, particleIndex, spliceIndex), branchProbVal, utilVal, newProb
+			print "%d %d %d branchProbVal, utilVal, poseProbValue, overlapSum:" % (self.hypothesisID, particleIndex, spliceIndex), branchProbVal, utilVal, newProb, overlapSum 
 
 			#print "%d %1.2f %1.2f %1.2f %d %d %d %d %1.2f %1.2f %d %d %d %d" % (particleIndex, newProb, contigFrac_0, overlapSum_0, isInterior1_0, isInterior2_0, isExist1_0, isExist2_0, contigFrac_1, overlapSum_1, isInterior1_1, isInterior2_1, isExist1_1, isExist2_1)
 
@@ -2660,6 +2772,7 @@ class MapState:
 			" return (particleIndex, icpDist, resultPose0, lastCost0, matchCount0, currAng0, currU0) + resultArgs + (isExist1 or isExist2,) "
 
 			particleObj = particleDist2[particleIndex].copy()
+			#particleObj.updatePose(pose0, pose1)
 			particleObj.pose0 = newPose0
 			particleObj.pose1 = newPose1
 			particleObj.hypDist = newDist0
@@ -2866,26 +2979,33 @@ class MapState:
 		particleDist2 = self.poseParticles["snapshots2"][0]
 
 
-		if 1 in self.getPathIDs():
+		localPathSets = {}
 
-			junctionDetails = self.longPathJunctions[1]
+		allPathIDs = self.getPathIDs()
+		for pathID in allPathIDs:
 
-			origJuncPose = copy(self.pathClasses[1]["globalJunctionPose"])
-			origJuncPose[2] = 0.0
-			origJuncOrigin = Pose(origJuncPose)
+			if pathID != 0:
 
-			smoothPathSegs = junctionDetails["leafSegments"] + junctionDetails["internalSegments"]
-			localPathSegs = []
-			for k in range(len(smoothPathSegs)):
-				pathSeg = smoothPathSegs[k]
-				localSeg = []
-				for p in pathSeg:
-					p1 = origJuncOrigin.convertGlobalPoseToLocal(p)
-					localSeg.append(p1)
+				junctionDetails = self.longPathJunctions[1]
 
-				localPathSegs.append(localSeg)
+				origJuncPose = copy(self.pathClasses[1]["globalJunctionPose"])
+				origJuncPose[2] = 0.0
+				origJuncOrigin = Pose(origJuncPose)
 
-			#print "path segs:", len(junctionDetails["leafSegments"]), "+", len(junctionDetails["internalSegments"]), "=", len(smoothPathSegs)
+				smoothPathSegs = junctionDetails["leafSegments"] + junctionDetails["internalSegments"]
+				localPathSegs = []
+				for k in range(len(smoothPathSegs)):
+					pathSeg = smoothPathSegs[k]
+					localSeg = []
+					for p in pathSeg:
+						p1 = origJuncOrigin.convertGlobalPoseToLocal(p)
+						localSeg.append(p1)
+
+					localPathSegs.append(localSeg)
+
+				#print "path segs:", len(junctionDetails["leafSegments"]), "+", len(junctionDetails["internalSegments"]), "=", len(smoothPathSegs)
+
+				localPathSets[pathID] = localPathSegs
 
 
 		#print "particles:", particleDist2
@@ -2944,6 +3064,9 @@ class MapState:
 			hypPointsX_1.append(hypPose1[0])
 			hypPointsY_1.append(hypPose1[1])
 
+			thisSplice = part.spliceCurve
+
+
 
 
 			poseOrigin0 = Pose(hypPose0)
@@ -2958,40 +3081,64 @@ class MapState:
 			pylab.plot(xP,yP, color = 'r', alpha = 0.2, zorder=9)
 
 
-			if 1 in self.getPathIDs():
-
-				if 1 in part.junctionData.keys():
-
-					probDist = part.junctionData[1]["probDist"]
-					branchPoseDist = part.junctionData[1]["branchPoseDist"]
+			allPathIDs = self.getPathIDs()
+			for pathID in allPathIDs:
 
 
-					maxProb = -1e100
-					maxIndex = 0
-					for k in range(len(probDist)):
-						if probDist[k] > maxProb:
-							maxProb = probDist[k]
-							maxIndex = k
+				if pathID != 0:
 
 
-					modPose0 = deepcopy(branchPoseDist[maxIndex])
-				else:
-					modPose0 = deepcopy(part.junctionData[1]["globalJunctionPose"])
+					if pathID in part.junctionData.keys():
 
-				modPose0[2] = 0.0
-				modOrigin0 = Pose(modPose0)
-				for k in range(len(localPathSegs)):
-					localSeg = localPathSegs[k]
-					xP1 = []
-					yP1 = []
-					for p in localSeg:
-						p1 = modOrigin0.convertLocalOffsetToGlobal(p)
-						xP1.append(p1[0])
-						yP1.append(p1[1])
-					#pylab.plot(xP1,yP1,color='k', zorder=9, alpha=part[8]/maxProb)
-					pylab.plot(xP1,yP1,color='k', zorder=9, alpha=0.2)
+						probDist = part.junctionData[pathID]["probDist"]
+						branchPoseDist = part.junctionData[pathID]["branchPoseDist"]
 
-				pylab.scatter([modPose0[0]], [modPose0[1]], color='k', linewidth=1, zorder=10, alpha=0.4)
+
+						maxProb = -1e100
+						maxIndex = 0
+						for k in range(len(probDist)):
+							if probDist[k] > maxProb:
+								maxProb = probDist[k]
+								maxIndex = k
+
+
+						modPose0 = deepcopy(branchPoseDist[maxIndex])
+					else:
+						modPose0 = deepcopy(part.junctionData[pathID]["globalJunctionPose"])
+
+					modPose0[2] = 0.0
+					modOrigin0 = Pose(modPose0)
+
+					if thisSplice != None:
+
+						xP1 = []
+						yP1 = []
+
+						for p1 in thisSplice:
+							xP1.append(p1[0])
+							yP1.append(p1[1])
+
+						pylab.plot(xP1,yP1,color='k', zorder=9, alpha=0.2)
+
+					"""
+					localPathSegs = localPathSets[pathID] 
+
+					for k in range(len(localPathSegs)):
+						localSeg = localPathSegs[k]
+						xP1 = []
+						yP1 = []
+						for p in localSeg:
+							p1 = modOrigin0.convertLocalOffsetToGlobal(p)
+							xP1.append(p1[0])
+							yP1.append(p1[1])
+						#pylab.plot(xP1,yP1,color='k', zorder=9, alpha=part[8]/maxProb)
+						pylab.plot(xP1,yP1,color='k', zorder=9, alpha=0.2)
+					"""
+
+					pylab.scatter([modPose0[0]], [modPose0[1]], color='k', linewidth=1, zorder=10, alpha=0.4)
+
+
+
 
 			poseOrigin1 = Pose(hypPose1)
 
@@ -3007,12 +3154,20 @@ class MapState:
 		pylab.scatter(hypPointsX_0, hypPointsY_0, color='r', linewidth=1, zorder=10, alpha=0.2)
 		pylab.scatter(hypPointsX_1, hypPointsY_1, color='b', linewidth=1, zorder=10, alpha=0.2)
 		
+		pylab.xlim(-6,16.48)
 		#pylab.xlim(-5,10)
-		#pylab.ylim(-8,8)
-		pylab.axis("equal")
+		pylab.ylim(-8,8)
+		#pylab.ylim(-5.85,5.85)
+		#pylab.axis("equal")
 		#pylab.title("%d particles" % len(particleDist))
 		pylab.title("nodeIDs %d %d hypID %d" % (nodeID0, nodeID1, self.hypothesisID))
-		pylab.savefig("moveEstimate2_%04u_%04u.png" % (updateCount, self.hypothesisID))
+
+
+		#pylab.savefig("moveEstimate2_%04u_%04u.png" % (self.posePlotCount, self.hypothesisID))
+		pylab.savefig("moveEstimate2_%04u_%04u.png" % (self.hypothesisID, self.posePlotCount))
+		print "moveEstimate2_%04u_%04u.png" % (self.hypothesisID, self.posePlotCount)
+
+		self.posePlotCount += 1
 
 	@logFunction
 	def updatePoseData(self, poseData):
@@ -3605,7 +3760,7 @@ class MapState:
 
 		self.branchEvaluations = {}
 
-		DIV_LEN = 0.1
+		DIV_LEN = 0.2
 
 		pathIDs = self.getPathIDs()
 		for pathID in pathIDs:
@@ -3802,7 +3957,8 @@ class MapState:
 			arcLow = arcDist - 0.5
 
 			" precompute the problem space "
-			for k in range(11):
+			#for k in range(11):
+			for k in range(6):
 				newArcDist = arcLow + (arcHigh-arcLow)*k/10
 				arcDists.append((pathID, newArcDist))
 
@@ -3907,7 +4063,7 @@ class MapState:
 
 			" initialize if this is the first time "
 			particles = []
-			for k in range(11):
+			for k in range(6):
 				newArcDist = arcLow + (arcHigh-arcLow)*k/10
 				particle = self.computeBranch(pathID, newArcDist)
 				particles.append(particle)
@@ -4330,7 +4486,13 @@ class MapState:
 			print "checking overlap of", overlappedPathIDs
 			isNotOverlapped = False
 			for pathID in overlappedPathIDs:
-				sum1 = self.getOverlapCondition(self.trimmedPaths[pathID], nodeID, plotIter = False)
+
+				#medial2 = self.poseData.medialAxes[nodeID]
+				#estPose2 = self.nodePoses[nodeID]
+				sum1 = getOverlapCondition(self.poseData.medialAxes[nodeID], self.nodePoses[nodeID], self.trimmedPaths[pathID], nodeID, plotIter = False, overlapPlotCount = self.overlapPlotCount)
+				self.overlapPlotCount += 1
+
+				#sum1 = self.getOverlapCondition(self.trimmedPaths[pathID], nodeID, plotIter = False)
 
 				print "pathID", pathID, "returned", sum1, "for splice", spliceIndex
 				if sum1 > 1e10:
