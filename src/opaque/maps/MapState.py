@@ -2200,6 +2200,9 @@ class MapState:
 							"sameProb" : {}, "nodeSet" : [], "globalJunctionPose" : None}
 		self.pathIDs += 1
 
+		self.DIV_LEN = 0.2
+		self.NUM_BRANCHES = 5
+
 
 		self.longPathJunctions = {}
 		self.medialLongPaths = {}
@@ -3760,7 +3763,7 @@ class MapState:
 
 		self.branchEvaluations = {}
 
-		DIV_LEN = 0.2
+		#self.DIV_LEN = 0.2
 
 		pathIDs = self.getPathIDs()
 		for pathID in pathIDs:
@@ -3775,7 +3778,7 @@ class MapState:
 				currDist = 0.0
 				branchSpace[currDist] = None
 				while currDist <= totalDist:
-					currDist += DIV_LEN
+					currDist += self.DIV_LEN
 					branchSpace[currDist] = None
 
 				self.branchEvaluations[pathID] = branchSpace
@@ -3789,16 +3792,26 @@ class MapState:
 			currKeys = currBranchSpace.keys()
 			currKeys.sort()
 
+
 			" find the bin for this arc distance "
 			thisKey = currKeys[0]
-			for val in currKeys:
+			#for val in currKeys:
+			for k in range(len(currKeys)):
+				val = currKeys[k]
 				if val >= arcDist:
 					break
 				thisKey = val
 
+			#print "precompute value:", arcDist, thisKey
+
 			if currBranchSpace[thisKey] != None:
-				print "returned precomputation of branch", thisKey
+				#print "returned precomputation of branch", thisKey
 				return deepcopy(currBranchSpace[thisKey])
+			else:
+
+				print "returned precomputation of branch", arcDist, thisKey, None
+
+			raise
 
 			return None
 
@@ -3953,13 +3966,16 @@ class MapState:
 			arcDist = pathSpline.dist_u(uVal)
 
 
-			arcHigh = arcDist + 0.5
-			arcLow = arcDist - 0.5
+			arcHigh = arcDist + floor(self.NUM_BRANCHES/2.0)
+			arcLow = arcDist - floor(self.NUM_BRANCHES/2.0)
+			#arcHigh = arcDist + 0.5
+			#arcLow = arcDist - 0.5
+
 
 			" precompute the problem space "
 			#for k in range(11):
-			for k in range(6):
-				newArcDist = arcLow + (arcHigh-arcLow)*k/10
+			for k in range(self.NUM_BRANCHES):
+				newArcDist = arcLow + (arcHigh-arcLow)*k/(self.NUM_BRANCHES-1)
 				arcDists.append((pathID, newArcDist))
 
 
@@ -3974,12 +3990,18 @@ class MapState:
 			currKeys = currBranchSpace.keys()
 			currKeys.sort()
 
+			#print "solve currKeys:", currKeys
+
 			" find the bin for this arc distance "
 			thisKey = currKeys[0]
-			for val in currKeys:
+			#for val in currKeys:
+			for k in range(len(currKeys)):
+				val = currKeys[k]
 				if val >= arcDist:
 					break
 				thisKey = val
+
+			#print "solve value:", arcDist, thisKey
 
 			binnedProblems.append((pathID, thisKey))
 
@@ -4019,6 +4041,10 @@ class MapState:
 			pathID = result[3]
 			currBranchSpace = self.branchEvaluations[pathID]
 			currBranchSpace[arcDist] = result
+			#if result != None:
+				#print "solved bin", arcDist
+			#else:
+				#print "solved bin", arcDist, result
 
 		#def computeBranch(pathID, parentID, origGlobJuncPose, childPath, parentPath, trimmedParent, smoothPathSegs, arcDist):
 		#particles.append(particle)
@@ -4034,6 +4060,7 @@ class MapState:
 		# junctionDetails = self.longPathJunctions[pathID]
 		# smoothPathSegs = junctionDetails["leafSegments"] + junctionDetails["internalSegments"]
 		# hypID
+
 
 		if self.pathClasses[pathID]["parentID"] != None: 
 
@@ -4052,8 +4079,10 @@ class MapState:
 			minDist, uVal, splinePoint = pathSpline.findClosestPoint(estJuncPose)
 			arcDist = pathSpline.dist_u(uVal)
 
-			arcHigh = arcDist + 0.5
-			arcLow = arcDist - 0.5
+			arcHigh = arcDist + floor(self.NUM_BRANCHES/2.0)
+			arcLow = arcDist - floor(self.NUM_BRANCHES/2.0)
+			#arcHigh = arcDist + 0.5
+			#arcLow = arcDist - 0.5
 
 			totalDist = pathSpline.dist_u(1.0)
 
@@ -4063,8 +4092,8 @@ class MapState:
 
 			" initialize if this is the first time "
 			particles = []
-			for k in range(6):
-				newArcDist = arcLow + (arcHigh-arcLow)*k/10
+			for k in range(self.NUM_BRANCHES):
+				newArcDist = arcLow + (arcHigh-arcLow)*k/(self.NUM_BRANCHES-1)
 				particle = self.computeBranch(pathID, newArcDist)
 				particles.append(particle)
 
@@ -4223,7 +4252,11 @@ class MapState:
 						p1 = offsetOrigin1.convertLocalOffsetToGlobal(p)
 						xP1.append(p1[0])
 						yP1.append(p1[1])
-					pylab.plot(xP1,yP1,color='k', zorder=9, alpha=part[8]/maxProb)
+
+					if maxProb > 0:
+						pylab.plot(xP1,yP1,color='k', zorder=9, alpha=part[8]/maxProb)
+					else:
+						pylab.plot(xP1,yP1,color='k', zorder=9, alpha=part[8])
 
 
 			pylab.scatter(xP, yP, color='k', zorder=8)
@@ -5707,7 +5740,7 @@ class MapState:
 			modJuncPose[2] = globalJunctionPose[2]
 
 			#part.addPath(newPathID, parentID, branchNodeID, localJunctionPose, globalJunctionPose)
-			part.addPath(newPathID, parentID, branchNodeID, localJunctionPose, modJuncPose)
+			part.addPath(newPathID, parentID, branchNodeID, localJunctionPose, modJuncPose, self.NUM_BRANCHES)
 
 		print "newPath", newPathID, "=", self.pathClasses[newPathID]
 		#self.drawPoseParticles()

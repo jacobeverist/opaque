@@ -5,13 +5,12 @@ from numpy import matrix
 import sys
 
 def logFunction(func):
-	pass
 
 	def inner(*args, **kwargs): #1
-		print "func: " + func.__name__ + "(%s, %s)" % (args, kwargs)
+		#print "func: " + func.__name__ + "(%s, %s)" % (args, kwargs)
 		sys.stdout.flush()
 		retVal = func(*args, **kwargs)
-		print "return: " + func.__name__ + " %s " % repr(retVal)
+		#print "return: " + func.__name__ + " %s " % repr(retVal)
 		sys.stdout.flush()
 		return retVal
 	

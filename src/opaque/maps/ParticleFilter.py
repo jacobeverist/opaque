@@ -216,7 +216,7 @@ def batchParticle(localizeJobs):
 	while len(knn) < nc:
 		knn += [qout_posePart.get()]
 	
-	print "received output:", knn
+	#print "received output:", knn
 		
 	# avoid race condition
 	_knn = [n for i,n in sorted(knn)]
@@ -224,7 +224,7 @@ def batchParticle(localizeJobs):
 	for tmp in _knn:
 		knn += tmp
 
-	print "sorted output:", knn
+	#print "sorted output:", knn
 		
 
 	#print "terminating pool"
@@ -342,7 +342,7 @@ class Particle:
 		self.pose0 = deepcopy(pose0)
 		self.pose1 = deepcopy(pose1)
 
-	def addPath(self, pathID, parentID, branchNodeID, localJunctionPose, globalJunctionPose):
+	def addPath(self, pathID, parentID, branchNodeID, localJunctionPose, globalJunctionPose, numBranches):
 
 		self.junctionData[pathID] = {
 									"parentID" : parentID,
@@ -350,9 +350,9 @@ class Particle:
 									"localJunctionPose" : localJunctionPose, 
 									"globalJunctionPose" : globalJunctionPose,
 									#"probDist" : [ 1.0 / 11.0 for k in range(11) ],
-									"probDist" : [ 1.0 / 6.0 for k in range(6) ],
+									"probDist" : [ 1.0 / float(numBranches) for k in range(numBranches) ],
 									#"branchPoseDist" : [deepcopy(globalJunctionPose) for k in range(11)],
-									"branchPoseDist" : [deepcopy(globalJunctionPose) for k in range(6)],
+									"branchPoseDist" : [deepcopy(globalJunctionPose) for k in range(numBranches)],
 									"maxLikelihoodBranch" : 0
 									}		
 
