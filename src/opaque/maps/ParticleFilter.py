@@ -323,7 +323,7 @@ class Particle:
 		self.spliceName = ('t0', 't1')
 		#self.spliceName = spliceName
 		self.spliceCurve = None
-		
+
 		self.nodeCorrespondence = {}
 
 		" temporary values, computed on-the-fly for each evaluation "

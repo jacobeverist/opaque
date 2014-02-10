@@ -26,6 +26,8 @@ import traceback
 
 import alphamod
 
+pylab.ioff()
+
 
 " 1) probability that a path is the same as another path "
 " 2) new ID for each new path "
@@ -205,6 +207,7 @@ def batchBranch(branchJobs):
 		qin_branch = processing.Queue(maxsize=ndata/chunk_size)
 		qout_branch = processing.Queue(maxsize=ndata/chunk_size)
 		pool_branch = [processing.Process(target=__remote_multiBranch,
+		#pool_branch = [processing.Process(target=__remote_prof_multiBranch,
 				args=(rank, qin_branch, qout_branch))
 					for rank in range(nproc)]
 		for p in pool_branch: p.start()
@@ -2169,6 +2172,7 @@ class MapState:
 		self.numJuncSamples = 20
 		self.juncSamples = {}
 
+		#self.numPoseParticles = 100
 		self.numPoseParticles = 20
 		self.poseParticles = {}
 		self.poseParticles["numParticles"] = self.numPoseParticles
@@ -2560,7 +2564,7 @@ class MapState:
 
 			hypPose0 = part.pose0
 			hypPose1 = part.pose1
-			pathID = part.memberPaths[0]
+			#pathID = part.memberPaths[0]
 			hypDist = part.hypDist
 			prevHypPose0 = part.prevPose0
 			prevHypPose1 = part.prevPose1
@@ -2615,15 +2619,53 @@ class MapState:
 
 								for k in range(numSplices):
 									splice = branchSplices[j][k]
-									thisSplicedPaths.append((j, probVal, splice))
+									thisSplicedPaths.append((j, probVal, splice, pathID))
 
 
 			" consider single path splices "
-			" FIXME: uses static currPath, should use hypothesize currPath instead "
-			for k in range(len(staticSplicePathIDs)):
-				if len(staticSplicePathIDs[k]) == 1:
-					" static splices have 1.0 probability "
-					thisSplicedPaths.append((None, 1.0, staticSplicedPaths[k]))
+			" uses hypothesize currPath to localize the trimmedPath "
+			" FIXME: grandparent child paths should be localized in a chain up to the root "
+			for j in range(len(staticSplicePathIDs)):
+				if len(staticSplicePathIDs[j]) == 1:
+
+					pathID = staticSplicePathIDs[j][0]
+					canonicalPath = staticSplicedPaths[j]
+
+					if pathID != 0:
+
+						partBranchIndex = part.junctionData[pathID]["maxLikelihoodBranch"]
+
+						partJuncPose = part.junctionData[pathID]["branchPoseDist"][partBranchIndex]
+						
+						origJuncPose = copy(self.pathClasses[pathID]["globalJunctionPose"])
+						origJuncPose[2] = 0.0
+
+						modJuncPose = copy(partJuncPose)
+						modJuncPose[2] = 0.0
+
+						origJuncOrigin = Pose(origJuncPose)
+						offsetOrigin1 = Pose(modJuncPose)
+
+
+						localPath = []
+
+						for p in canonicalPath:
+							p1 = origJuncOrigin.convertGlobalToLocal(p)
+							localPath.append(p1)
+
+
+						placedPath = []
+						for p in localPath:
+							p1 = offsetOrigin1.convertLocalToGlobal(p)
+							placedPath.append(p1)
+
+						" static splices have 1.0 probability "
+						thisSplicedPaths.append((None, 1.0, placedPath, pathID))
+							
+					else:
+
+						" static splices have 1.0 probability "
+						thisSplicedPaths.append((None, 1.0, canonicalPath, pathID))
 
 
 			print "particle:", particleIndex, ",",  len(thisSplicedPaths), "localize jobs"
@@ -2631,32 +2673,10 @@ class MapState:
 				
 				branchSampleIndex = thisSplicedPaths[spliceIndex][0]
 				probVal = thisSplicedPaths[spliceIndex][1]
-				
+						
 				path = thisSplicedPaths[spliceIndex][2]
 				
-				#poseOrigin = Pose(hypPose0)
-				#
-				#globalMedial0 = []
-				#for p in medial0:
-				#	globalMedial0.append(poseOrigin.convertLocalToGlobal(p))
-				#
-				#globalMedial1 = []
-				#for p in medial1:
-				#	globalMedial1.append(poseOrigin.convertLocalToGlobal(p))
-				#globalMedialP0 = poseOrigin.convertLocalOffsetToGlobal(oldMedialP0)	
-				#globalMedialP1 = poseOrigin.convertLocalOffsetToGlobal(oldMedialP1)	
-				#orientedPath0 = orientPath(path, globalMedial0)
-				#orientedPathSpline0 = SplineFit(orientedPath0, smooth=0.1)
-				#pathU0 = orientedPathSpline0.findU(globalMedialP0)
-				#pathU1 = orientedPathSpline0.findU(globalMedialP1)
-
-
-				" add guesses in the neighborhood of the closest pathU "
-				" 5 forward, 5 backward "
-				
-			
 				localizeJobs.append([oldMedialP0, oldMedialU0, 0.0, oldMedialP1, oldMedialU1, 0.0, branchSampleIndex, spliceCount, path, medial0, medial1, deepcopy(hypPose0), deepcopy(hypPose1), prevMedial0, prevMedial1, prevHypPose0, prevHypPose1, [], nodeID0, nodeID1, particleIndex, updateCount, self.hypothesisID])
-				#localizeJobs.append([pathU0, oldMedialU0, 0.0, pathU1, oldMedialU1, 0.0, branchSampleIndex, spliceCount, orientedPath0, medial0, medial1, deepcopy(hypPose0), deepcopy(hypPose1), [], nodeID0, nodeID1, particleIndex, updateCount, self.hypothesisID])
 
 				self.pathPlotCount2 += 1
 				spliceCount += 1
@@ -2711,8 +2731,10 @@ class MapState:
 
 			utilVal = part[45]
 			spliceIndex = part[47]
+			branchIndex = allSplicedPaths[spliceIndex][0]
 			branchProbVal = allSplicedPaths[spliceIndex][1]
 			spliceCurve = allSplicedPaths[spliceIndex][2]
+			pathID = allSplicedPaths[spliceIndex][3]
 
 			initPose0 = part[48]
 			initPose0 = part[49]
@@ -2775,12 +2797,18 @@ class MapState:
 			" return (particleIndex, icpDist, resultPose0, lastCost0, matchCount0, currAng0, currU0) + resultArgs + (isExist1 or isExist2,) "
 
 			particleObj = particleDist2[particleIndex].copy()
+
 			#particleObj.updatePose(pose0, pose1)
 			particleObj.pose0 = newPose0
 			particleObj.pose1 = newPose1
 			particleObj.hypDist = newDist0
 			particleObj.weightVal = newProb
 			particleObj.spliceCurve = spliceCurve
+
+			" Change branch if we are within a junction, otherwise, keep the most recent branch index "
+			if branchIndex != None:
+				particleObj.junctionData[pathID]["maxLikelihoodBranch"] = branchIndex
+
 
 			newParticleDist2.append(particleObj)
 
@@ -3013,6 +3041,8 @@ class MapState:
 
 		#print "particles:", particleDist2
 
+		pylab.ioff()
+		print pylab.isinteractive()
 		pylab.clf()
 
 		for k,path in  self.trimmedPaths.iteritems():
@@ -3966,8 +3996,8 @@ class MapState:
 			arcDist = pathSpline.dist_u(uVal)
 
 
-			arcHigh = arcDist + floor(self.NUM_BRANCHES/2.0)
-			arcLow = arcDist - floor(self.NUM_BRANCHES/2.0)
+			arcHigh = arcDist + self.DIV_LEN * floor(self.NUM_BRANCHES/2.0)
+			arcLow = arcDist - self.DIV_LEN * floor(self.NUM_BRANCHES/2.0)
 			#arcHigh = arcDist + 0.5
 			#arcLow = arcDist - 0.5
 
@@ -4079,8 +4109,10 @@ class MapState:
 			minDist, uVal, splinePoint = pathSpline.findClosestPoint(estJuncPose)
 			arcDist = pathSpline.dist_u(uVal)
 
-			arcHigh = arcDist + floor(self.NUM_BRANCHES/2.0)
-			arcLow = arcDist - floor(self.NUM_BRANCHES/2.0)
+			#arcHigh = arcDist + floor(self.NUM_BRANCHES/2.0)
+			#arcLow = arcDist - floor(self.NUM_BRANCHES/2.0)
+			arcHigh = arcDist + self.DIV_LEN * floor(self.NUM_BRANCHES/2.0)
+			arcLow = arcDist - self.DIV_LEN * floor(self.NUM_BRANCHES/2.0)
 			#arcHigh = arcDist + 0.5
 			#arcLow = arcDist - 0.5
 
