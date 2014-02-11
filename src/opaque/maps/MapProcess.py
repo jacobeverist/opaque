@@ -989,55 +989,57 @@ def movePath(mapHyp, nodeID, direction, distEst = 1.0):
 			#mapHyp.displacePoseParticles(nodeID-1, nodeID, newPose2, newPose3, travelDist2, travelDist3)
 			mapHyp.displacePoseParticles(nodeID-1, nodeID, travelDist2, travelDist3)
 
-			pylab.clf()
+			if False:
 
-			xP = []
-			yP = []
-			for p in orientedPoints2:
-				xP.append(p[0])
-				yP.append(p[1])
-			pylab.plot(xP,yP, color='k')
+				pylab.clf()
 
-			xP = []
-			yP = []
-			for p in orientedPoints3:
-				xP.append(p[0])
-				yP.append(p[1])
-			pylab.plot(xP,yP, color='k')
+				xP = []
+				yP = []
+				for p in orientedPoints2:
+					xP.append(p[0])
+					yP.append(p[1])
+				pylab.plot(xP,yP, color='k')
 
-			pylab.scatter([oldPose0[0],oldPose1[0]], [oldPose0[1],oldPose1[1]], color='r')
-			pylab.scatter([newPose2[0],newPose3[0]], [newPose2[1],newPose3[1]], color='b')
+				xP = []
+				yP = []
+				for p in orientedPoints3:
+					xP.append(p[0])
+					yP.append(p[1])
+				pylab.plot(xP,yP, color='k')
 
-			medial2 = poseData.medialAxes[nodeID-1]
-			poseOrigin2 = Pose(newPose2)
-			xP = []
-			yP = []
-			for p in medial2:
-				p1 = poseOrigin2.convertLocalToGlobal(p)
-				xP.append(p1[0])
-				yP.append(p1[1])
+				pylab.scatter([oldPose0[0],oldPose1[0]], [oldPose0[1],oldPose1[1]], color='r')
+				pylab.scatter([newPose2[0],newPose3[0]], [newPose2[1],newPose3[1]], color='b')
 
-			pylab.plot(xP,yP, color = 'b', alpha = 0.2, zorder=9)	
+				medial2 = poseData.medialAxes[nodeID-1]
+				poseOrigin2 = Pose(newPose2)
+				xP = []
+				yP = []
+				for p in medial2:
+					p1 = poseOrigin2.convertLocalToGlobal(p)
+					xP.append(p1[0])
+					yP.append(p1[1])
 
-			medial3 = poseData.medialAxes[nodeID]
-			poseOrigin3 = Pose(newPose3)
-			xP = []
-			yP = []
-			for p in medial3:
-				p1 = poseOrigin3.convertLocalToGlobal(p)
-				xP.append(p1[0])
-				yP.append(p1[1])
+				pylab.plot(xP,yP, color = 'b', alpha = 0.2, zorder=9)	
 
-			pylab.plot(xP,yP, color = 'b', alpha = 0.2, zorder=9)	
+				medial3 = poseData.medialAxes[nodeID]
+				poseOrigin3 = Pose(newPose3)
+				xP = []
+				yP = []
+				for p in medial3:
+					p1 = poseOrigin3.convertLocalToGlobal(p)
+					xP.append(p1[0])
+					yP.append(p1[1])
 
-			pylab.xlim(-5,10)
-			pylab.ylim(-8,8)
-			pylab.title("%1.3f %1.3f" % (travelDist2, travelDist3))
-			pylab.savefig("moveEstimate_%04u_%04u.png" % (nodeID, mapHyp.hypothesisID))
-			
+				pylab.plot(xP,yP, color = 'b', alpha = 0.2, zorder=9)	
 
-			#mapHyp.drawPoseParticles()
-			
+				pylab.xlim(-5,10)
+				pylab.ylim(-8,8)
+				pylab.title("%1.3f %1.3f" % (travelDist2, travelDist3))
+				pylab.savefig("moveEstimate_%04u_%04u.png" % (nodeID, mapHyp.hypothesisID))
+				
+
+				#mapHyp.drawPoseParticles()
+				
 
 @logFunction
 def getInPlaceGuess(mapHyp, nodeID1, nodeID2, direction):
@@ -1054,7 +1056,10 @@ def getInPlaceGuess(mapHyp, nodeID1, nodeID2, direction):
 	if len(supportLine) == 0:
 		resultSum1 = 1e100
 	else:
-		resultSum1 = checkSupport(mapHyp, nodeID1, nodeID2, offset1, supportLine)
+		#def checkSupport(estPose1, medial2, nodeID1, nodeID2, offset, supportLine):
+		medial2 = poseData.medialAxes[nodeID2]
+		estPose1 = mapHyp.nodePoses[nodeID1]		
+		resultSum1 = checkSupport(estPose1, medial2, nodeID1, nodeID2, offset1, supportLine)
 	
 
 	if poseData.numLeafs[nodeID1] > 2 or poseData.numLeafs[nodeID2] > 2:
@@ -1068,7 +1073,10 @@ def getInPlaceGuess(mapHyp, nodeID1, nodeID2, direction):
 	if len(supportLine) == 0:
 		resultSum3 = 1e100
 	else:
-		resultSum3 = checkSupport(mapHyp, nodeID1, nodeID2, offset3, supportLine)
+		#def checkSupport(estPose1, medial2, nodeID1, nodeID2, offset, supportLine):
+		medial2 = poseData.medialAxes[nodeID2]
+		estPose1 = mapHyp.nodePoses[nodeID1]		
+		resultSum3 = checkSupport(estPose1, medial2, nodeID1, nodeID2, offset3, supportLine)
 
 	print "INPLACE sums:", resultSum1, resultSum3
 
@@ -1321,14 +1329,12 @@ def computeMedialError(mapHyp, i, j, offset, minMatchDist = 2.0, tail1=0, tail2=
 
 
 @logFunction
-def checkSupport(mapHyp, nodeID1, nodeID2, offset, supportLine):
+def checkSupport(estPose1, medial2, nodeID1, nodeID2, offset, supportLine):
 
-	poseData = mapHyp.poseData
+	#poseData = mapHyp.poseData
 
-	hull2 = poseData.aHulls[nodeID2]
-	medial2 = poseData.medialAxes[nodeID2]
-	
-	estPose1 = mapHyp.nodePoses[nodeID1]		
+	#medial2 = poseData.medialAxes[nodeID2]
+	#estPose1 = mapHyp.nodePoses[nodeID1]		
 	
 	minMatchDist2 = 2.0
 		
@@ -1560,7 +1566,7 @@ def makeMultiJunctionMedialOverlapConstraint(mapHyp, nodeID1, nodeID2, isMove = 
 				gndGPAC2Pose = mapHyp.gndPoses[nodeID2]
 				gndOffset = currProfile.convertGlobalPoseToLocal(gndGPAC2Pose)
 				
-				result, hist = gen_icp.overlapICP(estPose1, gndOffset, [u1, u2, angGuess], hull1, hull2, medial1, orientedMedial2, [0.0,0.0], [0.0,0.0], inPlace = inPlace, plotIter = False, n1 = (nodeID1,k), n2 = (nodeID2,l), uRange = uRange)
+				result, hist = gen_icp.overlapICP(estPose1, gndOffset, [u1, u2, angGuess], medial1, orientedMedial2, [0.0,0.0], [0.0,0.0], inPlace = inPlace, plotIter = False, n1 = (nodeID1,k), n2 = (nodeID2,l), uRange = uRange)
 
 				transform = matrix([[result[0]], [result[1]], [result[2]]])
 				
@@ -1715,7 +1721,7 @@ def makeMultiJunctionMedialOverlapConstraint(mapHyp, nodeID1, nodeID2, isMove = 
 				gndOffset = currProfile.convertGlobalPoseToLocal(gndGPAC2Pose)
 
 				
-				result, hist = gen_icp.overlapICP(estPose1, gndOffset, [u1, u2, angGuess], hull1, hull2, medial1, orientedMedial2, [0.0,0.0], [0.0,0.0], inPlace = inPlace, plotIter = False, n1 = (nodeID1,k), n2 = (nodeID2,l), uRange = uRange)
+				result, hist = gen_icp.overlapICP(estPose1, gndOffset, [u1, u2, angGuess], medial1, orientedMedial2, [0.0,0.0], [0.0,0.0], inPlace = inPlace, plotIter = False, n1 = (nodeID1,k), n2 = (nodeID2,l), uRange = uRange)
 
 				transform = matrix([[result[0]], [result[1]], [result[2]]])
 				
@@ -1893,7 +1899,7 @@ def makeMedialOverlapConstraint(mapHyp, nodeID1, nodeID2, isMove = True, isForwa
 
 
 
-	result, hist = gen_icp.overlapICP_GPU2(estPose1, gndOffset, [u1, u2, angGuess], hull1, hull2, medial1, medial2, [0.0,0.0], [0.0,0.0], inPlace = inPlace, plotIter = False, n1 = nodeID1, n2 = nodeID2, uRange = uRange)
+	result, hist = gen_icp.overlapICP_GPU2(estPose1, gndOffset, [u1, u2, angGuess], medial1, medial2, [0.0,0.0], [0.0,0.0], inPlace = inPlace, plotIter = False, n1 = nodeID1, n2 = nodeID2, uRange = uRange)
 
 	transform = matrix([[result[0]], [result[1]], [result[2]]])
 	

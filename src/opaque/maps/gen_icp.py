@@ -889,7 +889,7 @@ def computeEnclosingCircle(a_data):
 
 	
 @logFunction
-def overlapICP(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1, medialPoints2, rootPose1, rootPose2, inPlace = False, plotIter = False, n1 = 0, n2 = 0, uRange = 1.5):
+def overlapICP(estPose1, gndOffset, initGuess, medialPoints1, medialPoints2, rootPose1, rootPose2, inPlace = False, plotIter = False, n1 = 0, n2 = 0, uRange = 1.5):
 
 	global numIterations
 
@@ -938,17 +938,6 @@ def overlapICP(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1, medi
 	offset = computeOffset(point1, point2, ang1, ang2 + currAng)
 
 
-	" transform the past poses "
-	a_data_raw = hull2
-	a_data = []
-	for p in a_data_raw:
-		result = dispOffset(p, offset)		  
-		a_data.append(result)	 
-
-	polyB = []		  
-	for p in hull1:
-		polyB.append([p[0],p[1]])	 
-	
 	costThresh = 0.004
 	minMatchDist = 2.0
 	lastCost = 1e100
@@ -1116,41 +1105,6 @@ def overlapICP(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1, medi
 			pylab.scatter(xP,yP,color='r')
 
 
-			xP = []
-			yP = []
-			for b in polyB:
-				p1 = poseOrigin.convertLocalToGlobal(b)
-
-				xP.append(p1[0])	
-				yP.append(p1[1])
-			
-			pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
-
-
-			xP = []
-			yP = []
-			for b in a_data_raw:
-				p = [b[0],b[1]]
-				p = dispOffset(p,offset)
-				
-				p1 = poseOrigin.convertLocalToGlobal(p)
-				xP.append(p1[0])	
-				yP.append(p1[1])
-
-			pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
-
-			xP = []
-			yP = []
-			for b in a_data_raw:
-				p = [b[0],b[1]]
-				p = dispOffset(p,gndOffset)
-				
-				p1 = poseOrigin.convertLocalToGlobal(p)
-				xP.append(p1[0])	
-				yP.append(p1[1])
-
-			pylab.plot(xP,yP,linewidth=1, color=(1.0,0.5,0.5))
-
 			plotEnv()		 
 			
 			lowCount, midCount, highCount = overlapHistogram([currU,currAng], match_pairs, medialSpline1, medialSpline2, u1)			
@@ -1285,41 +1239,6 @@ def overlapICP(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1, medi
 			yP = [gpac1[1],gpac2[1]]
 			pylab.scatter(xP,yP,color='r')
 
-			xP = []
-			yP = []
-			for b in polyB:
-				p1 = poseOrigin.convertLocalToGlobal(b)
-
-				xP.append(p1[0])	
-				yP.append(p1[1])
-			
-			pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
-
-			xP = []
-			yP = []
-			for b in a_data_raw:
-				p = [b[0],b[1]]
-				p = dispOffset(p,offset)
-				
-				p1 = poseOrigin.convertLocalToGlobal(p)
-				xP.append(p1[0])	
-				yP.append(p1[1])
-			
-			pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
-
-			xP = []
-			yP = []
-			for b in a_data_raw:
-				p = [b[0],b[1]]
-				p = dispOffset(p,gndOffset)
-				
-				p1 = poseOrigin.convertLocalToGlobal(p)
-				xP.append(p1[0])	
-				yP.append(p1[1])
-
-			pylab.plot(xP,yP,linewidth=1, color=(1.0,0.5,0.5))
-
-			
 			plotEnv()		 
 			
 			lowCount, midCount, highCount = overlapHistogram([currU,currAng], match_pairs, medialSpline1, medialSpline2, u1)			
@@ -1343,7 +1262,7 @@ def overlapICP(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1, medi
 
 
 @logFunction
-def overlapICP_GPU2(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1, medialPoints2, rootPose1, rootPose2, inPlace = False, plotIter = False, n1 = 0, n2 = 0, uRange = 1.5):
+def overlapICP_GPU2(estPose1, gndOffset, initGuess, medialPoints1, medialPoints2, rootPose1, rootPose2, inPlace = False, plotIter = False, n1 = 0, n2 = 0, uRange = 1.5):
 
 	global numIterations
 	global globalPlotCount
@@ -1389,18 +1308,6 @@ def overlapICP_GPU2(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1,
 
 	offset = computeOffset(point1, point2, ang1, ang2 + currAng)
 
-
-	" transform the past poses "
-	a_data_raw = hull2
-	a_data = []
-	for p in a_data_raw:
-		result = dispOffset(p, offset)		  
-		a_data.append(result)	 
-
-	polyB = []		  
-	for p in hull1:
-		polyB.append([p[0],p[1]])	 
-	
 	costThresh = 0.004
 	minMatchDist = 2.0
 	lastCost = 1e100
@@ -1629,42 +1536,6 @@ def overlapICP_GPU2(estPose1, gndOffset, initGuess, hull1, hull2, medialPoints1,
 		xP = [gpac1[0],gpac2[0]]
 		yP = [gpac1[1],gpac2[1]]
 		axes2.scatter(xP,yP,color='r')
-
-
-		xP = []
-		yP = []
-		for b in polyB:
-			p1 = poseOrigin.convertLocalToGlobal(b)
-
-			xP.append(p1[0])	
-			yP.append(p1[1])
-		
-		axes2.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
-
-
-		xP = []
-		yP = []
-		for b in a_data_raw:
-			p = [b[0],b[1]]
-			p = dispOffset(p,offset)
-			
-			p1 = poseOrigin.convertLocalToGlobal(p)
-			xP.append(p1[0])	
-			yP.append(p1[1])
-
-		axes2.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
-
-		xP = []
-		yP = []
-		for b in a_data_raw:
-			p = [b[0],b[1]]
-			p = dispOffset(p,gndOffset)
-			
-			p1 = poseOrigin.convertLocalToGlobal(p)
-			xP.append(p1[0])	
-			yP.append(p1[1])
-
-		axes2.plot(xP,yP,linewidth=1, color=(1.0,0.5,0.5))
 
 		plotEnv(axes2)		  
 		

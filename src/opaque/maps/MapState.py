@@ -20,7 +20,7 @@ from operator import itemgetter
 import hashlib
 from Splices import batchGlobalMultiFit, getMultiDeparturePoint, orientPath, getTipAngles
 from MapProcess import selectLocalCommonOrigin
-from ParticleFilter import multiParticleFitSplice, batchParticle, Particle
+from ParticleFilter import multiParticleFitSplice, batchLocalizeParticle, Particle
 import time
 import traceback
 
@@ -2692,7 +2692,7 @@ class MapState:
 
 		time1 = time.time()
 
-		results = batchParticle(localizeJobs)
+		results = batchLocalizeParticle(localizeJobs)
 
 		time2 = time.time()
 
@@ -2737,7 +2737,7 @@ class MapState:
 			pathID = allSplicedPaths[spliceIndex][3]
 
 			initPose0 = part[48]
-			initPose0 = part[49]
+			initPose1 = part[49]
 
 			overlapSum = part[50]
 
@@ -2780,6 +2780,9 @@ class MapState:
 
 			" contiguity between current and previous pose "
 			if overlapSum > 1e10:
+				isReject = True
+
+			if fabs(diffAngle(initPose0[2],newPose0[2])) > 2.0*pi/3.0:
 				isReject = True
 				
 			" probability is the contigFrac squared " 
