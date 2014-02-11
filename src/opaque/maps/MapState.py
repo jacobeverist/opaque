@@ -20,7 +20,7 @@ from operator import itemgetter
 import hashlib
 from Splices import batchGlobalMultiFit, getMultiDeparturePoint, orientPath, getTipAngles
 from MapProcess import selectLocalCommonOrigin
-from ParticleFilter import multiParticleFitSplice, batchLocalizeParticle, Particle
+from ParticleFilter import multiParticleFitSplice, batchLocalizeParticle, batchDisplaceParticles, Particle
 import time
 import traceback
 
@@ -2337,6 +2337,36 @@ class MapState:
 		#self.junctions = {}
 		#self.terminals = {}
 		#self.allSplices = {}
+
+	@logFunction
+	def batchDisplaceParticles(self, nodeID0, nodeID1):
+
+		batchJobs = []
+
+		particleDist2 = self.poseParticles["snapshots2"][0]
+		for particleIndex in range(len(particleDist2)):
+
+			part = particleDist2[particleIndex]
+
+			hypPose0 = part.pose0
+			hypPose1 = part.pose1
+			prevPose0 = part.prevPose0
+			prevPose1 = part.prevPose1
+
+			staticSplicedPaths0, spliceTerms0, staticSplicePathIDs0 = self.getSplicesByNearJunction(hypPose0)
+			staticSplicedPaths1, spliceTerms1, staticSplicePathIDs1 = self.getSplicesByNearJunction(hypPose1)
+
+			batchJobs.append([self.poseData, particleIndex, nodeID1, prevPose0, prevPose1, hypPose0, hypPose1, self.paths[0], staticSplicedPaths0, staticSplicedPaths1])
+
+		results = batchDisplaceParticles(batchJobs)
+
+		for result in results:
+			particleIndex = result[0]
+			part = particleDist2[particleIndex]
+			part.pose0 = result[1]
+			part.pose1 = result[2]
+
+			part.displacePose(result[1], result[2])
 
 	@logFunction
 	def displacePoseParticles(self, nodeID0, nodeID1, travelDist0, travelDist1):

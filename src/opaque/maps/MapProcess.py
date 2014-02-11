@@ -693,8 +693,15 @@ def movePath(mapHyp, nodeID, direction, distEst = 1.0):
 		if nodeID % 2 == 1:
 			" the guess process gives a meaningful guess for these node's poses "
 			" before this, it is meaningless "
-			getStepGuess(mapHyp, nodeID-1, direction)
-			getInPlaceGuess(mapHyp, nodeID-1, nodeID, direction)
+			#getStepGuess(mapHyp, nodeID-1, direction)
+			estPose0 = mapHyp.nodePoses[nodeID-3]		
+			estPose2 = mapHyp.nodePoses[nodeID-1]
+			mapHyp.nodePoses[nodeID-1] = getStepGuess(poseData, nodeID-3, nodeID-1, estPose0, estPose2, direction)
+
+			estPose3 = mapHyp.nodePoses[nodeID]
+			#getInPlaceGuess(mapHyp, nodeID-1, nodeID, direction)
+			supportLine = mapHyp.paths[0]
+			mapHyp.nodePoses[nodeID] = getInPlaceGuess(poseData, nodeID-1, nodeID, estPose2, estPose3, supportLine, direction)
 
 
 		else:
@@ -985,9 +992,7 @@ def movePath(mapHyp, nodeID, direction, distEst = 1.0):
 			orientedPoints2 = orientedPathSpline2.getUniformSamples()
 			orientedPoints3 = orientedPathSpline3.getUniformSamples()
 
-			#mapHyp.displacePoseParticles(nodeID-1, nodeID, newPose2, newPose3, travelDist2, travelDist3, currSplice2, currSplice3)
-			#mapHyp.displacePoseParticles(nodeID-1, nodeID, newPose2, newPose3, travelDist2, travelDist3)
-			mapHyp.displacePoseParticles(nodeID-1, nodeID, travelDist2, travelDist3)
+			#mapHyp.displacePoseParticles(nodeID-1, nodeID, travelDist2, travelDist3)
 
 			if False:
 
@@ -1042,14 +1047,24 @@ def movePath(mapHyp, nodeID, direction, distEst = 1.0):
 				
 
 @logFunction
-def getInPlaceGuess(mapHyp, nodeID1, nodeID2, direction):
+def getInPlaceGuess(poseData, nodeID1, nodeID2, estPose1, estPose2, supportLine, direction):
 	
-	poseData = mapHyp.poseData
+	#poseData = mapHyp.poseData
 
 	" PERFORM INPLACE CONSTRAINT BETWEEN PAIR "
-	supportLine = mapHyp.paths[0]
+	#supportLine = mapHyp.paths[0]
 	
-	transform = makeInPlaceConstraint(mapHyp, nodeID1, nodeID2)
+	#posture1 = poseData.correctedPostures[nodeID1]
+	#posture2 = poseData.correctedPostures[nodeID2]
+	#medial1 = poseData.medialLongPaths[nodeID1][0]
+	#medial2 = poseData.medialLongPaths[nodeID2][0]
+
+	#estPose1 = mapHyp.nodePoses[nodeID1]		
+	#estPose2 = mapHyp.nodePoses[nodeID2]
+
+
+	transform = makeInPlaceConstraint(poseData, nodeID1, nodeID2)
+
 	transform1 = transform
 	offset1 = [transform[0,0], transform[1,0], transform[2,0]]			
 	
@@ -1058,14 +1073,14 @@ def getInPlaceGuess(mapHyp, nodeID1, nodeID2, direction):
 	else:
 		#def checkSupport(estPose1, medial2, nodeID1, nodeID2, offset, supportLine):
 		medial2 = poseData.medialAxes[nodeID2]
-		estPose1 = mapHyp.nodePoses[nodeID1]		
+		#estPose1 = mapHyp.nodePoses[nodeID1]		
 		resultSum1 = checkSupport(estPose1, medial2, nodeID1, nodeID2, offset1, supportLine)
 	
 
 	if poseData.numLeafs[nodeID1] > 2 or poseData.numLeafs[nodeID2] > 2:
-		transform, overHist = makeMultiJunctionMedialOverlapConstraint(mapHyp, nodeID1, nodeID2, isMove = False, inPlace = False, isForward = direction )
+		transform, overHist = makeMultiJunctionMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose1, estPose2, isMove = False, inPlace = False, isForward = direction )
 	else:
-		transform, overHist = makeMedialOverlapConstraint(mapHyp, nodeID1, nodeID2, isMove = False, inPlace = True, isForward = direction)
+		transform, overHist = makeMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose1, estPose2, isMove = False, inPlace = True, isForward = direction)
 	
 	
 	transform3 = transform
@@ -1075,35 +1090,40 @@ def getInPlaceGuess(mapHyp, nodeID1, nodeID2, direction):
 	else:
 		#def checkSupport(estPose1, medial2, nodeID1, nodeID2, offset, supportLine):
 		medial2 = poseData.medialAxes[nodeID2]
-		estPose1 = mapHyp.nodePoses[nodeID1]		
+		#estPose1 = mapHyp.nodePoses[nodeID1]		
 		resultSum3 = checkSupport(estPose1, medial2, nodeID1, nodeID2, offset3, supportLine)
 
 	print "INPLACE sums:", resultSum1, resultSum3
 
-	poseOrigin = Pose(mapHyp.nodePoses[nodeID1])
+	#poseOrigin = Pose(mapHyp.nodePoses[nodeID1])
+	poseOrigin = Pose(estPose1)
 
 	if len(supportLine) > 0 and resultSum1 < resultSum3 and resultSum3 - resultSum1 > 100.0:
-		estPose2 = poseOrigin.convertLocalOffsetToGlobal(offset1)
-		mapHyp.nodePoses[nodeID2] = estPose2
+		newEstPose2 = poseOrigin.convertLocalOffsetToGlobal(offset1)
+		#mapHyp.nodePoses[nodeID2] = estPose2
 	else:
-		estPose2 = poseOrigin.convertLocalOffsetToGlobal(offset3)
-		mapHyp.nodePoses[nodeID2] = estPose2
+		newEstPose2 = poseOrigin.convertLocalOffsetToGlobal(offset3)
+		#mapHyp.nodePoses[nodeID2] = estPose2
 
+	return newEstPose2
 
 @logFunction
-def getStepGuess(mapHyp, nodeID, direction):
+def getStepGuess(poseData, nodeID0, nodeID2, estPose0, estPose2, direction, distEst = 0.5):
 	
-	poseData = mapHyp.poseData
+	#poseData = mapHyp.poseData
 
 	" ESTIMATE TRAVEL WITH MEDIAL OVERLAP CONSTRAINT OF EVEN NUMBER POSE "
-	if nodeID >= 2:
+	if nodeID2 >= 2:
+
+		#estPose0 = mapHyp.nodePoses[nodeID0]		
+		#estPose2 = mapHyp.nodePoses[nodeID2]
 		
-		if poseData.numLeafs[nodeID-2] > 2 or poseData.numLeafs[nodeID] > 2:
-			transform, hist1 = makeMultiJunctionMedialOverlapConstraint(mapHyp, nodeID-2, nodeID, isMove = True, isForward = direction )
+		if poseData.numLeafs[nodeID0] > 2 or poseData.numLeafs[nodeID2] > 2:
+			transform, hist1 = makeMultiJunctionMedialOverlapConstraint(poseData, nodeID0, nodeID2, estPose0, estPose2, isMove = True, isForward = direction )
 		else:			
-			transform1, hist1 = makeMedialOverlapConstraint(mapHyp, nodeID-2, nodeID, isMove = True, isForward = direction )
+			transform1, hist1 = makeMedialOverlapConstraint(poseData, nodeID0, nodeID2, estPose0, estPose2, isMove = True, isForward = direction, distEst = distEst )
 			if hist1[2] > 0 or hist1[1] > 10 and hist1[2] == 0:
-				transform2, hist2 = makeMedialOverlapConstraint(mapHyp, nodeID-2, nodeID, isMove = True, isForward = not direction )
+				transform2, hist2 = makeMedialOverlapConstraint(poseData, nodeID0, nodeID2, estPose0, estPose2, isMove = True, isForward = not direction , distEst = distEst)
 
 				if hist1[2] < hist2[2]:
 					transform = transform1
@@ -1116,15 +1136,23 @@ def getStepGuess(mapHyp, nodeID, direction):
 				transform = transform1
 
 		offset = [transform[0,0], transform[1,0], transform[2,0]]			
-		poseOrigin = Pose(mapHyp.nodePoses[nodeID-2])
-		estPose2 = poseOrigin.convertLocalOffsetToGlobal(offset)
-		mapHyp.nodePoses[nodeID] = estPose2
+		poseOrigin = Pose(estPose0)
+		newEstPose2 = poseOrigin.convertLocalOffsetToGlobal(offset)
+		return newEstPose2
+
+	#mapHyp.nodePoses[nodeID2] = estPose2
+	
+	return estPose2
 
 
 @logFunction
-def makeInPlaceConstraint(mapHyp, nodeID1, nodeID2):
+def makeInPlaceConstraint(poseData, nodeID1, nodeID2):
 
-	poseData = mapHyp.poseData
+	#poseData = mapHyp.poseData
+	originPosture = poseData.correctedPostures[nodeID1]
+	newPosture = poseData.correctedPostures[nodeID2]
+	medial1 = poseData.medialLongPaths[nodeID1][0]
+	medial2 = poseData.medialLongPaths[nodeID2][0]
 
 	" compute the new posture "
 	" 1. compute the GPAC pose "
@@ -1134,7 +1162,10 @@ def makeInPlaceConstraint(mapHyp, nodeID1, nodeID2):
 	" node1 is the front poke node "
 	" nodes is the back poke node "
 
-	originPosture = poseData.correctedPostures[nodeID1]
+
+	#originPosture = posture1
+	#newPosture = posture2
+
 	originCurve = StableCurve(originPosture)
 	originForePose, originBackPose = originCurve.getPoses()
 	
@@ -1148,7 +1179,6 @@ def makeInPlaceConstraint(mapHyp, nodeID1, nodeID2):
 	for i in range(len(originPosture)):
 		originBackPosture.append(originBackProfile.convertGlobalPoseToLocal(originPosture[i]))
 
-	newPosture = poseData.correctedPostures[nodeID2]
 
 	localPosture = newPosture
 	localCurve = StableCurve(localPosture)
@@ -1193,8 +1223,8 @@ def makeInPlaceConstraint(mapHyp, nodeID1, nodeID2):
 	offset2 = originForeProfile.convertLocalOffsetToGlobal(localRootOffset3_2)
 	
 	" except the case where one node has not updated "
-	cost1, matchCount1 = computeMedialError(mapHyp, nodeID1, nodeID2, offset1)
-	cost2, matchCount2 = computeMedialError(mapHyp, nodeID1, nodeID2, offset2)
+	cost1, matchCount1 = computeMedialError(nodeID1, nodeID2, offset1, medial1, medial2)
+	cost2, matchCount2 = computeMedialError(nodeID1, nodeID2, offset2, medial1, medial2)
 				
 	if cost1 < cost2:
 		correctedGPACPose = localBackProfile.convertLocalOffsetToGlobal([0.0,0.0,angle])
@@ -1218,12 +1248,11 @@ def makeInPlaceConstraint(mapHyp, nodeID1, nodeID2):
 
 
 @logFunction
-def computeMedialError(mapHyp, i, j, offset, minMatchDist = 2.0, tail1=0, tail2=0):
+def computeMedialError(nodeID1, nodeID2, offset, medial1, medial2, minMatchDist = 2.0):
 
-	poseData = mapHyp.poseData
-
-	medial1 = poseData.medialLongPaths[i][tail1]
-	medial2 = poseData.medialLongPaths[j][tail2]
+	#poseData = mapHyp.poseData
+	#medial1 = poseData.medialLongPaths[nodeID1][tail1]
+	#medial2 = poseData.medialLongPaths[nodeID2][tail2]
 	
 	medialSpline1 = SplineFit(medial1, smooth=0.1)
 	medialSpline2 = SplineFit(medial2, smooth=0.1)
@@ -1418,9 +1447,9 @@ def checkSupport(estPose1, medial2, nodeID1, nodeID2, offset, supportLine):
 
 
 @logFunction
-def makeMultiJunctionMedialOverlapConstraint(mapHyp, nodeID1, nodeID2, isMove = True, isForward = True, inPlace = False, uRange = 1.5):
+def makeMultiJunctionMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose1, estPose2, isMove = True, isForward = True, inPlace = False, uRange = 1.5):
 
-	poseData = mapHyp.poseData
+	#poseData = mapHyp.poseData
 
 	def computeOffset(point1, point2, ang1, ang2):
 	
@@ -1447,8 +1476,8 @@ def makeMultiJunctionMedialOverlapConstraint(mapHyp, nodeID1, nodeID2, isMove = 
 	hull1 = poseData.aHulls[nodeID1]
 	hull2 = poseData.aHulls[nodeID2]
 
-	estPose1 = mapHyp.nodePoses[nodeID1]		
-	estPose2 = mapHyp.nodePoses[nodeID2]
+	#estPose1 = mapHyp.nodePoses[nodeID1]		
+	#estPose2 = mapHyp.nodePoses[nodeID2]
 
 	originProfile = Pose(estPose1)
 	diffOffset = originProfile.convertGlobalPoseToLocal(estPose2)
@@ -1560,13 +1589,7 @@ def makeMultiJunctionMedialOverlapConstraint(mapHyp, nodeID1, nodeID2, isMove = 
 				u1 = originU1
 				angGuess = 0.0
 			
-				" create the ground constraints "
-				gndGPAC1Pose = mapHyp.gndPoses[nodeID1]
-				currProfile = Pose(gndGPAC1Pose)
-				gndGPAC2Pose = mapHyp.gndPoses[nodeID2]
-				gndOffset = currProfile.convertGlobalPoseToLocal(gndGPAC2Pose)
-				
-				result, hist = gen_icp.overlapICP(estPose1, gndOffset, [u1, u2, angGuess], medial1, orientedMedial2, [0.0,0.0], [0.0,0.0], inPlace = inPlace, plotIter = False, n1 = (nodeID1,k), n2 = (nodeID2,l), uRange = uRange)
+				result, hist = gen_icp.overlapICP(estPose1, [u1, u2, angGuess], medial1, orientedMedial2, [0.0,0.0], [0.0,0.0], inPlace = inPlace, plotIter = False, n1 = (nodeID1,k), n2 = (nodeID2,l), uRange = uRange)
 
 				transform = matrix([[result[0]], [result[1]], [result[2]]])
 				
@@ -1613,7 +1636,11 @@ def makeMultiJunctionMedialOverlapConstraint(mapHyp, nodeID1, nodeID2, isMove = 
 		
 		
 				#medialError, matchCount = computeMedialError(nodeID1, nodeID2, offset, minMatchDist = 0.5, tail1=k, tail2=l)
-				medialError, matchCount = computeMedialError(mapHyp, nodeID1, nodeID2, offset, minMatchDist = 0.5, tail1=k, tail2=l)
+
+				#poseData = mapHyp.poseData
+				medial1 = poseData.medialLongPaths[nodeID1][k]
+				medial2 = poseData.medialLongPaths[nodeID2][l]
+				medialError, matchCount = computeMedialError(nodeID1, nodeID2, offset, medial1, medial2, minMatchDist = 0.5)
 
 		
 				" None result used to be covariance matrix "
@@ -1715,13 +1742,7 @@ def makeMultiJunctionMedialOverlapConstraint(mapHyp, nodeID1, nodeID2, isMove = 
 			
 				" create the ground constraints "
 
-				gndGPAC1Pose = mapHyp.gndPoses[nodeID1]
-				currProfile = Pose(gndGPAC1Pose)
-				gndGPAC2Pose = mapHyp.gndPoses[nodeID2]
-				gndOffset = currProfile.convertGlobalPoseToLocal(gndGPAC2Pose)
-
-				
-				result, hist = gen_icp.overlapICP(estPose1, gndOffset, [u1, u2, angGuess], medial1, orientedMedial2, [0.0,0.0], [0.0,0.0], inPlace = inPlace, plotIter = False, n1 = (nodeID1,k), n2 = (nodeID2,l), uRange = uRange)
+				result, hist = gen_icp.overlapICP(estPose1, [u1, u2, angGuess], medial1, orientedMedial2, [0.0,0.0], [0.0,0.0], inPlace = inPlace, plotIter = False, n1 = (nodeID1,k), n2 = (nodeID2,l), uRange = uRange)
 
 				transform = matrix([[result[0]], [result[1]], [result[2]]])
 				
@@ -1766,7 +1787,10 @@ def makeMultiJunctionMedialOverlapConstraint(mapHyp, nodeID1, nodeID2, isMove = 
 					overlapSum /= matchCount
 		
 		
-				medialError, matchCount = computeMedialError(mapHyp, nodeID1, nodeID2, offset, minMatchDist = 0.5, tail1=k, tail2=l)
+				#poseData = mapHyp.poseData
+				medial1 = poseData.medialLongPaths[nodeID1][k]
+				medial2 = poseData.medialLongPaths[nodeID2][l]
+				medialError, matchCount = computeMedialError(nodeID1, nodeID2, offset, medial1, medial2, minMatchDist = 0.5)
 
 		
 				" None result used to be covariance matrix "
@@ -1792,9 +1816,10 @@ def makeMultiJunctionMedialOverlapConstraint(mapHyp, nodeID1, nodeID2, isMove = 
 
 
 @logFunction
-def makeMedialOverlapConstraint(mapHyp, nodeID1, nodeID2, isMove = True, isForward = True, inPlace = False, uRange = 0.1 ):
+def makeMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose1, estPose2, isMove = True, isForward = True, inPlace = False, uRange = 0.1, distEst = 0.5 ):
+#def makeMedialOverlapConstraint(mapHyp, nodeID1, nodeID2, isMove = True, isForward = True, inPlace = False, uRange = 0.1 ):
 
-	poseData = mapHyp.poseData
+	#poseData = mapHyp.poseData
 
 	#print "recomputing hulls and medial axis"
 	" compute the medial axis for each pose "
@@ -1802,13 +1827,11 @@ def makeMedialOverlapConstraint(mapHyp, nodeID1, nodeID2, isMove = True, isForwa
 	posture1 = poseData.correctedPostures[nodeID1]
 	posture2 = poseData.correctedPostures[nodeID2]
 
-	hull1 = poseData.aHulls[nodeID1]
 	medial1 = poseData.medialAxes[nodeID1]
-	hull2 = poseData.aHulls[nodeID2]
 	medial2 = poseData.medialAxes[nodeID2]
 
-	estPose1 = mapHyp.nodePoses[nodeID1]
-	estPose2 = mapHyp.nodePoses[nodeID2]
+	#estPose1 = mapHyp.nodePoses[nodeID1]
+	#estPose2 = mapHyp.nodePoses[nodeID2]
 	
 	medialSpline1 = SplineFit(medial1, smooth=0.1)
 	medialSpline2 = SplineFit(medial2, smooth=0.1)
@@ -1816,7 +1839,7 @@ def makeMedialOverlapConstraint(mapHyp, nodeID1, nodeID2, isMove = True, isForwa
 	originU1 = medialSpline1.findU([0.0,0.0])	
 	originU2 = medialSpline2.findU([0.0,0.0])	
 
-	distEst = 0.5
+	#distEst = 0.5
 
 	if inPlace:
 		" FULL LENGTH MEDIAL AXIS "
@@ -1890,16 +1913,7 @@ def makeMedialOverlapConstraint(mapHyp, nodeID1, nodeID2, isMove = True, isForwa
 	u1 = originU1
 	angGuess = 0.0
 
-	" create the ground constraints "
-	gndGPAC1Pose = mapHyp.gndPoses[nodeID1]
-	currProfile = Pose(gndGPAC1Pose)
-
-	gndGPAC2Pose = mapHyp.gndPoses[nodeID2]
-	gndOffset = currProfile.convertGlobalPoseToLocal(gndGPAC2Pose)
-
-
-
-	result, hist = gen_icp.overlapICP_GPU2(estPose1, gndOffset, [u1, u2, angGuess], medial1, medial2, [0.0,0.0], [0.0,0.0], inPlace = inPlace, plotIter = False, n1 = nodeID1, n2 = nodeID2, uRange = uRange)
+	result, hist = gen_icp.overlapICP_GPU2(estPose1, [u1, u2, angGuess], medial1, medial2, [0.0,0.0], [0.0,0.0], inPlace = inPlace, plotIter = False, n1 = nodeID1, n2 = nodeID2, uRange = uRange)
 
 	transform = matrix([[result[0]], [result[1]], [result[2]]])
 	

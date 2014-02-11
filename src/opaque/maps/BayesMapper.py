@@ -243,6 +243,7 @@ class BayesMapper:
 
 				hypSet = batchMovePath(hypSet, nodeID, direction)
 				for pID, currHyp in hypSet.iteritems():
+					currHyp.batchDisplaceParticles(nodeID-1, nodeID)
 					currHyp.drawPoseParticles()
 
 				"""

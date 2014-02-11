@@ -889,7 +889,7 @@ def computeEnclosingCircle(a_data):
 
 	
 @logFunction
-def overlapICP(estPose1, gndOffset, initGuess, medialPoints1, medialPoints2, rootPose1, rootPose2, inPlace = False, plotIter = False, n1 = 0, n2 = 0, uRange = 1.5):
+def overlapICP(estPose1, initGuess, medialPoints1, medialPoints2, rootPose1, rootPose2, inPlace = False, plotIter = False, n1 = 0, n2 = 0, uRange = 1.5):
 
 	global numIterations
 
@@ -1075,18 +1075,6 @@ def overlapICP(estPose1, gndOffset, initGuess, medialPoints1, medialPoints2, roo
 
 			pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
 
-			xP = []
-			yP = []
-			for b in points2:
-				p = [b[0],b[1]]
-				p = dispOffset(p,gndOffset)
-				
-				p1 = poseOrigin.convertLocalToGlobal(p)
-				xP.append(p1[0])	
-				yP.append(p1[1])
-
-			pylab.plot(xP,yP,linewidth=1, color=(1.0,0.5,0.5))
-
 			point2_trans = dispOffset(point2, offset)
 			p1 = poseOrigin.convertLocalToGlobal(point1)
 			p2 = poseOrigin.convertLocalToGlobal(point2_trans)
@@ -1210,17 +1198,6 @@ def overlapICP(estPose1, gndOffset, initGuess, medialPoints1, medialPoints2, roo
 			
 			pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
 
-			xP = []
-			yP = []
-			for b in points2:
-				p = [b[0],b[1]]
-				p = dispOffset(p,gndOffset)
-				
-				p1 = poseOrigin.convertLocalToGlobal(p)
-				xP.append(p1[0])	
-				yP.append(p1[1])
-
-			pylab.plot(xP,yP,linewidth=1, color=(1.0,0.5,0.5))
 
 			point2_trans = dispOffset(point2, offset)
 			p1 = poseOrigin.convertLocalToGlobal(point1)
@@ -1262,7 +1239,7 @@ def overlapICP(estPose1, gndOffset, initGuess, medialPoints1, medialPoints2, roo
 
 
 @logFunction
-def overlapICP_GPU2(estPose1, gndOffset, initGuess, medialPoints1, medialPoints2, rootPose1, rootPose2, inPlace = False, plotIter = False, n1 = 0, n2 = 0, uRange = 1.5):
+def overlapICP_GPU2(estPose1, initGuess, medialPoints1, medialPoints2, rootPose1, rootPose2, inPlace = False, plotIter = False, n1 = 0, n2 = 0, uRange = 1.5):
 
 	global numIterations
 	global globalPlotCount
@@ -1507,18 +1484,6 @@ def overlapICP_GPU2(estPose1, gndOffset, initGuess, medialPoints1, medialPoints2
 			yP.append(p1[1])
 
 		axes2.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
-
-		xP = []
-		yP = []
-		for b in points2:
-			p = [b[0],b[1]]
-			p = dispOffset(p,gndOffset)
-			
-			p1 = poseOrigin.convertLocalToGlobal(p)
-			xP.append(p1[0])	
-			yP.append(p1[1])
-
-		axes2.plot(xP,yP,linewidth=1, color=(1.0,0.5,0.5))
 
 		point2_trans = dispOffset(point2, offset)
 		p1 = poseOrigin.convertLocalToGlobal(point1)

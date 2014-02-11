@@ -6,11 +6,14 @@ import pylab
 from math import sqrt
 from Pose import Pose
 import gen_icp
-from math import acos, asin
+from math import acos, asin, fabs
 from numpy import array
 import ctypes, os, sys
+from operator import itemgetter
 
+from functions import diffAngle
 from Splices import getMultiDeparturePoint, orientPath, getCurveOverlap
+from MapProcess import getStepGuess, getInPlaceGuess, selectLocalCommonOrigin
 
 from scipy.spatial import KDTree, cKDTree
 from scipy.cluster.hierarchy import fclusterdata, fcluster
@@ -29,6 +32,10 @@ qin_posePart = None
 qout_posePart =  None
 pool_posePart = []
 
+qin_dispPosePart = None
+qout_dispPosePart =  None
+pool_dispPosePart = []
+
 qin_branch = None
 qout_branch =  None
 pool_branch = []
@@ -45,19 +52,19 @@ def __num_processors():
 		get_nprocs.argtypes = []
 		return get_nprocs()
 
-def batchDisplaceParticle(localizeJobs):
+def batchDisplaceParticles(displaceJobs):
 
 	global renderGlobalPlotCount
-	global pool_posePart
-	global qin_posePart
-	global qout_posePart
+	global pool_dispPosePart
+	global qin_dispPosePart
+	global qout_dispPosePart
 
-	ndata = len(localizeJobs)
+	ndata = len(displaceJobs)
 	
 	args = []
 	
 	for k in range(ndata):
-		arg = localizeJobs[k]
+		arg = displaceJobs[k]
 		args.append(arg)
 	
 	nproc = __num_processors()
@@ -73,16 +80,17 @@ def batchDisplaceParticle(localizeJobs):
 	print "max_size =", ndata/chunk_size
 	
 	# set up a pool of processes
-	if len(pool_posePart) == 0:
+	if len(pool_dispPosePart) == 0:
 
-		qin_posePart = processing.Queue(maxsize=ndata/chunk_size)
-		qout_posePart = processing.Queue(maxsize=ndata/chunk_size)
-		pool_posePart = [processing.Process(target=__remote_displaceParticle,
-		#pool_posePart = [processing.Process(target=__remote_prof_displaceParticle,
-				#args=(rank, qin_posePart, qout_posePart, splices, medial, initPose, pathIDs, nodeID))
-				args=(rank, qin_posePart, qout_posePart))
+		qin_dispPosePart = processing.Queue(maxsize=ndata/chunk_size)
+		qout_dispPosePart = processing.Queue(maxsize=ndata/chunk_size)
+		pool_dispPosePart = [processing.Process(target=__remote_displaceParticle,
+		#pool_dispPosePart = [processing.Process(target=__remote_prof_displaceParticle,
+				#args=(rank, qin_dispPosePart, qout_dispPosePart, splices, medial, initPose, pathIDs, nodeID))
+				args=(rank, qin_dispPosePart, qout_dispPosePart))
+				#args=(rank, qin_dispPosePart, qout_dispPosePart))
 					for rank in range(nproc)]
-		for p in pool_posePart: p.start()
+		for p in pool_dispPosePart: p.start()
 	
 	# put data chunks in input queue
 	cur, nc = 0, 0
@@ -92,7 +100,7 @@ def batchDisplaceParticle(localizeJobs):
 		print "nc = ", nc
 		print "cur =", cur
 		if len(_data) == 0: break
-		qin_posePart.put((nc,_data))
+		qin_dispPosePart.put((nc,_data))
 		print "DONE"
 		cur += chunk_size
 		nc += 1
@@ -103,7 +111,7 @@ def batchDisplaceParticle(localizeJobs):
 	# read output queue
 	knn = []
 	while len(knn) < nc:
-		knn += [qout_posePart.get()]
+		knn += [qout_dispPosePart.get()]
 	
 	# avoid race condition
 	_knn = [n for i,n in sorted(knn)]
@@ -143,79 +151,76 @@ def __remote_displaceParticle(rank, qin, qout):
 
 		results = []
 		for job in args:
-
-			#localizeJobs.append([pathU0, oldMedialU0, 0.0, pathU1, oldMedialU1, 0.0, spliceIndex, deepcopy(orientedPath0), deepcopy(medial0), deepcopy(medial1), deepcopy(hypPose0), deepcopy(hypPose1), [], nodeID0, particleIndex, updateCount, self.hypothesisID])
-
-			branchIndex = job[6]
-			spliceIndex = job[7]
-			globalPath = job[8]
-			medial0 = job[9]
-			medial1 = job[10]
-			initPose0 = job[11]
-			initPose1 = job[12]
-
-			prevMedial0 = job[13]
-			prevMedial1 = job[14]
-			prevPose0 = job[15]
-			prevPose1 = job[16]
-
-			pathIDs = job[17]
-			nodeID0 = job[18]
-			nodeID1 = job[19]
-			particleIndex = job[20]
-			updateCount = job[21]
-			hypID = job[22]
-
-			oldMedialP0 = job[0]
-			oldMedialU0 = job[1]
-			angGuess0 = job[2]
-			oldMedialP1 = job[3]
-			oldMedialU1 = job[4]
-			angGuess1 = job[5]
-
-			poseOrigin = Pose(initPose0)
 			
-			globalMedial0 = []
-			for p in medial0:
-				globalMedial0.append(poseOrigin.convertLocalToGlobal(p))
-			
-			#globalMedial1 = []
-			#for p in medial1:
-			#	globalMedial1.append(poseOrigin.convertLocalToGlobal(p))
+			#[particleIndex, nodeID3, prevPose0, prevPose1, initPose2, initPose3, supportLine, pathSplices2, pathSplices3]
+			poseData = job[0]
+			particleIndex = job[1]
+			nodeID3 = job[2]
+			prevPose0 = job[3]
+			prevPose1 = job[4]
+			initPose2 = job[5]
+			initPose3 = job[6]
+			supportLine = job[7]
+			pathSplices2 = job[8]
+			pathSplices3 = job[9]
 
-			globalMedialP0 = poseOrigin.convertLocalOffsetToGlobal(oldMedialP0)	
-			globalMedialP1 = poseOrigin.convertLocalOffsetToGlobal(oldMedialP1)	
-
-			orientedPath0 = orientPath(globalPath, globalMedial0)
-			orientedPathSpline0 = SplineFit(orientedPath0, smooth=0.1)
-			pathU0 = orientedPathSpline0.findU(globalMedialP0)
-			pathU1 = orientedPathSpline0.findU(globalMedialP1)
-
-
-			params0 = [pathU0, oldMedialU0, angGuess0]
-			params1 = [pathU1, oldMedialU1, angGuess1]
-
-			result = displaceParticle(params0, params1, orientedPath0, medial0, medial1, initPose0, initPose1, prevMedial0, prevMedial1, prevPose0, prevPose1, pathIDs, nodeID0, nodeID1, particleIndex, hypID = hypID, pathPlotCount = updateCount, branchIndex = branchIndex, spliceIndex = spliceIndex)
-			results.append(result)
+			result = displaceParticle( poseData, pathSplices2, pathSplices3, supportLine, nodeID3, initPose2, initPose3, prevPose0, prevPose1)
+			results.append((particleIndex,) + result)
 						   
 		# write to output queue
 		qout.put((nc,results))
 
-#def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, medialAxis1, initPose0, initPose1, prevMedialAxis0, prevMedialAxis1, prevPose0, prevPose1, pathIDs, nodeID0, nodeID1, particleIndex, hypID = 0, pathPlotCount = 0, branchIndex =0, spliceIndex = 0):
-#def movePath(mapHyp, nodeID, direction, distEst = 1.0):
-	
-def displaceParticle( pathSplices0, pathSplices1, medialAxis0, medialAxis1, initPose0, initPose1, prevMedialAxis0, prevMedialAxis1, prevPose0, prevPose1):
-#, pathIDs, nodeID0, nodeID1, particleIndex, hypID = 0, pathPlotCount = 0, branchIndex =0, spliceIndex = 0):
+def displaceParticle( poseData, pathSplices2, pathSplices3, supportLine, nodeID3, initPose2, initPose3, prevPose0, prevPose1):
 
-	print "movePath(", nodeID, ",", direction, ",", distEst, ")"
+	#print "movePath(", nodeID, ",", direction, ",", distEst, ")"
+
+	estPose0 = prevPose0
+	estPose1 = prevPose1
+	estPose2 = initPose2
+	estPose3 = initPose3
+
+	nodeID2 = nodeID3-1
+	nodeID1 = nodeID2-1
+	nodeID0 = nodeID1-1
+
+	nodeID = nodeID3
+
+	medial0 = poseData.medialAxes[nodeID0]
+	medial1 = poseData.medialAxes[nodeID1]
+	medial2 = poseData.medialAxes[nodeID2]
+	medial3 = poseData.medialAxes[nodeID3]
+
+
+	direction = poseData.travelDirs[nodeID]
+
+	currPose2 = estPose2
+	currPose3 = estPose3
+
+
+	#splicePaths = list(set(pathSplices2 + pathSplices3))
+	splicePaths = pathSplices2 + pathSplices3
 
 	if nodeID > 0:
 		
 		if nodeID % 2 == 1:
+
+			moveChance = random.random()
+			if moveChance >= 0.1:
+				distEst = 1.0
+			else:
+				distEst = -1.0
+
+
+			distEst = moveChance * 2.0
+
 			" the guess process gives a meaningful guess for these node's poses "
 			" before this, it is meaningless "
-			currPose2 = getStepGuess(mapHyp, nodeID-1, direction)
-			currPose3 = getInPlaceGuess(mapHyp, nodeID-1, nodeID, direction)
+			currPose2 = getStepGuess(poseData, nodeID-3, nodeID-1, estPose0, estPose2, direction, distEst = distEst)
+
+			#supportLine = mapHyp.paths[0]
+
+			currPose3 = getInPlaceGuess(poseData, nodeID-1, nodeID, estPose2, estPose3, supportLine, direction)
+
 
 
 		else:
@@ -228,17 +233,17 @@ def displaceParticle( pathSplices0, pathSplices1, medialAxis0, medialAxis1, init
 		if poseData.numNodes >= 4 and nodeID % 2 == 1:
 			
 			" 1) get spliced path that the previous node is on "
-			medial2 = medialAxis0
-			medial3 = medialAxis1
+			#medial2 = medialAxis0
+			#medial3 = medialAxis1
 			
-			initPose2 = initPose0
-			initPose3 = initPose1
+			#initPose2 = initPose0
+			#initPose3 = initPose1
 			
-			print "junctions:", junctions
+			#print "junctions:", junctions
 			print "initPose2:", initPose2
 			print "initPose3:", initPose3
 									
-			splicePaths = []
+			#splicePaths = []
 
 			resultMoves2 = []
 			resultMoves3 = []
@@ -252,7 +257,7 @@ def displaceParticle( pathSplices0, pathSplices1, medialAxis0, medialAxis1, init
 				pose1 = prevPose1
 
 				" FIXME:  make sure path is oriented correctly wrt node medial axis "
-				medial0 = prevMedialAxis0
+				#medial0 = prevMedialAxis0
 				
 				poseOrigin0 = Pose(pose0)
 				globalMedial0 = []
@@ -276,18 +281,10 @@ def displaceParticle( pathSplices0, pathSplices1, medialAxis0, medialAxis1, init
 				
 				" 3) step distance along the path in direction of travel "
 				
-				if direction:
-					arcDist2 = arcDist0 - distEst
-					arcDist3 = arcDist1 - distEst
-				else:
-					arcDist2 = arcDist0 + distEst
-					arcDist3 = arcDist1 + distEst
-				
-				print "arcDist0, arcDist1, arcDist2, arcDist3:", arcDist0, arcDist1, arcDist2, arcDist3
-				
-				pose2 = initPose2
-				pose3 = initPose3
-				
+				#pose2 = initPose2
+				#pose3 = initPose3
+				pose2 = currPose2
+				pose3 = currPose3
 				
 				print "pose2,pose3:", pose2, pose3
 				
@@ -366,6 +363,7 @@ def displaceParticle( pathSplices0, pathSplices1, medialAxis0, medialAxis1, init
 			else:
 				print "node", nodeID, "not movePathed because no valid pose"
 
+		return currPose2, currPose3
 
 def __remote_prof_multiParticle(rank, qin, qout):
 
