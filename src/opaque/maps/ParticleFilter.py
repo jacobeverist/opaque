@@ -204,14 +204,22 @@ def displaceParticle( poseData, pathSplices2, pathSplices3, supportLine, nodeID3
 		
 		if nodeID % 2 == 1:
 
+			rState = random.getstate()
+			random.seed()	
 			moveChance = random.random()
+			moveDist = random.random()
+			random.setstate(rState)
+			
 			if moveChance >= 0.1:
-				distEst = 1.0
+				distEst = 0.5 + (0.5-moveDist)/2.0
 			else:
-				distEst = -1.0
+				distEst = -0.5 - (0.5-moveDist)/2.0
 
 
-			distEst = moveChance * 2.0
+			#distEst = moveChance * 2.0
+			#distEst = 2.0*moveChance - 0.4
+
+			print "displacing", moveChance, distEst
 
 			" the guess process gives a meaningful guess for these node's poses "
 			" before this, it is meaningless "
@@ -219,12 +227,14 @@ def displaceParticle( poseData, pathSplices2, pathSplices3, supportLine, nodeID3
 
 			#supportLine = mapHyp.paths[0]
 
-			currPose3 = getInPlaceGuess(poseData, nodeID-1, nodeID, estPose2, estPose3, supportLine, direction)
+			currPose3 = getInPlaceGuess(poseData, nodeID-1, nodeID, currPose2, estPose3, supportLine, direction)
 
 
 
 		else:
 			print "movePath:  DO NOTHING"
+
+		#return currPose2, currPose3
 		
 		" now we fit the guessed pose to a splice of the paths "
 		" this constrains it to the previously explored environment "
@@ -303,8 +313,8 @@ def displaceParticle( poseData, pathSplices2, pathSplices3, supportLine, nodeID3
 				print "input: uMedialOrigin3, u3, pose3:", uMedialOrigin3, u3, pose3
 
 				
-				resultPose2, lastCost2, matchCount2, currAng2, currU2 = gen_icp.globalPathToNodeOverlapICP2([u2, uMedialOrigin2, 0.0], orientedSplicePath, medial2, plotIter = False, n1 = nodeID-1, n2 = -1, arcLimit = 0.1)
-				resultPose3, lastCost3, matchCount3, currAng3, currU3 = gen_icp.globalPathToNodeOverlapICP2([u3, uMedialOrigin3, 0.0], orientedSplicePath, medial3, plotIter = False, n1 = nodeID, n2 = -1, arcLimit = 0.1)
+				resultPose2, lastCost2, matchCount2, currAng2, currU2 = gen_icp.globalPathToNodeOverlapICP2([u2, uMedialOrigin2, 0.0], orientedSplicePath, medial2, plotIter = False, n1 = nodeID-1, n2 = -1, arcLimit = 0.01)
+				resultPose3, lastCost3, matchCount3, currAng3, currU3 = gen_icp.globalPathToNodeOverlapICP2([u3, uMedialOrigin3, 0.0], orientedSplicePath, medial3, plotIter = False, n1 = nodeID, n2 = -1, arcLimit = 0.01)
 				
 				print "resultPoses:", resultPose2, resultPose3
 
@@ -596,6 +606,9 @@ class Particle:
 		self.prevPose0 = deepcopy(pose0)
 		self.prevPose1 = deepcopy(pose1)
 
+		self.dispPose0 = deepcopy(pose0)
+		self.dispPose1 = deepcopy(pose1)
+
 		" classification or correspondence as member of path "
 		self.memberPaths = []
 		self.memberPaths.append(pathID)
@@ -624,6 +637,9 @@ class Particle:
 
 		self.prevPose0 = self.pose0
 		self.prevPose1 = self.pose1
+
+		self.dispPose0 = deepcopy(pose0)
+		self.dispPose1 = deepcopy(pose1)
 
 		self.pose0 = deepcopy(pose0)
 		self.pose1 = deepcopy(pose1)
@@ -657,6 +673,9 @@ class Particle:
 
 		newParticle.prevPose0 = deepcopy(self.prevPose0)
 		newParticle.prevPose1 = deepcopy(self.prevPose1)
+
+		newParticle.dispPose0 = deepcopy(self.dispPose0)
+		newParticle.dispPose1 = deepcopy(self.dispPose1)
 
 		return newParticle
 

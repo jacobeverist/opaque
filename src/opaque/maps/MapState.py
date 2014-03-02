@@ -2922,7 +2922,12 @@ class MapState:
 				printStr += repr(oldPart2.junctionData[key]["globalJunctionPose"]) 
 				printStr += " " + repr(self.pathClasses[key]["globalJunctionPose"]) 
 
-			print "resampling particle", k, probParticles[k], printStr
+			#print "resampling particle", k, probParticles[k], printStr
+			print "resampling particle", k, probParticles[k]
+			print oldPart2.prevPose0, oldPart2.prevPose1
+			print oldPart2.dispPose0, oldPart2.dispPose1
+			print oldPart2.pose0, oldPart2.pose1
+
 			resampledParticles2.append(oldPart2.copy())
 
 		updateCount += 1
@@ -4025,6 +4030,11 @@ class MapState:
 
 			pathID = prob[0]
 			estJuncPose = prob[1]
+
+			pathDesc = self.pathClasses[pathID]
+			parentID = pathDesc["parentID"]
+			pathSpline = pathSplines[parentID]
+
 			minDist, uVal, splinePoint = pathSpline.findClosestPoint(estJuncPose)
 			arcDist = pathSpline.dist_u(uVal)
 
@@ -4053,21 +4063,17 @@ class MapState:
 			currKeys = currBranchSpace.keys()
 			currKeys.sort()
 
-			#print "solve currKeys:", currKeys
-
 			" find the bin for this arc distance "
 			thisKey = currKeys[0]
-			#for val in currKeys:
 			for k in range(len(currKeys)):
 				val = currKeys[k]
 				if val >= arcDist:
 					break
 				thisKey = val
 
-			#print "solve value:", arcDist, thisKey
-
 			binnedProblems.append((pathID, thisKey))
 
+		" remove duplicates "
 		numProbs1 = len(binnedProblems)
 		binnedProblems = list(set(binnedProblems))
 		numProbs2 = len(binnedProblems)
@@ -4269,16 +4275,17 @@ class MapState:
 				part2 = (part[0], part[1], part[2], part[3], part[4], part[5], part[6], part[7], newProbVal, part[9], part[10])
 				particles[k] = part2
 
-			pylab.clf() 
-			for k,path in self.trimmedPaths.iteritems():
-				print "path has", len(path), "points"
-				xP = []
-				yP = []
-				for p in path:
-					xP.append(p[0])
-					yP.append(p[1])
+			if False:
+				pylab.clf() 
+				for k,path in self.trimmedPaths.iteritems():
+					print "path has", len(path), "points"
+					xP = []
+					yP = []
+					for p in path:
+						xP.append(p[0])
+						yP.append(p[1])
 
-				pylab.plot(xP,yP, color = self.colors[k], linewidth=4)
+					pylab.plot(xP,yP, color = self.colors[k], linewidth=4)
 
 
 			origJuncPose = copy(self.pathClasses[pathID]["globalJunctionPose"])
@@ -4300,37 +4307,39 @@ class MapState:
 
 				localPathSegs.append(localSeg)
 
-			xP = []
-			yP = []
-			for part in particles:
-				globJuncPose = part[1]
-				xP.append(globJuncPose[0])
-				yP.append(globJuncPose[1])
 
-				offsetOrigin1 = Pose(globJuncPose)
+			if False:
+				xP = []
+				yP = []
+				for part in particles:
+					globJuncPose = part[1]
+					xP.append(globJuncPose[0])
+					yP.append(globJuncPose[1])
 
-				for k in range(len(localPathSegs)):
-					localSeg = localPathSegs[k]
-					xP1 = []
-					yP1 = []
-					for p in localSeg:
-						p1 = offsetOrigin1.convertLocalOffsetToGlobal(p)
-						xP1.append(p1[0])
-						yP1.append(p1[1])
+					offsetOrigin1 = Pose(globJuncPose)
 
-					if maxProb > 0:
-						pylab.plot(xP1,yP1,color='k', zorder=9, alpha=part[8]/maxProb)
-					else:
-						pylab.plot(xP1,yP1,color='k', zorder=9, alpha=part[8])
+					for k in range(len(localPathSegs)):
+						localSeg = localPathSegs[k]
+						xP1 = []
+						yP1 = []
+						for p in localSeg:
+							p1 = offsetOrigin1.convertLocalOffsetToGlobal(p)
+							xP1.append(p1[0])
+							yP1.append(p1[1])
+
+						if maxProb > 0:
+							pylab.plot(xP1,yP1,color='k', zorder=9, alpha=part[8]/maxProb)
+						else:
+							pylab.plot(xP1,yP1,color='k', zorder=9, alpha=part[8])
 
 
-			pylab.scatter(xP, yP, color='k', zorder=8)
-			pylab.title("hyp: %d, pathID: %d, localPathSegs %d" % (self.hypothesisID, pathID, len(localPathSegs)))
-			
-			#self.plotEnv()			
-			
-			pylab.savefig("bayes_plot_%04u_%04u.png" % (self.hypothesisID, self.tempCount) )
-			self.tempCount += 1
+				pylab.scatter(xP, yP, color='k', zorder=8)
+				pylab.title("hyp: %d, pathID: %d, localPathSegs %d" % (self.hypothesisID, pathID, len(localPathSegs)))
+				
+				#self.plotEnv()			
+				
+				pylab.savefig("bayes_plot_%04u_%04u.png" % (self.hypothesisID, self.tempCount) )
+				self.tempCount += 1
 
 		return particles
 

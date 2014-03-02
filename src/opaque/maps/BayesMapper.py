@@ -241,10 +241,11 @@ class BayesMapper:
 			" ESTIMATE TRAVEL WITH MEDIAL OVERLAP CONSTRAINT OF EVEN NUMBER POSE "
 			if self.poseData.numNodes >= 4:
 
-				hypSet = batchMovePath(hypSet, nodeID, direction)
-				for pID, currHyp in hypSet.iteritems():
-					currHyp.batchDisplaceParticles(nodeID-1, nodeID)
-					currHyp.drawPoseParticles()
+				if nodeID % 2 == 1:
+					hypSet = batchMovePath(hypSet, nodeID, direction)
+					for pID, currHyp in hypSet.iteritems():
+						currHyp.batchDisplaceParticles(nodeID-1, nodeID)
+						currHyp.drawPoseParticles()
 
 				"""
 				for pID, mapHyp in hypSet.iteritems():
