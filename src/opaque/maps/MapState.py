@@ -2188,6 +2188,9 @@ class MapState:
 
 		self.utility = 0.0
 
+		" if a branching decision was made, and this is the no-branch state "
+		self.isNotBranched = False
+
 		" criteria for rejecting this map state "
 		self.mapOverlapSum = 0.0
 		self.isNoLocalize = False
@@ -2902,6 +2905,26 @@ class MapState:
 		" now resample "
 		resampledParticles2 = []
 		numParticles = self.poseParticles["numParticles"]
+
+		" find the maximum likelihood particle.  Take average if tied for max "
+		maxVal = 0.0
+		maxIndex = 0
+		numMax = 0
+		for k in range(len(probParticles)):
+			if probParticles[k] > maxVal:
+				maxVal = probParticles[k]
+				maxIndex = k 
+				numMax = 1
+			elif probParticles[k] == maxVal:
+				numMax += 1
+
+		" if more than one max, than we keep the static version "
+		if numMax == 1:
+			self.nodePoses[nodeID0] = deepcopy(particleDist2[maxIndex].pose0)
+			self.nodePoses[nodeID1] = deepcopy(particleDist2[maxIndex].pose1)
+		elif numMax > 1:
+			pass
+
 
 		print "particle evaluation:", nodeID0, self.hypothesisID, updateCount
 		for i in range(numParticles):

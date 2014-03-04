@@ -2241,6 +2241,8 @@ def checkForeBranch(hypSet, nodeID1, nodeID2, particleIDs):
 			" createa a new map state where a branch decision is not made "
 
 			newHyps[particleIDs] = mapHyp.copy(particleIDs)
+			newHyps[particleIDs].isNotBranched = True
+
 			print "creating hyp", particleIDs, "from hyp", mapHyp.hypothesisID, ", len(paths) =", len(mapHyp.pathClasses)
 			particleIDs += 1
 
@@ -2417,6 +2419,9 @@ def addToPaths(particleIDs, hypSet, nodeID1, nodeID2):
 	""" check branching of local spline from member path """
 	computeLocalDivergence(hypSet, nodeID1, nodeID2)
 
+	for pID, mapHyp in hypSet.iteritems():
+		mapHyp.isNotBranched = False
+
 
 	""" check for branching conditions from path, spawn new hypotheses """
 	hypSet, particleIDs = checkForeBranch(hypSet, nodeID1, nodeID2, particleIDs)
@@ -2463,7 +2468,23 @@ def addToPaths(particleIDs, hypSet, nodeID1, nodeID2):
 				currHyp.addNode(nodeID2,pathID)
 
 	#generateAll(hypSet)
-	hypSet = batchGenerate(hypSet)
+	genSet = {}
+	nonSet = {}
+	for pID, currHyp in hypSet.iteritems():
+		if not currHyp.isNotBranched:
+			genSet[pID] = currHyp
+		else:
+			nonSet[pID] = currHyp
+
+
+	genSet = batchGenerate(genSet)
+
+	#hypSet = genSet + nonSet
+	nonSet.update(genSet)
+	hypSet = nonSet
+	#hypSet.update(genSet)
+
+	#hypSet = batchGenerate(hypSet)
 
 	#for pID, currHyp in hypSet.iteritems():
 	#	currHyp.drawPoseParticles()
