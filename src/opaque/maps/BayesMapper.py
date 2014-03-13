@@ -297,7 +297,9 @@ class BayesMapper:
 
 			#scurrHyps = self.addToPaths(mapHyp, nodeID1, nodeID2)
 
-			hypSet = batchLocalizePair(hypSet, nodeID1, nodeID2)
+			for pID, currHyp in hypSet.iteritems():
+				localizePair(currHyp, nodeID1, nodeID2)
+			#hypSet = batchLocalizePair(hypSet, nodeID1, nodeID2)
 			#batchEval(hypSet)
 			
 			for pID, mapHyp in hypSet.iteritems():
@@ -1445,7 +1447,7 @@ class BayesMapper:
 		self.plotEnv(ax3)
 		self.plotEnv(ax4)
 		
-		print "pathAndHull2:", self.pathDrawCount
+		print "quadPath:", self.pathDrawCount
 		printStack()
 
 		#pylab.xlim(-10, 12)

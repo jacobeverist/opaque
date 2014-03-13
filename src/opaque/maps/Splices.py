@@ -1,7 +1,7 @@
 import pylab
 import numpy
 import multiprocessing as processing
-import ctypes, os
+import ctypes, os, sys
 from gen_icp import findClosestPointWithAngle, computeMatchErrorP
 from functions import normalizeAngle, diffAngle, logFunction
 from copy import copy, deepcopy
@@ -33,6 +33,12 @@ def __num_processors():
 
 #def __remote_multiFit(rank, qin, qout, splices, medial, initPose, pathIDs, nodeID):
 def __remote_multiFit(rank, qin, qout):
+
+	sys.stdout = open("multiFit_" + str(os.getpid()) + ".out", "w")
+	sys.stderr = open("multiFit_" + str(os.getpid()) + ".err", "w")
+	print 'module name:', __name__
+	print 'parent process:', os.getppid()
+	print 'process id:', os.getpid()
 
 	print "started __remote_multiFit"
 

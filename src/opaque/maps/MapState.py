@@ -2825,7 +2825,7 @@ class MapState:
 				newProb *= branchProbVal
 				#utilVal0 = (1.0-contigFrac_0) + (isExist1_0 or isExist2_0) + (1.0-contigFrac_1) + (isExist1_1 or isExist2_1)
 				
-			print "%d %d %d branchProbVal, utilVal, poseProbValue, overlapSum:" % (self.hypothesisID, particleIndex, spliceIndex), branchProbVal, utilVal, newProb, overlapSum 
+			print "%d %d %d branchProbVal, utilVal, poseProbValue, overlapSum:" % (self.hypothesisID, particleIndex, spliceIndex), branchProbVal, utilVal, newProb, overlapSum, contigFrac_0, contigFrac_1, overlapSum, initPose0[2], newPose0[2], int(isExist1_0), int(isExist2_0), int(isExist1_1), int(isExist2_1), int(isInterior1_0), int(isInterior2_0), int(isInterior1_1), int(isInterior2_1)
 
 			#print "%d %1.2f %1.2f %1.2f %d %d %d %d %1.2f %1.2f %d %d %d %d" % (particleIndex, newProb, contigFrac_0, overlapSum_0, isInterior1_0, isInterior2_0, isExist1_0, isExist2_0, contigFrac_1, overlapSum_1, isInterior1_1, isInterior2_1, isExist1_1, isExist2_1)
 
@@ -3078,9 +3078,9 @@ class MapState:
 
 			if pathID != 0:
 
-				junctionDetails = self.longPathJunctions[1]
+				junctionDetails = self.longPathJunctions[pathID]
 
-				origJuncPose = copy(self.pathClasses[1]["globalJunctionPose"])
+				origJuncPose = copy(self.pathClasses[pathID]["globalJunctionPose"])
 				origJuncPose[2] = 0.0
 				origJuncOrigin = Pose(origJuncPose)
 
@@ -3203,6 +3203,7 @@ class MapState:
 					modPose0[2] = 0.0
 					modOrigin0 = Pose(modPose0)
 
+					"""
 					if thisSplice != None:
 
 						xP1 = []
@@ -3213,6 +3214,7 @@ class MapState:
 							yP1.append(p1[1])
 
 						pylab.plot(xP1,yP1,color='k', zorder=9, alpha=0.2)
+					"""
 
 					"""
 					localPathSegs = localPathSets[pathID] 
@@ -3247,6 +3249,31 @@ class MapState:
 
 		pylab.scatter(hypPointsX_0, hypPointsY_0, color='r', linewidth=1, zorder=10, alpha=0.2)
 		pylab.scatter(hypPointsX_1, hypPointsY_1, color='b', linewidth=1, zorder=10, alpha=0.2)
+
+		pose0 = self.nodePoses[nodeID0]
+		pose1 = self.nodePoses[nodeID1]
+		medial0 = self.poseData.medialAxes[nodeID0]
+		medial1 = self.poseData.medialAxes[nodeID1]
+
+		poseOrigin0 = Pose(pose0)
+		poseOrigin1 = Pose(pose1)
+
+		xP = []
+		yP = []
+		for p in medial0:
+			p1 = poseOrigin0.convertLocalToGlobal(p)
+			xP.append(p1[0])
+			yP.append(p1[1])
+		pylab.plot(xP,yP,color='k', zorder=9, alpha=0.2)
+
+		xP = []
+		yP = []
+		for p in medial1:
+			p1 = poseOrigin1.convertLocalToGlobal(p)
+			xP.append(p1[0])
+			yP.append(p1[1])
+		pylab.plot(xP,yP,color='k', zorder=9, alpha=0.2)
+
 		
 		pylab.xlim(-6,16.48)
 		#pylab.xlim(-5,10)
@@ -3287,7 +3314,7 @@ class MapState:
 		newObj.poseParticles = deepcopy(self.poseParticles)
 
 		updateCount = newObj.poseParticles["updateCount"] 
-		particleDist2 = newObj.poseParticles["snapshots2"][0]
+		particleDist2 = deepcopy(newObj.poseParticles["snapshots2"][0])
 		for part in particleDist2:
 			part.mapStateID = hypothesisID
 
@@ -3322,9 +3349,10 @@ class MapState:
 		
 		newObj.pathGraph = deepcopy(self.pathGraph)
 		newObj.joins = deepcopy(self.joins)
-		newObj.junctions = self.junctions
-		newObj.terminals = self.terminals
-		newObj.allSplices = self.allSplices
+		newObj.junctions = deepcopy(self.junctions)
+		newObj.terminals = deepcopy(self.terminals)
+		newObj.topDict = deepcopy(self.topDict)
+		newObj.allSplices = deepcopy(self.allSplices)
 
 		newObj.orderedPathIDs1 = deepcopy(self.orderedPathIDs1)
 		newObj.orderedPathIDs2 = deepcopy(self.orderedPathIDs2)
@@ -3350,6 +3378,7 @@ class MapState:
 
 		newObj.medialLongPaths = deepcopy(self.medialLongPaths)
 		newObj.theoryMedialLongPaths = deepcopy(self.theoryMedialLongPaths) 
+		newObj.longPathJunctions = deepcopy(self.longPathJunctions) 
 
 		return newObj
 
@@ -4209,8 +4238,8 @@ class MapState:
 				if matchCount > maxMatchCount:
 					maxMatchCount = matchCount
 
-				if lastCost > maxCost:
-					maxCost = lastCost
+				if matchCount > 0 and lastCost/matchCount > maxCost:
+					maxCost = lastCost/matchCount
 
 				if dist > maxDist:
 					maxDist = dist
@@ -4227,10 +4256,11 @@ class MapState:
 				lastCost = part[5]
 				dist = part[6]
 				angDiff = part[7]
+				matchCount = part[4]
 
 				matchCost = 0.0
-				if maxCost > 0.0:
-					matchCost = (maxCost-lastCost)/maxCost
+				if maxCost > 0.0 and matchCount > 0:
+					matchCost = (maxCost-lastCost/matchCount)/maxCost
 				else:
 					matchCost = 0.0
 
@@ -4240,7 +4270,6 @@ class MapState:
 				else:
 					nomDist = 0.0
 
-				matchCount = part[4]
 
 				" angDiff feature times matchCount times dist "
 				#probVal = matchCount*matchCost + nomDist/4.0
@@ -5749,9 +5778,9 @@ class MapState:
 		print pathID, "has nodes", self.pathClasses[pathID]["nodeSet"]
 
 		self.isChanged = True
-		self.junctions = {}
-		self.terminals = {}
-		self.allSplices = {}
+		#self.junctions = {}
+		#self.terminals = {}
+		#self.allSplices = {}
 
 	@logFunction
 	def delPath(self, pathID, mergeTargetID):
@@ -5843,9 +5872,9 @@ class MapState:
 		#self.drawPoseParticles()
 
 		self.isChanged = True
-		self.junctions = {}
-		self.terminals = {}
-		self.allSplices = {}
+		#self.junctions = {}
+		#self.terminals = {}
+		#self.allSplices = {}
 
 		return newPathID
  
@@ -6872,7 +6901,7 @@ class MapState:
 		self.longPathJunctions[pathID]["juncDesc"] = juncDesc
 
 		
-		if False:
+		if True:
 			pylab.clf()
 	
 			for path in self.medialLongPaths[pathID]:
@@ -6925,13 +6954,118 @@ class MapState:
 						bufStr2 += "%1.2f %1.2f " % (angs[0],angs[1])
 			
 			pylab.axis("equal")
-			pylab.title("Path %d %s %s %s" % (pathID, sizes,bufStr1,bufStr2))
-			pylab.savefig("medialOut2_%04u.png" % self.topCount)
-			print "saving medialOut2_%04u.png" % self.topCount
+			pylab.title("Path %d %d %s %s %s" % (self.hypothesisID, pathID, sizes,bufStr1,bufStr2))
+			pylab.savefig("medialOut2_%02u_%04u.png" % (self.hypothesisID, self.topCount))
+			print "saving medialOut2_%02u_%04u.png" % (self.hypothesisID, self.topCount)
+
+			" 1) plot the pose of local splines and postures "
+			" 2) plot the alpha shape of the union of pose alpha shapes and medial axis tree "
+			" 3) plot the alpha shape of the union of pose alpha shapes and the long medial axis "
+			" 4) plot the trimmed path "
+
+			#fig = plt.figure()
+			#fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, sharex=True, sharey=True)
+			#ax1.plot(x)
+			
+			pylab.clf()
+			pathIDs = self.getPathIDs()
+
+			allNodes = []
+			for k in pathIDs:
+				nodeSet = self.getNodes(k)
+				allNodes += copy(nodeSet)
+			
+			allNodes.sort() 
+			
+			if len(allNodes) > 0:
+				highestNodeID = allNodes[-1]
+			else:
+				highestNodeID = 1e100		
+				
+				
+			xP = []
+			yP = []
+			
+			for path in self.medialLongPaths[pathID]:
+				xP = []
+				yP = []
+				for p in path:
+					xP.append(p[0])
+					yP.append(p[1])
+	
+				pylab.plot(xP,yP, color=self.colors[pathID], linewidth=4)
+
+			if junctionNodeID != None:
+	
+				for path in self.theoryMedialLongPaths[pathID]:
+					xP = []
+					yP = []
+					for p in path:
+						xP.append(p[0])
+						yP.append(p[1])
+	
+					pylab.plot(xP,yP, color='k')
+
+			nodeSet = self.getNodes(pathID)
+
+			print "drawing pathID", pathID, "for nodes:", nodeSet
+			for nodeID in nodeSet:
+				xP = []
+				yP = []
+
+				estPose1 = self.nodePoses[nodeID]
+		
+				if self.poseData.isBowties[nodeID]:			
+					hull1 = self.poseData.aHulls[nodeID]
+					#medial1 = self.poseData.medialAxes[nodeID]
+					#hull1 = computeBareHull(self.nodeHash[nodeID], sweep = False, static = True)
+				else:
+					#hull1 = computeBareHull(self.nodeHash[nodeID], sweep = False)
+					hull1 = self.poseData.aHulls[nodeID]
+		
+				" set the origin of pose 1 "
+				poseOrigin = Pose(estPose1)
+		
+				points = []
+				for p in hull1:
+					p1 = poseOrigin.convertLocalToGlobal(p)
+					points.append(p1)
+				
+				for p in points:
+					xP.append(p[0])
+					yP.append(p[1])
+				
+				if nodeID == highestNodeID:
+					pylab.plot(xP,yP, color=(0,0,0))
+				elif nodeID == highestNodeID-1:
+					pylab.plot(xP,yP, color=(0.5,0.5,0.5))
+				else:
+					pylab.plot(xP,yP, color=self.colors[pathID])
+					
+			
+			xP = []
+			yP = []
+			for p in vertices:
+				xP.append(p[0])
+				yP.append(p[1])
+				
+			pylab.plot(xP,yP, '--', color=self.colors[pathID], linewidth=4)
+
+			globJuncPose = self.getGlobalJunctionPose(pathID)
+			if globJuncPose != None:
+				pylab.scatter([globJuncPose[0],], [globJuncPose[1],], color='k', zorder=10)
+
+			#self.plotEnv()
+			
+			print "pathAndHull:", self.topCount
+
+			pylab.axis("equal")
+			pylab.title("Path %d %d" % (self.hypothesisID, pathID))
+			#pylab.title("paths: %s numNodes: %d %d, hyp %d %3.2f" % (repr(mapHyp.getPathIDs()), self.poseData.numNodes, highestNodeID, mapHyp.hypothesisID, mapHyp.utility))
+			pylab.savefig("pathAndHull_%02u_%04u.png" % (self.hypothesisID, self.topCount))
+
 			self.topCount += 1
 
-
-		
 		print "juncAngSet:", juncAngSet
 
 		

@@ -2357,6 +2357,7 @@ def checkBackBranch(hypSet, nodeID1, nodeID2, particleIDs):
 		if isBranched:
 			" create a new map state where a branch decision is not made "
 			newHyps[particleIDs] = mapHyp.copy(particleIDs)
+			newHyps[particleIDs].isNotBranched = True
 			print "creating hyp", particleIDs, "from hyp", mapHyp.hypothesisID, ", len(paths) =", len(mapHyp.pathClasses)
 			particleIDs += 1
 
