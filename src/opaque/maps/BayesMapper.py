@@ -289,6 +289,9 @@ class BayesMapper:
 				#self.drawPathAndHull(mapHyp)
 
 
+				mapHyp.isNodeBranching[nodeID1] = False
+				mapHyp.isNodeBranching[nodeID2] = False
+
 
 			#hypSet = self.addToPaths(hypSet, nodeID1, nodeID2)
 			self.particleIDs, hypSet = addToPaths(self.particleIDs, hypSet, nodeID1, nodeID2)

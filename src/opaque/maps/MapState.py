@@ -2173,13 +2173,14 @@ class MapState:
 		self.juncSamples = {}
 
 		#self.numPoseParticles = 100
-		self.numPoseParticles = 20
+		self.numPoseParticles = 40
 		self.poseParticles = {}
 		self.poseParticles["numParticles"] = self.numPoseParticles
 		self.poseParticles["updateCount"] = 0
 		self.poseParticles["snapshots2"] = {0 : ()}
 
 
+		self.isNodeBranching = {}
 		self.nodeRawPoses = {}
 		self.nodePoses = {}
 		self.gndPoses = {}
@@ -2502,6 +2503,8 @@ class MapState:
 		nodePose0 = self.nodePoses[nodeID0]
 		staticSplicedPaths, spliceTerms, staticSplicePathIDs = self.getSplicesByNearJunction(nodePose0)
 
+		print "numStaticSplicedPaths =", len(staticSplicedPaths)
+
 		pathIDs = self.getPathIDs()
 
 		medial0 = poseData.medialAxes[nodeID0]
@@ -2588,6 +2591,9 @@ class MapState:
 						probSets.append((pathID, globJuncPose))
 
 		self.batchEvalBranches(probSets)
+
+
+		#print "numParticles =", len(particleDist2)
 
 		for particleIndex in range(len(particleDist2)):
 
@@ -2706,8 +2712,8 @@ class MapState:
 				
 				branchSampleIndex = thisSplicedPaths[spliceIndex][0]
 				probVal = thisSplicedPaths[spliceIndex][1]
-						
 				path = thisSplicedPaths[spliceIndex][2]
+
 				
 				localizeJobs.append([oldMedialP0, oldMedialU0, 0.0, oldMedialP1, oldMedialU1, 0.0, branchSampleIndex, spliceCount, path, medial0, medial1, deepcopy(hypPose0), deepcopy(hypPose1), prevMedial0, prevMedial1, prevHypPose0, prevHypPose1, [], nodeID0, nodeID1, particleIndex, updateCount, self.hypothesisID])
 
@@ -2918,12 +2924,54 @@ class MapState:
 			elif probParticles[k] == maxVal:
 				numMax += 1
 
-		" if more than one max, than we keep the static version "
+		" if more than one max, than we don't change the node pose, we accept the localize on the canonical pose "
 		if numMax == 1:
 			self.nodePoses[nodeID0] = deepcopy(particleDist2[maxIndex].pose0)
 			self.nodePoses[nodeID1] = deepcopy(particleDist2[maxIndex].pose1)
+
+
+			" change to the maximum likelihood branch position as well "
+
+			allPathIDs = self.getPathIDs()
+			for pathID in allPathIDs:
+				if pathID != 0:
+
+					" maximum likelihood pose particle "
+					part = particleDist2[maxIndex]
+					#partBranchIndex = particleDist2[maxIndex].junctionData[pathID]["maxLikelihoodBranch"]
+
+				
+					" maximum likelihood branch point within maximum likelihood pose particle "
+					partBranchIndex = part.junctionData[pathID]["maxLikelihoodBranch"]
+					partJuncPose = part.junctionData[pathID]["branchPoseDist"][partBranchIndex]
+
+					origJuncPose = copy(self.pathClasses[pathID]["globalJunctionPose"])
+					origJuncPose[2] = 0.0
+
+					modJuncPose = copy(partJuncPose)
+					modJuncPose[2] = 0.0
+
+					origJuncOrigin = Pose(origJuncPose)
+					offsetOrigin1 = Pose(modJuncPose)
+
+					memberNodes = self.getNodes(pathID)
+
+					for nodeID in memberNodes:
+						if nodeID != nodeID0 and nodeID != nodeID1:
+							localPose = origJuncOrigin.convertGlobalPoseToLocal(self.nodePoses[nodeID])
+							newGlobalPose = offsetOrigin1.convertLocalOffsetToGlobal(localPose)
+							self.nodePoses[nodeID] = newGlobalPose
+
+					" update of canonical branch point from maximum likelihood branch point "
+					newJuncPose = deepcopy(partJuncPose)
+					newJuncPose[2] = self.pathClasses[pathID]["globalJunctionPose"][2]
+					self.pathClasses[pathID]["globalJunctionPose"] = newJuncPose
+
+
 		elif numMax > 1:
 			pass
+
+		" FIXME:  do we really do nothing here when we tie for maximum? "
 
 
 		print "particle evaluation:", nodeID0, self.hypothesisID, updateCount
@@ -3331,6 +3379,7 @@ class MapState:
 		newObj.gndRawPoses = deepcopy(self.gndRawPoses)
 		newObj.origPoses = deepcopy(self.origPoses)
 		newObj.utility = deepcopy(self.utility)
+		newObj.isNodeBranching = deepcopy(self.isNodeBranching)
 
 		newObj.alphaPlotCount = self.alphaPlotCount
 		newObj.medialCount = self.medialCount
@@ -3546,17 +3595,29 @@ class MapState:
 	def getPath(self, pathID):
 		return self.pathClasses[pathID]
 	
-	#@logFunction
 	def getAllSplices(self, plotIter = False):
-
 		if not self.isChanged:
 			print "returning without computing, not isChanged"
 			return self.allSplices, self.terminals, self.junctions
+		else:
+			print "recomputing allSplices"
+			self.generatePaths()
+			return self.allSplices, self.terminals, self.junctions
+
+	#@logFunction
+	def computeAllSplices(self, plotIter = False):
 
 		print "paths:", self.paths
-
 		print "junctions:", self.junctions
 		print "terminals:", self.terminals
+
+		#if not self.isChanged:
+		#	print "returning without computing, not isChanged"
+		#	return self.allSplices, self.terminals, self.junctions
+		#else:
+		#	print "computing allSplices"
+
+
 
 		" determine which paths are leaves "
 		
@@ -3790,7 +3851,7 @@ class MapState:
 					
 				results[(pathID1,pathID2)] = finalResults
 		
-		print "results:"
+		print len(results), "results:"
 		for k, result in results.iteritems():
 			print k, ":"
 			for sPath in result:
@@ -3798,7 +3859,9 @@ class MapState:
 
 
 		if plotIter:
+			print "plotting splicedPath"
 			pylab.clf()
+
 			
 			for k,path in  self.trimmedPaths.iteritems():
 				print "path has", len(path), "points"
@@ -3835,11 +3898,14 @@ class MapState:
 
 			#self.drawWalls()
 	
+			print "saving splicedPath"
 			pylab.title("Spliced Paths, pathIDs = %s" %  self.getPathIDs())
 			pylab.savefig("splicedPath_%04u.png" % self.spliceCount)
 			self.spliceCount += 1
 
 		self.allSplices = results
+
+		#self.isChanged = False
 		
 		return self.allSplices, self.terminals, self.junctions
 
@@ -4327,17 +4393,6 @@ class MapState:
 				part2 = (part[0], part[1], part[2], part[3], part[4], part[5], part[6], part[7], newProbVal, part[9], part[10])
 				particles[k] = part2
 
-			if False:
-				pylab.clf() 
-				for k,path in self.trimmedPaths.iteritems():
-					print "path has", len(path), "points"
-					xP = []
-					yP = []
-					for p in path:
-						xP.append(p[0])
-						yP.append(p[1])
-
-					pylab.plot(xP,yP, color = self.colors[k], linewidth=4)
 
 
 			origJuncPose = copy(self.pathClasses[pathID]["globalJunctionPose"])
@@ -4360,7 +4415,18 @@ class MapState:
 				localPathSegs.append(localSeg)
 
 
-			if False:
+			if True:
+				pylab.clf() 
+				for k,path in self.trimmedPaths.iteritems():
+					print "path has", len(path), "points"
+					xP = []
+					yP = []
+					for p in path:
+						xP.append(p[0])
+						yP.append(p[1])
+
+					pylab.plot(xP,yP, color = self.colors[k], linewidth=4)
+			if True:
 				xP = []
 				yP = []
 				for part in particles:
@@ -4590,10 +4656,11 @@ class MapState:
 						self.topDict["t%u" % (pathID+1)] = (pathID,len(path)-1)
 
 
-		if len(self.trimmedPaths[pathID]) > 0:
-			allSplices, terminals, junctions = self.getAllSplices(plotIter = False)
+		#if len(self.trimmedPaths[pathID]) > 0:
+		" don't care about return values, are stored as object member variable "
+		allSplices, terminals, junctions = self.computeAllSplices(plotIter = False)
 
-		isChanged = False
+		self.isChanged = False
 
 	@logFunction
 	def getOrderedOverlappingPaths(self, nodeID):
@@ -5757,8 +5824,45 @@ class MapState:
 		print "deleting node", nodeID, "from path", pathID
 		self.pathClasses[pathID]["nodeSet"].remove(nodeID)
 		
-		
-	 
+
+	@logFunction
+	def moveNode(self, nodeID, splicePathIDs):
+		" change the shoot membership based on fitted splice "
+
+		particleDist = self.poseParticles["snapshots2"][0]
+
+		" determine which paths are leaves "
+		pathIDs = self.getPathIDs()
+
+		" remove node from other shoots first"
+		for pathID in pathIDs:
+			if nodeID in self.pathClasses[pathID]["nodeSet"]:
+				print "removing node", nodeID, "from path", pathID
+				self.pathClasses[pathID]["nodeSet"].remove(nodeID)
+
+		isAParent = {}
+		for k in pathIDs:
+			isAParent[k] = False
+		for k in splicePathIDs:
+			currPath = self.getPath(k)
+			currParent = currPath["parentID"]
+			if currParent != None:
+				isAParent[currParent] = True
+
+		"add nodes to paths that are the leaves "
+		for pathID in splicePathIDs:
+			if not isAParent[pathID]:
+				print "adding node", nodeID, "to path", pathID
+				self.pathClasses[pathID]["nodeSet"].append(nodeID)
+				#self.addNode(nodeID,pathID)
+
+				for p in particleDist:
+					p.addNode(nodeID, pathID)
+
+		print "shoot", pathID, "has nodes", self.pathClasses[pathID]["nodeSet"]
+
+		self.isChanged = True		
+
 	@logFunction
 	def addNode(self, nodeID, pathID):
 

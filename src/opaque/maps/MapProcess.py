@@ -2238,11 +2238,12 @@ def checkForeBranch(hypSet, nodeID1, nodeID2, particleIDs):
 
 		#if isUnique1 or isUnique2:
 		if isBranched:
-			" createa a new map state where a branch decision is not made "
 
+			" create a new map state where a branch decision is not made "
 			newHyps[particleIDs] = mapHyp.copy(particleIDs)
 			newHyps[particleIDs].isNotBranched = True
-
+			newHyps[particleIDs].isNodeBranching[nodeID1] = True
+			newHyps[particleIDs].isNodeBranching[nodeID2] = True
 			print "creating hyp", particleIDs, "from hyp", mapHyp.hypothesisID, ", len(paths) =", len(mapHyp.pathClasses)
 			particleIDs += 1
 
@@ -2355,9 +2356,12 @@ def checkBackBranch(hypSet, nodeID1, nodeID2, particleIDs):
 
 		#if isUnique1 or isUnique2:
 		if isBranched:
+
 			" create a new map state where a branch decision is not made "
 			newHyps[particleIDs] = mapHyp.copy(particleIDs)
 			newHyps[particleIDs].isNotBranched = True
+			newHyps[particleIDs].isNodeBranching[nodeID1] = True
+			newHyps[particleIDs].isNodeBranching[nodeID2] = True
 			print "creating hyp", particleIDs, "from hyp", mapHyp.hypothesisID, ", len(paths) =", len(mapHyp.pathClasses)
 			particleIDs += 1
 
@@ -2394,7 +2398,6 @@ def addToPaths(particleIDs, hypSet, nodeID1, nodeID2):
 	newHyps = {}
 
 	#generateAll(hypSet)
-	hypSet = batchGenerate(hypSet)
 
 	" IF THIS IS THE FIRST NODES IN THE FIRST PATH, JUST ADD THEM AS DEFAULT, DO NOTHING "
 	isFirst = False
@@ -2416,6 +2419,7 @@ def addToPaths(particleIDs, hypSet, nodeID1, nodeID2):
 
 		return particleIDs, hypSet
 
+	hypSet = batchGenerate(hypSet)
 
 	""" check branching of local spline from member path """
 	computeLocalDivergence(hypSet, nodeID1, nodeID2)
@@ -2860,10 +2864,15 @@ def consistentFit(mapHyp, nodeID, estPose, numGuesses = 11, excludePathIDs = [])
 	#filteredResults = sorted(filteredResults, key=itemgetter(16))
 	filteredResults = sorted(filteredResults, key=itemgetter(22), reverse=True)
 
+	spliceIndex = filteredResults[0][19]
 	guessPose = filteredResults[0][0]
 	mapHyp.nodePoses[nodeID] = guessPose
 
-	return filteredResults[0]
+	if mapHyp.isNodeBranching[nodeID]:
+		mapHyp.moveNode(nodeID, splicePathIDs[spliceIndex])
+
+
+	return filteredResults[0], splicePathIDs[spliceIndex]
 
 
 @logFunction
