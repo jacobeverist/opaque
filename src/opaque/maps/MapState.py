@@ -597,7 +597,7 @@ def getTangentIntersections(path1, path2, frontDepI, backDepI, path1FrontDepI, p
 
 
 
-	if False:
+	if True:
 		pylab.clf()
 		xP = []
 		yP = []
@@ -681,7 +681,7 @@ def computePathAngleVariance(pathSamples):
 
 " get the trimmed version of child and parent paths that are overlapping in some fashion "
 @logFunction
-def getOverlapDeparture(globalJunctionPoint, parentPathID, childPathID, path1, path2, plotIter = False):
+def getOverlapDeparture(globalJunctionPose, parentPathID, childPathID, path1, path2, plotIter = False):
 
 	"Assumption:  one section of the medial axis is closely aligned with the path "		   
 		
@@ -850,13 +850,41 @@ def getOverlapDeparture(globalJunctionPoint, parentPathID, childPathID, path1, p
 
 	" distance of departure point from known junction point "
 	p0 = pathSec1[0]
-	juncDist1 = sqrt((globalJunctionPoint[0]-p0[0])**2 + (globalJunctionPoint[1]-p0[1])**2)
+	juncDist1 = sqrt((globalJunctionPose[0]-p0[0])**2 + (globalJunctionPose[1]-p0[1])**2)
 
 	p0 = pathSec2[0]
-	juncDist2 = sqrt((globalJunctionPoint[0]-p0[0])**2 + (globalJunctionPoint[1]-p0[1])**2)
+	juncDist2 = sqrt((globalJunctionPose[0]-p0[0])**2 + (globalJunctionPose[1]-p0[1])**2)
 
-	print "pathSec1 hypothesis discrepancy distance:", juncDist1
-	print "pathSec2 hypothesis discrepancy distance:", juncDist2
+	" juncAngle "
+	ang1 = pathSec1[0][2]
+	ang2 = pathSec2[0][2]
+
+	frontVec = [pathPoints2[frontDepI][0] - pathPoints2[frontDepI+1][0], pathPoints2[frontDepI][0] - pathPoints2[frontDepI+1][0]]
+	frontMag = math.sqrt(frontVec[0]*frontVec[0] + frontVec[1]*frontVec[1])
+	frontVec[0] /= frontMag
+	frontVec[1] /= frontMag
+
+	frontJuncAng = acos(-frontVec[0])
+	if -frontVec[1] < 0.0:
+		frontJuncAng = -frontJuncAng
+
+	backVec = [pathPoints2[backDepI][0] - pathPoints2[backDepI-1][0], pathPoints2[backDepI][0] - pathPoints2[backDepI-1][0]]
+	#backVec = [pathSec2[1][0] - pathSec2[0][0], pathSec2[1][0] - pathSec2[0][0]]
+	backMag = math.sqrt(backVec[0]*backVec[0] + backVec[1]*backVec[1])
+	backVec[0] /= backMag
+	backVec[1] /= backMag
+
+	backJuncAng = acos(-backVec[0])
+	if -backVec[1] < 0.0:
+		backJuncAng = -backJuncAng
+
+	#ang1 = diffAngle(pathSec1[0][2],math.pi)
+	#ang2 = pathSec2[0][2]
+	#secP2 = pathPoints2[frontDepI]
+	#secP1 = pathPoints2[backDepI]
+
+	print "hypothesis discrepancy distance:", juncDist1, juncDist2, globalJunctionPose[2], diffAngle(frontJuncAng, globalJunctionPose[2]), diffAngle(backJuncAng, globalJunctionPose[2])
+
 
 	#if plotIter:
 	if False:
@@ -891,7 +919,7 @@ def getOverlapDeparture(globalJunctionPoint, parentPathID, childPathID, path1, p
 			pylab.scatter(xP,yP, color='g')		   
 
 			
-		pylab.scatter([globalJunctionPoint[0]],[globalJunctionPoint[1]], color='r')		   
+		pylab.scatter([globalJunctionPose[0]],[globalJunctionPose[1]], color='r')		   
 
 		xP = []
 		yP = []
@@ -2621,7 +2649,7 @@ class MapState:
 
 						#time1 = time.time()
 
-						samples = self.evaluateBranches(pathID, globJuncPose)
+						samples = self.evaluateBranches(pathID, globJuncPose, nodeID0, particleIndex)
 
 						probDist = []
 						branchPoseDist = []
@@ -4237,7 +4265,7 @@ class MapState:
 		#particles.append(particle)
 
 	@logFunction
-	def evaluateBranches(self, pathID, estJuncPose):
+	def evaluateBranches(self, pathID, estJuncPose, nodeID0, particleIndex):
 
 		# pathID
 		# parentID
@@ -4452,11 +4480,14 @@ class MapState:
 
 
 				pylab.scatter(xP, yP, color='k', zorder=8)
-				pylab.title("hyp: %d, pathID: %d, localPathSegs %d" % (self.hypothesisID, pathID, len(localPathSegs)))
+				pylab.title("nodeID: %d hyp: %d, particleID: %d pathID: %d, localPathSegs %d" % (nodeID0, self.hypothesisID, particleIndex, pathID, len(localPathSegs)))
 				
 				#self.plotEnv()			
 				
-				pylab.savefig("bayes_plot_%04u_%04u.png" % (self.hypothesisID, self.tempCount) )
+				
+				#results = getMultiDeparturePoint(currPath, medial2, estPose2, estPose2, pathIDs, nodeID, pathPlotCount = self.multiDepCount, hypID = self.hypothesisID, plotIter = True)
+				pylab.savefig("bayes_plot_%04u_%02u_%03u_%04u.png" % (nodeID0, self.hypothesisID, particleIndex, self.tempCount) )
+				#pylab.savefig("multi_departure_%04u_%02u_%04u_%03u_%01u.png" % (nodeID, hypID, pathPlotCount, particleIndex, spliceIndex))
 				self.tempCount += 1
 
 		return particles
@@ -4686,7 +4717,7 @@ class MapState:
 			
 			currPath = splicePaths[k]
 			pathIDs = splicePathIDs[k]
-			results = getMultiDeparturePoint(currPath, medial2, estPose2, estPose2, pathIDs, nodeID, pathPlotCount = self.multiDepCount, hypID = self.hypothesisID, plotIter = False)
+			results = getMultiDeparturePoint(currPath, medial2, estPose2, estPose2, pathIDs, nodeID, pathPlotCount = self.multiDepCount, hypID = self.hypothesisID, plotIter = True)
 
 			self.multiDepCount += 1
 
@@ -4695,7 +4726,7 @@ class MapState:
 			"departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departu rePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2"
 
 		for result in resultSet:
-			print "result:", results+(k,)
+			print "result:", result
 		
 		resultSet = sorted(resultSet, key=itemgetter(12), reverse=True)
 		
@@ -5938,8 +5969,8 @@ class MapState:
 		updateCount = self.poseParticles["updateCount"] 
 		particleDist2 = self.poseParticles["snapshots2"][0]
 
-
 		pathSpline = SplineFit(self.paths[parentID])
+
 
 		" add new path to particles "
 		for part in particleDist2:

@@ -3149,6 +3149,7 @@ def pathOverlapICP(initGuess, globalPath, medialPoints,plotIter = False, n1 = 0,
 def plotEnv(axes = 0):
 
 	# Y - junction, test 1 				
+	"""
 	WLEN2 = 7.0
 	wall1 = [[-14.0, -0.2], [-4.0, -0.2], [-4.0 + WLEN2*cos(pi/3), -0.2 - WLEN2*sin(pi/3)]]
 	wall2 = [[-4.0 + WLEN2*cos(pi/3), 0.2 + WLEN2*sin(pi/3)], [-4.0, 0.2] ,[-14.0, 0.2]]
@@ -3166,9 +3167,9 @@ def plotEnv(axes = 0):
 			p = copy(wall[i])
 			p[0] += 6.0
 			wall[i] = p
+	"""
 
 	# cross - junctions, test 6
-	"""
 
 	wall1 = [[-14.0, -0.2], [-4.0, -0.2], [-4,-5.2], [-3.6,-5.2], [-3.6,-0.2], [2.0,-0.2], [2.0,0.2]]
 	wall2 = [[-14.0, 0.2], [-4.0, 0.2], [-4.0,5.2], [-3.6,5.2], [-3.6,0.2], [2.0,0.2]]
@@ -3182,7 +3183,6 @@ def plotEnv(axes = 0):
 			p[0] += 6.0
 			wall[i] = p
 
-	"""
 
 	if axes == 0:
 	

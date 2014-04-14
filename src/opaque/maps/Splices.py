@@ -708,6 +708,11 @@ def orientPath(globalPath, globalRefPath, dist_thresh = 0.5):
 	" select global path orientation based on which has the smallest angle between tangent vectors "
 	print i, "angleSum1 =", angleSum1, "angleSum2 =", angleSum2
 	if angleSum1 > angleSum2:
+
+		#for k in range(len(pathPointsReverse)):
+		#	pAngle = pathPointsReverse[k][2]
+		#	pathPointsReverse[k][2] = diffAngle(pAngle, math.pi)
+
 		orientedGlobalPath = pathPointsReverse
 	else:
 		orientedGlobalPath = pathPoints
