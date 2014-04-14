@@ -2293,13 +2293,32 @@ class MapState:
 
 		for i in range(1000):
 			self.colors.append((random.random(),random.random(),random.random()))
+
+	def getNodePose(self, nodeID):
+		return copy(self.nodePoses[nodeID])
 	
+	def setNodePose(self, nodeID, newPose):
+
+		oldGPACPose = self.getNodePose(nodeID)
+
+		self.nodePoses[nodeID] = newPose
+
+		gpacProfile = Pose(oldGPACPose)
+		
+		localOffset = gpacProfile.convertGlobalPoseToLocal(self.nodeRawPoses[nodeID])
+		
+		" go back and convert this from GPAC pose to estPose "
+		newProfile = Pose(newPose)
+		newEstPose = newProfile.convertLocalOffsetToGlobal(localOffset)
+		
+		self.nodeRawPoses[nodeID] = newEstPose
+
 	@logFunction
 	def initializePoseParticles(self):
 
 	
-		pose0 = self.nodePoses[0]
-		pose1 = self.nodePoses[1]
+		pose0 = self.getNodePose(0)
+		pose1 = self.getNodePose(1)
 
 		path0 = deepcopy(self.paths[0])
 
@@ -2528,7 +2547,7 @@ class MapState:
 
 		#nodeID = nodeID0
 
-		nodePose0 = self.nodePoses[nodeID0]
+		nodePose0 = self.getNodePose(nodeID0)
 		staticSplicedPaths, spliceTerms, staticSplicePathIDs = self.getSplicesByNearJunction(nodePose0)
 
 		print "numStaticSplicedPaths =", len(staticSplicedPaths)
@@ -2954,8 +2973,12 @@ class MapState:
 
 		" if more than one max, than we don't change the node pose, we accept the localize on the canonical pose "
 		if numMax == 1:
-			self.nodePoses[nodeID0] = deepcopy(particleDist2[maxIndex].pose0)
-			self.nodePoses[nodeID1] = deepcopy(particleDist2[maxIndex].pose1)
+
+			self.setNodePose(nodeID0, deepcopy(particleDist2[maxIndex].pose0))
+			self.setNodePose(nodeID1, deepcopy(particleDist2[maxIndex].pose1))
+
+			#self.nodePoses[nodeID0] = deepcopy(particleDist2[maxIndex].pose0)
+			#self.nodePoses[nodeID1] = deepcopy(particleDist2[maxIndex].pose1)
 
 
 			" change to the maximum likelihood branch position as well "
@@ -2986,9 +3009,10 @@ class MapState:
 
 					for nodeID in memberNodes:
 						if nodeID != nodeID0 and nodeID != nodeID1:
-							localPose = origJuncOrigin.convertGlobalPoseToLocal(self.nodePoses[nodeID])
+							localPose = origJuncOrigin.convertGlobalPoseToLocal(self.getNodePose(nodeID))
 							newGlobalPose = offsetOrigin1.convertLocalOffsetToGlobal(localPose)
-							self.nodePoses[nodeID] = newGlobalPose
+							#self.nodePoses[nodeID] = newGlobalPose
+							self.setNodePose(nodeID, newGlobalPose)
 
 					" update of canonical branch point from maximum likelihood branch point "
 					newJuncPose = deepcopy(partJuncPose)
@@ -3326,8 +3350,8 @@ class MapState:
 		pylab.scatter(hypPointsX_0, hypPointsY_0, color='r', linewidth=1, zorder=10, alpha=0.2)
 		pylab.scatter(hypPointsX_1, hypPointsY_1, color='b', linewidth=1, zorder=10, alpha=0.2)
 
-		pose0 = self.nodePoses[nodeID0]
-		pose1 = self.nodePoses[nodeID1]
+		pose0 = self.getNodePose(nodeID0)
+		pose1 = self.getNodePose(nodeID1)
 		medial0 = self.poseData.medialAxes[nodeID0]
 		medial1 = self.poseData.medialAxes[nodeID1]
 
@@ -3481,7 +3505,9 @@ class MapState:
 	
 		utilSum = 0.0
 
-		for nodeID1, estPose1 in self.nodePoses.iteritems():
+		for nodeID1 in self.nodePoses.keys():
+
+			estPose1 = self.getNodePose(nodeID1)
 	
 			orderedPathIDs1 = self.getOrderedOverlappingPaths(nodeID1)
 			print nodeID1, "recompute orderedPathIDs1:", orderedPathIDs1
@@ -4696,7 +4722,7 @@ class MapState:
 	@logFunction
 	def getOrderedOverlappingPaths(self, nodeID):
 
-		nodePose = self.nodePoses[nodeID]
+		nodePose = self.getNodePose(nodeID)
 		splicePaths, spliceTerms, splicePathIDs = self.getSplicesByNearJunction(nodePose)
 		
 		#node2 = self.nodeHash[nodeID]
@@ -4706,7 +4732,7 @@ class MapState:
 		medial2 = self.poseData.medialAxes[nodeID]
 
 		#estPose2 = node2.getGlobalGPACPose()		
-		estPose2 = self.nodePoses[nodeID]
+		estPose2 = self.getNodePose(nodeID)
 
 
 		resultSet = []
@@ -4746,7 +4772,7 @@ class MapState:
 
 				#medial2 = self.poseData.medialAxes[nodeID]
 				#estPose2 = self.nodePoses[nodeID]
-				sum1 = getOverlapCondition(self.poseData.medialAxes[nodeID], self.nodePoses[nodeID], self.trimmedPaths[pathID], nodeID, plotIter = False, overlapPlotCount = self.overlapPlotCount)
+				sum1 = getOverlapCondition(self.poseData.medialAxes[nodeID], self.getNodePose(nodeID), self.trimmedPaths[pathID], nodeID, plotIter = False, overlapPlotCount = self.overlapPlotCount)
 				self.overlapPlotCount += 1
 
 				#sum1 = self.getOverlapCondition(self.trimmedPaths[pathID], nodeID, plotIter = False)
@@ -5975,7 +6001,7 @@ class MapState:
 		" add new path to particles "
 		for part in particleDist2:
 
-			origPose = self.nodePoses[branchNodeID]
+			origPose = self.getNodePose(branchNodeID)
 
 			gpacProfile = Pose(origPose)
 			localOffset = gpacProfile.convertGlobalPoseToLocal(self.nodeRawPoses[branchNodeID])
@@ -6087,7 +6113,7 @@ class MapState:
 			for nodeID in nodes:
 
 				#estPose1 = self.nodeHash[nodeID].getGlobalGPACPose()		
-				estPose1 = self.nodePoses[nodeID]
+				estPose1 = self.getNodePose(nodeID)
 		
 				#if self.nodeHash[nodeID].isBowtie:			  
 				#	hull1 = computeBareHull(self.nodeHash[nodeID], sweep = False, static = True)
@@ -7148,7 +7174,7 @@ class MapState:
 				xP = []
 				yP = []
 
-				estPose1 = self.nodePoses[nodeID]
+				estPose1 = self.getNodePose(nodeID)
 		
 				if self.poseData.isBowties[nodeID]:			
 					hull1 = self.poseData.aHulls[nodeID]
@@ -7341,7 +7367,7 @@ class MapState:
 				#secP1, secP2 = getOverlapDeparture(parentPathID, childPathID, paths, plotIter = False)				 
 
 				branchNodeID = self.pathClasses[childPathID]["branchNodeID"]
-				branchNodePose = self.nodePoses[branchNodeID]
+				branchNodePose = self.getNodePose(branchNodeID)
 				globalJunctionPoint = self.getGlobalJunctionPose(childPathID)
 
 				#secP1, secP2 = getOverlapDeparture(globalJunctionPoint, parentPathID, childPathID, path1, path2, plotIter = False)				 
@@ -8070,7 +8096,7 @@ class MapState:
 		medial2 = self.poseData.medialAxes[nodeID]
 
 		#estPose2 = node2.getGlobalGPACPose()		
-		estPose2 = self.nodePoses[nodeID]
+		estPose2 = self.getNodePose(nodeID)
 			
 		" set the initial guess "
 		poseOrigin = Pose(estPose2)
@@ -8516,7 +8542,7 @@ class MapState:
 		medial2 = self.poseData.medialAxes[nodeID]
 
 		#estPose2 = node2.getGlobalGPACPose()		
-		estPose2 = self.nodePoses[nodeID]
+		estPose2 = self.getNodePose(nodeID)
 		
 		"Assumption:  one section of the medial axis is closely aligned with the path "
 		poseOrigin = Pose(estPose2)
@@ -9062,7 +9088,7 @@ class MapState:
 		medial2 = self.poseData.medialAxes[nodeID]
 
 		#estPose2 = node2.getGlobalGPACPose()		
-		estPose2 = self.nodePoses[nodeID]
+		estPose2 = self.getNodePose(nodeID)
 		
 		minMatchDist2 = 0.2
 			

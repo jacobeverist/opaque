@@ -165,9 +165,13 @@ class BayesMapper:
 
 			mapHyp.gndPoses[nodeID] = newNode.getGndGlobalGPACPose()
 			mapHyp.gndRawPoses[nodeID] = newNode.getGndPose()
-			mapHyp.nodePoses[nodeID] = newNode.getGlobalGPACPose()
+			mapHyp.setNodePose(nodeID, newNode.getGlobalGPACPose())
+			#mapHyp.nodePoses[nodeID] = newNode.getGlobalGPACPose()
 
 			" FIXME:  raw pose does not get updated yet with GPAC pose "
+
+			print "rawPoses:", mapHyp.nodeRawPoses[nodeID], newNode.getEstPose()
+
 			mapHyp.nodeRawPoses[nodeID] = newNode.getEstPose()
 
 		self.mapHyps = self.integrateNode(currHyps, nodeID)
@@ -213,8 +217,10 @@ class BayesMapper:
 
 			mapHyp.gndPoses[nodeID] = tempMapState.gndPoses[nodeID]
 			mapHyp.gndRawPoses[nodeID] = tempMapState.gndRawPoses[nodeID]
-			mapHyp.nodePoses[nodeID] = tempMapState.nodePoses[nodeID]
+			#mapHyp.nodePoses[nodeID] = tempMapState.nodePoses[nodeID]
+			mapHyp.setNodePose(nodeID, newNode.getGlobalGPACPose())
 
+			print "rawPoses:", mapHyp.nodeRawPoses[nodeID], newNode.getEstPose()
 			" FIXME:  raw pose does not get updated yet with GPAC pose "
 			mapHyp.nodeRawPoses[nodeID] = tempMapState.nodeRawPoses[nodeID]
 
@@ -372,9 +378,6 @@ class BayesMapper:
 		for pID in toDelete:
 			del hypSet[pID]
 
-		#for k in range(self.poseData.numNodes):
-		#	mapHyp.nodePoses[k] = self.nodeHash[k].getGlobalGPACPose()
-
 		hp = hpy()
 		print hp.heap()
 
@@ -421,9 +424,6 @@ class BayesMapper:
 
 	@logFunction
 	def saveState(self):
-
-		#for k in range(self.poseData.numNodes):
-		#	self.nodePoses[k] = self.nodeHash[k].getGlobalGPACPose()
 
 					
 		saveFile = ""
@@ -608,8 +608,8 @@ class BayesMapper:
 					hull2 = self.poseData.aHulls[nodeID2]
 					medial2 = self.poseData.medialAxes[nodeID2]
 
-					estPose1 = mapHyp.nodePoses[nodeID1]
-					estPose2 = mapHyp.nodePoses[nodeID2]
+					estPose1 = mapHyp.getNodePose(nodeID1)
+					estPose2 = mapHyp.getNodePose(nodeID2)
 					self.currSplicePath = self.selectSplice(mapHyp, nodeID1, nodeID2, medial1, medial2, estPose1, estPose2, orderedPathIDs1, orderedPathIDs2)
 					
 					self.paths.generatePaths()
@@ -625,10 +625,6 @@ class BayesMapper:
 		if self.poseData.numNodes >= 4:
 			pass
 		
-
-		#for k in range(self.poseData.numNodes):
-		#	self.nodePoses[k] = self.nodeHash[k].getGlobalGPACPose()
-
 
 	@logFunction
 	def selectSplice(self, mapHyp, nodeID1, nodeID2, medial1, medial2, estPose1, estPose2, orderedPathIDs1, orderedPathIDs2):
@@ -737,10 +733,11 @@ class BayesMapper:
 				if not hasMoved[nodeID]:
 					print "modifying node", nodeID, "in path", pathID1 
 					" adjust node poses to relative path positions "
-					nodePose = mapHyp.nodePoses[nodeID]
+					nodePose = mapHyp.getNodePose(nodeID)
 					guessPose = poseOrigin1.convertLocalOffsetToGlobal(nodePose)
 					#self.nodeHash[nodeID].setGPACPose(guessPose)
-					mapHyp.nodePoses[nodeID] = guessPose
+					mapHyp.setNodePose(nodeID, guessPose)
+					#mapHyp.nodePoses[nodeID] = guessPose
 					
 					#self.drawConstraints(mapHyp, self.statePlotCount)
 					self.statePlotCount += 1
@@ -754,10 +751,11 @@ class BayesMapper:
 				if not hasMoved[nodeID]:
 					print "modifying node", nodeID, "in path", pathID2 
 					" adjust node poses to relative path positions "
-					nodePose = mapHyp.nodePoses[nodeID]
+					nodePose = mapHyp.getNodePose(nodeID)
 					guessPose = poseOrigin2.convertLocalOffsetToGlobal(nodePose)
 					#self.nodeHash[nodeID].setGPACPose(guessPose)
-					mapHyp.nodePoses[nodeID] = guessPose
+					mapHyp.setNodePose(nodeID, guessPose)
+					#mapHyp.nodePoses[nodeID] = guessPose
 					
 					#self.drawConstraints(mapHyp, self.statePlotCount)
 					self.statePlotCount += 1
@@ -778,7 +776,7 @@ class BayesMapper:
 				#hull, medial = computeHullAxis(nodeID, self.nodeHash[nodeID], tailCutOff = False)
 				hull = self.poseData.aHulls[nodeID]
 				medial = self.poseData.medialAxes[nodeID]
-				estPose = mapHyp.nodePoses[nodeID]
+				estPose = mapHyp.getNodePose(nodeID)
 	
 				orderedPathIDs = [parentID1, pathID1]
 				splicedPaths1 = mapHyp.splicePathIDs(orderedPathIDs)	
@@ -1062,10 +1060,11 @@ class BayesMapper:
 				for nodeID in mergeNodes:
 
 					" adjust node poses to relative path positions "
-					nodePose = mapHyp.nodePoses[nodeID]
+					nodePose = mapHyp.getNodePose(nodeID)
 					guessPose = poseOrigin.convertLocalOffsetToGlobal(nodePose)
 					#self.nodeHash[nodeID].setGPACPose(guessPose)
-					mapHyp.nodePoses[nodeID] = guessPose
+					mapHyp.setNodePose(nodeID, guessPose)
+					#mapHyp.nodePoses[nodeID] = guessPose
 					
 					#self.drawConstraints(mapHyp, self.statePlotCount)
 					self.statePlotCount += 1
@@ -1084,13 +1083,13 @@ class BayesMapper:
 				
 
 					" control point nearest the GPAC origin "
-					globalPoint1 = mapHyp.nodePoses[nodeID][:2]					
-					print "adjusting pose", nodeID, "from", mapHyp.nodePoses[nodeID]
+					globalPoint1 = mapHyp.getNodePose(nodeID)[:2]
+					print "adjusting pose", nodeID, "from", mapHyp.getNodePose(nodeID)
 					
 					" if siblings, include mutual parent in splice"
 
 					try:
-						consistentFit(mapHyp, nodeID, mapHyp.nodePoses[nodeID], excludePathIDs = [lessID])
+						consistentFit(mapHyp, nodeID, mapHyp.getNodePose(nodeID), excludePathIDs = [lessID])
 					except IndexError:
 						print "failed to consistentFit node", nodeID
 						pass
@@ -1225,13 +1224,13 @@ class BayesMapper:
 
 		poses = []
 		for i in range(self.poseData.numNodes):
-			poses.append(mapHyp.nodePoses[i])
+			poses.append(mapHyp.getNodePose(i))
 
 		#pylab.clf()
 		for i in range(self.poseData.numNodes):
 
 			hull = self.poseData.aHulls[i]
-			currPose = mapHyp.nodePoses[i]
+			currPose = mapHyp.getNodePose(i)
 
 			currProfile = Pose(currPose)
 			posture1 = self.poseData.correctedPostures[i]
@@ -1518,7 +1517,7 @@ class BayesMapper:
 				xP = []
 				yP = []
 
-				estPose1 = mapHyp.nodePoses[nodeID]
+				estPose1 = mapHyp.getNodePose(nodeID)
 		
 				if self.poseData.isBowties[nodeID]:			
 					hull1 = self.poseData.aHulls[nodeID]

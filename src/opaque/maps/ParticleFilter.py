@@ -759,9 +759,7 @@ class Particle:
 									"branchNodeID" : branchNodeID,
 									"localJunctionPose" : localJunctionPose, 
 									"globalJunctionPose" : globalJunctionPose,
-									#"probDist" : [ 1.0 / 11.0 for k in range(11) ],
 									"probDist" : [ 1.0 / float(numBranches) for k in range(numBranches) ],
-									#"branchPoseDist" : [deepcopy(globalJunctionPose) for k in range(11)],
 									"branchPoseDist" : [deepcopy(globalJunctionPose) for k in range(numBranches)],
 									"maxLikelihoodBranch" : 0
 									}		

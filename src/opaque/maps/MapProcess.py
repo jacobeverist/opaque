@@ -333,7 +333,7 @@ def computeEvalNode(mapHyp, nodeID1):
 	print "nodeID1:", nodeID1
 	print "mapHyp.nodePoses:", mapHyp.nodePoses
 
-	estPose1 = mapHyp.nodePoses[nodeID1]
+	estPose1 = mapHyp.getNodePose(nodeID1)
 
 	utilVal = 0.0
 
@@ -694,14 +694,18 @@ def movePath(mapHyp, nodeID, direction, distEst = 1.0):
 			" the guess process gives a meaningful guess for these node's poses "
 			" before this, it is meaningless "
 			#getStepGuess(mapHyp, nodeID-1, direction)
-			estPose0 = mapHyp.nodePoses[nodeID-3]		
-			estPose2 = mapHyp.nodePoses[nodeID-1]
-			mapHyp.nodePoses[nodeID-1] = getStepGuess(poseData, nodeID-3, nodeID-1, estPose0, estPose2, direction)
+			estPose0 = mapHyp.getNodePose(nodeID-3)
+			estPose2 = mapHyp.getNodePose(nodeID-1)
+			#mapHyp.nodePoses[nodeID-1] = getStepGuess(poseData, nodeID-3, nodeID-1, estPose0, estPose2, direction)
+			newPose = getStepGuess(poseData, nodeID-3, nodeID-1, estPose0, estPose2, direction)
+			mapHyp.setNodePose(nodeID-1, newPose)
 
-			estPose3 = mapHyp.nodePoses[nodeID]
+			estPose3 = mapHyp.getNodePose(nodeID)
 			#getInPlaceGuess(mapHyp, nodeID-1, nodeID, direction)
 			supportLine = mapHyp.paths[0]
-			mapHyp.nodePoses[nodeID] = getInPlaceGuess(poseData, nodeID-1, nodeID, estPose2, estPose3, supportLine, direction)
+			#mapHyp.nodePoses[nodeID] = getInPlaceGuess(poseData, nodeID-1, nodeID, estPose2, estPose3, supportLine, direction)
+			newPose = getInPlaceGuess(poseData, nodeID-1, nodeID, estPose2, estPose3, supportLine, direction)
+			mapHyp.setNodePose(nodeID, newPose)
 
 
 		else:
@@ -724,8 +728,8 @@ def movePath(mapHyp, nodeID, direction, distEst = 1.0):
 			print "hypothesis", mapHyp.hypothesisID, terminals, junctions
 
 
-			initPose2 = mapHyp.nodePoses[nodeID-1]
-			initPose3 = mapHyp.nodePoses[nodeID]
+			initPose2 = mapHyp.getNodePose(nodeID-1)
+			initPose3 = mapHyp.getNodePose(nodeID)
 			
 			print "junctions:", junctions
 			print "initPose2:", initPose2
@@ -821,8 +825,8 @@ def movePath(mapHyp, nodeID, direction, distEst = 1.0):
 			for path in splicePaths:		
 
 				" 2) get pose of previous node, get point on path curve "
-				pose0 = mapHyp.nodePoses[nodeID-3]
-				pose1 = mapHyp.nodePoses[nodeID-2]
+				pose0 = mapHyp.getNodePose(nodeID-3)
+				pose1 = mapHyp.getNodePose(nodeID-2)
 
 				" FIXME:  make sure path is oriented correctly wrt node medial axis "
 				hull0 = poseData.aHulls[nodeID-3]
@@ -867,8 +871,10 @@ def movePath(mapHyp, nodeID, direction, distEst = 1.0):
 				print "pose2,pose3:", pose2, pose3
 				
 				" 4) set as pose of new node "
-				mapHyp.nodePoses[nodeID-1] = pose2
-				mapHyp.nodePoses[nodeID] = pose3
+				mapHyp.setNodePose(nodeID-1, pose2)
+				mapHyp.setNodePose(nodeID, pose3)
+				#mapHyp.nodePoses[nodeID-1] = pose2
+				#mapHyp.nodePoses[nodeID] = pose3
 
 				uPath2, uMedialOrigin2 = selectLocalCommonOrigin(orientedSplicePath, medial2, pose2)
 
@@ -934,13 +940,15 @@ def movePath(mapHyp, nodeID, direction, distEst = 1.0):
 			currSplice2 = []
 			currSplice3 = []
 			if len(resultMoves2) > 0:
-				mapHyp.nodePoses[nodeID-1] = resultMoves2[0][0]
+				#mapHyp.nodePoses[nodeID-1] = resultMoves2[0][0]
+				mapHyp.setNodePose(nodeID-1, resultMoves2[0][0])
 				currSplice2 = resultMoves2[0][19]
 			else:
 				print "node", nodeID-1, "not movePathed because no valid pose"
 
 			if len(resultMoves3) > 0:
-				mapHyp.nodePoses[nodeID] = resultMoves3[0][0]
+				#mapHyp.nodePoses[nodeID] = resultMoves3[0][0]
+				mapHyp.setNodePose(nodeID, resultMoves3[0][0])
 				currSplice3 = resultMoves3[0][19]
 			else:
 				print "node", nodeID, "not movePathed because no valid pose"
@@ -965,20 +973,20 @@ def movePath(mapHyp, nodeID, direction, distEst = 1.0):
 			orientedPathSpline2 = SplineFit(currSplice2, smooth=0.1)
 			orientedPathSpline3 = SplineFit(currSplice3, smooth=0.1)
 
-			oldPose0 = mapHyp.nodePoses[nodeID-3]
+			oldPose0 = mapHyp.getNodePose(nodeID-3)
 			minDist0, oldU0, oldP0 = orientedPathSpline2.findClosestPoint(oldPose0)
 			#oldP0, oldI0, minDist0 = gen_icp.findClosestPointInA(currSplice2, oldPose0)
 
-			oldPose1 = mapHyp.nodePoses[nodeID-2]
+			oldPose1 = mapHyp.getNodePose(nodeID-2)
 			minDist1, oldU1, oldP1 = orientedPathSpline3.findClosestPoint(oldPose1)
 			#oldP1, oldI1, minDist1 = gen_icp.findClosestPointInA(currSplice3, oldPose1)
 
 
-			newPose2 = mapHyp.nodePoses[nodeID-1]
+			newPose2 = mapHyp.getNodePose(nodeID-1)
 			minDist2, newU2, newP2 = orientedPathSpline2.findClosestPoint(newPose2)
 			#newP2, newI2, minDist2 = gen_icp.findClosestPointInA(currSplice2, newPose2)
 
-			newPose3 = mapHyp.nodePoses[nodeID]
+			newPose3 = mapHyp.getNodePose(nodeID)
 			minDist3, newU3, newP3 = orientedPathSpline3.findClosestPoint(newPose3)
 			#newP3, newI3, minDist3 = gen_icp.findClosestPointInA(currSplice3, newPose3)
 
@@ -2564,7 +2572,7 @@ def consistentFit(mapHyp, nodeID, estPose, numGuesses = 11, excludePathIDs = [])
 	medial1 = poseData.medialAxes[nodeID]
 	medialSpline1 = SplineFit(medial1, smooth=0.1)
 
-	estPose1 = mapHyp.nodePoses[nodeID]		
+	estPose1 = mapHyp.getNodePose(nodeID)
 	poseOrigin = Pose(estPose1)
 	
 	globalMedial = []
@@ -2866,7 +2874,8 @@ def consistentFit(mapHyp, nodeID, estPose, numGuesses = 11, excludePathIDs = [])
 
 	spliceIndex = filteredResults[0][19]
 	guessPose = filteredResults[0][0]
-	mapHyp.nodePoses[nodeID] = guessPose
+	#mapHyp.nodePoses[nodeID] = guessPose
+	mapHyp.setNodePose(nodeID, guessPose)
 
 	if mapHyp.isNodeBranching[nodeID]:
 		mapHyp.moveNode(nodeID, splicePathIDs[spliceIndex])
@@ -2892,7 +2901,7 @@ def consistentParticleFit(mapHyp, nodeID, estPose, excludePathIDs = []):
 	medial1 = poseData.medialAxes[nodeID]
 	medialSpline1 = SplineFit(medial1, smooth=0.1)
 
-	estPose1 = mapHyp.nodePoses[nodeID]		
+	estPose1 = mapHyp.getNodePose(nodeID)
 	poseOrigin = Pose(estPose1)
 	
 	globalMedial = []
@@ -3193,7 +3202,8 @@ def consistentParticleFit(mapHyp, nodeID, estPose, excludePathIDs = []):
 	filteredResults = sorted(filteredResults, key=itemgetter(22), reverse=True)
 
 	guessPose = filteredResults[0][0]
-	mapHyp.nodePoses[nodeID] = guessPose
+	#mapHyp.nodePoses[nodeID] = guessPose
+	mapHyp.setNodePose(nodeID, guessPose)
 
 	return filteredResults[0]
 
