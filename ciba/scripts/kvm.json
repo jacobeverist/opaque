@@ -1,0 +1,69 @@
+{
+  "builders": [
+    {
+      "accelerator": "kvm",
+      "boot_command": [
+        "",
+        "<tab> ks=http://{{ .HTTPIP}}:{{ .HTTPPort }}/centos6-ks.cfg <enter>"
+      ],
+      "disk_interface": "virtio",
+      "disk_size": 10000,
+      "format": "raw",
+      "headless": false,
+      "http_directory": "scripts",
+      "http_port_max": 10089,
+      "http_port_min": 10082,
+      "iso_checksum": "0d9dc37b5dd4befa1c440d2174e88a87",
+      "iso_checksum_type": "md5",
+      "iso_url": "http://www.chapterhouse.aero.org/mirrors/sites/centos/6.5/isos/x86_64/CentOS-6.5-x86_64-minimal.iso",
+      "net_device": "virtio-net",
+      "output_directory": "output_centos_cloud_barometer",
+      "shutdown_command": "shutdown -P now",
+
+      "ssh_host_port_max": 2229,
+      "ssh_host_port_min": 2222,
+      "ssh_password": "Password2014",
+      "ssh_port": 22,
+      "ssh_username": "root",
+      "ssh_wait_timeout": "90m",
+      "type": "qemu",
+      "vm_name": "cloud_barometer_2.0.0"
+    }
+  ],
+
+
+  "provisioners": [
+	  {
+	  "type": "file",
+	  "source": "cloud_barometer_2.0.0.tar.bz2",
+	  "destination": "/root/cloud_barometer_2.0.0.tar.bz2"
+	  },
+	  {
+	  "type": "file",
+	  "source": "pystache-0.5.3.tar.gz",
+	  "destination": "/root/pystache-0.5.3.tar.gz"
+	  },
+
+	  {
+	  "type": "file",
+	  "source": "openmpi-1.4.5.tar.bz2",
+	  "destination": "/root/openmpi-1.4.5.tar.bz2"
+	  },
+
+	  {
+	  "type": "file",
+	  "source": "cmake-2.8.12.2.tar.gz",
+	  "destination": "/root/cmake-2.8.12.2.tar.gz"
+	  },
+
+	  {
+	  "type": "shell",
+	  "script": "scripts/installStuff.sh"
+	  }
+
+  ],
+
+  "post-processors": null
+
+}
+
