@@ -165,12 +165,12 @@ class BayesMapper:
 
 			mapHyp.gndPoses[nodeID] = newNode.getGndGlobalGPACPose()
 			mapHyp.gndRawPoses[nodeID] = newNode.getGndPose()
-			mapHyp.setNodePose(nodeID, newNode.getGlobalGPACPose())
-			#mapHyp.nodePoses[nodeID] = newNode.getGlobalGPACPose()
+			#mapHyp.setNodePose(nodeID, newNode.getGlobalGPACPose())
+			mapHyp.nodePoses[nodeID] = newNode.getGlobalGPACPose()
 
 			" FIXME:  raw pose does not get updated yet with GPAC pose "
 
-			print "rawPoses:", mapHyp.nodeRawPoses[nodeID], newNode.getEstPose()
+			#print "rawPoses:", mapHyp.nodeRawPoses[nodeID], newNode.getEstPose()
 
 			mapHyp.nodeRawPoses[nodeID] = newNode.getEstPose()
 
@@ -217,10 +217,10 @@ class BayesMapper:
 
 			mapHyp.gndPoses[nodeID] = tempMapState.gndPoses[nodeID]
 			mapHyp.gndRawPoses[nodeID] = tempMapState.gndRawPoses[nodeID]
-			#mapHyp.nodePoses[nodeID] = tempMapState.nodePoses[nodeID]
-			mapHyp.setNodePose(nodeID, newNode.getGlobalGPACPose())
+			mapHyp.nodePoses[nodeID] = tempMapState.nodePoses[nodeID]
+			#mapHyp.setNodePose(nodeID, newNode.getGlobalGPACPose())
 
-			print "rawPoses:", mapHyp.nodeRawPoses[nodeID], newNode.getEstPose()
+			#print "rawPoses:", mapHyp.nodeRawPoses[nodeID], newNode.getEstPose()
 			" FIXME:  raw pose does not get updated yet with GPAC pose "
 			mapHyp.nodeRawPoses[nodeID] = tempMapState.nodeRawPoses[nodeID]
 
