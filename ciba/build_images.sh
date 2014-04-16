@@ -1,19 +1,21 @@
 #!/bin/bash
 
-WORKING_COPY_PATH=/home/everist/segd-cloud
+#WORKING_COPY_PATH=/home/everist/segd-cloud
 
-fileName=cloud_barometer_2.0.0
+#fileName=cloud_barometer_2.0.0
 
-rm cloud_barometer_2.0.0.tar.bz2
-rm -rf cloud_barometer_2.0.0
+#rm cloud_barometer_2.0.0.tar.bz2
+#rm -rf cloud_barometer_2.0.0
 
-svn export $WORKING_COPY_PATH/dist cloud_barometer_2.0.0
-tar cvf cloud_barometer_2.0.0.tar cloud_barometer_2.0.0
-bzip2 cloud_barometer_2.0.0.tar
+#svn export $WORKING_COPY_PATH/dist cloud_barometer_2.0.0
+#tar cvf cloud_barometer_2.0.0.tar cloud_barometer_2.0.0
+#bzip2 cloud_barometer_2.0.0.tar
 
-rm -rf output_centos_cloud_barometer
+rm -rf output_centos_dark_mapper
 
 packer/packer build scripts/kvm.json
+
+exit
 
 qemu-img convert -O vmdk -o subformat=monolithicSparse output_centos_cloud_barometer/$fileName.raw output_centos_cloud_barometer/$fileName.vmdk.tmp
 

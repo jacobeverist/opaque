@@ -15,7 +15,7 @@
       "http_port_min": 10082,
       "iso_checksum": "0d9dc37b5dd4befa1c440d2174e88a87",
       "iso_checksum_type": "md5",
-      "iso_url": "http://www.chapterhouse.aero.org/mirrors/sites/centos/6.5/isos/x86_64/CentOS-6.5-x86_64-minimal.iso",
+      "iso_url": "http://127.0.0.1/centos/6.5/isos/x86_64/CentOS-6.5-x86_64-minimal.iso",
       "net_device": "virtio-net",
       "output_directory": "output_centos_cloud_barometer",
       "shutdown_command": "shutdown -P now",
@@ -33,29 +33,6 @@
 
 
   "provisioners": [
-	  {
-	  "type": "file",
-	  "source": "cloud_barometer_2.0.0.tar.bz2",
-	  "destination": "/root/cloud_barometer_2.0.0.tar.bz2"
-	  },
-	  {
-	  "type": "file",
-	  "source": "pystache-0.5.3.tar.gz",
-	  "destination": "/root/pystache-0.5.3.tar.gz"
-	  },
-
-	  {
-	  "type": "file",
-	  "source": "openmpi-1.4.5.tar.bz2",
-	  "destination": "/root/openmpi-1.4.5.tar.bz2"
-	  },
-
-	  {
-	  "type": "file",
-	  "source": "cmake-2.8.12.2.tar.gz",
-	  "destination": "/root/cmake-2.8.12.2.tar.gz"
-	  },
-
 	  {
 	  "type": "shell",
 	  "script": "scripts/installStuff.sh"

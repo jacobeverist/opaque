@@ -26,6 +26,7 @@ echo "AllowTcpForwarding yes" >> /etc/ssh/sshd_config
 echo "X11DisplayOffset 10" >> /etc/ssh/sshd_config
 echo "X11UseLocalhost yes" >> /etc/ssh/sshd_config
 
+exit
 
 tar zxvf pystache-0.5.3.tar.gz
 cd pystache-0.5.3
