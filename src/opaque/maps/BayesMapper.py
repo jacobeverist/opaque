@@ -372,7 +372,8 @@ class BayesMapper:
 		toDelete = []
 		for pID, currHyp in hypSet.iteritems():
 			print pID, "mapOverlapSum =", currHyp.mapOverlapSum, "isNoLocalize =", currHyp.isNoLocalize
-			if currHyp.mapOverlapSum > 0.0 or currHyp.isNoLocalize:
+			#if currHyp.mapOverlapSum > 0.0 or currHyp.isNoLocalize:
+			if currHyp.mapOverlapSum > 4.0 or currHyp.isNoLocalize:
 				toDelete.append(pID)	
 				
 		for pID in toDelete:

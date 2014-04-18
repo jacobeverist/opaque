@@ -2340,8 +2340,10 @@ def branchEstimateCost(initGuess, junctionPose, pathSoup, globalPath, plotIter =
 	currPose = computeOffset(point1, point2, ang1, ang2 + currAng)
 
 	costThresh = 0.004
-	minMatchDist = 0.5
-	minMatchDist2 = 0.5
+	#minMatchDist = 0.5
+	#minMatchDist2 = 0.5
+	minMatchDist = 0.2
+	minMatchDist2 = 0.2
 	lastCost = 1e100
 	matchAngTol = math.pi/4.0
 	
