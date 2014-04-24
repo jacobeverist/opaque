@@ -13,6 +13,7 @@ from GPACurve import GPACurve
 from StableCurve import StableCurve
 #from gen_icp import computeMedialAxis, getLongestPath
 from medialaxis import computeMedialAxis
+import matplotlib.pyplot as plt
 
 import graph
 import alphamod
@@ -1684,7 +1685,8 @@ class LocalNode:
 		#medialLongPaths = []
 		#medialTailCuts = []
 		print len(self.longPaths), "long paths"
-		for longPath in self.longPaths:
+		for pathIndex in range(len(self.longPaths)):
+			longPath = self.longPaths[pathIndex]
 			print "longPath:", len(longPath)
 			
 			leafPath = deepcopy(longPath)
@@ -1957,8 +1959,12 @@ class LocalNode:
 				linePoint = medialSpline2.getU(currU)
 				vec = medialSpline2.getUVector(currU)
 
-
+				curveAngle = acos(vec[0])
+				if asin(vec[1]) < 0:
+					curveAngle = -curveAngle
 										
+				linePoint.append(curveAngle)
+
 				rightVec = [vec[0]*cos(pi/2.0) + vec[1]*sin(pi/2.0), -vec[0]*sin(pi/2.0) + vec[1]*cos(pi/2.0)]
 				leftVec = [vec[0]*cos(pi/2.0) - vec[1]*sin(pi/2.0), vec[0]*sin(pi/2.0) + vec[1]*cos(pi/2.0)]
 	
@@ -1990,14 +1996,15 @@ class LocalNode:
 					distL = sqrt((leftPoint[0]-linePoint[0])**2 + (leftPoint[1]-linePoint[1])**2)
 				else:
 					distL = 0.0
-				
+
 				if distL == 0.0:
 					distL = distR
 					
 				if distR == 0.0:
 					distR = distL				
 				
-				medialWidth.append([linePoint[0],linePoint[1],currU, distR, distL])
+
+				medialWidth.append([copy(linePoint),currU, distR, distL, copy(rightPoint), copy(leftPoint)])
 
 				if currU >= termU:
 					break
@@ -2006,7 +2013,19 @@ class LocalNode:
 				currU = nextU
 					
 			self.longMedialWidths.append(medialWidth)
-			
+	
+			widthStr = ""
+			widthStr += "medialWidth: %d %d %d " % (self.nodeID, pathIndex, len(longPath))
+			for width in medialWidth:
+				widthSum = width[2] + width[3]
+				#widthStr += "%0.2f " % widthSum
+				if widthSum > 0.4:
+					widthStr += "1 "
+				else:
+					widthStr += "0 "
+
+			print widthStr
+					
 			numSamples = len(medialWidth)
 			
 			" divide into 5 histograms "
@@ -2025,13 +2044,14 @@ class LocalNode:
 			remainderTotal = numSamples % 5
 			divIndexes[2] += remainderTotal
 			divIndexes[3] += remainderTotal
+
 				
 			print "numSamples:", numSamples
 			print "histDiv:", histDiv
 			print "divIndexes:", divIndexes
 			for k in range(numSamples):
 				
-				width = medialWidth[k][3] + medialWidth[k][4]
+				width = medialWidth[k][2] + medialWidth[k][3]
 				if k > divIndexes[currDiv]:
 					currDiv += 1
 				
@@ -2109,26 +2129,154 @@ class LocalNode:
 		medialSpline2 = SplineFit(medial2, smooth=0.1)
 
 
-		if False:
-			pylab.clf()
-	
+		if True:
+
+			#fig = plt.figure()
+			#fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, sharex=True, sharey=True)
+			fig, (ax1, ax2) = plt.subplots(2,  sharex=False, sharey=False)
+			#fig.set_size_inches(16,12)
+			#fig.tight_layout(pad=4.0)
+
+			#fig = plt.figure()
+			#ax1 = fig.add_subplot(2,1,1)
+			#ax1.plot(range(10), 'b-')
+
+			#ax2 = fig.add_subplot(2,1,2)
+			#ax2.plot(range(20), 'r^')
+
+			#ax1.plot(x)
+			#ax1.set_xlim(-4, 4)                    
+			#ax1.set_ylim(-3, 3)
+			ax1.set_xlim(-3, 3)
+			ax1.set_aspect("equal")
+
+			ax2.set_ylim(0.0, 1.0)
+			ax2.set_aspect("equal")
+
 			xP = []
 			yP = []
 			for p in medial2:
 				xP.append(p[0])
 				yP.append(p[1])
 
-			pylab.plot(xP,yP)
+			ax1.plot(xP,yP)
 	
 			xP = []
 			yP = []
 			for p in hull:
 				xP.append(p[0])
 				yP.append(p[1])
-			pylab.plot(xP,yP, color='r')
+			ax1.plot(xP,yP, color='r')
+
+			#medialWidth.append([linePoint[0],linePoint[1],currU, distR, distL, rightPoint, leftPoint])
+			#for longPathWidth in longMedialWidths:
+			if True:
+
+				longPathWidth = longMedialWidths[0]
+
+				widthX = []
+				widthY = []
+
+				contigCount = 0
+				contigPoints = []
+				contigCenterMass = []
+				contigWeights = []
+				contigPointIndex = []
+				contigLen = []
+
+				for val in longPathWidth:
+
+					distR = val[2]
+					distL = val[3]
+					linePoint = val[0]
+					rightPoint = val[4]
+					leftPoint = val[5]
+					widthSum = distR + distL
+
+					if len(widthX) > 0:
+						widthX.append(widthX[-1] + 0.04)
+					else:
+						widthX.append(0.0)
+
+					widthY.append(widthSum)
+
 						
-			pylab.title("Medial %d" % self.nodeID)
-			pylab.savefig("medialOut_%04u.png" % self.nodeID)
+					if widthSum > 0.45:
+						contigCount += 1
+						contigPoints.append(widthX[-1])
+						contigWeights.append(widthSum)
+
+					else:
+						if contigCount > 0:
+
+							if contigCount > 5 and contigCount < 20:
+								weightSum = sum(contigWeights)
+								centerMass = 0.0
+								for k in range(len(contigPoints)):
+
+									centerMass += contigPoints[k] * contigWeights[k]
+
+								centerMass = centerMass / weightSum
+								#centerMass = sum(contigPoints) / float(len(contigPoints))
+								contigCenterMass.append(centerMass)
+
+								for k in range(len(widthX)):
+									if widthX[k] < centerMass and widthX[k+1] > centerMass:
+										if fabs(widthX[k]-centerMass) > fabs(widthX[k+1]-centerMass):
+											contigPointIndex.append(k+1)
+										else:
+											contigPointIndex.append(k)
+
+										contigLen.append(len(contigPoints))
+
+
+							contigCount = 0
+							contigPoints = []
+							contigWeights = []
+
+					print "distR:", distR
+					print "distL:", distL
+					print "linePoint:", linePoint
+					print "leftPoint:", leftPoint
+					print "rightPoint:", rightPoint
+
+					if len(rightPoint) > 0.0:
+						xP = [linePoint[0], rightPoint[0]]
+						yP = [linePoint[1], rightPoint[1]]
+						if widthSum > 0.45:
+							ax1.plot(xP,yP, color='k')
+						else:
+							ax1.plot(xP,yP, color='b')
+
+					if len(leftPoint) > 0.0:
+						xP = [linePoint[0], leftPoint[0]]
+						yP = [linePoint[1], leftPoint[1]]
+						if widthSum > 0.45:
+							ax1.plot(xP,yP, color='k')
+						else:
+							ax1.plot(xP,yP, color='b')
+
+				ax2.plot(widthX,widthY, color='k')
+				ax2.plot([0.0,widthX[-1]], [0.45,0.45], color='r')
+
+				contigY = [0.45 for k in range(len(contigCenterMass))]
+				ax2.scatter(contigCenterMass,contigY, color='k')
+
+				centerPointsX = [longPathWidth[k][0][0] for k in contigPointIndex]
+				centerPointsY = [longPathWidth[k][0][1] for k in contigPointIndex]
+				ax1.scatter(centerPointsX,centerPointsY, color='k')
+
+				for k in range(len(centerPointsX)):
+					ax2.annotate("%d" % contigLen[k], xy=(contigCenterMass[k], 0.3), xytext=(contigCenterMass[k], 0.8))
+
+
+			#pylab.xlim(-3,3)
+			#pylab.ylim(-2.5,2.5)
+			#pylab.axis("equal")
+			ax1.set_title("Medial %d" % self.nodeID)
+			plt.savefig("medialOut_%04u.png" % self.nodeID)
+			plt.clf()
+			plt.close()
 
 
 		greatCount, divSums = bowtieValues[0]
