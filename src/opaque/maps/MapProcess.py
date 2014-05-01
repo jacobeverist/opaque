@@ -2252,6 +2252,10 @@ def checkForeBranch(hypSet, nodeID1, nodeID2, particleIDs):
 			newHyps[particleIDs].isNotBranched = True
 			newHyps[particleIDs].isNodeBranching[nodeID1] = True
 			newHyps[particleIDs].isNodeBranching[nodeID2] = True
+
+			" in case current hypothesis has already branched, this ensures that topology is regenerated when branching "
+			newHyps[pID].isNotBranched = False
+
 			print "creating hyp", particleIDs, "from hyp", mapHyp.hypothesisID, ", len(paths) =", len(mapHyp.pathClasses)
 			particleIDs += 1
 
@@ -2370,7 +2374,11 @@ def checkBackBranch(hypSet, nodeID1, nodeID2, particleIDs):
 			newHyps[particleIDs].isNotBranched = True
 			newHyps[particleIDs].isNodeBranching[nodeID1] = True
 			newHyps[particleIDs].isNodeBranching[nodeID2] = True
+
+			" in case current hypothesis has already branched, this ensures that topology is regenerated when branching "
+			newHyps[pID].isNotBranched = False
 			print "creating hyp", particleIDs, "from hyp", mapHyp.hypothesisID, ", len(paths) =", len(mapHyp.pathClasses)
+			
 			particleIDs += 1
 
 		isBranch, pathBranchIDs, isNew = mapHyp.determineBranchPair(nodeID1, nodeID2, backExist1, backExist2, backInterior1, backInterior2, depAngle1, depAngle2, depPoint1, depPoint2, parentPathID1, parentPathID2, dirFlag, isUnique1, isUnique2, duplicatePathID1, duplicatePathID2)
