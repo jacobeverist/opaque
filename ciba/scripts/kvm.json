@@ -40,72 +40,72 @@
 	  },
 	  {
 	  "type": "file",
-	  "source": "Cython-0.20.1.tar.gz",
+	  "source": "depends/Cython-0.20.1.tar.gz",
 	  "destination": "/root/Cython-0.20.1.tar.gz"
 	  },
 	  {
 	  "type": "file",
-	  "source": "numpy-1.7.2.tar.gz",
+	  "source": "depends/numpy-1.7.2.tar.gz",
 	  "destination": "/root/numpy-1.7.2.tar.gz"
 	  },
 	  {
 	  "type": "file",
-	  "source": "scipy-0.13.3.tar.gz",
+	  "source": "depends/scipy-0.13.3.tar.gz",
 	  "destination": "/root/scipy-0.13.3.tar.gz"
 	  },
 	  {
 	  "type": "file",
-	  "source": "matplotlib-1.3.1.tar.gz",
+	  "source": "depends/matplotlib-1.3.1.tar.gz",
 	  "destination": "/root/matplotlib-1.3.1.tar.gz"
 	  },
 	  {
 	  "type": "file",
-	  "source": "numpy-1.7.2.tar.gz",
+	  "source": "depends/numpy-1.7.2.tar.gz",
 	  "destination": "/root/numpy-1.7.2.tar.gz"
 	  },
 	  {
 	  "type": "file",
-	  "source": "pca_module-1.1.02.tar.gz",
+	  "source": "depends/pca_module-1.1.02.tar.gz",
 	  "destination": "/root/pca_module-1.1.02.tar.gz"
 	  },
 	  {
 	  "type": "file",
-	  "source": "python-graph-1.3.1.zip",
+	  "source": "depends/python-graph-1.3.1.zip",
 	  "destination": "/root/python-graph-1.3.1.zip"
 	  },
 	  {
 	  "type": "file",
-	  "source": "p7zip-9.20.1-1.el6.rf.x86_64.rpm",
+	  "source": "depends/p7zip-9.20.1-1.el6.rf.x86_64.rpm",
 	  "destination": "/root/p7zip-9.20.1-1.el6.rf.x86_64.rpm"
 	  },
 	  {
 	  "type": "file",
-	  "source": "cmake-2.8.12.2.tar.gz",
+	  "source": "depends/cmake-2.8.12.2.tar.gz",
 	  "destination": "/root/cmake-2.8.12.2.tar.gz"
 	  },
 	  {
 	  "type": "file",
-	  "source": "opencv-2.4.8.zip",
+	  "source": "depends/opencv-2.4.8.zip",
 	  "destination": "/root/opencv-2.4.8.zip"
 	  },
 	  {
 	  "type": "file",
-	  "source": "opencv-2.4.8.zip",
+	  "source": "depends/opencv-2.4.8.zip",
 	  "destination": "/root/opencv-2.4.8.zip"
 	  },
 	  {
 	  "type": "file",
-	  "source": "CGAL-4.4.tar.gz",
+	  "source": "depends/CGAL-4.4.tar.gz",
 	  "destination": "/root/CGAL-4.4.tar.gz"
 	  },
 	  {
 	  "type": "file",
-	  "source": "guppy-0.1.10.tar.gz",
+	  "source": "depends/guppy-0.1.10.tar.gz",
 	  "destination": "/root/guppy-0.1.10.tar.gz"
 	  },
 	  {
 	  "type": "file",
-	  "source": "test_data.tar.gz",
+	  "source": "depends/test_data.tar.gz",
 	  "destination": "/root/test_data.tar.gz"
 	  },
 	  {
