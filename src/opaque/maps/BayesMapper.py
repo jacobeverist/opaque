@@ -77,6 +77,7 @@ class BayesMapper:
 		self.poseData.isNodeFeatureless = {}
 		self.poseData.frontProbeError = {}
 		self.poseData.backProbeError = {}
+		self.poseData.spatialFeatures = {}
 
 	
 		self.pathDrawCount = 0
@@ -152,6 +153,7 @@ class BayesMapper:
 		self.poseData.frontProbeError[nodeID] = newNode.frontProbeError
 		self.poseData.backProbeError[nodeID] = newNode.backProbeError
 		self.poseData.travelDirs[nodeID] = newNode.travelDir
+		self.poseData.spatialFeatures[nodeID] = newNode.spatialFeatures
 
 
 		for mid, mapHyp in self.mapHyps.iteritems():
@@ -193,6 +195,8 @@ class BayesMapper:
 		existMapHyp = self.mapHyps
 		existParticleIDs = self.particleIDs
 		existWalls = self.walls
+
+		self.travelDirs
 
 		exec(saveStr)
 		self.poseData.travelDirs = self.poseData.travelDirs[nodeID]
@@ -372,7 +376,8 @@ class BayesMapper:
 		toDelete = []
 		for pID, currHyp in hypSet.iteritems():
 			print pID, "mapOverlapSum =", currHyp.mapOverlapSum, "isNoLocalize =", currHyp.isNoLocalize
-			if currHyp.mapOverlapSum > 0.0 or currHyp.isNoLocalize:
+			#if currHyp.mapOverlapSum > 0.0 or currHyp.isNoLocalize:
+			if currHyp.mapOverlapSum > 4.0 or currHyp.isNoLocalize:
 				toDelete.append(pID)	
 				
 		for pID in toDelete:
@@ -444,6 +449,7 @@ class BayesMapper:
 		saveFile += "self.poseData.frontProbeError = " + repr(self.poseData.frontProbeError) + "\n"
 		saveFile += "self.poseData.backProbeError = " + repr(self.poseData.backProbeError) + "\n"
 		saveFile += "self.poseData.travelDirs = " + repr(self.poseData.travelDirs) + "\n"
+		saveFile += "self.poseData.spatialFeatures = " + repr(self.poseData.spatialFeatures) + "\n"
 
 		saveFile += "mapHypIDs = " + repr(self.mapHyps.keys()) + "\n"
 

@@ -13,6 +13,7 @@ from GPACurve import GPACurve
 from StableCurve import StableCurve
 #from gen_icp import computeMedialAxis, getLongestPath
 from medialaxis import computeMedialAxis
+import matplotlib.pyplot as plt
 
 import graph
 import alphamod
@@ -26,6 +27,7 @@ from numpy import array, dot, transpose
 estPlotCount = 0
 alphaPlotCount = 0
 splineCount = 0
+THRESH_WIDTH = 0.45
 
 def computeBareHull(node1, sweep = False, static = False):
 	
@@ -412,6 +414,7 @@ class LocalNode:
 		self.medialLongPaths = []
 		self.medialTailCuts = []
 		self.longMedialWidths = []
+		self.spatialFeatures = []
 		self.bowtieValues = []
 		
 		self.hasDeparture = False
@@ -1123,7 +1126,7 @@ class LocalNode:
 
 		print "loading " + dirName + "/localStateSave_%04u.txt" % nodeID
 
-		self.nodeID = nodeID
+		#self.nodeID = nodeID
 
 		" occupancy map "
 		self.occMap.readFromFile(dirName)
@@ -1300,6 +1303,7 @@ class LocalNode:
 		self.medialLongPaths = []
 		self.medialTailCuts = []
 		self.longMedialWidths = []
+		self.spatialFeatures = []
 		self.bowtieValues = []
 	
 	def isDirty(self):
@@ -1684,7 +1688,8 @@ class LocalNode:
 		#medialLongPaths = []
 		#medialTailCuts = []
 		print len(self.longPaths), "long paths"
-		for longPath in self.longPaths:
+		for pathIndex in range(len(self.longPaths)):
+			longPath = self.longPaths[pathIndex]
 			print "longPath:", len(longPath)
 			
 			leafPath = deepcopy(longPath)
@@ -1952,13 +1957,15 @@ class LocalNode:
 			medialWidth= []
 			while True:
 
-
-								
 				linePoint = medialSpline2.getU(currU)
 				vec = medialSpline2.getUVector(currU)
 
-
+				curveAngle = acos(vec[0])
+				if asin(vec[1]) < 0:
+					curveAngle = -curveAngle
 										
+				linePoint.append(curveAngle)
+
 				rightVec = [vec[0]*cos(pi/2.0) + vec[1]*sin(pi/2.0), -vec[0]*sin(pi/2.0) + vec[1]*cos(pi/2.0)]
 				leftVec = [vec[0]*cos(pi/2.0) - vec[1]*sin(pi/2.0), vec[0]*sin(pi/2.0) + vec[1]*cos(pi/2.0)]
 	
@@ -1990,23 +1997,361 @@ class LocalNode:
 					distL = sqrt((leftPoint[0]-linePoint[0])**2 + (leftPoint[1]-linePoint[1])**2)
 				else:
 					distL = 0.0
-				
+
 				if distL == 0.0:
 					distL = distR
 					
 				if distR == 0.0:
 					distR = distL				
 				
-				medialWidth.append([linePoint[0],linePoint[1],currU, distR, distL])
+				widthEntry = {}
+				widthEntry["linePoint"] = copy(linePoint)
+				widthEntry["currU"] = currU
+				widthEntry["distR"] = distR
+				widthEntry["distL"] = distL
+				widthEntry["widthSum"] = distR+distL
+				widthEntry["asymm"] = distR-distL
+				widthEntry["rightPoint"] = copy(rightPoint)
+				widthEntry["leftPoint"] = copy(leftPoint)
+				widthEntry["distU"] = medialSpline2.dist_u(currU)
+
+				medialWidth.append(widthEntry)
+				#medialWidth.append([copy(linePoint),currU, distR, distL, copy(rightPoint), copy(leftPoint)])
 
 				if currU >= termU:
 					break
 	
 				nextU = medialSpline2.getUOfDist(currU, 0.04, distIter = 0.001)			
 				currU = nextU
-					
+
+
+			for k in range(len(medialWidth)):
+				
+				if (k-6) > 0 and (k+6) < len(medialWidth):
+
+					diffs = []
+
+					for l in range(0,7):
+
+						if (k-6+l) >= 0 and (k+l) < len(medialWidth):
+							ang1 = medialWidth[k-6+l]["linePoint"][2]
+							ang2 = medialWidth[k+l]["linePoint"][2]
+							diffs.append(fabs(ang1-ang2))
+
+
+					angDeriv = sum(diffs) / float(len(diffs))
+
+					medialWidth[k]["angDeriv"] = angDeriv
+				else:
+					medialWidth[k]["angDeriv"] = 0.0
+
+
 			self.longMedialWidths.append(medialWidth)
-			
+
+
+			"""
+			1) bloom feature detector ( contigCount, near edge )
+			2) arch feature detector
+			3) bending feature detector
+			4) bowtie feature detector
+
+			{linePoint, currU, distR, distL, rightPoint, leftPoint, angDeriv, widthSum}
+			"""
+
+
+
+			if True:
+
+				longPathWidth = medialWidth
+
+				widthX = []
+				widthY = []
+
+				contigCount = 0
+				contigPoints = []
+				contigWeights = []
+
+				contigAsymmSum = []
+				contigBoundaries = []
+				contigPointIndex = []
+				contigCenterMass = []
+				contigLen = []
+				contigArea = []
+				contigCounts = []
+				contigDensity = []
+				contigAsymm = []
+				contigNegArea = []
+				contigSlopes = []
+				contigInflection = 0
+				maxDeriv = 0.0
+
+				contigStartIndex = 0
+				contigFinalIndex = 0
+
+				#for val in longPathWidth:
+				for kIndex in range(len(longPathWidth)):
+
+					val = longPathWidth[kIndex]
+					distR = val["distR"]
+					distL = val["distL"]
+					widthSum = val["widthSum"]
+					angDeriv = val["angDeriv"]
+					distU = val["distU"]
+					asymm = val["asymm"]
+
+					if angDeriv > maxDeriv:
+						maxDeriv = angDeriv
+						contigInflection = kIndex
+
+					if widthSum > THRESH_WIDTH:
+
+						if contigCount == 0:
+							contigStartIndex = kIndex
+
+						contigCount += 1
+						contigPoints.append(distU)
+						contigWeights.append(widthSum)
+						contigAsymm.append(asymm)
+
+					else:
+
+						if contigCount > 0:
+
+							contigFinalIndex = kIndex-1
+
+							weightSum = sum(contigWeights)
+							centerMass = 0.0
+							threshArea = 0.0
+							maxWidth = 0.0
+							maxIndex = None
+							totalArea = 0.0
+
+							for k in range(len(contigPoints)):
+								centerMass += contigPoints[k] * contigWeights[k]
+								threshArea += contigWeights[k] - THRESH_WIDTH
+								totalArea += contigWeights[k]
+
+								if contigWeights[k] > maxWidth:
+									maxWidth = contigWeights[k]
+									maxIndex = k
+
+
+							maxArea = (maxWidth-THRESH_WIDTH) * len(contigPoints)
+							#contigNegArea.append((maxArea-threshArea)/maxArea)
+							#contigNegArea.append(maxArea-threshArea)
+							#contigNegArea.append((maxArea-threshArea)/float(len(contigPoints)))
+							#contigNegArea.append(maxWidth - THRESH_WIDTH)
+							contigNegArea.append((maxArea-threshArea)/(maxWidth*float(len(contigPoints))))
+
+							" search for local valleys "
+							minIndex1 = contigStartIndex
+							minWidth1 = longPathWidth[minIndex1]["widthSum"]
+
+							minIndex2 = contigFinalIndex
+							minWidth2 = longPathWidth[minIndex2]["widthSum"]
+
+							while True:
+
+								nextIndex1 = minIndex1 - 1
+								nextIndex2 = minIndex2 + 1
+
+								if nextIndex1 < 0:
+									break
+
+								if nextIndex2 >= len(longPathWidth):
+									break
+
+								nextWidth1 = longPathWidth[nextIndex1]["widthSum"]
+								nextWidth2 = longPathWidth[nextIndex2]["widthSum"]
+
+								minReached = False
+
+								if nextWidth1 < minWidth1:
+									minWidth1 = nextWidth1
+									minIndex1 = nextIndex1
+								else:
+									minReached = True
+
+								if nextWidth2 < minWidth2:
+									minWidth2 = nextWidth2
+									minIndex2 = nextIndex2
+								else:
+									minReached = True
+
+								if minReached:
+									break
+
+							maxMinWidth = minWidth1
+							if minWidth2 > minWidth1:
+								maxMinWidth = minWidth2
+
+							x1 = longPathWidth[minIndex1]["distU"]
+							x2 = longPathWidth[contigStartIndex+maxIndex]["distU"]
+							x3 = longPathWidth[minIndex2]["distU"]
+
+							p1 = [x1, maxMinWidth]
+							p2 = [x2, longPathWidth[contigStartIndex+maxIndex]["widthSum"]]
+							p3 = [x3, maxMinWidth]
+							#p1 = [contigStartIndex, longPathWidth[contigStartIndex]["widthSum"]]
+							#p2 = [contigStartIndex + maxIndex, contigWeights[maxIndex]]
+							#p3 = [contigFinalIndex, longPathWidth[contigFinalIndex]["widthSum"]]
+
+							print "indices", contigStartIndex, maxIndex, contigFinalIndex, p1[0], p2[0], p3[0]
+
+							if p2[0]-p1[0] != 0.0:
+								slope1 = (p2[1]-p1[1])/(p2[0]-p1[0])
+							else:
+								slope1 = 1e100
+
+							if p2[0]-p3[0] != 0.0:
+								slope2 = (p2[1]-p3[1])/(p2[0]-p3[0])
+							else:
+								slope2 = 1e100
+
+							#contigSlopes.append((slope1,slope2))
+	
+
+							vec1 = [p1[0]-p2[0],p1[1]-p2[1]]
+							mag1 = sqrt(vec1[0]*vec1[0] + vec1[1]*vec1[1])
+							if mag1 > 0.0:
+								vec1 = [vec1[0]/mag1, vec1[1]/mag1]
+								angle1 = acos(vec1[0])
+								if asin(vec1[1]) < 0:
+									angle1 = -angle1
+
+								#dAng1 = -angle1
+								dAng1 = diffAngle(angle1,pi)
+							else:
+								dAng1 = 0.0
+
+
+							vec2 = [p3[0]-p2[0],p3[1]-p2[1]]
+							mag2 = sqrt(vec2[0]*vec2[0] + vec2[1]*vec2[1])
+							if mag2 > 0.0:
+								vec2 = [vec2[0]/mag2, vec2[1]/mag2]
+								angle2 = acos(vec2[0])
+								if asin(vec2[1]) < 0:
+									angle2 = -angle2
+
+								dAng2 = -angle2
+								#dAng2 = diffAngle(angle2,pi)
+							else:
+								dAng2 = 0.0
+
+							contigSlopes.append((dAng1,dAng2,p1,p2,p3))
+							
+
+
+
+							centerMass = centerMass / weightSum
+							contigCenterMass.append(centerMass)
+
+							contigArea.append(threshArea)
+							contigCounts.append(contigCount)
+							contigDensity.append(threshArea/float(contigCount))
+							contigAsymmSum.append(sum(contigAsymm))
+
+							for k in range(len(longPathWidth)-1):
+								distU1 = longPathWidth[k]["distU"]
+								distU2 = longPathWidth[k+1]["distU"]
+
+								if distU1 < centerMass and distU2 > centerMass:
+									if fabs(distU1-centerMass) > fabs(distU2-centerMass):
+										contigPointIndex.append(k+1)
+									else:
+										contigPointIndex.append(k)
+
+
+							contigLen.append(len(contigPoints))
+							contigBoundaries.append((contigStartIndex, contigFinalIndex))
+
+							contigCount = 0
+							contigPoints = []
+							contigWeights = []
+							contigStartIndex = 0
+							contigFinalIndex = 0
+							contigAsymm = []
+
+
+
+				#if maxDeriv >= 0.25:
+				inflectionPoint = copy(longPathWidth[contigInflection]["linePoint"])
+
+			" conditions for a bloom detection "
+			bloomPoint = None
+			if len(contigPointIndex) == 1:
+				dens = contigDensity[0]
+				area = contigArea[0]
+				cLen = contigLen[0]
+				frontBoundIndex, backBoundIndex = contigBoundaries[0]
+				pointIndex = contigPointIndex[0]
+				angDeriv = longPathWidth[pointIndex]["angDeriv"]
+				asymm = contigAsymmSum[0]
+				negArea = contigNegArea[0]
+				slopes = contigSlopes[0]
+
+
+				if (frontBoundIndex <= 6 or backBoundIndex >= len(longPathWidth)-7) and cLen < 25 and dens >= 0.03:
+					bloomPoint = longPathWidth[pointIndex]["linePoint"]
+
+					print self.nodeID, "bloom boundaries:", frontBoundIndex, backBoundIndex, len(longPathWidth), cLen, dens, angDeriv, asymm, area, negArea, slopes[0]+slopes[1]
+
+			" conditions for a arch detection "
+			archPoint = None
+			if len(contigPointIndex) == 1 and bloomPoint == None:
+				dens = contigDensity[0]
+				area = contigArea[0]
+				cLen = contigLen[0]
+				frontBoundIndex, backBoundIndex = contigBoundaries[0]
+				pointIndex = contigPointIndex[0]
+				angDeriv = longPathWidth[pointIndex]["angDeriv"]
+				asymm = contigAsymmSum[0]
+				negArea = contigNegArea[0]
+				slopes = contigSlopes[0]
+
+
+				#if (frontBoundIndex > 6 and backBoundIndex < len(longPathWidth)-7) and angDeriv < 0.03 and cLen > 5 and cLen <= 20 and area > 0.2 and dens >= 0.03:
+				if (frontBoundIndex > 6 and backBoundIndex < len(longPathWidth)-7) and angDeriv < 0.03 and cLen > 5 and cLen <= 20 and area > 0.2 and (slopes[0]+slopes[1]) > 0.37:
+					# and angDeriv < 0.1:
+					#pass and cLen < 25 and dens >= 0.03:
+					archPoint = longPathWidth[pointIndex]["linePoint"]
+
+					print self.nodeID, "arch boundaries:", frontBoundIndex, backBoundIndex, len(longPathWidth), cLen, dens, angDeriv, asymm, area, negArea, slopes[0]+slopes[1]
+
+
+			results = {}
+			results["inflectionPoint"] = inflectionPoint
+			results["maxDeriv"] = maxDeriv
+			results["centerMasses"] = contigCenterMass
+			results["contigCounts"] = contigCounts
+			results["contigDensities"] = contigDensity
+			results["contigAreas"] = contigArea
+			results["contigLens"] = contigLen
+			results["contigPointIndex"] = contigPointIndex
+			results["contigBoundaries"] = contigBoundaries
+			results["contigAsymmSum"] = contigAsymmSum
+			results["contigNegArea"] = contigNegArea
+			results["contigSlopes"] = contigSlopes
+			results["medialWidths"] = longPathWidth
+			results["bloomPoint"] = bloomPoint
+			results["archPoint"] = archPoint
+
+
+			self.spatialFeatures.append(results)
+
+
+			widthStr = ""
+			widthStr += "medialWidth: %d %d %d " % (self.nodeID, pathIndex, len(longPath))
+			for width in medialWidth:
+				widthSum = width["widthSum"]
+				#widthStr += "%0.2f " % widthSum
+				if widthSum > 0.4:
+					widthStr += "1 "
+				else:
+					widthStr += "0 "
+
+			print widthStr
+					
 			numSamples = len(medialWidth)
 			
 			" divide into 5 histograms "
@@ -2025,13 +2370,14 @@ class LocalNode:
 			remainderTotal = numSamples % 5
 			divIndexes[2] += remainderTotal
 			divIndexes[3] += remainderTotal
+
 				
 			print "numSamples:", numSamples
 			print "histDiv:", histDiv
 			print "divIndexes:", divIndexes
 			for k in range(numSamples):
 				
-				width = medialWidth[k][3] + medialWidth[k][4]
+				width = medialWidth[k]["widthSum"]
 				if k > divIndexes[currDiv]:
 					currDiv += 1
 				
@@ -2109,26 +2455,207 @@ class LocalNode:
 		medialSpline2 = SplineFit(medial2, smooth=0.1)
 
 
-		if False:
-			pylab.clf()
-	
+		if True:
+
+			fig, (ax1, ax2) = plt.subplots(2,  sharex=False, sharey=False)
+
+			ax1.set_xlim(-3, 3)
+			ax1.set_aspect("equal")
+
+			ax2.set_ylim(0.0, 1.0)
+			ax2.set_aspect("equal")
+
 			xP = []
 			yP = []
 			for p in medial2:
 				xP.append(p[0])
 				yP.append(p[1])
 
-			pylab.plot(xP,yP)
+			ax1.plot(xP,yP)
 	
 			xP = []
 			yP = []
 			for p in hull:
 				xP.append(p[0])
 				yP.append(p[1])
-			pylab.plot(xP,yP, color='r')
-						
-			pylab.title("Medial %d" % self.nodeID)
-			pylab.savefig("medialOut_%04u.png" % self.nodeID)
+			ax1.plot(xP,yP, color='r')
+
+			if True:
+
+				longPathWidth = longMedialWidths[0]
+
+				results = self.spatialFeatures[0]
+
+				inflectionPoint = results["inflectionPoint"]
+				maxDeriv = results["maxDeriv"]
+				contigCenterMass = results["centerMasses"]
+				contigCounts = results["contigCounts"]
+				contigDensity = results["contigDensities"]
+				contigArea = results["contigAreas"]
+				contigLen = results["contigLens"]
+				contigPointIndex = results["contigPointIndex"]
+				contigBoundaries = results["contigBoundaries"]
+				longPathWidth = results["medialWidths"]
+				contigAsymmSum = results["contigAsymmSum"]
+				contigNegArea = results["contigNegArea"]
+				contigSlopes = results["contigSlopes"]
+
+				numPoints = len(longPathWidth)
+
+				for kIndex in range(len(contigCenterMass)):
+
+					area = contigArea[kIndex]
+					cLen = contigLen[kIndex]
+					frontBoundIndex, backBoundIndex = contigBoundaries[kIndex]
+
+				widthX = []
+				widthY = []
+
+				#for val in longPathWidth:
+				for kIndex in range(len(longPathWidth)):
+
+					val = longPathWidth[kIndex]
+					distR = val["distR"]
+					distL = val["distL"]
+					linePoint = val["linePoint"]
+					rightPoint = val["rightPoint"]
+					leftPoint = val["leftPoint"]
+					widthSum = val["widthSum"]
+					angDeriv = val["angDeriv"]
+					distU = val["distU"]
+
+
+					widthX.append(distU)
+					widthY.append(widthSum)
+
+					#if len(widthX) > 0:
+					#	widthX.append(widthX[-1] + 0.04)
+					#else:
+					#	widthX.append(0.0)
+
+					print "distR:", distR
+					print "distL:", distL
+					print "linePoint:", linePoint
+					print "leftPoint:", leftPoint
+					print "rightPoint:", rightPoint
+
+					if len(rightPoint) > 0.0:
+						xP = [linePoint[0], rightPoint[0]]
+						yP = [linePoint[1], rightPoint[1]]
+						if widthSum > THRESH_WIDTH:
+							ax1.plot(xP,yP, color='k')
+						else:
+							ax1.plot(xP,yP, color='b')
+
+					if len(leftPoint) > 0.0:
+						xP = [linePoint[0], leftPoint[0]]
+						yP = [linePoint[1], leftPoint[1]]
+						if widthSum > THRESH_WIDTH:
+							ax1.plot(xP,yP, color='k')
+						else:
+							ax1.plot(xP,yP, color='b')
+
+				ax2.plot(widthX,widthY, color='k')
+				ax2.plot([0.0,widthX[-1]], [THRESH_WIDTH,THRESH_WIDTH], color='r')
+				#contigY = [THRESH_WIDTH for k in range(len(contigCenterMass))]
+				#ax2.scatter(contigCenterMass,contigY, color='k')
+
+				#centerPointsX = [longPathWidth[k]["linePoint"][0] for k in contigPointIndex]
+				#centerPointsY = [longPathWidth[k]["linePoint"][1] for k in contigPointIndex]
+				#angDerivs = [longPathWidth[k]["linePoint"] for k in contigPointIndex]
+
+				#if len(centerPointsX) > 0:
+				#	ax1.scatter(centerPointsX,centerPointsY, color='k')
+
+				#for k in range(len(centerPointsX)):
+				#	ax2.annotate("%1.2f" % contigDensity[k], xy=(contigCenterMass[k], 0.3), xytext=(contigCenterMass[k], 0.8))
+					#ax2.annotate("%1.2f" % contigArea[k], xy=(contigCenterMass[k], 0.3), xytext=(contigCenterMass[k], 0.8))
+					#ax2.annotate("%1.2f" % angDerivs[k], xy=(contigCenterMass[k], 0.3), xytext=(contigCenterMass[k], 0.8))
+
+
+				bloomPoint = results["bloomPoint"]
+				if bloomPoint != None:
+					dens = contigDensity[0]
+					area = contigArea[0]
+					cLen = contigLen[0]
+					asymm = contigAsymmSum[0]
+					negArea = contigNegArea[0]
+					slopes = contigSlopes[0]
+					p1 = slopes[2]
+					p2 = slopes[3]
+					p3 = slopes[4]
+					ax1.scatter([bloomPoint[0],],[bloomPoint[1],], color='k')
+					ax2.scatter([contigCenterMass[0],],[THRESH_WIDTH,], color='k')
+					ax2.annotate("%1.2f %1.2f %1.2f %1.3f %s" % (dens, asymm, area, negArea, repr(slopes[0]+slopes[1])), xy=(contigCenterMass[0], 0.3), xytext=(contigCenterMass[0], 0.8), color='k')
+					ax2.plot([p1[0],p2[0],p3[0]],[p1[1],p2[1],p3[1]], color='y')
+			
+				archPoint = results["archPoint"]
+				if archPoint != None:
+					dens = contigDensity[0]
+					area = contigArea[0]
+					cLen = contigLen[0]
+					asymm = contigAsymmSum[0]
+					negArea = contigNegArea[0]
+					slopes = contigSlopes[0]
+					p1 = slopes[2]
+					p2 = slopes[3]
+					p3 = slopes[4]
+					ax1.scatter([archPoint[0],],[archPoint[1],], color='b')
+					ax2.scatter([contigCenterMass[0],],[THRESH_WIDTH,], color='b')
+					ax2.annotate("%1.2f %1.2f %1.2f %1.3f %s" % (dens, asymm, area, negArea, repr(slopes[0]+slopes[1])), xy=(contigCenterMass[0], 0.3), xytext=(contigCenterMass[0], 0.8), color='b')
+					ax2.plot([p1[0],p2[0],p3[0]],[p1[1],p2[1],p3[1]], color='y')
+
+				"""
+				print "num contigs:", len(contigPointIndex), len(contigCenterMass), len(contigLen), len(contigArea)
+				if len(contigPointIndex) > 1:
+					contigPointIndex = []
+					contigCenterMass = []
+					contigLen = []
+					contigArea = []
+					contigCounts = []
+					contigDensity = []
+
+
+				" conditions for a bloom detection "
+				if len(contigPointIndex) == 1:
+					dens = contigDensity[0]
+					area = contigArea[0]
+					cLen = contigLen[0]
+					frontBoundIndex, backBoundIndex = contigBoundaries[0]
+
+
+					if (frontBoundIndex <= 6 or backBoundIndex >= len(longPathWidth)-7) and cLen < 25 and dens >= 0.03:
+						pointIndex = contigPointIndex[0]
+						linePoint = longPathWidth[pointIndex]["linePoint"]
+
+						bloomPoint = results["bloomPoint"]
+						ax1.scatter([bloomPoint[0],],[bloomPoint[1],], color='k')
+						ax2.scatter([contigCenterMass[0],],[THRESH_WIDTH,], color='k')
+						ax2.annotate("%1.2f %1.2f" % (area, dens), xy=(contigCenterMass[0], 0.3), xytext=(contigCenterMass[0], 0.8), color='k')
+						print self.nodeID, "boundaries:", frontBoundIndex, backBoundIndex, len(longPathWidth), cLen, area, dens
+
+				"""
+
+				#if len(contigPointIndex) > 0 and (contigCounts[0] <= 5 or contigCounts[0] >= 20 or contigArea[0] < 0.20):
+				#if len(contigPointIndex) > 0 and (contigCounts[0] <= 5 or contigCounts[0] >= 30 or contigDensity[0] < 0.05):
+				#	contigPointIndex = []
+				#	contigCenterMass = []
+				#	contigLen = []
+				#	contigArea = []
+				#	contigCounts = []
+				#	contigDensity = []
+
+				#if maxDeriv >= 0.25:
+				#	ax1.scatter([inflectionPoint[0]],[inflectionPoint[1]], color='r')
+				#	ax1.annotate("%1.2f" % maxDeriv, xy=(inflectionPoint[0], 0.3), xytext=(inflectionPoint[0], 0.8))
+
+				ax1.scatter([inflectionPoint[0]],[inflectionPoint[1]], color='r')
+				ax1.annotate("%1.2f" % maxDeriv, xy=(inflectionPoint[0], 0.3), xytext=(inflectionPoint[0], 0.8), color='r')
+
+			ax1.set_title("Medial %d, %s, %d" % (self.nodeID, repr(contigBoundaries), numPoints))
+			plt.savefig("medialOut_%04u.png" % self.nodeID)
+			plt.clf()
+			plt.close()
 
 
 		greatCount, divSums = bowtieValues[0]
@@ -2150,6 +2677,7 @@ class LocalNode:
 		self.medialLongPaths = []
 		self.medialTailCuts = []
 		self.longMedialWidths = []
+		self.spatialFeatures = []
 		self.bowtieValues = []
 
 

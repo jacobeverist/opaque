@@ -1618,6 +1618,7 @@ def computeBranch(pathID, parentID, origGlobJuncPose, childPath, parentPath, tri
 
 		#print "path segs:", len(junctionDetails["leafSegments"]), "+", len(junctionDetails["internalSegments"]), "=", len(smoothPathSegs)
 
+		" convert from global to local coordinates "
 		for k in range(len(smoothPathSegs)):
 			pathSeg = smoothPathSegs[k]
 			localSeg = []
@@ -1633,6 +1634,7 @@ def computeBranch(pathID, parentID, origGlobJuncPose, childPath, parentPath, tri
 
 		offsetOrigin1 = Pose(modJuncPose)
 
+		" transform back to global coordinates of modified junction pose "
 		placedPathSegs = []
 		for k in range(len(localPathSegs)):
 			localSeg = localPathSegs[k]
@@ -2238,6 +2240,8 @@ class MapState:
 
 		self.DIV_LEN = 0.2
 		self.NUM_BRANCHES = 5
+		#self.DIV_LEN = 0.1
+		#self.NUM_BRANCHES = 1
 
 
 		self.longPathJunctions = {}
@@ -4220,7 +4224,8 @@ class MapState:
 			" precompute the problem space "
 			#for k in range(11):
 			for k in range(self.NUM_BRANCHES):
-				newArcDist = arcLow + (arcHigh-arcLow)*k/(self.NUM_BRANCHES-1)
+				#newArcDist = arcLow + (arcHigh-arcLow)*k/(self.NUM_BRANCHES-1)
+				newArcDist = arcLow + k * self.DIV_LEN
 				arcDists.append((pathID, newArcDist))
 
 
@@ -4278,10 +4283,13 @@ class MapState:
 
 		results = batchBranch(branchJobs)
 		for result in results:
+			#result = (parentID, modJuncPose, newArcDist, pathID, matchCount1, lastCost1, distDisc, angDisc, initProb, newSplices, juncDiscAngle)
 			arcDist = result[2]
 			pathID = result[3]
 			currBranchSpace = self.branchEvaluations[pathID]
 			currBranchSpace[arcDist] = result
+
+
 			#if result != None:
 				#print "solved bin", arcDist
 			#else:
@@ -4336,7 +4344,8 @@ class MapState:
 			" initialize if this is the first time "
 			particles = []
 			for k in range(self.NUM_BRANCHES):
-				newArcDist = arcLow + (arcHigh-arcLow)*k/(self.NUM_BRANCHES-1)
+				#newArcDist = arcLow + (arcHigh-arcLow)*k/(self.NUM_BRANCHES-1)
+				newArcDist = arcLow + k * self.DIV_LEN
 				particle = self.computeBranch(pathID, newArcDist)
 				particles.append(particle)
 
@@ -4358,8 +4367,11 @@ class MapState:
 				if matchCount > maxMatchCount:
 					maxMatchCount = matchCount
 
-				if matchCount > 0 and lastCost/matchCount > maxCost:
-					maxCost = lastCost/matchCount
+				#if matchCount > 0 and lastCost/matchCount > maxCost:
+				#	maxCost = lastCost/matchCount
+
+				if lastCost > maxCost:
+					maxCost = lastCost
 
 				if dist > maxDist:
 					maxDist = dist
@@ -4378,11 +4390,16 @@ class MapState:
 				angDiff = part[7]
 				matchCount = part[4]
 
-				matchCost = 0.0
-				if maxCost > 0.0 and matchCount > 0:
-					matchCost = (maxCost-lastCost/matchCount)/maxCost
-				else:
-					matchCost = 0.0
+				#matchCost = 0.0
+				#if maxCost > 0.0 and matchCount > 0:
+				#	matchCost = (maxCost-lastCost/matchCount)/maxCost
+				#else:
+				#	matchCost = 0.0
+
+							
+				" makes the maximum cost non-zero "
+				matchCost = 0.1 + maxCost-lastCost
+				#matchCost = maxCost-lastCost
 
 				nomDist = 0.0
 				if maxDist > 0.0:
@@ -4418,6 +4435,7 @@ class MapState:
 				part2 = (part[0], part[1], part[2], part[3], part[4], part[5], part[6], part[7], probVal, part[9], part[10])
 				particles[k] = part2
 
+				#part2 = (parentID, modJuncPose, newArcDist, pathID, matchCount1, lastCost1, distDisc, angDisc, initProb, newSplices, juncDiscAngle)
 				print "particle %02u %1.4f %03u %1.4f %1.4f %1.4f %1.4f %d" % (k, part2[1][2], part2[4], part2[5], part2[6], part2[7], part2[8], len(part2[9]))
 			print "particle"
 
@@ -4572,6 +4590,7 @@ class MapState:
 			
 			if self.pathClasses[pathID]["parentID"] != None:
 
+				"""
 				parentPathID = self.pathClasses[pathID]["parentID"]
 				childPathID = pathID
 
@@ -4583,10 +4602,11 @@ class MapState:
 				globalJunctionPoint = poseOrigin2.convertLocalToGlobal(localJunctionPoint)
 
 				globJuncPose = getBranchPoint(globalJunctionPoint, parentPathID, childPathID, path1, path2, plotIter = False)
-				#globJuncPose = getBranchPoint(parentPathID, childPathID, self.paths, plotIter = False)
+
 				print "generated globJuncPose:",  globJuncPose
 				
 				self.pathClasses[childPathID]["globalJunctionPose"] = globJuncPose
+				"""
 
 
 
@@ -9270,9 +9290,9 @@ class MapState:
 						return False, pathID
 				
 				" Explicit limitation that we wont be able to detect a T-Junction coming from left or right"
-				if isNodeFeatureless:
-					print "REJECT new branch because the branching node is featureless"
-					return False, -1
+				#if isNodeFeatureless:
+				#	print "REJECT new branch because the branching node is featureless"
+				#	return False, -1
 		
 		return True, -1
 

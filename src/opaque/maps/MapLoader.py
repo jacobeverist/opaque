@@ -35,7 +35,9 @@ class MapLoader:
 	def loadSeries(self, dirName, num_poses):
 	
 		PIXELSIZE = 0.05
-		for i in range(0, num_poses):
+		initNum = len(self.localNodes)
+
+		for i in range(initNum, initNum+num_poses):
 
 			print "loading node", i		
 			currNode = LocalNode(self.probe, self.contacts, i, 19, PIXELSIZE)

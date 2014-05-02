@@ -23,6 +23,7 @@ class PoseData:
 		self.isNodeFeatureless = {}
 		self.frontProbeError = {}
 		self.backProbeError = {}
+		self.spatialFeatures = {}
 
 	
 
