@@ -7,7 +7,7 @@
         "<tab> ks=http://{{ .HTTPIP}}:{{ .HTTPPort }}/centos6-ks.cfg <enter>"
       ],
       "disk_interface": "virtio",
-      "disk_size": 10000,
+      "disk_size": 20000,
       "format": "raw",
       "headless": false,
       "http_directory": "scripts",
@@ -15,9 +15,9 @@
       "http_port_min": 10082,
       "iso_checksum": "0d9dc37b5dd4befa1c440d2174e88a87",
       "iso_checksum_type": "md5",
-      "iso_url": "http://127.0.0.1/centos/6.5/isos/x86_64/CentOS-6.5-x86_64-minimal.iso",
+      "iso_url": "http://www.chapterhouse.aero.org/mirrors/sites/centos/6.5/isos/x86_64/CentOS-6.5-x86_64-minimal.iso",
       "net_device": "virtio-net",
-      "output_directory": "output_centos_cloud_barometer",
+      "output_directory": "output_centos_dark_mapper",
       "shutdown_command": "shutdown -P now",
 
       "ssh_host_port_max": 2229,
@@ -27,12 +27,87 @@
       "ssh_username": "root",
       "ssh_wait_timeout": "90m",
       "type": "qemu",
-      "vm_name": "cloud_barometer_2.0.0"
+      "vm_name": "dark_mapper"
     }
   ],
 
 
   "provisioners": [
+	  {
+	  "type": "file",
+	  "source": "opaque_0.1.tar",
+	  "destination": "/root/opaque_0.1.tar"
+	  },
+	  {
+	  "type": "file",
+	  "source": "Cython-0.20.1.tar.gz",
+	  "destination": "/root/Cython-0.20.1.tar.gz"
+	  },
+	  {
+	  "type": "file",
+	  "source": "numpy-1.7.2.tar.gz",
+	  "destination": "/root/numpy-1.7.2.tar.gz"
+	  },
+	  {
+	  "type": "file",
+	  "source": "scipy-0.13.3.tar.gz",
+	  "destination": "/root/scipy-0.13.3.tar.gz"
+	  },
+	  {
+	  "type": "file",
+	  "source": "matplotlib-1.3.1.tar.gz",
+	  "destination": "/root/matplotlib-1.3.1.tar.gz"
+	  },
+	  {
+	  "type": "file",
+	  "source": "numpy-1.7.2.tar.gz",
+	  "destination": "/root/numpy-1.7.2.tar.gz"
+	  },
+	  {
+	  "type": "file",
+	  "source": "pca_module-1.1.02.tar.gz",
+	  "destination": "/root/pca_module-1.1.02.tar.gz"
+	  },
+	  {
+	  "type": "file",
+	  "source": "python-graph-1.3.1.zip",
+	  "destination": "/root/python-graph-1.3.1.zip"
+	  },
+	  {
+	  "type": "file",
+	  "source": "p7zip-9.20.1-1.el6.rf.x86_64.rpm",
+	  "destination": "/root/p7zip-9.20.1-1.el6.rf.x86_64.rpm"
+	  },
+	  {
+	  "type": "file",
+	  "source": "cmake-2.8.12.2.tar.gz",
+	  "destination": "/root/cmake-2.8.12.2.tar.gz"
+	  },
+	  {
+	  "type": "file",
+	  "source": "opencv-2.4.8.zip",
+	  "destination": "/root/opencv-2.4.8.zip"
+	  },
+	  {
+	  "type": "file",
+	  "source": "opencv-2.4.8.zip",
+	  "destination": "/root/opencv-2.4.8.zip"
+	  },
+	  {
+	  "type": "file",
+	  "source": "CGAL-4.4.tar.gz",
+	  "destination": "/root/CGAL-4.4.tar.gz"
+	  },
+	  {
+	  "type": "file",
+	  "source": "guppy-0.1.10.tar.gz",
+	  "destination": "/root/guppy-0.1.10.tar.gz"
+	  },
+	  {
+	  "type": "file",
+	  "source": "test_data.tar.gz",
+	  "destination": "/root/test_data.tar.gz"
+	  },
 	  {
 	  "type": "shell",
 	  "script": "scripts/installStuff.sh"
