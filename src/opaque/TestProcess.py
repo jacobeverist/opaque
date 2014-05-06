@@ -6,6 +6,7 @@ from copy import *
 from math import *
 import time
 import math
+import os
 
 from behaviors.AnchorTransition import AnchorTransition
 
@@ -120,8 +121,8 @@ class TestProcess(SnakeControl):
 			#self.mapGraph = VisualGraph(self.probe, self.contacts)
 			self.mapGraph = MapLoader(self.probe, self.contacts)
 
-			#targetMapFile = "../mapLibrary/cross_junction.py"
-			targetMapFile = "../mapLibrary/Y_junction.py"
+			targetMapFile = "../mapLibrary/cross_junction.py"
+			#targetMapFile = "../mapLibrary/Y_junction.py"
 			#targetMapFile = "mapFile0002.txt"
 			f = open(targetMapFile, 'r')
 			str_f = f.read()
@@ -131,6 +132,24 @@ class TestProcess(SnakeControl):
 
 			self.mapGraph.loadWalls(walls)
 
+			#self.mapGraph = MapLoader(self.probe, self.contacts)
+			#self.mapGraph.loadWalls(walls)
+			#self.mapGraph.loadSeries("../results/result_2013_08_16_Y_junction_complete", 290)
+			#retvalue = os.system("mkdir data2")
+			#retvalue = os.system("mv *.png data2")
+
+			#self.mapGraph = MapLoader(self.probe, self.contacts)
+			#self.mapGraph.loadWalls(walls)
+			#self.mapGraph.loadSeries("../results/result_2013_08_18_cross", 236)
+			#retvalue = os.system("mkdir data4")
+			#retvalue = os.system("mv *.png data4")
+
+			#self.mapGraph = MapLoader(self.probe, self.contacts)
+			#self.mapGraph.loadWalls(walls)
+			self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 238)
+			#retvalue = os.system("mkdir data6")
+			#retvalue = os.system("mv *.png data6")
+
 
 			#self.mapGraph.restoreSeries("../results/result_2013_08_24_cross", 80)
 			#self.mapGraph.restoreSeries("../results/result_2013_08_24_cross", 44)
@@ -138,17 +157,28 @@ class TestProcess(SnakeControl):
 
 			#self.mapGraph.loadDataSeries("../results/result_2013_11_04_cross", 40)
 			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 60)
-			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 238)
+			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 236)
 
 			#self.mapGraph.loadDataSeries("../results/result_2013_11_04_Y_junction", 60)
+
 			#self.mapGraph.loadSeries("../results/result_2013_08_16_Y_junction_complete", 60)
-			self.mapGraph.loadSeries("../results/result_2013_08_16_Y_junction_complete", 290)
+			#self.mapGraph.loadSeries("../results/result_2013_08_16_Y_junction_complete", 290)
 			
 			#self.mapGraph.newNode(0.0, self.direction)
 			#self.mapGraph.forceUpdate(False)
 			#self.mapGraph.synch()
 			#self.mapGraph.saveMap()
 
+			#retvalue = os.system("mkdir data1")
+			#retvalue = os.system("mv *.png data1")
+
+			#self.mapGraph = MapLoader(self.probe, self.contacts)
+			#exec(str_f)
+			#self.mapGraph.loadWalls(walls)
+			#self.mapGraph.loadSeries("../results/result_2013_08_16_Y_junction_complete", 290)
+
+			#retvalue = os.system("mkdir data2")
+			#retvalue = os.system("mv *.png data2")
 
 			#self.mapGraph.restoreSeries("resultProcess_2013_07_06a", 56)
 

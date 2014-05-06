@@ -53,16 +53,6 @@ class TestNavigation(SnakeControl):
 		self.contacts = AverageContacts(self.probe)
 		self.contacts.setTimerAliasing(5)
 		
-		" maps "
-		#self.mapGraph = MapGraph(self.probe, self.contacts)
-		#self.mapGraph.loadFile("testData/correctionTest", 9)
-		#self.mapGraph.loadFile("testData/correctionTest", 3)
-		
-		#self.mapGraph.correctPoses2()
-		#self.mapGraph.synch()
-		#self.mapGraph.saveMap()
-		
-				
 		" get the probe state "
 		probeState = self.probe.getProbeState()
 		torques = probeState['torques']
@@ -112,9 +102,6 @@ class TestNavigation(SnakeControl):
 	def updateMaps(self):
 		pass
 	
-	def saveMaps(self):
-		self.mapGraph.saveMap()
-
 	def grabImage(self):
 
 		#inc = 50
@@ -602,12 +589,8 @@ class TestNavigation(SnakeControl):
 			" select the destination and generate path "
 			
 			" select the point to go to "
-			#frontierPoint = self.mapGraph.selectNextFrontier()
-			#frontierPoint = self.mapGraph.selectNextFrontier()
-			
 			if self.targetPoint == []:
 				frontierPoint, self.termPathID = self.mapGraph.selectNextDestination()
-			
 			else:
 				frontierPoint = self.targetPoint
 				self.termPathID = -1
@@ -629,10 +612,6 @@ class TestNavigation(SnakeControl):
 				
 				" generate the path "
 			"""
-
-			#originPath, goalPath, breakPoint = self.mapGraph.computeHeadPath(self.currPose, frontierPoint, self.exploreRoot)
-			#self.wayPoints = [breakPoint, goalPath[-1]]
-			#self.wayPaths = [originPath, goalPath]
 
 			frontPose = self.contacts.getAverageSegPose(0)
 			backPose = self.contacts.getAverageSegPose(39)
@@ -666,13 +645,6 @@ class TestNavigation(SnakeControl):
 			print "self.wayPaths =", self.wayPaths
 
 
-
-			#goalPath = self.mapGraph.computePath(self.currPose, frontierPoint)
-			#self.wayPoints = [goalPath[-1]]
-			#self.wayPaths = [goalPath]
-
-
-			
 			self.globalState = 11
 
 		elif self.globalState == 11:

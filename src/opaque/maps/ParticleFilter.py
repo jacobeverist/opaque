@@ -154,23 +154,24 @@ def __remote_displaceParticle(rank, qin, qout):
 			
 			#[particleIndex, nodeID3, prevPose0, prevPose1, initPose2, initPose3, supportLine, pathSplices2, pathSplices3]
 			poseData = job[0]
-			particleIndex = job[1]
-			nodeID3 = job[2]
-			prevPose0 = job[3]
-			prevPose1 = job[4]
-			initPose2 = job[5]
-			initPose3 = job[6]
-			supportLine = job[7]
-			pathSplices2 = job[8]
-			pathSplices3 = job[9]
+			partObj = job[1]
+			particleIndex = job[2]
+			nodeID3 = job[3]
+			prevPose0 = job[4]
+			prevPose1 = job[5]
+			initPose2 = job[6]
+			initPose3 = job[7]
+			supportLine = job[8]
+			pathSplices2 = job[9]
+			pathSplices3 = job[10]
 
-			result = displaceParticle( poseData, pathSplices2, pathSplices3, supportLine, nodeID3, initPose2, initPose3, prevPose0, prevPose1)
+			result = displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine, nodeID3, initPose2, initPose3, prevPose0, prevPose1)
 			results.append((particleIndex,) + result)
 						   
 		# write to output queue
 		qout.put((nc,results))
 
-def displaceParticle( poseData, pathSplices2, pathSplices3, supportLine, nodeID3, initPose2, initPose3, prevPose0, prevPose1):
+def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine, nodeID3, initPose2, initPose3, prevPose0, prevPose1):
 
 	#print "movePath(", nodeID, ",", direction, ",", distEst, ")"
 
@@ -231,12 +232,136 @@ def displaceParticle( poseData, pathSplices2, pathSplices3, supportLine, nodeID3
 
 			currPose3 = getInPlaceGuess(poseData, nodeID-1, nodeID, currPose2, estPose3, supportLine, direction)
 
-
-
 		else:
 			print "movePath:  DO NOTHING"
 
 		#return currPose2, currPose3
+
+
+		""" if the node has a spatial feature, localize it to the closest landmark """
+
+		""" if the node has a landmark feature, then we try to localize on the junction point """
+		""" FIXME: only use the first long path, we don't try and figure out the longest yet """
+		currPoses = {nodeID2: currPose2, nodeID3: currPose3}
+		poseOffsets = {nodeID2: [0.0,0.0,0.0], nodeID3: [0.0,0.0,0.0]}
+		isPoseChanged = {nodeID2: False, nodeID3: False}
+
+		for nodeID in [nodeID2, nodeID3]:
+
+			"""
+			self.junctionData[pathID] = {
+										"parentID" : parentID,
+										"branchNodeID" : branchNodeID,
+										"localJunctionPose" : localJunctionPose, 
+										"globalJunctionPose" : globalJunctionPose,
+										"probDist" : [ 1.0 / float(numBranches) for k in range(numBranches) ],
+										"branchPoseDist" : [deepcopy(globalJunctionPose) for k in range(numBranches)],
+										"maxLikelihoodBranch" : 0
+										}		
+			"""
+
+
+
+			sF0 = poseData.spatialFeatures[nodeID][0]
+			if len(partObj.junctionData) > 0 and (sF0["bloomPoint"] != None or sF0["archPoint"] != None):
+
+				""" FIXME: assume one landmark feature """
+
+				if sF0["bloomPoint"] != None:
+					print "DO bloom localize to landmark feature", nodeID
+					localJunctionPoint = sF0["bloomPoint"]
+
+				elif sF0["archPoint"] != None:
+					print "DO arch localize to landmark feature", nodeID
+					localJunctionPoint = sF0["archPoint"]
+
+				""" starting pose of nodeID """
+				nodePose0 = currPoses[nodeID]
+				poseOrigin0 = Pose(nodePose0)
+				globalLandmarkPoint = poseOrigin0.convertLocalToGlobal(localJunctionPoint)
+
+				# self.pathClasses[0] = {"parentID" : None, "branchNodeID" : None, "localJunctionPose" : None, 
+								#"sameProb" : {}, "nodeSet" : [], "globalJunctionPose" : None}
+
+				minPathID = None
+				minJuncDist = 1e100
+				junctionPose0 = None
+				#for pathID, values in pathClasses.iteritems():
+				for pathID, values in partObj.junctionData.iteritems():
+
+					if pathID != 0 and values["branchNodeID"] != nodeID:
+
+						currJuncPose = values["globalJunctionPose"]
+
+						currDist = sqrt((currJuncPose[0]-globalLandmarkPoint[0])**2 + (currJuncPose[1]-globalLandmarkPoint[1])**2)
+
+						if currDist < minJuncDist:
+							minJuncDist = currDist
+							minPathID = pathID
+							junctionPose0 = currJuncPose
+
+				if minPathID != None:
+
+					print "nodePose0 =", nodePose0
+					print "global landmark =", globalLandmarkPoint
+					print "localJunctionPoint =", localJunctionPoint
+					print "junction pose =", junctionPose0
+					print "nodeID, pathID =", nodeID, minPathID
+
+					modJuncPose0 = [junctionPose0[0], junctionPose0[1], nodePose0[2]]
+
+
+					juncOrigin0 = Pose(modJuncPose0)
+					invPoint0 = [-localJunctionPoint[0], -localJunctionPoint[1]]
+					newNodePoint0 = juncOrigin0.convertLocalToGlobal(invPoint0)
+
+					""" set pose of node0 to compute offset, but keep same angle """
+					junctionNodePose0 = [newNodePoint0[0], newNodePoint0[1], nodePose0[2]]
+					
+					poseOffset = [newNodePoint0[0]-nodePose0[0], newNodePoint0[1]-nodePose0[1]]
+					print "poseOffset =", poseOffset
+					#poseOffset = poseOrigin0.convertGlobalToLocal(newNodePoint0)
+					#print "poseOffset =", poseOffset
+					
+					print "junctionNodePose0 =", junctionNodePose0
+
+			
+					poseOffsets[nodeID] = poseOffset
+					currPoses[nodeID] = junctionNodePose0
+					isPoseChanged[nodeID] = True
+
+					#self.setNodePose(nodeID, junctionNodePose0)
+
+					
+				"""
+				global pose of node0
+				local pose of landmark feature  (localOffset0)
+				global pose of existing junction (junction0)
+				assuming that existing junction is landmark, convert back to get global pose of node
+				"""
+	
+		if isPoseChanged[nodeID2] and not isPoseChanged[nodeID3]:
+			poseOffset2 = poseOffsets[nodeID2]
+			tempPose3 = deepcopy(currPose3)
+			tempPose3[0] = poseOffset2[0] + currPose3[0]
+			tempPose3[1] = poseOffset2[1] + currPose3[1]
+			print "changing nodeID3", nodeID3, "from ", currPose3, "to", tempPose3, "with offset", poseOffset2
+			currPoses[nodeID3] = tempPose3
+
+		elif isPoseChanged[nodeID3] and not isPoseChanged[nodeID2]:
+			poseOffset3 = poseOffsets[nodeID3]
+			tempPose2 = deepcopy(currPose2)
+			tempPose2[0] = poseOffset3[0] + currPose2[0]
+			tempPose2[1] = poseOffset3[1] + currPose2[1]
+			print "changing nodeID2", nodeID2, "from ", currPose2, "to", tempPose2, "with offset", poseOffset3
+			currPoses[nodeID2] = tempPose2
+	
+		""" if the node has been localized to a landmark, we need the updated version """
+		currPose2 = currPoses[nodeID2]
+		currPose3 = currPoses[nodeID3]
+
+		print "final poses:", currPose2, currPose3
+
 		
 		" now we fit the guessed pose to a splice of the paths "
 		" this constrains it to the previously explored environment "
