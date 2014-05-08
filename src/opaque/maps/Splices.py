@@ -386,10 +386,13 @@ def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, node
 	forePathAngle = pathPoints[forePathIndex][2]
 	forePathAngle = normalizeAngle(forePathAngle + pi)
 
-	foreDiffAngle = diffAngle(angle1, forePathAngle)
+	#foreDiffAngle = diffAngle(angle1, forePathAngle)
 	
+
+	""" angle checking assumes that the tip angle and the parent ref angle are not oriented the same way """
+	""" such a circumstance arises from a branch event from a featureless node through an intersection """
 	newFrontDepI = 4
-	while fabs(diffAngle(normalizeAngle(points2_offset[newFrontDepI][2]+pi), forePathAngle)) > DEP_ANG:
+	while fabs(diffAngle(normalizeAngle(points2_offset[newFrontDepI][2]+pi), forePathAngle)) > DEP_ANG or distances[newFrontDepI] > 1.5*DEP_DIST:
 		
 		if newFrontDepI < frontDepI:
 			newFrontDepI += 1
@@ -422,10 +425,12 @@ def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, node
 	backPathIndex = indices[backAngleRefI]
 	backPathAngle = pathPoints[backPathIndex][2]
 	
-	backDiffAngle = diffAngle(angle2, backPathAngle)
+	#backDiffAngle = diffAngle(angle2, backPathAngle)
 	
+	""" angle checking assumes that the tip angle and the parent ref angle are not oriented the same way """
+	""" such a circumstance arises from a branch event from a featureless node through an intersection """
 	newBackDepI = len(distances)-5
-	while fabs(diffAngle(points2_offset[newBackDepI][2], backPathAngle)) > DEP_ANG:
+	while fabs(diffAngle(points2_offset[newBackDepI][2], backPathAngle)) > DEP_ANG or distances[newBackDepI] > 1.5*DEP_DIST:
 		
 		if newBackDepI > backDepI:
 			newBackDepI -= 1

@@ -5802,6 +5802,7 @@ class MapState:
 
 		print "addPath(", parentID, branchNodeID, localJunctionPose
 		
+		estPose = self.nodePoses[branchNodeID]
 		nodePose = self.nodeRawPoses[branchNodeID]
 		nodeOrigin = Pose(nodePose)
 		globalJunctionPose = nodeOrigin.convertLocalOffsetToGlobal(localJunctionPose)
@@ -5810,8 +5811,19 @@ class MapState:
 		oldPaths = self.getPathIDs()
 		
 		newPathID = self.pathIDs
+
+		medial0 = self.poseData.medialAxes[branchNodeID]
+		poseOrigin0 = Pose(estPose)
+		globalMedial0 = []
+		for p in medial0:
+			globalMedial0.append(poseOrigin0.convertLocalToGlobal(p))
+
+		newGlobJuncPose = getBranchPoint(globalJunctionPose, parentID, newPathID, self.trimmedPaths[parentID], globalMedial0, plotIter = True, hypothesisID = self.hypothesisID, nodeID = branchNodeID)
+
 		self.pathClasses[newPathID] = {"parentID" : parentID, "branchNodeID" : branchNodeID, "localJunctionPose" : localJunctionPose, 
-							"sameProb" : {}, "nodeSet" : [], "globalJunctionPose" : globalJunctionPose }		
+							"sameProb" : {}, "nodeSet" : [], "globalJunctionPose" : newGlobJuncPose }		
+		#self.pathClasses[newPathID] = {"parentID" : parentID, "branchNodeID" : branchNodeID, "localJunctionPose" : localJunctionPose, 
+		#					"sameProb" : {}, "nodeSet" : [], "globalJunctionPose" : globalJunctionPose }		
 				
 		self.pathTermsVisited[newPathID] = False
 		
@@ -7210,7 +7222,7 @@ class MapState:
 				#newGlobJuncPose = getBranchPoint(globJuncPose, parentPathID, pathID, path1, particlePath2, plotIter = False)
 				#def trimBranch(pathID, parentPathID, globJuncPose, origGlobJuncPose, childPath, parentPath, trimmedParent, smoothPathSegs, plotIter = False, hypothesisID = 0, nodeID = 0):
 				# newPath3, newGlobJuncPose, juncDiscDist, juncDiscAngle, splicedPaths =  trimBranch(pathID, parentID, modJuncPose, origGlobJuncPose, childPath, parentPath, trimmedParent, smoothPathSegs)
-				newPath3, newGlobJuncPose, juncDiscDist, juncDiscAngle, splicedPaths = trimBranch(childPathID, parentPathID, modJuncPose, globalJunctionPoint, path2, path1, trimmedPaths[parentPathID], [], plotIter=True, hypothesisID=self.hypothesisID, nodeID=(self.poseData.numNodes-1))
+				newPath3, newGlobJuncPose, juncDiscDist, juncDiscAngle, splicedPaths = trimBranch(childPathID, parentPathID, modJuncPose, globalJunctionPoint, path2, path1, trimmedPaths[parentPathID], [], plotIter=False, hypothesisID=self.hypothesisID, nodeID=(self.poseData.numNodes-1))
 
 				"""
 				#secP1, secP2 = getOverlapDeparture(globalJunctionPoint, parentPathID, childPathID, path1, path2, plotIter = False)				 
