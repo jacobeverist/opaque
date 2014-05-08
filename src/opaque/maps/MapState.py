@@ -1092,7 +1092,7 @@ def getOverlapCondition(medial2, estPose2, supportLine, nodeID, plotIter = False
 
 
 @logFunction
-def getBranchPoint(globalJunctionPoint, parentPathID, childPathID, path1, path2, plotIter = False):
+def getBranchPoint(globalJunctionPoint, parentPathID, childPathID, path1, path2, plotIter = False, hypothesisID = 0, nodeID = 0):
 	""" get the trimmed version of child and parent paths that are overlapping in some fashion """
 
 	"""Assumption:  one section of the medial axis is closely aligned with the path """		   
@@ -1501,8 +1501,7 @@ def getBranchPoint(globalJunctionPoint, parentPathID, childPathID, path1, path2,
 	
 	""" last junction point is the intersection point """
 
-	#if plotIter:
-	if False:
+	if plotIter:
 
 		pylab.clf()
 		xP = []
@@ -1566,7 +1565,7 @@ def getBranchPoint(globalJunctionPoint, parentPathID, childPathID, path1, path2,
 		printStack()				 
 
 		pylab.title("%3.2f %3.2f %3.2f" % (juncDist1, juncDist2, juncAng))
-		pylab.savefig("trimDeparture_%04u.png" % pathPlotCount)
+		pylab.savefig("trimDeparture2_%04u_%04u.png" % (hypothesisID, nodeID))
 		
 		pathPlotCount += 1
 
@@ -1695,7 +1694,7 @@ def computeBranch(pathID, parentID, origGlobJuncPose, childPath, parentPath, tri
 		return part2
 
 @logFunction
-def trimBranch(pathID, parentPathID, globJuncPose, origGlobJuncPose, childPath, parentPath, trimmedParent, smoothPathSegs, plotIter = False):
+def trimBranch(pathID, parentPathID, globJuncPose, origGlobJuncPose, childPath, parentPath, trimmedParent, smoothPathSegs, plotIter = False, hypothesisID = 0, nodeID = 0):
 
 	global pathPlotCount 
 
@@ -1706,24 +1705,24 @@ def trimBranch(pathID, parentPathID, globJuncPose, origGlobJuncPose, childPath, 
 
 	localPathSegs = []
 
-	for k in range(len(smoothPathSegs)):
-		pathSeg = smoothPathSegs[k]
-		localSeg = []
-		for p in pathSeg:
-			p1 = origJuncOrigin.convertGlobalPoseToLocal(p)
-			localSeg.append(p1)
+	#for k in range(len(smoothPathSegs)):
+	#	pathSeg = smoothPathSegs[k]
+	#	localSeg = []
+	#	for p in pathSeg:
+	#		p1 = origJuncOrigin.convertGlobalPoseToLocal(p)
+	#		localSeg.append(p1)
 
-		localPathSegs.append(localSeg)
+	#	localPathSegs.append(localSeg)
 
 
 	offsetOrigin1 = Pose(globJuncPose)
 	
 	partPathSegs = []
 
-	for k in range(len(localPathSegs)):
-		localSeg = localPathSegs[k]
-		for p in localSeg:
-			p1 = offsetOrigin1.convertLocalOffsetToGlobal(p)
+	#for k in range(len(localPathSegs)):
+	#	localSeg = localPathSegs[k]
+	#	for p in localSeg:
+	#		p1 = offsetOrigin1.convertLocalOffsetToGlobal(p)
 
 	path1 = parentPath
 	path2 = childPath
@@ -1884,7 +1883,7 @@ def trimBranch(pathID, parentPathID, globJuncPose, origGlobJuncPose, childPath, 
 
 	deepcopy(newPath3)
 
-	newGlobJuncPose = getBranchPoint(globJuncPose, parentPathID, pathID, path1, particlePath2, plotIter = False)
+	newGlobJuncPose = getBranchPoint(globJuncPose, parentPathID, pathID, path1, particlePath2, plotIter = plotIter, hypothesisID = hypothesisID, nodeID = nodeID)
 
 	""" junction discrepency distance """
 	origJuncPose = copy(origGlobJuncPose)
@@ -2100,7 +2099,7 @@ def trimBranch(pathID, parentPathID, globJuncPose, origGlobJuncPose, childPath, 
 	if plotIter:
 		#if False:
 			
-		hypothesisID = 0
+		#hypothesisID = 0
 		numNodes = 0
 		pathPlotCount = 0
 
@@ -2123,6 +2122,7 @@ def trimBranch(pathID, parentPathID, globJuncPose, origGlobJuncPose, childPath, 
 		
 		pylab.scatter([newGlobJuncPose[0],], [newGlobJuncPose[1],], color='r')
 		pylab.scatter([globJuncPose[0],], [globJuncPose[1],], color='b')
+		pylab.scatter([origJuncPose[0],], [origJuncPose[1],], color='g')
 
 		xP = []
 		yP = []
@@ -2140,10 +2140,10 @@ def trimBranch(pathID, parentPathID, globJuncPose, origGlobJuncPose, childPath, 
 
 
 		pylab.axis("equal")
-		pylab.title("hyp %d nodeID %d %1.3f %1.3f %1.3f %1.3f" % ( hypothesisID, numNodes, juncDiscDist, juncDiscAngle, origJuncPose[2], newGlobJuncPose[2]))
-		pylab.savefig("trimDeparture_%04u_%04u.png" % (hypothesisID, pathPlotCount))
+		pylab.title("hyp %d nodeID %d %1.3f %1.3f %1.3f %1.3f" % ( hypothesisID, nodeID, juncDiscDist, juncDiscAngle, origJuncPose[2], newGlobJuncPose[2]))
+		pylab.savefig("trimDeparture_%04u_%04u.png" % (hypothesisID, nodeID))
 
-		print "saving trimDeparture_%04u_%04u.png" % (hypothesisID, pathPlotCount)
+		print "saving trimDeparture_%04u_%04u.png" % (hypothesisID, nodeID)
 		
 		pathPlotCount += 1
 
@@ -2295,6 +2295,8 @@ class MapState:
 		return copy(self.nodePoses[nodeID])
 	
 	def setNodePose(self, nodeID, newPose):
+
+		print "setNodePose(", nodeID, ",", newPose, ")"
 
 		oldGPACPose = self.getNodePose(nodeID)
 
@@ -2891,7 +2893,7 @@ class MapState:
 				newProb *= branchProbVal
 				#utilVal0 = (1.0-contigFrac_0) + (isExist1_0 or isExist2_0) + (1.0-contigFrac_1) + (isExist1_1 or isExist2_1)
 			
-			print "%d %d %d branchProbVal, utilVal, poseProbValue, overlapSum:" % (self.hypothesisID, particleIndex, spliceIndex), branchProbVal, utilVal, newProb, overlapSum, contigFrac_0, contigFrac_1, overlapSum, initPose0[2], newPose0[2], int(isExist1_0), int(isExist2_0), int(isExist1_1), int(isExist2_1), int(isInterior1_0), int(isInterior2_0), int(isInterior1_1), int(isInterior2_1)
+			print "%d %d %d branchProbVal, utilVal, poseProbValue, overlapSum:" % (self.hypothesisID, particleIndex, spliceIndex), branchProbVal, utilVal, newProb, overlapSum, contigFrac_0, contigFrac_1, overlapSum, initPose0[2], newPose0[2], int(isExist1_0), int(isExist2_0), int(isExist1_1), int(isExist2_1), int(isInterior1_0), int(isInterior2_0), int(isInterior1_1), int(isInterior2_1), isReject, branchIndex
 
 			#print "%d %1.2f %1.2f %1.2f %d %d %d %d %1.2f %1.2f %d %d %d %d" % (particleIndex, newProb, contigFrac_0, overlapSum_0, isInterior1_0, isInterior2_0, isExist1_0, isExist2_0, contigFrac_1, overlapSum_1, isInterior1_1, isInterior2_1, isExist1_1, isExist2_1)
 
@@ -2946,12 +2948,14 @@ class MapState:
 				probParticles.append(float(1)/float(numParticles))
 				self.isNoLocalize = True
 
+		print "probParticles:", self.isNoLocalize, probParticles 
 
 		""" apply branch probability """
 		probSum2 = 0.0
 		for k in range(len(probParticles)):
 			#part = particleDist2[k]
-			part = filteredParticles[particleIndex]
+			#part = filteredParticles[particleIndex]
+			part = filteredParticles[k]
 
 			""" branch probability """
 			spliceIndex = part[47]
@@ -2961,12 +2965,16 @@ class MapState:
 
 			probSum2 += probParticles[k]
 
+		print "applied branch probability:", probParticles
+
 		""" renormalize """
 		for k in range(len(probParticles)):
 			if probSum2 > 0.0:
 				probParticles[k] /= probSum2
 			else:
 				probParticles[k] = float(1)/float(numParticles)
+
+		print "normalized probParticles:", probParticles 
 
 		""" now resample """
 		resampledParticles2 = []
@@ -2984,11 +2992,15 @@ class MapState:
 			elif probParticles[k] == maxVal:
 				numMax += 1
 
+		print "maxIndex, numMax, maxVal:", maxIndex, numMax, maxVal
+
 		""" if more than one max, than we don't change the node pose, we accept the localize on the canonical pose """
 		if numMax == 1:
 
 			self.setNodePose(nodeID0, deepcopy(particleDist2[maxIndex].pose0))
 			self.setNodePose(nodeID1, deepcopy(particleDist2[maxIndex].pose1))
+
+			print "setting max likelihood poses", nodeID0, nodeID1, self.getNodePose(nodeID0), self.getNodePose(nodeID1)
 
 			#self.nodePoses[nodeID0] = deepcopy(particleDist2[maxIndex].pose0)
 			#self.nodePoses[nodeID1] = deepcopy(particleDist2[maxIndex].pose1)
@@ -3004,12 +3016,13 @@ class MapState:
 					part = particleDist2[maxIndex]
 					#partBranchIndex = particleDist2[maxIndex].junctionData[pathID]["maxLikelihoodBranch"]
 
-				
+
 					""" maximum likelihood branch point within maximum likelihood pose particle """
 					partBranchIndex = part.junctionData[pathID]["maxLikelihoodBranch"]
 					partJuncPose = part.junctionData[pathID]["branchPoseDist"][partBranchIndex]
 
 					origJuncPose = copy(self.pathClasses[pathID]["globalJunctionPose"])
+					print "changing path", pathID, "branch position from", origJuncPose, "to", partJuncPose
 					origJuncPose[2] = 0.0
 
 					modJuncPose = copy(partJuncPose)
@@ -7192,7 +7205,12 @@ class MapState:
 				branchNodePose = self.getNodePose(branchNodeID)
 				globalJunctionPoint = self.getGlobalJunctionPose(childPathID)
 
-				newPath3, newGlobJuncPose, juncDiscDist, juncDiscAngle, splicedPaths = trimBranch(childPathID, parentPathID, globalJunctionPoint, globalJunctionPoint, path2, path1, trimmedPaths[parentPathID], [], plotIter=True)
+				modJuncPose = [globalJunctionPoint[0], globalJunctionPoint[1], 0.0]
+
+				#newGlobJuncPose = getBranchPoint(globJuncPose, parentPathID, pathID, path1, particlePath2, plotIter = False)
+				#def trimBranch(pathID, parentPathID, globJuncPose, origGlobJuncPose, childPath, parentPath, trimmedParent, smoothPathSegs, plotIter = False, hypothesisID = 0, nodeID = 0):
+				# newPath3, newGlobJuncPose, juncDiscDist, juncDiscAngle, splicedPaths =  trimBranch(pathID, parentID, modJuncPose, origGlobJuncPose, childPath, parentPath, trimmedParent, smoothPathSegs)
+				newPath3, newGlobJuncPose, juncDiscDist, juncDiscAngle, splicedPaths = trimBranch(childPathID, parentPathID, modJuncPose, globalJunctionPoint, path2, path1, trimmedPaths[parentPathID], [], plotIter=True, hypothesisID=self.hypothesisID, nodeID=(self.poseData.numNodes-1))
 
 				"""
 				#secP1, secP2 = getOverlapDeparture(globalJunctionPoint, parentPathID, childPathID, path1, path2, plotIter = False)				 

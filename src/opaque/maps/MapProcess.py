@@ -2722,7 +2722,6 @@ def consistentFit(mapHyp, nodeID, estPose, numGuesses = 11, excludePathIDs = [])
 
 	globalMedialSpline1 = SplineFit(globalMedial, smooth=0.1)
 				
-	originU1 = medialSpline1.findU([0.0,0.0])	
 
 	resultsBySplice = []
 
@@ -2733,8 +2732,8 @@ def consistentFit(mapHyp, nodeID, estPose, numGuesses = 11, excludePathIDs = [])
 
 		pathSpline = SplineFit(path, smooth=0.1)
 		pathU1 = pathSpline.findU(estPose1[:2])
-		pathForeU = pathSpline.getUOfDist(originU1, 1.0, distIter = 0.001)
-		pathBackU = pathSpline.getUOfDist(originU1, -1.0, distIter = 0.001)
+		pathForeU = pathSpline.getUOfDist(pathU1, 1.0, distIter = 0.001)
+		pathBackU = pathSpline.getUOfDist(pathU1, -1.0, distIter = 0.001)
 		
 		orientedPath = orientPath(path, globalMedial)
 		orientedPathSpline = SplineFit(orientedPath, smooth=0.1)
@@ -3051,8 +3050,6 @@ def consistentParticleFit(mapHyp, nodeID, estPose, excludePathIDs = []):
 
 	globalMedialSpline1 = SplineFit(globalMedial, smooth=0.1)
 				
-	originU1 = medialSpline1.findU([0.0,0.0])	
-
 	resultsBySplice = []
 
 	for spliceIndex in range(len(splicedPaths1)):
@@ -3062,8 +3059,8 @@ def consistentParticleFit(mapHyp, nodeID, estPose, excludePathIDs = []):
 
 		pathSpline = SplineFit(path, smooth=0.1)
 		pathU1 = pathSpline.findU(estPose1[:2])
-		pathForeU = pathSpline.getUOfDist(originU1, 1.0, distIter = 0.001)
-		pathBackU = pathSpline.getUOfDist(originU1, -1.0, distIter = 0.001)
+		pathForeU = pathSpline.getUOfDist(pathU1, 1.0, distIter = 0.001)
+		pathBackU = pathSpline.getUOfDist(pathU1, -1.0, distIter = 0.001)
 		
 		orientedPath = orientPath(path, globalMedial)
 		orientedPathSpline = SplineFit(orientedPath, smooth=0.1)
