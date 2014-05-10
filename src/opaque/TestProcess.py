@@ -11,8 +11,6 @@ import os
 from behaviors.AnchorTransition import AnchorTransition
 
 from pose.AverageContacts import AverageContacts
-from maps.MapGraph import MapGraph
-from maps.VisualGraph import VisualGraph
 from maps.MapLoader import MapLoader
 
 import numpy
@@ -117,8 +115,6 @@ class TestProcess(SnakeControl):
 		elif self.globalState == 3:
 			
 			" create the mapping object "
-			#self.mapGraph = MapGraph(self.probe, self.contacts, isStable = True)
-			#self.mapGraph = VisualGraph(self.probe, self.contacts)
 			self.mapGraph = MapLoader(self.probe, self.contacts)
 
 			targetMapFile = "../mapLibrary/cross_junction.py"
