@@ -18,6 +18,8 @@ import Image
 import sys
 import alphamod
 
+import cPickle as pickle
+
 class MapLoader:
 
 	def __init__(self, probe, contacts):
@@ -32,12 +34,41 @@ class MapLoader:
 		MAPSIZE = 20.0
 		self.occMap = OccupancyMap(self.probe, self, MAPSIZE)
 
-	def loadSeries(self, dirName, num_poses):
+	def restorePickle(self, dirName, nodeID):
+		PIXELSIZE = 0.05
+
+		with open('map_%04u.obj' % nodeID, 'rb') as input:
+			self.mapAlgorithm = pickle.load(input)
+			self.mapAlgorithm.saveState()
+
+			for val in self.mapAlgorithm.mapHyps.values():
+				self.mapAlgorithm.drawPathAndHull2(val)
+
+			#self.mapAlgorithm.loadSeries("../results/result_2013_08_24_cross", 238)
+
+			"""
+			print "loading node", 12		
+			currNode = LocalNode(self.probe, self.contacts, 12, 19, PIXELSIZE)
+			currNode.readFromFile2("../results/result_2013_08_24_cross", 12)
+			self.localNodes.append(currNode)
+			self.mapAlgorithm.loadNewNode(currNode)
+			self.mapAlgorithm.saveState()
+		
+			print "loading node", 13		
+			currNode = LocalNode(self.probe, self.contacts, 13, 19, PIXELSIZE)
+			currNode.readFromFile2("../results/result_2013_08_24_cross", 13)
+			self.localNodes.append(currNode)
+			self.mapAlgorithm.loadNewNode(currNode)
+			self.mapAlgorithm.saveState()
+			"""
+		
+
+	def loadSeries(self, dirName, startID, endID):
 	
 		PIXELSIZE = 0.05
-		initNum = len(self.localNodes)
+		#initNum = len(self.localNodes)
 
-		for i in range(initNum, initNum+num_poses):
+		for i in range(startID, endID+1):
 
 			print "loading node", i		
 			currNode = LocalNode(self.probe, self.contacts, i, 19, PIXELSIZE)
@@ -46,10 +77,12 @@ class MapLoader:
 
 			self.localNodes.append(currNode)
 			
-
 			self.mapAlgorithm.loadNewNode(currNode)
 			self.mapAlgorithm.saveState()
 		
+ 
+			with open("map_%04u.obj" % i, 'wb') as output:
+				pickle.dump(self.mapAlgorithm, output, pickle.HIGHEST_PROTOCOL)
 
 		#self.drawMap()
 

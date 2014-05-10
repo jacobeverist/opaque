@@ -1470,7 +1470,7 @@ class BayesMapper:
 
 		#foo = "paths: %s, nodeID: %d, hyp %d %3.2f" % (repr(mapHyp.getPathIDs()), highestNodeID, mapHyp.hypothesisID, mapHyp.utility)
 		fig.suptitle("paths: %s, nodeID: %d, hyp %d %3.2f" % (repr(mapHyp.getPathIDs()), highestNodeID, mapHyp.hypothesisID, mapHyp.mapOverlapSum), fontsize=18, y=0.99)
-		plt.savefig("quadPath_%04u_%04u.png" % (self.pathDrawCount, mapHyp.hypothesisID))
+		plt.savefig("quadPath_%04u_%04u.png" % (highestNodeID, mapHyp.hypothesisID))
 
 		plt.clf()
 		plt.close()

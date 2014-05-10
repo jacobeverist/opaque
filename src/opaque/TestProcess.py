@@ -142,9 +142,11 @@ class TestProcess(SnakeControl):
 
 			#self.mapGraph = MapLoader(self.probe, self.contacts)
 			#self.mapGraph.loadWalls(walls)
-			self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 238)
-			#retvalue = os.system("mkdir data6")
-			#retvalue = os.system("mv *.png data6")
+			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 238)
+			#self.mapGraph.restorePickle(".", 11)
+			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 12, 40)
+			self.mapGraph.restorePickle(".", 39)
+			self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 40, 237)
 
 
 			#self.mapGraph.restoreSeries("../results/result_2013_08_24_cross", 80)
