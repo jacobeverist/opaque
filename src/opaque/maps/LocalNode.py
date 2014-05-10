@@ -7,7 +7,7 @@ from LocalObstacleMap import *
 from SplineFit import *
 from Pose import Pose
 #from cornerDetection import extractCornerCandidates
-from voronoi import Site, computeVoronoiDiagram
+#from voronoi import Site, computeVoronoiDiagram
 
 from GPACurve import GPACurve
 from StableCurve import StableCurve
