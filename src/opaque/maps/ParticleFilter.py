@@ -878,13 +878,14 @@ class Particle:
 		self.pose0 = deepcopy(pose0)
 		self.pose1 = deepcopy(pose1)
 
-	def addPath(self, pathID, parentID, branchNodeID, localJunctionPose, globalJunctionPose, numBranches):
+	def addPath(self, pathID, parentID, branchNodeID, localJunctionPose, globalJunctionPose, controlPoint, numBranches):
 
 		self.junctionData[pathID] = {
 									"parentID" : parentID,
 									"branchNodeID" : branchNodeID,
 									"localJunctionPose" : localJunctionPose, 
 									"globalJunctionPose" : globalJunctionPose,
+									"controlPoint" : controlPoint,
 									"probDist" : [ 1.0 / float(numBranches) for k in range(numBranches) ],
 									"branchPoseDist" : [deepcopy(globalJunctionPose) for k in range(numBranches)],
 									"maxLikelihoodBranch" : 0

@@ -1092,7 +1092,7 @@ def getOverlapCondition(medial2, estPose2, supportLine, nodeID, plotIter = False
 
 
 @logFunction
-def getBranchPoint(globalJunctionPoint, parentPathID, childPathID, path1, path2, plotIter = False, hypothesisID = 0, nodeID = 0):
+def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, plotIter = False, hypothesisID = 0, nodeID = 0):
 	""" get the trimmed version of child and parent paths that are overlapping in some fashion """
 
 	"""Assumption:  one section of the medial axis is closely aligned with the path """		   
@@ -1118,6 +1118,49 @@ def getBranchPoint(globalJunctionPoint, parentPathID, childPathID, path1, path2,
 	pathPoints1 = path1Spline.getUniformSamples(interpAngle=True)
 	pathPoints2 = path2Spline.getUniformSamples(interpAngle=True)
 
+
+	""" compute the angle derivative at each point of the curves """
+	angDerivs1 = []
+	for k in range(len(pathPoints1)):
+		
+		if (k-6) > 0 and (k+6) < len(pathPoints1):
+
+			diffs = []
+
+			for l in range(0,7):
+
+				if (k-6+l) >= 0 and (k+l) < len(pathPoints1):
+					ang1 = pathPoints1[k-6+l][2]
+					ang2 = pathPoint1[k+l][2]
+					diffs.append(fabs(ang1-ang2))
+
+			angDeriv = sum(diffs) / float(len(diffs))
+
+			angDerivs1.append(angDeriv)
+		else:
+			angDerivs1.append(0.0)
+
+	angDerivs2 = []
+	for k in range(len(pathPoints2)):
+		
+		if (k-6) > 0 and (k+6) < len(pathPoints2):
+
+			diffs = []
+
+			for l in range(0,7):
+
+				if (k-6+l) >= 0 and (k+l) < len(pathPoints2):
+					ang1 = pathPoints2[k-6+l][2]
+					ang2 = pathPoint2[k+l][2]
+					diffs.append(fabs(ang1-ang2))
+
+			angDeriv = sum(diffs) / float(len(diffs))
+
+			angDerivs2.append(angDeriv)
+		else:
+			angDerivs2.append(0.0)
+
+
 	distances = []
 	indices = []
 	juncDists = []
@@ -1134,13 +1177,14 @@ def getBranchPoint(globalJunctionPoint, parentPathID, childPathID, path1, path2,
 		""" and the associated index of the point on the parent path """
 		indices.append(i_1)
 		
-		juncDist = sqrt((p_2[0]-globalJunctionPoint[0])**2 + (p_2[1]-globalJunctionPoint[1])**2)
+		juncDist = sqrt((p_2[0]-globalJunctionPose[0])**2 + (p_2[1]-globalJunctionPose[1])**2)
 
 		if juncDist < minDist2:
 			minDist2 = juncDist
 			juncI = i
 
 		juncDists.append(juncDist)
+
 
 
 	frontInd = 0
@@ -1311,11 +1355,11 @@ def getBranchPoint(globalJunctionPoint, parentPathID, childPathID, path1, path2,
 	#juncDist2 = -1
 	#if len(pathSec1) > 0:
 	p0 = pathSec1[0]
-	juncDist1 = sqrt((globalJunctionPoint[0]-p0[0])**2 + (globalJunctionPoint[1]-p0[1])**2)
+	juncDist1 = sqrt((globalJunctionPose[0]-p0[0])**2 + (globalJunctionPose[1]-p0[1])**2)
 
 	#if len(pathSec2) > 0:
 	p0 = pathSec2[0]
-	juncDist2 = sqrt((globalJunctionPoint[0]-p0[0])**2 + (globalJunctionPoint[1]-p0[1])**2)
+	juncDist2 = sqrt((globalJunctionPose[0]-p0[0])**2 + (globalJunctionPose[1]-p0[1])**2)
 
 	print "pathSec1 hypothesis discrepancy distance:", juncDist1
 	print "pathSec2 hypothesis discrepancy distance:", juncDist2
@@ -1334,7 +1378,7 @@ def getBranchPoint(globalJunctionPoint, parentPathID, childPathID, path1, path2,
 	"""
 
 
-	junctionPoint = globalJunctionPoint		 
+	junctionPoint = globalJunctionPose		 
 	minDist2 = 1e100
 	juncI = 0		 
 	for i in range(len(pathPoints2)):
@@ -1468,7 +1512,7 @@ def getBranchPoint(globalJunctionPoint, parentPathID, childPathID, path1, path2,
 	
 
 	try:
-		#def getBranchPoint(globalJunctionPoint, parentPathID, childPathID, path1, path2, plotIter = False, hypothesisID = 0, nodeID = 0):
+		#def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, plotIter = False, hypothesisID = 0, nodeID = 0):
 		foreIntI, backIntI, juncForeAng, juncBackAng = getTangentIntersections(pathPoints1, pathPoints2, frontDepI, backDepI, indices[frontDepI], indices[backDepI], juncI, indices[juncI], pathPlotCount, hypothesisID = hypothesisID, nodeID = nodeID, plotIter = True)
 		print "foreIntI, backIntII:", foreIntI, backIntI
 
@@ -1478,28 +1522,41 @@ def getBranchPoint(globalJunctionPoint, parentPathID, childPathID, path1, path2,
 		print "juncDist1, juncDist2 =", juncDist1, juncDist2
 		if juncDist1 == juncDist2:
 
-			juncDist2 = sqrt((globalJunctionPoint[0]-p0[0])**2 + (globalJunctionPoint[1]-p0[1])**2)
+			juncDist2 = sqrt((globalJunctionPose[0]-p0[0])**2 + (globalJunctionPose[1]-p0[1])**2)
 
-			foreDist = sqrt((pathPoints1[foreIntI][0]-globalJunctionPoint[0])**2 +  (pathPoints1[foreIntI][1]-globalJunctionPoint[1])**2)
-			backDist = sqrt((pathPoints1[backIntI][0]-globalJunctionPoint[0])**2 +  (pathPoints1[backIntI][1]-globalJunctionPoint[1])**2)
+			foreDist = sqrt((pathPoints1[foreIntI][0]-globalJunctionPose[0])**2 +  (pathPoints1[foreIntI][1]-globalJunctionPose[1])**2)
+			backDist = sqrt((pathPoints1[backIntI][0]-globalJunctionPose[0])**2 +  (pathPoints1[backIntI][1]-globalJunctionPose[1])**2)
 
 			print "foreDist, backDist =", foreDist, backDist
 
 			if foreDist < backDist:
 				globJuncPose = [pathPoints1[foreIntI][0], pathPoints1[foreIntI][1], juncForeAng]
+				controlPoint = pathPoints1[forePathIndex][0], pathPoints1[forePathIndex][1]
+
 			else:
 				globJuncPose = [pathPoints1[backIntI][0], pathPoints1[backIntI][1], juncBackAng]
+				controlPoint = pathPoints1[backPathIndex][0], pathPoints1[backPathIndex][1]
 	
 		elif juncDist1 < juncDist2:
 			globJuncPose = [pathPoints1[foreIntI][0], pathPoints1[foreIntI][1], juncForeAng]
+			controlPoint = pathPoints1[forePathIndex][0], pathPoints1[forePathIndex][1]
 		else:
 			globJuncPose = [pathPoints1[backIntI][0], pathPoints1[backIntI][1], juncBackAng]
+			controlPoint = pathPoints1[backPathIndex][0], pathPoints1[backPathIndex][1]
 
 		print "globJuncPose =", globJuncPose
 
 	except:
 		print "getTangentIntersections() failed!"
-		globJuncPose = [medial2[0][0], medial2[0][1], juncAng]
+		if foreDist < backDist:
+			globJuncPose = [pathPoints1[forePathIndex][0], pathPoints1[forePathIndex][1], globalJunctionPose[2]]
+			controlPoint = pathPoints1[forePathIndex][0], pathPoints1[forePathIndex][1]
+		else:
+			globJuncPose = [pathPoints1[backPathIndex][0], pathPoints1[backPathIndex][1], globalJunctionPose[2]]
+			controlPoint = pathPoints1[backPathIndex][0], pathPoints1[backPathIndex][1]
+
+		#globJuncPose = [medial2[0][0], medial2[0][1], juncAng]
+		#controlPoint = pathPoints1[backPathIndex][0], pathPoints1[backPathIndex][1]
 	
 	""" last junction point is the intersection point """
 
@@ -1544,7 +1601,7 @@ def getBranchPoint(globalJunctionPoint, parentPathID, childPathID, path1, path2,
 
 
 			
-		pylab.scatter([globalJunctionPoint[0]],[globalJunctionPoint[1]], color='r')		   
+		pylab.scatter([globalJunctionPose[0]],[globalJunctionPose[1]], color='r')		   
 		pylab.scatter([globJuncPose[0]],[globJuncPose[1]], color='k')		 
 
 		xP = []
@@ -1573,7 +1630,7 @@ def getBranchPoint(globalJunctionPoint, parentPathID, childPathID, path1, path2,
 
 
 	
-	return globJuncPose
+	return globJuncPose, controlPoint
 
 @logFunction
 def computeBranch(pathID, parentID, origGlobJuncPose, childPath, parentPath, trimmedParent, smoothPathSegs, arcDist):
@@ -1890,7 +1947,7 @@ def trimBranch(pathID, parentPathID, globJuncPose, origGlobJuncPose, childPath, 
 
 	deepcopy(newPath3)
 
-	newGlobJuncPose = getBranchPoint(globJuncPose, parentPathID, pathID, path1, particlePath2, plotIter = plotIter, hypothesisID = hypothesisID, nodeID = nodeID)
+	newGlobJuncPose, controlPoint = getBranchPoint(globJuncPose, parentPathID, pathID, path1, particlePath2, plotIter = plotIter, hypothesisID = hypothesisID, nodeID = nodeID)
 
 	""" junction discrepency distance """
 	origJuncPose = copy(origGlobJuncPose)
@@ -5948,11 +6005,11 @@ class MapState:
 		for p in medial0:
 			globalMedial0.append(poseOrigin0.convertLocalToGlobal(p))
 
-		newGlobJuncPose = getBranchPoint(globalJunctionPose, parentID, newPathID, self.trimmedPaths[parentID], globalMedial0, plotIter = True, hypothesisID = self.hypothesisID, nodeID = branchNodeID)
-		newGlobJuncPose2 = getBranchPoint(globalJunctionPose, newPathID, parentID, globalMedial0, self.trimmedPaths[parentID], plotIter = True, hypothesisID = self.hypothesisID, nodeID = branchNodeID)
+		newGlobJuncPose, controlPoint = getBranchPoint(globalJunctionPose, parentID, newPathID, self.trimmedPaths[parentID], globalMedial0, plotIter = True, hypothesisID = self.hypothesisID, nodeID = branchNodeID)
+		newGlobJuncPose2, controlPoint2 = getBranchPoint(globalJunctionPose, newPathID, parentID, globalMedial0, self.trimmedPaths[parentID], plotIter = True, hypothesisID = self.hypothesisID, nodeID = branchNodeID)
 
 		self.pathClasses[newPathID] = {"parentID" : parentID, "branchNodeID" : branchNodeID, "localJunctionPose" : localJunctionPose, 
-							"sameProb" : {}, "nodeSet" : [], "globalJunctionPose" : newGlobJuncPose }		
+							"sameProb" : {}, "nodeSet" : [], "globalJunctionPose" : newGlobJuncPose, "controlPoint" : controlPoint }		
 		#self.pathClasses[newPathID] = {"parentID" : parentID, "branchNodeID" : branchNodeID, "localJunctionPose" : localJunctionPose, 
 		#					"sameProb" : {}, "nodeSet" : [], "globalJunctionPose" : globalJunctionPose }		
 				
@@ -6004,7 +6061,7 @@ class MapState:
 			modJuncPose[2] = globalJunctionPose[2]
 
 			#part.addPath(newPathID, parentID, branchNodeID, localJunctionPose, globalJunctionPose)
-			part.addPath(newPathID, parentID, branchNodeID, localJunctionPose, modJuncPose, self.NUM_BRANCHES)
+			part.addPath(newPathID, parentID, branchNodeID, localJunctionPose, modJuncPose, controlPoint, self.NUM_BRANCHES)
 
 		print "newPath", newPathID, "=", self.pathClasses[newPathID]
 		#self.drawPoseParticles()
