@@ -2357,7 +2357,8 @@ class LocalNode:
 
 			xP = []
 			yP = []
-			for p in medial2:
+			#for p in medial2:
+			for p in realPath:
 				xP.append(p[0])
 				yP.append(p[1])
 

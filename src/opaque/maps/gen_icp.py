@@ -2299,7 +2299,7 @@ def globalPathToNodeOverlapICP2(initGuess, globalPath, medialPoints, plotIter = 
 
 
 @logFunction
-def branchEstimateCost(initGuess, junctionPose, pathSoup, globalPath, plotIter = False, n1 = 0, n2 = 0):
+def branchEstimateCost(initGuess, junctionPose, pathSoup, globalPath, plotIter = False, n1 = 0, n2 = 0, arcDist = 0.0):
 
 	global numIterations
 	global globalPlotCount
@@ -2498,12 +2498,23 @@ def branchEstimateCost(initGuess, junctionPose, pathSoup, globalPath, plotIter =
 
 		pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
 
+		xP = []
+		yP = []
+		for b in globalVecPoints:
+			p1 = [b[0],b[1]]
+			xP.append(p1[0])	
+			yP.append(p1[1])
+
+		pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0), alpha=0.5)
+
+
 		plotEnv()		 
 		pylab.title("%u -- %s u1 = %1.3f, u2 = %1.3f, ang = %1.3f, %.1f, %d %d F" % (n1, repr(n2), u1, currU, currAng, newCost, len(match_pairs), numIterations))
 
 		pylab.xlim(-6, 10)					  
 		pylab.ylim(-8, 8)
-		pylab.savefig("ICP_plot_%06u.png" % globalPlotCount)
+		#pylab.savefig("ICP_plot_%06u.png" % globalPlotCount)
+		pylab.savefig("ICP_plot_%1.2f_%04u.png" % (arcDist, globalPlotCount))
 		pylab.clf()
 		
 		" save inputs "

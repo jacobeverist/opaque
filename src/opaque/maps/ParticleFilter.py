@@ -326,6 +326,7 @@ def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine
 					print "junctionNodePose0 =", junctionNodePose0
 
 			
+					print "changing nodeID", nodeID, "from ", nodePose0, "to", junctionNodePose0, "with offset", poseOffset
 					poseOffsets[nodeID] = poseOffset
 					currPoses[nodeID] = junctionNodePose0
 					isPoseChanged[nodeID] = True

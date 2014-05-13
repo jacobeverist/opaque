@@ -270,7 +270,7 @@ def printStack():
 	print printStr
 
 @logFunction
-def getTangentIntersections(path1, path2, frontDepI, backDepI, path1FrontDepI, path1BackDepI, path2JuncI, path1JuncI, plotCount):
+def getTangentIntersections(path1, path2, frontDepI, backDepI, path1FrontDepI, path1BackDepI, path2JuncI, path1JuncI, plotCount, hypothesisID = 0, nodeID = 0, plotIter = False):
 
 
 	""" for tangent on path2, find the intersection point on path1 """
@@ -598,7 +598,7 @@ def getTangentIntersections(path1, path2, frontDepI, backDepI, path1FrontDepI, p
 
 
 
-	if True:
+	if plotIter:
 		pylab.clf()
 		xP = []
 		yP = []
@@ -636,8 +636,8 @@ def getTangentIntersections(path1, path2, frontDepI, backDepI, path1FrontDepI, p
 		print "intersectDeparture:", plotCount
 		printStack()				 
 
-		pylab.title("%d intersections, %d tangent segments, angles %1.2f %1.2f %1.2f %1.2f" % (len(interPoints), len(edges), juncForeAng1, juncBackAng1, juncForeAng, juncBackAng))
-		pylab.savefig("intersectDeparture_%04u.png" % plotCount)
+		pylab.title("%d intersections, %d tangent segments, angles %1.2f %1.2f %1.2f %1.2f %d %d" % (len(interPoints), len(edges), juncForeAng1, juncBackAng1, juncForeAng, juncBackAng, hypothesisID, nodeID))
+		pylab.savefig("intersectDeparture_%04u_%04u_%04u.png" % (nodeID, hypothesisID, plotCount))
 		
 
 		return i_f, i_b, juncForeAng, juncBackAng
@@ -1097,7 +1097,8 @@ def getBranchPoint(globalJunctionPoint, parentPathID, childPathID, path1, path2,
 
 	"""Assumption:  one section of the medial axis is closely aligned with the path """		   
 	
-	pathPlotCount = 0
+	global pathPlotCount
+	#pathPlotCount = 0
 	print "getBranchPoint():"
 	
 	""" return exception if we receive an invalid path """		  
@@ -1467,7 +1468,8 @@ def getBranchPoint(globalJunctionPoint, parentPathID, childPathID, path1, path2,
 	
 
 	try:
-		foreIntI, backIntI, juncForeAng, juncBackAng = getTangentIntersections(pathPoints1, pathPoints2, frontDepI, backDepI, indices[frontDepI], indices[backDepI], juncI, indices[juncI], pathPlotCount)
+		#def getBranchPoint(globalJunctionPoint, parentPathID, childPathID, path1, path2, plotIter = False, hypothesisID = 0, nodeID = 0):
+		foreIntI, backIntI, juncForeAng, juncBackAng = getTangentIntersections(pathPoints1, pathPoints2, frontDepI, backDepI, indices[frontDepI], indices[backDepI], juncI, indices[juncI], pathPlotCount, hypothesisID = hypothesisID, nodeID = nodeID, plotIter = True)
 		print "foreIntI, backIntII:", foreIntI, backIntI
 
 		""" junction distances are equal if both of the indices selected juncI as the departure point on path2'
@@ -1565,7 +1567,7 @@ def getBranchPoint(globalJunctionPoint, parentPathID, childPathID, path1, path2,
 		printStack()				 
 
 		pylab.title("%3.2f %3.2f %3.2f" % (juncDist1, juncDist2, juncAng))
-		pylab.savefig("trimDeparture2_%04u_%04u.png" % (hypothesisID, nodeID))
+		pylab.savefig("trimDeparture2_%04u_%04u_%04u.png" % (hypothesisID, nodeID, pathPlotCount))
 		
 		pathPlotCount += 1
 
@@ -1647,7 +1649,7 @@ def computeBranch(pathID, parentID, origGlobJuncPose, childPath, parentPath, tri
 
 		""" use ICP to align the branch segments to the parent shoot """
 		initGuess = [u1,u2,angGuess]
-		resultPose1, lastCost1, matchCount1 = gen_icp.branchEstimateCost(initGuess, modJuncPose, placedPathSegs, globalPath2, plotIter = False, n1 = pathID, n2 = parentID)
+		resultPose1, lastCost1, matchCount1 = gen_icp.branchEstimateCost(initGuess, modJuncPose, placedPathSegs, globalPath2, plotIter = True, n1 = pathID, n2 = parentID, arcDist = arcDist)
 
 
 		""" perform computations to get new aligned branch pose from ICP result """
@@ -1669,11 +1671,16 @@ def computeBranch(pathID, parentID, origGlobJuncPose, childPath, parentPath, tri
 		""" get the trimmed child shoot at the new designated branch point from parent """
 		newPath3, newGlobJuncPose, juncDiscDist, juncDiscAngle, splicedPaths =  trimBranch(pathID, parentID, modJuncPose, origGlobJuncPose, childPath, parentPath, trimmedParent, smoothPathSegs)
 
+		for placedSeg in placedPathSegs:
+			pass
+
 
 		""" cache the generated result and package it for later retrieval """
 		newSplices = deepcopy(splicedPaths)
-		initProb = 0.0
-		part2 = (parentID, modJuncPose, newArcDist, pathID, matchCount1, lastCost1, distDisc, angDisc, initProb, newSplices, juncDiscAngle)
+		# initProb = 0.0
+		#initProb = matchCount1*(1000.0-lastCost1)
+		initProb = matchCount1
+		part2 = (parentID, modJuncPose, newArcDist, pathID, matchCount1, lastCost1, distDisc, angDisc, initProb, newSplices, juncDiscAngle, juncDiscDist)
 
 		"""
 		result values are as follows:
@@ -1688,7 +1695,7 @@ def computeBranch(pathID, parentID, origGlobJuncPose, childPath, parentPath, tri
 		8 = initial probability value of this branch position, initialized to 0.0 in this function
 		9 = set of splices including the branch at this position
 		10 = angle discrepancy 
-
+		11 = dist discrepancy 
 		"""
 
 		return part2
@@ -3965,6 +3972,7 @@ class MapState:
 		8 = initial probability value of this branch position, initialized to 0.0 in this function
 		9 = set of splices including the branch at this position
 		10 = angle discrepancy 
+		11 = dist discrepancy 
 		"""
 
 		if self.pathClasses[pathID]["parentID"] != None: 
@@ -4111,14 +4119,133 @@ class MapState:
 		8 = initial probability value of this branch position, initialized to 0.0 in this function
 		9 = set of splices including the branch at this position
 		10 = angle discrepancy 
+		11 = dist discrepancy 
 		"""
 
 		results = batchBranch(branchJobs)
+
+		""" get the maximum value for each of our features """
+		maxCost = -1e100
+		maxMatchCount = -1000
+		maxAngDiff = -1e100
+		maxDist = 10.0
+
+		""" find maximum values for each metric """
+		for k in range(len(results)):
+			part = results[k]
+			matchCount = part[4]
+			lastCost = part[5]
+			dist = part[6]
+			angDiff = part[7]
+
+			if matchCount > maxMatchCount:
+				maxMatchCount = matchCount
+
+			if lastCost > maxCost:
+				maxCost = lastCost
+
+			if dist > maxDist:
+				maxDist = dist
+
+			if angDiff > maxAngDiff:
+				maxAngDiff = angDiff
+
+
+		probSum = 0.0
+		for result in results:
+			probVal = result[8]
+			probSum += probVal
+
 		for result in results:
 			arcDist = result[2]
 			pathID = result[3]
+			probVal = result[8] / probSum
 			currBranchSpace = self.branchEvaluations[pathID]
-			currBranchSpace[arcDist] = result
+
+			result2 = (result[0], result[1], result[2], result[3], result[4], result[5], result[6], result[7], probVal, result[9], result[10], result[11])
+
+			currBranchSpace[arcDist] = result2
+
+		maxProb = 0.0
+		for result in results:
+			probVal = result[8]
+			if probVal > maxProb:
+				maxProb = probVal
+			#probSum += probVal
+
+		if True:
+
+			pylab.clf() 
+
+
+			for result in results:
+
+				globJuncPose = result[1]
+				pathID = result[3]
+				probVal = result[8]
+				lastCost = result[5]
+				matchCount = result[4]
+
+				origJuncPose = copy(self.pathClasses[pathID]["globalJunctionPose"])
+				origJuncPose[2] = 0.0
+				origJuncOrigin = Pose(origJuncPose)
+
+				junctionDetails = self.longPathJunctions[pathID]
+				smoothPathSegs = junctionDetails["leafSegments"] + junctionDetails["internalSegments"]
+
+
+				localPathSegs = []
+				for k in range(len(smoothPathSegs)):
+					pathSeg = smoothPathSegs[k]
+					localSeg = []
+					for p in pathSeg:
+						p1 = origJuncOrigin.convertGlobalPoseToLocal(p)
+						localSeg.append(p1)
+
+					localPathSegs.append(localSeg)
+
+
+				for k,path in self.trimmedPaths.iteritems():
+					print "path has", len(path), "points"
+					xP = []
+					yP = []
+					for p in path:
+						xP.append(p[0])
+						yP.append(p[1])
+
+					pylab.plot(xP,yP, color = self.colors[k], linewidth=4)
+
+				xP = []
+				yP = []
+				xP.append(globJuncPose[0])
+				yP.append(globJuncPose[1])
+				pylab.scatter(xP, yP, color='k', zorder=8)
+
+				offsetOrigin1 = Pose(globJuncPose)
+
+				for k in range(len(localPathSegs)):
+					localSeg = localPathSegs[k]
+					xP1 = []
+					yP1 = []
+					for p in localSeg:
+						p1 = offsetOrigin1.convertLocalOffsetToGlobal(p)
+						xP1.append(p1[0])
+						yP1.append(p1[1])
+
+					#pylab.plot(xP1,yP1,color='k', zorder=9, alpha=0.5)
+					#if maxCost > 0:
+					if maxMatchCount > 0:
+						#pylab.plot(xP1,yP1,color='k', zorder=9, alpha=probVal/maxProb)
+						#pylab.plot(xP1,yP1,color='k', zorder=9, alpha=lastCost/maxCost)
+						pylab.plot(xP1,yP1,color='k', zorder=9, alpha=float(matchCount)/float(maxMatchCount))
+					else:
+						pylab.plot(xP1,yP1,color='k', zorder=9, alpha=0.10)
+
+
+
+			pylab.title("nodeID: %d hyp: %d, pathID: %d, localPathSegs %d" % (len(self.nodePoses), self.hypothesisID, pathID, len(localPathSegs)))
+			pylab.savefig("all_branch_plot_%04u_%02u_%04u.png" % (len(self.nodePoses), self.hypothesisID, self.tempCount) )
+			self.tempCount += 1
 
 
 	@logFunction
@@ -4229,10 +4356,11 @@ class MapState:
 
 				""" angDiff feature times matchCount times dist """
 				#probVal = matchCount*matchCost + nomDist/4.0
-				probVal = matchCount*matchCost
+				#probVal = matchCount*matchCost
+				probVal = matchCount
 				totalProbSum += probVal
 
-				part2 = (part[0], part[1], part[2], part[3], part[4], matchCost, nomDist, part[7], probVal, part[9], part[10])
+				part2 = (part[0], part[1], part[2], part[3], part[4], matchCost, nomDist, part[7], probVal, part[9], part[10], part[11])
 				particles[k] = part2
 
 			""" normalize the probability values """
@@ -4251,18 +4379,19 @@ class MapState:
 				else:
 					probVal = 0.0
 
-				part2 = (part[0], part[1], part[2], part[3], part[4], part[5], part[6], part[7], probVal, part[9], part[10])
+				part2 = (part[0], part[1], part[2], part[3], part[4], part[5], part[6], part[7], probVal, part[9], part[10], part[11])
 				particles[k] = part2
 
 				#part2 = (parentID, modJuncPose, newArcDist, pathID, matchCount1, lastCost1, distDisc, angDisc, initProb, newSplices, juncDiscAngle)
-				print "particle %02u %1.4f %03u %1.4f %1.4f %1.4f %1.4f %d" % (k, part2[1][2], part2[4], part2[5], part2[6], part2[7], part2[8], len(part2[9]))
+				print "particle %04u %02u %02u %1.4f %03u %1.2f %1.2f %1.2f %1.2f %d %1.2f %1.2f" % (nodeID0, particleIndex, k, part2[1][2], part2[4], part2[5], part2[6], part2[7], part2[8], len(part2[9]), part2[10], part2[11])
 			print "particle"
 
 			""" cartesian distance """
 			DISC_THRESH = 0.5
 
 			""" 60 degree threshold """
-			ANG_THRESH = 0.523 # pi/6
+			#ANG_THRESH = 0.523 # pi/6
+			ANG_THRESH = 1.5708 # pi/2
 
 			
 			""" get splices for new branch position """
@@ -4281,7 +4410,7 @@ class MapState:
 				if fabs(juncDiscAngle) > ANG_THRESH:
 					newProbVal = 0.0
 
-				part2 = (part[0], part[1], part[2], part[3], part[4], part[5], part[6], part[7], newProbVal, part[9], part[10])
+				part2 = (part[0], part[1], part[2], part[3], part[4], part[5], part[6], part[7], newProbVal, part[9], part[10], part[11])
 				particles[k] = part2
 
 
@@ -4339,7 +4468,8 @@ class MapState:
 						if maxProb > 0:
 							pylab.plot(xP1,yP1,color='k', zorder=9, alpha=part[8]/maxProb)
 						else:
-							pylab.plot(xP1,yP1,color='k', zorder=9, alpha=part[8])
+							#pylab.plot(xP1,yP1,color='k', zorder=9, alpha=part[8])
+							pylab.plot(xP1,yP1,color='k', zorder=9, alpha=0.10)
 
 
 				pylab.scatter(xP, yP, color='k', zorder=8)
@@ -5819,6 +5949,7 @@ class MapState:
 			globalMedial0.append(poseOrigin0.convertLocalToGlobal(p))
 
 		newGlobJuncPose = getBranchPoint(globalJunctionPose, parentID, newPathID, self.trimmedPaths[parentID], globalMedial0, plotIter = True, hypothesisID = self.hypothesisID, nodeID = branchNodeID)
+		newGlobJuncPose2 = getBranchPoint(globalJunctionPose, newPathID, parentID, globalMedial0, self.trimmedPaths[parentID], plotIter = True, hypothesisID = self.hypothesisID, nodeID = branchNodeID)
 
 		self.pathClasses[newPathID] = {"parentID" : parentID, "branchNodeID" : branchNodeID, "localJunctionPose" : localJunctionPose, 
 							"sameProb" : {}, "nodeSet" : [], "globalJunctionPose" : newGlobJuncPose }		

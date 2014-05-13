@@ -141,7 +141,8 @@ class BayesMapper:
 		self.poseData.numNodes += 1
 		print self.poseData.numNodes
 		
-		hull1, medial1 = computeHullAxis(nodeID, newNode, tailCutOff = False)
+		#hull1, medial1 = computeHullAxis(nodeID, newNode, tailCutOff = False)
+		hull1, medial1 = computeHullAxis(nodeID, newNode, tailCutOff = True)
 		self.poseData.aHulls[nodeID] = hull1
 		self.poseData.medialAxes[nodeID] = medial1
 		self.poseData.numLeafs[nodeID] = newNode.getNumLeafs()
