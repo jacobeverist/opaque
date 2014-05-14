@@ -630,6 +630,15 @@ class SplineFit:
 		newPoint1 = scipy.interpolate.splev(unew1,self.tck)
 		unew2 = [u1 + iter]
 		newPoint2 = scipy.interpolate.splev(unew2,self.tck)
+
+		try:
+			newPoint1 = [newPoint1[0][0], newPoint1[1][0]]	
+		except:
+			pass
+		try:
+			newPoint2 = [newPoint2[0][0], newPoint2[1][0]]	
+		except:
+			pass
 		
 		#print unew1, newPoint1, unew2, newPoint2
 
@@ -800,6 +809,11 @@ class SplineFit:
 
 		unew = [u]
 		newPoint = scipy.interpolate.splev(unew,self.tck)
+		try:
+			newPoint = [newPoint[0][0], newPoint[1][0]]	
+		except:
+			pass
+
 		return newPoint
 
 	def getUSet(self, u_set):
@@ -839,6 +853,16 @@ class SplineFit:
 			newPoint1 = scipy.interpolate.splev(unew1,self.tck)
 			unew2 = [u + iter]
 			newPoint2 = scipy.interpolate.splev(unew2,self.tck)
+
+			try:
+				newPoint1 = [newPoint1[0][0], newPoint1[1][0]]	
+			except:
+				pass
+
+			try:
+				newPoint2 = [newPoint2[0][0], newPoint2[1][0]]	
+			except:
+				pass
 	
 			# tangent vector
 			vec = [newPoint2[0] - newPoint1[0], newPoint2[1] - newPoint1[1]]

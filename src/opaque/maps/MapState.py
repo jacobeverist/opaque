@@ -1131,7 +1131,7 @@ def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, 
 
 				if (k-6+l) >= 0 and (k+l) < len(pathPoints1):
 					ang1 = pathPoints1[k-6+l][2]
-					ang2 = pathPoint1[k+l][2]
+					ang2 = pathPoints1[k+l][2]
 					diffs.append(fabs(ang1-ang2))
 
 			angDeriv = sum(diffs) / float(len(diffs))
@@ -1151,7 +1151,7 @@ def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, 
 
 				if (k-6+l) >= 0 and (k+l) < len(pathPoints2):
 					ang1 = pathPoints2[k-6+l][2]
-					ang2 = pathPoint2[k+l][2]
+					ang2 = pathPoints2[k+l][2]
 					diffs.append(fabs(ang1-ang2))
 
 			angDeriv = sum(diffs) / float(len(diffs))
@@ -2779,7 +2779,7 @@ class MapState:
 							numSplices = len(branchSplices[j])
 
 							dist2 = sqrt((branchPose[0]-hypPose0[0])**2 + (branchPose[1]-hypPose0[1])**2)
-							if dist2 < 3.0:
+							if dist2 < 3.0 and probVal > 0.0:
 
 								for k in range(numSplices):
 									splice = branchSplices[j][k]
@@ -2852,6 +2852,7 @@ class MapState:
 
 			time2 = time.time()
 			print "localize construct", particleIndex, time2-time1
+			print
 
 		print len(localizeJobs), "total localize jobs"
 
@@ -4300,7 +4301,7 @@ class MapState:
 
 
 
-			pylab.title("nodeID: %d hyp: %d, pathID: %d, localPathSegs %d" % (len(self.nodePoses), self.hypothesisID, pathID, len(localPathSegs)))
+			pylab.title("nodeID: %d hyp: %d, pathID: %d" % (len(self.nodePoses), self.hypothesisID, pathID))
 			pylab.savefig("all_branch_plot_%04u_%02u_%04u.png" % (len(self.nodePoses), self.hypothesisID, self.tempCount) )
 			self.tempCount += 1
 
@@ -4439,7 +4440,7 @@ class MapState:
 				part2 = (part[0], part[1], part[2], part[3], part[4], part[5], part[6], part[7], probVal, part[9], part[10], part[11])
 				particles[k] = part2
 
-				#part2 = (parentID, modJuncPose, newArcDist, pathID, matchCount1, lastCost1, distDisc, angDisc, initProb, newSplices, juncDiscAngle)
+				#part2 = (parentID, modJuncPose, newArcDist, pathID, matchCount1, lastCost1, distDisc, angDisc, initProb, newSplices, juncDiscAngle, juncDist)
 				print "particle %04u %02u %02u %1.4f %03u %1.2f %1.2f %1.2f %1.2f %d %1.2f %1.2f" % (nodeID0, particleIndex, k, part2[1][2], part2[4], part2[5], part2[6], part2[7], part2[8], len(part2[9]), part2[10], part2[11])
 			print "particle"
 

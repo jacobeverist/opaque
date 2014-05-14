@@ -1,4 +1,4 @@
-import PoseGraph
+#import PoseGraph
 import BayesMapper
 from LocalNode import LocalNode, getLongestPath
 from Pose import Pose
@@ -8,7 +8,6 @@ from numpy import matrix
 from random import random, gauss
 import functions
 from copy import copy
-from OccupancyMap import OccupancyMap
 from SplineFit import SplineFit
 import math
 import graph
@@ -32,7 +31,7 @@ class MapLoader:
 		self.localNodes = []
 
 		MAPSIZE = 20.0
-		self.occMap = OccupancyMap(self.probe, self, MAPSIZE)
+		#self.occMap = OccupancyMap(self.probe, self, MAPSIZE)
 
 	def restorePickle(self, dirName, nodeID):
 		PIXELSIZE = 0.05
@@ -79,6 +78,9 @@ class MapLoader:
 			
 			self.mapAlgorithm.loadNewNode(currNode)
 			self.mapAlgorithm.saveState()
+
+			#for val in self.mapAlgorithm.mapHyps.values():
+			#	self.mapAlgorithm.drawPathAndHull2(val)
 		
  
 			with open("map_%04u.obj" % i, 'wb') as output:
@@ -155,9 +157,10 @@ class MapLoader:
 			pylab.plot(xP,yP, linewidth=2, color = 'g')
 
 	def drawMap(self):
+		pass
 
-		self.occMap.update()
-		self.occMap.saveMap()
+		#self.occMap.update()
+		#self.occMap.saveMap()
 
 	def loadWalls(self, walls):
 		self.walls = walls

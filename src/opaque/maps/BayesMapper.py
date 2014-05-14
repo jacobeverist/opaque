@@ -4,13 +4,10 @@ from StableCurve import StableCurve
 from SplineFit import SplineFit
 from ParticleFilter import ParticleFilter
 from Pose import Pose
-from Paths import computePathAngleVariance
 from PoseData import PoseData
-from MapProcess import movePath, selectLocalCommonOrigin, addToPaths, localizePair, consistentFit, batchMovePath, batchLocalizePair, batchEval
+from MapProcess import movePath, selectLocalCommonOrigin, addToPaths, localizePair, consistentFit, batchMovePath, batchLocalizePair, batchEval, computePathAngleVariance
 import gen_icp
 from functions import *
-import scsgp
-import bayes
 from operator import itemgetter
 import cProfile
 import time
@@ -141,8 +138,8 @@ class BayesMapper:
 		self.poseData.numNodes += 1
 		print self.poseData.numNodes
 		
-		#hull1, medial1 = computeHullAxis(nodeID, newNode, tailCutOff = False)
-		hull1, medial1 = computeHullAxis(nodeID, newNode, tailCutOff = True)
+		hull1, medial1 = computeHullAxis(nodeID, newNode, tailCutOff = False)
+		#hull1, medial1 = computeHullAxis(nodeID, newNode, tailCutOff = True)
 		self.poseData.aHulls[nodeID] = hull1
 		self.poseData.medialAxes[nodeID] = medial1
 		self.poseData.numLeafs[nodeID] = newNode.getNumLeafs()

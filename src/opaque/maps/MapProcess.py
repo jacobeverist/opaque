@@ -6,7 +6,6 @@ from Pose import Pose
 from Splices import batchGlobalMultiFit, getMultiDeparturePoint, orientPath
 from functions import *
 from StableCurve import StableCurve
-from Paths import computePathAngleVariance
 import math
 from operator import itemgetter
 import time
@@ -2198,6 +2197,43 @@ def selectLocalCommonOrigin(globalPath, medial1, estPose1):
 	
 	return u1, u2
 		
+
+def computePathAngleVariance(pathSamples):
+	pathVar = []
+	
+	" compute the local variance of the angle "
+	VAR_WIDTH = 40
+	for i in range(len(pathSamples)):
+		
+		lowK = i - VAR_WIDTH/2
+		if lowK < 0:
+			lowK = 0
+			
+		highK = i + VAR_WIDTH/2
+		if highK >= len(pathSamples):
+			highK = len(pathSamples)-1
+		
+		localSamp = []
+		for k in range(lowK, highK+1):
+			localSamp.append(pathSamples[k][2])
+		
+		sum = 0.0
+		for val in localSamp:
+			sum += val
+			
+		meanSamp = sum / float(len(localSamp))
+		
+
+		sum = 0
+		for k in range(len(localSamp)):
+			sum += (localSamp[k] - meanSamp)*(localSamp[k] - meanSamp)
+	
+		varSamp = sum / float(len(localSamp))
+		
+		pathVar.append((meanSamp, varSamp))		 
+
+	return pathVar
+
 
 
 @logFunction

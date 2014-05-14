@@ -28,7 +28,7 @@ args = parser.parse_args()
 
 from opaque.robot.QuickProbe import QuickProbe
 from opaque.TestProcess import TestProcess
-from opaque.TestUnit import TestUnit
+#from opaque.TestUnit import TestUnit
 from opaque.ControlError import *
 from opaque.CmdDrawThings import CmdDrawThings
 
