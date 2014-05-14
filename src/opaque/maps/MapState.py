@@ -1548,6 +1548,9 @@ def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, 
 
 	except:
 		print "getTangentIntersections() failed!"
+		foreDist = sqrt((pathPoints1[forePathIndex][0]-globalJunctionPose[0])**2 +  (pathPoints1[forePathIndex][1]-globalJunctionPose[1])**2)
+		backDist = sqrt((pathPoints1[backPathIndex][0]-globalJunctionPose[0])**2 +  (pathPoints1[backPathIndex][1]-globalJunctionPose[1])**2)
+
 		if foreDist < backDist:
 			globJuncPose = [pathPoints1[forePathIndex][0], pathPoints1[forePathIndex][1], globalJunctionPose[2]]
 			controlPoint = pathPoints1[forePathIndex][0], pathPoints1[forePathIndex][1]
