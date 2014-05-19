@@ -277,7 +277,8 @@ def getTangentIntersections(path1, path2, frontDepI, backDepI, path1FrontDepI, p
 
 	interPoints = []
 	indices1 = []
-	edges = []
+	foreEdges = []
+	backEdges = []
 
 	forePoints = []
 	backPoints = []
@@ -301,8 +302,10 @@ def getTangentIntersections(path1, path2, frontDepI, backDepI, path1FrontDepI, p
 	if backDepI >= len(path2):
 		backDepI = len(path2)-1
 
+	print "frontBoundI, frontDepI:", frontBoundI, frontDepI
+	print "backBoundI, backDepI:", backBoundI, backDepI
 
-	for i in range(frontBoundI, frontDepI):
+	for i in range(frontBoundI, frontDepI+1):
 
 		p = path2[i]
 
@@ -312,8 +315,8 @@ def getTangentIntersections(path1, path2, frontDepI, backDepI, path1FrontDepI, p
 		pA = [p[0] + 3*cos(angle2), p[1] + 3*sin(angle2)]
 		pB = [p[0] - 3*cos(angle2), p[1] - 3*sin(angle2)]
 
-		edge2 = [pA,pB]
-		edges.append(edge2)
+		edge2 = deepcopy([pA,pB])
+		foreEdges.append(edge2)
 
 		""" find the intersection with path1 """
 
@@ -346,11 +349,14 @@ def getTangentIntersections(path1, path2, frontDepI, backDepI, path1FrontDepI, p
 		""" generate tangent segment """
 		angle2 = p[2]
 
+		print i, ":", angle2, p[:2]
+
 		pA = [p[0] + 3*cos(angle2), p[1] + 3*sin(angle2)]
 		pB = [p[0] - 3*cos(angle2), p[1] - 3*sin(angle2)]
 
-		edge2 = [pA,pB]
-		edges.append(edge2)
+		edge2 = deepcopy([pA,pB])
+		#print "back edge:", p, edge2
+		backEdges.append(edge2)
 
 		""" find the intersection with path1 """
 
@@ -482,7 +488,7 @@ def getTangentIntersections(path1, path2, frontDepI, backDepI, path1FrontDepI, p
 
 	print "foreDists:", foreDists
 	print "backDists:", backDists
-	print "interPoints:", interPoints
+	#print "interPoints:", interPoints
 
 
 
@@ -610,10 +616,15 @@ def getTangentIntersections(path1, path2, frontDepI, backDepI, path1FrontDepI, p
 		if True:	
 
 			""" draw the tangents """
-			for edge in edges:
+			for edge in foreEdges:
 				xP = [edge[0][0], edge[1][0]]
 				yP = [edge[0][1], edge[1][1]]
 				pylab.plot(xP,yP, color=(0.5,1.0,0.5), linewidth=1, alpha=0.5,zorder=1)		   
+
+			for edge in backEdges:
+				xP = [edge[0][0], edge[1][0]]
+				yP = [edge[0][1], edge[1][1]]
+				pylab.plot(xP,yP, color=(1.0,0.5,0.5), linewidth=1, alpha=0.5,zorder=1)		   
 
 			for pnt in forePoints + backPoints:
 				xP = [pnt[0],]
@@ -636,7 +647,7 @@ def getTangentIntersections(path1, path2, frontDepI, backDepI, path1FrontDepI, p
 		print "intersectDeparture:", plotCount
 		printStack()				 
 
-		pylab.title("%d intersections, %d tangent segments, angles %1.2f %1.2f %1.2f %1.2f %d %d" % (len(interPoints), len(edges), juncForeAng1, juncBackAng1, juncForeAng, juncBackAng, hypothesisID, nodeID))
+		pylab.title("%d intersections, %d %d tangent segments, angles %1.2f %1.2f %1.2f %1.2f %d %d" % (len(interPoints), len(foreEdges), len(backEdges), juncForeAng1, juncBackAng1, juncForeAng, juncBackAng, hypothesisID, nodeID))
 		pylab.savefig("intersectDeparture_%04u_%04u_%04u.png" % (nodeID, hypothesisID, plotCount))
 		
 
@@ -1115,8 +1126,10 @@ def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, 
 
 	""" for each point on the child path, find its closest pair on the parent path """
 	
-	pathPoints1 = path1Spline.getUniformSamples(interpAngle=True)
-	pathPoints2 = path2Spline.getUniformSamples(interpAngle=True)
+	#pathPoints1 = path1Spline.getUniformSamples(numSamples=20, interpAngle=True)
+	#pathPoints2 = path2Spline.getUniformSamples(numSamples=20, interpAngle=True)
+	pathPoints1 = path1Spline.getUniformSamples(numSamples=100, interpAngle=True)
+	pathPoints2 = path2Spline.getUniformSamples(numSamples=100, interpAngle=True)
 
 
 	""" compute the angle derivative at each point of the curves """
@@ -1327,8 +1340,8 @@ def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, 
 	print "newFrontDepI, newBackDepI:", newFrontDepI, newBackDepI
 	print "foreDiff, backDiff:", diffAngle(normalizeAngle(pathPoints2[newFrontDepI][2]+pi), forePathAngle), diffAngle(normalizeAngle(pathPoints2[newBackDepI][2]), backPathAngle)
 
-	print "frontDiffAngles:", frontDiffAngles
-	print "backDiffAngles:", backDiffAngles
+	#print "frontDiffAngles:", frontDiffAngles
+	#print "backDiffAngles:", backDiffAngles
 
 
 	print "lengths of parent and child paths:", len(pathPoints1), len(pathPoints2)
@@ -1510,11 +1523,12 @@ def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, 
 		juncAng = -juncAng
 	
 	
+	#foreIntI, backIntI, juncForeAng, juncBackAng = getTangentIntersections(pathPoints1, pathPoints2, frontDepI, backDepI, indices[frontDepI], indices[backDepI], juncI, indices[juncI], pathPlotCount, hypothesisID = hypothesisID, nodeID = nodeID, plotIter = True)
 
 	try:
 		#def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, plotIter = False, hypothesisID = 0, nodeID = 0):
 		foreIntI, backIntI, juncForeAng, juncBackAng = getTangentIntersections(pathPoints1, pathPoints2, frontDepI, backDepI, indices[frontDepI], indices[backDepI], juncI, indices[juncI], pathPlotCount, hypothesisID = hypothesisID, nodeID = nodeID, plotIter = True)
-		print "foreIntI, backIntII:", foreIntI, backIntI
+		print "foreIntI, backIntI:", foreIntI, backIntI
 
 		""" junction distances are equal if both of the indices selected juncI as the departure point on path2'
 			occurs if path2 does not come close enough to path1 to get under distance 0.1

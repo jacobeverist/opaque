@@ -4,12 +4,12 @@ import scipy.interpolate
 import random
 from random import gauss
 from copy import copy
-from math import floor, asin, acos, cos, sin
+from math import floor, asin, acos, cos, sin, ceil
 from time import time
-from functions import closestAngle
+from functions import closestAngle, diffAngle
 
 from scipy.spatial import cKDTree
-from numpy import array
+from numpy import array, append
 
 class SplineFit:
 
@@ -120,26 +120,26 @@ class SplineFit:
 		
 		return uVal
 		
-		#return min, min_i/1000.0, self.densePoints[min_i]
+	def getUniformSamples(self, spacing = 0.04, numSamples = 20, interpAngle = False):
 		
-		
-		samples = scipy.arange(0.0,1.0,0.01)
-		sample_points = self.getUVecSet(samples)
-		
-		minI = -1
-		minDist = 1e100
-		
-		for i in range(len(sample_points)):
-			dist = sqrt((sample_points[i][0]-point[0])**2 + (sample_points[i][1]-point[1])**2)
-			if dist < minDist:
-				minI = i
-				minDist = dist
-				
-		return minI * 0.01
+		if len(self.distPoints) == 0:
+			self.precompute()
 
-	def getUniformSamples(self, spacing = 0.04, interpAngle = False):
-		
-		samples = scipy.arange(0.0,1.05,0.05)
+		totalDist = self.distPoints[-1]
+
+		approxSamples = totalDist / spacing
+		approxSamples = ceil(approxSamples) + 1.0
+		#print numSamples, approxSamples
+
+
+		#iterVal = 1.0 / float(numSamples)
+		iterVal = 1.0 / float(approxSamples)
+		iterVal = round(iterVal, 3)
+		samples = scipy.arange(0.0, 1.0, iterVal)
+		samples = append(samples, [1.0])
+		#samples.append(1.0)
+		print "iterVal:", iterVal, approxSamples, len(samples), samples[-1]
+		#samples = scipy.arange(0.0,1.01,0.01)
 		sample_points = self.getUVecSet(samples)
 		sample_points = self.makePointsUniform(sample_points, max_spacing = spacing, interpAngle = interpAngle)
 		return sample_points
@@ -168,11 +168,13 @@ class SplineFit:
 				" cut into pieces max_spacing length or less "
 				numCount = int(floor(dist / max_spacing))
 				
-				angStep = (ang1-ang0) / float(numCount+1)
+				angStep = diffAngle(ang0,ang1) / float(numCount+1)
+				#print "angStep:", angStep, numCount, dist
 				
 				
 				for j in range(1, numCount+1):
 					if interpAngle:
+						#print "interp:", j*angStep
 						newP = [j*max_spacing*vec[0] + p0[0], j*max_spacing*vec[1] + p0[1], p0[2]+j*angStep]
 					else:
 						newP = [j*max_spacing*vec[0] + p0[0], j*max_spacing*vec[1] + p0[1], p0[2]]
