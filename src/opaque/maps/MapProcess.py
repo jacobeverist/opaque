@@ -696,15 +696,15 @@ def movePath(mapHyp, nodeID, direction, distEst = 1.0):
 			estPose0 = mapHyp.getNodePose(nodeID-3)
 			estPose2 = mapHyp.getNodePose(nodeID-1)
 			#mapHyp.nodePoses[nodeID-1] = getStepGuess(poseData, nodeID-3, nodeID-1, estPose0, estPose2, direction)
-			newPose = getStepGuess(poseData, nodeID-3, nodeID-1, estPose0, estPose2, direction)
-			mapHyp.setNodePose(nodeID-1, newPose)
+			newPose2 = getStepGuess(poseData, nodeID-3, nodeID-1, estPose0, estPose2, direction)
+			mapHyp.setNodePose(nodeID-1, newPose2)
 
 			estPose3 = mapHyp.getNodePose(nodeID)
 			#getInPlaceGuess(mapHyp, nodeID-1, nodeID, direction)
 			supportLine = mapHyp.paths[0]
 			#mapHyp.nodePoses[nodeID] = getInPlaceGuess(poseData, nodeID-1, nodeID, estPose2, estPose3, supportLine, direction)
-			newPose = getInPlaceGuess(poseData, nodeID-1, nodeID, estPose2, estPose3, supportLine, direction)
-			mapHyp.setNodePose(nodeID, newPose)
+			newPose3 = getInPlaceGuess(poseData, nodeID-1, nodeID, newPose2, estPose3, supportLine, direction)
+			mapHyp.setNodePose(nodeID, newPose3)
 
 
 		else:
