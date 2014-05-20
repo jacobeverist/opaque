@@ -167,8 +167,10 @@ def __remote_multiBranch(rank, qin, qout):
 			trimmedParent = job[5]
 			smoothPathSegs = job[6]
 			arcDist = job[7]
+			numNodes = job[8]
+			hypID = job[9]
 
-			result = computeBranch(pathID, parentID, origGlobJuncPose, childPath, parentPath, trimmedParent, smoothPathSegs, arcDist)
+			result = computeBranch(pathID, parentID, origGlobJuncPose, childPath, parentPath, trimmedParent, smoothPathSegs, arcDist, numNodes, hypID)
 
 			results.append(result)
 						   
@@ -1650,7 +1652,7 @@ def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, 
 	return globJuncPose, controlPoint
 
 @logFunction
-def computeBranch(pathID, parentID, origGlobJuncPose, childPath, parentPath, trimmedParent, smoothPathSegs, arcDist):
+def computeBranch(pathID, parentID, origGlobJuncPose, childPath, parentPath, trimmedParent, smoothPathSegs, arcDist, numNodes = 0, hypothesisID = 0):
 
 	if parentID != None: 
 
@@ -1662,9 +1664,8 @@ def computeBranch(pathID, parentID, origGlobJuncPose, childPath, parentPath, tri
 		origJuncPose[2] = 0.0
 
 		""" position on the spline curve of the parent path """
-		newArcDist = arcDist
-
 		""" NOTE:  angle is the tangent angle, not branch angle """
+		newArcDist = arcDist
 		newJuncPose = pathSpline.getPointOfDist(newArcDist)
 		modJuncPose = copy(newJuncPose)
 		modJuncPose[2] = origJuncPose[2]
@@ -1709,7 +1710,8 @@ def computeBranch(pathID, parentID, origGlobJuncPose, childPath, parentPath, tri
 		globalPath2 = parentPath
 
 		""" point on parent shoot curve closest to junction pose """
-		globalSpline2 = SplineFit(globalPath2, smooth=0.1)
+		#globalSpline2 = SplineFit(globalPath2, smooth=0.1)
+		globalSpline2 = pathSpline
 		globalSamples2 = globalSpline2.getUniformSamples(spacing = 0.04)
 		originU2 = globalSpline2.findU(modJuncPose)
 		minDist, originU2, uPoint = globalSpline2.findClosestPoint(modJuncPose)
@@ -1733,17 +1735,19 @@ def computeBranch(pathID, parentID, origGlobJuncPose, childPath, parentPath, tri
 		poseOrigin = Pose(inversePose)
 
 		finalPose = poseOrigin.convertLocalOffsetToGlobal(modJuncPose)
-		poseOrigin2 = Pose(finalPose)
+		#poseOrigin2 = Pose(finalPose)
 
 		origJuncPose = copy(origGlobJuncPose)
 		origJuncPose[2] = 0.0
 		#distDisc = sqrt((finalPose[0]-origJuncPose[0])**2 + (finalPose[1]-origJuncPose[1])**2)
 		distDisc = 0.0
+
+		""" FIXME:  what does this angle difference represent?  is finalPose a unique value? """
 		angDisc = fabs(normalizeAngle(finalPose[2]-origJuncPose[2]))
 
 
 		""" get the trimmed child shoot at the new designated branch point from parent """
-		newPath3, newGlobJuncPose, juncDiscDist, juncDiscAngle, splicedPaths =  trimBranch(pathID, parentID, modJuncPose, origGlobJuncPose, childPath, parentPath, trimmedParent, smoothPathSegs)
+		newPath3, newGlobJuncPose, juncDiscDist, juncDiscAngle, splicedPaths =  trimBranch(pathID, parentID, modJuncPose, origGlobJuncPose, childPath, parentPath, trimmedParent, smoothPathSegs, plotIter=False, arcDist = arcDist, nodeID=numNodes, hypothesisID = hypothesisID)
 
 		for placedSeg in placedPathSegs:
 			pass
@@ -1775,7 +1779,7 @@ def computeBranch(pathID, parentID, origGlobJuncPose, childPath, parentPath, tri
 		return part2
 
 @logFunction
-def trimBranch(pathID, parentPathID, globJuncPose, origGlobJuncPose, childPath, parentPath, trimmedParent, smoothPathSegs, plotIter = False, hypothesisID = 0, nodeID = 0):
+def trimBranch(pathID, parentPathID, globJuncPose, origGlobJuncPose, childPath, parentPath, trimmedParent, smoothPathSegs, plotIter = False, hypothesisID = 0, nodeID = 0, arcDist = 0.0):
 
 	global pathPlotCount 
 
@@ -2222,8 +2226,9 @@ def trimBranch(pathID, parentPathID, globJuncPose, origGlobJuncPose, childPath, 
 
 		pylab.axis("equal")
 		pylab.title("hyp %d nodeID %d %1.3f %1.3f %1.3f %1.3f" % ( hypothesisID, nodeID, juncDiscDist, juncDiscAngle, origJuncPose[2], newGlobJuncPose[2]))
-		pylab.savefig("trimDeparture_%04u_%04u.png" % (hypothesisID, nodeID))
+		pylab.savefig("trimDeparture_%04u_%04u_%1.1f.png" % (hypothesisID, nodeID, arcDist))
 
+		#def trimBranch(pathID, parentPathID, globJuncPose, origGlobJuncPose, childPath, parentPath, trimmedParent, smoothPathSegs, plotIter = False, hypothesisID = 0, nodeID = 0, arcDist = 0.0):
 		print "saving trimDeparture_%04u_%04u.png" % (hypothesisID, nodeID)
 		
 		pathPlotCount += 1
@@ -3503,7 +3508,7 @@ class MapState:
 				path2 = self.trimmedPaths[k]
 
 				if j < k:
-					resultSum = self.getPathOverlapSum(path1, path2, j, k, plotIter = False)
+					resultSum = self.getPathOverlapSum(path1, path2, j, k, plotIter = True)
 					print "computing sum of", j, "and", k, "=", resultSum
 					totalSum += resultSum
 
@@ -3924,15 +3929,15 @@ class MapState:
 			pylab.clf()
 
 			
-			for k,path in  self.trimmedPaths.iteritems():
-				print "path has", len(path), "points"
-				xP = []
-				yP = []
-				for p in path:
-					xP.append(p[0])
-					yP.append(p[1])
-	
-				pylab.plot(xP,yP, color = self.colors[k])
+			#for k,path in  self.trimmedPaths.iteritems():
+			#	print "path has", len(path), "points"
+			#	xP = []
+			#	yP = []
+			#	for p in path:
+			#		xP.append(p[0])
+			#		yP.append(p[1])
+			#	
+			#	pylab.plot(xP,yP, color = self.colors[k])
 	
 	
 			for k, result in results.iteritems():
@@ -3944,7 +3949,7 @@ class MapState:
 					for p in path:
 						xP.append(p[0])
 						yP.append(p[1])
-					pylab.plot(xP,yP, color='b')
+					pylab.plot(xP,yP, color='b', zorder=2)
 
 
 			for k in pathIDs:
@@ -3954,14 +3959,23 @@ class MapState:
 				for p in self.paths[k]:
 					xP.append(p[0])
 					yP.append(p[1])
-				pylab.plot(xP,yP, color=self.colors[k], linewidth=1)
+				pylab.plot(xP,yP, color=self.colors[k], linewidth=1, zorder=1)
 
+			xP = []
+			yP = []
+			for k,path in  self.pathClasses.iteritems():
+				if k != 0:
+					globalJunctionPose = path["globalJunctionPose"]
+					xP.append(globalJunctionPose[0])
+					yP.append(globalJunctionPose[1])
+
+			pylab.scatter(xP,yP, color='k', zorder=3)
 
 			#self.drawWalls()
 	
 			print "saving splicedPath"
 			pylab.title("Spliced Paths, pathIDs = %s" %  self.getPathIDs())
-			pylab.savefig("splicedPath_%04u.png" % self.spliceCount)
+			pylab.savefig("splicedPath_%04u_%04u.png" % (self.hypothesisID, self.spliceCount))
 			self.spliceCount += 1
 
 		self.allSplices = results
@@ -4176,7 +4190,8 @@ class MapState:
 			parentPath = self.paths[parentID]
 			trimmedParent = self.trimmedPaths[parentID]
 
-			branchJobs.append((pathID, parentID, origGlobJuncPose, childPath, parentPath, trimmedParent, smoothPathSegs, arcDist))
+			#self.nodePoses = {}
+			branchJobs.append((pathID, parentID, origGlobJuncPose, childPath, parentPath, trimmedParent, smoothPathSegs, arcDist, len(self.nodePoses)-1, self.hypothesisID ))
 
 		#part2 = (parentID, modJuncPose, newArcDist, pathID, matchCount1, lastCost1, distDisc, angDisc, initProb, newSplices, juncDiscAngle)
 		#result = (parentID, modJuncPose, newArcDist, pathID, matchCount1, lastCost1, distDisc, angDisc, initProb, newSplices, juncDiscAngle)
@@ -4754,7 +4769,7 @@ class MapState:
 
 		#if len(self.trimmedPaths[pathID]) > 0:
 		" don't care about return values, are stored as object member variable "
-		allSplices, terminals, junctions = self.computeAllSplices(plotIter = False)
+		allSplices, terminals, junctions = self.computeAllSplices(plotIter = True)
 
 		self.isChanged = False
 
@@ -8552,7 +8567,8 @@ class MapState:
 	
 		medial2 = path2
 			   
-		minMatchDist2 = 0.2
+		minMatchDist2 = 0.1
+		angThresh = math.pi/8.0
 					
 	
 		supportSpline = SplineFit(path1, smooth=0.1)		
@@ -8574,7 +8590,7 @@ class MapState:
 			p_2 = vecPoints2[i]
 	
 			try:
-				p_1, minI, minDist = gen_icp.findClosestPointWithAngle(vecPoints1, p_2, math.pi/8.0)
+				p_1, minI, minDist = gen_icp.findClosestPointWithAngle(vecPoints1, p_2, angThresh)
 	
 				if minDist <= minMatchDist2:
 					C2 = points2[i][2]
@@ -8643,7 +8659,7 @@ class MapState:
 				p2 = pair[1]
 				xP = [p1[0],p2[0]]
 				yP = [p1[1],p2[1]]
-				pylab.plot(xP,yP)
+				pylab.plot(xP,yP, color='k', alpha=0.3)
 			
 			pylab.xlim(-5,10)
 			pylab.ylim(-8,8)
