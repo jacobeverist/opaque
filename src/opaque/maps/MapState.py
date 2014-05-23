@@ -6127,7 +6127,7 @@ class MapState:
 						"branchNodeID" : branchNodeID,
 						"localJunctionPose" : localJunctionPose, 
 						"sameProb" : {},
-						"nodeSet" : [branchNodeID],
+						"nodeSet" : [branchNodeID,],
 						"globalJunctionPose" : newGlobJuncPose,
 						"controlPoint" : controlPoint }		
 
@@ -6151,15 +6151,16 @@ class MapState:
 		pathSpline = SplineFit(self.paths[parentID])
 
 
-		" add new path to particles "
+		""" add new path to particles """
 		for part in particleDist2:
 
 			origPose = self.getNodePose(branchNodeID)
 
+			""" get local transform of GPAC to raw pose """
 			gpacProfile = Pose(origPose)
 			localOffset = gpacProfile.convertGlobalPoseToLocal(self.nodeRawPoses[branchNodeID])
 			
-			" go back and convert this from GPAC pose to estPose "
+			""" go back and convert this from GPAC pose to estPose """
 			particlePose = deepcopy(part.pose0)
 			particlePose[2] = origPose[2]
 			newProfile = Pose(particlePose)
