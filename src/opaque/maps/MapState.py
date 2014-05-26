@@ -1103,38 +1103,11 @@ def getOverlapCondition(medial2, estPose2, supportLine, nodeID, plotIter = False
 	return cost
 
 
-
 @logFunction
-def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, plotIter = False, hypothesisID = 0, nodeID = 0, arcDist = 0.0):
-	""" get the trimmed version of child and parent paths that are overlapping in some fashion """
-
-	"""Assumption:  one section of the medial axis is closely aligned with the path """		   
-	
-	global pathPlotCount
-	#pathPlotCount = 0
-	print "getBranchPoint():"
-	
-	""" return exception if we receive an invalid path """		  
-	if len(path1) == 0:
-		print "path1 has zero length"
-		raise
-	
-	""" make sure the overlap of both paths are oriented the same way """
-	orientedPath2 = orientPath(path2, path1)
-	
-	path1Spline = SplineFit(path1, smooth=0.1)			  
-	path2Spline = SplineFit(orientedPath2, smooth=0.1)
-
-
-	""" for each point on the child path, find its closest pair on the parent path """
-	
-	#pathPoints1 = path1Spline.getUniformSamples(numSamples=20, interpAngle=True)
-	#pathPoints2 = path2Spline.getUniformSamples(numSamples=20, interpAngle=True)
-	pathPoints1 = path1Spline.getUniformSamples(numSamples=100, interpAngle=True)
-	pathPoints2 = path2Spline.getUniformSamples(numSamples=100, interpAngle=True)
-
+def getAngleDerivatives(pathPoints1):
 
 	""" compute the angle derivative at each point of the curves """
+
 	angDerivs1 = []
 	for k in range(len(pathPoints1)):
 		
@@ -1155,33 +1128,14 @@ def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, 
 		else:
 			angDerivs1.append(0.0)
 
-	angDerivs2 = []
-	for k in range(len(pathPoints2)):
-		
-		if (k-6) > 0 and (k+6) < len(pathPoints2):
+	return angDerivs1
 
-			diffs = []
+@logFunction
+def getClosestPairs(pathPoints2, pathPoints1):
 
-			for l in range(0,7):
-
-				if (k-6+l) >= 0 and (k+l) < len(pathPoints2):
-					ang1 = pathPoints2[k-6+l][2]
-					ang2 = pathPoints2[k+l][2]
-					diffs.append(fabs(ang1-ang2))
-
-			angDeriv = sum(diffs) / float(len(diffs))
-
-			angDerivs2.append(angDeriv)
-		else:
-			angDerivs2.append(0.0)
-
-
+	""" for each point on the child path, find its closest pair on the parent path """
 	distances = []
 	indices = []
-	juncDists = []
-
-	minDist2 = 1e100
-	juncI = 0		 
 
 	for i in range(0,len(pathPoints2)):
 		p_2 = pathPoints2[i]
@@ -1192,6 +1146,18 @@ def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, 
 		""" and the associated index of the point on the parent path """
 		indices.append(i_1)
 		
+	return distances, indices
+
+@logFunction
+def getPointDistances(pathPoints2, globalJunctionPose):
+
+	juncDists = []
+	minDist2 = 1e100
+	juncI = 0		 
+
+	for i in range(0,len(pathPoints2)):
+		p_2 = pathPoints2[i]
+		
 		juncDist = sqrt((p_2[0]-globalJunctionPose[0])**2 + (p_2[1]-globalJunctionPose[1])**2)
 
 		if juncDist < minDist2:
@@ -1200,49 +1166,36 @@ def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, 
 
 		juncDists.append(juncDist)
 
+	return juncDists, minDist2, juncI
 
+@logFunction
+def computeDivergencePoint(juncI, frontInd, distances, indices, pathPoints1, pathPoints2):
 
-	frontInd = 0
-	backInd = len(pathPoints2)-1
+	""" initial distances of the indexed point on the child shoot, here classified as
+		the first point within radius of the temporary junction point
 
-	path2Indices = range(0,len(pathPoints2))
-		
-	frontFound = False
-	backFound = False
-	for k in path2Indices:
-		if not frontFound and juncDists[k] <= 1.0:
-			frontInd = k
-			frontFound = True
-
-	path2Indices.reverse()
-	for k in path2Indices:
-		if not backFound and juncDists[k] <= 1.0:
-			backFound = k
-			backFound = True
-
-	print "frontFound, backFound:", frontFound, backFound
-	print "frontInd, backInd:", frontInd, backInd
-
-	print "minDist2, juncI:", minDist2, juncI
-
-	""" match distances of the tip points of child path """		   
+		pathPoints2 are aligned with distances and indices
+	"""		   
 	maxFront = distances[frontInd]
-	maxBack = distances[backInd]
-	print "match distances of tip points:", maxFront, maxBack
+	#maxBack = distances[backInd]
+	print "match distances of tip points:", maxFront#, maxBack
 
-	""" walk back from tip point until we have a non-monotic increase in match distance """
+	""" walk back from first point until we have a non-monotic increase in match distance """
 	""" this becomes our departure point """
 	
-	"""TODO:	why is there a 3-offset in this comparison? """
+	INDEX_DELTA = 3
+	""" FIXME:  index out of bounds case, occurs when the number of shoot points is smaller than various deltas """
+
+	""" the 3-offset is so that the any small blips do not affect the distance increase threshold """
 	currI = frontInd + 1
 	try:
-		while distances[currI+3] < maxFront or distances[currI+3] > 0.1:
+		while distances[currI+INDEX_DELTA] < maxFront or distances[currI+INDEX_DELTA] > 0.1:
 			maxFront = distances[currI]
 			currI += 1
 	except:
 		pass
 	
-	""" departure index on child path """
+	""" departure index on child shoot """
 	frontDepI = currI
 
 	if frontDepI+3 >= len(pathPoints2)-1:
@@ -1250,6 +1203,81 @@ def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, 
 
 	
 	""" departure index of child path and match distance """
+	frontPoint = [frontDepI, distances[frontDepI]]
+
+
+	""" starting from the frontDepI, reverse direction and step until the distance is greater than 0.1 """
+	frontAngleRefI = frontDepI
+	while distances[frontAngleRefI] < 0.1:
+		frontAngleRefI -= 1
+		
+		if frontAngleRefI < 0:
+			frontAngleRefI = 0
+			break
+					
+	""" corresponding point on the parent shoot, the angle on parent becomes our reference angle """
+	forePathIndex = indices[frontAngleRefI]
+	forePathAngle = pathPoints1[forePathIndex][2]
+	forePathAngle = normalizeAngle(forePathAngle)
+	
+
+	""" 40 steps away from initial departure point on child shoot, 
+		step back towards the parent until the angle difference is
+		< pi/3
+	"""
+	newFrontDepI = frontDepI - 40
+	if newFrontDepI < 4:
+		newFrontDepI = 4
+
+	while fabs(diffAngle(normalizeAngle(pathPoints2[newFrontDepI][2]), forePathAngle)) > pi/3.0:
+		
+		if newFrontDepI < frontDepI:
+			newFrontDepI += 1
+		else:
+			break
+	
+	""" compute the angle difference from the parent shoot reference angle """
+	frontDiffAngles = []
+	for k in range(len(pathPoints2)):
+		if k == newFrontDepI:
+			frontDiffAngles.append(None)
+		else:
+			frontDiffAngles.append(fabs(diffAngle(normalizeAngle(pathPoints2[k][2]), forePathAngle)))
+
+	#print "frontDepI, backDepI:", frontDepI, backDepI
+	#print "frontAngleRefI, backAngleRefI:", frontAngleRefI, backAngleRefI
+	#print "forePathAngle, backPathAngle:", forePathAngle, backPathAngle
+	#print "newFrontDepI, newBackDepI:", newFrontDepI, newBackDepI
+	#print "foreDiff, backDiff:", diffAngle(normalizeAngle(pathPoints2[newFrontDepI][2]+pi), forePathAngle), diffAngle(normalizeAngle(pathPoints2[newBackDepI][2]), backPathAngle)
+	#print "frontDiffAngles:", frontDiffAngles
+	#print "backDiffAngles:", backDiffAngles
+	#print "non monotonic departures:", maxFront, maxBack, frontPoint, backPoint
+
+	return frontDepI, newFrontDepI, forePathIndex, maxFront, frontDiffAngles
+
+	"""
+	maxFront = distances[frontInd]
+	maxBack = distances[backInd]
+	print "match distances of tip points:", maxFront, maxBack
+
+
+
+	INDEX_DELTA = 3
+
+	currI = frontInd + 1
+	try:
+		while distances[currI+INDEX_DELTA] < maxFront or distances[currI+INDEX_DELTA] > 0.1:
+			maxFront = distances[currI]
+			currI += 1
+	except:
+		pass
+	
+	frontDepI = currI
+
+	if frontDepI+3 >= len(pathPoints2)-1:
+		frontDepI = juncI
+
+	
 	frontPoint = [frontDepI, distances[frontDepI]]
 
 
@@ -1265,6 +1293,7 @@ def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, 
 	forePathAngle = pathPoints1[forePathIndex][2]
 	forePathAngle = normalizeAngle(forePathAngle + pi)
 	
+
 	newFrontDepI = frontDepI - 40
 	if newFrontDepI < 4:
 		newFrontDepI = 4
@@ -1275,24 +1304,22 @@ def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, 
 			newFrontDepI += 1
 		else:
 			break
+	
 
 
-	""" FIXME:  index out of bounds case """
 	currI = 1 + len(pathPoints2) - backInd
 	try:
-		while distances[-currI-3] < maxBack or distances[-currI-3] > 0.1:
+		while distances[-currI-INDEX_DELTA] < maxBack or distances[-currI-INDEX_DELTA] > 0.1:
 			maxBack = distances[-currI]
 			currI += 1
 	except:
 		pass
 
-	""" departure index on child path """
 	backDepI = len(distances) - currI
 
 	if backDepI-3 <= 0: 
 		backDepI = juncI
 
-	""" departure index of child path and match distance """
 	backPoint = [backDepI, distances[backDepI]]
 
 
@@ -1334,20 +1361,105 @@ def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, 
 			backDiffAngles.append(None)
 		else:
 			backDiffAngles.append(fabs(diffAngle(normalizeAngle(pathPoints2[k][2]), backPathAngle)))
+	"""
 
+@logFunction
+def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, plotIter = False, hypothesisID = 0, nodeID = 0, arcDist = 0.0):
+	""" get the trimmed version of child and parent paths that are overlapping in some fashion """
 
-	print "frontDepI, backDepI:", frontDepI, backDepI
-	print "frontAngleRefI, backAngleRefI:", frontAngleRefI, backAngleRefI
-	print "forePathAngle, backPathAngle:", forePathAngle, backPathAngle
-	print "newFrontDepI, newBackDepI:", newFrontDepI, newBackDepI
-	print "foreDiff, backDiff:", diffAngle(normalizeAngle(pathPoints2[newFrontDepI][2]+pi), forePathAngle), diffAngle(normalizeAngle(pathPoints2[newBackDepI][2]), backPathAngle)
+	"""Assumption:  one section of the child shoot is overlapped and closely aligned with the parent shoot """
+	
+	global pathPlotCount
 
-	#print "frontDiffAngles:", frontDiffAngles
-	#print "backDiffAngles:", backDiffAngles
-
+	print "getBranchPoint():"
 
 	print "lengths of parent and child paths:", len(pathPoints1), len(pathPoints2)
-	print "non monotonic departures:", maxFront, maxBack, frontPoint, backPoint
+	
+	""" return exception if we receive an invalid path """		  
+	if len(path1) == 0:
+		print "path1 has zero length"
+		raise
+
+	if len(path2) == 0:
+		print "path2 has zero length"
+		raise
+	
+	""" make sure the overlap of both shoots are oriented the same way """
+	orientedPath2 = orientPath(path2, path1)
+	
+
+	""" compute spline for each set of points """
+	path1Spline = SplineFit(path1, smooth=0.1)			  
+	path2Spline = SplineFit(orientedPath2, smooth=0.1)
+
+	
+	""" get uniform selection of points along curve segments with the tangent angle interpolated """
+	pathPoints1 = path1Spline.getUniformSamples(interpAngle=True)
+	pathPoints2 = path2Spline.getUniformSamples(interpAngle=True)
+
+
+	""" compute the angle derivative at each point of the curves """
+	angDerivs1 = getAngleDerivatives(pathPoints1)
+	angDerivs2 = getAngleDerivatives(pathPoints2)
+
+
+	""" for each point on the child path, find its closest pair on the parent path """
+	distances, indices = getClosestPairs(pathPoints2, pathPoints1)
+
+	pathPoints2_rvrs = deepcopy(pathPoints2)
+	pathPoints2_rvrs.reverse()
+
+	""" get the closest point to the current junction pose and each points' distance to it """
+	juncDists, minDist2, juncI = getPointDistances(pathPoints2, globalJunctionPose)
+	print "minDist2, juncI:", minDist2, juncI
+	juncI_rvrs = len(pathPoints2) - juncI - 1
+	#juncDists_rvrs, minDist2, juncI_rvrs = getPointDistances(pathPoints2_rvrs, globalJunctionPose)
+
+
+
+	""" find the first point on the child shoot that is within radius 1.0 of junction point """
+	frontInd = 0
+	backInd = len(pathPoints2)-1
+
+	path2Indices = range(0,len(pathPoints2))
+		
+	frontFound = False
+	backFound = False
+	for k in path2Indices:
+		if not frontFound and juncDists[k] <= 1.0:
+			frontInd = k
+			frontFound = True
+
+	path2Indices.reverse()
+	for k in path2Indices:
+		if not backFound and juncDists[k] <= 1.0:
+			backInd = k
+			backFound = True
+
+	print "frontFound, backFound:", frontFound, backFound
+	print "frontInd, backInd:", frontInd, backInd
+
+
+	""" compute the divergence point of the child shoot from the parent in the front """
+	frontDepI, newFrontDepI, forePathIndex, maxFront, frontDiffAngles = computeDivergencePoint(juncI, frontInd, distances, indices, pathPoints1, pathPoints2)
+
+
+	""" reverse the direction of all of the input datas and compute the divergence point from the rear """
+	distances_rvrs = copy(distances)
+	distances_rvrs.reverse()
+	indices_rvrs = copy(indices)
+	indices_rvrs.reverse()
+
+	backDepI, newBackDepI, backPathIndex, maxBack, backDiffAngles = computeDivergencePoint(juncI_rvrs, backInd, distances_rvrs, indices_rvrs, pathPoints1, pathPoints2_rvrs)
+
+	""" unreverse output data """
+	backDepI = len(pathPoints2) - backDepI - 1
+	newBackDepI = len(pathPoints2) - newBackDepI - 1
+	backDiffAngles.reverse()
+
+
+
+
 
 
 	""" reset to the tip match distance """
@@ -1366,13 +1478,9 @@ def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, 
 	pathSec2 = pathPoints2[backDepI:]
 	
 	""" distance of departure point from known junction point """
-	#juncDist1 = -1
-	#juncDist2 = -1
-	#if len(pathSec1) > 0:
 	p0 = pathSec1[0]
 	juncDist1 = sqrt((globalJunctionPose[0]-p0[0])**2 + (globalJunctionPose[1]-p0[1])**2)
 
-	#if len(pathSec2) > 0:
 	p0 = pathSec2[0]
 	juncDist2 = sqrt((globalJunctionPose[0]-p0[0])**2 + (globalJunctionPose[1]-p0[1])**2)
 
@@ -6167,18 +6275,20 @@ class MapState:
 			newEstPose = newProfile.convertLocalOffsetToGlobal(localOffset)
 		
 			#nodePose = part.pose0
+
+			""" location of junction point from raw to global in the particle pose """
 			nodeOrigin = Pose(newEstPose)
 			newGlobalJunctionPose = nodeOrigin.convertLocalOffsetToGlobal(localJunctionPose)
 
+			""" location on the parent shoot closest to the locally computed branch point """
 			minDist, uVal, newJuncPose = pathSpline.findClosestPoint(newGlobalJunctionPose)
-			#minDist, uVal, splinePoint = pathSpline.findClosestPoint(globalJunctionPose)
 			#arcDist = pathSpline.dist_u(uVal)
 
-			#newJuncPose = pathSpline.getPointOfDist(newArcDist)
+			""" angle of junction corrected to the original orientation """
 			modJuncPose = copy(newJuncPose)
 			modJuncPose[2] = globalJunctionPose[2]
 
-			#part.addPath(newPathID, parentID, branchNodeID, localJunctionPose, globalJunctionPose)
+			""" add the details of this junction given particle pose is true """
 			part.addPath(newPathID, parentID, branchNodeID, localJunctionPose, modJuncPose, controlPoint, self.NUM_BRANCHES)
 
 		print "newPath", newPathID, "=", self.pathClasses[newPathID]
