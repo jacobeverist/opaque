@@ -4238,7 +4238,7 @@ class MapState:
 
 		""" precompute the evaluation for branches and cache result """
 		""" each branch point is the max likelihood of each pose particle """
-		""" computes discretized samples around each ma likelihood branch point """
+		""" computes discretized samples around each maximum likelihood branch point """
 
 		""" probSets:  [ (pathID, globJuncPose), ] """
 		""" possible locations of branch point shoot pathID """
@@ -6278,8 +6278,26 @@ class MapState:
 			modJuncPose = copy(newJuncPose)
 			modJuncPose[2] = globalJunctionPose[2]
 
+
+			newPathID
+			modJuncPose 
+			parentID
+
+			""" get the arc distance of the given branch point """
+			arcDist = pathSpline.dist_u(uVal)
+
+			""" compute the rails of the branch point distribution """
+			arcHigh = arcDist + self.DIV_LEN * floor(self.NUM_BRANCHES/2.0)
+			arcLow = arcDist - self.DIV_LEN * floor(self.NUM_BRANCHES/2.0)
+
+			""" compute the sample points for the branch point distribution """
+			arcDists = []
+			for k in range(self.NUM_BRANCHES):
+				newArcDist = arcLow + k * self.DIV_LEN
+				arcDists.append((pathID, newArcDist))
+
 			""" add the details of this junction given particle pose is true """
-			part.addPath(newPathID, parentID, branchNodeID, localJunctionPose, modJuncPose, controlPoint, self.NUM_BRANCHES)
+			part.addPath(newPathID, parentID, branchNodeID, localJunctionPose, modJuncPose, controlPoint, self.NUM_BRANCHES, arcDists)
 
 		print "newPath", newPathID, "=", self.pathClasses[newPathID]
 
