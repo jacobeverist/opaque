@@ -2061,9 +2061,126 @@ def makeMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose1, estPose2, 
 
 	return transform, hist
 
+@logFunction
+def selectCommonOrigin(globalPath1, globalPath2):
+
+	""" FIXME:  change function so that it always returns a common pair, biasing towards it's current location """
+	""" alternately, make a new function that gives the option to enforce locality to common pair """
+	
+	globalSpline1 = SplineFit(globalPath1, smooth=0.1)
+	globalSpline2 = SplineFit(globalPath2, smooth=0.1)
+
+	globalSamples1 = globalSpline1.getUniformSamples(spacing = 0.04)
+	globalSamples2 = globalSpline2.getUniformSamples(spacing = 0.04)
+	
+	""" compute the local variance of the angle """
+	globalVar1 = computePathAngleVariance(globalSamples1)
+	globalVar2 = computePathAngleVariance(globalSamples2)
+
+  
+	""" now lets find closest points and save their local variances """			
+	closestPairs = []
+	allPairs = []
+	TERM_DIST = 20
+
+	""" stay 1/20th away from terminators of both shoot curves """
+	pathRail1 = int(len(globalSamples1) / 20.0)
+	pathRail2 = int(len(globalSamples2) / 20.0)
+
+	print "rails:", len(globalSamples1), len(globalSamples2), pathRail1, pathRail2
+
+	
+	for i in range(pathRail1, len(globalSamples1)-pathRail1):
+		pG = globalSamples1[i]
+		minDist = 1e100
+		minJ = -1
+		for j in range(pathRail2, len(globalSamples2)-pathRail2):
+			pM = globalSamples2[j]
+			dist = math.sqrt((pG[0]-pM[0])**2 + (pG[1]-pM[1])**2)
+			
+			
+			
+			if dist < minDist:
+				minDist = dist
+				minJ = j
+		
+		if True:
+			allPairs.append((i,minJ,minDist,globalVar1[i][0],globalVar2[minJ][0],globalVar1[i][1],globalVar2[minJ][1]))
+
+	for j in range(pathRail2, len(globalSamples2)-pathRail2):
+		pM = globalSamples2[j]
+		minDist = 1e100
+		minI = -1
+		for i in range(pathRail1, len(globalSamples1)-pathRail1):
+			pG = globalSamples1[i]
+			dist = math.sqrt((pG[0]-pM[0])**2 + (pG[1]-pM[1])**2)
+			
+			
+			
+			if dist < minDist:
+				minDist = dist
+				minI = i
+
+		if True:		
+			allPairs.append((minI,j,minDist,globalVar1[minI][0],globalVar2[j][0],globalVar1[minI][1],globalVar2[j][1]))
+		
+	" remove duplicates "
+	allPairs = list(set(allPairs))
+
+	""" sorty by match distance """
+	allPairs = sorted(allPairs, key=itemgetter(2))
+	
+	maxDistThresh = allPairs[-1][2]
+	minDistThresh = 0.1
+
+	""" ensure that the while loop is executed at least once """
+	if minDistThresh > maxDistThresh:
+		maxDistThresh = minDistThresh
+	
+	print "minDistThresh,maxDistThresh =", allPairs[0][2], allPairs[-1][2]
+
+	if len(allPairs) == 0:
+		raise
+
+	
+	originU2 = 0.5
+	originU1 = 0.5
+
+	cPoint2 = []
+	cPoint1 = []
+	
+	while minDistThresh <= maxDistThresh:
+		closestPairs = []
+		for pair in allPairs:			
+			if pair[2] < minDistThresh:				
+				closestPairs.append(pair)
+		
+		" sort by lowest angular variance"
+		closestPairs = sorted(closestPairs, key=itemgetter(5,6))
+
+		print len(closestPairs), "closest pairs for dist", minDistThresh
+
+		if len(closestPairs) > 0:
+			originU2 = globalSpline2.findU(globalSamples2[closestPairs[0][1]])	
+			originU1 = globalSpline1.findU(globalSamples1[closestPairs[0][0]])
+
+			cPoint2 = globalSamples2[closestPairs[0][1]]
+			cPoint1 = globalSamples1[closestPairs[0][0]]
+			
+			break
+		
+		minDistThresh += 0.1
+	
+	u2 = originU2
+	u1 = originU1
+	angGuess = 0.0
+	
+	return u1, u2, cPoint1, cPoint2
+
 
 @logFunction
 def selectLocalCommonOrigin(globalPath, medial1, estPose1):
+
 	poseOrigin = Pose(estPose1)
 	
 	" FIXME:  change function so that it always returns a common pair, biasing towards it's current location "
@@ -2161,6 +2278,10 @@ def selectLocalCommonOrigin(globalPath, medial1, estPose1):
 	
 	maxDistThresh = allPairs[-1][2]
 	minDistThresh = 0.1
+
+	""" ensure that the while loop is executed at least once """
+	if minDistThresh > maxDistThresh:
+		maxDistThresh = minDistThresh
 	
 	print "minDistThresh,maxDistThresh =", allPairs[0][2], allPairs[-1][2]
 
@@ -2196,7 +2317,7 @@ def selectLocalCommonOrigin(globalPath, medial1, estPose1):
 	angGuess = 0.0
 	
 	return u1, u2
-		
+
 
 def computePathAngleVariance(pathSamples):
 	pathVar = []

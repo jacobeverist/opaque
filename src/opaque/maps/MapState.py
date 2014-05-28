@@ -19,7 +19,7 @@ import numpy
 from operator import itemgetter
 import hashlib
 from Splices import batchGlobalMultiFit, getMultiDeparturePoint, orientPath, getTipAngles
-from MapProcess import selectLocalCommonOrigin
+from MapProcess import selectLocalCommonOrigin, selectCommonOrigin
 from ParticleFilter import multiParticleFitSplice, batchLocalizeParticle, batchDisplaceParticles, Particle
 import time
 import traceback
@@ -1364,6 +1364,48 @@ def computeDivergencePoint(juncI, frontInd, distances, indices, pathPoints1, pat
 	"""
 
 @logFunction
+def ensureEnoughPoints(newPath2, max_spacing = 0.08, minPoints = 5):
+
+	if len(newPath2) < 2:
+		print len(newPath2), "not enough points to expand with", newPath2
+		raise
+
+	max_spacing = 0.08
+	newPath3 = []
+
+	""" make sure path is greater than 5 points """
+	while len(newPath3) <= minPoints:
+
+		max_spacing /= 2
+		print "max_spacing =", max_spacing
+		
+		newPath3 = [copy(newPath2[0])]
+							
+		for i in range(len(newPath2)-1):
+			p0 = newPath2[i]
+			p1 = newPath2[(i+1)]
+			dist = sqrt((p0[0]-p1[0])**2 + (p0[1]-p1[1])**2)
+
+			vec = [p1[0]-p0[0], p1[1]-p0[1]]
+			vec[0] /= dist
+			vec[1] /= dist
+			
+			
+			if dist > max_spacing:
+				""" cut into pieces max_spacing length or less """
+				numCount = int(floor(dist / max_spacing))
+				
+				for j in range(1, numCount+1):
+					newP = [j*max_spacing*vec[0] + p0[0], j*max_spacing*vec[1] + p0[1]]
+					newPath3.append(newP)
+
+			newPath3.append(copy(p1))			 
+
+
+	return newPath3
+	
+
+@logFunction
 def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, plotIter = False, hypothesisID = 0, nodeID = 0, arcDist = 0.0):
 	""" get the trimmed version of child and parent paths that are overlapping in some fashion """
 
@@ -1373,7 +1415,7 @@ def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, 
 
 	print "getBranchPoint():"
 
-	print "lengths of parent and child paths:", len(pathPoints1), len(pathPoints2)
+	print "lengths of parent and child paths:", len(path1), len(path2)
 	
 	""" return exception if we receive an invalid path """		  
 	if len(path1) == 0:
@@ -1387,6 +1429,8 @@ def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, 
 	""" make sure the overlap of both shoots are oriented the same way """
 	orientedPath2 = orientPath(path2, path1)
 	
+	""" compute the control point """
+	commonU1, commonU2, commonP1, commonP2 = selectCommonOrigin(path1, orientedPath2)
 
 	""" compute spline for each set of points """
 	path1Spline = SplineFit(path1, smooth=0.1)			  
@@ -1460,8 +1504,6 @@ def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, 
 
 
 
-
-
 	""" reset to the tip match distance """
 	maxFront = distances[frontInd]
 	maxBack = distances[backInd]
@@ -1500,21 +1542,9 @@ def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, 
 	5) no match count, low junc dist, correct
 	"""
 
-
-	junctionPoint = globalJunctionPose		 
-	minDist2 = 1e100
-	juncI = 0		 
-	for i in range(len(pathPoints2)):
-		pnt = pathPoints2[i]
-		dist = sqrt((pnt[0]-junctionPoint[0])**2 + (pnt[1]-junctionPoint[1])**2)
-	
-		if dist < minDist2:
-			minDist2 = dist
-			juncI = i
-	
-	
-	
-	if juncDist1 < juncDist2:
+	""" FIXME:  Assumes that we are only diverging in one direction, selects only one point """
+	""" retrieve terminator points of the diverging section of the child shoot """
+	if juncDist1 <= juncDist2:
 		""" FIXME: if [0,frontDepI] has high overlap compared to total length, then we reject it """
 		secP1 = pathPoints2[0]
 		secP2 = pathPoints2[frontDepI]
@@ -1529,50 +1559,18 @@ def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, 
 
 		newPath2 = pathPoints2[newBackDepI:]
 
-	if len(secP1) == 0:
-		print "no departures found"
-		raise
-	
+
 	""" convert path so that the points are uniformly distributed """
-	
-	
-	max_spacing = 0.08
-	newPath3 = []
-
 	""" make sure path is greater than 5 points """
-	while len(newPath3) <= 5:
-
-		max_spacing /= 2
-		print "max_spacing =", max_spacing
-		
-		newPath3 = [copy(newPath2[0])]
-							
-		for i in range(len(newPath2)-1):
-			p0 = newPath2[i]
-			p1 = newPath2[(i+1)]
-			dist = sqrt((p0[0]-p1[0])**2 + (p0[1]-p1[1])**2)
-
-			vec = [p1[0]-p0[0], p1[1]-p0[1]]
-			vec[0] /= dist
-			vec[1] /= dist
-			
-			
-			if dist > max_spacing:
-				""" cut into pieces max_spacing length or less """
-				numCount = int(floor(dist / max_spacing))
-				
-				for j in range(1, numCount+1):
-					newP = [j*max_spacing*vec[0] + p0[0], j*max_spacing*vec[1] + p0[1]]
-					newPath3.append(newP)
-
-			newPath3.append(copy(p1))			 
+	newPath3 = ensureEnoughPoints(newPath2, max_spacing = 0.08, minPoints = 5)
 	
 
 
 	leafPath = deepcopy(newPath3)
+
 	
+	""" compute direction from which the curve diverges from parent shoot """
 	frontVec = [0.,0.]
-	backVec = [0.,0.]
 	indic = range(3)
 	indic.reverse()
 	
@@ -1584,56 +1582,67 @@ def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, 
 			frontVec[0] += vec[0]
 			frontVec[1] += vec[1]
 
-
 	frontMag = math.sqrt(frontVec[0]*frontVec[0] + frontVec[1]*frontVec[1])
-
 	frontVec[0] /= frontMag
 	frontVec[1] /= frontMag
 
 
-	newP1 = (leafPath[0][0] + frontVec[0]*10, leafPath[0][1] + frontVec[1]*10)
+	""" extend edge back towards the parent shoot such that it most likely overlaps """
+	newP1 = (leafPath[0][0] + frontVec[0]*2, leafPath[0][1] + frontVec[1]*2)
 
 	leafPath.insert(0,newP1)
 	
 	medial2 = deepcopy(leafPath)
 
-	""" take the long length segments at tips of medial axis """
+	""" take the short length segment that we hope overlaps the parent shoot """
 	edge1 = medial2[0:2]
 	
-	frontVec = [edge1[0][0]-edge1[1][0], edge1[0][1]-edge1[1][1]]
-	frontMag = math.sqrt(frontVec[0]*frontVec[0] + frontVec[1]*frontVec[1])
-	
-	frontVec[0] /= frontMag
-	frontVec[1] /= frontMag
-	
-	""" make a smaller version of these edges """
-	newP1 = (edge1[1][0] + frontVec[0]*2, edge1[1][1] + frontVec[1]*2)
+	""" make a smaller version of these edges, supposedly so that we are not
+		intersecting the parent in more than one place
+	"""
+	#newP1 = (edge1[1][0] + frontVec[0]*2, edge1[1][1] + frontVec[1]*2)
 
-	edge1 = [newP1, edge1[1]]
+	#edge1 = [newP1, edge1[1]]
 
-	""" find the intersection points with the hull """
+	""" find the intersection points with the parent shoot """
 	interPoints = []
 	for k in range(len(path1)-1):
-		hullEdge = [path1[k],path1[k+1]]
-		isIntersect1, point1 = Intersect(edge1, hullEdge)
+		shootEdge = [path1[k],path1[k+1]]
+		isIntersect1, point1 = Intersect(edge1, shootEdge)
 		if isIntersect1:
 			interPoints.append(point1)
 			break
 
 	
-	""" replace the extended edges with a termination point at the hull edge """			
+	""" replace the extended edges with a termination point on the parent shoot """
 	medial2 = medial2[1:]
 	
+	""" take the closest intersection point """
 	if isIntersect1:
-		medial2.insert(0, point1)
+		termPoint = newPath3[0]
+		minDist = 1e100
+		minIndex = 0
+
+		for k in range(len(interPoints)):
+			intPoint = interPoints[k]
+			dist = sqrt((intPoint[0]-termPoint[0])**2 + (intPoint[1]-termPoint[1])**2 )
+
+			if dist < minDist:
+				minDist = dist
+				minIndex = k
+
+		intPoint = interPoints[minIndex]	
+		medial2.insert(0, intPoint)
 
 
+	""" angle inverted, starting from parent shoot, out in direction of divergence """
 	juncAng = acos(-frontVec[0])
 	if -frontVec[1] < 0.0:
 		juncAng = -juncAng
 	
 	
-	#foreIntI, backIntI, juncForeAng, juncBackAng = getTangentIntersections(pathPoints1, pathPoints2, frontDepI, backDepI, indices[frontDepI], indices[backDepI], juncI, indices[juncI], pathPlotCount, hypothesisID = hypothesisID, nodeID = nodeID, plotIter = True)
+	""" get divergence point by using tangent intersection method """
+	""" This method instead of angle/dist threshold approaches """
 
 	try:
 
@@ -1753,6 +1762,8 @@ def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, 
 		pylab.scatter([globalJunctionPose[0]],[globalJunctionPose[1]], color='r')		   
 		pylab.scatter([globJuncPose[0]],[globJuncPose[1]], color='k')		 
 		pylab.scatter([controlPoint[0]],[controlPoint[1]], color='k', alpha = 0.5)		   
+
+		pylab.scatter([commonP1[0],commonP2[0]], [commonP1[1],commonP2[1]], color='b')
 
 		xP = []
 		yP = []
@@ -2065,53 +2076,32 @@ def trimBranch(pathID, parentPathID, globJuncPose, origGlobJuncPose, childPath, 
 		raise
 					
 	""" convert path so that the points are uniformly distributed """
-	
-	
-	max_spacing = 0.08
-	newPath3 = []
-
-	""" make sure path is greater than 5 points """
-	while len(newPath3) <= 5:
-
-		max_spacing /= 2
-		print "max_spacing =", max_spacing
-		
-		newPath3 = [copy(newPath2[0])]
-							
-		for i in range(len(newPath2)-1):
-			p0 = newPath2[i]
-			p1 = newPath2[(i+1)]
-			dist = sqrt((p0[0]-p1[0])**2 + (p0[1]-p1[1])**2)
-
-			vec = [p1[0]-p0[0], p1[1]-p0[1]]
-			vec[0] /= dist
-			vec[1] /= dist
-			
-			
-			if dist > max_spacing:
-				""" cut into pieces max_spacing length or less """
-				numCount = int(floor(dist / max_spacing))
-				
-				for j in range(1, numCount+1):
-					newP = [j*max_spacing*vec[0] + p0[0], j*max_spacing*vec[1] + p0[1]]
-					newPath3.append(newP)
-
-			newPath3.append(copy(p1))			 
-
-	deepcopy(newPath3)
+	newPath3 = ensureEnoughPoints(newPath2, max_spacing = 0.08, minPoints = 5)
 
 
-	newGlobJuncPose1, controlPoint1, angDeriv1 = getBranchPoint(globJuncPose, parentPathID, pathID, path1, particlePath2, plotIter = plotIter, hypothesisID = hypothesisID, nodeID = nodeID, arcDist = arcDist)
-	newGlobJuncPose2, controlPoint2, angDeriv2 = getBranchPoint(globJuncPose, pathID, parentPathID, particlePath2, path1, plotIter = plotIter, hypothesisID = hypothesisID, nodeID = nodeID, arcDist = arcDist)
+	newGlobJuncPose1, controlPoint1, angDeriv1 = getBranchPoint(globJuncPose, parentPathID, pathID, trimmedParent, particlePath2, plotIter = plotIter, hypothesisID = hypothesisID, nodeID = nodeID, arcDist = arcDist)
+	newGlobJuncPose2, controlPoint2, angDeriv2 = getBranchPoint(globJuncPose, pathID, parentPathID, trimmedParent, path1, plotIter = plotIter, hypothesisID = hypothesisID, nodeID = nodeID, arcDist = arcDist)
+	#newGlobJuncPose1, controlPoint1, angDeriv1 = getBranchPoint(globJuncPose, parentPathID, pathID, path1, particlePath2, plotIter = plotIter, hypothesisID = hypothesisID, nodeID = nodeID, arcDist = arcDist)
+	#newGlobJuncPose2, controlPoint2, angDeriv2 = getBranchPoint(globJuncPose, pathID, parentPathID, particlePath2, path1, plotIter = plotIter, hypothesisID = hypothesisID, nodeID = nodeID, arcDist = arcDist)
+
+	juncDiscDist1 = sqrt((newGlobJuncPose1[0]-globJuncPose[0])**2 + (newGlobJuncPose1[1]-globJuncPose[1])**2)
+	juncDiscDist2 = sqrt((newGlobJuncPose2[0]-globJuncPose[0])**2 + (newGlobJuncPose2[1]-globJuncPose[1])**2)
 
 	if angDeriv1 < angDeriv2:
 		newGlobJuncPose = newGlobJuncPose1
 		controlPoint = controlPoint1
 		angDeriv = angDeriv1
 	else:
-		newGlobJuncPose = newGlobJuncPose2
-		controlPoint = controlPoint2
-		angDeriv = angDeriv2
+
+		""" only diverge from the parent if the determined branch point is in the neighborhood of the original """
+		if juncDiscDist2 < 1.0:
+			newGlobJuncPose = newGlobJuncPose2
+			controlPoint = controlPoint2
+			angDeriv = angDeriv2
+		else:
+			newGlobJuncPose = newGlobJuncPose1
+			controlPoint = controlPoint1
+			angDeriv = angDeriv1
 
 	""" junction discrepency distance """
 	origJuncPose = copy(origGlobJuncPose)
@@ -2141,7 +2131,7 @@ def trimBranch(pathID, parentPathID, globJuncPose, origGlobJuncPose, childPath, 
 	for i in range(len(path2)):
 		pnt = path2[i]
 		dist = sqrt((pnt[0]-junctionPoint[0])**2 + (pnt[1]-junctionPoint[1])**2)
-	
+
 		if dist < minDist2:
 			minDist2 = dist
 			minI2 = i
