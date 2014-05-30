@@ -2409,12 +2409,10 @@ class MapState:
 	
 	def __init__(self, poseData, hypothesisID):
 		
+		""" raw sensor data products """
 		self.poseData = deepcopy(poseData)
 		
-		" branch point particles "
-		self.numJuncSamples = 20
-		self.juncSamples = {}
-
+		""" pose particles for different combinations of poses and branch points """
 		#self.numPoseParticles = 100
 		self.numPoseParticles = 40
 		self.poseParticles = {}
@@ -2423,6 +2421,7 @@ class MapState:
 		self.poseParticles["snapshots2"] = {0 : ()}
 
 
+		""" pose information for each of the spatial map nodes """
 		self.isNodeBranching = {}
 		self.nodeRawPoses = {}
 		self.nodePoses = {}
@@ -2430,22 +2429,32 @@ class MapState:
 		self.gndRawPoses = {}
 		self.origPoses = {}
 
+		""" evaluation result of map consistency """
 		self.utility = 0.0
 
-		" if a branching decision was made, and this is the no-branch state "
+		""" if a branching decision was made, and this is the no-branch state """
 		self.isNotBranched = False
 
-		" criteria for rejecting this map state "
+		""" criteria for rejecting this map state """
 		self.mapOverlapSum = 0.0
 		self.isNoLocalize = False
 
-		self.pathIDs = 0
+		""" unique ID for this MapState instantation """
 		self.hypothesisID = hypothesisID
 
+		""" the alpha hull and maximum length path of shoot skeleton """
 		self.paths = {0 : []}
 		self.hulls = {0 : []}
-		self.pathTermsVisited = {0: False}
+
+		""" intermediate data structure for computing the shoot skeleton """
+		self.longPathJunctions = {}
+		self.medialLongPaths = {}
+		self.theoryMedialLongPaths = {}
+
+		""" shoot spine only, separated from the skeleton at the branch point """
 		self.trimmedPaths  = {}
+
+		""" membership, parent-relationship, branch point, and control point for a shoot """
 		self.pathClasses = {}
 		self.pathClasses[0] = {"parentID" : None,
 					"branchNodeID" : None,
@@ -2455,36 +2464,23 @@ class MapState:
 					"globalJunctionPose" : None,
 					"controlPoint" : None }		
 
-		self.pathIDs += 1
+		""" number of shoots in the current map state """
+		self.pathIDs = 1
 
+		""" travel destinations on the shoot map """
+		self.pathTermsVisited = {0: False}
+
+		""" number of branch hypotheses and spacing between them for a branch point distribution """
 		self.DIV_LEN = 0.2
 		self.NUM_BRANCHES = 5
 		#self.DIV_LEN = 0.1
 		#self.NUM_BRANCHES = 1
 
 
-		self.longPathJunctions = {}
-		self.medialLongPaths = {}
-		self.theoryMedialLongPaths = {}
-
-		self.alphaPlotCount = 0
-		self.medialCount = 0
-		self.topCount = 0
-		self.spliceCount = 0
-		self.multiDepCount = 0
-		self.overlapPlotCount = 0
-		self.tempCount = 0
-
-		self.pathPlotCount = 0
-		self.pathPlotCount2 = 0
-		self.overlapPlotCount2 = 0
-		self.medialSoupCount = 0
-		self.posePlotCount = 0
-
-
-
+		""" the entrance point of the environment """
 		self.rootPoint = [-3.2, 0.0]
 		
+		""" data structures for computing splices on the shoot map """
 		self.pathGraph = graph.graph()
 		self.joins = []
 		self.junctions = {}
@@ -2492,6 +2488,9 @@ class MapState:
 		self.allSplices = {}
 		self.isChanged = True
 
+
+
+		""" plotting colors """
 		self.colors = []
 
 		self.colors.append([127, 127, 255])
@@ -2500,14 +2499,6 @@ class MapState:
 		self.colors.append([255, 127, 255])
 		self.colors.append([255, 255, 127])
 		self.colors.append([127, 255, 255])
-		"""
-		self.colors.append([215, 48, 39])
-		self.colors.append([252, 141, 89])
-		self.colors.append([254, 224, 144])
-		self.colors.append([224, 243, 248])
-		self.colors.append([145, 191, 219])
-		self.colors.append([69, 117, 180])
-		"""
 
 		for color in self.colors:
 			color[0] = float(color[0])/256.0
@@ -2516,6 +2507,23 @@ class MapState:
 
 		for i in range(1000):
 			self.colors.append((random.random(),random.random(),random.random()))
+
+
+		""" plot counts """
+		self.alphaPlotCount = 0
+		self.medialCount = 0
+		self.topCount = 0
+		self.spliceCount = 0
+		self.multiDepCount = 0
+		self.overlapPlotCount = 0
+		self.tempCount = 0
+		self.pathPlotCount = 0
+		self.pathPlotCount2 = 0
+		self.overlapPlotCount2 = 0
+		self.medialSoupCount = 0
+		self.posePlotCount = 0
+
+
 
 	def getNodePose(self, nodeID):
 		return copy(self.nodePoses[nodeID])
@@ -3559,10 +3567,8 @@ class MapState:
 
 		newObj = MapState(self.poseData, hypothesisID)
 
-		newObj.numJuncSamples = deepcopy(self.numJuncSamples)
 		newObj.numPoseParticles = deepcopy(self.numPoseParticles)
 
-		newObj.juncSamples = deepcopy(self.juncSamples)
 		newObj.poseParticles = deepcopy(self.poseParticles)
 
 		updateCount = newObj.poseParticles["updateCount"] 
@@ -3713,19 +3719,6 @@ class MapState:
 		return utilSum
 
 
-	@logFunction
-	def addBranch(self):
-		pass
-
-	@logFunction
-	def computeConsistency(self):
-		pass
-
-	@logFunction
-	def updatePose(self, nodeID, pose):
-		pass
-
-	
 	""" state save and restore methods """
 	@logFunction
 	def saveState(self, saveCount):
@@ -4756,7 +4749,7 @@ class MapState:
 		pathIDs = self.getPathIDs()
 		for k in pathIDs:
 			print "computing path for node set", k, ":", self.getNodes(k)
-			self.paths[k], self.hulls[k] = self.getTopology(k)
+			self.paths[k], self.hulls[k] = self.computeShootSkeleton(k)
 
 		" compute the junction points between parent paths and child branches "
 		for pathID in pathIDs:
@@ -4907,9 +4900,8 @@ class MapState:
 
 
 		#if len(self.trimmedPaths[pathID]) > 0:
-		" don't care about return values, are stored as object member variable "
-		allSplices, terminals, junctions = self.computeAllSplices(plotIter = True)
-
+		""" don't care about return values, are stored as object member variable """
+		self.computeAllSplices(plotIter = True)
 		self.isChanged = False
 
 	@logFunction
@@ -6235,14 +6227,6 @@ class MapState:
 		self.pathIDs += 1
 
 
-		juncSamps = {}
-		juncSamps["numParticles"] = self.numJuncSamples
-		juncSamps["updateCount"] = 0
-		juncSamps["snapshots"] = {0 : []}
-		self.juncSamples[newPathID] = juncSamps
-
-
-
 		updateCount = self.poseParticles["updateCount"] 
 		particleDist2 = self.poseParticles["snapshots2"][0]
 
@@ -6306,7 +6290,7 @@ class MapState:
 		return newPathID
  
 	@logFunction
-	def getTopology(self, pathID):
+	def computeShootSkeleton(self, pathID):
 		
 		random.seed(0)		  
  
@@ -6314,7 +6298,6 @@ class MapState:
 		self.medialLongPaths[pathID] = []
 		self.longPathJunctions[pathID] = {}
 
-		print "caseA"
 		sys.stdout.flush()
 		nodes = self.getNodes(pathID)
 
@@ -8297,6 +8280,7 @@ class MapState:
 				currI += 1
 		except:
 			pass
+			""" raw sensor data products """
 
 		backDepI = len(distances) - currI
 		backPoint = [backDepI, distances[backDepI]]
