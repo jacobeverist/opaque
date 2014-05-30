@@ -76,7 +76,48 @@ def findClosestPoint(a_trans, b):
 		return minPoint, min_i, minDist
 	else:
 		raise
+
+
+
+def makePosesUniform(points, max_spacing = 0.04, interpAngle = False):
 	
+	" make the points uniformly distributed "
+	
+	new_points = []
+	
+	for i in range(len(points)-1):
+		p0 = points[i]
+		p1 = points[i+1]
+		dist = sqrt((p0[0]-p1[0])**2 + (p0[1]-p1[1])**2)
+
+		vec = [p1[0]-p0[0], p1[1]-p0[1]]
+		vec[0] /= dist
+		vec[1] /= dist
+		
+		new_points.append(copy(p0))
+		
+		ang0 = p0[2]
+		ang1 = p1[2]
+		
+		if dist > max_spacing:
+			" cut into pieces max_spacing length or less "
+			numCount = int(floor(dist / max_spacing))
+			
+			angStep = diffAngle(ang0,ang1) / float(numCount+1)
+			#print "angStep:", angStep, numCount, dist
+			
+			
+			for j in range(1, numCount+1):
+				if interpAngle:
+					#print "interp:", j*angStep
+					newP = [j*max_spacing*vec[0] + p0[0], j*max_spacing*vec[1] + p0[1], p0[2]+j*angStep]
+				else:
+					newP = [j*max_spacing*vec[0] + p0[0], j*max_spacing*vec[1] + p0[1], p0[2]]
+					
+				new_points.append(newP)
+	
+	return new_points		
+
 def makePointsUniform(points, max_spacing = 0.04):
 	
 	" make the points uniformly distributed "
@@ -104,6 +145,38 @@ def makePointsUniform(points, max_spacing = 0.04):
 	
 	return new_points		
 
+
+def makePolygonUniform(a_vert, max_spacing = 0.04):
+	
+	" make the vertices uniformly distributed "
+	
+	new_vert = []
+
+	for i in range(len(a_vert)):
+		p0 = a_vert[i]
+		p1 = a_vert[(i+1) % len(a_vert)]
+		dist = sqrt((p0[0]-p1[0])**2 + (p0[1]-p1[1])**2)
+
+		vec = [p1[0]-p0[0], p1[1]-p0[1]]
+		
+		if dist == 0:
+			pass
+		else:
+								
+			vec[0] /= dist
+			vec[1] /= dist
+			
+			new_vert.append(copy(p0))
+			
+			if dist > max_spacing:
+				" cut into pieces max_spacing length or less "
+				numCount = int(floor(dist / max_spacing))
+				
+				for j in range(1, numCount+1):
+					newP = [j*max_spacing*vec[0] + p0[0], j*max_spacing*vec[1] + p0[1]]
+					new_vert.append(newP)
+	
+	return new_vert			   
 
 # determines signed area of 3 points (used for solving Point in Polygon problem)
 def Area2(Ax,Ay,Bx,By,Cx,Cy):

@@ -6262,11 +6262,6 @@ class MapState:
 			modJuncPose = copy(newJuncPose)
 			modJuncPose[2] = globalJunctionPose[2]
 
-
-			newPathID
-			modJuncPose 
-			parentID
-
 			""" get the arc distance of the given branch point """
 			arcDist = pathSpline.dist_u(uVal)
 
@@ -6278,7 +6273,7 @@ class MapState:
 			arcDists = []
 			for k in range(self.NUM_BRANCHES):
 				newArcDist = arcLow + k * self.DIV_LEN
-				arcDists.append((pathID, newArcDist))
+				arcDists.append((newPathID, newArcDist))
 
 			""" add the details of this junction given particle pose is true """
 			part.addPath(newPathID, parentID, branchNodeID, localJunctionPose, modJuncPose, controlPoint, self.NUM_BRANCHES, arcDists)
@@ -6292,129 +6287,78 @@ class MapState:
 	@logFunction
 	def computeShootSkeleton(self, pathID):
 		
+		""" establish recomputability for debugging """
 		random.seed(0)		  
+
+		""" flush the print buffer for debugging """
+		sys.stdout.flush()
  
+ 		""" delete the previous computed shoot skeleton """
 		self.theoryMedialLongPaths[pathID] = []
 		self.medialLongPaths[pathID] = []
 		self.longPathJunctions[pathID] = {}
 
-		sys.stdout.flush()
-		nodes = self.getNodes(pathID)
 
-
-		junctionNodeID = self.pathClasses[pathID]["branchNodeID"]
+		""" get the junction point of this shoot if it is not the root """
+		branchNodeID = self.pathClasses[pathID]["branchNodeID"]
 		globalJunctionPoint = None
 
-		if junctionNodeID != None:
-		
-			print "junctionNodeID:", junctionNodeID
-			#print "nodes:", self.nodeHash.keys()
-			print "nodes:", [k for k in range(self.poseData.numNodes)]
-			
+		if branchNodeID != None:
 			globalJunctionPoint = self.getGlobalJunctionPose(pathID) 
-
-		print "caseB"
-		sys.stdout.flush()
 		
-		def convertAlphaUniform(a_vert, max_spacing = 0.04):
-			
-			" make the vertices uniformly distributed "
-			
-			new_vert = []
-		
-			for i in range(len(a_vert)):
-				p0 = a_vert[i]
-				p1 = a_vert[(i+1) % len(a_vert)]
-				dist = math.sqrt((p0[0]-p1[0])**2 + (p0[1]-p1[1])**2)
-	
-				vec = [p1[0]-p0[0], p1[1]-p0[1]]
-				
-				if dist == 0:
-					pass
-				else:
-										
-					vec[0] /= dist
-					vec[1] /= dist
-					
-					new_vert.append(copy(p0))
-					
-					if dist > max_spacing:
-						" cut into pieces max_spacing length or less "
-						numCount = int(math.floor(dist / max_spacing))
-						
-						for j in range(1, numCount+1):
-							newP = [j*max_spacing*vec[0] + p0[0], j*max_spacing*vec[1] + p0[1]]
-							new_vert.append(newP)
-			
-			return new_vert			   
 
-		medialPointSoup = []
-
-
+		""" if there is no data, return an empty skeleton """
+		nodes = self.getNodes(pathID)
 		if nodes == []:
 			return [], []
 
 
-		print "caseC"
-		sys.stdout.flush()
 
-		if True:	
-			for nodeID in nodes:
+		
+		""" collect the local hulls of each the spatial images attached to this shoot """
+		medialPointSoup = []
+		for nodeID in nodes:
 
-				#estPose1 = self.nodeHash[nodeID].getGlobalGPACPose()		
-				estPose1 = self.getNodePose(nodeID)
-		
-				#if self.nodeHash[nodeID].isBowtie:			  
-				#	hull1 = computeBareHull(self.nodeHash[nodeID], sweep = False, static = True)
-				#else:
-				#	hull1 = computeBareHull(self.nodeHash[nodeID], sweep = False)
-		
-				hull1 = self.poseData.aHulls[nodeID]
-		
+			""" global GPAC pose and alpha hull of the local spatial image """
+			estPose1 = self.getNodePose(nodeID)
+			hull1 = self.poseData.aHulls[nodeID]
+	
+			""" print out a hash value for this unique hull for debugging """
+			m = hashlib.md5()
+			m.update(repr(hull1))
+			print nodeID, "hull1 =", int(m.digest().encode('hex'),16)
+	
+			""" convert hull points to global coordinates and save """
+			poseOrigin = Pose(estPose1)
+			for k in range(len(hull1)):
+ 
+				p = hull1[k]
+				
 				m = hashlib.md5()
-				m.update(repr(hull1))
-				print nodeID, "hull1 =", int(m.digest().encode('hex'),16)
-		
-				" set the origin of pose 1 "
-				poseOrigin = Pose(estPose1)
-		
-				xP = []
-				yP = []    
-				for k in range(len(hull1)):
-	 
-					p = hull1[k]
-					
-					m = hashlib.md5()
-					m.update(repr(p))
-					
-					p1 = poseOrigin.convertLocalToGlobal(p)
-					
-					m = hashlib.md5()
-					m.update(repr(p1))
-					
-					medialPointSoup.append(p1)
+				m.update(repr(p))
+				
+				p1 = poseOrigin.convertLocalToGlobal(p)
+				
+				m = hashlib.md5()
+				m.update(repr(p1))
+				
+				medialPointSoup.append(p1)
 
-		print "caseD"
-		sys.stdout.flush()
 
-		radius = 0.2
+		""" radius constant for alpha shape algorithm """
+		ALPHA_RADIUS = 0.2
 
-		numPoints = len(medialPointSoup)
 
+		""" attempt to compute the alpha hull multiple times until it is successful """
 		isDone = False
-
-		print "caseE"
-		sys.stdout.flush()
-		
 		while not isDone:
 	
+			""" add a little bit of noise to each of the points to avoid degenerate
+				conditions in CGAL.  Catch the exception in case of a math domain error """
 			perturbPoints = []
-			
 			for p in medialPointSoup:
 				p2 = copy(p)
 				
-				" add a little bit of noise to avoid degenerate conditions in CGAL "
-				" catch exception in case of math domain error "
 				isReturned = False
 				while not isReturned:
 					try:
@@ -6438,13 +6382,12 @@ class MapState:
 		
 			try:			
 		
+				""" the data to be input in text form """
 				saveFile = ""	 
-				saveFile += "radius = " + repr(radius) + "\n"
+				saveFile += "ALPHA_RADIUS = " + repr(ALPHA_RADIUS) + "\n"
 				saveFile += "perturbPoints = " + repr(perturbPoints) + "\n"
 
-				#print saveFile
-				#sys.stdout.flush()
-		
+				""" save the input data for debug purposes in case we crash """
 				isWritten = False
 				while not isWritten:
 					try:
@@ -6455,37 +6398,39 @@ class MapState:
 						pass
 					else:
 						isWritten = True
-				print "caseF"
-				sys.stdout.flush()
 	
-				vertices = alphamod.doAlpha(radius,perturbPoints)
-				numVert = len(vertices)
+				""" call CGAL alpha shape 2D function with noise-added points """
+				vertices = alphamod.doAlpha(ALPHA_RADIUS,perturbPoints)
 
-				print "caseG"
-				sys.stdout.flush()
-
+				""" delete the temporary file since we were successful """
 				os.remove("doAlphaInput_%08u.txt" % (self.alphaPlotCount))
 				self.alphaPlotCount += 1
 				
 				
+				""" if the hull doesn't have enough vertices, then we throw an exception, retry again """
+				numVert = len(vertices)
 				if numVert <= 2:
 					print "Failed, hull had only", numVert, "vertices"
 					raise
 				
+				""" success!  Now exit the infinite loop """
 				isDone = True
+
 			except:
 				print "hull has holes!	retrying..."
-				#print sArr		
-		
 		
 
-		" cut out the repeat vertex "
+		""" cut out the repeat vertex """
 		vertices = vertices[:-1]
 		
-		vertices = convertAlphaUniform(vertices)
+		""" make the edges of the hull uniform with maximum length """
+		vertices = makePolygonUniform(vertices)
 
+		""" add in the repeat vertex again """
 		vertices.append(vertices[0])
 		
+
+		""" find the bounding box of the points """
 		minX = 1e100
 		maxX = -1e100
 		minY = 1e100
@@ -6501,7 +6446,7 @@ class MapState:
 				minY = p[1]
 	
 	
-		" SPECIFY SIZE OF GRID AND CONVERSION PARAMETERS "
+		""" SPECIFY SIZE OF GRID AND CONVERSION PARAMETERS from the bounding box """
 		PIXELSIZE = 0.05
 		mapSize = 2*max(max(maxX,math.fabs(minX)),max(maxY,math.fabs(minY))) + 1
 		pixelSize = PIXELSIZE
@@ -6518,17 +6463,16 @@ class MapState:
 			j = indices[1]
 			pX = (i - numPixel/2 - 1)*(pixelSize/2.0) + pixelSize/2.0
 			pY = (j - numPixel/2 - 1)*(pixelSize/2.0) + pixelSize/2.0
-			#point = ((i - numPixel/2 - 1)*(pixelSize/2.0) + pixelSize/2.0, (j - numPixel/2 - 1)*(pixelSize/2.0) + pixelSize/2.0)
 			point = (pX,pY)
 			return point
 	
-		" CONVERT HULL TO GRID COORDINATES "
+		""" CONVERT HULL TO GRID COORDINATES """
 		gridHull = []
 		for i in range(len(vertices)):
 			p = vertices[i]
 			gridHull.append(realToGrid(p))
 
-		" BOUNDING BOX OF GRID HULL "	 
+		""" BOUNDING BOX OF GRID HULL """	 
 		minX = 1e100
 		maxX = -1e100
 		minY = 1e100
@@ -6543,12 +6487,12 @@ class MapState:
 			if p[1] < minY:
 				minY = p[1]
 
-		" COMPUTE MEDIAL AXIS OF HULL "
+		""" COMPUTE MEDIAL AXIS OF HULL, the shoot skeleton """
 		resultImg = Image.new('L', (numPixel,numPixel))
 		resultImg = computeMedialAxis(self.medialCount, numPixel,numPixel, 5, resultImg, len(gridHull[:-2]), gridHull[:-2])
 		self.medialCount += 1
 
-		" EXTRACT POINTS FROM GRID TO LIST "
+		""" EXTRACT POINTS FROM GRID TO LIST """
 		imgA = resultImg.load()    
 		points = []
 		for i in range(1, numPixel-1):
@@ -6556,52 +6500,49 @@ class MapState:
 				if imgA[i,j] == 0:
 					points.append((i,j))
 	
-		" CREATE GRAPH NODES FOR EACH POINT "
+		""" CREATE GRAPH NODES FOR EACH POINT """
 		medialGraph = graph.graph()
 		for p in points:
 			medialGraph.add_node(p, [])
 	
-		" ADD EDGES BETWEEN NEIGHBORS "
-		builtGraph = {}
+		""" ADD EDGES BETWEEN NEIGHBORS """
 		for i in range(2, numPixel-2):
 			for j in range(2, numPixel-2):
 				if imgA[i,j] == 0:
-					builtGraph[(i,j)] = []
 					for k in range(i-1, i+2):
 						for l in range(j-1, j+2):
 							if imgA[k,l] == 0 and not (k == i and l == j):
-								builtGraph[(i,j)].append((k,l))
 								medialGraph.add_edge((i,j), (k,l))
 								
-		" COMPUTE MINIMUM SPANNING TREE "
+		""" COMPUTE MINIMUM SPANNING TREE """
 		mst = medialGraph.minimal_spanning_tree()
 		
-		" INITIALIZE DATA DICTS FOR UNIDIRECTIONAL MST"
+		""" INITIALIZE DATA DICTS FOR UNIDIRECTIONAL MST """
 		uni_mst = {}
 		for k, v in mst.items():
 			uni_mst[k] = []
 
 		
-		" ADD EDGES TO DICT TREE REPRESENTATION "
+		""" ADD EDGES TO DICT TREE REPRESENTATION """
 		for k, v in mst.items():
 			if v != None:
 				uni_mst[k].append(v)
 				uni_mst[v].append(k)
 
-		" LOCATE ALL LEAVES "
+		""" LOCATE ALL LEAVES """
 		leaves = []
 		for k, v in uni_mst.items():
 			if len(v) == 1:
 				leaves.append(k)
 		
-		" DELETE ALL NODES THAT ARE LEAVES, TO REMOVE SINGLE NODE BRANCHES "
+		""" DELETE ALL NODES THAT ARE LEAVES, TO REMOVE SINGLE NODE BRANCHES """
 		for leaf in leaves:
 			medialGraph.del_node(leaf)	  
 			
-		" RECOMPUTE MST "
+		""" RECOMPUTE MST """
 		mst = medialGraph.minimal_spanning_tree()
 
-		" AGAIN, CREATE OUR DATA STRUCTURES AND IDENTIFY LEAVES "
+		""" AGAIN, CREATE OUR DATA STRUCTURES AND IDENTIFY LEAVES """
 		uni_mst = {}
 		isVisited = {}
 		nodeSum = {}
@@ -6615,7 +6556,7 @@ class MapState:
 				uni_mst[k].append(v)
 				uni_mst[v].append(k)
 						
-		" RECORD THE LEAVES AND JUNCTIONS "
+		""" RECORD THE LEAVES AND JUNCTIONS """
 		leaves = []
 		junctions = []
 		for k, v in uni_mst.items():
@@ -6625,17 +6566,13 @@ class MapState:
 			if len(v) > 2:
 				junctions.append(k)
 
-		print "junctionNodeID:", junctionNodeID
+		print "branchNodeID:", branchNodeID
 		print "junctions:", junctions
+		print "leaves:", leaves
 		
-		" SAVE FOR LATER, IDENTIFIED BY THEIR INDEX NOW "
-		numLeafs = len(leaves)
-		allLeafs = []
-		allJunctions = []
-		for leaf in leaves:
-			allLeafs.append(gridToReal(leaf))
 
-		if junctionNodeID != None:
+		allJunctions = []
+		if branchNodeID != None:
 		
 			print "finding theoretical junction:"
 			minKey = None
@@ -6838,7 +6775,7 @@ class MapState:
 						longPaths.append((len(nPath),nPath, juncIndices))
 
 
-		if junctionNodeID != None:
+		if branchNodeID != None:
 			#theoryMedialLongPaths = []
 			theoryPaths = []
 			print "theoryPaths:"
@@ -7324,7 +7261,7 @@ class MapState:
 				pylab.plot(xP,yP)
 
 	
-			if junctionNodeID != None:
+			if branchNodeID != None:
 	
 				for path in self.theoryMedialLongPaths[pathID]:
 					xP = []
@@ -7405,7 +7342,7 @@ class MapState:
 	
 				pylab.plot(xP,yP, color=self.colors[pathID], linewidth=4)
 
-			if junctionNodeID != None:
+			if branchNodeID != None:
 	
 				for path in self.theoryMedialLongPaths[pathID]:
 					xP = []

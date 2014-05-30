@@ -6,7 +6,7 @@ from random import gauss
 from copy import copy
 from math import floor, asin, acos, cos, sin, ceil
 from time import time
-from functions import closestAngle, diffAngle
+from functions import closestAngle, diffAngle, makePosesUniform
 
 from scipy.spatial import cKDTree
 from numpy import array, append
@@ -141,10 +141,10 @@ class SplineFit:
 		print "iterVal:", iterVal, approxSamples, len(samples), samples[-1]
 		#samples = scipy.arange(0.0,1.01,0.01)
 		sample_points = self.getUVecSet(samples)
-		sample_points = self.makePointsUniform(sample_points, max_spacing = spacing, interpAngle = interpAngle)
+		sample_points = self.makePosesUniform(sample_points, max_spacing = spacing, interpAngle = interpAngle)
 		return sample_points
 	
-	def makePointsUniform(self, points, max_spacing = 0.04, interpAngle = False):
+	def makePosesUniform(self, points, max_spacing = 0.04, interpAngle = False):
 		
 		" make the points uniformly distributed "
 		
@@ -189,7 +189,7 @@ class SplineFit:
 
 		samples = scipy.arange(0.0,1.0,0.01)
 		sample_points = self.getUVecSet(samples)
-		points = self.makePointsUniform(sample_points, max_spacing = 0.01)
+		points = self.makePosesUniform(sample_points, max_spacing = 0.01)
 
 		" transform angle to y coordinate, and total distance to the x coordinate "
 
