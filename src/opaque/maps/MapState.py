@@ -11,7 +11,7 @@ from subprocess import Popen, PIPE
 import Image
 from medialaxis import computeMedialAxis
 import graph
-from LocalNode import getLongestPath, computePathSegments
+from LocalNode import getLongestPath
 import gen_icp
 from SplineFit import SplineFit
 import pylab
@@ -25,6 +25,8 @@ import time
 import traceback
 
 import alphamod
+
+from shoots import computeSkeletonFromImage, computePathSegments, extendToHull
 
 pylab.ioff()
 
@@ -2447,7 +2449,7 @@ class MapState:
 		self.hulls = {0 : []}
 
 		""" intermediate data structure for computing the shoot skeleton """
-		self.longPathJunctions = {}
+		self.leaf2LeafPathJunctions = {}
 		self.medialLongPaths = {}
 		self.theoryMedialLongPaths = {}
 
@@ -3338,7 +3340,7 @@ class MapState:
 
 			if pathID != 0:
 
-				junctionDetails = self.longPathJunctions[pathID]
+				junctionDetails = self.leaf2LeafPathJunctions[pathID]
 
 				origJuncPose = copy(self.pathClasses[pathID]["globalJunctionPose"])
 				origJuncPose[2] = 0.0
@@ -3637,7 +3639,7 @@ class MapState:
 
 		newObj.medialLongPaths = deepcopy(self.medialLongPaths)
 		newObj.theoryMedialLongPaths = deepcopy(self.theoryMedialLongPaths) 
-		newObj.longPathJunctions = deepcopy(self.longPathJunctions) 
+		newObj.leaf2LeafPathJunctions = deepcopy(self.leaf2LeafPathJunctions) 
 
 		return newObj
 
@@ -4315,7 +4317,7 @@ class MapState:
 			pathDesc = self.pathClasses[pathID]
 			parentID = pathDesc["parentID"]
 
-			junctionDetails = self.longPathJunctions[pathID]
+			junctionDetails = self.leaf2LeafPathJunctions[pathID]
 			smoothPathSegs = junctionDetails["leafSegments"] + junctionDetails["internalSegments"]
 
 			origGlobJuncPose = copy(self.pathClasses[pathID]["globalJunctionPose"])
@@ -4413,7 +4415,7 @@ class MapState:
 				origJuncPose[2] = 0.0
 				origJuncOrigin = Pose(origJuncPose)
 
-				junctionDetails = self.longPathJunctions[pathID]
+				junctionDetails = self.leaf2LeafPathJunctions[pathID]
 				smoothPathSegs = junctionDetails["leafSegments"] + junctionDetails["internalSegments"]
 
 
@@ -4479,7 +4481,7 @@ class MapState:
 		# curr path
 		# parent path
 		# origJuncPose
-		# junctionDetails = self.longPathJunctions[pathID]
+		# junctionDetails = self.leaf2LeafPathJunctions[pathID]
 		# smoothPathSegs = junctionDetails["leafSegments"] + junctionDetails["internalSegments"]
 		# hypID
 
@@ -4642,7 +4644,7 @@ class MapState:
 			origJuncPose[2] = 0.0
 			origJuncOrigin = Pose(origJuncPose)
 
-			junctionDetails = self.longPathJunctions[pathID]
+			junctionDetails = self.leaf2LeafPathJunctions[pathID]
 			smoothPathSegs = junctionDetails["leafSegments"] + junctionDetails["internalSegments"]
 
 			print "path segs:", len(junctionDetails["leafSegments"]), "+", len(junctionDetails["internalSegments"]), "=", len(smoothPathSegs)
@@ -6296,7 +6298,7 @@ class MapState:
  		""" delete the previous computed shoot skeleton """
 		self.theoryMedialLongPaths[pathID] = []
 		self.medialLongPaths[pathID] = []
-		self.longPathJunctions[pathID] = {}
+		self.leaf2LeafPathJunctions[pathID] = {}
 
 
 		""" get the junction point of this shoot if it is not the root """
@@ -6313,14 +6315,14 @@ class MapState:
 			return [], []
 
 
-
-		
 		""" collect the local hulls of each the spatial images attached to this shoot """
 		medialPointSoup = []
 		for nodeID in nodes:
 
 			""" global GPAC pose and alpha hull of the local spatial image """
 			estPose1 = self.getNodePose(nodeID)
+			#return copy(self.nodePoses[nodeID])
+			estPose1 = copy(self.nodePoses[nodeID])
 			hull1 = self.poseData.aHulls[nodeID]
 	
 			""" print out a hash value for this unique hull for debugging """
@@ -6344,242 +6346,23 @@ class MapState:
 				
 				medialPointSoup.append(p1)
 
-
-		""" radius constant for alpha shape algorithm """
-		ALPHA_RADIUS = 0.2
-
-
-		""" attempt to compute the alpha hull multiple times until it is successful """
-		isDone = False
-		while not isDone:
-	
-			""" add a little bit of noise to each of the points to avoid degenerate
-				conditions in CGAL.  Catch the exception in case of a math domain error """
-			perturbPoints = []
-			for p in medialPointSoup:
-				p2 = copy(p)
-				
-				isReturned = False
-				while not isReturned:
-					try:
-						p2[0] += random.gauss(0.0,0.000001)
-					except:
-						pass
-					else:
-						isReturned = True
-
-				isReturned = False
-				while not isReturned:
-					try:
-						p2[1] += random.gauss(0.0,0.000001)
-					except:
-						pass
-					else:
-						isReturned = True
-						
-	
-				perturbPoints.append(p2)
-		
-			try:			
-		
-				""" the data to be input in text form """
-				saveFile = ""	 
-				saveFile += "ALPHA_RADIUS = " + repr(ALPHA_RADIUS) + "\n"
-				saveFile += "perturbPoints = " + repr(perturbPoints) + "\n"
-
-				""" save the input data for debug purposes in case we crash """
-				isWritten = False
-				while not isWritten:
-					try:
-						f = open("doAlphaInput_%08u.txt" % (self.alphaPlotCount), 'w')
-						f.write(saveFile)
-						f.close()
-					except:
-						pass
-					else:
-						isWritten = True
-	
-				""" call CGAL alpha shape 2D function with noise-added points """
-				vertices = alphamod.doAlpha(ALPHA_RADIUS,perturbPoints)
-
-				""" delete the temporary file since we were successful """
-				os.remove("doAlphaInput_%08u.txt" % (self.alphaPlotCount))
-				self.alphaPlotCount += 1
-				
-				
-				""" if the hull doesn't have enough vertices, then we throw an exception, retry again """
-				numVert = len(vertices)
-				if numVert <= 2:
-					print "Failed, hull had only", numVert, "vertices"
-					raise
-				
-				""" success!  Now exit the infinite loop """
-				isDone = True
-
-			except:
-				print "hull has holes!	retrying..."
-		
-
-		""" cut out the repeat vertex """
-		vertices = vertices[:-1]
-		
-		""" make the edges of the hull uniform with maximum length """
-		vertices = makePolygonUniform(vertices)
-
-		""" add in the repeat vertex again """
-		vertices.append(vertices[0])
-		
-
-		""" find the bounding box of the points """
-		minX = 1e100
-		maxX = -1e100
-		minY = 1e100
-		maxY = -1e100
-		for p in vertices:
-			if p[0] > maxX:
-				maxX = p[0]
-			if p[0] < minX:
-				minX = p[0]
-			if p[1] > maxY:
-				maxY = p[1]
-			if p[1] < minY:
-				minY = p[1]
-	
-	
-		""" SPECIFY SIZE OF GRID AND CONVERSION PARAMETERS from the bounding box """
-		PIXELSIZE = 0.05
-		mapSize = 2*max(max(maxX,math.fabs(minX)),max(maxY,math.fabs(minY))) + 1
-		pixelSize = PIXELSIZE
-		numPixel = int(2.0*mapSize / pixelSize + 1.0)
-		divPix = math.floor((2.0*mapSize/pixelSize)/mapSize)
-		
-		def realToGrid(point):
-			indexX = int(math.floor(point[0]*divPix)) + numPixel/2 + 1
-			indexY = int(math.floor(point[1]*divPix)) + numPixel/2 + 1
-			return indexX, indexY
-	
-		def gridToReal(indices):
-			i = indices[0]
-			j = indices[1]
-			pX = (i - numPixel/2 - 1)*(pixelSize/2.0) + pixelSize/2.0
-			pY = (j - numPixel/2 - 1)*(pixelSize/2.0) + pixelSize/2.0
-			point = (pX,pY)
-			return point
-	
-		""" CONVERT HULL TO GRID COORDINATES """
-		gridHull = []
-		for i in range(len(vertices)):
-			p = vertices[i]
-			gridHull.append(realToGrid(p))
-
-		""" BOUNDING BOX OF GRID HULL """	 
-		minX = 1e100
-		maxX = -1e100
-		minY = 1e100
-		maxY = -1e100
-		for p in gridHull:
-			if p[0] > maxX:
-				maxX = p[0]
-			if p[0] < minX:
-				minX = p[0]
-			if p[1] > maxY:
-				maxY = p[1]
-			if p[1] < minY:
-				minY = p[1]
-
-		""" COMPUTE MEDIAL AXIS OF HULL, the shoot skeleton """
-		resultImg = Image.new('L', (numPixel,numPixel))
-		resultImg = computeMedialAxis(self.medialCount, numPixel,numPixel, 5, resultImg, len(gridHull[:-2]), gridHull[:-2])
-		self.medialCount += 1
-
-		""" EXTRACT POINTS FROM GRID TO LIST """
-		imgA = resultImg.load()    
-		points = []
-		for i in range(1, numPixel-1):
-			for j in range(1, numPixel-1):
-				if imgA[i,j] == 0:
-					points.append((i,j))
-	
-		""" CREATE GRAPH NODES FOR EACH POINT """
-		medialGraph = graph.graph()
-		for p in points:
-			medialGraph.add_node(p, [])
-	
-		""" ADD EDGES BETWEEN NEIGHBORS """
-		for i in range(2, numPixel-2):
-			for j in range(2, numPixel-2):
-				if imgA[i,j] == 0:
-					for k in range(i-1, i+2):
-						for l in range(j-1, j+2):
-							if imgA[k,l] == 0 and not (k == i and l == j):
-								medialGraph.add_edge((i,j), (k,l))
-								
-		""" COMPUTE MINIMUM SPANNING TREE """
-		mst = medialGraph.minimal_spanning_tree()
-		
-		""" INITIALIZE DATA DICTS FOR UNIDIRECTIONAL MST """
-		uni_mst = {}
-		for k, v in mst.items():
-			uni_mst[k] = []
-
-		
-		""" ADD EDGES TO DICT TREE REPRESENTATION """
-		for k, v in mst.items():
-			if v != None:
-				uni_mst[k].append(v)
-				uni_mst[v].append(k)
-
-		""" LOCATE ALL LEAVES """
-		leaves = []
-		for k, v in uni_mst.items():
-			if len(v) == 1:
-				leaves.append(k)
-		
-		""" DELETE ALL NODES THAT ARE LEAVES, TO REMOVE SINGLE NODE BRANCHES """
-		for leaf in leaves:
-			medialGraph.del_node(leaf)	  
-			
-		""" RECOMPUTE MST """
-		mst = medialGraph.minimal_spanning_tree()
-
-		""" AGAIN, CREATE OUR DATA STRUCTURES AND IDENTIFY LEAVES """
-		uni_mst = {}
-		isVisited = {}
-		nodeSum = {}
-		for k, v in mst.items():
-			uni_mst[k] = []
-			isVisited[k] = 0
-			nodeSum[k] = 0
-		
-		for k, v in mst.items():
-			if v != None:
-				uni_mst[k].append(v)
-				uni_mst[v].append(k)
-						
-		""" RECORD THE LEAVES AND JUNCTIONS """
-		leaves = []
-		junctions = []
-		for k, v in uni_mst.items():
-			if len(v) == 1:
-				leaves.append(k)
-
-			if len(v) > 2:
-				junctions.append(k)
-
-		print "branchNodeID:", branchNodeID
-		print "junctions:", junctions
-		print "leaves:", leaves
-		
+		""" compute the alpha shape and then the medial axis skeleton from the result """
+		vertices, junctions, leaves, uni_mst, gridHash = computeSkeletonFromImage(medialPointSoup)
 
 		allJunctions = []
 		if branchNodeID != None:
+
+			""" If this is a branching shoot, then we want to find the point on the skeleton
+				that is closest to the originally located junction point.
+				This is so that we can add an edge that roughly corresponds to point 
+				and orientation if one does not already exist """
 		
-			print "finding theoretical junction:"
+			""" go through all grid points in the unidirectional MST and find the closest point in real coordinates """
 			minKey = None
 			minCand = None
 			minJuncDist = 1e100
 			for k, v in uni_mst.items():
-				gCand = gridToReal(k)
+				gCand = gridHash[k]
 				juncDist = sqrt((globalJunctionPoint[0]-gCand[0])**2 + (globalJunctionPoint[1]-gCand[1])**2)
 				
 				if juncDist < minJuncDist:
@@ -6587,11 +6370,18 @@ class MapState:
 					minJuncDist = juncDist
 					minCand = gCand
 		
+			""" compute the direction vector based on globalJunctionPoint angle """
 			theoryVec = [cos(globalJunctionPoint[2]), sin(globalJunctionPoint[2])]
 
+			""" junction description:
+				0: grid coordinates
+				1: real coordinates
+				2: closest distance
+				3: direction vector """
 			theoryJunc = (minKey, minCand, minJuncDist, theoryVec)
 			print "theoryJunc:", theoryJunc
 			
+			""" create a series of edges that extends off of closest point mimicking the theoretical branch """
 			theoryJuncPoint = theoryJunc[1]
 			theoryLeaf = []
 			leafMag = 0.02
@@ -6604,22 +6394,26 @@ class MapState:
 			print "theoryLeaf:", theoryLeaf
 			
 
-			"""
-			If there is a node of degree > 2, use these nodes as the junction points.
-			If there is no nodes of degree > 2, find the closest node to the theoretical junction point and use this as the junction index 
-			"""
+			"""  Find the junctions and add them to allJunctions:
 
-
+				If there is a node of degree > 2, use these nodes as the junction points.
+				If there is no nodes of degree > 2, find the closest node to the theoretical junction point and use this as the junction index 
+			"""
 			if len(junctions) > 0:
 				
 				for junc in junctions:
-					gJunc = gridToReal(junc)
+					gJunc = gridHash[junc]
 					juncDist = sqrt((globalJunctionPoint[0]-gJunc[0])**2 + (globalJunctionPoint[1]-gJunc[1])**2)
-					allJunctions.append((junc, gJunc,juncDist))
+
+					""" 0: grid coordinates
+						1: real coordinates
+						2: distance from point to real junction
+						3: branch direction (None) """
+					allJunctions.append((junc, gJunc, juncDist, None))
 
 			else:
 				
-				print "adding theoretical junction:", (minKey, minCand, minJuncDist)
+				print "adding theoretical junction:", theoryJunc
 				allJunctions.append(theoryJunc)						  
 		
 		print "allJunctions:", allJunctions
@@ -6643,14 +6437,11 @@ class MapState:
 			" SAVE THE RESULTING PATH DATA STRUCTURE "
 			nodePaths[leaf] = nodePath
 
-		#leafSegments = []
-		#internalSegments = []
-		#isVisited = {}
-		#nodeSum = {}
-		#nodePath = {}
-		leafSegments, internalSegments = computePathSegments(junctions, leaves, uni_mst)
+		""" get the shoot skeleton as sets of order points representing curve segments
+			with junctions and leaves as terminals """
+		smoothLeafSegments, smoothInternalSegments = computePathSegments(junctions, leaves, uni_mst, gridHash, vertices)
 
-		print "computePathSegments:", len(leafSegments), len(internalSegments), "paths from", len(junctions), "junctions and", len(leaves), "leaves", [len(pMem) for pMem in leafSegments], [len(pMem) for pMem in internalSegments]
+		print "computePathSegments:", len(smoothLeafSegments), len(smoothInternalSegments), "paths from", len(junctions), "junctions and", len(leaves), "leaves", [len(pMem) for pMem in smoothLeafSegments], [len(pMem) for pMem in smoothInternalSegments]
 
 
 		"""
@@ -6661,108 +6452,20 @@ class MapState:
 		5) convert to oriented points
 		6) return set of points based on return condition
 		"""
-
-		realLeafSegments = []
-		realInternalSegments = []
-		for seg in leafSegments:
-			newSeg = []
-			for p in seg:
-				newSeg.append(gridToReal(p))
-
-			realLeafSegments.append(newSeg)
-
-		for seg in internalSegments:
-			newSeg = []
-			for p in seg:
-				newSeg.append(gridToReal(p))
-			realInternalSegments.append(newSeg)
-
-		longLeafSegments = []
-		for seg in realLeafSegments:
-
-			backVec = [0.,0.]
-			indic = range(3)
-			indic.reverse()
-			
-			for i in indic:
-				if i+2 < len(seg):
-					p1 = seg[-i-3]
-					p2 = seg[-i-1]
-					vec = [p2[0]-p1[0], p2[1]-p1[1]]
-					backVec[0] += vec[0]
-					backVec[1] += vec[1]
-		
-			backMag = math.sqrt(backVec[0]*backVec[0] + backVec[1]*backVec[1])
-		
-			backVec[0] /= backMag
-			backVec[1] /= backMag
-		
-			newP2 = (seg[-1][0] + backVec[0]*10, seg[-1][1] + backVec[1]*10)
-		
-			realSeg = deepcopy(seg)
-
-			realSeg.append(newP2)
-			
-	
-			" take the long length segments at tips of medial axis"
-			edge2 = realSeg[-2:]
-			
-			backVec = [edge2[1][0]-edge2[0][0], edge2[1][1]-edge2[0][1]]
-			backMag = math.sqrt(backVec[0]*backVec[0] + backVec[1]*backVec[1])
-			
-			backVec[0] /= backMag
-			backVec[1] /= backMag
-			
-			" make a smaller version of these edges "
-			newP2 = (edge2[0][0] + backVec[0]*2, edge2[0][1] + backVec[1]*2)
-	
-			edge2 = [edge2[0], newP2]
-
-			" find the intersection points with the hull "
-			hull = vertices
-			interPoints = []
-			for k in range(len(hull)-1):
-				hullEdge = [hull[k],hull[k+1]]
-				isIntersect2, point2 = Intersect(edge2, hullEdge)
-				if isIntersect2:
-					interPoints.append(point2)
-					break
-			
-			" replace the extended edges with a termination point at the hull edge "			
-			realSeg = realSeg[:-2]
-			
-			if isIntersect2:
-				realSeg.append(point2)
-	
-			longLeafSegments.append(realSeg)
-
-
-		smoothLeafSegments = []
-		smoothInternalSegments = []
-
-		for seg in longLeafSegments:
-			leafSpline = SplineFit(seg, smooth=0.1)
-			leafPoints = leafSpline.getUniformSamples()
-			smoothLeafSegments.append(leafPoints)
-
-		for seg in realInternalSegments:
-			internalSpline = SplineFit(seg, smooth=0.1)
-			internalPoints = internalSpline.getUniformSamples()
-			smoothInternalSegments.append(internalPoints)
-
-
 		
 
-		" FOR EVERY PAIR OF LEAVES, SAVE ITS PATH IF ITS LONG ENOUGH "
-		" should have X choose 2 combinations"
-		longPaths = []
-		
+		""" FOR EVERY PAIR OF LEAVES, SAVE ITS PATH IF ITS LONG ENOUGH """
+		leafToLeafPathTuples = []
 		MAX_LEN = 2
+
 		for leaf1 in leaves:
 			for leaf2 in leaves:
 				if leaf1 < leaf2:
+					""" make sure selected route is greater than 2 points """
 					if len(nodePaths[leaf1][leaf2]) > MAX_LEN:
 						nPath = deepcopy(nodePaths[leaf1][leaf2])
+
+						""" find which junctions are on this path, if any """
 						juncIndices = []
 						for junc in allJunctions:
 							try:
@@ -6772,11 +6475,14 @@ class MapState:
 							else:
 								juncIndices.append(index)
 								
-						longPaths.append((len(nPath),nPath, juncIndices))
+						""" save the path length, the path, and the junction indexes """
+						leafToLeafPathTuples.append((len(nPath),nPath, juncIndices))
 
 
 		if branchNodeID != None:
-			#theoryMedialLongPaths = []
+
+
+			""" every path from a leaf to the theoretical junction point """ 
 			theoryPaths = []
 			print "theoryPaths:"
 			for leaf1 in leaves:
@@ -6784,13 +6490,15 @@ class MapState:
 				theoryPaths.append((len(nPath), nPath))
 				print leaf1, theoryJunc, len(nPath)
 	
+			""" sort by longest path first """
 			theoryPaths.sort(reverse=True)
 	
+			""" extend these theoretical leaves to the boundary of the hull """
 			for k in range(len(theoryPaths)):
 				path = theoryPaths[k][1]
 				realPath = []
 				for p in path:
-					realPath.append(gridToReal(p))
+					realPath.append(gridHash[p])
 				#realPath.reverse()
 				
 				
@@ -6803,266 +6511,78 @@ class MapState:
 				
 				leafPath = deepcopy(theoryPath)
 				
-				frontVec = [0.,0.]
-				backVec = [0.,0.]
-				indic = range(3)
-				indic.reverse()
-				
-				for i in indic:
-					if i+2 < len(leafPath):
-						p1 = leafPath[i+2]
-						p2 = leafPath[i]
-						vec = [p2[0]-p1[0], p2[1]-p1[1]]
-						frontVec[0] += vec[0]
-						frontVec[1] += vec[1]
-			
-						p1 = leafPath[-i-3]
-						p2 = leafPath[-i-1]
-						vec = [p2[0]-p1[0], p2[1]-p1[1]]
-						backVec[0] += vec[0]
-						backVec[1] += vec[1]
-			
-				frontMag = math.sqrt(frontVec[0]*frontVec[0] + frontVec[1]*frontVec[1])
-				backMag = math.sqrt(backVec[0]*backVec[0] + backVec[1]*backVec[1])
-			
-				frontVec[0] /= frontMag
-				frontVec[1] /= frontMag
-				backVec[0] /= backMag
-				backVec[1] /= backMag
-			
-				newP1 = (leafPath[0][0] + frontVec[0]*10, leafPath[0][1] + frontVec[1]*10)
-				newP2 = (leafPath[-1][0] + backVec[0]*10, leafPath[-1][1] + backVec[1]*10)
-			
-				leafPath.insert(0,newP1)
-				leafPath.append(newP2)
-				
-				medial2 = deepcopy(leafPath)
+				resultPath = extendToHull(theoryPath, vertices)
+				self.theoryMedialLongPaths[pathID].append(resultPath)
+
+
+
+		""" SORT FROM THE LONGEST TO SHORTEST """
+		leafToLeafPathTuples.sort(reverse=True)
 		
-				" take the long length segments at tips of medial axis"
-				edge1 = medial2[0:2]
-				edge2 = medial2[-2:]
-				
-				frontVec = [edge1[0][0]-edge1[1][0], edge1[0][1]-edge1[1][1]]
-				backVec = [edge2[1][0]-edge2[0][0], edge2[1][1]-edge2[0][1]]
-				frontMag = math.sqrt(frontVec[0]*frontVec[0] + frontVec[1]*frontVec[1])
-				backMag = math.sqrt(backVec[0]*backVec[0] + backVec[1]*backVec[1])
-				
-				frontVec[0] /= frontMag
-				frontVec[1] /= frontMag
-				backVec[0] /= backMag
-				backVec[1] /= backMag
-				
-				" make a smaller version of these edges "
-				newP1 = (edge1[1][0] + frontVec[0]*2, edge1[1][1] + frontVec[1]*2)
-				newP2 = (edge2[0][0] + backVec[0]*2, edge2[0][1] + backVec[1]*2)
-		
-				edge1 = [newP1, edge1[1]]
-				edge2 = [edge2[0], newP2]
-
-				" find the intersection points with the hull "
-				hull = vertices
-				interPoints = []
-				for k in range(len(hull)-1):
-					hullEdge = [hull[k],hull[k+1]]
-					isIntersect1, point1 = Intersect(edge1, hullEdge)
-					if isIntersect1:
-						interPoints.append(point1)
-						break
-		
-				for k in range(len(hull)-1):
-					hullEdge = [hull[k],hull[k+1]]
-					isIntersect2, point2 = Intersect(edge2, hullEdge)
-					if isIntersect2:
-						interPoints.append(point2)
-						break
-				
-				" replace the extended edges with a termination point at the hull edge "			
-				medial2 = medial2[1:-1]
-				
-				if isIntersect1:
-					medial2.insert(0, point1)
-				if isIntersect2:
-					medial2.append(point2)
-	
-				self.theoryMedialLongPaths[pathID].append(deepcopy(medial2))
-
-
-
-
-
-
-
-
-		print "longPaths:"
-		for longPath in longPaths:
-			print longPath[2]
-		
-		" SORT FOR THE LONGEST TO SHORTEST "
-		longPaths.sort(reverse=True)
-		
-		" REMOVE SIZE FROM TUPLE  "
+		""" Separate the tuple information into individual lists """
 		juncGrids = []
-		juncIndices = []
-		longPathLengths = []
-		for k in range(len(longPaths)):
-			juncIndices.append(longPaths[k][2])
-
-			juncInds = longPaths[k][2]
-			jGrids = []
-			for index in juncInds:
-				if index != None:
-					jGrids.append(longPaths[k][1][index])
-			juncGrids.append(jGrids)
-
-			longPathLengths.append(longPaths[k][0])
-			longPaths[k] = longPaths[k][1]
-		
-		print "juncIndices:", juncIndices
-		
-		" GET THE LEAF INDEXES TO EACH PATH "
-		leafPairs = []
-		for path in longPaths:
-			leaf1 = path[0]
-			leaf2 = path[-1]	
-			
-			leafID1 = leaves.index(leaf1)
-			leafID2 = leaves.index(leaf2)
-
-			leafPairs.append((leafID1,leafID2))
-		
-		print "leafPairs:", leafPairs
-
 		juncReals = []
-		for k in range(len(longPaths)):
-			path = longPaths[k]
+		juncIndices = []
+		leaf2LeafPathLengths = []
+		leafToLeafPaths = []
+		for k in range(len(leafToLeafPathTuples)):
+
+			juncInds = leafToLeafPathTuples[k][2]
+
+			""" separate list of junc indices for each leaf2leaf path """
+			juncIndices.append(juncInds)
+
+
+			""" only the list of paths itself in real coordinates """
+			path = leafToLeafPathTuples[k][1]
 			realPath = []
 			for p in path:
-				realPath.append(gridToReal(p))
-			
-			longPaths[k] = realPath
-			#juncReals.append(longPaths[k][juncIndices[k]])
+				realPath.append(gridHash[p])
+			leafToLeafPaths.append(realPath)
 
-			juncInds = juncIndices[k]
+
+			""" only the grid and real values of each junction point """
+			jGrids = []
 			jReals = []
 			for index in juncInds:
 				if index != None:
-					jReals.append(copy(longPaths[k][index]))
+					jGrids.append(copy(leafToLeafPathTuples[k][1][index]))
+					jReals.append(copy(leafToLeafPaths[k][index]))
+			juncGrids.append(jGrids)
 			juncReals.append(jReals)
-					
 
-		#self.medialLongPaths = []
+			""" only the list of path lengths """
+			leaf2LeafPathLengths.append(leafToLeafPathTuples[k][0])
+
+			#leafToLeafPaths.append(leafToLeafPathTuples[k][1])
+		
+		print "juncIndices:", juncIndices
+		
+
+		""" extend these leaf2leaf paths to the boundary of the hull """
 		juncAngSet = []
-
-		print len(longPaths), "long paths"
-		for n in range(len(longPaths)):
+		juncLongIndices = []
+		print len(leafToLeafPaths), "long paths"
+		for leafIndex in range(len(leafToLeafPaths)):
 			
-			longPath = longPaths[n]
-			print "longPath:", len(longPath)
-			print longPath
+			leaf2LeafPath = leafToLeafPaths[leafIndex]
+			print "leaf2LeafPath:", len(leaf2LeafPath)
+			print leaf2LeafPath
 			
-			leafPath = deepcopy(longPath)
-			
-			frontVec = [0.,0.]
-			backVec = [0.,0.]
-			indic = range(3)
-			indic.reverse()
-			
-			for i in indic:
-				if i+2 < len(leafPath):
-					p1 = leafPath[i+2]
-					p2 = leafPath[i]
-					vec = [p2[0]-p1[0], p2[1]-p1[1]]
-					frontVec[0] += vec[0]
-					frontVec[1] += vec[1]
-		
-					p1 = leafPath[-i-3]
-					p2 = leafPath[-i-1]
-					vec = [p2[0]-p1[0], p2[1]-p1[1]]
-					backVec[0] += vec[0]
-					backVec[1] += vec[1]
-		
-			frontMag = math.sqrt(frontVec[0]*frontVec[0] + frontVec[1]*frontVec[1])
-			backMag = math.sqrt(backVec[0]*backVec[0] + backVec[1]*backVec[1])
-		
-			frontVec[0] /= frontMag
-			frontVec[1] /= frontMag
-			backVec[0] /= backMag
-			backVec[1] /= backMag
-		
-			newP1 = (leafPath[0][0] + frontVec[0]*10, leafPath[0][1] + frontVec[1]*10)
-			newP2 = (leafPath[-1][0] + backVec[0]*10, leafPath[-1][1] + backVec[1]*10)
-		
-			leafPath.insert(0,newP1)
-			leafPath.append(newP2)
-			print "leafPath:", leafPath
-			
-			medial2 = deepcopy(leafPath)
-	
-			" take the long length segments at tips of medial axis"
-			edge1 = medial2[0:2]
-			edge2 = medial2[-2:]
-			print "edge1, edge2 =", edge1, edge2
-			
-			frontVec = [edge1[0][0]-edge1[1][0], edge1[0][1]-edge1[1][1]]
-			backVec = [edge2[1][0]-edge2[0][0], edge2[1][1]-edge2[0][1]]
-			frontMag = math.sqrt(frontVec[0]*frontVec[0] + frontVec[1]*frontVec[1])
-			backMag = math.sqrt(backVec[0]*backVec[0] + backVec[1]*backVec[1])
-			
-			frontVec[0] /= frontMag
-			frontVec[1] /= frontMag
-			backVec[0] /= backMag
-			backVec[1] /= backMag
-			
-			" make a smaller version of these edges "
-			newP1 = (edge1[1][0] + frontVec[0]*2, edge1[1][1] + frontVec[1]*2)
-			newP2 = (edge2[0][0] + backVec[0]*2, edge2[0][1] + backVec[1]*2)
-	
-			edge1 = [newP1, edge1[1]]
-			edge2 = [edge2[0], newP2]
-
-			print "edge1, edge2 =", edge1, edge2
-
-			" find the intersection points with the hull "
-			hull = vertices
-			interPoints = []
-			for k in range(len(hull)-1):
-				hullEdge = [hull[k],hull[k+1]]
-				isIntersect1, point1 = Intersect(edge1, hullEdge)
-				if isIntersect1:
-					interPoints.append(point1)
-					break
-	
-			for k in range(len(hull)-1):
-				hullEdge = [hull[k],hull[k+1]]
-				isIntersect2, point2 = Intersect(edge2, hullEdge)
-				if isIntersect2:
-					interPoints.append(point2)
-					break
-			
-			print isIntersect1, isIntersect2, interPoints
-			" replace the extended edges with a termination point at the hull edge "			
-			medial2 = medial2[1:-1]
-
-			
-			if isIntersect1:
-				medial2.insert(0, point1)
-			if isIntersect2:
-				medial2.append(point2)
-
-			print "medial2:", medial2
-
-			self.medialLongPaths[pathID].append(deepcopy(medial2))
+			leafPath = extendToHull(leaf2LeafPath, vertices)
+			self.medialLongPaths[pathID].append(leafPath)
 
 			print "globalJunctionPoint:", globalJunctionPoint
-			print "juncIndices:", juncIndices[n]
+			print "juncIndices:", juncIndices[leafIndex]
 
 			
-			jReals = juncReals[n]
-			mLongPath = self.medialLongPaths[pathID][n]
+			""" recompute the junction indices based on the concatenated edges """
+			jReals = juncReals[leafIndex]
+			mLongPath = self.medialLongPaths[pathID][leafIndex]
 			jIndices = []
 
+			""" junction indices in real path """
 			for jPoint in jReals:
-
 				try:
 					index = mLongPath.index(jPoint)
 				except:
@@ -7072,7 +6592,9 @@ class MapState:
 					
 			print "jIndices:", jIndices
 
+			juncLongIndices.append(jIndices)
 
+			""" compute difference of junction index point angle with declared junction angle """
 			juncAngs = []
 			if globalJunctionPoint != None:
 				for juncInd in jIndices:
@@ -7144,67 +6666,24 @@ class MapState:
 
 
 		
+		""" distance of points to declared junction """
 		juncDists = []
 		for junc in allJunctions:
 			juncDists.append(junc[2])
 
-		juncLongIndices = []
-		for k in range(len(self.medialLongPaths[pathID])):
-			
-			jReals = juncReals[k]
-			mLongPath = self.medialLongPaths[pathID][k]
-
-			jIndices = []
-
-			for jPoint in jReals:
-				try:
-					index = mLongPath.index(jPoint)
-				except:
-					print "index failure!"
-					print "jPoint:", jPoint
-					print "jReals:", jReals
-					print "mLongPath:", mLongPath
-					print "juncReals:", juncReals
-					print "juncAngSet:", juncAngSet
-					print "allJunctions:", allJunctions
-					print "juncIndices:", juncIndices
-					print "juncDists:", juncDists
-					raise
-				else:
-					jIndices.append(index)
-
-				"""
-				try:
-				except:
-					jIndices.append(None)
-				else:
-				"""
-					
-			juncLongIndices.append(jIndices)
-
-		juncMedialReals = []
-		for k in range(len(self.medialLongPaths[pathID])):
-			juncInds = juncLongIndices[k]
-			jMedialReals = []
-			for index in juncInds:
-				jMedialReals.append(copy(self.medialLongPaths[pathID][k][index]))
-			juncMedialReals.append(jMedialReals)
-
-		self.longPathJunctions[pathID]["juncIndices"] = juncIndices
-		self.longPathJunctions[pathID]["juncAngSet"] = juncAngSet
-		self.longPathJunctions[pathID]["juncDists"] = juncDists
-		self.longPathJunctions[pathID]["longPathLengths"] = longPathLengths
-		self.longPathJunctions[pathID]["juncMedialReals"] = juncMedialReals
-		self.longPathJunctions[pathID]["juncReals"] = juncReals
-		self.longPathJunctions[pathID]["juncGrids"] = juncGrids
+		""" record all the data into data structure for leaf-to-leaf paths """
+		self.leaf2LeafPathJunctions[pathID]["juncIndices"] = juncIndices
+		self.leaf2LeafPathJunctions[pathID]["juncAngSet"] = juncAngSet
+		self.leaf2LeafPathJunctions[pathID]["juncDists"] = juncDists
+		self.leaf2LeafPathJunctions[pathID]["leaf2LeafPathLengths"] = leaf2LeafPathLengths
+		self.leaf2LeafPathJunctions[pathID]["juncReals"] = juncReals
+		self.leaf2LeafPathJunctions[pathID]["juncGrids"] = juncGrids
+		self.leaf2LeafPathJunctions[pathID]["juncLongIndices"] = juncLongIndices
+		self.leaf2LeafPathJunctions[pathID]["leafSegments"] = smoothLeafSegments
+		self.leaf2LeafPathJunctions[pathID]["internalSegments"] = smoothInternalSegments
 
 
-		self.longPathJunctions[pathID]["juncLongIndices"] = juncLongIndices
-
-		self.longPathJunctions[pathID]["leafSegments"] = smoothLeafSegments
-		self.longPathJunctions[pathID]["internalSegments"] = smoothInternalSegments
-
-
+		""" get the neighbor points along the path at the junction so we can describe the occupancy state """
 		juncPoints = []
 		juncArmPoints = []
 		juncDesc = {}
@@ -7237,15 +6716,16 @@ class MapState:
 			juncPoints.append(juncPnts)
 			juncArmPoints.append(juncArmPnts)
 
+		""" remove duplicates """
 		for k, v in juncDesc.iteritems():
 			v1 = set(v)
 			juncDesc[k] = list(v1)
 
 					
-
-		self.longPathJunctions[pathID]["juncPoints"] = juncPoints
-		self.longPathJunctions[pathID]["juncArmPoints"] = juncArmPoints
-		self.longPathJunctions[pathID]["juncDesc"] = juncDesc
+		""" update to data structure """
+		self.leaf2LeafPathJunctions[pathID]["juncPoints"] = juncPoints
+		self.leaf2LeafPathJunctions[pathID]["juncArmPoints"] = juncArmPoints
+		self.leaf2LeafPathJunctions[pathID]["juncDesc"] = juncDesc
 
 		
 		if True:
@@ -7285,7 +6765,7 @@ class MapState:
 			pylab.plot(xP,yP, color='r')
 			
 			sizes = []
-			for path in longPaths:
+			for path in leafToLeafPaths:
 				sizes.append(len(path))
 			
 			bufStr1 = ""
@@ -7416,6 +6896,8 @@ class MapState:
 		print "juncAngSet:", juncAngSet
 
 		
+		""" Select the leaf-to-leaf path that will be our defacto shoot """
+
 		" searches for the branch from the parent junction "
 		" selects splice of topology that has aligning junction "
 		" does not select for distance or best medial axis representation of path "
@@ -7423,8 +6905,8 @@ class MapState:
 
 		" sort by longest first "
 		pathCands = []
-		for k in range(len(longPaths)):
-			pathCands.append((len(longPaths[k]), k))
+		for k in range(len(leafToLeafPaths)):
+			pathCands.append((len(leafToLeafPaths[k]), k))
 
 		pathCands.sort(reverse=True)
 		
@@ -7478,15 +6960,15 @@ class MapState:
 				if fabs(minDiff) < 1.047:
 
 					print "returning bestFit:", bestFit, minDiff
-					self.longPathJunctions[pathID]["bestFit"] = bestFit
-					self.longPathJunctions[pathID]["branchArm"] = branchArm
+					self.leaf2LeafPathJunctions[pathID]["bestFit"] = bestFit
+					self.leaf2LeafPathJunctions[pathID]["branchArm"] = branchArm
 					return self.medialLongPaths[pathID][bestFit], vertices
 
 				else:
 					" FIXME:  return theory junction information if this is selected "
 					print "returning bestFit theory:", theoryJunc
-					self.longPathJunctions[pathID]["bestFit"] = 0
-					self.longPathJunctions[pathID]["branchArm"] = branchArm
+					self.leaf2LeafPathJunctions[pathID]["bestFit"] = 0
+					self.leaf2LeafPathJunctions[pathID]["branchArm"] = branchArm
 					return self.theoryMedialLongPaths[pathID][0], vertices
 			
 			else:
@@ -7496,17 +6978,17 @@ class MapState:
 
 		maxIndex = 0
 		maxLen = 0
-		for k in range(len(longPathLengths)):
-			if longPathLengths[k] > maxLen:
+		for k in range(len(leaf2LeafPathLengths)):
+			if leaf2LeafPathLengths[k] > maxLen:
 				maxIndex = k
-				maxLen = longPathLengths[k]
+				maxLen = leaf2LeafPathLengths[k]
 
-		self.longPathJunctions[pathID]["bestFit"] = maxIndex
+		self.leaf2LeafPathJunctions[pathID]["bestFit"] = maxIndex
 
 
 		" FIXME: change from selecting any old junction point since "
 		#jIndex = juncLongIndices[maxIndex][0]
-		self.longPathJunctions[pathID]["branchArm"] = self.medialLongPaths[pathID][maxIndex][1]
+		self.leaf2LeafPathJunctions[pathID]["branchArm"] = self.medialLongPaths[pathID][maxIndex][1]
 
 		return self.medialLongPaths[pathID][maxIndex], vertices
 
