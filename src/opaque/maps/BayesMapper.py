@@ -1360,7 +1360,8 @@ class BayesMapper:
 			ax3.plot(xP,yP, color=self.colors[k], linewidth=4)
 			"""
 
-			for path in mapHyp.medialLongPaths[k]:
+			#for path in mapHyp.medialLongPaths[k]:
+			for path in mapHyp.leaf2LeafPathJunctions[k]["longPaths"]:
 				xP = []
 				yP = []
 				for p in path:

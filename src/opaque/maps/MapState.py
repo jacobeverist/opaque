@@ -26,7 +26,7 @@ import traceback
 
 import alphamod
 
-from shoots import computeSkeletonFromImage, computePathSegments, extendToHull, computeShootSkeleton
+from shoots import computeShootSkeleton
 
 pylab.ioff()
 
@@ -2450,8 +2450,6 @@ class MapState:
 
 		""" intermediate data structure for computing the shoot skeleton """
 		self.leaf2LeafPathJunctions = {}
-		self.medialLongPaths = {}
-		self.theoryMedialLongPaths = {}
 
 		""" shoot spine only, separated from the skeleton at the branch point """
 		self.trimmedPaths  = {}
@@ -3637,8 +3635,6 @@ class MapState:
 		newObj.departureResultSet1 = deepcopy(self.departureResultSet1)  
 		newObj.departureResultSet2 = deepcopy(self.departureResultSet2)
 
-		newObj.medialLongPaths = deepcopy(self.medialLongPaths)
-		newObj.theoryMedialLongPaths = deepcopy(self.theoryMedialLongPaths) 
 		newObj.leaf2LeafPathJunctions = deepcopy(self.leaf2LeafPathJunctions) 
 
 		return newObj
@@ -4748,8 +4744,6 @@ class MapState:
 		self.paths = {}
 		self.hulls = {}
 		self.leaf2LeafPathJunctions = {}
-		self.medialLongPaths = {}
-		self.theoryMedialLongPaths = {}
 		
 		pathIDs = self.getPathIDs()
 		for pathID in pathIDs:
@@ -4765,11 +4759,9 @@ class MapState:
 										self.colors[pathID],
 										self.topCount)
 
-			self.theoryMedialLongPaths[pathID] = results[0]
-			self.medialLongPaths[pathID] = results[1]
-			self.leaf2LeafPathJunctions[pathID] = results[2]
-			self.paths[pathID] = results[3]
-			self.hulls[pathID] = results[4]
+			self.leaf2LeafPathJunctions[pathID] = results[0]
+			self.paths[pathID] = results[1]
+			self.hulls[pathID] = results[2]
 
 			self.topCount += 1
 			
@@ -6159,8 +6151,6 @@ class MapState:
 		try: 
 			del self.pathClasses[pathID]
 			del self.pathTermsVisited[pathID]
-			del self.theoryMedialLongPaths[pathID]
-			del self.medialLongPaths[pathID]
 			
 			
 			for k, pathClass in self.pathClasses.iteritems():
@@ -7453,131 +7443,6 @@ class MapState:
 
 		return cost
 
-
-	@logFunction
-	def getOverlapCondition(self, supportLine, nodeID, plotIter = False):
-
-		if len(supportLine) == 0:
-			return 1e100
-
-		#node2 = self.nodeHash[nodeID]
-
-		#hull2, medial2 = computeHullAxis(nodeID, node2, tailCutOff = False)
-		hull2 = self.poseData.aHulls[nodeID]
-		medial2 = self.poseData.medialAxes[nodeID]
-
-		#estPose2 = node2.getGlobalGPACPose()		
-		estPose2 = self.getNodePose(nodeID)
-		
-		minMatchDist2 = 0.2
-			
-		" set the initial guess "
-		poseOrigin = Pose(estPose2)
-		
-		localSupport = []
-		for pnt in supportLine:
-			localSupport.append(poseOrigin.convertGlobalToLocal(pnt))
-	
-		supportSpline = SplineFit(localSupport, smooth=0.1)		   
-		vecPoints1 = supportSpline.getUniformSamples()
-		supportPoints = gen_icp.addGPACVectorCovariance(vecPoints1,high_var=0.05, low_var = 0.001)
-			
-		medialSpline2 = SplineFit(medial2, smooth=0.1)
-		vecPoints2 = medialSpline2.getUniformSamples()
-		points2 = gen_icp.addGPACVectorCovariance(vecPoints2,high_var=0.05, low_var = 0.001)
-
-		" transformed points without associated covariance "
-		poly2 = []
-		for p in points2:
-			poly2.append([p[0],p[1]])			 
-		
-		support_pairs = []
-		for i in range(len(vecPoints2)):
-			
-			p_2 = vecPoints2[i]
-	
-			" for every transformed point of A, find it's closest neighbor in B "
-			try:
-				p_1, minI, minDist = gen_icp.findClosestPointWithAngle(vecPoints1, p_2, math.pi/8.0)
-	
-				if minDist <= minMatchDist2:
-					C2 = points2[i][2]
-					C1 = supportPoints[minI][2]
-	
-					" we store the untransformed point, but the transformed covariance of the A point "
-					support_pairs.append([points2[i],supportPoints[minI],C2,C1])
-			except:
-				pass
-
-		cost = 0.0
-		if len(support_pairs) == 0:
-			cost = 1e100
-		else:
-			vals = []
-			sum1 = 0.0
-			for pair in support_pairs:
-		
-				a = pair[0]
-				b = pair[1]
-				Ca = pair[2]
-				Cb = pair[3]
-		
-				ax = a[0]
-				ay = a[1]		 
-				bx = b[0]
-				by = b[1]
-		
-				c11 = Ca[0][0]
-				c12 = Ca[0][1]
-				c21 = Ca[1][0]
-				c22 = Ca[1][1]
-						
-				b11 = Cb[0][0]
-				b12 = Cb[0][1]
-				b21 = Cb[1][0]
-				b22 = Cb[1][1]	  
-			
-				val = gen_icp.computeMatchErrorP([0.0,0.0,0.0], [ax,ay], [bx,by], [c11,c12,c21,c22], [b11,b12,b21,b22])
-				
-				vals.append(val)
-				sum1 += val
-				
-			cost = sum1 / len(support_pairs)
-			
-
-		if plotIter:
-			pylab.clf()
-			xP = []
-			yP = []
-			for p in supportPoints:
-				xP.append(p[0])
-				yP.append(p[1])
-			pylab.plot(xP,yP, color='b')
-	
-			xP = []
-			yP = []
-			for p in poly2:
-				xP.append(p[0])
-				yP.append(p[1])
-			pylab.plot(xP,yP, color='r')
-			
-			for pair in support_pairs:
-				p1 = pair[0]
-				p2 = pair[1]
-				xP = [p1[0],p2[0]]
-				yP = [p1[1],p2[1]]
-				pylab.plot(xP,yP)
-					
-			pylab.xlim(-5,10)
-			pylab.ylim(-8,8)
-			pylab.title("nodeID %d, cost = %f, count = %d" % (nodeID, cost, len(support_pairs)))
-			pylab.savefig("overlapCost_%04u.png" % self.overlapPlotCount)
-			self.overlapPlotCount += 1
-		
-		if len(support_pairs) == 0:
-			return 1e100
-
-		return cost
 
 	@logFunction
 	def checkUniqueBranch(self, parentPathID, nodeID1, depAngle, depPoint):

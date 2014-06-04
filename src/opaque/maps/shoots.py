@@ -1199,16 +1199,22 @@ def computeShootSkeleton(poseData, pathID, branchNodeID, globalJunctionPose, nod
 				print "returning bestFit:", bestFit, minDiff
 				leaf2LeafPathJunctions["bestFit"] = bestFit
 				leaf2LeafPathJunctions["branchArm"] = branchArm
+				leaf2LeafPathJunctions["longPaths"] = medialLongPaths
+				leaf2LeafPathJunctions["theoryPaths"] = theoryMedialLongPaths
+				return leaf2LeafPathJunctions, medialLongPaths[bestFit], vertices
 				#return medialLongPaths[bestFit], vertices
-				return theoryMedialLongPaths, medialLongPaths, leaf2LeafPathJunctions, medialLongPaths[bestFit], vertices
+				#return theoryMedialLongPaths, medialLongPaths, leaf2LeafPathJunctions, medialLongPaths[bestFit], vertices
 
 			else:
 				" FIXME:  return theory junction information if this is selected "
 				print "returning bestFit theory:", theoryJunc
 				leaf2LeafPathJunctions["bestFit"] = 0
 				leaf2LeafPathJunctions["branchArm"] = branchArm
+				leaf2LeafPathJunctions["longPaths"] = medialLongPaths
+				leaf2LeafPathJunctions["theoryPaths"] = theoryMedialLongPaths
+				return leaf2LeafPathJunctions, theoryMedialLongPaths[0], vertices
 				#return theoryMedialLongPaths[0], vertices
-				return theoryMedialLongPaths, medialLongPaths, leaf2LeafPathJunctions, theoryMedialLongPaths[0], vertices
+				#return theoryMedialLongPaths, medialLongPaths, leaf2LeafPathJunctions, theoryMedialLongPaths[0], vertices
 		
 		else:
 			print "not returning bestFit"
@@ -1229,7 +1235,8 @@ def computeShootSkeleton(poseData, pathID, branchNodeID, globalJunctionPose, nod
 	#jIndex = juncLongIndices[maxIndex][0]
 	leaf2LeafPathJunctions["branchArm"] = medialLongPaths[maxIndex][1]
 
-	return theoryMedialLongPaths, medialLongPaths, leaf2LeafPathJunctions, medialLongPaths[maxIndex], vertices
+	leaf2LeafPathJunctions["longPaths"] = medialLongPaths
+	leaf2LeafPathJunctions["theoryPaths"] = theoryMedialLongPaths
+
+	return leaf2LeafPathJunctions, medialLongPaths[maxIndex], vertices
 	#return medialLongPaths[maxIndex], vertices
-
-
