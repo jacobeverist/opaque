@@ -256,6 +256,7 @@ def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine
 										"globalJunctionPose" : globalJunctionPose,
 										"probDist" : [ 1.0 / float(numBranches) for k in range(numBranches) ],
 										"branchPoseDist" : [deepcopy(globalJunctionPose) for k in range(numBranches)],
+										"controlPoseDist" : [deepcopy(controlPose) for k in range(numBranches)],
 										"arcDists" : [deepcopy(arcDists)],
 										"maxLikelihoodBranch" : 0
 										}		
@@ -879,16 +880,17 @@ class Particle:
 		self.pose0 = deepcopy(pose0)
 		self.pose1 = deepcopy(pose1)
 
-	def addPath(self, pathID, parentID, branchNodeID, localJunctionPose, globalJunctionPose, controlPoint, numBranches, arcDists):
+	def addPath(self, pathID, parentID, branchNodeID, localJunctionPose, globalJunctionPose, controlPose, numBranches, arcDists, controlPoses):
 
 		self.junctionData[pathID] = {
 									"parentID" : parentID,
 									"branchNodeID" : branchNodeID,
 									"localJunctionPose" : localJunctionPose, 
 									"globalJunctionPose" : globalJunctionPose,
-									"controlPoint" : controlPoint,
+									"controlPose" : controlPose,
 									"probDist" : [ 1.0 / float(numBranches) for k in range(numBranches) ],
 									"branchPoseDist" : [deepcopy(globalJunctionPose) for k in range(numBranches)],
+									"controlPoseDist" : controlPoses,
 									"arcDists" : [deepcopy(arcDists)],
 									"maxLikelihoodBranch" : 0
 									}		

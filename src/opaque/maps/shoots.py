@@ -522,7 +522,7 @@ def getSegPaths(node, juncIDs, leafIDs, currPath, tree, isVisited):
 
 
 @logFunction
-def computeShootSkeleton(poseData, pathID, branchNodeID, globalJunctionPose, nodeSet, nodePoses, hypothesisID, color, topCount):
+def computeShootSkeleton(poseData, pathID, branchNodeID, globalJunctionPose, controlPose, nodeSet, nodePoses, hypothesisID, color, topCount):
 	
 	""" establish recomputability for debugging """
 	random.seed(0)		  
@@ -917,6 +917,27 @@ def computeShootSkeleton(poseData, pathID, branchNodeID, globalJunctionPose, nod
 	leaf2LeafPathJunctions["juncLongIndices"] = juncLongIndices
 	leaf2LeafPathJunctions["leafSegments"] = smoothLeafSegments
 	leaf2LeafPathJunctions["internalSegments"] = smoothInternalSegments
+
+	if globalJunctionPose != None:
+		#origJuncPose = copy(controlPose)
+		origJuncPose = copy(globalJunctionPose)
+		origJuncPose[2] = 0.0
+		origJuncOrigin = Pose(origJuncPose)
+		smoothPathSegs = smoothLeafSegments + smoothInternalSegments
+
+		localPathSegs = []
+		for k in range(len(smoothPathSegs)):
+			pathSeg = smoothPathSegs[k]
+			localSeg = []
+			for p in pathSeg:
+				p1 = origJuncOrigin.convertGlobalPoseToLocal(p)
+				localSeg.append(p1)
+
+			localPathSegs.append(localSeg)
+	else:
+		localPathSegs = smoothLeafSegments + smoothInternalSegments
+
+	leaf2LeafPathJunctions["localSegments"] = localPathSegs
 
 
 	""" get the neighbor points along the path at the junction so we can describe the occupancy state """

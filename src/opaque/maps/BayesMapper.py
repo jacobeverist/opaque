@@ -174,6 +174,19 @@ class BayesMapper:
 
 			mapHyp.nodeRawPoses[nodeID] = newNode.getEstPose()
 
+			pathIDs = mapHyp.getPathIDs()
+			for k in range(mapHyp.numPoseParticles):
+				for pathID in pathIDs:
+
+					if pathID != 0:
+						particle = mapHyp.poseParticles["snapshots2"][0][k]
+
+						controlPoseDist = particle.junctionData[pathID]["controlPoseDist"]
+						branchPoseDist = particle.junctionData[pathID]["branchPoseDist"]
+
+						print "hypID,pathID,particleIndex:", mapHyp.hypothesisID, pathID, k, controlPoseDist
+					
+
 		self.mapHyps = self.integrateNode(currHyps, nodeID)
 
 
