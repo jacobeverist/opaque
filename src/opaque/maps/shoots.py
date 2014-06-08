@@ -920,9 +920,10 @@ def computeShootSkeleton(poseData, pathID, branchNodeID, globalJunctionPose, con
 
 	if globalJunctionPose != None:
 		#origJuncPose = copy(controlPose)
-		origJuncPose = copy(globalJunctionPose)
-		origJuncPose[2] = 0.0
-		origJuncOrigin = Pose(origJuncPose)
+		#origJuncPose = copy(globalJunctionPose)
+		#origJuncPose[2] = 0.0
+		#origJuncOrigin = Pose(origJuncPose)
+		origControlOrigin = Pose(controlPose)
 		smoothPathSegs = smoothLeafSegments + smoothInternalSegments
 
 		localPathSegs = []
@@ -930,7 +931,7 @@ def computeShootSkeleton(poseData, pathID, branchNodeID, globalJunctionPose, con
 			pathSeg = smoothPathSegs[k]
 			localSeg = []
 			for p in pathSeg:
-				p1 = origJuncOrigin.convertGlobalPoseToLocal(p)
+				p1 = origControlOrigin.convertGlobalPoseToLocal(p)
 				localSeg.append(p1)
 
 			localPathSegs.append(localSeg)

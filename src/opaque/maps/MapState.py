@@ -2400,7 +2400,6 @@ def trimBranch(pathID, parentPathID, origControlPose, modControlPose, origGlobJu
 		pylab.title("hyp %d nodeID %d %1.2f %1.2f %1.2f %1.2f %1.2f %1.2f" % ( hypothesisID, nodeID, juncDiscDist, juncDiscAngle, origGlobJuncPose[2], newGlobJuncPose[2], angDeriv1, angDeriv2))
 		pylab.savefig("trimDeparture_%04u_%04u_%1.1f.png" % (hypothesisID, nodeID, arcDist))
 
-		#def trimBranch(pathID, parentPathID, modControlPose, origGlobJuncPose, childPath, parentPath, trimmedParent, smoothPathSegs, plotIter = False, hypothesisID = 0, nodeID = 0, arcDist = 0.0):
 		print "saving trimDeparture_%04u_%04u_%1.1f.png" % (hypothesisID, nodeID, arcDist)
 		
 		pathPlotCount += 1
@@ -4494,9 +4493,9 @@ class MapState:
 				lastCost = result["lastCost"]
 				probVal = result["initProb"]
 
-				origJuncPose = copy(self.pathClasses[pathID]["globalJunctionPose"])
-				origJuncPose[2] = 0.0
-				origJuncOrigin = Pose(origJuncPose)
+				#origJuncPose = copy(self.pathClasses[pathID]["globalJunctionPose"])
+				#origJuncPose[2] = 0.0
+				#origJuncOrigin = Pose(origJuncPose)
 
 				junctionDetails = self.leaf2LeafPathJunctions[pathID]
 				#smoothPathSegs = junctionDetails["leafSegments"] + junctionDetails["internalSegments"]
@@ -6380,6 +6379,11 @@ class MapState:
 			particlePose[2] = origPose[2]
 			newProfile = Pose(particlePose)
 			newEstPose = newProfile.convertLocalOffsetToGlobal(localOffset)
+
+			localControlPose = gpacProfile.convertGlobalPoseToLocal(controlPose)
+			particleControlPose = newProfile.convertLocalOffsetToGlobal(localControlPose)
+
+			#print "control poses:", origPose, particlePose, controlPose, particleControlPose
 		
 			#nodePose = part.pose0
 
@@ -6398,7 +6402,7 @@ class MapState:
 			#""" get the arc distance of the given branch point """
 			#arcDist = pathSpline.dist_u(uVal)
 			""" get the arc distance of the control point """
-			minDist, controlUVal, newControlPose = pathSpline.findClosestPoint(controlPose)
+			minDist, controlUVal, newControlPose = pathSpline.findClosestPoint(particleControlPose)
 			arcDist = pathSpline.dist_u(controlUVal)
 
 			""" compute the rails of the branch point distribution """
@@ -6415,7 +6419,7 @@ class MapState:
 			controlPoses = [pathSpline.getPointOfDist(arcDists[k][1]) for k in range(self.NUM_BRANCHES)]
 
 			""" add the details of this junction given particle pose is true """
-			part.addPath(newPathID, parentID, branchNodeID, localJunctionPose, modJuncPose, controlPose, self.NUM_BRANCHES, arcDists, controlPoses)
+			part.addPath(newPathID, parentID, branchNodeID, localJunctionPose, modJuncPose, particleControlPose, self.NUM_BRANCHES, arcDists, controlPoses)
 
 		print "newPath", newPathID, "=", self.pathClasses[newPathID]
 
