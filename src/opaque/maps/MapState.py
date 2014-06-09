@@ -3306,6 +3306,8 @@ class MapState:
 					newJuncPose[2] = self.pathClasses[pathID]["globalJunctionPose"][2]
 					self.pathClasses[pathID]["globalJunctionPose"] = newJuncPose
 
+					self.pathClasses[pathID]["controlPose"] = partControlPose
+
 
 		elif numMax > 1:
 			pass
