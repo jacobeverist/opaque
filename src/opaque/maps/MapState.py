@@ -4905,10 +4905,16 @@ class MapState:
 
 		self.trimmedPaths = self.trimPaths(self.paths)
 
+
 		" for each path, attempt to join with its parent path "
 		self.joins = []
 		self.junctions = {}
 		for pathID in pathIDs:
+
+
+			localPathSegs = self.leaf2LeafPathJunctions[pathID]["localSegments"]
+			for segPath in localPathSegs:
+				pass
 
 			cPath = self.getPath(pathID)
 			
@@ -4968,7 +4974,11 @@ class MapState:
 				self.pathGraph.add_node((pathID, k), path[k])
 
 			for k in range(len(path)-1):
-				self.pathGraph.add_edge((pathID, k), (pathID, k+1))
+				p1 = path[k]
+				p2 = path[k+1]
+				weight = sqrt((p1[0]-p2[0])**2+(p1[1]-p2[1])**2)
+
+				self.pathGraph.add_edge((pathID, k), (pathID, k+1), wt=weight)
 			
 			" parent does not concern us "
 			cPath = self.getPath(pathID)			
@@ -4977,10 +4987,16 @@ class MapState:
 		" join with the junction in between the join points "
 		for k in range(len(self.joins)):
 			join = self.joins[k]
-			self.pathGraph.add_edge(join[0], join[1])
 
 			pID1, k1 = join[0]
 			pID2, k2 = join[1]
+
+			p1 = self.trimmedPaths[pID1][k1]
+			p2 = self.trimmedPaths[pID2][k2]
+			weight = sqrt((p1[0]-p2[0])**2+(p1[1]-p2[1])**2)
+
+			self.pathGraph.add_edge(join[0], join[1], wt=weight)
+
 
 
 		self.topDict = {}

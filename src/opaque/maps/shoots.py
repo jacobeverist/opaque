@@ -761,6 +761,7 @@ def computeShootSkeleton(poseData, pathID, branchNodeID, globalJunctionPose, con
 	juncIndices = []
 	leaf2LeafPathLengths = []
 	leafToLeafPaths = []
+	leafToLeafGridPaths = []
 	for k in range(len(leafToLeafPathTuples)):
 
 		juncInds = leafToLeafPathTuples[k][2]
@@ -770,11 +771,13 @@ def computeShootSkeleton(poseData, pathID, branchNodeID, globalJunctionPose, con
 
 
 		""" only the list of paths itself in real coordinates """
-		path = leafToLeafPathTuples[k][1]
+		gridPath = leafToLeafPathTuples[k][1]
 		realPath = []
-		for p in path:
+		for p in gridPath:
 			realPath.append(gridHash[p])
 		leafToLeafPaths.append(realPath)
+
+		leafToLeafGridPaths.append(deepcopy(gridPath))
 
 
 		""" only the grid and real values of each junction point """
@@ -782,7 +785,7 @@ def computeShootSkeleton(poseData, pathID, branchNodeID, globalJunctionPose, con
 		jReals = []
 		for index in juncInds:
 			if index != None:
-				jGrids.append(copy(leafToLeafPathTuples[k][1][index]))
+				jGrids.append(copy(gridPath[index]))
 				jReals.append(copy(leafToLeafPaths[k][index]))
 		juncGrids.append(jGrids)
 		juncReals.append(jReals)
@@ -793,7 +796,6 @@ def computeShootSkeleton(poseData, pathID, branchNodeID, globalJunctionPose, con
 		#leafToLeafPaths.append(leafToLeafPathTuples[k][1])
 	
 	print "juncIndices:", juncIndices
-	
 
 	""" extend these leaf2leaf paths to the boundary of the hull """
 	juncAngSet = []
@@ -945,7 +947,13 @@ def computeShootSkeleton(poseData, pathID, branchNodeID, globalJunctionPose, con
 	juncPoints = []
 	juncArmPoints = []
 	juncDesc = {}
+	juncGridPoints = []
+	juncGridArmPoints = []
+	juncGridDesc = {}
 	for k in range(len(juncLongIndices)):
+
+		print "junc indexes:", juncLongIndices[k], juncIndices[k]
+
 		juncInds = juncLongIndices[k]
 		juncPnts = []
 		juncArmPnts = []
@@ -974,10 +982,47 @@ def computeShootSkeleton(poseData, pathID, branchNodeID, globalJunctionPose, con
 		juncPoints.append(juncPnts)
 		juncArmPoints.append(juncArmPnts)
 
+		#juncGridPoints = []
+		#juncGridArmPoints = []
+		#juncGridDesc = {}
+		#leafToLeafGridPaths = []
+		juncGridInds = juncIndices[k]
+		juncGridPnts = []
+		juncGridArmPnts = []
+		for index in juncGridInds:
+			jPnt = copy(leafToLeafGridPaths[k][index])
+
+			jaPnt1 = leafToLeafGridPaths[k][index+1]
+			jaPnt2 = leafToLeafGridPaths[k][index-1]
+
+			jPnt = tuple(jPnt)
+			jaPnt1 = tuple(jaPnt1)
+			jaPnt2 = tuple(jaPnt2)
+
+			juncGridPnts.append(jPnt)
+			juncGridArmPnts.append((jaPnt1, jaPnt2))
+
+			try:
+				juncGridDesc[jPnt].append(jaPnt1)
+				juncGridDesc[jPnt].append(jaPnt2)
+			except:
+				juncGridDesc[jPnt] = []
+				juncGridDesc[jPnt].append(jaPnt1)
+				juncGridDesc[jPnt].append(jaPnt2)
+
+
+		juncGridPoints.append(juncGridPnts)
+		juncGridArmPoints.append(juncGridArmPnts)
+
+
 	""" remove duplicates """
 	for k, v in juncDesc.iteritems():
 		v1 = set(v)
 		juncDesc[k] = list(v1)
+
+	for k, v in juncGridDesc.iteritems():
+		v1 = set(v)
+		juncGridDesc[k] = list(v1)
 
 				
 	""" update to data structure """
