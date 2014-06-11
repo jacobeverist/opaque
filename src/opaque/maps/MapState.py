@@ -4053,6 +4053,58 @@ class MapState:
 					startKey = termPath[0]
 					endKey = termPath[-1]
 
+					""" use splice skeleton to find shortest path """
+					startPose = self.pathGraph.get_node_attributes(startKey)
+					endPose = self.pathGraph.get_node_attributes(endKey)
+
+					minStartDist = 1e100
+					minStartNode = None
+					minEndDist = 1e100
+					minEndNode = None
+					
+					for edge in self.spliceSkeleton.edges():
+					
+						globalNodePoint1 = edge[0]
+						globalNodePoint2 = edge[1]
+
+						dist1 = sqrt((globalNodePoint1[0]-startPose[0])**2 + (globalNodePoint1[1]-startPose[1])**2)
+						dist2 = sqrt((globalNodePoint2[0]-startPose[0])**2 + (globalNodePoint2[1]-startPose[1])**2)
+
+						if dist1 < minStartDist:
+							minStartDist = dist1
+							minStartNode = globalNodePoint1
+
+						if dist2 < minStartDist:
+							minStartDist = dist2
+							minStartNode = globalNodePoint2
+
+						dist1 = sqrt((globalNodePoint1[0]-endPose[0])**2 + (globalNodePoint1[1]-endPose[1])**2)
+						dist2 = sqrt((globalNodePoint2[0]-endPose[0])**2 + (globalNodePoint2[1]-endPose[1])**2)
+
+						if dist1 < minEndDist:
+							minEndDist = dist1
+							minEndNode = globalNodePoint1
+
+						if dist2 < minEndDist:
+							minEndDist = dist2
+							minEndNode = globalNodePoint2
+
+			
+					startNode = minStartNode
+					endNode = minEndNode
+
+
+					shortestSpliceTree, shortestSpliceDist = self.spliceSkeleton.shortest_path(endNode)
+					currNode = shortestSpliceTree[startNode]					 
+					splicedSkel = []
+					while currNode != endNode:
+						splicedSkel.append(currNode)
+						nextNode = shortestSpliceTree[currNode]
+						currNode = nextNode
+					splicedSkel.append(currNode)
+
+
+					""" find splice using the old method """
 					shortestPathSpanTree, shortestDist = self.pathGraph.shortest_path(endKey)
 					currNode = shortestPathSpanTree[startKey]					 
 					splicedPath = []
@@ -4067,7 +4119,7 @@ class MapState:
 								joinPairs.append((len(splicedPath)-1,len(splicedPath)))
 							
 						currNode = nextNode
-						
+
 					splicedPath.append(self.pathGraph.get_node_attributes(currNode))
 
 
@@ -4091,8 +4143,10 @@ class MapState:
 
 					sPath = {}
 					sPath['orderedPathIDs'] = orderedPathIDs
-					sPath['path'] = newPath
+					sPath['path'] = splicedSkel
+					sPath['oldPath'] = newPath
 					sPath['termPath'] = termPath
+					sPath['skelPath'] = splicedSkel
 					
 					finalResults.append(sPath)
 					
@@ -4123,7 +4177,8 @@ class MapState:
 	
 			for k, result in results.iteritems():
 				for sPath in result:
-					path = sPath['path']
+					#path = sPath['path']
+					path = sPath['skelPath']
 	
 					xP = []
 					yP = []
@@ -4905,23 +4960,25 @@ class MapState:
 
 		self.trimmedPaths = self.trimPaths(self.paths)
 
-		localSkeletons = []
-		controlPoses = []
+		localSkeletons = {}
+		controlPoses = {}
+		junctionPoses = {}
+		parentPathIDs = {}
 		for pathID in pathIDs:
-			localSkeletons.append(self.leaf2LeafPathJunctions[pathID]["skeletonGraph"])
-			controlPoses.append(self.pathClasses[pathID]["controlPose"])
+			localSkeletons[pathID] = self.leaf2LeafPathJunctions[pathID]["skeletonGraph"]
+			controlPoses[pathID] = self.pathClasses[pathID]["controlPose"]
+			junctionPoses[pathID] = self.pathClasses[pathID]["globalJunctionPose"]
 
-		resultSkeleton = spliceSkeletons(localSkeletons, controlPoses)
+			cPath = self.getPath(pathID)
+			parentPathID = cPath["parentID"]
+			parentPathIDs[pathID] = parentPathID
+
+		self.spliceSkeleton = spliceSkeletons(localSkeletons, controlPoses, junctionPoses, parentPathIDs)
 
 		" for each path, attempt to join with its parent path "
 		self.joins = []
 		self.junctions = {}
 		for pathID in pathIDs:
-
-
-			localPathSegs = self.leaf2LeafPathJunctions[pathID]["localSegments"]
-			for segPath in localPathSegs:
-				pass
 
 			cPath = self.getPath(pathID)
 			
@@ -4930,12 +4987,6 @@ class MapState:
 			" parent does not concern us "
 			if parentPathID == None:
 				continue
-			
-			#junctionNodeID = cPath["branchNodeID"]
-			#localJunctionPoint = cPath["localJunctionPose"]
-			#poseOrigin = Pose(self.nodeRawPoses[junctionNodeID])
-			#junctionPoint = poseOrigin.convertLocalToGlobal(localJunctionPoint)
-			#junctionPose = poseOrigin.convertLocalOffsetToGlobal(localJunctionPoint)
 
 			junctionPose = self.getGlobalJunctionPose(pathID)
 			junctionPoint = [junctionPose[0],junctionPose[1]]
@@ -4944,7 +4995,7 @@ class MapState:
 
 			path1 = self.trimmedPaths[pathID]
 			path2 = self.trimmedPaths[parentPathID]
-			
+
 			minDist1 = 1e100
 			minI1 = 0		 
 			for i in range(len(path1)):
@@ -4954,7 +5005,7 @@ class MapState:
 				if dist < minDist1:
 					minDist1 = dist
 					minI1 = i
-	
+
 			minDist2 = 1e100
 			minI2 = 0		 
 			for i in range(len(path2)):
@@ -4967,11 +5018,11 @@ class MapState:
 			
 			self.joins.append([(pathID, minI1),(parentPathID, minI2), junctionPoint])
 
-
 			" get junctions " 
 			branchNodeID = cPath["branchNodeID"]
 			
 			self.junctions[pathID] = [branchNodeID, junctionPose, (parentPathID,minI2), path2[minI2], minI1]
+
 
 		" create a tree with the node IDs and then stitch them together with joins "
 		self.pathGraph = graph.graph()

@@ -1354,20 +1354,28 @@ def computeShootSkeleton(poseData, pathID, branchNodeID, globalJunctionPose, con
 
 
 @logFunction
-def spliceSkeletons(localSkeletons, controlPoses):
+def spliceSkeletons(localSkeletons, controlPoses, junctionPoses, parentPathIDs):
 
 	SPLICE_DIST = 0.05
 
-	globalSkeletons = []
-	
-	for k in range(len(localSkeletons)):
+	globalSkeletons = {}
+	junctionNodes = {}
 
-		skel = localSkeletons[k]
-		controlPose = controlPoses[k]
+	pathIDs = localSkeletons.keys()
+	
+	for pathID in pathIDs: 
+
+		skel = localSkeletons[pathID]
+		controlPose = controlPoses[pathID]
+		juncPose = junctionPoses[pathID]
+		parentPathID = parentPathIDs[pathID]
 
 		origControlOrigin = Pose(controlPose)
 
 		globalSkeletonGraph = graph.graph()
+
+		minChildNode = None
+		minChildDist = 1e100
 	
 		for edge in skel.edges():
 		
@@ -1379,11 +1387,38 @@ def spliceSkeletons(localSkeletons, controlPoses):
 
 			dist = sqrt((globalNodePoint1[0]-globalNodePoint2[0])**2 + (globalNodePoint1[1]-globalNodePoint2[1])**2)
 
+			if parentPathID != None:
+				dist1 = sqrt((globalNodePoint1[0]-juncPose[0])**2 + (globalNodePoint1[1]-juncPose[1])**2)
+				dist2 = sqrt((globalNodePoint2[0]-juncPose[0])**2 + (globalNodePoint2[1]-juncPose[1])**2)
+
+				if dist1 < minChildDist:
+					minChildDist = dist1
+					minChildNode = globalNodePoint1
+
+				if dist2 < minChildDist:
+					minChildDist = dist2
+					minChildNode = globalNodePoint2
+
+
 			globalSkeletonGraph.add_node(globalNodePoint1)
 			globalSkeletonGraph.add_node(globalNodePoint2)
 			globalSkeletonGraph.add_edge(globalNodePoint1, globalNodePoint2, wt=dist)
 
-		globalSkeletons.append(globalSkeletonGraph)
+		if parentPathID != None:
+
+			""" add junction node and edge """
+			juncNode = (juncPose[0], juncPose[1])
+
+			junctionNodes[pathID] = juncNode
+
+			globalSkeletonGraph.add_node(juncNode)
+			globalSkeletonGraph.add_edge(juncNode, minChildNode, wt=minChildDist)
+
+		else:
+			junctionNodes[pathID] = None
+
+		globalSkeletons[pathID] = globalSkeletonGraph
+
 
 	spliceSkeleton = graph.graph()
 	for k in range(len(globalSkeletons)):
@@ -1403,7 +1438,36 @@ def spliceSkeletons(localSkeletons, controlPoses):
 			spliceSkeleton.add_edge(globalNodePoint1, globalNodePoint2, wt=weight)
 
 
+	""" connect the children to their parents via the junction node """
+	for pathID in pathIDs:
+		juncNode = junctionNodes[pathID]
+		parentPathID = parentPathIDs[pathID]
+
+		if parentPathID != None:
+			parentSkel = globalSkeletons[parentPathID]
+
+			minParentdNode = None
+			minParentDist = 1e100
+		
+			for edge in parentSkel.edges():
+			
+				globalNodePoint1 = edge[0]
+				globalNodePoint2 = edge[1]
+
+				dist1 = sqrt((globalNodePoint1[0]-juncNode[0])**2 + (globalNodePoint1[1]-juncNode[1])**2)
+				dist2 = sqrt((globalNodePoint2[0]-juncNode[0])**2 + (globalNodePoint2[1]-juncNode[1])**2)
+
+				if dist1 < minParentDist:
+					minParentDist = dist1
+					minParentNode = globalNodePoint1
+
+				if dist2 < minParentDist:
+					minParentDist = dist2
+					minParentNode = globalNodePoint2
+
+			spliceSkeleton.add_edge(juncNode, minParentNode, wt=minParentDist)
 	
+
 	for j in range(len(globalSkeletons)):
 		for k in range(j, len(globalSkeletons)):
 			nodes1 = globalSkeletons[j].nodes()
