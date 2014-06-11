@@ -12,6 +12,8 @@ from SplineFit import SplineFit
 from Pose import Pose
 from LocalNode import getLongestPath
 import pylab
+import gen_icp
+
 
 alphaPlotCount = 0
 medialCount = 0
@@ -358,7 +360,7 @@ def computeSkeletonFromImage(medialPointSoup):
 	return vertices, junctions, leaves, uni_mst, gridHash
 
 
-def computePathSegments(juncIDs, leafIDs, tree, gridHash, vertices):
+def computePathSegments(juncIDs, leafIDs, tree, gridHash, vertices, controlPose):
 
 	leafSegments = []
 	internalSegments = []
@@ -480,12 +482,51 @@ def computePathSegments(juncIDs, leafIDs, tree, gridHash, vertices):
 		internalSpline = SplineFit(seg, smooth=0.1)
 		internalPoints = internalSpline.getUniformSamples()
 		smoothInternalSegments.append(internalPoints)
+	
+	allRealSegments = longLeafSegments + realInternalSegments
+
+	origControlOrigin = Pose(controlPose)
+	smoothPathSegs = smoothLeafSegments + smoothInternalSegments
 
 
 
+	skeletonGraph = graph.graph()
 
-	#return leafSegments, internalSegments
-	return smoothLeafSegments, smoothInternalSegments
+	""" add the leaf and their attached junction points,
+		add internal segments, inclusive of junction terminals """
+	for seg in allRealSegments:
+		for k in range(0,len(seg)):
+			skeletonGraph.add_node(tuple(seg[k]))
+	
+	""" now add edges weighted with cartesian distance """
+	for seg in allRealSegments:
+		for k in range(0,len(seg)-1):
+			p1 = tuple(seg[k])
+			p2 = tuple(seg[k+1])
+
+			dist = sqrt((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2)
+
+			skeletonGraph.add_edge(p1,p2,wt=dist)
+	
+	origControlOrigin = Pose(controlPose)
+
+	localSkeletonGraph = graph.graph()
+	
+	for edge in skeletonGraph.edges():
+	
+		nodePoint1 = edge[0]
+		nodePoint2 = edge[1]
+
+		localNodePoint1 = tuple(origControlOrigin.convertGlobalToLocal(nodePoint1))
+		localNodePoint2 = tuple(origControlOrigin.convertGlobalToLocal(nodePoint2))
+
+		dist = sqrt((localNodePoint1[0]-localNodePoint2[0])**2 + (localNodePoint1[1]-localNodePoint2[1])**2)
+
+		localSkeletonGraph.add_node(localNodePoint1)
+		localSkeletonGraph.add_node(localNodePoint2)
+		localSkeletonGraph.add_edge(localNodePoint1, localNodePoint2, wt=dist)
+
+	return smoothLeafSegments, smoothInternalSegments, localSkeletonGraph
 
 def getSegPaths(node, juncIDs, leafIDs, currPath, tree, isVisited):
 
@@ -675,7 +716,7 @@ def computeShootSkeleton(poseData, pathID, branchNodeID, globalJunctionPose, con
 
 	""" get the shoot skeleton as sets of order points representing curve segments
 		with junctions and leaves as terminals """
-	smoothLeafSegments, smoothInternalSegments = computePathSegments(junctions, leaves, uni_mst, gridHash, vertices)
+	smoothLeafSegments, smoothInternalSegments, localSkeletonGraph = computePathSegments(junctions, leaves, uni_mst, gridHash, vertices, controlPose)
 
 	print "computePathSegments:", len(smoothLeafSegments), len(smoothInternalSegments), "paths from", len(junctions), "junctions and", len(leaves), "leaves", [len(pMem) for pMem in smoothLeafSegments], [len(pMem) for pMem in smoothInternalSegments]
 
@@ -919,6 +960,7 @@ def computeShootSkeleton(poseData, pathID, branchNodeID, globalJunctionPose, con
 	leaf2LeafPathJunctions["juncLongIndices"] = juncLongIndices
 	leaf2LeafPathJunctions["leafSegments"] = smoothLeafSegments
 	leaf2LeafPathJunctions["internalSegments"] = smoothInternalSegments
+	leaf2LeafPathJunctions["skeletonGraph"] = localSkeletonGraph
 
 	if globalJunctionPose != None:
 		#origJuncPose = copy(controlPose)
@@ -1307,3 +1349,109 @@ def computeShootSkeleton(poseData, pathID, branchNodeID, globalJunctionPose, con
 
 	return leaf2LeafPathJunctions, medialLongPaths[maxIndex], vertices
 	#return medialLongPaths[maxIndex], vertices
+
+
+
+
+@logFunction
+def spliceSkeletons(localSkeletons, controlPoses):
+
+	SPLICE_DIST = 0.05
+
+	globalSkeletons = []
+	
+	for k in range(len(localSkeletons)):
+
+		skel = localSkeletons[k]
+		controlPose = controlPoses[k]
+
+		origControlOrigin = Pose(controlPose)
+
+		globalSkeletonGraph = graph.graph()
+	
+		for edge in skel.edges():
+		
+			nodePoint1 = edge[0]
+			nodePoint2 = edge[1]
+
+			globalNodePoint1 = tuple(origControlOrigin.convertLocalToGlobal(nodePoint1))
+			globalNodePoint2 = tuple(origControlOrigin.convertLocalToGlobal(nodePoint2))
+
+			dist = sqrt((globalNodePoint1[0]-globalNodePoint2[0])**2 + (globalNodePoint1[1]-globalNodePoint2[1])**2)
+
+			globalSkeletonGraph.add_node(globalNodePoint1)
+			globalSkeletonGraph.add_node(globalNodePoint2)
+			globalSkeletonGraph.add_edge(globalNodePoint1, globalNodePoint2, wt=dist)
+
+		globalSkeletons.append(globalSkeletonGraph)
+
+	spliceSkeleton = graph.graph()
+	for k in range(len(globalSkeletons)):
+		#nodes = globalSkeletons[k].nodes()
+		edges = globalSkeletons[k].edges()
+		#spliceSkeleton.add_nodes(nodes)
+
+		for edge in edges:
+			globalNodePoint1 = edge[0]
+			globalNodePoint2 = edge[1]
+
+			weight = globalSkeletons[k].get_edge_weight(globalNodePoint1, globalNodePoint2)
+
+			#dist = sqrt((globalNodePoint1[0]-globalNodePoint2[0])**2 + (globalNodePoint1[1]-globalNodePoint2[1])**2)
+			spliceSkeleton.add_node(globalNodePoint1)
+			spliceSkeleton.add_node(globalNodePoint2)
+			spliceSkeleton.add_edge(globalNodePoint1, globalNodePoint2, wt=weight)
+
+
+	
+	for j in range(len(globalSkeletons)):
+		for k in range(j, len(globalSkeletons)):
+			nodes1 = globalSkeletons[j].nodes()
+			nodes2 = globalSkeletons[k].nodes()
+
+			distances1, indices1 = getClosestPairs(nodes1, nodes2)
+			distances2, indices2 = getClosestPairs(nodes2, nodes1)
+
+			for m in range(len(distances1)):
+				dist1 = distances1[m]
+
+				node1 = nodes1[m]
+				node2 = nodes2[indices1[m]]
+
+				if dist1 <= SPLICE_DIST:
+					spliceSkeleton.add_edge(node1, node2, wt=dist1)
+	
+			for m in range(len(distances2)):
+				dist2 = distances2[m]
+
+				node2 = nodes2[m]
+				node1 = nodes1[indices2[m]]
+
+				if dist2 <= SPLICE_DIST:
+					spliceSkeleton.add_edge(node2, node1, wt=dist2)
+		
+	return spliceSkeleton
+
+@logFunction
+def getClosestPairs(pathPoints2, pathPoints1):
+
+	""" for each point on the child path, find its closest pair on the parent path """
+	distances = []
+	indices = []
+
+	for i in range(0,len(pathPoints2)):
+		p_2 = pathPoints2[i]
+		p_1, i_1, minDist = gen_icp.findClosestPointInA(pathPoints1, p_2)
+		
+		""" keep the distance information """
+		distances.append(minDist)
+		""" and the associated index of the point on the parent path """
+		indices.append(i_1)
+		
+	return distances, indices
+
+
+
+
+
+

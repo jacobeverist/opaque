@@ -26,7 +26,7 @@ import traceback
 
 import alphamod
 
-from shoots import computeShootSkeleton
+from shoots import computeShootSkeleton, spliceSkeletons
 
 pylab.ioff()
 
@@ -2463,7 +2463,7 @@ class MapState:
 					"sameProb" : {},
 					"nodeSet" : [],
 					"globalJunctionPose" : None,
-					"controlPose" : None }		
+					"controlPose" : [0.0,0.0,0.0] }		
 
 		""" number of shoots in the current map state """
 		self.pathIDs = 1
@@ -4905,6 +4905,13 @@ class MapState:
 
 		self.trimmedPaths = self.trimPaths(self.paths)
 
+		localSkeletons = []
+		controlPoses = []
+		for pathID in pathIDs:
+			localSkeletons.append(self.leaf2LeafPathJunctions[pathID]["skeletonGraph"])
+			controlPoses.append(self.pathClasses[pathID]["controlPose"])
+
+		resultSkeleton = spliceSkeletons(localSkeletons, controlPoses)
 
 		" for each path, attempt to join with its parent path "
 		self.joins = []
