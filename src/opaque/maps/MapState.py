@@ -1950,7 +1950,337 @@ def computeBranch(pathID, parentID, origGlobJuncPose, origControlPose, childPath
 
 		return part2
  
-# newPath3, newGlobJuncPose, juncDiscDist, juncDiscAngle, splicedPaths =  trimBranch(pathID, parentID, origControlPose, modControlPose, origGlobJuncPose, childPath, parentPath, trimmedParent, localPathSegs, plotIter=True, arcDist = arcDist, nodeID=numNodes, hypothesisID = hypothesisID)
+@logFunction
+def trimBranch2(pathID, parentPathID, origControlPose, modControlPose, origGlobJuncPose, modJuncPose, childPath, parentPath, trimmedParent, localPathSegs, plotIter = False, hypothesisID = 0, nodeID = 0, arcDist = 0.0):
+
+	global pathPlotCount 
+
+
+
+	globJuncPose = origGlobJuncPose
+
+	origJuncPose = copy(origGlobJuncPose)
+	origJuncPose[2] = 0.0
+	origControlOrigin = Pose(origControlPose)
+
+
+	offsetOrigin1 = Pose(modControlPose)
+	
+	partPathSegs = []
+
+	path1 = parentPath
+	path2 = childPath
+
+	localPath2 = []
+	for p in path2:
+		p1 = origControlOrigin.convertGlobalToLocal(p)
+		localPath2.append(p1)
+
+	particlePath2 = []
+	for p in localPath2:
+		p1 = offsetOrigin1.convertLocalToGlobal(p)
+		particlePath2.append(p1)
+
+	""" get departing sections of overlapped curves """
+	""" branch point as input """
+	secP1, secP2 = getOverlapDeparture(modJuncPose, parentPathID, pathID, path1, particlePath2, plotIter = False)				 
+
+	minI_1 = 0		  
+	minI_2 = 0
+	minDist_1 = 1e100
+	minDist_2 = 1e100		 
+	for i in range(len(particlePath2)):
+		pnt = particlePath2[i]
+		dist1 = sqrt((pnt[0]-secP1[0])**2 + (pnt[1]-secP1[1])**2)
+		dist2 = sqrt((pnt[0]-secP2[0])**2 + (pnt[1]-secP2[1])**2)
+	
+		if dist1 < minDist_1:
+			minDist_1 = dist1
+			minI_1 = i
+
+		if dist2 < minDist_2:
+			minDist_2 = dist2
+			minI_2 = i
+
+	term0 = particlePath2[0]
+	termN = particlePath2[-1]
+
+	""" smallest distance is the terminal point """
+	dist0_1 = sqrt((term0[0]-secP1[0])**2 + (term0[1]-secP1[1])**2)
+	distN_1 = sqrt((termN[0]-secP1[0])**2 + (termN[1]-secP1[1])**2)
+	dist0_2 = sqrt((term0[0]-secP2[0])**2 + (term0[1]-secP2[1])**2)
+	distN_2 = sqrt((termN[0]-secP2[0])**2 + (termN[1]-secP2[1])**2)
+	print "terminal distances:", dist0_1, distN_1, dist0_2, distN_2
+	
+	distList = [dist0_1, distN_1, dist0_2, distN_2]
+	
+	minI = -1
+	minDist = 1e100
+	for i in range(len(distList)):
+		if distList[i] < minDist:
+			minDist = distList[i]
+			minI = i
+	
+	if minDist_1 < minDist_2:
+		junctionPoint_K = secP1
+		juncI_K = minI_1
+	else:
+		junctionPoint_K = secP2
+		juncI_K = minI_2
+	
+	minDist2 = 1e100
+	juncI = 0		 
+	for i in range(len(particlePath2)):
+		pnt = particlePath2[i]
+		dist = sqrt((pnt[0]-modJuncPose[0])**2 + (pnt[1]-modJuncPose[1])**2)
+	
+		if dist < minDist2:
+			minDist2 = dist
+			juncI = i
+	 
+	 
+	
+	print "len(path1):", len(path1)
+	print "len(particlePath2):", len(particlePath2)
+	print "juncI:", juncI
+	print "minDist:", minDist_1, minDist_2
+	
+	""" now we have closest point to departure point. """
+	""" Which side is the departing side? """	 
+
+			
+	if minI == 0:
+		"""secP1 is terminal 0"""
+		index = juncI-10
+		if index < 1:
+			index = 1
+
+		
+		newPath2 = particlePath2[:index+1]
+		newPath2.reverse()
+	
+	elif minI == 1:
+		"""secP1 is terminal N"""
+		index = juncI+10
+		if index >= len(particlePath2)-1:
+			
+			""" ensure at least 2 elements in path """
+			index = len(particlePath2)-2
+
+		newPath2 = particlePath2[index:]
+
+		
+	elif minI == 2:
+		"""secP2 is terminal 0"""
+		index = juncI-10
+		if index < 1:
+			index = 1
+
+		newPath2 = particlePath2[:index+1]
+		newPath2.reverse()
+		
+	elif minI == 3:
+		"""secP2 is terminal N"""
+		index = juncI+10
+		if index >= len(particlePath2)-1:
+			""" ensure at least 2 elements in path """
+			index = len(particlePath2)-2
+		
+		newPath2 = particlePath2[index:]
+	
+	else:
+		print """no terminal found"""
+		raise
+					
+	""" convert path so that the points are uniformly distributed """
+	newPath3 = ensureEnoughPoints(newPath2, max_spacing = 0.08, minPoints = 5)
+
+
+	newGlobJuncPose1, controlPoint1, angDeriv1 = getBranchPoint(modJuncPose, parentPathID, pathID, trimmedParent, particlePath2, plotIter = plotIter, hypothesisID = hypothesisID, nodeID = nodeID, arcDist = arcDist)
+	newGlobJuncPose2, controlPoint2, angDeriv2 = getBranchPoint(modJuncPose, pathID, parentPathID, particlePath2, trimmedParent, plotIter = plotIter, hypothesisID = hypothesisID, nodeID = nodeID, arcDist = arcDist)
+
+
+	juncDiscDist1 = sqrt((newGlobJuncPose1[0]-modJuncPose[0])**2 + (newGlobJuncPose1[1]-modJuncPose[1])**2)
+	juncDiscDist2 = sqrt((newGlobJuncPose2[0]-modJuncPose[0])**2 + (newGlobJuncPose2[1]-modJuncPose[1])**2)
+
+	if angDeriv1 < angDeriv2:
+		newGlobJuncPose = newGlobJuncPose1
+		controlPoint = controlPoint1
+		angDeriv = angDeriv1
+	else:
+
+		""" only diverge from the parent if the determined branch point is in the neighborhood of the original """
+		if juncDiscDist2 < 1.0:
+			newGlobJuncPose = newGlobJuncPose2
+			controlPoint = controlPoint2
+			angDeriv = angDeriv2
+		else:
+			newGlobJuncPose = newGlobJuncPose1
+			controlPoint = controlPoint1
+			angDeriv = angDeriv1
+
+	""" junction discrepency distance """
+	juncDiscDist = 0.0
+	juncDiscAngle = 0.0
+
+
+
+	""" for each path, attempt to join with its parent path """
+	junctionPoint = [newGlobJuncPose[0],newGlobJuncPose[1]]
+
+
+
+
+
+
+	localSkeletons = {}
+	controlPoses = {}
+	junctionPoses = {}
+	parentPathIDs = {}
+	for pathID in pathIDs:
+		localSkeletons[pathID] = self.leaf2LeafPathJunctions[pathID]["skeletonGraph"]
+		controlPoses[pathID] = self.pathClasses[pathID]["controlPose"]
+		junctionPoses[pathID] = self.pathClasses[pathID]["globalJunctionPose"]
+
+		cPath = self.getPath(pathID)
+		parentPathID = cPath["parentID"]
+		parentPathIDs[pathID] = parentPathID
+
+	#def trimBranch2(pathID, parentPathID, origControlPose, modControlPose, origGlobJuncPose, modJuncPose, childPath, parentPath, trimmedParent, localPathSegs, plotIter = False, hypothesisID = 0, nodeID = 0, arcDist = 0.0):
+	spliceSkeleton = spliceSkeletons(localSkeletons, controlPoses, junctionPoses, parentPathIDs)
+
+	""" the terminals of the parent shoot """
+	parentTerm1 = trimmedParent[0]
+	parentTerm2 = trimmedParent[-1]
+
+	""" the terminals of the child shoot """
+	dist1 = sqrt((newGlobJuncPose[0]-newPath3[0][0])**2 + (newGlobJuncPose[1]-newPath3[0][1])**2)
+	dist2 = sqrt((newGlobJuncPose[0]-newPath3[-1][0])**2 + (newGlobJuncPose[1]-newPath3[-1][1])**2)
+
+	if dist1 < dist2:
+		childTerm = newPath3[-1]
+	else:
+		childTerm = newPath3[0]
+
+
+	""" two different splices between child and parent terminals """
+	termPaths = [(parentTerm1, childTerm), (parentTerm2, childTerm)]
+
+	splicedPaths = []
+	for termPath in termPaths:
+
+		""" use splice skeleton to find shortest path """
+		startPose = termPath[0]
+		endPose = termPath[-1]
+
+		minStartDist = 1e100
+		minStartNode = None
+		minEndDist = 1e100
+		minEndNode = None
+		
+		for edge in spliceSkeleton.edges():
+		
+			globalNodePoint1 = edge[0]
+			globalNodePoint2 = edge[1]
+
+			dist1 = sqrt((globalNodePoint1[0]-startPose[0])**2 + (globalNodePoint1[1]-startPose[1])**2)
+			dist2 = sqrt((globalNodePoint2[0]-startPose[0])**2 + (globalNodePoint2[1]-startPose[1])**2)
+
+			if dist1 < minStartDist:
+				minStartDist = dist1
+				minStartNode = globalNodePoint1
+
+			if dist2 < minStartDist:
+				minStartDist = dist2
+				minStartNode = globalNodePoint2
+
+			dist1 = sqrt((globalNodePoint1[0]-endPose[0])**2 + (globalNodePoint1[1]-endPose[1])**2)
+			dist2 = sqrt((globalNodePoint2[0]-endPose[0])**2 + (globalNodePoint2[1]-endPose[1])**2)
+
+			if dist1 < minEndDist:
+				minEndDist = dist1
+				minEndNode = globalNodePoint1
+
+			if dist2 < minEndDist:
+				minEndDist = dist2
+				minEndNode = globalNodePoint2
+
+
+		startNode = minStartNode
+		endNode = minEndNode
+
+
+		shortestSpliceTree, shortestSpliceDist = spliceSkeleton.shortest_path(endNode)
+		currNode = shortestSpliceTree[startNode]					 
+		splicedSkel = []
+		while currNode != endNode:
+			splicedSkel.append(currNode)
+			nextNode = shortestSpliceTree[currNode]
+			currNode = nextNode
+		splicedSkel.append(currNode)
+
+		spliceSpline1 = SplineFit(splicedSkel, smooth=0.1)
+		splicePoints1 = spliceSpline1.getUniformSamples()
+
+		#splicedPaths.append(splicedSkel)
+		splicedPaths.append(splicedPoints1)
+		
+
+	if plotIter:
+		#if False:
+			
+		#hypothesisID = 0
+		numNodes = 0
+		pathPlotCount = 0
+
+		
+		pylab.clf()
+		xP = []
+		yP = []
+		for p in newPath3:
+			xP.append(p[0])
+			yP.append(p[1])
+		pylab.plot(xP,yP, color=(0.5,0.5,1.0))
+
+		xP = []
+		yP = []
+		for p in path1:
+			xP.append(p[0])
+			yP.append(p[1])
+		pylab.plot(xP,yP, color=(1.0,0.5,0.5))
+
+		
+		pylab.scatter([newGlobJuncPose[0],], [newGlobJuncPose[1],], color='r')
+		pylab.scatter([modControlPose[0],], [modControlPose[1],], color='b')
+		pylab.scatter([origControlPose[0],], [origControlPose[1],], color='g')
+		pylab.scatter([modJuncPose[0],], [modJuncPose[1],], color='m')
+
+		xP = []
+		yP = []
+		for p in splicePoints1:
+			xP.append(p[0])
+			yP.append(p[1])
+		pylab.plot(xP,yP, color='k', alpha=0.3)
+
+		xP = []
+		yP = []
+		for p in splicePoints2:
+			xP.append(p[0])
+			yP.append(p[1])
+		pylab.plot(xP,yP, color='k', alpha=0.3)
+
+
+		pylab.axis("equal")
+		pylab.title("hyp %d nodeID %d %1.2f %1.2f %1.2f %1.2f %1.2f %1.2f" % ( hypothesisID, nodeID, juncDiscDist, juncDiscAngle, origGlobJuncPose[2], newGlobJuncPose[2], angDeriv1, angDeriv2))
+		pylab.savefig("trimDeparture_%04u_%04u_%1.1f.png" % (hypothesisID, nodeID, arcDist))
+
+		print "saving trimDeparture_%04u_%04u_%1.1f.png" % (hypothesisID, nodeID, arcDist)
+		
+		pathPlotCount += 1
+
+
+	return newPath3, newGlobJuncPose, juncDiscDist, juncDiscAngle, splicedPaths
+
 
 @logFunction
 def trimBranch(pathID, parentPathID, origControlPose, modControlPose, origGlobJuncPose, modJuncPose, childPath, parentPath, trimmedParent, localPathSegs, plotIter = False, hypothesisID = 0, nodeID = 0, arcDist = 0.0):
