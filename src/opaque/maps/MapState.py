@@ -170,10 +170,14 @@ def __remote_multiBranch(rank, qin, qout):
 			trimmedParent = job[6]
 			localPathSegs = job[7]
 			arcDist = job[8]
-			numNodes = job[9]
-			hypID = job[10]
+			localSkeletons = job[9]
+			controlPoses = job[10]
+			junctionPoses = job[11]
+			parentPathIDs = job[12]
+			numNodes = job[13]
+			hypID = job[14]
 
-			result = computeBranch(pathID, parentID, origGlobJuncPose, controlPose, childPath, parentPath, trimmedParent, localPathSegs, arcDist, numNodes, hypID)
+			result = computeBranch(pathID, parentID, origGlobJuncPose, controlPose, childPath, parentPath, trimmedParent, localPathSegs, arcDist, localSkeletons, controlPoses, junctionPoses, parentPathIDs, numNodes, hypID)
 
 			results.append(result)
 						   
@@ -1798,7 +1802,7 @@ def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, 
 	return globJuncPose, controlPoint, angDeriv
 
 @logFunction
-def computeBranch(pathID, parentID, origGlobJuncPose, origControlPose, childPath, parentPath, trimmedParent, localPathSegs, arcDist, numNodes = 0, hypothesisID = 0):
+def computeBranch(pathID, parentID, origGlobJuncPose, origControlPose, childPath, parentPath, trimmedParent, localPathSegs, arcDist, localSkeletons, controlPoses, junctionPoses, parentPathIDs, numNodes=0, hypothesisID=0):
 
 	if parentID != None: 
 
@@ -1905,9 +1909,87 @@ def computeBranch(pathID, parentID, origGlobJuncPose, origControlPose, childPath
 		""" get the trimmed child shoot at the new designated branch point from parent """
 		newPath3, newGlobJuncPose, juncDiscDist, juncDiscAngle, splicedPaths =  trimBranch(pathID, parentID, origControlPose, modControlPose, origGlobJuncPose, modJuncPose, childPath, parentPath, trimmedParent, localPathSegs, plotIter=True, arcDist = arcDist, nodeID=numNodes, hypothesisID = hypothesisID)
 
-		for placedSeg in placedPathSegs:
-			pass
+		junctionPoses[pathID] = newGlobJuncPose
+		controlPoses[pathID] = modControlPose
 
+		spliceSkeleton = spliceSkeletons(localSkeletons, controlPoses, junctionPoses, parentPathIDs)
+
+		""" the terminals of the parent shoot """
+		parentTerm1 = parentPath[0]
+		parentTerm2 = parentPath[-1]
+
+		""" the terminals of the child shoot """
+		dist1 = sqrt((newGlobJuncPose[0]-newPath3[0][0])**2 + (newGlobJuncPose[1]-newPath3[0][1])**2)
+		dist2 = sqrt((newGlobJuncPose[0]-newPath3[-1][0])**2 + (newGlobJuncPose[1]-newPath3[-1][1])**2)
+
+		if dist1 < dist2:
+			childTerm = newPath3[-1]
+		else:
+			childTerm = newPath3[0]
+
+
+		""" two different splices between child and parent terminals """
+		termPaths = [(parentTerm1, childTerm), (parentTerm2, childTerm)]
+
+		splicedPaths = []
+		for termPath in termPaths:
+
+			""" use splice skeleton to find shortest path """
+			startPose = termPath[0]
+			endPose = termPath[-1]
+
+			minStartDist = 1e100
+			minStartNode = None
+			minEndDist = 1e100
+			minEndNode = None
+			
+			for edge in spliceSkeleton.edges():
+			
+				globalNodePoint1 = edge[0]
+				globalNodePoint2 = edge[1]
+
+				dist1 = sqrt((globalNodePoint1[0]-startPose[0])**2 + (globalNodePoint1[1]-startPose[1])**2)
+				dist2 = sqrt((globalNodePoint2[0]-startPose[0])**2 + (globalNodePoint2[1]-startPose[1])**2)
+
+				if dist1 < minStartDist:
+					minStartDist = dist1
+					minStartNode = globalNodePoint1
+
+				if dist2 < minStartDist:
+					minStartDist = dist2
+					minStartNode = globalNodePoint2
+
+				dist1 = sqrt((globalNodePoint1[0]-endPose[0])**2 + (globalNodePoint1[1]-endPose[1])**2)
+				dist2 = sqrt((globalNodePoint2[0]-endPose[0])**2 + (globalNodePoint2[1]-endPose[1])**2)
+
+				if dist1 < minEndDist:
+					minEndDist = dist1
+					minEndNode = globalNodePoint1
+
+				if dist2 < minEndDist:
+					minEndDist = dist2
+					minEndNode = globalNodePoint2
+
+
+			startNode = minStartNode
+			endNode = minEndNode
+
+
+			shortestSpliceTree, shortestSpliceDist = spliceSkeleton.shortest_path(endNode)
+			currNode = shortestSpliceTree[startNode]					 
+			splicedSkel = []
+			while currNode != endNode:
+				splicedSkel.append(currNode)
+				nextNode = shortestSpliceTree[currNode]
+				currNode = nextNode
+			splicedSkel.append(currNode)
+
+			splicedSkel = ensureEnoughPoints(splicedSkel, max_spacing = 0.08, minPoints = 5)
+			spliceSpline1 = SplineFit(splicedSkel, smooth=0.1)
+			splicePoints1 = spliceSpline1.getUniformSamples()
+
+			splicedPaths.append(splicePoints1)
+		
 
 		""" cache the generated result and package it for later retrieval """
 		newSplices = deepcopy(splicedPaths)
@@ -4746,6 +4828,23 @@ class MapState:
 		print "binnedProblems:", numProbs1, numProbs2
 		branchJobs = []
 
+
+		parentIDs = {}
+		localSkeletons = {}
+		controlPoses = {}
+		junctionPoses = {}
+		parentPathIDs = {}
+		pathIDs = self.getPathIDs()
+		for pathID in pathIDs:
+			localSkeletons[pathID] = self.leaf2LeafPathJunctions[pathID]["skeletonGraph"]
+			controlPoses[pathID] = self.pathClasses[pathID]["controlPose"]
+			junctionPoses[pathID] = self.pathClasses[pathID]["globalJunctionPose"]
+
+			cPath = self.getPath(pathID)
+			parentPathID = cPath["parentID"]
+			parentPathIDs[pathID] = parentPathID
+
+
 		for prob in binnedProblems:
 			pathID = prob[0]
 			arcDist = prob[1]
@@ -4764,7 +4863,7 @@ class MapState:
 			parentPath = self.paths[parentID]
 			trimmedParent = self.trimmedPaths[parentID]
 
-			branchJobs.append((pathID, parentID, origGlobJuncPose, origControlPose, childPath, parentPath, trimmedParent, localPathSegs, arcDist, len(self.nodePoses)-1, self.hypothesisID ))
+			branchJobs.append((pathID, parentID, origGlobJuncPose, origControlPose, childPath, parentPath, trimmedParent, localPathSegs, arcDist, localSkeletons, controlPoses, junctionPoses, parentPathIDs, len(self.nodePoses)-1, self.hypothesisID ))
 
 
 		"""
@@ -4880,6 +4979,8 @@ class MapState:
 				lastCost = result["lastCost"]
 				probVal = result["initProb"]
 
+				newSplices = result["newSplices"]
+
 				#origJuncPose = copy(self.pathClasses[pathID]["globalJunctionPose"])
 				#origJuncPose[2] = 0.0
 				#origJuncOrigin = Pose(origJuncPose)
@@ -4899,6 +5000,16 @@ class MapState:
 				#
 				#	localPathSegs.append(localSeg)
 
+				for path in newSplices:
+					print "path has", len(path), "points"
+					xP = []
+					yP = []
+					for p in path:
+						xP.append(p[0])
+						yP.append(p[1])
+
+					#pylab.plot(xP,yP, color = 'k', linewidth=4)
+					pylab.plot(xP,yP,color='k', zorder=9, alpha=0.10)
 
 				for k,path in self.trimmedPaths.iteritems():
 					print "path has", len(path), "points"
@@ -4918,6 +5029,7 @@ class MapState:
 
 				offsetOrigin1 = Pose(modControlPose)
 
+				"""
 				for k in range(len(localPathSegs)):
 					localSeg = localPathSegs[k]
 					xP1 = []
@@ -4935,6 +5047,7 @@ class MapState:
 						pylab.plot(xP1,yP1,color='k', zorder=9, alpha=float(matchCount)/float(maxMatchCount))
 					else:
 						pylab.plot(xP1,yP1,color='k', zorder=9, alpha=0.10)
+				"""
 
 
 
@@ -5170,6 +5283,21 @@ class MapState:
 					xP.append(modJuncPose[0])
 					yP.append(modJuncPose[1])
 
+					newSplices = part["newSplices"]
+
+					for path in newSplices:
+						xP1 = []
+						yP1 = []
+						for p in path:
+							xP1.append(p[0])
+							yP1.append(p[1])
+						if maxProb > 0:
+							pylab.plot(xP1,yP1,color='k', zorder=9, alpha=part["initProb"]/maxProb)
+						else:
+							pylab.plot(xP1,yP1,color='k', zorder=9, alpha=0.10)
+
+
+					"""
 					offsetOrigin1 = Pose(modControlPose)
 
 					for k in range(len(localPathSegs)):
@@ -5186,6 +5314,7 @@ class MapState:
 						else:
 							#pylab.plot(xP1,yP1,color='k', zorder=9, alpha=part[8])
 							pylab.plot(xP1,yP1,color='k', zorder=9, alpha=0.10)
+					"""
 
 
 				pylab.scatter(xP, yP, color='k', zorder=8)
