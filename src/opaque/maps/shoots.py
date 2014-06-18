@@ -561,6 +561,37 @@ def getSegPaths(node, juncIDs, leafIDs, currPath, tree, isVisited):
 	raise
 	return nextPath
 
+@logFunction
+def computeGlobalControlPoses(controlPoses, parentPathIDs):
+
+	pathIDs = parentPathIDs.keys()
+
+	isComputed = {}
+
+	finalPoses = {}
+
+	for pathID in pathIDs:
+		isComputed[pathID] = False
+
+		if pathID == 0:
+			finalPoses[pathID] = controlPoses[pathID]
+			isComputed[pathID] = True
+
+
+	while False in isComputed.values():
+
+		for pathID in pathIDs:
+			if pathID != 0:
+				parentPathID = parentPathIDs[pathID]
+
+				if isComputed[parentPathID]:
+					localFrame = Pose(finalPoses[parentPathID])
+					localPose = controlPoses[pathID]
+
+					finalPoses[pathID] = localFrame.convertLocalOffsetToGlobal(localPose)
+					isComputed[pathID] = True
+
+	return finalPoses
 
 @logFunction
 def computeShootSkeleton(poseData, pathID, branchNodeID, globalJunctionPose, controlPose, nodeSet, nodePoses, hypothesisID, color, topCount):

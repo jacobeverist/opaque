@@ -26,7 +26,7 @@ import traceback
 
 import alphamod
 
-from shoots import computeShootSkeleton, spliceSkeletons
+from shoots import computeShootSkeleton, spliceSkeletons, computeGlobalControlPoses
 
 pylab.ioff()
 
@@ -3176,6 +3176,7 @@ class MapState:
 
 					""" FIXME: assume one landmark feature """
 
+					""" get the point landmark in local coordinates """
 					if sF0["bloomPoint"] != None:
 						print "DO bloom localize to landmark feature", nodeID
 						localJunctionPoint = sF0["bloomPoint"]
@@ -3186,12 +3187,13 @@ class MapState:
 
 					""" starting pose of nodeID """
 					nodePose0 = self.getNodePose(nodeID)
+					
+					""" convert landmark into global coordinates """
 					poseOrigin0 = Pose(nodePose0)
 					globalLandmarkPoint = poseOrigin0.convertLocalToGlobal(localJunctionPoint)
 
-					# self.pathClasses[0] = {"parentID" : None, "branchNodeID" : None, "localJunctionPose" : None, 
-									#"sameProb" : {}, "nodeSet" : [], "globalJunctionPose" : None}
-
+	
+					""" identify which junction this landmark is by the closest in cartesian distance from canonical """
 					minPathID = None
 					minJuncDist = 1e100
 					junctionPose0 = None
@@ -3208,6 +3210,9 @@ class MapState:
 								minPathID = pathID
 								junctionPose0 = currJuncPose
 
+
+
+					""" compute new node pose based on current location of junction landmark feature """
 					if minPathID != None:
 
 						print "nodePose0 =", nodePose0
@@ -3231,20 +3236,11 @@ class MapState:
 						self.setNodePose(nodeID, junctionNodePose0)
 
 						
-					"""
-					global pose of node0
-					local pose of landmark feature  (localOffset0)
-					global pose of existing junction (junction0)
-					assuming that existing junction is landmark, convert back to get global pose of node
-					"""
-					
 		self.isNoLocalize = False
 		self.resetBranches()
 
 		updateCount = self.poseParticles["updateCount"] 
 		particleDist2 = self.poseParticles["snapshots2"][0]
-
-		#nodeID = nodeID0
 
 		nodePose0 = self.getNodePose(nodeID0)
 		staticSplicedPaths, spliceTerms, staticSplicePathIDs = self.getSplicesByNearJunction(nodePose0)
@@ -3274,6 +3270,9 @@ class MapState:
 		allSplicedPaths = []
 		spliceCount = 0
 
+		#parentPathIDs = self.getParentHash()
+		#controlPoses = self.getControlPoses()
+		#globalControlPoses = computeGlobalControlPoses(controlPoses, parentPathIDs)
 
 		probSets = []
 		for particleIndex in range(len(particleDist2)):
@@ -3290,6 +3289,7 @@ class MapState:
 					dist1 = sqrt((globJuncPose[0]-hypPose0[0])**2 + (globJuncPose[1]-hypPose0[1])**2)
 					if dist1 < 3.0:
 						probSets.append((pathID, globJuncPose, controlPose))
+
 
 		""" precompute the evaluation for branches and cache result """
 		""" each branch point is the max likelihood of each pose particle """
@@ -4244,7 +4244,40 @@ class MapState:
 	@logFunction
 	def getPathIDs(self):
 		return self.pathClasses.keys()
+
+	@logFunction
+	def getParentHash(self):
+
+		parentPathIDs = {}
+		pathIDs = self.getPathIDs()
+
+		for pathID in pathIDs:
+			cPath = self.getPath(pathID)
+			parentPathID = cPath["parentID"]
+			parentPathIDs[pathID] = parentPathID
+
+		return parentPathIDs
+
+	@logFunction
+	def getControlPoses(self):
+		controlPoses = {}
+		allPathIDs = self.getPathIDs()
+		for pathID in allPathIDs:
+			controlPoses[pathID] = self.pathClasses[pathID]["controlPose"]
+
+		return controlPoses
 	
+
+	@logFunction
+	def getFinalControlPose(self, pathID):
+		
+		parentPathIDs = self.getParentHash()
+		controlPoses = self.getControlPoses()
+		globalControlPoses = computeGlobalControlPoses(controlPoses, parentPathIDs)
+
+
+		return globalControlPoses[pathID]
+
 	@logFunction
 	def getParentPathID(self, pathID):
 		parentID = self.pathClasses[pathID]["parentID"]
@@ -5422,15 +5455,17 @@ class MapState:
 		localSkeletons = {}
 		controlPoses = {}
 		junctionPoses = {}
-		parentPathIDs = {}
 		for pathID in pathIDs:
 			localSkeletons[pathID] = self.leaf2LeafPathJunctions[pathID]["skeletonGraph"]
 			controlPoses[pathID] = self.pathClasses[pathID]["controlPose"]
 			junctionPoses[pathID] = self.pathClasses[pathID]["globalJunctionPose"]
 
-			cPath = self.getPath(pathID)
-			parentPathID = cPath["parentID"]
-			parentPathIDs[pathID] = parentPathID
+		parentPathIDs = self.getParentHash()
+		
+		finalPoses = computeGlobalControlPoses(controlPoses, parentPathIDs)
+		print "controlPoses:", controlPoses
+		print "finalPoses:", finalPoses
+
 
 		self.spliceSkeleton = spliceSkeletons(localSkeletons, controlPoses, junctionPoses, parentPathIDs)
 
@@ -6875,6 +6910,16 @@ class MapState:
 		#controlPose = [controlPoint[0], controlPoint[1], 0.0]
 		controlPose = [cPoint1[0],cPoint1[1], 0.0]
 
+		""" convert the controlPose to coordinates local to the parent frame """
+		parentPathIDs = self.getParentHash()
+		controlPoses = self.getControlPoses()
+		globalControlPoses = computeGlobalControlPoses(controlPoses, parentPathIDs)
+		
+		""" compute the control pose relative to the parent """
+		parentControlPose = globalControlPoses[parentID]
+		parentFrame = Pose(parentControlPose)
+		localControlPose = parentFrame.convertGlobalPoseToLocal(controlPose)
+
 
 		""" basic shoot data structure """
 		self.pathClasses[newPathID] = {"parentID" : parentID,
@@ -6883,7 +6928,8 @@ class MapState:
 						"sameProb" : {},
 						"nodeSet" : [branchNodeID,],
 						"globalJunctionPose" : newGlobJuncPose,
-						"controlPose" : controlPose }		
+						"controlPose" : localControlPose }		
+						#"controlPose" : controlPose }		
 
 		print "new pathClass:", self.pathClasses[newPathID]
 
@@ -6950,11 +6996,26 @@ class MapState:
 				newArcDist = arcLow + k * self.DIV_LEN
 				arcDists.append((newPathID, newArcDist))
 
+			""" convert the controlPose to coordinates local to the parent frame """
+			""" compute the control pose relative to the parent """
+			parentPathIDs = self.getParentHash()
+			controlPoses = self.getControlPoses()
+			globalControlPoses = computeGlobalControlPoses(controlPoses, parentPathIDs)
+			parentControlPose = globalControlPoses[parentID]
+			parentFrame = Pose(parentControlPose)
 
-			controlPoses = [pathSpline.getPointOfDist(arcDists[k][1]) for k in range(self.NUM_BRANCHES)]
+			controlPoses = []
+			for k in range(self.NUM_BRANCHES):
+				globalControlPose = pathSpline.getPointOfDist(arcDists[k][1])
+				localControlPose = parentFrame.convertGlobalPoseToLocal(globalControlPose)
+				controlPoses.append(localControlPose)
+
+			localParticleControlPose = parentFrame.convertGlobalPoseToLocal(particleControlPose)
+
+			#controlPoses = [pathSpline.getPointOfDist(arcDists[k][1]) for k in range(self.NUM_BRANCHES)]
 
 			""" add the details of this junction given particle pose is true """
-			part.addPath(newPathID, parentID, branchNodeID, localJunctionPose, modJuncPose, particleControlPose, self.NUM_BRANCHES, arcDists, controlPoses)
+			part.addPath(newPathID, parentID, branchNodeID, localJunctionPose, modJuncPose, localParticleControlPose, self.NUM_BRANCHES, arcDists, controlPoses)
 
 		print "newPath", newPathID, "=", self.pathClasses[newPathID]
 
@@ -6998,6 +7059,10 @@ class MapState:
 
 		isParentComputed[0] = True
 
+		parentPathIDs = self.getParentHash()
+		controlPoses = self.getControlPoses()
+		globalControlPoses = computeGlobalControlPoses(controlPoses, parentPathIDs)
+
 		while False in isParentComputed.values():
 			print "trim parents:", isParentComputed, childParents
 
@@ -7017,13 +7082,18 @@ class MapState:
 
 								
 						origControlPose = self.pathClasses[childPathID]["controlPose"]
+						origGlobalControlPose = self.getFinalControlPose(childPathID)
+
+
 						branchNodeID = self.pathClasses[childPathID]["branchNodeID"]
 						branchNodePose = self.getNodePose(branchNodeID)
 						globalJunctionPose = self.getGlobalJunctionPose(childPathID)
 
 						modJuncPose = [globalJunctionPose[0], globalJunctionPose[1], 0.0]
 
-						newPath3, newGlobJuncPose, juncDiscDist, juncDiscAngle, splicedPaths = trimBranch(childPathID, parentPathID, origControlPose, origControlPose, globalJunctionPose, modJuncPose, path2, path1, trimmedPaths[parentPathID], [], plotIter=False, hypothesisID=self.hypothesisID, nodeID=(self.poseData.numNodes-1))
+						globalControlPose = globalControlPoses[pathID]
+
+						newPath3, newGlobJuncPose, juncDiscDist, juncDiscAngle, splicedPaths = trimBranch(childPathID, parentPathID, origGlobalControlPose, globalControlPose, globalJunctionPose, modJuncPose, path2, path1, trimmedPaths[parentPathID], [], plotIter=False, hypothesisID=self.hypothesisID, nodeID=(self.poseData.numNodes-1))
 						#newPath3, newGlobJuncPose, juncDiscDist, juncDiscAngle, splicedPaths = trimBranch(childPathID, parentPathID, origControlPose, modJuncPose, globalJunctionPoint, path2, path1, trimmedPaths[parentPathID], [], plotIter=False, hypothesisID=self.hypothesisID, nodeID=(self.poseData.numNodes-1))
 
 						trimmedPaths[pathID] = deepcopy(newPath3)
