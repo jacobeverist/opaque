@@ -2,7 +2,6 @@
 from LocalNode import getLongestPath, computeHullAxis
 from StableCurve import StableCurve
 from SplineFit import SplineFit
-from ParticleFilter import ParticleFilter
 from Pose import Pose
 from PoseData import PoseData
 from MapProcess import movePath, selectLocalCommonOrigin, addToPaths, localizePair, consistentFit, batchMovePath, batchLocalizePair, batchEval, computePathAngleVariance

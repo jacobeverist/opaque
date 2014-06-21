@@ -325,6 +325,7 @@ class MapState:
 					"localJunctionPose" : None, 
 					"sameProb" : {},
 					"nodeSet" : [],
+					"localNodePoses" : {},
 					"globalJunctionPose" : None,
 					"controlPose" : [0.0,0.0,0.0] }		
 
@@ -474,8 +475,8 @@ class MapState:
 
 				particleObj = Particle(hypPose0, hypPose1, pathID, hypDist, 0.0, self.hypothesisID)
 				particleObj.spliceCurve = deepcopy(self.paths[0])
-				particleObj.addNode(0,0)
-				particleObj.addNode(1,0)
+				particleObj.addNode(0,0, hypPose0)
+				particleObj.addNode(1,0, hypPose1)
 				initDist2.append(particleObj)
 
 		#print "setting pose particles", len(initDist), initDist
@@ -4235,6 +4236,11 @@ class MapState:
 			if nodeID in self.pathClasses[pathID]["nodeSet"]:
 				print "removing node", nodeID, "from path", pathID
 				self.pathClasses[pathID]["nodeSet"].remove(nodeID)
+				del self.pathClasses[pathID]["localNodePoses"][nodeID]
+
+				for p in particleDist:
+					p.delNode(nodeID)
+
 
 		isAParent = {}
 		for k in pathIDs:
@@ -4252,8 +4258,18 @@ class MapState:
 				self.pathClasses[pathID]["nodeSet"].append(nodeID)
 				#self.addNode(nodeID,pathID)
 
+				""" convert the controlPose to coordinates local to the parent frame """
+				parentPathIDs = self.getParentHash()
+				controlPoses = self.getControlPoses()
+				globalControlPoses = computeGlobalControlPoses(controlPoses, parentPathIDs)
+				shootControlPose = globalControlPoses[pathID]
+				shootFrame = Pose(shootControlPose)
+				localNodePose = shootFrame.convertGlobalPoseToLocal(self.nodePoses[nodeID])
+
+				self.pathClasses[pathID]["localNodePoses"][nodeID] = localNodePose
+
 				for p in particleDist:
-					p.addNode(nodeID, pathID)
+					p.addNode(nodeID, pathID, localNodePose)
 
 		print "shoot", pathID, "has nodes", self.pathClasses[pathID]["nodeSet"]
 
@@ -4266,6 +4282,19 @@ class MapState:
 		print "adding node", nodeID, "to path", pathID
 		if not nodeID in self.pathClasses[pathID]["nodeSet"]:
 			self.pathClasses[pathID]["nodeSet"].append(nodeID)
+
+
+			""" convert the controlPose to coordinates local to the parent frame """
+			parentPathIDs = self.getParentHash()
+			controlPoses = self.getControlPoses()
+			globalControlPoses = computeGlobalControlPoses(controlPoses, parentPathIDs)
+			shootControlPose = globalControlPoses[pathID]
+			shootFrame = Pose(shootControlPose)
+
+			localNodePose = shootFrame.convertGlobalPoseToLocal(self.nodePoses[nodeID])
+			
+			self.pathClasses[pathID]["localNodePoses"][nodeID] = localNodePose
+
 		else:
 			print "node", nodeID, "already present in path", pathID
 
@@ -4273,7 +4302,8 @@ class MapState:
 		particleDist = self.poseParticles["snapshots2"][0]
 
 		for p in particleDist:
-			p.addNode(nodeID, pathID)
+			localNodePose = self.pathClasses[pathID]["localNodePoses"][nodeID]
+			p.addNode(nodeID, pathID, localNodePose)
 
 		print pathID, "has nodes", self.pathClasses[pathID]["nodeSet"]
 
@@ -4379,13 +4409,16 @@ class MapState:
 		parentFrame = Pose(parentControlPose)
 		localControlPose = parentFrame.convertGlobalPoseToLocal(controlPose)
 
-
+		shootFrame = Pose(controlPose)
+		localNodePose = shootFrame.convertGlobalPoseToLocal(self.nodePoses[branchNodeID])
+		
 		""" basic shoot data structure """
 		self.pathClasses[newPathID] = {"parentID" : parentID,
 						"branchNodeID" : branchNodeID,
 						"localJunctionPose" : localJunctionPose, 
 						"sameProb" : {},
 						"nodeSet" : [branchNodeID,],
+						"localNodePoses" : {branchNodeID : localNodePose},
 						"globalJunctionPose" : newGlobJuncPose,
 						"controlPose" : localControlPose }		
 						#"controlPose" : controlPose }		

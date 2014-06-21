@@ -860,6 +860,10 @@ class Particle:
 		self.spliceCurve = None
 
 		self.nodeCorrespondence = {}
+		self.localNodePoses = {}
+
+		self.addNode(0,0, pose0)
+		self.addNode(1,0, pose1)
 
 		" temporary values, computed on-the-fly for each evaluation "
 
@@ -895,13 +899,23 @@ class Particle:
 									"maxLikelihoodBranch" : 0
 									}		
 
+	def delNode(self, nodeID):
+		del self.nodeCorrespondence[nodeID]
+		del self.localNodePoses[nodeID]
 
-	def addNode(self, nodeID, pathID):
-		self.nodeCorrespondence[nodeID] = pathID
+	def addNode(self, nodeID, pathID, localNodePose):
+		try:
+			self.nodeCorrespondence[nodeID]
+		except:
+			self.nodeCorrespondence[nodeID] = []
+
+		self.nodeCorrespondence[nodeID].append(pathID)
+		self.localNodePoses[nodeID] = localNodePose
 
 	def copy(self):
 		newParticle = Particle(deepcopy(self.pose0), deepcopy(self.pose1), 0, self.hypDist, self.weightVal, self.mapStateID)
 		newParticle.nodeCorrespondence = deepcopy(self.nodeCorrespondence)
+		newParticle.localNodePoses = deepcopy(self.localNodePoses)
 		newParticle.memberPaths = deepcopy(self.memberPaths)
 		newParticle.junctionData = deepcopy(self.junctionData)
 
