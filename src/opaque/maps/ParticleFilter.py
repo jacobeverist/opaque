@@ -859,8 +859,20 @@ class Particle:
 		#self.spliceName = spliceName
 		self.spliceCurve = None
 
-		self.nodeCorrespondence = {}
-		self.localNodePoses = {}
+		self.junctionData[0] = {
+									"parentID" : None,
+									"branchNodeID" : None,
+									"localJunctionPose" : None, 
+									"globalJunctionPose" : None,
+									"nodeSet" : [],
+									"localNodePoses" : {},
+									"controlPose" : [0.0,0.0,0.0],
+									"probDist" : [ 1.0 ],
+									"branchPoseDist" : None,
+									"controlPoseDist" : None,
+									"arcDists" : None,
+									"maxLikelihoodBranch" : 0
+									}		
 
 		self.addNode(0,0, pose0)
 		self.addNode(1,0, pose1)
@@ -872,7 +884,9 @@ class Particle:
 		self.weightVal = weightVal
 
 		self.mapStateID = mapStateID
-	
+
+
+
 	def displacePose(self, pose0, pose1):
 
 		self.prevPose0 = self.pose0
@@ -884,13 +898,15 @@ class Particle:
 		self.pose0 = deepcopy(pose0)
 		self.pose1 = deepcopy(pose1)
 
-	def addPath(self, pathID, parentID, branchNodeID, localJunctionPose, globalJunctionPose, controlPose, numBranches, arcDists, controlPoses):
+	def addPath(self, pathID, parentID, branchNodeID, localNodePose, localJunctionPose, globalJunctionPose, controlPose, numBranches, arcDists, controlPoses):
 
 		self.junctionData[pathID] = {
 									"parentID" : parentID,
 									"branchNodeID" : branchNodeID,
 									"localJunctionPose" : localJunctionPose, 
 									"globalJunctionPose" : globalJunctionPose,
+									"nodeSet" : [branchNodeID,],
+									"localNodePoses" : {branchNodeID : localNodePose},
 									"controlPose" : controlPose,
 									"probDist" : [ 1.0 / float(numBranches) for k in range(numBranches) ],
 									"branchPoseDist" : [deepcopy(globalJunctionPose) for k in range(numBranches)],
@@ -899,23 +915,18 @@ class Particle:
 									"maxLikelihoodBranch" : 0
 									}		
 
-	def delNode(self, nodeID):
-		del self.nodeCorrespondence[nodeID]
-		del self.localNodePoses[nodeID]
+	def delNode(self, nodeID, pathID):
 
+		self.junctionData[pathID]["nodeSet"].remove(nodeID)
+		del self.junctionData[pathID]["localNodePoses"][nodeID]
+		
 	def addNode(self, nodeID, pathID, localNodePose):
-		try:
-			self.nodeCorrespondence[nodeID]
-		except:
-			self.nodeCorrespondence[nodeID] = []
 
-		self.nodeCorrespondence[nodeID].append(pathID)
-		self.localNodePoses[nodeID] = localNodePose
+		self.junctionData[pathID]["nodeSet"].append(nodeID)
+		self.junctionData[pathID]["localNodePoses"][nodeID] = localNodePose
 
 	def copy(self):
 		newParticle = Particle(deepcopy(self.pose0), deepcopy(self.pose1), 0, self.hypDist, self.weightVal, self.mapStateID)
-		newParticle.nodeCorrespondence = deepcopy(self.nodeCorrespondence)
-		newParticle.localNodePoses = deepcopy(self.localNodePoses)
 		newParticle.memberPaths = deepcopy(self.memberPaths)
 		newParticle.junctionData = deepcopy(self.junctionData)
 

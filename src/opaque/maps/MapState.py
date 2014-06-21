@@ -543,7 +543,6 @@ class MapState:
 			pathID = part.memberPaths[0]
 			hypDist = part.hypDist
 			spliceID = part.spliceName
-			corresp = part.nodeCorrespondence
 
 			currSplice0 = part.spliceCurve
 
@@ -4220,6 +4219,7 @@ class MapState:
 	def delNode(self, nodeID, pathID):
 		print "deleting node", nodeID, "from path", pathID
 		self.pathClasses[pathID]["nodeSet"].remove(nodeID)
+		del self.pathClasses[pathID]["localNodePoses"][nodeID]
 		
 
 	@logFunction
@@ -4239,7 +4239,7 @@ class MapState:
 				del self.pathClasses[pathID]["localNodePoses"][nodeID]
 
 				for p in particleDist:
-					p.delNode(nodeID)
+					p.delNode(nodeID, pathID)
 
 
 		isAParent = {}
@@ -4507,7 +4507,7 @@ class MapState:
 			#controlPoses = [pathSpline.getPointOfDist(arcDists[k][1]) for k in range(self.NUM_BRANCHES)]
 
 			""" add the details of this junction given particle pose is true """
-			part.addPath(newPathID, parentID, branchNodeID, localJunctionPose, modJuncPose, localParticleControlPose, self.NUM_BRANCHES, arcDists, controlPoses)
+			part.addPath(newPathID, parentID, branchNodeID, localNodePose, localJunctionPose, modJuncPose, localParticleControlPose, self.NUM_BRANCHES, arcDists, controlPoses)
 
 		print "newPath", newPathID, "=", self.pathClasses[newPathID]
 
