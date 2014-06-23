@@ -820,7 +820,6 @@ def computeShootSkeleton(poseData, pathID, branchNodeID, globalJunctionPose, con
 				realPath.append(gridHash[p])
 			#realPath.reverse()
 			
-			
 			theoryPaths[k] = realPath + theoryLeaf
 			
 			print "theoryPath(" , k , ")", len(realPath), realPath[-1], theoryLeaf
@@ -910,7 +909,7 @@ def computeShootSkeleton(poseData, pathID, branchNodeID, globalJunctionPose, con
 				jIndices.append(None)
 			else:
 				jIndices.append(index)
-				
+		
 		print "jIndices:", jIndices
 
 		juncLongIndices.append(jIndices)
@@ -1031,9 +1030,9 @@ def computeShootSkeleton(poseData, pathID, branchNodeID, globalJunctionPose, con
 	juncPoints = []
 	juncArmPoints = []
 	juncDesc = {}
-	juncGridPoints = []
-	juncGridArmPoints = []
-	juncGridDesc = {}
+	#juncGridPoints = []
+	#juncGridArmPoints = []
+	#juncGridDesc = {}
 	for k in range(len(juncLongIndices)):
 
 		print "junc indexes:", juncLongIndices[k], juncIndices[k]
@@ -1066,37 +1065,33 @@ def computeShootSkeleton(poseData, pathID, branchNodeID, globalJunctionPose, con
 		juncPoints.append(juncPnts)
 		juncArmPoints.append(juncArmPnts)
 
-		#juncGridPoints = []
-		#juncGridArmPoints = []
-		#juncGridDesc = {}
-		#leafToLeafGridPaths = []
-		juncGridInds = juncIndices[k]
-		juncGridPnts = []
-		juncGridArmPnts = []
-		for index in juncGridInds:
-			jPnt = copy(leafToLeafGridPaths[k][index])
-
-			jaPnt1 = leafToLeafGridPaths[k][index+1]
-			jaPnt2 = leafToLeafGridPaths[k][index-1]
-
-			jPnt = tuple(jPnt)
-			jaPnt1 = tuple(jaPnt1)
-			jaPnt2 = tuple(jaPnt2)
-
-			juncGridPnts.append(jPnt)
-			juncGridArmPnts.append((jaPnt1, jaPnt2))
-
-			try:
-				juncGridDesc[jPnt].append(jaPnt1)
-				juncGridDesc[jPnt].append(jaPnt2)
-			except:
-				juncGridDesc[jPnt] = []
-				juncGridDesc[jPnt].append(jaPnt1)
-				juncGridDesc[jPnt].append(jaPnt2)
+		#juncGridInds = juncIndices[k]
+		#juncGridPnts = []
+		#juncGridArmPnts = []
+		#for index in juncGridInds:
+		#	jPnt = copy(leafToLeafGridPaths[k][index])
+		#
+		#	jaPnt1 = leafToLeafGridPaths[k][index+1]
+		#	jaPnt2 = leafToLeafGridPaths[k][index-1]
+		#
+		#	jPnt = tuple(jPnt)
+		#	jaPnt1 = tuple(jaPnt1)
+		#	jaPnt2 = tuple(jaPnt2)
+		#
+		#	juncGridPnts.append(jPnt)
+		#	juncGridArmPnts.append((jaPnt1, jaPnt2))
+		#
+		#	try:
+		#		juncGridDesc[jPnt].append(jaPnt1)
+		#		juncGridDesc[jPnt].append(jaPnt2)
+		#	except:
+		#		juncGridDesc[jPnt] = []
+		#		juncGridDesc[jPnt].append(jaPnt1)
+		#		juncGridDesc[jPnt].append(jaPnt2)
 
 
-		juncGridPoints.append(juncGridPnts)
-		juncGridArmPoints.append(juncGridArmPnts)
+		#juncGridPoints.append(juncGridPnts)
+		#juncGridArmPoints.append(juncGridArmPnts)
 
 
 	""" remove duplicates """
@@ -1104,9 +1099,9 @@ def computeShootSkeleton(poseData, pathID, branchNodeID, globalJunctionPose, con
 		v1 = set(v)
 		juncDesc[k] = list(v1)
 
-	for k, v in juncGridDesc.iteritems():
-		v1 = set(v)
-		juncGridDesc[k] = list(v1)
+	#for k, v in juncGridDesc.iteritems():
+	#	v1 = set(v)
+	#	juncGridDesc[k] = list(v1)
 
 				
 	""" update to data structure """

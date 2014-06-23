@@ -311,9 +311,12 @@ class MapState:
 		""" the alpha hull and maximum length path of shoot skeleton """
 		self.paths = {0 : []}
 		self.hulls = {0 : []}
+		self.localPaths = {0 : []}
+		self.localHulls = {0 : []}
 
 		""" intermediate data structure for computing the shoot skeleton """
 		self.leaf2LeafPathJunctions = {}
+		self.localLeaf2LeafPathJunctions = {}
 
 		""" shoot spine only, separated from the skeleton at the branch point """
 		self.trimmedPaths  = {}
@@ -323,6 +326,7 @@ class MapState:
 		self.pathClasses[0] = {"parentID" : None,
 					"branchNodeID" : None,
 					"localJunctionPose" : None, 
+					"localDivergencePose" : None, 
 					"sameProb" : {},
 					"nodeSet" : [],
 					"localNodePoses" : {},
@@ -410,6 +414,30 @@ class MapState:
 		newEstPose = newProfile.convertLocalOffsetToGlobal(localOffset)
 		
 		self.nodeRawPoses[nodeID] = newEstPose
+
+
+		allPathIDs = self.getPathIDs()
+
+		parentPathIDs = self.getParentHash()
+		controlPoses = self.getControlPoses()
+		globalControlPoses = computeGlobalControlPoses(controlPoses, parentPathIDs)
+
+		for pathID in allPathIDs:
+
+			if nodeID in self.pathClasses[pathID]["nodeSet"]:
+
+				if pathID != 0:
+
+					""" convert the controlPose to coordinates local to the parent frame """
+					shootControlPose = globalControlPoses[pathID]
+					shootFrame = Pose(shootControlPose)
+					localNodePose = shootFrame.convertGlobalPoseToLocal(newPose)
+
+					self.pathClasses[pathID]["localNodePoses"][nodeID] = localNodePose
+
+				else:
+					self.pathClasses[pathID]["localNodePoses"][nodeID] = newPose
+
 
 	@logFunction
 	def initializePoseParticles(self):
@@ -726,11 +754,25 @@ class MapState:
 		#globalControlPoses = computeGlobalControlPoses(controlPoses, parentPathIDs)
 
 		""" FIXME:  convert particle to control matrix and switch to local controls """
+
+		"""
+		1.  First, for given pose, compute distance to each junction point for each branch point distribution
+		2.  if branch point of shoot is beyond threshold distance, only include the most likely shoot point, all others same
+		3.  For each branch point for each shoot, compute all possible combinations
+		4.  Each combination is a problem set
+
+
+
+		"""
+
+
 		probSets = []
 		for particleIndex in range(len(particleDist2)):
 			part = particleDist2[particleIndex]
 			hypPose0 = part.pose0
 			pathIDs = self.getPathIDs()
+
+			branchDists = {}
 
 			for pathID in pathIDs:
 				if pathID != 0:
@@ -739,8 +781,58 @@ class MapState:
 					controlPose = part.junctionData[pathID]["controlPose"]
 
 					dist1 = sqrt((globJuncPose[0]-hypPose0[0])**2 + (globJuncPose[1]-hypPose0[1])**2)
+
+					branchDists[pathID] = dist1
+
 					if dist1 < 3.0:
 						probSets.append((pathID, globJuncPose, controlPose))
+
+
+
+
+			#part.junctionData[pathID]["controlPoseDist"]
+			#part.junctionData[pathID]["arcDists"]
+
+		#allPathIDs = self.getPathIDs()
+
+		""" get spline curves of each parent shoot """
+		#pathSplines = {}
+		#for pathID in allPathIDs:
+
+		""" path information """
+			#pathDesc = self.pathClasses[pathID]
+			#parentID = pathDesc["parentID"]
+
+			#if parentID != None:
+				#pathSpline = SplineFit(self.paths[parentID])
+				#pathSplines[parentID] = pathSpline
+
+		""" convert branch points from poses into arc distances on parent shoot """
+		#arcDists = []
+		#for prob in probSets:
+
+			#pathID = prob[0]
+			#estJuncPose = prob[1]
+			#controlPose = prob[2]
+
+			#pathDesc = self.pathClasses[pathID]
+			#parentID = pathDesc["parentID"]
+			#pathSpline = pathSplines[parentID]
+
+		""" get the arc distance of the control point """
+			#minDist, controlUVal, newControlPose = pathSpline.findClosestPoint(controlPose)
+			#arcDist = pathSpline.dist_u(controlUVal)
+
+			#arcHigh = arcDist + self.DIV_LEN * floor(self.NUM_BRANCHES/2.0)
+			#arcLow = arcDist - self.DIV_LEN * floor(self.NUM_BRANCHES/2.0)
+
+		" sample points around each probSet branch point "
+			#for k in range(self.NUM_BRANCHES):
+				#newArcDist = arcLow + k * self.DIV_LEN
+				#arcDists.append((pathID, newArcDist))
+
+
+
 
 
 		""" precompute the evaluation for branches and cache result """
@@ -1168,14 +1260,16 @@ class MapState:
 							#self.nodePoses[nodeID] = newGlobalPose
 							self.setNodePose(nodeID, newGlobalPose)
 
+					""" FIXME:  convert to control matrix and local controls """
+					self.pathClasses[pathID]["controlPose"] = partControlPose
+
 					""" update of canonical branch point from maximum likelihood branch point """
 					partJuncPose = part.junctionData[pathID]["branchPoseDist"][partBranchIndex]
 					newJuncPose = deepcopy(partJuncPose)
 					newJuncPose[2] = self.pathClasses[pathID]["globalJunctionPose"][2]
-					self.pathClasses[pathID]["globalJunctionPose"] = newJuncPose
+					#self.pathClasses[pathID]["globalJunctionPose"] = newJuncPose
+					self.setGlobalJunctionPose(pathID, newJuncPose)
 
-					""" FIXME:  convert to control matrix and local controls """
-					self.pathClasses[pathID]["controlPose"] = partControlPose
 
 
 		elif numMax > 1:
@@ -1673,8 +1767,23 @@ class MapState:
 	def getControlPose(self, pathID):
 
 		controlPose = self.pathClasses[pathID]["controlPose"]
-
 		return controlPose
+
+	@logFunction
+	def setGlobalJunctionPose(self, pathID, newJuncPose):
+
+		if pathID != 0:
+
+			self.pathClasses[pathID]["globalJunctionPose"] = newJuncPose
+
+			globalControlPoses = computeGlobalControlPoses(self.getControlPoses(), self.getParentHash())
+
+			""" convert the controlPose to coordinates local to the parent frame """
+			shootControlPose = globalControlPoses[pathID]
+			shootFrame = Pose(shootControlPose)
+			localJuncPose = shootFrame.convertGlobalPoseToLocal(newJuncPose)
+
+			self.pathClasses[pathID]["localJunctionPose"] = localJuncPose
 
 	@logFunction
 	def getGlobalJunctionPose(self, pathID):
@@ -1688,10 +1797,10 @@ class MapState:
 			if branchNodeID == None:
 				return None
 			
-			localJunctionPose = self.pathClasses[pathID]["localJunctionPose"]
+			localDivergencePose = self.pathClasses[pathID]["localDivergencePose"]
 			
 			poseOrigin = Pose(self.nodeRawPoses[branchNodeID])
-			globJuncPose = poseOrigin.convertLocalOffsetToGlobal(localJunctionPose)
+			globJuncPose = poseOrigin.convertLocalOffsetToGlobal(localDivergencePose)
 
 		return globJuncPose
 		
@@ -2859,6 +2968,9 @@ class MapState:
 		self.paths = {}
 		self.hulls = {}
 		self.leaf2LeafPathJunctions = {}
+		self.localLeaf2LeafPathJunctions = {}
+		self.localPaths = {}
+		self.localHulls = {}
 		
 		pathIDs = self.getPathIDs()
 		for pathID in pathIDs:
@@ -2878,6 +2990,23 @@ class MapState:
 			self.leaf2LeafPathJunctions[pathID] = results[0]
 			self.paths[pathID] = results[1]
 			self.hulls[pathID] = results[2]
+
+			self.topCount += 1
+
+			localResults = computeShootSkeleton(self.poseData,
+										pathID,
+										self.pathClasses[pathID]["branchNodeID"],
+										self.pathClasses[pathID]["localJunctionPose"],
+										self.getControlPose(pathID),
+										self.getNodes(pathID),
+										self.pathClasses[pathID]["localNodePoses"],
+										self.hypothesisID,
+										self.colors[pathID],
+										self.topCount)
+
+			self.localLeaf2LeafPathJunctions[pathID] = localResults[0]
+			self.localPaths[pathID] = localResults[1]
+			self.localHulls[pathID] = localResults[2]
 
 			self.topCount += 1
 			
@@ -4330,7 +4459,7 @@ class MapState:
 			pass
 	
 	@logFunction
-	def addPath(self, parentID, branchNodeID, localJunctionPose):
+	def addPath(self, parentID, branchNodeID, localDivergencePose):
 
 		"""
 
@@ -4350,7 +4479,7 @@ class MapState:
 		"""
 
 
-		print "addPath(", parentID, branchNodeID, localJunctionPose
+		print "addPath(", parentID, branchNodeID, localDivergencePose
 		
 		""" the raw pose and posture pose """
 		estPose = self.nodePoses[branchNodeID]
@@ -4358,7 +4487,7 @@ class MapState:
 
 		""" the localJunctionPose computed from raw local coordinates to global coordinates """
 		nodeOrigin = Pose(nodePose)
-		globalJunctionPose = nodeOrigin.convertLocalOffsetToGlobal(localJunctionPose)
+		globalJunctionPose = nodeOrigin.convertLocalOffsetToGlobal(localDivergencePose)
 	
 		
 		allPathIDs = self.getPathIDs()
@@ -4411,17 +4540,18 @@ class MapState:
 
 		shootFrame = Pose(controlPose)
 		localNodePose = shootFrame.convertGlobalPoseToLocal(self.nodePoses[branchNodeID])
-		
+		localJunctionPose = shootFrame.convertGlobalPoseToLocal(newGlobJuncPose)
+
 		""" basic shoot data structure """
 		self.pathClasses[newPathID] = {"parentID" : parentID,
 						"branchNodeID" : branchNodeID,
+						"localDivergencePose" : localDivergencePose, 
 						"localJunctionPose" : localJunctionPose, 
 						"sameProb" : {},
 						"nodeSet" : [branchNodeID,],
 						"localNodePoses" : {branchNodeID : localNodePose},
 						"globalJunctionPose" : newGlobJuncPose,
 						"controlPose" : localControlPose }		
-						#"controlPose" : controlPose }		
 
 		print "new pathClass:", self.pathClasses[newPathID]
 
@@ -4462,7 +4592,7 @@ class MapState:
 
 			""" location of junction point from raw to global in the particle pose """
 			nodeOrigin = Pose(newEstPose)
-			newGlobalJunctionPose = nodeOrigin.convertLocalOffsetToGlobal(localJunctionPose)
+			newGlobalJunctionPose = nodeOrigin.convertLocalOffsetToGlobal(localDivergencePose)
 
 			""" location on the parent shoot closest to the locally computed branch point """
 			minDist, uVal, newJuncPose = pathSpline.findClosestPoint(newGlobalJunctionPose)
@@ -4496,6 +4626,9 @@ class MapState:
 			parentControlPose = globalControlPoses[parentID]
 			parentFrame = Pose(parentControlPose)
 
+			shootFrame = Pose(newControlPose)
+			localJunctionPose = shootFrame.convertGlobalPoseToLocal(modJuncPose)
+
 			controlPoses = []
 			for k in range(self.NUM_BRANCHES):
 				globalControlPose = pathSpline.getPointOfDist(arcDists[k][1])
@@ -4507,7 +4640,7 @@ class MapState:
 			#controlPoses = [pathSpline.getPointOfDist(arcDists[k][1]) for k in range(self.NUM_BRANCHES)]
 
 			""" add the details of this junction given particle pose is true """
-			part.addPath(newPathID, parentID, branchNodeID, localNodePose, localJunctionPose, modJuncPose, localParticleControlPose, self.NUM_BRANCHES, arcDists, controlPoses)
+			part.addPath(newPathID, parentID, branchNodeID, localNodePose, localDivergencePose, modJuncPose, localJunctionPose, localParticleControlPose, self.NUM_BRANCHES, arcDists, controlPoses)
 
 		print "newPath", newPathID, "=", self.pathClasses[newPathID]
 
