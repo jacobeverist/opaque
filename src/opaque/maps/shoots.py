@@ -1448,8 +1448,10 @@ def spliceSkeletons(localSkeletons, controlPoses, junctionPoses, parentPathIDs):
 
 			junctionNodes[pathID] = juncNode
 
+			print "add child junc edge", juncNode, minChildNode, minChildDist
 			globalSkeletonGraph.add_node(juncNode)
 			globalSkeletonGraph.add_edge(juncNode, minChildNode, wt=minChildDist)
+
 
 		else:
 			junctionNodes[pathID] = None
@@ -1480,7 +1482,7 @@ def spliceSkeletons(localSkeletons, controlPoses, junctionPoses, parentPathIDs):
 		juncNode = junctionNodes[pathID]
 		parentPathID = parentPathIDs[pathID]
 
-		if parentPathID != None:
+		if parentPathID != None and juncNode != None:
 			parentSkel = globalSkeletons[parentPathID]
 
 			minParentdNode = None
@@ -1502,6 +1504,7 @@ def spliceSkeletons(localSkeletons, controlPoses, junctionPoses, parentPathIDs):
 					minParentDist = dist2
 					minParentNode = globalNodePoint2
 
+			print "add parent junc edge", juncNode, minParentNode, minParentDist
 			spliceSkeleton.add_edge(juncNode, minParentNode, wt=minParentDist)
 	
 
@@ -3188,7 +3191,7 @@ def computeBranch(pathID, parentID, origGlobJuncPose, origControlPose, childPath
 
 
 		""" get the trimmed child shoot at the new designated branch point from parent """
-		newPath3, newGlobJuncPose, juncDiscDist, juncDiscAngle, splicedPaths =  trimBranch(pathID, parentID, origControlPose, modControlPose, origGlobJuncPose, modJuncPose, childPath, parentPath, trimmedParent, localPathSegs, plotIter=True, arcDist = arcDist, nodeID=numNodes, hypothesisID = hypothesisID)
+		newPath3, newGlobJuncPose, juncDiscDist, juncDiscAngle, splicedPaths, particlePath =  trimBranch(pathID, parentID, origControlPose, modControlPose, origGlobJuncPose, modJuncPose, childPath, parentPath, trimmedParent, localPathSegs, plotIter=True, arcDist = arcDist, nodeID=numNodes, hypothesisID = hypothesisID)
 
 		junctionPoses[pathID] = newGlobJuncPose
 		controlPoses[pathID] = modControlPose
@@ -3208,9 +3211,16 @@ def computeBranch(pathID, parentID, origGlobJuncPose, origControlPose, childPath
 		else:
 			childTerm = newPath3[0]
 
+		dist3 = sqrt((childTerm[0]-particlePath[0][0])**2 + (childTerm[1]-particlePath[0][1])**2)
+		dist4 = sqrt((childTerm[0]-particlePath[-1][0])**2 + (childTerm[1]-particlePath[-1][1])**2)
+
+		if dist3 < dist4:
+			childTerm2 = particlePath[-1]
+		else:
+			childTerm2 = particlePath[0]
 
 		""" two different splices between child and parent terminals """
-		termPaths = [(parentTerm1, childTerm), (parentTerm2, childTerm)]
+		termPaths = [(parentTerm1, childTerm), (parentTerm2, childTerm), (childTerm2, childTerm)]
 
 		splicedPaths = []
 		for termPath in termPaths:
@@ -3293,6 +3303,7 @@ def computeBranch(pathID, parentID, origGlobJuncPose, origControlPose, childPath
 		part2["newSplices"] = newSplices
 		part2["juncDiscAngle"] = juncDiscAngle
 		part2["juncDiscDist"] = juncDiscDist
+		part2["termPaths"] = termPaths
 
 
 		"""
@@ -4098,7 +4109,8 @@ def trimBranch(pathID, parentPathID, origControlPose, modControlPose, origGlobJu
 		pathPlotCount += 1
 
 
-	return newPath3, newGlobJuncPose, juncDiscDist, juncDiscAngle, splicedPaths
+	return newPath3, newGlobJuncPose, juncDiscDist, juncDiscAngle, splicedPaths, particlePath2
+
 
 
 

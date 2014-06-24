@@ -788,6 +788,77 @@ class MapState:
 						probSets.append((pathID, globJuncPose, controlPose))
 
 
+		if True:
+
+			#probSets = []
+			pathSplines = {}
+			allPathIDs = self.getPathIDs()
+			parentPathIDs = self.getParentHash()
+
+			for pathID in allPathIDs:
+				pathSpline = SplineFit(self.localPaths[pathID])
+				pathSplines[pathID] = pathSpline
+
+			for particleIndex in range(len(particleDist2)):
+				part = particleDist2[particleIndex]
+				hypPose0 = part.pose0
+
+
+				branchDists = {}
+
+				for pathID in allPathIDs:
+					if pathID != 0:
+
+						#globJuncPose = part.junctionData[pathID]["localJunctionPose"]
+						globJuncPose = part.junctionData[pathID]["globalJunctionPose"]
+
+						dist1 = sqrt((globJuncPose[0]-hypPose0[0])**2 + (globJuncPose[1]-hypPose0[1])**2)
+
+						branchDists[pathID] = dist1
+		
+				
+				jointArcDist = {}
+				for pathID in allPathIDs:
+					if pathID != 0:
+
+						parentID = parentPathIDs[pathID]
+						pathSpline = pathSplines[parentID]
+
+						# arcDists = part.junctionData[pathID]["arcDists"]
+						# part.junctionData[pathID]["controlPose"]
+						controlPose = [0.0,0.0,0.0]
+						minDist, controlUVal, newControlPose = pathSpline.findClosestPoint(controlPose)
+						arcDist = pathSpline.dist_u(controlUVal)
+
+						if branchDists[pathID] < 3.0:
+
+							arcHigh = arcDist + self.DIV_LEN * floor(self.NUM_BRANCHES/2.0)
+							arcLow = arcDist - self.DIV_LEN * floor(self.NUM_BRANCHES/2.0)
+
+							arcDists = []
+
+							" sample points around each probSet branch point "
+							for k in range(self.NUM_BRANCHES):
+								newArcDist = arcLow + k * self.DIV_LEN
+								arcDists.append(newArcDist)
+
+
+							""" select range of control points if junction is close enough """
+							jointArcDist[pathID] = arcDists
+
+						
+						else:
+							""" only select one control point if the junction point is too far away """
+							jointArcDist[pathID] = [arcDist]
+
+			
+				keys = jointArcDist.keys()
+				listIndexes = [0 for k in range(len(keys))]
+				maxIndexes = [len(jointArcDist[keys[k]]) for k in range(len(keys))]
+					
+
+				print "branchDists, maxIndexes, jointArcDist:", branchDists, maxIndexes, jointArcDist
+
 
 
 			#part.junctionData[pathID]["controlPoseDist"]
@@ -837,7 +908,7 @@ class MapState:
 
 		""" precompute the evaluation for branches and cache result """
 		""" each branch point is the max likelihood of each pose particle """
-		self.batchEvalBranches(probSets)
+		self.batchPrecomputeBranches(probSets)
 
 
 		for particleIndex in range(len(particleDist2)):
@@ -1016,12 +1087,24 @@ class MapState:
 		thisParticleID = -1
 		distMin = 1e100
 		filteredParticles = []
+		probResults = {}
 		for res in sortedResults:
+			try:
+				probResults[res[0]]
+			except:
+				probResults[res[0]] = []
+
+			utilVal = res[45]
+			probResults[res[0]].append(utilVal)
 			if res[0] != thisParticleID:
 				thisParticleID = res[0]
 				distMin = res[1]
 				filteredParticles.append(res)
 
+		print "localize results:"
+		for key, values in probResults.iteritems():
+			print key, values
+			
 		print "len(filteredParticles) =", len(filteredParticles)
 
 		"""
@@ -2057,6 +2140,9 @@ class MapState:
 						raise
 				
 				finalResults = []
+
+
+				print "termPaths:", termPaths
 				
 				for termPath in termPaths:
 
@@ -2065,9 +2151,13 @@ class MapState:
 					startKey = termPath[0]
 					endKey = termPath[-1]
 
+					print "startKey, endKey:", startKey, endKey
+
 					""" use splice skeleton to find shortest path """
 					startPose = self.pathGraph.get_node_attributes(startKey)
 					endPose = self.pathGraph.get_node_attributes(endKey)
+
+					print "startPose, endPose:", startPose, endPose
 
 					minStartDist = 1e100
 					minStartNode = None
@@ -2106,10 +2196,12 @@ class MapState:
 					endNode = minEndNode
 
 
+					print "nodes path from", startNode, "to", endNode
 					shortestSpliceTree, shortestSpliceDist = self.spliceSkeleton.shortest_path(endNode)
 					currNode = shortestSpliceTree[startNode]					 
 					splicedSkel = []
 					while currNode != endNode:
+						print "currNode:", currNode
 						splicedSkel.append(currNode)
 						nextNode = shortestSpliceTree[currNode]
 						currNode = nextNode
@@ -2342,7 +2434,7 @@ class MapState:
 
 
 	@logFunction
-	def batchEvalBranches(self, probSets):
+	def batchPrecomputeBranches(self, probSets):
 
 		""" precompute the evaluation for branches and cache result """
 		""" each branch point is the max likelihood of each pose particle """
@@ -2537,6 +2629,7 @@ class MapState:
 			result2["newSplices"] = result["newSplices"]
 			result2["juncDiscAngle"] = result["juncDiscAngle"]
 			result2["juncDiscDist"] = result["juncDiscDist"]
+			result2["termPaths"] = result["termPaths"]
 
 
 			#result2 = (result[0], result[1], result[3], result[4], result[5], result[6], result[7], result[8], probVal, result[10], result[11], result[12])
@@ -2625,7 +2718,25 @@ class MapState:
 				yP = []
 				xP.append(modJuncPose[0])
 				yP.append(modJuncPose[1])
+				pylab.scatter(xP, yP, color='y', zorder=8)
+
+				xP = []
+				yP = []
+				xP.append(modControlPose[0])
+				yP.append(modControlPose[1])
 				pylab.scatter(xP, yP, color='k', zorder=8)
+
+
+				xP = []
+				yP = []
+				termPaths = result["termPaths"]
+				for p1, p2 in termPaths:
+					xP.append(p1[0])
+					yP.append(p1[1])
+					xP.append(p2[0])
+					yP.append(p2[1])
+				pylab.scatter(xP, yP, color='r', zorder=8)
+
 
 				offsetOrigin1 = Pose(modControlPose)
 
@@ -2876,12 +2987,17 @@ class MapState:
 			if True:
 				xP = []
 				yP = []
+
+				xP2 = []
+				yP2 = []
 				for part in particles:
 
 					modControlPose = part["modControlPose"]
 					modJuncPose = part["modJuncPose"]
 					xP.append(modJuncPose[0])
 					yP.append(modJuncPose[1])
+					xP2.append(modControlPose[0])
+					yP2.append(modControlPose[1])
 
 					newSplices = part["newSplices"]
 
@@ -2917,7 +3033,8 @@ class MapState:
 					"""
 
 
-				pylab.scatter(xP, yP, color='k', zorder=8)
+				pylab.scatter(xP, yP, color='y', zorder=8)
+				pylab.scatter(xP2, yP2, color='k', zorder=8)
 				pylab.title("nodeID: %d hyp: %d, particleID: %d pathID: %d, localPathSegs %d" % (nodeID0, self.hypothesisID, particleIndex, pathID, len(localPathSegs)))
 				
 				pylab.savefig("bayes_plot_%04u_%02u_%03u_%04u.png" % (nodeID0, self.hypothesisID, particleIndex, self.tempCount) )
@@ -4718,7 +4835,7 @@ class MapState:
 
 						globalControlPose = globalControlPoses[pathID]
 
-						newPath3, newGlobJuncPose, juncDiscDist, juncDiscAngle, splicedPaths = trimBranch(childPathID, parentPathID, origGlobalControlPose, globalControlPose, globalJunctionPose, modJuncPose, path2, path1, trimmedPaths[parentPathID], [], plotIter=False, hypothesisID=self.hypothesisID, nodeID=(self.poseData.numNodes-1))
+						newPath3, newGlobJuncPose, juncDiscDist, juncDiscAngle, splicedPaths, particlePath = trimBranch(childPathID, parentPathID, origGlobalControlPose, globalControlPose, globalJunctionPose, modJuncPose, path2, path1, trimmedPaths[parentPathID], [], plotIter=False, hypothesisID=self.hypothesisID, nodeID=(self.poseData.numNodes-1))
 						#newPath3, newGlobJuncPose, juncDiscDist, juncDiscAngle, splicedPaths = trimBranch(childPathID, parentPathID, origControlPose, modJuncPose, globalJunctionPoint, path2, path1, trimmedPaths[parentPathID], [], plotIter=False, hypothesisID=self.hypothesisID, nodeID=(self.poseData.numNodes-1))
 
 						trimmedPaths[pathID] = deepcopy(newPath3)
