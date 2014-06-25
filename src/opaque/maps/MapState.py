@@ -869,7 +869,7 @@ class MapState:
 					currResult = []
 					for k in range(len(keys)):
 						
-						currResult.append(jointArcDist[listIndexes[k]])
+						currResult.append(jointArcDist[keys[k]][listIndexes[k]])
 
 					print "currResult:", currResult
 					jointBranches.append(tuple(currResult))
