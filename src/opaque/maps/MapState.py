@@ -817,90 +817,94 @@ class MapState:
 						branchDists[pathID] = dist1
 		
 				
-				jointArcDist = {}
-				for pathID in allPathIDs:
-					if pathID != 0:
+				if len(allPathIDs) > 1:
 
-						parentID = parentPathIDs[pathID]
-						pathSpline = pathSplines[parentID]
+					jointArcDist = {}
 
-						# arcDists = part.junctionData[pathID]["arcDists"]
-						# part.junctionData[pathID]["controlPose"]
-						controlPose = [0.0,0.0,0.0]
-						minDist, controlUVal, newControlPose = pathSpline.findClosestPoint(controlPose)
-						arcDist = pathSpline.dist_u(controlUVal)
+					for pathID in allPathIDs:
 
-						if branchDists[pathID] < 3.0:
+						if pathID != 0:
 
-							arcHigh = arcDist + self.DIV_LEN * floor(self.NUM_BRANCHES/2.0)
-							arcLow = arcDist - self.DIV_LEN * floor(self.NUM_BRANCHES/2.0)
+							parentID = parentPathIDs[pathID]
+							pathSpline = pathSplines[parentID]
 
-							arcDists = []
+							# arcDists = part.junctionData[pathID]["arcDists"]
+							controlPose = part.junctionData[pathID]["controlPose"]
+							#controlPose = [0.0,0.0,0.0]
+							minDist, controlUVal, newControlPose = pathSpline.findClosestPoint(controlPose)
+							arcDist = pathSpline.dist_u(controlUVal)
 
-							" sample points around each probSet branch point "
-							for k in range(self.NUM_BRANCHES):
-								newArcDist = arcLow + k * self.DIV_LEN
-								arcDists.append(newArcDist)
+							if branchDists[pathID] < 3.0:
+
+								arcHigh = arcDist + self.DIV_LEN * floor(self.NUM_BRANCHES/2.0)
+								arcLow = arcDist - self.DIV_LEN * floor(self.NUM_BRANCHES/2.0)
+
+								arcDists = []
+
+								" sample points around each probSet branch point "
+								for k in range(self.NUM_BRANCHES):
+									newArcDist = arcLow + k * self.DIV_LEN
+									arcDists.append(newArcDist)
 
 
-							""" select range of control points if junction is close enough """
-							jointArcDist[pathID] = arcDists
+								""" select range of control points if junction is close enough """
+								jointArcDist[pathID] = arcDists
 
-						
-						else:
-							""" only select one control point if the junction point is too far away """
-							jointArcDist[pathID] = [arcDist]
+							
+							else:
+								""" only select one control point if the junction point is too far away """
+								jointArcDist[pathID] = [arcDist]
 
 			
-				keys = jointArcDist.keys()
-				listIndexes = [0 for k in range(len(keys))]
-				maxIndexes = [len(jointArcDist[keys[k]]) for k in range(len(keys))]
+					keys = jointArcDist.keys()
+					listIndexes = [0 for k in range(len(keys))]
+					maxIndexes = [len(jointArcDist[keys[k]]) for k in range(len(keys))]
 
-				jointBranches = []
+					jointBranches = []
 
-				print "keys:", keys
-				print "listIndexes:", listIndexes
-				print "maxIndexes:", maxIndexes
+					print "keys:", keys
+					print "listIndexes:", listIndexes
+					print "maxIndexes:", maxIndexes
 
-				""" compute all possible combinations of branch locations """
-				isContinue = True
-				while isContinue:
+					""" compute all possible combinations of branch locations """
+					isContinue = True
+					while isContinue:
 
-					currResult = []
-					for k in range(len(keys)):
-						
-						currResult.append(jointArcDist[keys[k]][listIndexes[k]])
+						currResult = []
+						for k in range(len(keys)):
+							
+							currResult.append(jointArcDist[keys[k]][listIndexes[k]])
 
-					print "currResult:", currResult
-					jointBranches.append(tuple(currResult))
-
-
-					""" increment the next combination """
-					revRange = range(0,len(keys))
-					revRange.reverse()
-					isCarry = False
-
-					""" structured like a simple carry adder """
-
-					""" always increment the LSB """
-					listIndexes[-1] += 1
-					for k in revRange:
-
-						if isCarry:
-							listIndexes[k] += 1
-							isCarry = False
-
-						if k!= 0 and listIndexes[k] >= maxIndexes[k]:
-							isCarry = True
-							listIndexes[k] = 0
-
-					""" the MSB has exceeded it's digit range, so we have incremented over all possibilities """
-					if listIndexes[0] >= maxIndexes[0]:
-						break
+						print "currResult:", currResult
+						jointBranches.append(tuple(currResult))
 
 
-				#print "branchDists, maxIndexes, jointArcDist:", branchDists, maxIndexes, jointArcDist
-				print "branchDists, maxIndexes, jointBranches:", branchDists, maxIndexes, jointBranches
+						""" increment the next combination """
+						revRange = range(0,len(keys))
+						revRange.reverse()
+						isCarry = False
+
+						""" structured like a simple carry adder """
+
+						""" always increment the LSB """
+						listIndexes[-1] += 1
+						for k in revRange:
+
+							if isCarry:
+								listIndexes[k] += 1
+								isCarry = False
+
+							if k!= 0 and listIndexes[k] >= maxIndexes[k]:
+								isCarry = True
+								listIndexes[k] = 0
+
+						""" the MSB has exceeded it's digit range, so we have incremented over all possibilities """
+						if listIndexes[0] >= maxIndexes[0]:
+							break
+
+
+					#print "branchDists, maxIndexes, jointArcDist:", branchDists, maxIndexes, jointArcDist
+					print "branchDists, maxIndexes, jointBranches:", branchDists, maxIndexes, jointBranches
 
 
 
