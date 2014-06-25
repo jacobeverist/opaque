@@ -855,9 +855,52 @@ class MapState:
 				keys = jointArcDist.keys()
 				listIndexes = [0 for k in range(len(keys))]
 				maxIndexes = [len(jointArcDist[keys[k]]) for k in range(len(keys))]
-					
 
-				print "branchDists, maxIndexes, jointArcDist:", branchDists, maxIndexes, jointArcDist
+				jointBranches = []
+
+				print "keys:", keys
+				print "listIndexes:", listIndexes
+				print "maxIndexes:", maxIndexes
+
+				""" compute all possible combinations of branch locations """
+				isContinue = True
+				while isContinue:
+
+					currResult = []
+					for k in range(len(keys)):
+						
+						currResult.append(jointArcDist[listIndexes[k]])
+
+					print "currResult:", currResult
+					jointBranches.append(tuple(currResult))
+
+
+					""" increment the next combination """
+					revRange = range(0,len(keys))
+					revRange.reverse()
+					isCarry = False
+
+					""" structured like a simple carry adder """
+
+					""" always increment the LSB """
+					listIndexes[-1] += 1
+					for k in revRange:
+
+						if isCarry:
+							listIndexes[k] += 1
+							isCarry = False
+
+						if k!= 0 and listIndexes[k] >= maxIndexes[k]:
+							isCarry = True
+							listIndexes[k] = 0
+
+					""" the MSB has exceeded it's digit range, so we have incremented over all possibilities """
+					if listIndexes[0] >= maxIndexes[0]:
+						break
+
+
+				#print "branchDists, maxIndexes, jointArcDist:", branchDists, maxIndexes, jointArcDist
+				print "branchDists, maxIndexes, jointBranches:", branchDists, maxIndexes, jointBranches
 
 
 
