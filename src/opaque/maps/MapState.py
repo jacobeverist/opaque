@@ -4687,6 +4687,12 @@ class MapState:
 			angDeriv = angDeriv2
 
 
+		""" regardless, take the branch angle of the child from parent shoot branch point """
+		print "branchPointProb:", angDeriv1, angDeriv2, newGlobJuncPose1, newGlobJuncPose2
+		newGlobJuncPose[2] = newGlobJuncPose1[2]
+		print "setting new", newGlobJuncPose
+
+
 		commonU1, commonU2, cPoint1, cPoint2 = selectCommonOrigin(self.trimmedPaths[parentID],globalMedial0)	
 
 		#controlPose = [controlPoint[0], controlPoint[1], 0.0]
