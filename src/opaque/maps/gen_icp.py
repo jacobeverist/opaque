@@ -2299,6 +2299,158 @@ def globalPathToNodeOverlapICP2(initGuess, globalPath, medialPoints, plotIter = 
 
 
 @logFunction
+def branchEstimateCost2(controlPose, pathSoup, globalPath, plotIter = False, n1 = 0, n2 = 0, arcDist = 0.0):
+
+	global globalPlotCount
+	
+	globalSpline = SplineFit(globalPath, smooth=0.1)
+	
+	costThresh = 0.004
+	minMatchDist = 0.1
+	minMatchDist2 = 0.1
+	lastCost = 1e100
+	matchAngTol = math.pi/4.0
+	
+	" sample a series of points from the medial curves "
+	" augment points with point-to-line covariances "
+	" treat the points with the point-to-line constraint "
+	globalVecPoints = globalSpline.getUniformSamples()
+	globalCovPoints = addGPACVectorCovariance(globalVecPoints,high_var=1.00, low_var = 1.00)
+
+	pointCovSoup = []
+	pointVecSoup = []
+	for path in pathSoup:
+		points = addGPACVectorCovariance(path, high_var=1.00, low_var = 1.00)
+		pointCovSoup += deepcopy(points)
+		pointVecSoup += deepcopy(path)
+	
+	" transform pose 2 by initial offset guess "	
+	" transform the new pose "
+	
+	" find the matching pairs "
+	match_pairs = []
+
+
+	" get the circles and radii "
+	match_pairs = []
+
+	for i in range(len(globalVecPoints)):
+		p_1 = globalVecPoints[i]
+
+		try:
+			p_2, i_2, minDist = findClosestPointWithAngle(pointVecSoup, p_1, matchAngTol)
+
+			if minDist <= minMatchDist:
+	
+				" add to the list of match pairs less than 1.0 distance apart "
+				" keep A points and covariances untransformed "
+				C1 = globalCovPoints[i][2]
+				C2 = pointCovSoup[i_2][2]
+
+				" we store the untransformed point, but the transformed covariance of the A point "
+				match_pairs.append([globalVecPoints[i],pointVecSoup[i_2],C1,C2])
+
+		except:
+			pass
+
+	for i in range(len(pointVecSoup)):
+		p_1 = pointVecSoup[i]
+
+		try:
+			p_2, i_2, minDist = findClosestPointWithAngle(globalVecPoints, p_1, matchAngTol)
+
+			if minDist <= minMatchDist2:
+	
+				" add to the list of match pairs less than 1.0 distance apart "
+				" keep A points and covariances untransformed "
+				C1 = globalCovPoints[i_2][2]	 
+				C2 = pointCovSoup[i][2]						 
+
+				" we store the untransformed point, but the transformed covariance of the A point "
+				match_pairs.append([globalVecPoints[i_2],pointVecSoup[i],C1,C2])
+		except:
+			pass
+
+	vals = []
+	sum1 = 0.0
+	for pair in match_pairs:
+
+		a = pair[0]
+		b = pair[1]
+		Ca = pair[2]
+		Cb = pair[3]
+
+		ax = a[0]
+		ay = a[1]		 
+		bx = b[0]
+		by = b[1]
+
+		c11 = Ca[0][0]
+		c12 = Ca[0][1]
+		c21 = Ca[1][0]
+		c22 = Ca[1][1]
+				
+		b11 = Cb[0][0]
+		b12 = Cb[0][1]
+		b21 = Cb[1][0]
+		b22 = Cb[1][1]	  
+	
+		val = computeMatchErrorP([0.0,0.0,0.0], [ax,ay], [bx,by], [c11,c12,c21,c22], [b11,b12,b21,b22])
+		
+		vals.append(val)
+		sum1 += val
+
+	newCost = sum1
+		
+	" draw final position "
+	if plotIter:
+		
+		pylab.clf()
+		pylab.axes()
+		match_global = []
+		
+		for pair in match_pairs:
+			p1 = pair[0]
+			p2 = pair[1]
+			
+			match_global.append([p1,p2])
+
+		draw_matches(match_global, [0.0,0.0,0.0])
+
+		
+		for path in pathSoup:
+			xP = []
+			yP = []
+			for p in path:
+				xP.append(p[0])	
+				yP.append(p[1])
+
+			pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))
+
+		pylab.scatter([controlPose[0]],[controlPose[1]],color=(0.0,0.0,1.0))
+
+		xP = []
+		yP = []
+		for b in globalVecPoints:
+			xP.append(b[0])	
+			yP.append(b[1])
+
+		pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
+
+		plotEnv()		 
+		pylab.title("%u -- %s , %.1f, %d" % (n1, repr(n2), newCost, len(match_pairs)))
+
+		pylab.xlim(-6, 10)					  
+		pylab.ylim(-8, 8)
+		pylab.savefig("cost_plot_%1.2f_%04u.png" % (arcDist, globalPlotCount))
+		pylab.clf()
+		
+		" save inputs "
+		globalPlotCount += 1
+
+	return newCost, len(match_pairs)
+
+@logFunction
 def branchEstimateCost(initGuess, junctionPose, pathSoup, globalPath, plotIter = False, n1 = 0, n2 = 0, arcDist = 0.0):
 
 	global numIterations

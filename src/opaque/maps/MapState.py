@@ -2912,7 +2912,7 @@ class MapState:
 				#	matchCost = 0.0
 
 							
-				""" makes the maximum cost non-zero """
+				""" makes the maximum cost non-zero and inverted """
 				matchCost = 0.1 + maxCost-lastCost
 				#matchCost = maxCost-lastCost
 

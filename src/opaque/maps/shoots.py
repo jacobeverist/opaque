@@ -3169,25 +3169,13 @@ def computeBranch(pathID, parentID, origGlobJuncPose, origControlPose, childPath
 
 		""" use ICP to align the branch segments to the parent shoot """
 		initGuess = [u1,u2,angGuess]
-		resultPose1, lastCost1, matchCount1 = gen_icp.branchEstimateCost(initGuess, modControlPose, placedPathSegs, globalPath2, plotIter = True, n1 = pathID, n2 = parentID, arcDist = arcDist)
+		lastCost1, matchCount1 = gen_icp.branchEstimateCost2(modControlPose, placedPathSegs, globalPath2, plotIter = True, n1 = pathID, n2 = parentID, arcDist = arcDist)
 
 
-		""" perform computations to get new aligned branch pose from ICP result """
-		poseOrigin = Pose(resultPose1)
-
-		inversePose = poseOrigin.doInverse(resultPose1)
-		poseOrigin = Pose(inversePose)
-
-		finalPose = poseOrigin.convertLocalOffsetToGlobal(modControlPose)
-		#poseOrigin2 = Pose(finalPose)
-
-		origJuncPose = copy(origGlobJuncPose)
-		origJuncPose[2] = 0.0
-		#distDisc = sqrt((finalPose[0]-origJuncPose[0])**2 + (finalPose[1]-origJuncPose[1])**2)
+		""" originally designed to compute the discrepancy between initial and final poses of ICP,
+			now there is no ICP so there is no discrepancy """
 		distDisc = 0.0
-
-		""" FIXME:  what does this angle difference represent?  is finalPose a unique value? """
-		angDisc = fabs(normalizeAngle(finalPose[2]-origJuncPose[2]))
+		angDisc = 0.0
 
 
 		""" get the trimmed child shoot at the new designated branch point from parent """
