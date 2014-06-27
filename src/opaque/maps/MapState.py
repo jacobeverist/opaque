@@ -26,7 +26,7 @@ import traceback
 
 import alphamod
 
-from shoots import computeShootSkeleton, spliceSkeletons, computeGlobalControlPoses, batchBranch, trimBranch, getBranchPoint
+from shoots import computeShootSkeleton, spliceSkeletons, computeGlobalControlPoses, batchBranch, trimBranch, getBranchPoint, ensureEnoughPoints
 #from shoots import *
 
 pylab.ioff()
@@ -1097,7 +1097,7 @@ class MapState:
 				path = thisSplicedPaths[spliceIndex][2]
 
 				
-				localizeJobs.append([oldMedialP0, oldMedialU0, 0.0, oldMedialP1, oldMedialU1, 0.0, branchSampleIndex, spliceCount, path, medial0, medial1, deepcopy(hypPose0), deepcopy(hypPose1), prevMedial0, prevMedial1, prevHypPose0, prevHypPose1, [], nodeID0, nodeID1, particleIndex, updateCount, self.hypothesisID])
+				localizeJobs.append([oldMedialP0, oldMedialU0, 0.0, oldMedialP1, oldMedialU1, 0.0, branchSampleIndex, spliceCount, path, medial0, medial1, deepcopy(hypPose0), deepcopy(hypPose1), prevMedial0, prevMedial1, prevHypPose0, prevHypPose1, [], nodeID0, nodeID1, particleIndex, updateCount, self.hypothesisID, probVal])
 
 				self.pathPlotCount2 += 1
 				spliceCount += 1
@@ -1122,7 +1122,6 @@ class MapState:
 		print len(results[0]), "result arguments"
 		#for k in range(len(results)):
 		#	resultArgs = results[k]
-
 
 		#results.sort
 		#sortedResults = sorted(results, key=itemgetter(0,1), reverse=False)
@@ -2186,6 +2185,29 @@ class MapState:
 						print termPaths
 						raise
 				
+				#globJuncPose = self.pathClasses[pathID2]["globalJunctionPose"]
+
+				#""" the terminals of the child shoot """
+				#dist1 = sqrt((globJuncPose[0]-newPath3[0][0])**2 + (globJuncPose[1]-newPath3[0][1])**2)
+				#dist2 = sqrt((globJuncPose[0]-newPath3[-1][0])**2 + (globJuncPose[1]-newPath3[-1][1])**2)
+
+				#if dist1 < dist2:
+				#	childTerm = newPath3[-1]
+				#else:
+				#	childTerm = newPath3[0]
+
+				#dist3 = sqrt((childTerm[0]-particlePath[0][0])**2 + (childTerm[1]-particlePath[0][1])**2)
+				#dist4 = sqrt((childTerm[0]-particlePath[-1][0])**2 + (childTerm[1]-particlePath[-1][1])**2)
+
+				#if dist3 < dist4:
+				#	childTerm2 = particlePath[-1]
+				#else:
+				#	childTerm2 = particlePath[0]
+
+				#""" two different splices between child and parent terminals """
+				#termPaths = [(parentTerm1, childTerm), (parentTerm2, childTerm), (childTerm2, childTerm)]
+
+
 				finalResults = []
 
 
@@ -2254,6 +2276,10 @@ class MapState:
 						currNode = nextNode
 					splicedSkel.append(currNode)
 
+					splicedSkel = ensureEnoughPoints(splicedSkel, max_spacing = 0.08, minPoints = 5)
+					spliceSpline1 = SplineFit(splicedSkel, smooth=0.1)
+					splicePoints1 = spliceSpline1.getUniformSamples()
+
 
 					""" find splice using the old method """
 					shortestPathSpanTree, shortestDist = self.pathGraph.shortest_path(endKey)
@@ -2294,10 +2320,10 @@ class MapState:
 
 					sPath = {}
 					sPath['orderedPathIDs'] = orderedPathIDs
-					sPath['path'] = splicedSkel
+					sPath['path'] = splicePoints1
 					sPath['oldPath'] = newPath
 					sPath['termPath'] = termPath
-					sPath['skelPath'] = splicedSkel
+					sPath['skelPath'] = splicePoints1
 					
 					finalResults.append(sPath)
 					
