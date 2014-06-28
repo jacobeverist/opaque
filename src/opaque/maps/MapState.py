@@ -2268,7 +2268,7 @@ class MapState:
 					print "nodes path from", startNode, "to", endNode
 					shortestSpliceTree, shortestSpliceDist = self.spliceSkeleton.shortest_path(endNode)
 					currNode = shortestSpliceTree[startNode]					 
-					splicedSkel = []
+					splicedSkel = [startNode]
 					while currNode != endNode:
 						print "currNode:", currNode
 						splicedSkel.append(currNode)
@@ -2601,9 +2601,11 @@ class MapState:
 		parentPathIDs = {}
 		pathIDs = self.getPathIDs()
 		for pathID in pathIDs:
-			localSkeletons[pathID] = self.leaf2LeafPathJunctions[pathID]["skeletonGraph"]
+			#localSkeletons[pathID] = self.leaf2LeafPathJunctions[pathID]["skeletonGraph"]
+			localSkeletons[pathID] = self.localLeaf2LeafPathJunctions[pathID]["skeletonGraph"]
 			controlPoses[pathID] = self.pathClasses[pathID]["controlPose"]
-			junctionPoses[pathID] = self.pathClasses[pathID]["globalJunctionPose"]
+			#junctionPoses[pathID] = self.pathClasses[pathID]["globalJunctionPose"]
+			junctionPoses[pathID] = self.pathClasses[pathID]["localJunctionPose"]
 
 			cPath = self.getPath(pathID)
 			parentPathID = cPath["parentID"]
@@ -2617,16 +2619,21 @@ class MapState:
 			pathDesc = self.pathClasses[pathID]
 			parentID = pathDesc["parentID"]
 
-			junctionDetails = self.leaf2LeafPathJunctions[pathID]
+			#junctionDetails = self.leaf2LeafPathJunctions[pathID]
+			junctionDetails = self.localLeaf2LeafPathJunctions[pathID]
 			#smoothPathSegs = junctionDetails["leafSegments"] + junctionDetails["internalSegments"]
 			localPathSegs = junctionDetails["localSegments"]
 
 			origControlPose = copy(self.getControlPose(pathID))
 
-			origGlobJuncPose = copy(self.pathClasses[pathID]["globalJunctionPose"])
-			childPath = self.paths[pathID]
-			parentPath = self.paths[parentID]
-			trimmedParent = self.trimmedPaths[parentID]
+			#origGlobJuncPose = copy(self.pathClasses[pathID]["globalJunctionPose"])
+			origGlobJuncPose = copy(self.pathClasses[pathID]["localJunctionPose"])
+			childPath = self.localPaths[pathID]
+			parentPath = self.localPaths[parentID]
+			#childPath = self.paths[pathID]
+			#parentPath = self.paths[parentID]
+			#trimmedParent = self.trimmedPaths[parentID]
+			trimmedParent = self.localTrimmedPaths[parentID]
 
 			branchJobs.append((pathID, parentID, origGlobJuncPose, origControlPose, childPath, parentPath, trimmedParent, localPathSegs, arcDist, localSkeletons, controlPoses, junctionPoses, parentPathIDs, len(self.nodePoses)-1, self.hypothesisID ))
 
@@ -3200,32 +3207,6 @@ class MapState:
 
 			self.topCount += 1
 			
-			#return theoryMedialLongPaths, medialLongPaths, leaf2LeafPathJunctions, medialLongPaths[maxIndex], vertices
-
-		" compute the junction points between parent paths and child branches "
-		for pathID in pathIDs:
-			
-			if self.pathClasses[pathID]["parentID"] != None:
-
-				"""
-				parentPathID = self.pathClasses[pathID]["parentID"]
-				childPathID = pathID
-
-				path1 = self.paths[parentPathID]
-				path2 = self.paths[childPathID]
-				branchNodeID = self.pathClasses[childPathID]["branchNodeID"]
-				localJunctionPoint = self.pathClasses[childPathID]["localJunctionPose"]
-				poseOrigin2 = Pose(self.nodeRawPoses[branchNodeID])
-				globalJunctionPoint = poseOrigin2.convertLocalToGlobal(localJunctionPoint)
-
-				globJuncPose = getBranchPoint(globalJunctionPoint, parentPathID, childPathID, path1, path2, plotIter = False)
-
-				print "generated globJuncPose:",  globJuncPose
-				
-				self.pathClasses[childPathID]["globalJunctionPose"] = globJuncPose
-				"""
-
-
 
 		self.trimmedPaths = self.trimPaths(self.paths)
 
@@ -3233,7 +3214,8 @@ class MapState:
 		controlPoses = {}
 		junctionPoses = {}
 		for pathID in pathIDs:
-			localSkeletons[pathID] = self.leaf2LeafPathJunctions[pathID]["skeletonGraph"]
+			#localSkeletons[pathID] = self.leaf2LeafPathJunctions[pathID]["skeletonGraph"]
+			localSkeletons[pathID] = self.localLeaf2LeafPathJunctions[pathID]["skeletonGraph"]
 			controlPoses[pathID] = self.pathClasses[pathID]["controlPose"]
 			junctionPoses[pathID] = self.pathClasses[pathID]["globalJunctionPose"]
 
@@ -3242,6 +3224,8 @@ class MapState:
 		finalPoses = computeGlobalControlPoses(controlPoses, parentPathIDs)
 		print "controlPoses:", controlPoses
 		print "finalPoses:", finalPoses
+
+		print "junctionPoses:", junctionPoses
 
 
 		#self.spliceSkeleton = spliceSkeletons(localSkeletons, controlPoses, junctionPoses, parentPathIDs)
@@ -4540,6 +4524,7 @@ class MapState:
 		self.pathClasses[pathID]["nodeSet"].remove(nodeID)
 		del self.pathClasses[pathID]["localNodePoses"][nodeID]
 		
+		self.isChanged = True		
 
 	@logFunction
 	def moveNode(self, nodeID, splicePathIDs):
@@ -4648,6 +4633,8 @@ class MapState:
 		except:
 			pass
 	
+		self.isChanged = True		
+
 	@logFunction
 	def addPath(self, parentID, branchNodeID, localDivergencePose):
 
@@ -4696,10 +4683,10 @@ class MapState:
 
 
 		""" compute branch point of posture curve diverging from parent shoot """
-		newGlobJuncPose1, controlPoint1, angDeriv1 = getBranchPoint(globalJunctionPose, parentID, newPathID, self.trimmedPaths[parentID], globalMedial0, plotIter = True, hypothesisID = self.hypothesisID, nodeID = branchNodeID)
+		newGlobJuncPose1, controlPoint1, angDeriv1 = getBranchPoint(globalJunctionPose, parentID, newPathID, self.trimmedPaths[parentID], globalMedial0, plotIter = False, hypothesisID = self.hypothesisID, nodeID = branchNodeID)
 
 		""" compute branch point of parent shoot diverging from posture curve """
-		newGlobJuncPose2, controlPoint2, angDeriv2 = getBranchPoint(globalJunctionPose, newPathID, parentID, globalMedial0, self.trimmedPaths[parentID], plotIter = True, hypothesisID = self.hypothesisID, nodeID = branchNodeID)
+		newGlobJuncPose2, controlPoint2, angDeriv2 = getBranchPoint(globalJunctionPose, newPathID, parentID, globalMedial0, self.trimmedPaths[parentID], plotIter = False, hypothesisID = self.hypothesisID, nodeID = branchNodeID)
 
 		""" the control point that is the flattest determines which curve is the diverging one """
 		""" the curve that is sharpest at the control point is the diverging curve """
@@ -4848,7 +4835,9 @@ class MapState:
 	def trimPaths(self, foo = None):
 
 		paths = self.paths
+		localPaths = self.localPaths
 		trimmedPaths = {}
+		localTrimmedPaths = {}
 		
 		print "path lengths:"
 		for k,v in paths.iteritems():
@@ -4858,8 +4847,10 @@ class MapState:
 		if len(paths) <= 1:
 			for k, v in paths.iteritems():
 				trimmedPaths[k] = v
+				localTrimmedPaths[k] = v
 				
 			self.trimmedPaths = trimmedPaths
+			self.localTrimmedPaths = localTrimmedPaths
 			return trimmedPaths
 
 		" path0 is root, and path1 is a child of path0 "
@@ -4893,6 +4884,7 @@ class MapState:
 				
 					if childParents[pathID] == None:
 						trimmedPaths[pathID] = deepcopy(paths[pathID])
+						localTrimmedPaths[pathID] = deepcopy(paths[pathID])
 
 					else:
 						parentPathID = childParents[pathID]
@@ -4901,29 +4893,34 @@ class MapState:
 						path1 = paths[parentPathID]
 						path2 = paths[childPathID]
 
+						localPath1 = localPaths[parentPathID]
+						localPath2 = localPaths[childPathID]
 								
-						origControlPose = self.pathClasses[childPathID]["controlPose"]
-						origGlobalControlPose = self.getFinalControlPose(childPathID)
-
-
-						branchNodeID = self.pathClasses[childPathID]["branchNodeID"]
-						branchNodePose = self.getNodePose(branchNodeID)
+						localJunctionPose = self.pathClasses[childPathID]["localJunctionPose"]
+						localControlPose = self.pathClasses[childPathID]["controlPose"]
 						globalJunctionPose = self.getGlobalJunctionPose(childPathID)
-
-						modJuncPose = [globalJunctionPose[0], globalJunctionPose[1], 0.0]
-
 						globalControlPose = globalControlPoses[pathID]
 
-						newPath3, newGlobJuncPose, juncDiscDist, juncDiscAngle, splicedPaths, particlePath = trimBranch(childPathID, parentPathID, origGlobalControlPose, globalControlPose, globalJunctionPose, modJuncPose, path2, path1, trimmedPaths[parentPathID], [], plotIter=False, hypothesisID=self.hypothesisID, nodeID=(self.poseData.numNodes-1))
-						#newPath3, newGlobJuncPose, juncDiscDist, juncDiscAngle, splicedPaths = trimBranch(childPathID, parentPathID, origControlPose, modJuncPose, globalJunctionPoint, path2, path1, trimmedPaths[parentPathID], [], plotIter=False, hypothesisID=self.hypothesisID, nodeID=(self.poseData.numNodes-1))
+						#newPath3, newGlobJuncPose, juncDiscDist, juncDiscAngle, splicedPaths, particlePath = trimBranch(childPathID, parentPathID, globalControlPose, globalControlPose, globalJunctionPose, path2, path1, trimmedPaths[parentPathID], [], plotIter=True, hypothesisID=self.hypothesisID, nodeID=(self.poseData.numNodes-1))
 
-						trimmedPaths[pathID] = deepcopy(newPath3)
+						#localNewPath3, localNewGlobJuncPose, localJuncDiscDist, localJuncDiscAngle, localSplicedPaths, localParticlePath = trimBranch(childPathID, parentPathID, localControlPose, localControlPose, localJunctionPose, localPath2, localPath1, localTrimmedPaths[parentPathID], [], plotIter=True, hypothesisID=self.hypothesisID, nodeID=(self.poseData.numNodes-1))
+						localNewPath3, localNewGlobJuncPose, localJuncDiscDist, localJuncDiscAngle, localSplicedPaths, localParticlePath = trimBranch(childPathID, parentPathID, localControlPose, localJunctionPose, localPath2, localPath1, localTrimmedPaths[parentPathID], [], plotIter=True, hypothesisID=self.hypothesisID, nodeID=(self.poseData.numNodes))
+
+
+						offsetOrigin1 = Pose(globalControlPose)
+						globalPath3 = []
+						for p in localNewPath3:
+							globalPath3.append(offsetOrigin1.convertLocalToGlobal(p))
+
+						trimmedPaths[pathID] = deepcopy(globalPath3)
+						localTrimmedPaths[pathID] = deepcopy(localNewPath3)
 
 					for childID in pathIDs:
 						if self.pathClasses[childID]["parentID"] == pathID:
 							isParentComputed[childID] = True
 
 		self.trimmedPaths = trimmedPaths
+		self.localTrimmedPaths = localTrimmedPaths
 			
 		return trimmedPaths
 
