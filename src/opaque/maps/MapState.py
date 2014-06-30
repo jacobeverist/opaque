@@ -957,6 +957,7 @@ class MapState:
 		""" each branch point is the max likelihood of each pose particle """
 		self.batchPrecomputeBranches(probSets)
 
+		parentPathIDs = self.getParentHash()
 
 		for particleIndex in range(len(particleDist2)):
 
@@ -975,6 +976,7 @@ class MapState:
 
 			thisSplicedPaths = []
 
+
 			for pathID in pathIDs:
 
 				if pathID != 0:
@@ -984,16 +986,16 @@ class MapState:
 
 					globJuncPose = part.junctionData[pathID]["globalJunctionPose"]
 					controlPose = part.junctionData[pathID]["controlPose"]
-					#parentPathIDs = self.getParentHash()
-					#controlPoses = self.getControlPoses()
+
 					#globalControlPoses = computeGlobalControlPoses(controlPoses, parentPathIDs)
 
 					dist1 = sqrt((globJuncPose[0]-hypPose0[0])**2 + (globJuncPose[1]-hypPose0[1])**2)
+					print "dist1 =", dist1
 					if dist1 < 3.0:
 
 						#time1 = time.time()
 
-						samples = self.evaluateBranches(pathID, controlPose, globJuncPose, nodeID0, particleIndex)
+						samples = self.evaluateBranches(pathID, controlPose, nodeID0, particleIndex)
 
 						probDist = []
 						branchPoseDist = []
@@ -1031,62 +1033,73 @@ class MapState:
 
 						for j in range(len(samples)):
 
+							controlPoses = deepcopy(self.getControlPoses())
+							controlPoses[pathID] = samples[j]["modControlPose"]
+							globalControlPoses = computeGlobalControlPoses(controlPoses, parentPathIDs)
+
+							""" FIXME:  convert branchPose to global frame that hypPose0 is in """
+							controlOrigin1 = Pose(globalControlPoses[pathID])
 							branchPose = samples[j]["modJuncPose"]
+							globalBranchPose = controlOrigin1.convertLocalOffsetToGlobal(branchPose)
+
 							probVal = samples[j]["initProb"]
 							#branchSplices = samples[j][9]
 							numSplices = len(branchSplices[j])
 
-							dist2 = sqrt((branchPose[0]-hypPose0[0])**2 + (branchPose[1]-hypPose0[1])**2)
+							dist2 = sqrt((globalBranchPose[0]-hypPose0[0])**2 + (globalBranchPose[1]-hypPose0[1])**2)
+							print "dist2 =", dist2
 							if dist2 < 3.0 and probVal > 0.0:
 
 								for k in range(numSplices):
 									splice = branchSplices[j][k]
 									thisSplicedPaths.append((j, probVal, splice, pathID))
+				else:
 
+					""" static splices have 1.0 probability """
+					thisSplicedPaths.append((None, 1.0, self.paths[0], pathID))
 
 			""" consider single path splices """
 			""" uses hypothesize currPath to localize the trimmedPath """
 			""" FIXME: grandparent child paths should be localized in a chain up to the root """
 			""" FIXME: do we still need comparison to max likelihood?  should this only be the childless parent? """
-			for j in range(len(staticSplicePathIDs)):
-				if len(staticSplicePathIDs[j]) == 1:
+			#for j in range(len(staticSplicePathIDs)):
+			#	if len(staticSplicePathIDs[j]) == 1:
 
-					pathID = staticSplicePathIDs[j][0]
-					canonicalPath = staticSplicedPaths[j]
+			#		pathID = staticSplicePathIDs[j][0]
+			#		canonicalPath = staticSplicedPaths[j]
 
-					if pathID != 0:
+			#		if pathID != 0:
 
-						partBranchIndex = part.junctionData[pathID]["maxLikelihoodBranch"]
+			#			partBranchIndex = part.junctionData[pathID]["maxLikelihoodBranch"]
 
-						""" use the max likelihood branch for our 'static' case """
-						partControlPose = part.junctionData[pathID]["controlPoseDist"][partBranchIndex]
+						#""" use the max likelihood branch for our 'static' case """
+			#			partControlPose = part.junctionData[pathID]["controlPoseDist"][partBranchIndex]
 						
-						""" FIXME:  convert to control matrix and local controls """
-						origControlPose = copy(self.pathClasses[pathID]["controlPose"])
-						modControlPose = copy(partControlPose)
+						#""" FIXME:  convert to control matrix and local controls """
+			#			origControlPose = copy(self.pathClasses[pathID]["controlPose"])
+			#			modControlPose = copy(partControlPose)
 
-						origControlOrigin = Pose(origControlPose)
-						offsetOrigin1 = Pose(modControlPose)
+			#			origControlOrigin = Pose(origControlPose)
+			#			offsetOrigin1 = Pose(modControlPose)
+
+			#			localPath = []
+			#			for p in canonicalPath:
+			#				p1 = origControlOrigin.convertGlobalToLocal(p)
+			#				localPath.append(p1)
 
 
-						localPath = []
-						for p in canonicalPath:
-							p1 = origControlOrigin.convertGlobalToLocal(p)
-							localPath.append(p1)
+			#			placedPath = []
+			#			for p in localPath:
+			#				p1 = offsetOrigin1.convertLocalToGlobal(p)
+			#				placedPath.append(p1)
 
-
-						placedPath = []
-						for p in localPath:
-							p1 = offsetOrigin1.convertLocalToGlobal(p)
-							placedPath.append(p1)
-
-						""" static splices have 1.0 probability """
-						thisSplicedPaths.append((None, 1.0, placedPath, pathID))
+						#""" static splices have 1.0 probability """
+			#			thisSplicedPaths.append((None, 1.0, placedPath, pathID))
 							
-					else:
+			#		else:
 
-						""" static splices have 1.0 probability """
-						thisSplicedPaths.append((None, 1.0, canonicalPath, pathID))
+						#""" static splices have 1.0 probability """
+			#			thisSplicedPaths.append((None, 1.0, canonicalPath, pathID))
 
 
 			print "particle:", particleIndex, ",",  len(thisSplicedPaths), "localize jobs"
@@ -1377,27 +1390,39 @@ class MapState:
 
 					modControlPose = copy(partControlPose)
 
-					origControlOrigin = Pose(origControlPose)
-					offsetOrigin1 = Pose(modControlPose)
+					controlPoses = deepcopy(self.getControlPoses())
+					controlPoses[pathID] = origControlPose
+					oldGlobalControlPoses = computeGlobalControlPoses(controlPoses, parentPathIDs)
+
+					controlPoses = deepcopy(self.getControlPoses())
+					controlPoses[pathID] = modControlPose
+					newGlobalControlPoses = computeGlobalControlPoses(controlPoses, parentPathIDs)
+
+					oldControlOrigin1 = Pose(oldGlobalControlPoses[pathID])
+					newControlOrigin1 = Pose(newGlobalControlPoses[pathID])
+
+					""" FIXME:  convert to control matrix and local controls """
+					self.pathClasses[pathID]["controlPose"] = partControlPose
+
 
 					memberNodes = self.getNodes(pathID)
 
 					for nodeID in memberNodes:
 						if nodeID != nodeID0 and nodeID != nodeID1:
-							localPose = origControlOrigin.convertGlobalPoseToLocal(self.getNodePose(nodeID))
-							newGlobalPose = offsetOrigin1.convertLocalOffsetToGlobal(localPose)
-							#self.nodePoses[nodeID] = newGlobalPose
+							localPose = oldControlOrigin1.convertGlobalPoseToLocal(self.getNodePose(nodeID))
+							newGlobalPose = newControlOrigin1.convertLocalOffsetToGlobal(localPose)
 							self.setNodePose(nodeID, newGlobalPose)
 
-					""" FIXME:  convert to control matrix and local controls """
-					self.pathClasses[pathID]["controlPose"] = partControlPose
 
 					""" update of canonical branch point from maximum likelihood branch point """
 					partJuncPose = part.junctionData[pathID]["branchPoseDist"][partBranchIndex]
-					newJuncPose = deepcopy(partJuncPose)
-					newJuncPose[2] = self.pathClasses[pathID]["globalJunctionPose"][2]
-					#self.pathClasses[pathID]["globalJunctionPose"] = newJuncPose
-					self.setGlobalJunctionPose(pathID, newJuncPose)
+
+					newGlobalJuncPose = newControlOrigin1.convertLocalOffsetToGlobal(partJuncPose)
+					
+					#newJuncPose = deepcopy(partJuncPose)
+					""" FIXME:  was recycling the angle, but now we are regenerating it """
+					#newJuncPose[2] = self.pathClasses[pathID]["globalJunctionPose"][2]
+					self.setGlobalJunctionPose(pathID, newGlobalJuncPose)
 
 
 
@@ -2794,10 +2819,13 @@ class MapState:
 
 					pylab.plot(xP,yP, color = self.colors[k], linewidth=4)
 
+				controlOrigin1 = Pose(modControlPose)
+				globalJuncPose = controlOrigin1.convertLocalOffsetToGlobal(modJuncPose)
+
 				xP = []
 				yP = []
-				xP.append(modJuncPose[0])
-				yP.append(modJuncPose[1])
+				xP.append(globalJuncPose[0])
+				yP.append(globalJuncPose[1])
 				pylab.scatter(xP, yP, color='y', zorder=8)
 
 				xP = []
@@ -2848,7 +2876,7 @@ class MapState:
 
 
 	@logFunction
-	def evaluateBranches(self, pathID, modControlPose, estJuncPose, nodeID0, particleIndex):
+	def evaluateBranches(self, pathID, modControlPose, nodeID0, particleIndex):
 
 		# pathID
 		# parentID
@@ -3074,8 +3102,14 @@ class MapState:
 
 					modControlPose = part["modControlPose"]
 					modJuncPose = part["modJuncPose"]
-					xP.append(modJuncPose[0])
-					yP.append(modJuncPose[1])
+
+					controlOrigin1 = Pose(modControlPose)
+					globalJuncPose = controlOrigin1.convertLocalOffsetToGlobal(modJuncPose)
+
+					#xP.append(modJuncPose[0])
+					#yP.append(modJuncPose[1])
+					xP.append(globalJuncPose[0])
+					yP.append(globalJuncPose[1])
 					xP2.append(modControlPose[0])
 					yP2.append(modControlPose[1])
 
@@ -3455,7 +3489,7 @@ class MapState:
 			
 			dist2 = sqrt((junctionPose[0]-initPose2[0])**2 + (junctionPose[1]-initPose2[1])**2)
 			
-			print "dist2 =", dist2
+			#print "dist2 =", dist2
 			
 			if dist2 < 3.0:
 				junctions2.append((pathID,params[2][0]))
