@@ -623,8 +623,10 @@ def computeGlobalControlPoses(controlPoses, parentPathIDs):
 	return finalPoses
 
 @logFunction
-def computeShootSkeleton(poseData, pathID, branchNodeID, globalJunctionPose, controlPose, nodeSet, nodePoses, hypothesisID, color, topCount):
+def computeShootSkeleton(poseData, pathID, branchNodeID, globalJunctionPose, controlPose, nodeSet, nodePoses, hypothesisID, color, topCount, plotIter = False):
 	
+	print "computeShootSkeleton(", pathID, branchNodeID, globalJunctionPose, controlPose, hypothesisID, topCount, ")"
+
 	""" establish recomputability for debugging """
 	random.seed(0)		  
 
@@ -1128,7 +1130,7 @@ def computeShootSkeleton(poseData, pathID, branchNodeID, globalJunctionPose, con
 	leaf2LeafPathJunctions["juncDesc"] = juncDesc
 
 	
-	if True:
+	if plotIter:
 		pylab.clf()
 
 		for path in medialLongPaths:
@@ -3153,7 +3155,7 @@ def computeBranch(pathID, parentID, oldLocalJuncPose_C, origControlPose, childPa
 
 
 		""" get the trimmed child shoot at the new designated branch point from parent """
-		newPath3, localJuncPose_C, juncDiscDist, juncDiscAngle, splicedPaths, particlePath =  trimBranch(pathID, parentID, modControlPose_P, oldLocalJuncPose_C, childPath_C, parentPath_P, trimmedParent_P, localPathSegs, plotIter=False, arcDist = arcDist, nodeID=numNodes, hypothesisID = hypothesisID)
+		newPath3, localJuncPose_C, juncDiscDist, juncDiscAngle, splicedPaths, particlePath =  trimBranch(pathID, parentID, modControlPose_P, oldLocalJuncPose_C, childPath_C, parentPath_P, trimmedParent_P, localPathSegs, plotIter=True, arcDist = arcDist, nodeID=numNodes, hypothesisID = hypothesisID)
 
 
 		newGlobJuncPose = offsetOrigin1.convertLocalOffsetToGlobal(localJuncPose_C)
@@ -3296,6 +3298,23 @@ def computeBranch(pathID, parentID, oldLocalJuncPose_C, origControlPose, childPa
 			#		xP.append(p[0])
 			#		yP.append(p[1])
 			#	pylab.plot(xP,yP, color='k', alpha=0.8)
+
+
+			xP = []
+			yP = []
+			for p in newPath3:
+				p1 = offsetOrigin1.convertLocalToGlobal(p)
+				xP.append(p1[0])
+				yP.append(p1[1])
+				pylab.plot(xP,yP, color='k', alpha=0.8)
+
+			xP = []
+			yP = []
+			for p in particlePath:
+				p1 = offsetOrigin1.convertLocalToGlobal(p)
+				xP.append(p1[0])
+				yP.append(p1[1])
+				pylab.plot(xP,yP, color='m', alpha=0.5)
 
 			for edge in spliceSkeleton_G.edges():
 			
@@ -3512,8 +3531,7 @@ def trimBranch(pathID, parentPathID, modControlPose, origGlobJuncPose, childPath
 
 	newGlobJuncPose1, controlPoint1, angDeriv1 = getBranchPoint(globJuncPose, parentPathID, pathID, trimmedParent, particlePath2, plotIter = plotIter, hypothesisID = hypothesisID, nodeID = nodeID, arcDist = arcDist)
 	newGlobJuncPose2, controlPoint2, angDeriv2 = getBranchPoint(globJuncPose, pathID, parentPathID, particlePath2, trimmedParent, plotIter = plotIter, hypothesisID = hypothesisID, nodeID = nodeID, arcDist = arcDist)
-	#newGlobJuncPose1, controlPoint1, angDeriv1 = getBranchPoint(modControlPose, parentPathID, pathID, path1, particlePath2, plotIter = plotIter, hypothesisID = hypothesisID, nodeID = nodeID, arcDist = arcDist)
-	#newGlobJuncPose2, controlPoint2, angDeriv2 = getBranchPoint(modControlPose, pathID, parentPathID, particlePath2, path1, plotIter = plotIter, hypothesisID = hypothesisID, nodeID = nodeID, arcDist = arcDist)
+
 
 	juncDiscDist1 = sqrt((newGlobJuncPose1[0]-globJuncPose[0])**2 + (newGlobJuncPose1[1]-globJuncPose[1])**2)
 	juncDiscDist2 = sqrt((newGlobJuncPose2[0]-globJuncPose[0])**2 + (newGlobJuncPose2[1]-globJuncPose[1])**2)
@@ -3533,6 +3551,8 @@ def trimBranch(pathID, parentPathID, modControlPose, origGlobJuncPose, childPath
 			newGlobJuncPose = newGlobJuncPose1
 			controlPoint = controlPoint1
 			angDeriv = angDeriv1
+
+	newGlobJuncPose = junctionPoint_K
 
 	""" regardless, take the branch angle of the child from parent shoot branch point """
 	newGlobJuncPose[2] = newGlobJuncPose1[2]
@@ -3774,6 +3794,13 @@ def trimBranch(pathID, parentPathID, modControlPose, origGlobJuncPose, childPath
 			xP.append(p[0])
 			yP.append(p[1])
 		pylab.plot(xP,yP, color=(1.0,0.5,0.5))
+
+		xP = []
+		yP = []
+		for p in particlePath2:
+			xP.append(p[0])
+			yP.append(p[1])
+			pylab.plot(xP,yP, color='m', alpha=0.5)
 
 		
 		pylab.scatter([newGlobJuncPose[0],], [newGlobJuncPose[1],], color='r')
