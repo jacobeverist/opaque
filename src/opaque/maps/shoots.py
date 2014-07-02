@@ -2419,6 +2419,80 @@ def getOverlapDeparture(globalJunctionPose, parentPathID, childPathID, path1, pa
 	
 	return secP1, secP2
 
+@logFunction
+def getSimpleDeparture(globalJunctionPose, parentPathID, childPathID, path1, path2, plotIter = False):
+
+	" return exception if we receive an invalid path "		  
+	if len(path1) == 0:
+		print "path1 has zero length"
+		raise
+
+	" return exception if we receive an invalid path "		  
+	if len(path2) == 0:
+		print "path2 has zero length"
+		raise
+
+
+	" make sure the overlap of both paths are oriented the same way "
+	path1Spline = SplineFit(path1, smooth=0.1)
+	path2Spline = SplineFit(path2, smooth=0.1)
+
+	path2Reverse = deepcopy(path2)
+	path2Reverse.reverse()
+	path2SplineReverse = SplineFit(path2Reverse, smooth=0.1)
+	
+	orientedPath2 = orientPath(path2, path1, dist_thresh=0.1)
+		
+	path2Spline = SplineFit(orientedPath2, smooth=0.1)
+
+
+	" for each point on the child path, find its closest pair on the parent path "
+	
+	pathPoints1 = path1Spline.getUniformSamples()
+	pathPoints2 = path2Spline.getUniformSamples()
+
+	distances = []
+	indices = []
+	for i in range(0,len(pathPoints2)):
+		p_2 = pathPoints2[i]
+		p_1, i_1, minDist = gen_icp.findClosestPointInA(pathPoints1, p_2)
+		
+		" keep the distance information "
+		distances.append(minDist)
+		" and the associated index of the point on the parent path "
+		indices.append(i_1)
+
+	DIST_THRESH = 0.1
+
+	""" find the point that first crosses distance threshold """
+	currI = 0
+	try:
+		while distances[currI] > DIST_THRESH:
+			currI += 1
+	except:
+		pass
+	
+	frontPoint = pathPoints1[indices[currI]]
+
+	currI = len(distances)-1
+	try:
+		while distances[currI] > DIST_THRESH:
+			currI -= 1
+	except:
+		pass
+
+	backPoint = pathPoints1[indices[currI]]
+	
+	juncDist1 = sqrt((globalJunctionPose[0]-frontPoint[0])**2 + (globalJunctionPose[1]-frontPoint[1])**2)
+	juncDist2 = sqrt((globalJunctionPose[0]-backPoint[0])**2 + (globalJunctionPose[1]-backPoint[1])**2)
+
+
+	if juncDist1 < juncDist2:
+		return frontPoint
+	else:
+		return backPoint
+
+
 
 @logFunction
 def getAngleDerivatives(pathPoints1):
@@ -3551,7 +3625,10 @@ def trimBranch(pathID, parentPathID, modControlPose, origGlobJuncPose, childPath
 			controlPoint = controlPoint1
 			angDeriv = angDeriv1
 
-	newGlobJuncPose = junctionPoint_K
+	""" override this with simple getSimpleDeparture() """
+	#newGlobJuncPose = junctionPoint_K
+
+	newGlobJuncPose = getSimpleDeparture(globJuncPose, parentPathID, pathID, path1, particlePath2)
 
 	""" regardless, take the branch angle of the child from parent shoot branch point """
 	newGlobJuncPose[2] = newGlobJuncPose1[2]

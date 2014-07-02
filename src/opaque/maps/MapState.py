@@ -511,13 +511,14 @@ class MapState:
 
 
 		""" update the visible nodes, self.nodePoses """
+		controlPoses = deepcopy(self.getControlPoses())
+		globalControlPoses = computeGlobalControlPoses(controlPoses, parentPathIDs)
+
 		for pathID in allPathIDs:
 
-			controlPoses = deepcopy(self.getControlPoses())
-			controlPoses[pathID] = modControlPose
-			globalControlPoses = computeGlobalControlPoses(controlPoses, parentPathIDs)
-			
 			allNodes = self.pathClasses[pathID]["nodeSet"]
+
+			print "local to global controlPose:", controlPoses[pathID], globalControlPoses[pathID]
 
 			for nodeID in allNodes:
 
@@ -1475,6 +1476,7 @@ class MapState:
 			self.setNodePose(nodeID0, deepcopy(particleDist2[maxIndex].pose0))
 			self.setNodePose(nodeID1, deepcopy(particleDist2[maxIndex].pose1))
 
+			self.generatePaths()
 
 			#allPathIDs = self.getPathIDs()
 			#for pathID in allPathIDs:
