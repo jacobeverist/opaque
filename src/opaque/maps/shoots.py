@@ -364,14 +364,13 @@ def computeSkeletonFromImage(medialPointSoup):
 		if len(v) > 2:
 			junctions.append(k)
 
-	#print "branchNodeID:", branchNodeID
 	print "junctions:", junctions
 	print "leaves:", leaves
 
 	return vertices, junctions, leaves, uni_mst, gridHash
 
 
-def computePathSegments(juncIDs, leafIDs, tree, gridHash, vertices, controlPose):
+def computePathSegments(juncIDs, leafIDs, tree, gridHash, vertices):
 
 	leafSegments = []
 	internalSegments = []
@@ -534,9 +533,9 @@ def computePathSegments(juncIDs, leafIDs, tree, gridHash, vertices, controlPose)
 
 			skeletonGraph.add_edge(p1,p2,wt=dist)
 	
+	"""
 	origControlOrigin = Pose(controlPose)
 
-	"""
 	localSkeletonGraph = graph.graph()
 	
 	for edge in skeletonGraph.edges():
@@ -623,9 +622,9 @@ def computeGlobalControlPoses(controlPoses, parentPathIDs):
 	return finalPoses
 
 @logFunction
-def computeShootSkeleton(poseData, pathID, branchNodeID, globalJunctionPose, controlPose, nodeSet, nodePoses, hypothesisID, color, topCount, plotIter = False):
+def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePoses, hypothesisID, color, topCount, plotIter = False):
 	
-	print "computeShootSkeleton(", pathID, branchNodeID, globalJunctionPose, controlPose, hypothesisID, topCount, ")"
+	print "computeShootSkeleton(", pathID, globalJunctionPose, hypothesisID, topCount, ")"
 
 	""" establish recomputability for debugging """
 	random.seed(0)		  
@@ -689,7 +688,7 @@ def computeShootSkeleton(poseData, pathID, branchNodeID, globalJunctionPose, con
 	vertices, junctions, leaves, uni_mst, gridHash = computeSkeletonFromImage(medialPointSoup)
 
 	allJunctions = []
-	if branchNodeID != None:
+	if globalJunctionPose != None:
 
 		""" If this is a branching shoot, then we want to find the point on the skeleton
 			that is closest to the originally located junction point.
@@ -778,7 +777,7 @@ def computeShootSkeleton(poseData, pathID, branchNodeID, globalJunctionPose, con
 
 	""" get the shoot skeleton as sets of order points representing curve segments
 		with junctions and leaves as terminals """
-	smoothLeafSegments, smoothInternalSegments, localSkeletonGraph = computePathSegments(junctions, leaves, uni_mst, gridHash, vertices, controlPose)
+	smoothLeafSegments, smoothInternalSegments, localSkeletonGraph = computePathSegments(junctions, leaves, uni_mst, gridHash, vertices)
 
 	print "computePathSegments:", len(smoothLeafSegments), len(smoothInternalSegments), "paths from", len(junctions), "junctions and", len(leaves), "leaves", [len(pMem) for pMem in smoothLeafSegments], [len(pMem) for pMem in smoothInternalSegments]
 
@@ -818,7 +817,7 @@ def computeShootSkeleton(poseData, pathID, branchNodeID, globalJunctionPose, con
 					leafToLeafPathTuples.append((len(nPath),nPath, juncIndices))
 
 
-	if branchNodeID != None:
+	if globalJunctionPose != None:
 
 
 		""" every path from a leaf to the theoretical junction point """ 
@@ -1143,7 +1142,7 @@ def computeShootSkeleton(poseData, pathID, branchNodeID, globalJunctionPose, con
 			pylab.plot(xP,yP)
 
 
-		if branchNodeID != None:
+		if globalJunctionPose != None:
 
 			for path in theoryMedialLongPaths:
 				xP = []
@@ -1224,7 +1223,7 @@ def computeShootSkeleton(poseData, pathID, branchNodeID, globalJunctionPose, con
 
 			pylab.plot(xP,yP, color=color, linewidth=4)
 
-		if branchNodeID != None:
+		if globalJunctionPose != None:
 
 			for path in theoryMedialLongPaths:
 				xP = []

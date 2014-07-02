@@ -425,6 +425,8 @@ class MapState:
 		controlPoses = self.getControlPoses()
 		globalControlPoses = computeGlobalControlPoses(controlPoses, parentPathIDs)
 
+		particleDist2 = self.poseParticles["snapshots2"][0]
+
 		for pathID in allPathIDs:
 
 			if nodeID in self.pathClasses[pathID]["nodeSet"]:
@@ -438,8 +440,107 @@ class MapState:
 
 					self.pathClasses[pathID]["localNodePoses"][nodeID] = localNodePose
 
+					for part in particleDist2:
+						part.junctionData[pathID]["localNodePoses"][nodeID] = localNodePose
+
+
 				else:
 					self.pathClasses[pathID]["localNodePoses"][nodeID] = newPose
+
+					for part in particleDist2:
+						part.junctionData[pathID]["localNodePoses"][nodeID] = newPose
+
+
+	@logFunction
+	def updateMaxParticle(self, maxIndex):
+
+		print "updateMaxParticle(", maxIndex, ")"
+
+		particleDist2 = self.poseParticles["snapshots2"][0]
+		maxParticle = particleDist2[maxIndex]
+		allPathIDs = self.getPathIDs()
+		parentPathIDs = self.getParentHash()
+
+		for pathID in allPathIDs:
+			
+			allNodes = self.pathClasses[pathID]["nodeSet"]
+			for nodeID in allNodes:
+
+				newPose = maxParticle.junctionData[pathID]["localNodePoses"][nodeID]
+				self.pathClasses[pathID]["localNodePoses"][nodeID] = newPose
+
+
+		""" change to the maximum likelihood branch position as well """
+
+		for pathID in allPathIDs:
+			if pathID != 0:
+
+				""" maximum likelihood pose particle """
+				maxParticle = particleDist2[maxIndex]
+
+				""" maximum likelihood branch point within maximum likelihood pose particle """
+				partBranchIndex = maxParticle.junctionData[pathID]["maxLikelihoodBranch"]
+
+				""" FIXME:  convert to control matrix and local controls """
+				partControlPose = maxParticle.junctionData[pathID]["controlPoseDist"][partBranchIndex]
+
+				origControlPose = copy(self.pathClasses[pathID]["controlPose"])
+				print "changing path", pathID, "control position from", origControlPose, "to", partControlPose
+
+				modControlPose = copy(partControlPose)
+
+				controlPoses = deepcopy(self.getControlPoses())
+				controlPoses[pathID] = origControlPose
+				oldGlobalControlPoses = computeGlobalControlPoses(controlPoses, parentPathIDs)
+
+				controlPoses = deepcopy(self.getControlPoses())
+				controlPoses[pathID] = modControlPose
+				newGlobalControlPoses = computeGlobalControlPoses(controlPoses, parentPathIDs)
+
+				oldControlOrigin1 = Pose(oldGlobalControlPoses[pathID])
+				newControlOrigin1 = Pose(newGlobalControlPoses[pathID])
+
+				""" FIXME:  convert to control matrix and local controls """
+				self.pathClasses[pathID]["controlPose"] = partControlPose
+
+				""" update of canonical branch point from maximum likelihood branch point """
+				partJuncPose = maxParticle.junctionData[pathID]["branchPoseDist"][partBranchIndex]
+
+				""" FIXME:  was recycling the angle, but now we are regenerating it """
+				self.setLocalJunctionPose(pathID, partJuncPose)
+
+
+		""" update the visible nodes, self.nodePoses """
+		for pathID in allPathIDs:
+
+			controlPoses = deepcopy(self.getControlPoses())
+			controlPoses[pathID] = modControlPose
+			globalControlPoses = computeGlobalControlPoses(controlPoses, parentPathIDs)
+			
+			allNodes = self.pathClasses[pathID]["nodeSet"]
+
+			for nodeID in allNodes:
+
+				shootControlPose_G = globalControlPoses[pathID]
+				currFrame_G = Pose(shootControlPose_G)
+
+				newPose_C = self.pathClasses[pathID]["localNodePoses"][nodeID]
+
+				nodePose_G = currFrame_G.convertLocalOffsetToGlobal(newPose_C)
+
+				""" get the relationship between current gpac and raw poses """
+				oldGPACPose = self.getNodePose(nodeID)
+				gpacProfile = Pose(oldGPACPose)
+				localOffset = gpacProfile.convertGlobalPoseToLocal(self.nodeRawPoses[nodeID])
+				
+				" go back and convert this from GPAC pose to estPose "
+				newProfile = Pose(nodePose_G)
+				newEstPose = newProfile.convertLocalOffsetToGlobal(localOffset)
+				self.nodeRawPoses[nodeID] = newEstPose
+
+				self.nodePoses[nodeID] = nodePose_G
+
+
 
 
 	@logFunction
@@ -1363,72 +1464,65 @@ class MapState:
 		""" if more than one max, than we don't change the node pose, we accept the localize on the canonical pose """
 		if numMax == 1:
 
-			self.setNodePose(nodeID0, deepcopy(particleDist2[maxIndex].pose0))
-			self.setNodePose(nodeID1, deepcopy(particleDist2[maxIndex].pose1))
-
-			print "setting max likelihood poses", nodeID0, nodeID1, self.getNodePose(nodeID0), self.getNodePose(nodeID1)
+			print "setting max likelihood poses", maxIndex, nodeID0, nodeID1, self.getNodePose(nodeID0), self.getNodePose(nodeID1)
 
 			#self.nodePoses[nodeID0] = deepcopy(particleDist2[maxIndex].pose0)
 			#self.nodePoses[nodeID1] = deepcopy(particleDist2[maxIndex].pose1)
 
-
 			""" change to the maximum likelihood branch position as well """
+			self.updateMaxParticle(maxIndex)
 
-			allPathIDs = self.getPathIDs()
-			for pathID in allPathIDs:
-				if pathID != 0:
-
-					""" maximum likelihood pose particle """
-					part = particleDist2[maxIndex]
-					#partBranchIndex = particleDist2[maxIndex].junctionData[pathID]["maxLikelihoodBranch"]
+			self.setNodePose(nodeID0, deepcopy(particleDist2[maxIndex].pose0))
+			self.setNodePose(nodeID1, deepcopy(particleDist2[maxIndex].pose1))
 
 
-					""" maximum likelihood branch point within maximum likelihood pose particle """
-					partBranchIndex = part.junctionData[pathID]["maxLikelihoodBranch"]
-
-					""" FIXME:  convert to control matrix and local controls """
-					partControlPose = part.junctionData[pathID]["controlPoseDist"][partBranchIndex]
-
-					#origJuncPose = copy(self.pathClasses[pathID]["globalJunctionPose"])
-					origControlPose = copy(self.pathClasses[pathID]["controlPose"])
-					print "changing path", pathID, "branch position from", origControlPose, "to", partControlPose
-
-					modControlPose = copy(partControlPose)
-
-					controlPoses = deepcopy(self.getControlPoses())
-					controlPoses[pathID] = origControlPose
-					oldGlobalControlPoses = computeGlobalControlPoses(controlPoses, parentPathIDs)
-
-					controlPoses = deepcopy(self.getControlPoses())
-					controlPoses[pathID] = modControlPose
-					newGlobalControlPoses = computeGlobalControlPoses(controlPoses, parentPathIDs)
-
-					oldControlOrigin1 = Pose(oldGlobalControlPoses[pathID])
-					newControlOrigin1 = Pose(newGlobalControlPoses[pathID])
-
-					""" FIXME:  convert to control matrix and local controls """
-					self.pathClasses[pathID]["controlPose"] = partControlPose
-
-
-					memberNodes = self.getNodes(pathID)
-
-					for nodeID in memberNodes:
-						if nodeID != nodeID0 and nodeID != nodeID1:
-							localPose = oldControlOrigin1.convertGlobalPoseToLocal(self.getNodePose(nodeID))
-							newGlobalPose = newControlOrigin1.convertLocalOffsetToGlobal(localPose)
-							self.setNodePose(nodeID, newGlobalPose)
-
-
-					""" update of canonical branch point from maximum likelihood branch point """
-					partJuncPose = part.junctionData[pathID]["branchPoseDist"][partBranchIndex]
-
-					#newGlobalJuncPose = newControlOrigin1.convertLocalOffsetToGlobal(partJuncPose)
-					
-					#newJuncPose = deepcopy(partJuncPose)
-					""" FIXME:  was recycling the angle, but now we are regenerating it """
-					#newJuncPose[2] = self.pathClasses[pathID]["globalJunctionPose"][2]
-					#self.setGlobalJunctionPose(pathID, newGlobalJuncPose)
-					self.setLocalJunctionPose(pathID, partJuncPose)
+			#allPathIDs = self.getPathIDs()
+			#for pathID in allPathIDs:
+			#	if pathID != 0:
+			#
+			#		""" maximum likelihood pose particle """
+			#		part = particleDist2[maxIndex]
+			#
+			#		""" maximum likelihood branch point within maximum likelihood pose particle """
+			#		partBranchIndex = part.junctionData[pathID]["maxLikelihoodBranch"]
+			#
+			#		""" FIXME:  convert to control matrix and local controls """
+			#		partControlPose = part.junctionData[pathID]["controlPoseDist"][partBranchIndex]
+			#
+			#		origControlPose = copy(self.pathClasses[pathID]["controlPose"])
+			#		print "changing path", pathID, "control position from", origControlPose, "to", partControlPose
+			#
+			#		modControlPose = copy(partControlPose)
+			#
+			#		controlPoses = deepcopy(self.getControlPoses())
+			#		controlPoses[pathID] = origControlPose
+			#		oldGlobalControlPoses = computeGlobalControlPoses(controlPoses, parentPathIDs)
+			#
+			#		controlPoses = deepcopy(self.getControlPoses())
+			#		controlPoses[pathID] = modControlPose
+			#		newGlobalControlPoses = computeGlobalControlPoses(controlPoses, parentPathIDs)
+			#
+			#		oldControlOrigin1 = Pose(oldGlobalControlPoses[pathID])
+			#		newControlOrigin1 = Pose(newGlobalControlPoses[pathID])
+			#	
+			#		""" FIXME:  convert to control matrix and local controls """
+			#		self.pathClasses[pathID]["controlPose"] = partControlPose
+			#
+			#
+			#		memberNodes = self.getNodes(pathID)
+			#
+			#		for nodeID in memberNodes:
+			#			if nodeID != nodeID0 and nodeID != nodeID1:
+			#				localPose = oldControlOrigin1.convertGlobalPoseToLocal(self.getNodePose(nodeID))
+			#				newGlobalPose = newControlOrigin1.convertLocalOffsetToGlobal(localPose)
+			#				self.setNodePose(nodeID, newGlobalPose)
+			#
+			#
+			#		""" update of canonical branch point from maximum likelihood branch point """
+			#		partJuncPose = part.junctionData[pathID]["branchPoseDist"][partBranchIndex]
+			#
+			#		""" FIXME:  was recycling the angle, but now we are regenerating it """
+			#		self.setLocalJunctionPose(pathID, partJuncPose)
 
 
 
@@ -3233,9 +3327,7 @@ class MapState:
 			#self.paths[pathID], self.hulls[pathID] = self.computeShootSkeleton(pathID)
 			results = computeShootSkeleton(self.poseData,
 										pathID,
-										self.pathClasses[pathID]["branchNodeID"],
 										self.getGlobalJunctionPose(pathID),
-										self.getControlPose(pathID),
 										self.getNodes(pathID),
 										self.nodePoses,
 										self.hypothesisID,
@@ -3251,9 +3343,7 @@ class MapState:
 
 			localResults = computeShootSkeleton(self.poseData,
 										pathID,
-										self.pathClasses[pathID]["branchNodeID"],
 										self.pathClasses[pathID]["localJunctionPose"],
-										self.getControlPose(pathID),
 										self.getNodes(pathID),
 										self.pathClasses[pathID]["localNodePoses"],
 										self.hypothesisID,
