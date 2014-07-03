@@ -2494,13 +2494,14 @@ def checkForeBranch(hypSet, nodeID1, nodeID2, particleIDs):
 		frontInterior2 = mapHyp.interiors2[0][0]
 		foreTerm2 = frontExist2 and frontInterior2
 
+		depPoint1 = mapHyp.depPoints1[0][0]
+		depPoint2 = mapHyp.depPoints2[0][0]
+
 		depAngle1 = mapHyp.depAngles1[0][0]
 		depAngle2 = mapHyp.depAngles2[0][0]
 
 		frontAngDiff = diffAngle(depAngle1, depAngle2)
 		
-		depPoint1 = mapHyp.depPoints1[0][0]
-		depPoint2 = mapHyp.depPoints2[0][0]
 		
 		parentPathID1 = mapHyp.orderedPathIDs1[0]
 		parentPathID2 = mapHyp.orderedPathIDs2[0]
@@ -2516,8 +2517,19 @@ def checkForeBranch(hypSet, nodeID1, nodeID2, particleIDs):
 			raise	
 
 
-		isUnique1, duplicatePathID1 = mapHyp.checkUniqueBranch(parentPathID1, nodeID1, depAngle1, depPoint1)
-		isUnique2, duplicatePathID2 = mapHyp.checkUniqueBranch(parentPathID2, nodeID2, depAngle2, depPoint2)
+		if depPoint1 != 0:
+			#isUnique1, duplicatePathID1 = mapHyp.checkUniqueBranch(parentPathID1, nodeID1, depAngle1, depPoint1)
+			isUnique1, duplicatePathID1 = mapHyp.checkUniqueBranch(parentPathID1, nodeID1, depPoint1[2], depPoint1)
+		else:
+			isUnique1 = False
+			duplicatePathID1 = -1
+			
+		if depPoint2 != 0:
+			#isUnique2, duplicatePathID2 = mapHyp.checkUniqueBranch(parentPathID2, nodeID2, depAngle2, depPoint2)
+			isUnique2, duplicatePathID2 = mapHyp.checkUniqueBranch(parentPathID2, nodeID2, depPoint2[2], depPoint2)
+		else:
+			isUnique2 = False
+			duplicatePathID2 = -1
 
 		isBranched = False
 		if foreTerm1 and foreTerm2:
@@ -2616,14 +2628,15 @@ def checkBackBranch(hypSet, nodeID1, nodeID2, particleIDs):
 		backExist2 = mapHyp.departures2[-1][1]
 		backInterior2 = mapHyp.interiors2[-1][1]
 		backTerm2 = backExist2 and backInterior2
+
+		depPoint1 = mapHyp.depPoints1[-1][1]
+		depPoint2 = mapHyp.depPoints2[-1][1]
 		
 		depAngle1 = mapHyp.depAngles1[-1][1]
 		depAngle2 = mapHyp.depAngles2[-1][1]
 		
 		backAngDiff = diffAngle(depAngle1, depAngle2)
 
-		depPoint1 = mapHyp.depPoints1[-1][1]
-		depPoint2 = mapHyp.depPoints2[-1][1]
 
 		parentPathID1 = mapHyp.orderedPathIDs1[-1]
 		parentPathID2 = mapHyp.orderedPathIDs2[-1]
@@ -2638,8 +2651,20 @@ def checkBackBranch(hypSet, nodeID1, nodeID2, particleIDs):
 			print isFront1, isFront2
 			raise	
 
-		isUnique1, duplicatePathID1 = mapHyp.checkUniqueBranch(parentPathID1, nodeID1, depAngle1, depPoint1)
-		isUnique2, duplicatePathID2 = mapHyp.checkUniqueBranch(parentPathID2, nodeID2, depAngle2, depPoint2)
+		if depPoint1 != 0:
+			#isUnique1, duplicatePathID1 = mapHyp.checkUniqueBranch(parentPathID1, nodeID1, depAngle1, depPoint1)
+			isUnique1, duplicatePathID1 = mapHyp.checkUniqueBranch(parentPathID1, nodeID1, depPoint1[2], depPoint1)
+		else:
+			isUnique1 = False
+			duplicatePathID1 = -1
+			
+		if depPoint2 != 0:
+			#isUnique2, duplicatePathID2 = mapHyp.checkUniqueBranch(parentPathID2, nodeID2, depAngle2, depPoint2)
+			isUnique2, duplicatePathID2 = mapHyp.checkUniqueBranch(parentPathID2, nodeID2, depPoint2[2], depPoint2)
+		else:
+			isUnique2 = False
+			duplicatePathID2 = -1
+
 
 		isBranched = False
 		if backTerm1 and backTerm2:
