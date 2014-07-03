@@ -2435,11 +2435,19 @@ def computeLocalDivergence(hypSet, nodeID1, nodeID2):
 
 
 		print "node departures", nodeID1, ":", mapHyp.departures1
-		print "node  interiors", nodeID1, ":", mapHyp.interiors1
 		print "node departures", nodeID2, ":", mapHyp.departures2
+		print "node  interiors", nodeID1, ":", mapHyp.interiors1
 		print "node  interiors", nodeID2, ":", mapHyp.interiors2
 		print "node contiguity", nodeID1, ":", mapHyp.contig1
 		print "node contiguity", nodeID2, ":", mapHyp.contig2
+		print "node depPoints", nodeID1, ":", mapHyp.depPoints1
+		print "node depPoints", nodeID2, ":", mapHyp.depPoints2
+		print "node distances", nodeID1, ":", mapHyp.distances1
+		print "node distances", nodeID2, ":", mapHyp.distances2
+		print "node depAngles", nodeID1, ":", mapHyp.depAngles1
+		print "node depAngles", nodeID2, ":", mapHyp.depAngles2
+		print "node contig", nodeID1, ":", mapHyp.contig1
+		print "node contig", nodeID2, ":", mapHyp.contig2
 
 
 
@@ -2454,6 +2462,22 @@ def checkForeBranch(hypSet, nodeID1, nodeID2, particleIDs):
 
 
 	for pID, mapHyp in hypSet.iteritems():
+
+		print "F node departures", nodeID1, ":", mapHyp.departures1
+		print "F node departures", nodeID2, ":", mapHyp.departures2
+		print "F node  interiors", nodeID1, ":", mapHyp.interiors1
+		print "F node  interiors", nodeID2, ":", mapHyp.interiors2
+		print "F node contiguity", nodeID1, ":", mapHyp.contig1
+		print "F node contiguity", nodeID2, ":", mapHyp.contig2
+		print "F node depPoints", nodeID1, ":", mapHyp.depPoints1
+		print "F node depPoints", nodeID2, ":", mapHyp.depPoints2
+		print "F node distances", nodeID1, ":", mapHyp.distances1
+		print "F node distances", nodeID2, ":", mapHyp.distances2
+		print "F node depAngles", nodeID1, ":", mapHyp.depAngles1
+		print "F node depAngles", nodeID2, ":", mapHyp.depAngles2
+		print "F node contig", nodeID1, ":", mapHyp.contig1
+		print "F node contig", nodeID2, ":", mapHyp.contig2
+
 		" new junction finding logic "
 		" if terminal departures for each medial axis are None or exterior, than we stay on existing paths "
 		" if a terminal departure exists that is internal, than we have a new junction "
@@ -2722,8 +2746,8 @@ def addToPaths(particleIDs, hypSet, nodeID1, nodeID2):
 
 			mapHyp.initializePoseParticles()
 
-
 		return particleIDs, hypSet
+
 
 	hypSet = batchGenerate(hypSet)
 
