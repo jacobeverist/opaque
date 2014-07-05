@@ -1095,57 +1095,12 @@ class MapState:
 		#results.sort
 		#sortedResults = sorted(results, key=itemgetter(0,1), reverse=False)
 
-		""" sort by pose particle index followed by utility value """
-		sortedResults = sorted(results, key=itemgetter(0,45), reverse=False)
 
-		print "particle sort"
-		thisParticleID = -1
-		distMin = 1e100
-		filteredParticles = []
-		probResults = {}
-		for res in sortedResults:
-			try:
-				probResults[res[0]]
-			except:
-				probResults[res[0]] = []
 
-			utilVal = res[45]
-			probResults[res[0]].append(utilVal)
-			if res[0] != thisParticleID:
-				thisParticleID = res[0]
-				distMin = res[1]
-				filteredParticles.append(res)
+		""" set the rejection criteria """
+		for index in range(len(results)):
 
-		print "localize results:"
-		for key, values in probResults.iteritems():
-			print key, values
-			
-		print "len(filteredParticles) =", len(filteredParticles)
-
-		"""
-		result2["parentID"] = result["parentID"]
-		result2["modJuncPose"] = result["modJuncPose"]
-		result2["modControlPose"] = result["modControlPose"]
-		result2["newArcDist"] = result["newArcDist"]
-		result2["pathID"] = result["pathID"]
-		result2["matchCount"] = result["matchCount"]
-		result2["lastCost"] = result["lastCost"]
-		result2["distDisc"] = result["distDisc"]
-		result2["angDisc"] = result["angDisc"]
-		result2["initProb"] = probVal
-		result2["newSplices"] = result["newSplices"]
-		result2["juncDiscAngle"] = result["juncDiscAngle"]
-		result2["juncDiscDist"] = result["juncDiscDist"]
-		"""
-
-		newParticleDist2 = []
-
-		print "particle evaluation:", nodeID0, self.hypothesisID, updateCount
-		for particleIndex in range(len(filteredParticles)):
-
-			#if duplicateMatches[particleIndex] == particleIndex:
-
-			part = filteredParticles[particleIndex]
+			part = results[index]
 
 			particleID = part[0]
 
@@ -1163,7 +1118,6 @@ class MapState:
 
 
 			newPose0 = part[2]
-			newDist0 = 0.5
 
 			isInterior1_0 = part[9]
 			isExist1_0 = part[10]
@@ -1200,20 +1154,83 @@ class MapState:
 
 			if fabs(diffAngle(initPose0[2],newPose0[2])) > 2.0*pi/3.0:
 				isReject = True
+
+			if isReject:
+				newUtilVal = 1e100
+				listCopy = list(part)
+				listCopy[45] = newUtilVal
+				tupleCopy = tuple(listCopy)
+
+				results[index] = tupleCopy
+			
+			print "%d %d %d %d branchProbVal, newUtilVal, overlapSum:" % (self.hypothesisID, particleID, index, spliceIndex), branchProbVal, results[index][45], overlapSum, contigFrac_0, contigFrac_1, initPose0[2], newPose0[2], int(isExist1_0), int(isExist2_0), int(isExist1_1), int(isExist2_1), int(isInterior1_0), int(isInterior2_0), int(isInterior1_1), int(isInterior2_1), isReject, branchIndex
+
+		""" sort by pose particle index followed by utility value """
+		sortedResults = sorted(results, key=itemgetter(0,45), reverse=False)
+
+		print "particle sort"
+		thisParticleID = -1
+		distMin = 1e100
+		filteredParticles = []
+		probResults = {}
+		for res in sortedResults:
+			try:
+				probResults[res[0]]
+			except:
+				probResults[res[0]] = []
+
+			utilVal = res[45]
+			probResults[res[0]].append(utilVal)
+			if res[0] != thisParticleID:
+				thisParticleID = res[0]
+				distMin = res[1]
+				filteredParticles.append(res)
+
+		print "localize results:"
+		for key, values in probResults.iteritems():
+			print key, values
+			
+		print "len(filteredParticles) =", len(filteredParticles)
+
+		newParticleDist2 = []
+
+		print "particle evaluation:", nodeID0, self.hypothesisID, updateCount
+		for particleIndex in range(len(filteredParticles)):
+
+			#if duplicateMatches[particleIndex] == particleIndex:
+
+			part = filteredParticles[particleIndex]
+
+			particleID = part[0]
+
+			utilVal = part[45]
+			spliceIndex = part[47]
+			branchIndex = allSplicedPaths[spliceIndex][0]
+			branchProbVal = allSplicedPaths[spliceIndex][1]
+			spliceCurve = allSplicedPaths[spliceIndex][2]
+			pathID = allSplicedPaths[spliceIndex][3]
+
+			initPose0 = part[48]
+			initPose1 = part[49]
+			overlapSum = part[50]
+
+
+			newPose0 = part[2]
+			newDist0 = 0.5
+
+			contigFrac_0 = part[19]
+			overlapSum_0 = part[20]
+
+			newPose1 = part[24]
 				
 			""" probability is the contigFrac squared """ 
 			newProb = 0.0
-			if not isReject:
+			if utilVal > 0.0:
 				newProb = (pi-fabs(diffAngle(initPose0[2],newPose0[2])) ) * contigFrac_0 * contigFrac_0 / overlapSum_0
 				newProb *= branchProbVal
 				#utilVal0 = (1.0-contigFrac_0) + (isExist1_0 or isExist2_0) + (1.0-contigFrac_1) + (isExist1_1 or isExist2_1)
 			
-			print "%d %d %d %d branchProbVal, utilVal, poseProbValue, overlapSum:" % (self.hypothesisID, particleID, particleIndex, spliceIndex), branchProbVal, utilVal, newProb, overlapSum, contigFrac_0, contigFrac_1, overlapSum, initPose0[2], newPose0[2], int(isExist1_0), int(isExist2_0), int(isExist1_1), int(isExist2_1), int(isInterior1_0), int(isInterior2_0), int(isInterior1_1), int(isInterior2_1), isReject, branchIndex
-
-			#print "%d %1.2f %1.2f %1.2f %d %d %d %d %1.2f %1.2f %d %d %d %d" % (particleIndex, newProb, contigFrac_0, overlapSum_0, isInterior1_0, isInterior2_0, isExist1_0, isExist2_0, contigFrac_1, overlapSum_1, isInterior1_1, isInterior2_1, isExist1_1, isExist2_1)
-
-			" departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2 "
-			" return (particleIndex, icpDist, resultPose0, lastCost0, matchCount0, currAng0, currU0) + resultArgs + (isExist1 or isExist2,) "
+			print "%d %d %d %d branchProbVal, utilVal, newProb" % (self.hypothesisID, particleID, particleIndex, spliceIndex), branchProbVal, utilVal, newProb, contigFrac_0, overlapSum_0
 
 			particleObj = particleDist2[particleIndex].copy()
 
@@ -1230,10 +1247,6 @@ class MapState:
 
 
 			newParticleDist2.append(particleObj)
-
-			#else:
-			#	dupIndex = duplicateMatches[particleIndex]
-			#	newParticleDist2.append(newParticleDist2[dupIndex].copy())
 
 
 		updateCount += 1
