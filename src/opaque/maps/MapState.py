@@ -1225,7 +1225,7 @@ class MapState:
 				
 			""" probability is the contigFrac squared """ 
 			newProb = 0.0
-			if utilVal > 0.0:
+			if utilVal < 1e10:
 				newProb = (pi-fabs(diffAngle(initPose0[2],newPose0[2])) ) * contigFrac_0 * contigFrac_0 / overlapSum_0
 				newProb *= branchProbVal
 				#utilVal0 = (1.0-contigFrac_0) + (isExist1_0 or isExist2_0) + (1.0-contigFrac_1) + (isExist1_1 or isExist2_1)
