@@ -2468,7 +2468,8 @@ def getSimpleDeparture(globalJunctionPose, parentPathID, childPathID, path1, pat
 		while distances[currI] > DIST_THRESH:
 			currI += 1
 	except:
-		pass
+		""" index out of bounds, back track """
+		currI -= 1
 	
 	frontPoint = pathPoints1[indices[currI]]
 
@@ -2477,7 +2478,8 @@ def getSimpleDeparture(globalJunctionPose, parentPathID, childPathID, path1, pat
 		while distances[currI] > DIST_THRESH:
 			currI -= 1
 	except:
-		pass
+		""" index out of bounds, back track """
+		currI += 1
 
 	backPoint = pathPoints1[indices[currI]]
 	

@@ -315,7 +315,6 @@ class MapState:
 		self.localHulls = {0 : []}
 
 		""" intermediate data structure for computing the shoot skeleton """
-		self.leaf2LeafPathJunctions = {}
 		self.localLeaf2LeafPathJunctions = {}
 
 		""" shoot spine only, separated from the skeleton at the branch point """
@@ -1396,7 +1395,7 @@ class MapState:
 
 			if pathID != 0:
 
-				junctionDetails = self.leaf2LeafPathJunctions[pathID]
+				junctionDetails = self.localLeaf2LeafPathJunctions[pathID]
 
 				origJuncPose = copy(self.pathClasses[pathID]["globalJunctionPose"])
 				origJuncPose[2] = 0.0
@@ -1646,7 +1645,9 @@ class MapState:
 		newObj.departureResultSet1 = deepcopy(self.departureResultSet1)  
 		newObj.departureResultSet2 = deepcopy(self.departureResultSet2)
 
-		newObj.leaf2LeafPathJunctions = deepcopy(self.leaf2LeafPathJunctions) 
+		newObj.localPaths = deepcopy(self.localPaths)
+		newObj.localHulls = deepcopy(self.localHulls)
+		newObj.localLeaf2LeafPathJunctions = deepcopy(self.localLeaf2LeafPathJunctions) 
 
 		return newObj
 
@@ -1670,63 +1671,6 @@ class MapState:
 		self.mapOverlapSum = totalSum
 		return totalSum
 	
-		utilSum = 0.0
-
-		for nodeID1 in self.nodePoses.keys():
-
-			estPose1 = self.getNodePose(nodeID1)
-	
-			orderedPathIDs1 = self.getOrderedOverlappingPaths(nodeID1)
-			print nodeID1, "recompute orderedPathIDs1:", orderedPathIDs1
-
-			hull1 = self.poseData.aHulls[nodeID1]
-			medial1 = self.poseData.medialAxes[nodeID1]
-			origPose1 = self.origPoses[nodeID1]
-			#estPose1 = self.nodePoses[nodeID1]
-				
-			splicedPaths1 = self.splicePathIDs(orderedPathIDs1)
-
-			#print "received", len(splicedPaths1), "spliced paths from path IDs", orderedPathIDs1
-
-			" departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2 |"
-
-			results1 = []		
-			for k in range(len(splicedPaths1)):
-				path = splicedPaths1[k]			
-				result = getMultiDeparturePoint(path, medial1, origPose1, estPose1, orderedPathIDs1, nodeID1)
-				results1.append(result+(k,))
-
-			results1 = sorted(results1, key=itemgetter(14))
-			results1 = sorted(results1, key=itemgetter(12), reverse=True)				
-
-			#kIndex = results1[0][15]
-
-			angDiff2 = results1[0][14]
-			contigFrac = results1[0][12]
-			#dist = results1[0][17]
-			dist = sqrt((origPose1[0]-estPose1[0])**2 + (origPose1[1] - estPose1[1])**2)
-			
-			#isDeparture = results1[0][15]
-			isDeparture = results1[0][2] and results1[0][3] or results1[0][8] and results1[0][9]
-			#utilVal = (0.5-angDiff2)/0.5 + (contigFrac-0.5)/0.5 + (3.0-dist)/3.0 + 1-isDeparture*0.5
-
-			maxFront = results1[0][5]
-			maxBack = results1[0][11]
-
-			#utilVal = contigFrac - 2*isDeparture
-
-			utilVal = maxFront + maxBack
-
-			print "util:", nodeID1, maxFront, maxBack, angDiff2, contigFrac, dist, isDeparture, utilVal
-				
-
-			utilSum += utilVal
-			#return splicedPaths1[kIndex]
-
-		self.utility = utilSum
-
-		return utilSum
-
 
 	""" state save and restore methods """
 	@logFunction
@@ -2477,7 +2421,6 @@ class MapState:
 		parentPathIDs = {}
 		pathIDs = self.getPathIDs()
 		for pathID in pathIDs:
-			#localSkeletons[pathID] = self.leaf2LeafPathJunctions[pathID]["skeletonGraph"]
 			localSkeletons[pathID] = self.localLeaf2LeafPathJunctions[pathID]["skeletonGraph"]
 			controlPoses[pathID] = self.pathClasses[pathID]["controlPose"]
 			#junctionPoses[pathID] = self.pathClasses[pathID]["globalJunctionPose"]
@@ -2698,7 +2641,6 @@ class MapState:
 		# curr path
 		# parent path
 		# origJuncPose
-		# junctionDetails = self.leaf2LeafPathJunctions[pathID]
 		# smoothPathSegs = junctionDetails["leafSegments"] + junctionDetails["internalSegments"]
 		# hypID
 
@@ -2963,7 +2905,6 @@ class MapState:
 		" COMPUTE MEDIAL AXIS FROM UNION OF PATH-CLASSIFIED NODES "
 		self.paths = {}
 		self.hulls = {}
-		self.leaf2LeafPathJunctions = {}
 		self.localLeaf2LeafPathJunctions = {}
 		self.localPaths = {}
 		self.localHulls = {}
@@ -2971,23 +2912,6 @@ class MapState:
 		pathIDs = self.getPathIDs()
 		for pathID in pathIDs:
 			print "computing path for node set", pathID, ":", self.getNodes(pathID)
-			#self.paths[pathID], self.hulls[pathID] = self.computeShootSkeleton(pathID)
-			results = computeShootSkeleton(self.poseData,
-										pathID,
-										self.getGlobalJunctionPose(pathID),
-										self.getNodes(pathID),
-										self.nodePoses,
-										self.hypothesisID,
-										self.colors[pathID],
-										self.topCount,
-										plotIter = True)
-
-			self.leaf2LeafPathJunctions[pathID] = results[0]
-			self.paths[pathID] = results[1]
-			self.hulls[pathID] = results[2]
-
-			self.topCount += 1
-
 			localResults = computeShootSkeleton(self.poseData,
 										pathID,
 										self.pathClasses[pathID]["localJunctionPose"],
@@ -3002,16 +2926,17 @@ class MapState:
 			self.localPaths[pathID] = localResults[1]
 			self.localHulls[pathID] = localResults[2]
 
+
+
+
 			self.topCount += 1
 			
 
-		self.trimmedPaths = self.trimPaths(self.paths)
 
 		localSkeletons = {}
 		controlPoses = {}
 		junctionPoses = {}
 		for pathID in pathIDs:
-			#localSkeletons[pathID] = self.leaf2LeafPathJunctions[pathID]["skeletonGraph"]
 			localSkeletons[pathID] = self.localLeaf2LeafPathJunctions[pathID]["skeletonGraph"]
 			controlPoses[pathID] = self.pathClasses[pathID]["controlPose"]
 			junctionPoses[pathID] = self.pathClasses[pathID]["globalJunctionPose"]
@@ -3019,10 +2944,38 @@ class MapState:
 		parentPathIDs = self.getParentHash()
 		
 		finalPoses = computeGlobalControlPoses(controlPoses, parentPathIDs)
+
 		print "controlPoses:", controlPoses
 		print "finalPoses:", finalPoses
-
 		print "junctionPoses:", junctionPoses
+
+
+		""" convert local to max likelihood global """
+		for pathID, localPath in self.localPaths.iteritems():
+			shootFrame = Pose(finalPoses[pathID])
+
+			globalPath = []
+			for p in localPath:
+				globalP = shootFrame.convertLocalToGlobal(p)
+				globalPath.append(globalP)
+
+			self.paths[pathID] = globalPath
+
+		""" convert local to max likelihood global """
+		for pathID, localHull in self.localHulls.iteritems():
+			shootFrame = Pose(finalPoses[pathID])
+
+			globalHull = []
+			for p in localHull:
+				globalP = shootFrame.convertLocalToGlobal(p)
+				globalHull.append(globalP)
+
+			self.hulls[pathID] = globalHull
+
+		#self.paths[pathID] = results[1]
+		#self.hulls[pathID] = results[2]
+
+		self.trimmedPaths = self.trimPaths(self.paths)
 
 
 		#self.spliceSkeleton = spliceSkeletons(localSkeletons, controlPoses, junctionPoses, parentPathIDs)

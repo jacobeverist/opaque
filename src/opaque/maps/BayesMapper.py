@@ -5,6 +5,7 @@ from SplineFit import SplineFit
 from Pose import Pose
 from PoseData import PoseData
 from MapProcess import movePath, selectLocalCommonOrigin, addToPaths, localizePair, consistentFit, batchMovePath, batchLocalizePair, batchEval, computePathAngleVariance
+from shoots import computeGlobalControlPoses
 import gen_icp
 from functions import *
 from operator import itemgetter
@@ -1359,6 +1360,12 @@ class BayesMapper:
 		self.topCount += 1
 		"""
 
+		""" convert the controlPose to coordinates local to the parent frame """
+		parentPathIDs = mapHyp.getParentHash()
+
+		""" control state of maximum likelihood particle determine's location of shoot frame """
+		controlPoses = mapHyp.getControlPoses()
+		globalControlPoses_G = computeGlobalControlPoses(controlPoses, parentPathIDs)
 
 
 		for k in pathIDs:
@@ -1372,13 +1379,17 @@ class BayesMapper:
 			ax3.plot(xP,yP, color=self.colors[k], linewidth=4)
 			"""
 
+			shootControlPose_G = globalControlPoses_G[k]
+			currFrame = Pose(shootControlPose_G)
+
 			#for path in mapHyp.medialLongPaths[k]:
-			for path in mapHyp.leaf2LeafPathJunctions[k]["longPaths"]:
+			for path in mapHyp.localLeaf2LeafPathJunctions[k]["longPaths"]:
 				xP = []
 				yP = []
 				for p in path:
-					xP.append(p[0])
-					yP.append(p[1])
+					p1 = currFrame.convertLocalToGlobal(p)
+					xP.append(p1[0])
+					yP.append(p1[1])
 
 				ax3.plot(xP,yP, color=self.colors[k], linewidth=4)
 
