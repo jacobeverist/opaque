@@ -26,7 +26,7 @@ import traceback
 
 import alphamod
 
-from shoots import computeShootSkeleton, spliceSkeletons, computeGlobalControlPoses, batchBranch, trimBranch, getBranchPoint, ensureEnoughPoints
+from shoots import computeShootSkeleton, spliceSkeletons, computeGlobalControlPoses, batchBranch, trimBranch, getBranchPoint, ensureEnoughPoints, getInitSkeletonBranchPoint, getSkeletonBranchPoint
 #from shoots import *
 
 pylab.ioff()
@@ -3439,6 +3439,21 @@ class MapState:
 			globalMedial0_G.append(nodeFrame.convertLocalToGlobal(p))
 
 		trimmedParent_G = self.trimmedPaths[parentID]
+
+		parentPathIDs = self.getParentHash()
+		controlPoses = self.getControlPoses()
+		globalControlPoses_G = computeGlobalControlPoses(controlPoses, parentPathIDs)
+
+		localPathSegsByID = {}
+		for pathID in allPathIDs:
+			localPathSegs = self.localLeaf2LeafPathJunctions[pathID]["localSegments"]
+			localPathSegsByID[pathID] = localPathSegs
+
+
+		#localPathSegsByID[newPathID] 
+	
+
+		getInitSkeletonBranchPoint(globalJunctionPose_G, newPathID, globalMedial0_G, parentPathIDs, localPathSegsByID, globalControlPoses_G, plotIter = False, hypothesisID = self.hypothesisID, nodeID = branchNodeID)
 
 		""" compute branch point of posture curve diverging from parent shoot """
 		newGlobJuncPose1_G, controlPoint1_G, angDeriv1 = getBranchPoint(globalJunctionPose_G, parentID, newPathID, trimmedParent_G, globalMedial0_G, plotIter = False, hypothesisID = self.hypothesisID, nodeID = branchNodeID)

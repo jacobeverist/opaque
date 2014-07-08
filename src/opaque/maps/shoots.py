@@ -18,6 +18,10 @@ from MapProcess import selectLocalCommonOrigin, selectCommonOrigin
 import traceback
 import ctypes
 import multiprocessing as processing
+from scipy.spatial import cKDTree
+from numpy import array
+
+
 
 renderGlobalPlotCount = 0
 pathPlotCount = 0
@@ -2418,7 +2422,7 @@ def getOverlapDeparture(globalJunctionPose, parentPathID, childPathID, path1, pa
 	return secP1, secP2
 
 @logFunction
-def getSimpleDeparture(globalJunctionPose, parentPathID, childPathID, path1, path2, plotIter = False):
+def getSimpleDeparture(globalJunctionPose, path1, path2, plotIter = False):
 
 	" return exception if we receive an invalid path "		  
 	if len(path1) == 0:
@@ -2492,6 +2496,65 @@ def getSimpleDeparture(globalJunctionPose, parentPathID, childPathID, path1, pat
 	else:
 		return backPoint
 
+
+@logFunction
+def getSimpleSoupDeparture(globalJunctionPose, pointSoup, path2, plotIter = False):
+
+	" return exception if we receive an invalid path "		  
+	if len(path2) == 0:
+		print "path2 has zero length"
+		raise
+
+	pointSoupTree = cKDTree(array(pointSoup))
+
+	" for each point on the child path, find its closest pair on the parent path "
+	path2Spline = SplineFit(path2, smooth=0.1)
+	pathPoints2 = path2Spline.getUniformSamples()
+
+	distances = []
+	indices = []
+	for i in range(0,len(pathPoints2)):
+		p_2 = pathPoints2[i]
+		queryPoint = p_2[0:2]
+		minDist, i_1 = pointSoupTree.query(array(queryPoint))
+		#p_1, i_1, minDist = gen_icp.findClosestPointInA(pathPoints1, p_2)
+		
+		" keep the distance information "
+		distances.append(minDist)
+		" and the associated index of the point on the parent path "
+		indices.append(i_1)
+
+	DIST_THRESH = 0.1
+
+	""" find the point that first crosses distance threshold """
+	currI = 0
+	try:
+		while distances[currI] > DIST_THRESH:
+			currI += 1
+	except:
+		""" index out of bounds, back track """
+		currI -= 1
+	
+	frontPoint = pointSoup[indices[currI]]
+
+	currI = len(distances)-1
+	try:
+		while distances[currI] > DIST_THRESH:
+			currI -= 1
+	except:
+		""" index out of bounds, back track """
+		currI += 1
+
+	backPoint = pointSoup[indices[currI]]
+	
+	juncDist1 = sqrt((globalJunctionPose[0]-frontPoint[0])**2 + (globalJunctionPose[1]-frontPoint[1])**2)
+	juncDist2 = sqrt((globalJunctionPose[0]-backPoint[0])**2 + (globalJunctionPose[1]-backPoint[1])**2)
+
+
+	if juncDist1 < juncDist2:
+		return frontPoint
+	else:
+		return backPoint
 
 
 @logFunction
@@ -2688,6 +2751,201 @@ def ensureEnoughPoints(newPath2, max_spacing = 0.08, minPoints = 5):
 
 	return newPath3
 	
+@logFunction
+def getInitSkeletonBranchPoint(globalJunctionPose, currShootID, globalMedial_G, parentShootIDs, localPathSegsByID, globalControlPoses, plotIter = False, hypothesisID = 0, nodeID = 0, arcDist = 0.0):
+
+	"""
+	1)  get the control point, common length between current and most senior parent 
+	2)  branch point is the part of current skeleton that diverges from all non-descendent skeletons
+
+	"""
+
+	allPointSoup_G = []
+
+	CONTIG_DIST = 0.2
+
+	allPathIDs = localPathSegsByID.keys()
+
+	pathSegsByID_G = []
+	for shootID in allPathIDs:
+
+		localSegs_L = localPathSegsByID[shootID]
+		controlPose_G = globalControlPoses[shootID]
+
+		localSegs_G = []
+		descenFrame = Pose(controlPose_G)
+		for seg in localSegs_L:
+			newSeg = []
+			for p in seg:
+				newPose = descenFrame.convertLocalOffsetToGlobal(p)
+				allPointSoup_G.append(newPose[0:2])
+				newSeg.append(newPose)
+			localSegs_G.append(newSeg)
+
+		pathSegsByID_G.append(localSegs_G)
+
+
+
+	maxSkeletonID = 0
+	maxSkeletonContigFrac = 0.0
+	maxSkeletonSegID = 0
+
+	for shootID in allPathIDs:
+		shootSegs_G = pathSegsByID_G[shootID]
+
+		maxContigFrac = 0.0
+		maxContigIndex = 0
+
+		for segIndex in range(len(shootSegs_G)):
+
+			seg = shootSegs_G[segIndex]
+
+			""" make sure the overlap of both shoots are oriented the same way """
+			orientedMedial_G = orientPath(globalMedial_G, seg)
+	
+			kdInput = []
+			for j in range(0,len(seg)):
+				p_1 = seg[j]
+				kdInput.append(p_1[0:2])
+
+			kdTree = cKDTree(array(kdInput))
+			
+			contigCount = 0
+			maxContig = 0
+			for i in range(0,len(orientedMedial_G)):
+
+				p_2 = orientedMedial_G[i]
+
+				queryPoint = p_2[0:2]
+				minDist, i_1 = kdTree.query(array(queryPoint))
+				p_1 = seg[i_1]
+
+				if minDist < CONTIG_DIST:
+					contigCount += 1
+					if contigCount > maxContig:
+						maxContig = contigCount
+				else:
+					contigCount = 0
+
+			contigFrac = float(maxContig)/float(len(orientedMedial_G))
+
+			if contigFrac > maxContigFrac:
+				maxContigFrac = contigFrac
+				maxContigIndex = segIndex
+			
+		if maxContigFrac > maxSkeletonContigFrac:
+			maxSkeletonID = shootID
+			maxSkeletonSegID = maxContigIndex
+			maxSkeletonContigFrac = maxContigFrac
+
+
+	controlSeg = pathSegsByID_G[maxSkeletonID][maxSkeletonSegID]
+	orientedMedial_G = orientPath(globalMedial_G, controlSeg)
+	
+	""" compute the control point """
+	commonU1, commonU2, commonP1, commonP2 = selectCommonOrigin(controlSeg, orientedMedial_G)
+
+	print "skeletonBranchPoint:", maxSkeletonID, maxSkeletonSegID, maxSkeletonContigFrac, commonP1, commonP2
+
+
+	#queryPoint = p_2[0:2]
+	#minDist, i_1 = pointSoupTree.query(array(queryPoint))
+	""" all points KDTree """
+	#pointSoupTree = cKDTree(array(allPointSoup_G))
+	newGlobJuncPose = getSimpleSoupDeparture(globalJunctionPose, allPointSoup_G, globalMedial_G)
+
+	""" convert control pose from global to parent frame """
+	controlPose_G = commonP1
+	controlParentID = maxSkeletonID
+	parentControlPose_G = globalControlPoses[controlParentID]
+	shootFrame = Pose(parentControlPose_G)
+	controlPose_P = shootFrame.convertGlobalPoseToLocal(controlPose_G)
+
+	""" placeholder values, not true branch point """
+	branchPoint = [0.0,0.0,0.0]
+	branchParentID = controlParentID
+
+	return controlPose_P, controlParentID, branchPoint, branchParentID
+	
+
+
+@logFunction
+def getSkeletonBranchPoint(globalJunctionPose, currShootID, globalMedial_G, parentShootIDs, localPathSegsByID, globalControlPoses, plotIter = False, hypothesisID = 0, nodeID = 0, arcDist = 0.0):
+
+	"""
+	1)  get the control point, common length between current and most senior parent 
+	2)  branch point is the part of current skeleton that diverges from all non-descendent skeletons
+
+	"""
+
+
+	"""
+	for current shoot skeleton, find common point between all other skeletons
+
+	"""
+
+
+	""" bookkeeping, find all descendants of current shoot """
+	isDescendant = {}
+
+	for key in parentShootIDs.keys():
+		isDescendant[key] = False
+
+	currID = currShootID
+	currDescen = [currShootID]
+	while True:
+		
+		for val in currDescen:
+			isDescendant[val] = True
+
+		newDescen = [currShootID]
+
+		for key, val in parentShootIDs.iteritems():
+			if val in currDescen:
+				newDescen.append(key)
+
+		if len(currDescen) == len(newDescen):
+			break
+
+		currDescen = list(set(currDescen + newDescen))
+
+
+	""" we are potentially branching or controlling from any of the non-descendant skeletons """
+	nonDescentIDs = []
+	for shootID, isDescen in isDescendant.iteritems():
+		if not isDescen:
+			nonDescentIDs.append(shootID)
+	
+
+	currSegs_L = localPathSegsByID[currShootID]
+	currControlPose_G = globalControlPoses[currShootID]
+
+	""" convert to global frame """
+	currSegs_G = []
+	currFrame = Pose(currControlPose_G)
+	for seg in currSegs_L:
+		newSeg = []
+		for p in seg:
+			newSeg.append(currFrame.convertLocalOffsetToGlobal(p))
+		currSegs_G.append(newSeg)
+
+
+	pathSegsByID_G = []
+	for shootID in nonDescentIDs:
+
+		localSegs_L = localPathSegsByID[shootID]
+		controlPose_G = globalControlPoses[shootID]
+
+		localSegs_G = []
+		descenFrame = Pose(controlPose_G)
+		for seg in localSegs_L:
+			newSeg = []
+			for p in seg:
+				newSeg.append(descenFrame.convertLocalOffsetToGlobal(p))
+			localSegs_G.append(newSeg)
+
+		pathSegsByID_G.append(localSegs_G)
+
 
 @logFunction
 def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, plotIter = False, hypothesisID = 0, nodeID = 0, arcDist = 0.0):
@@ -3521,7 +3779,7 @@ def trimBranch(pathID, parentPathID, modControlPose, origGlobJuncPose, childPath
 	""" override this with simple getSimpleDeparture() """
 	#newGlobJuncPose = junctionPoint_K
 
-	newGlobJuncPose = getSimpleDeparture(globJuncPose, parentPathID, pathID, path1, particlePath2)
+	newGlobJuncPose = getSimpleDeparture(globJuncPose, path1, particlePath2)
 
 	""" regardless, take the branch angle of the child from parent shoot branch point """
 	newGlobJuncPose[2] = newGlobJuncPose1[2]
