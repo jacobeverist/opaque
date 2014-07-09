@@ -471,6 +471,9 @@ def computePathSegments(juncIDs, leafIDs, tree, gridHash, vertices):
 			newSeg.append(gridHash[p])
 		realInternalSegments.append(newSeg)
 
+	#realJuncIDs = []
+	#for jID in juncIDs:
+	#	realJuncIDs.append(gridHash[jID])
 
 
 	""" EXTEND LEAF SEGMENTS TO BOUNDARY OF HULL """
@@ -690,6 +693,14 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 
 	""" compute the alpha shape and then the medial axis skeleton from the result """
 	vertices, junctions, leaves, uni_mst, gridHash = computeSkeletonFromImage(medialPointSoup)
+
+
+	allRealJunctions = []
+	for junc in junctions:
+		gJunc = gridHash[junc]
+		allRealJunctions.append(gJunc)
+
+	print "all real junctions:", allRealJunctions
 
 	allJunctions = []
 	if globalJunctionPose != None:
@@ -1025,6 +1036,7 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 	leaf2LeafPathJunctions["leafSegments"] = smoothLeafSegments
 	leaf2LeafPathJunctions["internalSegments"] = smoothInternalSegments
 	leaf2LeafPathJunctions["skeletonGraph"] = localSkeletonGraph
+	leaf2LeafPathJunctions["realJunctions"] = allRealJunctions
 
 	localPathSegs = smoothLeafSegments + smoothInternalSegments
 
@@ -1640,15 +1652,16 @@ def __remote_multiBranch(rank, qin, qout):
 			parentPath = job[5]
 			trimmedParent = job[6]
 			localPathSegs = job[7]
-			arcDist = job[8]
-			localSkeletons = job[9]
-			controlPoses = job[10]
-			junctionPoses = job[11]
-			parentPathIDs = job[12]
-			numNodes = job[13]
-			hypID = job[14]
+			localPaths = job[8]
+			arcDist = job[9]
+			localSkeletons = job[10]
+			controlPoses = job[11]
+			junctionPoses = job[12]
+			parentPathIDs = job[13]
+			numNodes = job[14]
+			hypID = job[15]
 
-			result = computeBranch(pathID, parentID, origGlobJuncPose, controlPose, childPath, parentPath, trimmedParent, localPathSegs, arcDist, localSkeletons, controlPoses, junctionPoses, parentPathIDs, numNodes, hypID)
+			result = computeBranch(pathID, parentID, origGlobJuncPose, controlPose, childPath, parentPath, trimmedParent, localPathSegs, localPaths, arcDist, localSkeletons, controlPoses, junctionPoses, parentPathIDs, numNodes, hypID)
 
 			results.append(result)
 						   
@@ -2605,14 +2618,30 @@ def getSimpleSoupDeparture(globalJunctionPose, pointSoup, path2, plotIter = Fals
 	else:
 		backPose = None
 
-
 	print "getSimpleSoupDeparture:", frontPoint, backPoint, frontPose, backPose, juncDist1, juncDist2, len(pathPoints2), frontIndex, backIndex
-	if juncDist1 < juncDist2 and frontPose != None:
+
+	if juncDist1 < juncDist2:
 		return frontPose
-	elif juncDist1 > juncDist2 and backPose != None:
-		return backPose
 	else:
-		raise
+		return backPose
+
+
+	# DEAD CODE 
+	if juncDist1 < juncDist2:
+		if frontPose != None:
+			return frontPose
+		elif backPose != None:
+			return backPose
+
+	else:
+		if backPose != None:
+			return backPose
+		elif frontPose != None:
+			return frontPose
+
+	""" no suitable answer, exception """
+	raise
+
 
 
 @logFunction
@@ -2810,7 +2839,7 @@ def ensureEnoughPoints(newPath2, max_spacing = 0.08, minPoints = 5):
 	return newPath3
 	
 @logFunction
-def getInitSkeletonBranchPoint(globalJunctionPose, currShootID, globalMedial_G, parentShootIDs, localPathSegsByID, globalControlPoses, plotIter = False, hypothesisID = 0, nodeID = 0, arcDist = 0.0):
+def getInitSkeletonBranchPoint(globalJunctionPose, currShootID, globalMedial_G, parentShootIDs, localPathSegsByID, localPaths, globalControlPoses, plotIter = False, hypothesisID = 0, nodeID = 0, arcDist = 0.0):
 
 	"""
 	1)  get the control point, common length between current and most senior parent 
@@ -2828,6 +2857,7 @@ def getInitSkeletonBranchPoint(globalJunctionPose, currShootID, globalMedial_G, 
 	for shootID in allPathIDs:
 
 		localSegs_L = localPathSegsByID[shootID]
+		localPath_L = SplineFit(localPaths[shootID]).getUniformSamples()
 		controlPose_G = globalControlPoses[shootID]
 
 		localSegs_G = []
@@ -2836,11 +2866,17 @@ def getInitSkeletonBranchPoint(globalJunctionPose, currShootID, globalMedial_G, 
 			newSeg = []
 			for p in seg:
 				newPose = descenFrame.convertLocalOffsetToGlobal(p)
-				allPointSoup_G.append(newPose[0:2])
+				#allPointSoup_G.append(newPose[0:2])
 				newSeg.append(newPose)
 			localSegs_G.append(newSeg)
 
 		pathSegsByID_G.append(localSegs_G)
+
+		localPath_G = []
+		for p in localPath_L:
+			newPose = descenFrame.convertLocalOffsetToGlobal(p)
+			allPointSoup_G.append(newPose[0:2])
+			localPath_G.append(newPose)
 
 
 
@@ -2929,7 +2965,7 @@ def getInitSkeletonBranchPoint(globalJunctionPose, currShootID, globalMedial_G, 
 
 
 @logFunction
-def getSkeletonBranchPoint(globalJunctionPose, currShootID, parentShootIDs, localPathSegsByID, globalControlPoses, plotIter = False, hypothesisID = 0, nodeID = 0, arcDist = 0.0):
+def getSkeletonBranchPoint(globalJunctionPose, currShootID, parentShootIDs, localPathSegsByID, localPaths, globalControlPoses, plotIter = False, hypothesisID = 0, nodeID = 0, arcDist = 0.0):
 
 	"""
 	2)  branch point is the part of current skeleton that diverges from all non-descendent skeletons
@@ -2988,6 +3024,7 @@ def getSkeletonBranchPoint(globalJunctionPose, currShootID, parentShootIDs, loca
 
 		localSegs_L = localPathSegsByID[shootID]
 		controlPose_G = globalControlPoses[shootID]
+		localPath_L = SplineFit(localPaths[shootID]).getUniformSamples()
 
 		localSegs_G = []
 		descenFrame = Pose(controlPose_G)
@@ -2995,11 +3032,17 @@ def getSkeletonBranchPoint(globalJunctionPose, currShootID, parentShootIDs, loca
 			newSeg = []
 			for p in seg:
 				newPose = descenFrame.convertLocalOffsetToGlobal(p)
-				allPointSoup_G.append(newPose[0:2])
+				#allPointSoup_G.append(newPose[0:2])
 				newSeg.append(newPose)
 			localSegs_G.append(newSeg)
 
 		pathSegsByID_G.append(localSegs_G)
+
+		localPath_G = []
+		for p in localPath_L:
+			newPose = descenFrame.convertLocalOffsetToGlobal(p)
+			allPointSoup_G.append(newPose[0:2])
+			localPath_G.append(newPose)
 
 	"""
 	2)  branch point is the part of current skeleton that diverges from all non-descendent skeletons
@@ -3028,8 +3071,8 @@ def getSkeletonBranchPoint(globalJunctionPose, currShootID, parentShootIDs, loca
 
 	print "skeletonBranchPoint:", minBranchPose
 
-	if minBranchPose == None:
-		raise
+	#if minBranchPose == None:
+	#	raise
 
 	return minBranchPose
 	
@@ -3422,7 +3465,7 @@ def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, 
 
 
 @logFunction
-def computeBranch(pathID, parentID, oldLocalJuncPose_C, origControlPose, childPath_C, parentPath_P, trimmedParent_P, localPathSegsByID, arcDist, localSkeletons, controlPoses, junctionPoses, parentPathIDs, numNodes=0, hypothesisID=0):
+def computeBranch(pathID, parentID, oldLocalJuncPose_C, origControlPose, childPath_C, parentPath_P, trimmedParent_P, localPathSegsByID, localPaths, arcDist, localSkeletons, controlPoses, junctionPoses, parentPathIDs, numNodes=0, hypothesisID=0):
 
 	if parentID != None: 
 
@@ -3466,10 +3509,11 @@ def computeBranch(pathID, parentID, oldLocalJuncPose_C, origControlPose, childPa
 		distDisc = 0.0
 		angDisc = 0.0
 
-		finalPoses_G = computeGlobalControlPoses(controlPoses, parentPathIDs)
+		controlPoses[pathID] = modControlPose_P
+		controlPoses_G = computeGlobalControlPoses(controlPoses, parentPathIDs)
 
 		""" get the trimmed child shoot at the new designated branch point from parent """
-		newPath3, localJuncPose_C, juncDiscDist, juncDiscAngle, splicedPaths, particlePath =  trimBranch(pathID, parentID, modControlPose_P, oldLocalJuncPose_C, childPath_C, parentPath_P, trimmedParent_P, localPathSegsByID, parentPathIDs, finalPoses_G, plotIter=True, arcDist = arcDist, nodeID=numNodes, hypothesisID = hypothesisID)
+		newPath3, localJuncPose_C, juncDiscDist, juncDiscAngle, splicedPaths, particlePath =  trimBranch(pathID, parentID, modControlPose_P, oldLocalJuncPose_C, childPath_C, parentPath_P, trimmedParent_P, localPathSegsByID, localPaths, parentPathIDs, controlPoses_G, plotIter=True, arcDist = arcDist, nodeID=numNodes, hypothesisID = hypothesisID)
 
 
 		newGlobJuncPose = offsetOrigin1.convertLocalOffsetToGlobal(localJuncPose_C)
@@ -3478,9 +3522,9 @@ def computeBranch(pathID, parentID, oldLocalJuncPose_C, origControlPose, childPa
 		junctionPoses[pathID] = localJuncPose_C
 		controlPoses[pathID] = modControlPose_P
 
-		finalPoses = computeGlobalControlPoses(controlPoses, parentPathIDs)
+		controlPoses_G = computeGlobalControlPoses(controlPoses, parentPathIDs)
 
-		spliceSkeleton_G = spliceSkeletons(localSkeletons, finalPoses, junctionPoses, parentPathIDs)
+		spliceSkeleton_G = spliceSkeletons(localSkeletons, controlPoses_G, junctionPoses, parentPathIDs)
 
 
 		""" the terminals of the parent shoot """
@@ -3681,7 +3725,7 @@ def computeBranch(pathID, parentID, oldLocalJuncPose_C, origControlPose, childPa
  
 
 @logFunction
-def trimBranch(pathID, parentPathID, modControlPose, origGlobJuncPose, childPath, parentPath, trimmedParent, localPathSegsByID, parentPathIDs, controlPoses_G, plotIter = False, hypothesisID = 0, nodeID = 0, arcDist = 0.0):
+def trimBranch(pathID, parentPathID, modControlPose, origGlobJuncPose, childPath, parentPath, trimmedParent, localPathSegsByID, localPaths, parentPathIDs, controlPoses_G, plotIter = False, hypothesisID = 0, nodeID = 0, arcDist = 0.0):
 
 	global pathPlotCount 
 
@@ -3706,6 +3750,8 @@ def trimBranch(pathID, parentPathID, modControlPose, origGlobJuncPose, childPath
 	offsetOrigin1 = Pose(modControlPose)
 
 	globJuncPose = offsetOrigin1.convertLocalOffsetToGlobal(origGlobJuncPose)
+
+	branchPose_G = getSkeletonBranchPoint(globJuncPose, pathID, parentPathIDs, localPathSegsByID, localPaths, controlPoses_G)
 	
 	partPathSegs = []
 
@@ -3843,7 +3889,6 @@ def trimBranch(pathID, parentPathID, modControlPose, origGlobJuncPose, childPath
 	newPath3 = ensureEnoughPoints(newPath2, max_spacing = 0.08, minPoints = 5)
 
 
-	branchPose_G = getSkeletonBranchPoint(globJuncPose, pathID, parentPathIDs, localPathSegsByID, controlPoses_G)
 
 	newGlobJuncPose1, controlPoint1, angDeriv1 = getBranchPoint(globJuncPose, parentPathID, pathID, trimmedParent, particlePath2, plotIter = plotIter, hypothesisID = hypothesisID, nodeID = nodeID, arcDist = arcDist)
 	newGlobJuncPose2, controlPoint2, angDeriv2 = getBranchPoint(globJuncPose, pathID, parentPathID, particlePath2, trimmedParent, plotIter = plotIter, hypothesisID = hypothesisID, nodeID = nodeID, arcDist = arcDist)
@@ -3866,12 +3911,13 @@ def trimBranch(pathID, parentPathID, modControlPose, origGlobJuncPose, childPath
 			angDeriv = angDeriv1
 
 	""" override this with simple getSimpleDeparture() """
-	#newGlobJuncPose = junctionPoint_K
-
 	newGlobJuncPose = getSimpleDeparture(globJuncPose, path1, particlePath2)
 
 	""" regardless, take the branch angle of the child from parent shoot branch point """
 	newGlobJuncPose[2] = newGlobJuncPose1[2]
+
+	if branchPose_G != None:
+		newGlobJuncPose = branchPose_G
 
 
 	""" junction discrepency distance """
