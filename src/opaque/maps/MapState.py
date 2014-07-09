@@ -2419,12 +2419,14 @@ class MapState:
 		controlPoses = {}
 		junctionPoses = {}
 		parentPathIDs = {}
+		localPathSegsByID = {}
 		pathIDs = self.getPathIDs()
 		for pathID in pathIDs:
 			localSkeletons[pathID] = self.localLeaf2LeafPathJunctions[pathID]["skeletonGraph"]
 			controlPoses[pathID] = self.pathClasses[pathID]["controlPose"]
 			#junctionPoses[pathID] = self.pathClasses[pathID]["globalJunctionPose"]
 			junctionPoses[pathID] = self.pathClasses[pathID]["localJunctionPose"]
+			localPathSegsByID[pathID] = self.localLeaf2LeafPathJunctions[pathID]["localSegments"]
 
 			cPath = self.getPath(pathID)
 			parentPathID = cPath["parentID"]
@@ -2448,7 +2450,7 @@ class MapState:
 			parentPath = self.localPaths[parentID]
 			trimmedParent = self.localTrimmedPaths[parentID]
 
-			branchJobs.append((pathID, parentID, origGlobJuncPose, origControlPose, childPath, parentPath, trimmedParent, localPathSegs, arcDist, localSkeletons, controlPoses, junctionPoses, parentPathIDs, len(self.nodePoses)-1, self.hypothesisID ))
+			branchJobs.append((pathID, parentID, origGlobJuncPose, origControlPose, childPath, parentPath, trimmedParent, localPathSegsByID, arcDist, localSkeletons, controlPoses, junctionPoses, parentPathIDs, len(self.nodePoses)-1, self.hypothesisID ))
 
 
 		"""
@@ -3453,7 +3455,7 @@ class MapState:
 		#localPathSegsByID[newPathID] 
 	
 
-		getInitSkeletonBranchPoint(globalJunctionPose_G, newPathID, globalMedial0_G, parentPathIDs, localPathSegsByID, globalControlPoses_G, plotIter = False, hypothesisID = self.hypothesisID, nodeID = branchNodeID)
+		controlPose_G, controlParentID, branchPose_G = getInitSkeletonBranchPoint(globalJunctionPose_G, newPathID, globalMedial0_G, parentPathIDs, localPathSegsByID, globalControlPoses_G, plotIter = False, hypothesisID = self.hypothesisID, nodeID = branchNodeID)
 
 		""" compute branch point of posture curve diverging from parent shoot """
 		newGlobJuncPose1_G, controlPoint1_G, angDeriv1 = getBranchPoint(globalJunctionPose_G, parentID, newPathID, trimmedParent_G, globalMedial0_G, plotIter = False, hypothesisID = self.hypothesisID, nodeID = branchNodeID)
@@ -3648,6 +3650,13 @@ class MapState:
 		controlPoses = self.getControlPoses()
 		globalControlPoses = computeGlobalControlPoses(controlPoses, parentPathIDs)
 
+		localPathSegsByID = {}
+		for pathID in pathIDs:
+			#localSkeletons[pathID] = self.localLeaf2LeafPathJunctions[pathID]["skeletonGraph"]
+			#controlPoses[pathID] = self.pathClasses[pathID]["controlPose"]
+			#junctionPoses[pathID] = self.pathClasses[pathID]["localJunctionPose"]
+			localPathSegsByID[pathID] = self.localLeaf2LeafPathJunctions[pathID]["localSegments"]
+
 		while False in isParentComputed.values():
 			print "trim parents:", isParentComputed, childParents
 
@@ -3674,7 +3683,7 @@ class MapState:
 						globalJunctionPose = self.getGlobalJunctionPose(childPathID)
 						globalControlPose = globalControlPoses[pathID]
 
-						localNewPath3, localNewGlobJuncPose, localJuncDiscDist, localJuncDiscAngle, localSplicedPaths, localParticlePath = trimBranch(childPathID, parentPathID, localControlPose, localJunctionPose, localPath2, localPath1, localTrimmedPaths[parentPathID], [], plotIter=False, hypothesisID=self.hypothesisID, nodeID=(self.poseData.numNodes))
+						localNewPath3, localNewGlobJuncPose, localJuncDiscDist, localJuncDiscAngle, localSplicedPaths, localParticlePath = trimBranch(childPathID, parentPathID, localControlPose, localJunctionPose, localPath2, localPath1, localTrimmedPaths[parentPathID], localPathSegsByID, parentPathIDs, globalControlPoses, plotIter=False, hypothesisID=self.hypothesisID, nodeID=(self.poseData.numNodes))
 
 
 						offsetOrigin1 = Pose(globalControlPose)
