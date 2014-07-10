@@ -2489,6 +2489,7 @@ def getSimpleDeparture(globalJunctionPose, path1, path2, plotIter = False):
 		currI -= 1
 	
 	frontPoint = pathPoints1[indices[currI]]
+	frontIndex = currI
 
 	currI = len(distances)-1
 	try:
@@ -2499,9 +2500,65 @@ def getSimpleDeparture(globalJunctionPose, path1, path2, plotIter = False):
 		currI += 1
 
 	backPoint = pathPoints1[indices[currI]]
+	backIndex = currI
 	
 	juncDist1 = sqrt((globalJunctionPose[0]-frontPoint[0])**2 + (globalJunctionPose[1]-frontPoint[1])**2)
 	juncDist2 = sqrt((globalJunctionPose[0]-backPoint[0])**2 + (globalJunctionPose[1]-backPoint[1])**2)
+
+	"""
+	frontIndexEnd = frontIndex-20
+	if frontIndexEnd < 0:
+		frontIndexEnd = 0
+	if frontIndex-frontIndexEnd > 0:
+		frontVecSum = [0.0,0.0]
+
+		revRange = range(frontIndexEnd+1, frontIndex+1)
+		revRange.reverse()
+		for k in revRange:
+			p1 = pathPoints2[k]
+			p2 = pathPoints2[k-1]
+			frontVecSum[0] += p2[0]-p1[0]
+			frontVecSum[1] += p2[1]-p1[1]
+		
+		vecMag = sqrt(frontVecSum[0]**2 + frontVecSum[1]**2)
+
+		frontVec = [frontVecSum[0]/vecMag, frontVecSum[1]/vecMag]
+
+		frontVecAngle = acos(frontVec[0])
+		if frontVec[1] < 0.0:
+			frontVecAngle = -frontVecAngle
+
+		frontPose = [frontPoint[0], frontPoint[1], frontVecAngle]
+	else:
+		frontPose = None
+
+
+	#pathPoints2[backIndex:len(distances)]
+
+	backIndexEnd = backIndex+20
+	if backIndexEnd >= len(distances):
+		backIndexEnd = len(distances)-1
+	if backIndexEnd-backIndex > 0:
+		backVecSum = [0.0,0.0]
+		for k in range(backIndex, backIndexEnd):
+			p1 = pathPoints2[k]
+			p2 = pathPoints2[k+1]
+			backVecSum[0] += p2[0]-p1[0]
+			backVecSum[1] += p2[1]-p1[1]
+		
+		vecMag = sqrt(backVecSum[0]**2 + backVecSum[1]**2)
+
+		backVec = [backVecSum[0]/vecMag, backVecSum[1]/vecMag]
+
+		backVecAngle = acos(backVec[0])
+		if backVec[1] < 0.0:
+			backVecAngle = -backVecAngle
+
+		backPose = [backPoint[0], backPoint[1], backVecAngle]
+	else:
+		backPose = None
+	"""
+
 
 
 	if juncDist1 < juncDist2:
@@ -2590,7 +2647,8 @@ def getSimpleSoupDeparture(globalJunctionPose, pointSoup, path2, plotIter = Fals
 
 		frontPose = [frontPoint[0], frontPoint[1], frontVecAngle]
 	else:
-		frontPose = None
+		#frontPose = None
+		frontPose = [frontPoint[0], frontPoint[1], 0.0]
 
 
 	#pathPoints2[backIndex:len(distances)]
@@ -2616,7 +2674,8 @@ def getSimpleSoupDeparture(globalJunctionPose, pointSoup, path2, plotIter = Fals
 
 		backPose = [backPoint[0], backPoint[1], backVecAngle]
 	else:
-		backPose = None
+		#backPose = None
+		backPose = [backPoint[0], backPoint[1], 0.0]
 
 	print "getSimpleSoupDeparture:", frontPoint, backPoint, frontPose, backPose, juncDist1, juncDist2, len(pathPoints2), frontIndex, backIndex
 
@@ -3513,7 +3572,10 @@ def computeBranch(pathID, parentID, oldLocalJuncPose_C, origControlPose, childPa
 		controlPoses_G = computeGlobalControlPoses(controlPoses, parentPathIDs)
 
 		""" get the trimmed child shoot at the new designated branch point from parent """
-		newPath3, localJuncPose_C, juncDiscDist, juncDiscAngle, splicedPaths, particlePath =  trimBranch(pathID, parentID, modControlPose_P, oldLocalJuncPose_C, childPath_C, parentPath_P, trimmedParent_P, localPathSegsByID, localPaths, parentPathIDs, controlPoses_G, plotIter=True, arcDist = arcDist, nodeID=numNodes, hypothesisID = hypothesisID)
+		newPath3, localJuncPose_C, particlePath =  trimBranch(pathID, parentID, modControlPose_P, oldLocalJuncPose_C, childPath_C, parentPath_P, trimmedParent_P, localPathSegsByID, localPaths, parentPathIDs, controlPoses_G, plotIter=True, arcDist = arcDist, nodeID=numNodes, hypothesisID = hypothesisID)
+
+		juncDiscDist = 0.0
+		juncDiscAngle = 0.0
 
 
 		newGlobJuncPose = offsetOrigin1.convertLocalOffsetToGlobal(localJuncPose_C)
@@ -3729,47 +3791,24 @@ def trimBranch(pathID, parentPathID, modControlPose, origGlobJuncPose, childPath
 
 	global pathPlotCount 
 
-
-
-
-
-	#origControlOrigin = Pose(origControlPose)
-
-	#localPathSegs = []
-
-	#for k in range(len(smoothPathSegs)):
-	#	pathSeg = smoothPathSegs[k]
-	#	localSeg = []
-	#	for p in pathSeg:
-	#		p1 = origJuncOrigin.convertGlobalPoseToLocal(p)
-	#		localSeg.append(p1)
-
-	#	localPathSegs.append(localSeg)
-
-
 	offsetOrigin1 = Pose(modControlPose)
 
+
+	""" get branch point landmark """ 
 	globJuncPose = offsetOrigin1.convertLocalOffsetToGlobal(origGlobJuncPose)
 
 	branchPose_G = getSkeletonBranchPoint(globJuncPose, pathID, parentPathIDs, localPathSegsByID, localPaths, controlPoses_G)
+	newGlobJuncPose = branchPose_G
 	
-	partPathSegs = []
 
-	#for k in range(len(localPathSegs)):
-	#	localSeg = localPathSegs[k]
-	#	for p in localSeg:
-	#		p1 = offsetOrigin1.convertLocalOffsetToGlobal(p)
+	""" get trimmed path """
+
+	partPathSegs = []
 
 	path1 = parentPath
 	path2 = childPath
 
-	#localPath2 = []
-	#for p in path2:
-	#	p1 = origControlOrigin.convertGlobalToLocal(p)
-	#	localPath2.append(p1)
-
 	particlePath2 = []
-	#for p in localPath2:
 	for p in path2:
 		p1 = offsetOrigin1.convertLocalToGlobal(p)
 		particlePath2.append(p1)
@@ -3844,7 +3883,8 @@ def trimBranch(pathID, parentPathID, modControlPose, origGlobJuncPose, childPath
 			
 	if minI == 0:
 		"""secP1 is terminal 0"""
-		index = juncI-10
+		#index = juncI-10
+		index = juncI
 		if index < 1:
 			index = 1
 
@@ -3854,7 +3894,8 @@ def trimBranch(pathID, parentPathID, modControlPose, origGlobJuncPose, childPath
 	
 	elif minI == 1:
 		"""secP1 is terminal N"""
-		index = juncI+10
+		#index = juncI+10
+		index = juncI
 		if index >= len(particlePath2)-1:
 			
 			""" ensure at least 2 elements in path """
@@ -3865,7 +3906,8 @@ def trimBranch(pathID, parentPathID, modControlPose, origGlobJuncPose, childPath
 		
 	elif minI == 2:
 		"""secP2 is terminal 0"""
-		index = juncI-10
+		#index = juncI-10
+		index = juncI
 		if index < 1:
 			index = 1
 
@@ -3874,7 +3916,8 @@ def trimBranch(pathID, parentPathID, modControlPose, origGlobJuncPose, childPath
 		
 	elif minI == 3:
 		"""secP2 is terminal N"""
-		index = juncI+10
+		#index = juncI+10
+		index = juncI
 		if index >= len(particlePath2)-1:
 			""" ensure at least 2 elements in path """
 			index = len(particlePath2)-2
@@ -3888,256 +3931,7 @@ def trimBranch(pathID, parentPathID, modControlPose, origGlobJuncPose, childPath
 	""" convert path so that the points are uniformly distributed """
 	newPath3 = ensureEnoughPoints(newPath2, max_spacing = 0.08, minPoints = 5)
 
-
-
-	newGlobJuncPose1, controlPoint1, angDeriv1 = getBranchPoint(globJuncPose, parentPathID, pathID, trimmedParent, particlePath2, plotIter = plotIter, hypothesisID = hypothesisID, nodeID = nodeID, arcDist = arcDist)
-	newGlobJuncPose2, controlPoint2, angDeriv2 = getBranchPoint(globJuncPose, pathID, parentPathID, particlePath2, trimmedParent, plotIter = plotIter, hypothesisID = hypothesisID, nodeID = nodeID, arcDist = arcDist)
-
-
-	juncDiscDist1 = sqrt((newGlobJuncPose1[0]-globJuncPose[0])**2 + (newGlobJuncPose1[1]-globJuncPose[1])**2)
-	juncDiscDist2 = sqrt((newGlobJuncPose2[0]-globJuncPose[0])**2 + (newGlobJuncPose2[1]-globJuncPose[1])**2)
-
-	if angDeriv1 < angDeriv2:
-		newGlobJuncPose = newGlobJuncPose1
-		angDeriv = angDeriv1
-	else:
-
-		""" only diverge from the parent if the determined branch point is in the neighborhood of the original """
-		if juncDiscDist2 < 1.0:
-			newGlobJuncPose = newGlobJuncPose2
-			angDeriv = angDeriv2
-		else:
-			newGlobJuncPose = newGlobJuncPose1
-			angDeriv = angDeriv1
-
-	""" override this with simple getSimpleDeparture() """
-	newGlobJuncPose = getSimpleDeparture(globJuncPose, path1, particlePath2)
-
-	""" regardless, take the branch angle of the child from parent shoot branch point """
-	newGlobJuncPose[2] = newGlobJuncPose1[2]
-
-	if branchPose_G != None:
-		newGlobJuncPose = branchPose_G
-
-
-	""" junction discrepency distance """
-	#origControlPose = copy(origGlobJuncPose)
-	juncDiscDist = 0.0
-	juncDiscAngle = 0.0
-	#origControlPose = copy(origGlobJuncPose)
-	#juncDiscDist = sqrt((newGlobJuncPose[0]-modControlPose[0])**2 + (newGlobJuncPose[1]-modControlPose[1])**2)
-	#juncDiscAngle = normalizeAngle(origControlPose[2]-newGlobJuncPose[2])
-
-
-
-	""" for each path, attempt to join with its parent path """
-	junctionPoint = [newGlobJuncPose[0],newGlobJuncPose[1]]
-
-	path1 = newPath3
-	path2 = trimmedParent
-	
-	minDist1 = 1e100
-	minI1 = 0		 
-	for i in range(len(path1)):
-		pnt = path1[i]
-		dist = sqrt((pnt[0]-junctionPoint[0])**2 + (pnt[1]-junctionPoint[1])**2)
-	
-		if dist < minDist1:
-			minDist1 = dist
-			minI1 = i
-
-	minDist2 = 1e100
-	minI2 = 0		 
-	for i in range(len(path2)):
-		pnt = path2[i]
-		dist = sqrt((pnt[0]-junctionPoint[0])**2 + (pnt[1]-junctionPoint[1])**2)
-
-		if dist < minDist2:
-			minDist2 = dist
-			minI2 = i
-	
-	joins = []
-	joins.append([(pathID, minI1),(parentPathID, minI2), junctionPoint])
-
-
-	""" get junctions """ 
-	
-	junctions = {}
-	junctions[pathID] = [0, newGlobJuncPose, (parentPathID,minI2), path2[minI2], minI1]
-
-
-	""" create a tree with the node IDs and then stitch them together with joins """
-	pathGraph = graph.graph()
-
-	for k in range(len(path1)):
-		pathGraph.add_node((pathID, k), path1[k])
-	for k in range(len(path1)-1):
-		pathGraph.add_edge((pathID, k), (pathID, k+1))
-	
-	for k in range(len(path2)):
-		pathGraph.add_node((parentPathID, k), path2[k])
-	for k in range(len(path2)-1):
-		pathGraph.add_edge((parentPathID, k), (parentPathID, k+1))
-
-	""" join with the junction in between the join points """
-	for k in range(len(joins)):
-		join = joins[k]
-		pathGraph.add_edge(join[0], join[1])
-
-	""" get terminals """
-	topDict = {}
-	terminals = {}
-
-
-	""" parent is either the root path or some sub path """
-	""" we only care about the two terminals of our immediate parent """
-
-
-	terminals[parentPathID] = [(parentPathID, 0), path2[0]]
-	terminals[parentPathID+1] = [(parentPathID, len(path2)-1), path2[len(path2)-1]]
-	topDict["t%u" % 0] = terminals[parentPathID][0]
-	topDict["t%u" % 1] = terminals[parentPathID+1][0]
-		
-	minI1 = junctions[pathID][4]
-	
-	""" get the two terminals of the current pathID path """
-	""" determine which side is junction and which side is terminal """
-	if minI1 > len(path1)-1 - minI1:    
-		terminals[pathID+1] = [(pathID,0), path1[0]]
-		topDict["t%u" % (pathID+1)] = (pathID,0)
-	else:
-		terminals[pathID+1] = [(pathID,len(path1)-1), path1[len(path1)-1]]
-		topDict["t%u" % (pathID+1)] = (pathID,len(path1)-1)
-
-
-
-	""" determine which paths are leaves """
-	isAParent = {}
-	parents = {}
-	pathIDGraph = graph.graph()
-
-	isAParent[pathID] = False
-	pathIDGraph.add_node(pathID, [])
-
-	isAParent[parentPathID] = True
-	pathIDGraph.add_node(parentPathID, [])
-	pathIDGraph.add_edge(pathID, parentPathID)
-	
-	leafCount = 1
-
-	""" build topological graph """
-	topGraph = graph.graph()
-	
-	""" add topological nodes to the graph """
-	topNodes = []
-	for k, term in terminals.iteritems():
-		topGraph.add_node(term[0], term[1])
-		topNodes.append(term[0])
-	for k, junc in junctions.iteritems():
-		topGraph.add_node(junc[2], junc[3])
-		topNodes.append(junc[2])
-
-	topGraph.add_edge(terminals[parentPathID][0], junctions[pathID][2])
-	topGraph.add_edge(terminals[parentPathID+1][0], junctions[pathID][2])
-	topGraph.add_edge(terminals[pathID+1][0], junctions[pathID][2])
-
-
-
-	startKey1 = terminals[parentPathID][0]
-	endKey1 = terminals[pathID+1][0]
-
-	startKey2 = terminals[parentPathID+1][0]
-	endKey2 = terminals[pathID+1][0]
-
-	joinPairs = []
-	shortestPathSpanTree, shortestDist = pathGraph.shortest_path(endKey1)
-	currNode = shortestPathSpanTree[startKey1]					 
-	splicedPath = []
-	while currNode != endKey1:
-		splicedPath.append(pathGraph.get_node_attributes(currNode))
-		nextNode = shortestPathSpanTree[currNode]
-		
-		for join in joins:
-			if join[0] == currNode and join[1] == nextNode:
-				joinPairs.append((len(splicedPath)-1,len(splicedPath)))
-			elif join[1] == currNode and join[0] == nextNode:
-				joinPairs.append((len(splicedPath)-1,len(splicedPath)))
-			
-		currNode = nextNode
-		
-	splicedPath.append(pathGraph.get_node_attributes(currNode))
-
-	""" if there are any joins, we must interpolate a smooth transition """
-	lastIndex = 0
-	newSplicePath1 = []
-	for pair in joinPairs:
-		index1 = pair[0]
-		index2 = pair[1]
-		cPoints = [splicedPath[index1-1], splicedPath[index1], splicedPath[index2], splicedPath[index2+1]]				 
-		spline = SplineFit(cPoints, smooth=0.0, kp=3)
-		points = spline.getUniformSamples(spacing = 0.1)
-		
-		newSplicePath1 += splicedPath[lastIndex:index1]
-		newSplicePath1 += points
-		
-		lastIndex = index2+2
-
-	newSplicePath1 += splicedPath[lastIndex:]
-
-
-
-
-	joinPairs = []
-	shortestPathSpanTree, shortestDist = pathGraph.shortest_path(endKey2)
-	currNode = shortestPathSpanTree[startKey2]					 
-	splicedPath = []
-	while currNode != endKey2:
-		splicedPath.append(pathGraph.get_node_attributes(currNode))
-		nextNode = shortestPathSpanTree[currNode]
-		
-		for join in joins:
-			if join[0] == currNode and join[1] == nextNode:
-				joinPairs.append((len(splicedPath)-1,len(splicedPath)))
-			elif join[1] == currNode and join[0] == nextNode:
-				joinPairs.append((len(splicedPath)-1,len(splicedPath)))
-			
-		currNode = nextNode
-		
-	splicedPath.append(pathGraph.get_node_attributes(currNode))
-
-	""" if there are any joins, we must interpolate a smooth transition """
-	lastIndex = 0
-	newSplicePath2 = []
-	for pair in joinPairs:
-		index1 = pair[0]
-		index2 = pair[1]
-		cPoints = [splicedPath[index1-1], splicedPath[index1], splicedPath[index2], splicedPath[index2+1]]				 
-		spline = SplineFit(cPoints, smooth=0.0, kp=3)
-		points = spline.getUniformSamples(spacing = 0.1)
-		
-		newSplicePath2 += splicedPath[lastIndex:index1]
-		newSplicePath2 += points
-		
-		lastIndex = index2+2
-
-	newSplicePath2 += splicedPath[lastIndex:]
-
-
-	spliceSpline1 = SplineFit(newSplicePath1, smooth=0.1)
-	spliceSpline2 = SplineFit(newSplicePath2, smooth=0.1)
-
-	splicePoints1 = spliceSpline1.getUniformSamples()
-	splicePoints2 = spliceSpline2.getUniformSamples()
-
-	splicedPaths = []
-	splicedPaths.append(newSplicePath1)
-	splicedPaths.append(newSplicePath2)
-
-
 	if plotIter:
-		#if False:
-			
-		#hypothesisID = 0
 		numNodes = 0
 		pathPlotCount = 0
 
@@ -4170,23 +3964,8 @@ def trimBranch(pathID, parentPathID, modControlPose, origGlobJuncPose, childPath
 		#pylab.scatter([origControlPose[0],], [origControlPose[1],], color='g')
 		pylab.scatter([globJuncPose[0],], [globJuncPose[1],], color='m')
 
-		xP = []
-		yP = []
-		for p in splicePoints1:
-			xP.append(p[0])
-			yP.append(p[1])
-		pylab.plot(xP,yP, color='k', alpha=0.3)
-
-		xP = []
-		yP = []
-		for p in splicePoints2:
-			xP.append(p[0])
-			yP.append(p[1])
-		pylab.plot(xP,yP, color='k', alpha=0.3)
-
-
 		pylab.axis("equal")
-		pylab.title("hyp %d nodeID %d %1.2f %1.2f %1.2f %1.2f %1.2f %1.2f" % ( hypothesisID, nodeID, juncDiscDist, juncDiscAngle, origGlobJuncPose[2], newGlobJuncPose[2], angDeriv1, angDeriv2))
+		pylab.title("hyp %d nodeID %d %1.2f %1.2f" % ( hypothesisID, nodeID, origGlobJuncPose[2], newGlobJuncPose[2]))
 		pylab.savefig("trimDeparture_%04u_%04u_%1.1f.png" % (hypothesisID, nodeID, arcDist))
 
 		print "saving trimDeparture_%04u_%04u_%1.1f.png" % (hypothesisID, nodeID, arcDist)
@@ -4207,16 +3986,7 @@ def trimBranch(pathID, parentPathID, modControlPose, origGlobJuncPose, childPath
 
 	localJuncPose = offsetOrigin1.convertGlobalPoseToLocal(newGlobJuncPose)
 
-	localSplicedPaths = []
-	for splicePath in splicedPaths:
-		localSplicePath = []
-		for p in splicePath:
-			p1 = offsetOrigin1.convertGlobalToLocal(p)
-			localSplicePath.append(p1)
-		localSplicedPaths.append(localSplicePath)
-
-	#return newPath3, newGlobJuncPose, juncDiscDist, juncDiscAngle, splicedPaths, particlePath2
-	return localNewPath3, localJuncPose, juncDiscDist, juncDiscAngle, localSplicedPaths, localParticlePath2
+	return localNewPath3, localJuncPose, localParticlePath2
 
 
 

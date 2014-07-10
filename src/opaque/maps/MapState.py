@@ -3458,31 +3458,33 @@ class MapState:
 
 		controlPose_G, controlParentID, branchPose_G = getInitSkeletonBranchPoint(globalJunctionPose_G, newPathID, globalMedial0_G, parentPathIDs, localPathSegsByID, self.localPaths, globalControlPoses_G, plotIter = False, hypothesisID = self.hypothesisID, nodeID = branchNodeID)
 
-		""" compute branch point of posture curve diverging from parent shoot """
-		newGlobJuncPose1_G, controlPoint1_G, angDeriv1 = getBranchPoint(globalJunctionPose_G, parentID, newPathID, trimmedParent_G, globalMedial0_G, plotIter = False, hypothesisID = self.hypothesisID, nodeID = branchNodeID)
+		#""" compute branch point of posture curve diverging from parent shoot """
+		#newGlobJuncPose1_G, controlPoint1_G, angDeriv1 = getBranchPoint(globalJunctionPose_G, parentID, newPathID, trimmedParent_G, globalMedial0_G, plotIter = False, hypothesisID = self.hypothesisID, nodeID = branchNodeID)
 
-		""" compute branch point of parent shoot diverging from posture curve """
-		newGlobJuncPose2_G, controlPoint2_G, angDeriv2 = getBranchPoint(globalJunctionPose_G, newPathID, parentID, globalMedial0_G, trimmedParent_G, plotIter = False, hypothesisID = self.hypothesisID, nodeID = branchNodeID)
+		#""" compute branch point of parent shoot diverging from posture curve """
+		#newGlobJuncPose2_G, controlPoint2_G, angDeriv2 = getBranchPoint(globalJunctionPose_G, newPathID, parentID, globalMedial0_G, trimmedParent_G, plotIter = False, hypothesisID = self.hypothesisID, nodeID = branchNodeID)
 
-		""" the control point that is the flattest determines which curve is the diverging one """
-		""" the curve that is sharpest at the control point is the diverging curve """
-		if angDeriv1 > angDeriv2:
-			newGlobJuncPose_G = newGlobJuncPose1_G
-			angDeriv = angDeriv1
-		else:
-			newGlobJuncPose_G = newGlobJuncPose2_G
-			angDeriv = angDeriv2
+		#""" the control point that is the flattest determines which curve is the diverging one """
+		#""" the curve that is sharpest at the control point is the diverging curve """
+		#if angDeriv1 > angDeriv2:
+		#	newGlobJuncPose_G = newGlobJuncPose1_G
+		#	angDeriv = angDeriv1
+		#else:
+		#	newGlobJuncPose_G = newGlobJuncPose2_G
+		#	angDeriv = angDeriv2
 
 
-		""" regardless, take the branch angle of the child from parent shoot branch point """
-		print "branchPointProb:", angDeriv1, angDeriv2, newGlobJuncPose1_G, newGlobJuncPose2_G
-		newGlobJuncPose_G[2] = newGlobJuncPose1_G[2]
-		print "setting new", newGlobJuncPose_G
+		#""" regardless, take the branch angle of the child from parent shoot branch point """
+		#print "branchPointProb:", angDeriv1, angDeriv2, newGlobJuncPose1_G, newGlobJuncPose2_G
+		#newGlobJuncPose_G[2] = newGlobJuncPose1_G[2]
+		#print "setting new", newGlobJuncPose_G
+		
+		newGlobJuncPose_G = branchPose_G
 
 
 		""" choose a control point that is common between parent and child shoots """
-		commonU1, commonU2, cPoint1_G, cPoint2_G = selectCommonOrigin(trimmedParent_G, globalMedial0_G)	
-		controlPose_G = [cPoint1_G[0],cPoint1_G[1], 0.0]
+		#commonU1, commonU2, cPoint1_G, cPoint2_G = selectCommonOrigin(trimmedParent_G, globalMedial0_G)	
+		#controlPose_G = [cPoint1_G[0],cPoint1_G[1], 0.0]
 
 		""" convert the controlPose to coordinates local to the parent frame """
 		parentPathIDs = self.getParentHash()
@@ -3684,7 +3686,7 @@ class MapState:
 						globalJunctionPose = self.getGlobalJunctionPose(childPathID)
 						globalControlPose = globalControlPoses[pathID]
 
-						localNewPath3, localNewGlobJuncPose, localJuncDiscDist, localJuncDiscAngle, localSplicedPaths, localParticlePath = trimBranch(childPathID, parentPathID, localControlPose, localJunctionPose, localPath2, localPath1, localTrimmedPaths[parentPathID], localPathSegsByID, self.localPaths, parentPathIDs, globalControlPoses, plotIter=False, hypothesisID=self.hypothesisID, nodeID=(self.poseData.numNodes))
+						localNewPath3, localNewGlobJuncPose, localParticlePath = trimBranch(childPathID, parentPathID, localControlPose, localJunctionPose, localPath2, localPath1, localTrimmedPaths[parentPathID], localPathSegsByID, self.localPaths, parentPathIDs, globalControlPoses, plotIter=False, hypothesisID=self.hypothesisID, nodeID=(self.poseData.numNodes))
 
 
 						offsetOrigin1 = Pose(globalControlPose)
@@ -4818,9 +4820,9 @@ class MapState:
 				
 				print "termDist =", termDist
 				
-				if termDist < TERM_THRESH:
-					print "REJECT, proposed junction point is too close to parent pathID terminal", pathID, termDist, termPoint, depPoint
-					return False, pathID
+				#if termDist < TERM_THRESH:
+				#	print "REJECT, proposed junction point is too close to parent pathID terminal", pathID, termDist, termPoint, depPoint
+				#	return False, pathID
 
 			
 			path = self.getPath(pathID)
