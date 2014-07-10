@@ -3443,7 +3443,7 @@ class MapState:
 		for p in medial0_L:
 			globalMedial0_G.append(nodeFrame.convertLocalToGlobal(p))
 
-		trimmedParent_G = self.trimmedPaths[parentID]
+		#trimmedParent_G = self.trimmedPaths[parentID]
 
 		parentPathIDs = self.getParentHash()
 		controlPoses = self.getControlPoses()
@@ -3495,7 +3495,7 @@ class MapState:
 		globalControlPoses_G = computeGlobalControlPoses(controlPoses, parentPathIDs)
 		
 		""" compute the control pose relative to the parent """
-		parentControlPose_G = globalControlPoses_G[parentID]
+		parentControlPose_G = globalControlPoses_G[controlParentID]
 		parentFrame = Pose(parentControlPose_G)
 		controlPose_P = parentFrame.convertGlobalPoseToLocal(controlPose_G)
 
@@ -3505,7 +3505,7 @@ class MapState:
 		junctionPose_C = currFrame.convertGlobalPoseToLocal(newGlobJuncPose_G)
 
 		""" basic shoot data structure """
-		self.pathClasses[newPathID] = {"parentID" : parentID,
+		self.pathClasses[newPathID] = {"parentID" : controlParentID,
 						"branchNodeID" : branchNodeID,
 						"localDivergencePose" : localDivergencePose_R, 
 						"localJunctionPose" : junctionPose_C, 
@@ -3528,7 +3528,7 @@ class MapState:
 
 		""" FIXME:  Full path spline instead of just relevant section.  Does this always work? """
 		#parentShoot_G = self.paths[parentID]
-		parentShoot_L = self.localPaths[parentID]
+		parentShoot_L = self.localPaths[controlParentID]
 		parentShoot_G = []
 		for p in parentShoot_L:
 			parentShoot_G.append(parentFrame.convertLocalToGlobal(p))
@@ -3589,7 +3589,7 @@ class MapState:
 			parentPathIDs = self.getParentHash()
 			controlPoses = self.getControlPoses()
 			globalControlPoses_G = computeGlobalControlPoses(controlPoses, parentPathIDs)
-			parentControlPose_G = globalControlPoses_G[parentID]
+			parentControlPose_G = globalControlPoses_G[controlParentID]
 			parentFrame = Pose(parentControlPose_G)
 
 			currFrame = Pose(newControlPose_G)
@@ -3604,7 +3604,7 @@ class MapState:
 			localParticleControlPose_P = parentFrame.convertGlobalPoseToLocal(particleControlPose_G)
 
 			""" add the details of this junction given particle pose is true """
-			part.addPath(newPathID, parentID, branchNodeID, nodePose_C, localDivergencePose_R, modJunctionPose_G, localJunctionPose_C, localParticleControlPose_P, self.NUM_BRANCHES, arcDists, controlPoses_P)
+			part.addPath(newPathID, controlParentID, branchNodeID, nodePose_C, localDivergencePose_R, modJunctionPose_G, localJunctionPose_C, localParticleControlPose_P, self.NUM_BRANCHES, arcDists, controlPoses_P)
 
 		print "newPath", newPathID, "=", self.pathClasses[newPathID]
 

@@ -3753,7 +3753,7 @@ def computeBranch(pathID, parentID, childPath_C, parentPath_P, trimmedParent_P, 
 
 				pylab.plot(xP,yP, color='k', alpha=0.2)
 
-			for termPath in termPaths:
+			for termPath in termPaths_G:
 				startPose = termPath[0]
 				endPose = termPath[-1]
 
