@@ -780,14 +780,16 @@ class MapState:
 				if pathID != 0:
 
 					globJuncPose = part.junctionData[pathID]["globalJunctionPose"]
-					controlPose = part.junctionData[pathID]["controlPose"]
+					controlPose_L = part.junctionData[pathID]["controlPose"]
+
+					branchPose_L = part.junctionData[pathID]["localJunctionPose"]
 
 					dist1 = sqrt((globJuncPose[0]-hypPose0[0])**2 + (globJuncPose[1]-hypPose0[1])**2)
 
 					branchDists[pathID] = dist1
 
 					if dist1 < 3.0:
-						probSets.append((pathID, globJuncPose, controlPose))
+						probSets.append((pathID, branchPose_L, controlPose_L))
 
 
 		if True:
@@ -847,7 +849,6 @@ class MapState:
 								for k in range(self.NUM_BRANCHES):
 									newArcDist = arcLow + k * self.DIV_LEN
 									arcDists.append(newArcDist)
-
 
 								""" select range of control points if junction is close enough """
 								jointArcDist[pathID] = arcDists
@@ -2431,6 +2432,7 @@ class MapState:
 		for pathID in pathIDs:
 			localSkeletons[pathID] = self.localLeaf2LeafPathJunctions[pathID]["skeletonGraph"]
 			controlPoses[pathID] = self.pathClasses[pathID]["controlPose"]
+			#junctionPoses[pathID] = self.pathClasses[pathID]["localJunctionPose"]
 			junctionPoses[pathID] = self.pathClasses[pathID]["localJunctionPose"]
 			localPathSegsByID[pathID] = self.localLeaf2LeafPathJunctions[pathID]["localSegments"]
 
@@ -2451,9 +2453,8 @@ class MapState:
 			#origGlobJuncPose = copy(self.pathClasses[pathID]["localJunctionPose"])
 			childPath = self.localPaths[pathID]
 			parentPath = self.localPaths[parentID]
-			trimmedParent = self.localTrimmedPaths[parentID]
 
-			branchJobs.append((pathID, parentID, childPath, parentPath, trimmedParent, localPathSegsByID, self.localPaths, arcDist, localSkeletons, controlPoses, junctionPoses, parentPathIDs, len(self.nodePoses)-1, self.hypothesisID ))
+			branchJobs.append((pathID, parentID, localPathSegsByID, self.localPaths, arcDist, localSkeletons, controlPoses, junctionPoses, parentPathIDs, len(self.nodePoses)-1, self.hypothesisID ))
 
 
 		"""
@@ -2609,9 +2610,9 @@ class MapState:
 				pylab.scatter(xP, yP, color='r', zorder=8)
 
 
+				"""
 				offsetOrigin1 = Pose(modControlPose)
 
-				"""
 				for k in range(len(localPathSegs)):
 					localSeg = localPathSegs[k]
 					xP1 = []
@@ -3678,18 +3679,12 @@ class MapState:
 						parentPathID = childParents[pathID]
 						childPathID = pathID
 
-						path1 = paths[parentPathID]
-						path2 = paths[childPathID]
-
-						localPath1 = localPaths[parentPathID]
-						localPath2 = localPaths[childPathID]
-								
 						localJunctionPose = self.pathClasses[childPathID]["localJunctionPose"]
 						localControlPose = self.pathClasses[childPathID]["controlPose"]
 						globalJunctionPose = self.getGlobalJunctionPose(childPathID)
 						globalControlPose = globalControlPoses[pathID]
 
-						localNewPath3, localNewGlobJuncPose, localParticlePath = trimBranch(childPathID, parentPathID, localControlPose, localJunctionPose, localPath2, localPath1, localTrimmedPaths[parentPathID], localPathSegsByID, self.localPaths, parentPathIDs, globalControlPoses, plotIter=True, hypothesisID=self.hypothesisID, nodeID=(self.poseData.numNodes))
+						localNewPath3, localNewGlobJuncPose, localParticlePath = trimBranch(childPathID, parentPathID, localControlPose, localJunctionPose, localPathSegsByID, self.localPaths, parentPathIDs, globalControlPoses, plotIter=True, hypothesisID=self.hypothesisID, nodeID=(self.poseData.numNodes))
 
 
 						offsetOrigin1 = Pose(globalControlPose)

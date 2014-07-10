@@ -1646,20 +1646,17 @@ def __remote_multiBranch(rank, qin, qout):
 
 			pathID = job[0]
 			parentID = job[1]
-			childPath = job[2]
-			parentPath = job[3]
-			trimmedParent = job[4]
-			localPathSegs = job[5]
-			localPaths = job[6]
-			arcDist = job[7]
-			localSkeletons = job[8]
-			controlPoses = job[9]
-			junctionPoses = job[10]
-			parentPathIDs = job[11]
-			numNodes = job[12]
-			hypID = job[13]
+			localPathSegs = job[2]
+			localPaths = job[3]
+			arcDist = job[4]
+			localSkeletons = job[5]
+			controlPoses = job[6]
+			junctionPoses = job[7]
+			parentPathIDs = job[8]
+			numNodes = job[9]
+			hypID = job[10]
 
-			result = computeBranch(pathID, parentID, childPath, parentPath, trimmedParent, localPathSegs, localPaths, arcDist, localSkeletons, controlPoses, junctionPoses, parentPathIDs, numNodes, hypID)
+			result = computeBranch(pathID, parentID, localPathSegs, localPaths, arcDist, localSkeletons, controlPoses, junctionPoses, parentPathIDs, numNodes, hypID)
 
 			results.append(result)
 						   
@@ -3522,7 +3519,7 @@ def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, 
 
 
 @logFunction
-def computeBranch(pathID, parentID, childPath_C, parentPath_P, trimmedParent_P, localPathSegsByID, localPaths, arcDist, localSkeletons, controlPoses, junctionPoses, parentPathIDs, numNodes=0, hypothesisID=0):
+def computeBranch(pathID, parentID, localPathSegsByID, localPaths, arcDist, localSkeletons, controlPoses, junctionPoses, parentPathIDs, numNodes=0, hypothesisID=0):
 
 
 	origControlPose = controlPoses[pathID]
@@ -3531,6 +3528,8 @@ def computeBranch(pathID, parentID, childPath_C, parentPath_P, trimmedParent_P, 
 
 
 	if parentID != None: 
+
+		parentPath_P = localPaths[parentID]
 
 		""" parent path information """
 		pathSpline_P = SplineFit(parentPath_P)
@@ -3576,7 +3575,7 @@ def computeBranch(pathID, parentID, childPath_C, parentPath_P, trimmedParent_P, 
 		controlPoses_G = computeGlobalControlPoses(controlPoses, parentPathIDs)
 
 		""" get the trimmed child shoot at the new designated branch point from parent """
-		newPath3, localJuncPose_C, particlePath =  trimBranch(pathID, parentID, modControlPose_P, oldLocalJuncPose_C, childPath_C, parentPath_P, trimmedParent_P, localPathSegsByID, localPaths, parentPathIDs, controlPoses_G, plotIter=True, arcDist = arcDist, nodeID=numNodes, hypothesisID = hypothesisID)
+		newPath3, localJuncPose_C, particlePath =  trimBranch(pathID, parentID, modControlPose_P, oldLocalJuncPose_C, localPathSegsByID, localPaths, parentPathIDs, controlPoses_G, plotIter=True, arcDist = arcDist, nodeID=numNodes, hypothesisID = hypothesisID)
 
 		juncDiscDist = 0.0
 		juncDiscAngle = 0.0
@@ -3794,7 +3793,7 @@ def computeBranch(pathID, parentID, childPath_C, parentPath_P, trimmedParent_P, 
  
 
 @logFunction
-def trimBranch(pathID, parentPathID, modControlPose, origGlobJuncPose, childPath, parentPath, trimmedParent, localPathSegsByID, localPaths, parentPathIDs, controlPoses_G, plotIter = False, hypothesisID = 0, nodeID = 0, arcDist = 0.0):
+def trimBranch(pathID, parentPathID, modControlPose, origGlobJuncPose, localPathSegsByID, localPaths, parentPathIDs, controlPoses_G, plotIter = False, hypothesisID = 0, nodeID = 0, arcDist = 0.0):
 
 	global pathPlotCount 
 
@@ -3813,8 +3812,11 @@ def trimBranch(pathID, parentPathID, modControlPose, origGlobJuncPose, childPath
 
 	partPathSegs = []
 
-	path1 = parentPath
-	path2 = childPath
+	#path1 = parentPath
+	#path2 = childPath
+
+	path1 = localPaths[parentPathID]
+	path2 = localPaths[pathID]
 
 	particlePath2 = []
 	for p in path2:
