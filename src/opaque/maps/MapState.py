@@ -1137,21 +1137,26 @@ class MapState:
 			isReject = False
 			""" divergence is prohibited """
 			if isInterior1_0 or isInterior2_0 or isInterior1_1 or isInterior2_1:
+				print "reject because divergence"
 				isReject = True
 
 			""" only a single extension is permitted, but not two """
 			if isExist1_0 and isExist2_0 or isExist1_1 and isExist2_1:
+				print "reject because double extension"
 				isReject = True
 			
 			""" horrifically low contiguity is rejected out of hand """
 			if contigFrac_0 <= 0.5 or contigFrac_1 <= 0.5:
+				print "reject because low contiguity"
 				isReject = True
 
 			""" contiguity between current and previous pose """
 			if overlapSum > 1e10:
+				print "reject because no overlap"
 				isReject = True
 
 			if fabs(diffAngle(initPose0[2],newPose0[2])) > 2.0*pi/3.0:
+				print "reject because change in pose angle is too different"
 				isReject = True
 
 			if isReject:
@@ -1668,7 +1673,10 @@ class MapState:
 					print "computing sum of", j, "and", k, "=", resultSum
 					totalSum += resultSum
 
-		self.mapOverlapSum = totalSum
+
+		#self.mapOverlapSum = totalSum
+		self.mapOverlapSum = 0.0
+
 		return totalSum
 	
 
@@ -2418,20 +2426,15 @@ class MapState:
 		localSkeletons = {}
 		controlPoses = {}
 		junctionPoses = {}
-		parentPathIDs = {}
 		localPathSegsByID = {}
 		pathIDs = self.getPathIDs()
 		for pathID in pathIDs:
 			localSkeletons[pathID] = self.localLeaf2LeafPathJunctions[pathID]["skeletonGraph"]
 			controlPoses[pathID] = self.pathClasses[pathID]["controlPose"]
-			#junctionPoses[pathID] = self.pathClasses[pathID]["globalJunctionPose"]
 			junctionPoses[pathID] = self.pathClasses[pathID]["localJunctionPose"]
 			localPathSegsByID[pathID] = self.localLeaf2LeafPathJunctions[pathID]["localSegments"]
 
-			cPath = self.getPath(pathID)
-			parentPathID = cPath["parentID"]
-			parentPathIDs[pathID] = parentPathID
-
+		parentPathIDs = self.getParentHash()
 
 		for prob in binnedProblems:
 			pathID = prob[0]
@@ -2443,14 +2446,14 @@ class MapState:
 			junctionDetails = self.localLeaf2LeafPathJunctions[pathID]
 			localPathSegs = junctionDetails["localSegments"]
 
-			origControlPose = copy(self.getControlPose(pathID))
+			#origControlPose = copy(self.getControlPose(pathID))
 
-			origGlobJuncPose = copy(self.pathClasses[pathID]["localJunctionPose"])
+			#origGlobJuncPose = copy(self.pathClasses[pathID]["localJunctionPose"])
 			childPath = self.localPaths[pathID]
 			parentPath = self.localPaths[parentID]
 			trimmedParent = self.localTrimmedPaths[parentID]
 
-			branchJobs.append((pathID, parentID, origGlobJuncPose, origControlPose, childPath, parentPath, trimmedParent, localPathSegsByID, self.localPaths, arcDist, localSkeletons, controlPoses, junctionPoses, parentPathIDs, len(self.nodePoses)-1, self.hypothesisID ))
+			branchJobs.append((pathID, parentID, childPath, parentPath, trimmedParent, localPathSegsByID, self.localPaths, arcDist, localSkeletons, controlPoses, junctionPoses, parentPathIDs, len(self.nodePoses)-1, self.hypothesisID ))
 
 
 		"""
@@ -3137,7 +3140,7 @@ class MapState:
 			
 			currPath = splicePaths[k]
 			pathIDs = splicePathIDs[k]
-			results = getMultiDeparturePoint(currPath, medial2, estPose2, estPose2, pathIDs, nodeID, pathPlotCount = self.multiDepCount, hypID = self.hypothesisID, plotIter = True)
+			results = getMultiDeparturePoint(currPath, medial2, estPose2, estPose2, pathIDs, nodeID, pathPlotCount = self.multiDepCount, hypID = self.hypothesisID, plotIter = False)
 
 			self.multiDepCount += 1
 
@@ -3686,7 +3689,7 @@ class MapState:
 						globalJunctionPose = self.getGlobalJunctionPose(childPathID)
 						globalControlPose = globalControlPoses[pathID]
 
-						localNewPath3, localNewGlobJuncPose, localParticlePath = trimBranch(childPathID, parentPathID, localControlPose, localJunctionPose, localPath2, localPath1, localTrimmedPaths[parentPathID], localPathSegsByID, self.localPaths, parentPathIDs, globalControlPoses, plotIter=False, hypothesisID=self.hypothesisID, nodeID=(self.poseData.numNodes))
+						localNewPath3, localNewGlobJuncPose, localParticlePath = trimBranch(childPathID, parentPathID, localControlPose, localJunctionPose, localPath2, localPath1, localTrimmedPaths[parentPathID], localPathSegsByID, self.localPaths, parentPathIDs, globalControlPoses, plotIter=True, hypothesisID=self.hypothesisID, nodeID=(self.poseData.numNodes))
 
 
 						offsetOrigin1 = Pose(globalControlPose)

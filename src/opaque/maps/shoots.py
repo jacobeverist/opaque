@@ -1646,22 +1646,20 @@ def __remote_multiBranch(rank, qin, qout):
 
 			pathID = job[0]
 			parentID = job[1]
-			origGlobJuncPose = job[2]
-			controlPose = job[3]
-			childPath = job[4]
-			parentPath = job[5]
-			trimmedParent = job[6]
-			localPathSegs = job[7]
-			localPaths = job[8]
-			arcDist = job[9]
-			localSkeletons = job[10]
-			controlPoses = job[11]
-			junctionPoses = job[12]
-			parentPathIDs = job[13]
-			numNodes = job[14]
-			hypID = job[15]
+			childPath = job[2]
+			parentPath = job[3]
+			trimmedParent = job[4]
+			localPathSegs = job[5]
+			localPaths = job[6]
+			arcDist = job[7]
+			localSkeletons = job[8]
+			controlPoses = job[9]
+			junctionPoses = job[10]
+			parentPathIDs = job[11]
+			numNodes = job[12]
+			hypID = job[13]
 
-			result = computeBranch(pathID, parentID, origGlobJuncPose, controlPose, childPath, parentPath, trimmedParent, localPathSegs, localPaths, arcDist, localSkeletons, controlPoses, junctionPoses, parentPathIDs, numNodes, hypID)
+			result = computeBranch(pathID, parentID, childPath, parentPath, trimmedParent, localPathSegs, localPaths, arcDist, localSkeletons, controlPoses, junctionPoses, parentPathIDs, numNodes, hypID)
 
 			results.append(result)
 						   
@@ -3524,7 +3522,13 @@ def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, 
 
 
 @logFunction
-def computeBranch(pathID, parentID, oldLocalJuncPose_C, origControlPose, childPath_C, parentPath_P, trimmedParent_P, localPathSegsByID, localPaths, arcDist, localSkeletons, controlPoses, junctionPoses, parentPathIDs, numNodes=0, hypothesisID=0):
+def computeBranch(pathID, parentID, childPath_C, parentPath_P, trimmedParent_P, localPathSegsByID, localPaths, arcDist, localSkeletons, controlPoses, junctionPoses, parentPathIDs, numNodes=0, hypothesisID=0):
+
+
+	origControlPose = controlPoses[pathID]
+	oldLocalJuncPose_C = junctionPoses[pathID]
+
+
 
 	if parentID != None: 
 
@@ -3588,6 +3592,7 @@ def computeBranch(pathID, parentID, oldLocalJuncPose_C, origControlPose, childPa
 
 		spliceSkeleton_G = spliceSkeletons(localSkeletons, controlPoses_G, junctionPoses, parentPathIDs)
 
+		parentFrame = Pose(controlPoses_G[parentID])
 
 		""" the terminals of the parent shoot """
 		parentTerm1 = parentPath_P[0]
@@ -3615,10 +3620,12 @@ def computeBranch(pathID, parentID, oldLocalJuncPose_C, origControlPose, childPa
 		""" two different splices between child and parent terminals """
 		globalChildTerm1 = offsetOrigin1.convertLocalToGlobal(childTerm)
 		globalChildTerm2 = offsetOrigin1.convertLocalToGlobal(childTerm2)
-		termPaths = [(parentTerm1, globalChildTerm1), (parentTerm2, globalChildTerm1), (globalChildTerm2, globalChildTerm1)]
+		globalParentTerm1 = parentFrame.convertLocalToGlobal(parentTerm1)
+		globalParentTerm2 = parentFrame.convertLocalToGlobal(parentTerm2)
+		termPaths_G = [(globalParentTerm1, globalChildTerm1), (globalParentTerm2, globalChildTerm1), (globalChildTerm2, globalChildTerm1)]
 
 		splicedPaths = []
-		for termPath in termPaths:
+		for termPath in termPaths_G:
 
 			""" use splice skeleton to find shortest path """
 			startPose = termPath[0]
@@ -3699,7 +3706,7 @@ def computeBranch(pathID, parentID, oldLocalJuncPose_C, origControlPose, childPa
 		part2["newSplices"] = newSplices
 		part2["juncDiscAngle"] = juncDiscAngle
 		part2["juncDiscDist"] = juncDiscDist
-		part2["termPaths"] = termPaths
+		part2["termPaths"] = termPaths_G
 
 		#if plotIter:
 		if True:
@@ -3800,6 +3807,7 @@ def trimBranch(pathID, parentPathID, modControlPose, origGlobJuncPose, childPath
 	branchPose_G = getSkeletonBranchPoint(globJuncPose, pathID, parentPathIDs, localPathSegsByID, localPaths, controlPoses_G)
 	newGlobJuncPose = branchPose_G
 	
+	globJuncPose = newGlobJuncPose
 
 	""" get trimmed path """
 
@@ -3951,18 +3959,18 @@ def trimBranch(pathID, parentPathID, modControlPose, origGlobJuncPose, childPath
 			yP.append(p[1])
 		pylab.plot(xP,yP, color=(1.0,0.5,0.5))
 
-		xP = []
-		yP = []
-		for p in particlePath2:
-			xP.append(p[0])
-			yP.append(p[1])
-			pylab.plot(xP,yP, color='m', alpha=0.5)
+		#xP = []
+		#yP = []
+		#for p in particlePath2:
+		#	xP.append(p[0])
+		#	yP.append(p[1])
+		#	pylab.plot(xP,yP, color='m', alpha=0.5)
 
 		
 		pylab.scatter([newGlobJuncPose[0],], [newGlobJuncPose[1],], color='r')
 		pylab.scatter([modControlPose[0],], [modControlPose[1],], color='b')
 		#pylab.scatter([origControlPose[0],], [origControlPose[1],], color='g')
-		pylab.scatter([globJuncPose[0],], [globJuncPose[1],], color='m')
+		#pylab.scatter([globJuncPose[0],], [globJuncPose[1],], color='m')
 
 		pylab.axis("equal")
 		pylab.title("hyp %d nodeID %d %1.2f %1.2f" % ( hypothesisID, nodeID, origGlobJuncPose[2], newGlobJuncPose[2]))
