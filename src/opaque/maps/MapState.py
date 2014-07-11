@@ -25,6 +25,7 @@ import time
 import traceback
 
 import alphamod
+from itertools import product
 
 from shoots import computeShootSkeleton, spliceSkeletons, computeGlobalControlPoses, batchBranch, trimBranch, getBranchPoint, ensureEnoughPoints, getInitSkeletonBranchPoint, getSkeletonBranchPoint
 #from shoots import *
@@ -794,7 +795,7 @@ class MapState:
 
 		if True:
 
-			#probSets = []
+			jointControlSets = []
 			pathSplines = {}
 			allPathIDs = self.getPathIDs()
 			parentPathIDs = self.getParentHash()
@@ -803,158 +804,102 @@ class MapState:
 				pathSpline = SplineFit(self.localPaths[pathID])
 				pathSplines[pathID] = pathSpline
 
+			branchPathIDs = deepcopy(allPathIDs)
+			branchPathIDs.remove(0)
+			
 			for particleIndex in range(len(particleDist2)):
 				part = particleDist2[particleIndex]
 				hypPose0 = part.pose0
 
 
-				branchDists = {}
+				origBranchDists = {}
+				origBranchControls = {}
+				origBranchArcDists = {}
 
-				for pathID in allPathIDs:
-					if pathID != 0:
+				for pathID in branchPathIDs:
 
-						#globJuncPose = part.junctionData[pathID]["localJunctionPose"]
-						globJuncPose = part.junctionData[pathID]["globalJunctionPose"]
+					parentID = parentPathIDs[pathID]
+					pathSpline = pathSplines[parentID]
+					controlPose = part.junctionData[pathID]["controlPose"]
+					minDist, controlUVal, newControlPose = pathSpline.findClosestPoint(controlPose)
+					arcDist = pathSpline.dist_u(controlUVal)
 
-						dist1 = sqrt((globJuncPose[0]-hypPose0[0])**2 + (globJuncPose[1]-hypPose0[1])**2)
+					globJuncPose = part.junctionData[pathID]["globalJunctionPose"]
+					dist1 = sqrt((globJuncPose[0]-hypPose0[0])**2 + (globJuncPose[1]-hypPose0[1])**2)
 
-						branchDists[pathID] = dist1
-		
-				
-				if len(allPathIDs) > 1:
-
-					jointArcDist = {}
-
-					for pathID in allPathIDs:
-
-						if pathID != 0:
-
-							parentID = parentPathIDs[pathID]
-							pathSpline = pathSplines[parentID]
-
-							# arcDists = part.junctionData[pathID]["arcDists"]
-							controlPose = part.junctionData[pathID]["controlPose"]
-							#controlPose = [0.0,0.0,0.0]
-							minDist, controlUVal, newControlPose = pathSpline.findClosestPoint(controlPose)
-							arcDist = pathSpline.dist_u(controlUVal)
-
-							if branchDists[pathID] < 3.0:
-
-								arcHigh = arcDist + self.DIV_LEN * floor(self.NUM_BRANCHES/2.0)
-								arcLow = arcDist - self.DIV_LEN * floor(self.NUM_BRANCHES/2.0)
-
-								arcDists = []
-
-								" sample points around each probSet branch point "
-								for k in range(self.NUM_BRANCHES):
-									newArcDist = arcLow + k * self.DIV_LEN
-									arcDists.append(newArcDist)
-
-								""" select range of control points if junction is close enough """
-								jointArcDist[pathID] = arcDists
-
-							
-							else:
-								""" only select one control point if the junction point is too far away """
-								jointArcDist[pathID] = [arcDist]
-
-			
-					keys = jointArcDist.keys()
-					listIndexes = [0 for k in range(len(keys))]
-					maxIndexes = [len(jointArcDist[keys[k]]) for k in range(len(keys))]
-
-					jointBranches = []
-
-					print "keys:", keys
-					print "listIndexes:", listIndexes
-					print "maxIndexes:", maxIndexes
-
-					""" compute all possible combinations of branch locations """
-					isContinue = True
-					while isContinue:
-
-						currResult = []
-						for k in range(len(keys)):
-							
-							currResult.append(jointArcDist[keys[k]][listIndexes[k]])
-
-						print "currResult:", currResult
-						jointBranches.append(tuple(currResult))
+					origBranchDists[pathID] = dist1
+					origBranchControls[pathID] = controlPose
+					origBranchArcDists[pathID] = arcDist
 
 
-						""" increment the next combination """
-						revRange = range(0,len(keys))
-						revRange.reverse()
-						isCarry = False
+				if len(branchPathIDs) > 0:
 
-						""" structured like a simple carry adder """
+					#self.branchControlPoses = {}
+					#self.branchArcDists = {}
 
-						""" always increment the LSB """
-						listIndexes[-1] += 1
-						for k in revRange:
+					newBranchArcDists = {}
+					newBranchControls = {}
 
-							if isCarry:
-								listIndexes[k] += 1
-								isCarry = False
+					""" bin the arc distances, and then compute discrete problem set """
+					for pathID in branchPathIDs:
 
-							if k!= 0 and listIndexes[k] >= maxIndexes[k]:
-								isCarry = True
-								listIndexes[k] = 0
+						minArcDiff = 1e100
+						minIndex = 0
 
-						""" the MSB has exceeded it's digit range, so we have incremented over all possibilities """
-						if listIndexes[0] >= maxIndexes[0]:
-							break
+						origArcDist = origBranchArcDists[pathID]
+
+						for k in range(len(self.branchArcDists[pathID])):
+
+							currArcDist = self.branchArcDists[pathID][k]
+
+							diff = abs(currArcDist-origArcDist)
+
+							if diff < minArcDiff:
+								minArcDiff = diff
+								minIndex = k
+
+						""" determine the range of values for this particular branch """
+						newArcDist = self.branchArcDists[pathID][minIndex]
+						if origBranchDists[pathID] < 3.0:
+
+							if minIndex < 2:
+								minIndex = 2
+
+							if minIndex > len(self.branchArcDists[pathID]) - 3:
+								minIndex = len(self.branchArcDists[pathID]) - 3
 
 
-					print "branchDists, maxIndexes, jointBranches:", branchDists, maxIndexes, jointBranches
+							arcList = []
+							controlList = []
+							for k in range(minIndex-2,minIndex+3):
+								newArcDist = self.branchArcDists[pathID][k]
+								arcList.append(newArcDist)
+								controlList.append(self.branchControlPoses[pathID][newArcDist])
+
+							newBranchArcDists[pathID] = arcList
+							newBranchControls[pathID] = controlList
+
+						else:
+							newBranchArcDists[pathID] = [newArcDist,]
+							newBranchControls[pathID] = [self.branchControlPoses[pathID][newArcDist],]
+
+					argSet = []
+					for pathID in branchPathIDs:
+						argSet.append(newBranchControls[pathID])
 
 
 
-		#allPathIDs = self.getPathIDs()
+					combIterator = product(*argSet)
+					for comb in combIterator:
+						jointControlSets.append(comb)
 
-		""" get spline curves of each parent shoot """
-		#pathSplines = {}
-		#for pathID in allPathIDs:
-
-		""" path information """
-			#pathDesc = self.pathClasses[pathID]
-			#parentID = pathDesc["parentID"]
-
-			#if parentID != None:
-				#pathSpline = SplineFit(self.paths[parentID])
-				#pathSplines[parentID] = pathSpline
-
-		""" convert branch points from poses into arc distances on parent shoot """
-		#arcDists = []
-		#for prob in probSets:
-
-			#pathID = prob[0]
-			#estJuncPose = prob[1]
-			#controlPose = prob[2]
-
-			#pathDesc = self.pathClasses[pathID]
-			#parentID = pathDesc["parentID"]
-			#pathSpline = pathSplines[parentID]
-
-		""" get the arc distance of the control point """
-			#minDist, controlUVal, newControlPose = pathSpline.findClosestPoint(controlPose)
-			#arcDist = pathSpline.dist_u(controlUVal)
-
-			#arcHigh = arcDist + self.DIV_LEN * floor(self.NUM_BRANCHES/2.0)
-			#arcLow = arcDist - self.DIV_LEN * floor(self.NUM_BRANCHES/2.0)
-
-		" sample points around each probSet branch point "
-			#for k in range(self.NUM_BRANCHES):
-				#newArcDist = arcLow + k * self.DIV_LEN
-				#arcDists.append((pathID, newArcDist))
-
-
-
+			for val in jointControlSets:
+				print "jointControlSet:", val
 
 
 		""" precompute the evaluation for branches and cache result """
 		""" each branch point is the max likelihood of each pose particle """
-		self.batchPrecomputeBranches(probSets)
+		self.batchPrecomputeBranches(probSets, jointControlSets)
 
 		parentPathIDs = self.getParentHash()
 
@@ -1328,7 +1273,7 @@ class MapState:
 		print "maxIndex, numMax, maxVal:", maxIndex, numMax, maxVal
 
 		""" if more than one max, than we don't change the node pose, we accept the localize on the canonical pose """
-		if numMax == 1:
+		if numMax >= 1:
 
 			print "setting max likelihood poses", maxIndex, nodeID0, nodeID1, self.getNodePose(nodeID0), self.getNodePose(nodeID1)
 
@@ -1338,14 +1283,20 @@ class MapState:
 			""" change to the maximum likelihood branch position as well """
 			self.updateMaxParticle(maxIndex)
 
+			""" we update the canonical poses afterward because for now, we don't let node poses vary between particles """
+			""" if we let them vary, then we would need to generate unique shoot maps for each particle """
+
+			""" update the poses across all particles based on this max displacement result """
 			self.setNodePose(nodeID0, deepcopy(particleDist2[maxIndex].pose0))
 			self.setNodePose(nodeID1, deepcopy(particleDist2[maxIndex].pose1))
 
+			""" using the results of localizePair() to position the nodes for generating map poses """
 			self.generatePaths()
 
 
-		elif numMax > 1:
-			pass
+		else:
+			print "no maximum particle!", probParticles
+			raise
 
 		""" FIXME:  do we really do nothing here when we tie for maximum? """
 
@@ -1768,7 +1719,7 @@ class MapState:
 	
 	@logFunction
 	def getPathIDs(self):
-		return self.pathClasses.keys()
+		return deepcopy(self.pathClasses.keys())
 
 	@logFunction
 	def getParentHash(self):
@@ -2266,11 +2217,12 @@ class MapState:
 
 
 		self.branchEvaluations = {}
+		self.jointBranchEvaluations = {}
 
 		#self.DIV_LEN = 0.2
 
-		pathIDs = self.getPathIDs()
-		for pathID in pathIDs:
+		allPathIDs = self.getPathIDs()
+		for pathID in allPathIDs:
 			if self.pathClasses[pathID]["parentID"] != None:
 				parentPathID = self.pathClasses[pathID]["parentID"]
 				pathSpline = SplineFit(self.paths[parentPathID])
@@ -2286,6 +2238,109 @@ class MapState:
 					branchSpace[currDist] = None
 
 				self.branchEvaluations[pathID] = branchSpace
+
+
+		self.branchControlPoses = {}
+		self.branchArcDists = {}
+		for pathID in allPathIDs:
+			if pathID != 0:
+
+				self.branchControlPoses[pathID] = {}
+				self.branchArcDists[pathID] = []
+
+				parentPathID = self.pathClasses[pathID]["parentID"]
+				pathSpline = SplineFit(self.paths[parentPathID])
+
+				totalDist = pathSpline.dist_u(1.0)
+
+				""" arc distances """
+				currDist = 0.0
+				self.branchArcDists[pathID].append(currDist)
+
+				""" control poses """
+				controlPose_C = pathSpline.getPointOfDist(currDist)
+				controlPose_C[2] = 0.0
+				self.branchControlPoses[pathID][currDist] = controlPose_C
+
+
+				while currDist <= totalDist:
+
+					""" arc distances """
+					currDist += self.DIV_LEN
+					self.branchArcDists[pathID].append(currDist)
+
+					""" control poses """
+					controlPose_C = pathSpline.getPointOfDist(currDist)
+					controlPose_C[2] = 0.0
+					self.branchControlPoses[pathID][currDist] = controlPose_C
+
+
+		#if len(allPathIDs) > 1:
+
+			#shootIDs = self.branchArcDists.keys()
+			#shootIDs.sort()
+			#listIndexes = [0 for k in shootIDs]
+			#maxIndexes = [len(self.branchArcDists[k]) for k in shootIDs]
+
+			#jointBranches = {}
+
+			#print "keys:", shootIDs
+			#print "listIndexes:", listIndexes
+			#print "maxIndexes:", maxIndexes
+
+			#""" compute all possible combinations of branch locations """
+			#while True:
+
+				#""" current combination of arc distances """
+				#currResult = []
+				#currControl = []
+
+
+				#for k in range(len(shootIDs)):
+				#	currResult.append(self.branchArcDists[shootIDs[k]][listIndexes[k]])
+				#	currControl.append(self.branchControlPoses[shootIDs[k]][listIndexes[k]])
+
+				#print "currResult:", currResult
+				#jointBranches[tuple(currResult)] = currControl
+
+				#""" increment the next combination """
+				#revRange = range(0,len(shootIDs))
+				#revRange.reverse()
+				#isCarry = False
+
+				#""" structured like a simple carry adder """
+
+				#""" always increment the LSB """
+				#listIndexes[-1] += 1
+				#for k in revRange:
+
+				#	if isCarry:
+				#		listIndexes[k] += 1
+				#		isCarry = False
+
+				#	if k!= 0 and listIndexes[k] >= maxIndexes[k]:
+				#		isCarry = True
+				#		listIndexes[k] = 0
+
+				#""" the MSB has exceeded it's digit range, so we have incremented over all possibilities """
+				#if listIndexes[0] >= maxIndexes[0]:
+				#	break
+
+
+			#print "branchDists, maxIndexes:", branchDists, maxIndexes
+
+
+		self.jointBranchEvaluations = {}
+		#self.jointBranchControlPoses = {}
+		#if len(allPathIDs) > 1:
+		#	for jointArcs, jointControl in jointBranches.iteritems():
+		#		self.jointBranchEvaluations[jointArcs] = None
+		"""
+				self.jointBranchControlPoses[jointArcs] = jointControl
+				#print "arcs, controls:", jointArcs, jointControl
+				print "arcs, controls:", len(jointArcs), len(jointControl)
+		"""
+
 
 	@logFunction
 	def getPrecomputedBranch(self, pathID, arcDist):
@@ -2336,7 +2391,7 @@ class MapState:
 
 
 	@logFunction
-	def batchPrecomputeBranches(self, probSets):
+	def batchPrecomputeBranches(self, probSets, jointControlSets):
 
 		""" precompute the evaluation for branches and cache result """
 		""" each branch point is the max likelihood of each pose particle """
@@ -2346,8 +2401,11 @@ class MapState:
 		""" possible locations of branch point shoot pathID """
 
 		probSets = sorted(probSets, key=itemgetter(0), reverse=True)
+		jointControlSets = sorted(jointControlSets, reverse=True)
 
 		allPathIDs = self.getPathIDs()
+		branchPathIDs = deepcopy(allPathIDs)
+		branchPathIDs.remove(0)
 
 		""" get spline curves of each parent shoot """
 		pathSplines = {}
@@ -2659,10 +2717,6 @@ class MapState:
 
 			pathSpline = SplineFit(self.paths[parentID])
 
-			""" initial position of junction """
-			origJuncPose = copy(pathDesc["globalJunctionPose"])
-			origJuncPose[2] = 0.0
-
 			minDist, uVal, splinePoint = pathSpline.findClosestPoint(modControlPose)
 			arcDist = pathSpline.dist_u(uVal)
 
@@ -2678,11 +2732,11 @@ class MapState:
 			"""
 
 			""" initialize if this is the first time """
-			particles = []
+			branchSamples = []
 			for k in range(self.NUM_BRANCHES):
 				newArcDist = arcLow + k * self.DIV_LEN
-				particle = self.getPrecomputedBranch(pathID, newArcDist)
-				particles.append(particle)
+				branchSample = self.getPrecomputedBranch(pathID, newArcDist)
+				branchSamples.append(branchSample)
 
 			""" get the maximum value for each of our features """
 			maxCost = -1e100
@@ -2692,8 +2746,8 @@ class MapState:
 
 
 			""" find maximum values for each metric """
-			for k in range(len(particles)):
-				part = particles[k]
+			for k in range(len(branchSamples)):
+				part = branchSamples[k]
 				matchCount = part["matchCount"]
 				lastCost = part["lastCost"]
 				dist = part["distDisc"]
@@ -2714,9 +2768,9 @@ class MapState:
 
 			""" invert the distance, angDiff and cost features """
 			totalProbSum = 0.0
-			for k in range(len(particles)):
+			for k in range(len(branchSamples)):
 
-				part = particles[k]
+				part = branchSamples[k]
 
 				lastCost = part["lastCost"]
 				dist = part["distDisc"]
@@ -2743,12 +2797,12 @@ class MapState:
 				part2["initProb"] = probVal
 
 				#part2 = (part[0], part[1], part[2], part[3], part[4], matchCost, nomDist, part[7], probVal, part[9], part[10], part[11])
-				particles[k] = part2
+				branchSamples[k] = part2
 
 			""" normalize the probability values """
 			maxProb = 0.0
-			for k in range(len(particles)):
-				part = particles[k]
+			for k in range(len(branchSamples)):
+				part = branchSamples[k]
 
 				probVal = 0.0
 
@@ -2764,11 +2818,11 @@ class MapState:
 				part2 = deepcopy(part)
 				part2["initProb"] = probVal
 
-				particles[k] = part2
+				branchSamples[k] = part2
 
 				#part2 = (parentID, modJuncPose, newArcDist, pathID, matchCount1, lastCost1, distDisc, angDisc, initProb, newSplices, juncDiscAngle, juncDist)
-				print "particle %04u %02u %02u %1.4f %03u %1.2f %1.2f %1.2f %1.2f %d %1.2f %1.2f" % (nodeID0, particleIndex, k, part2["modJuncPose"][2], part2["matchCount"], part2["lastCost"], part2["distDisc"], part2["angDisc"], part2["initProb"], len(part2["newSplices"]), part2["juncDiscAngle"], part2["juncDiscDist"])
-			print "particle"
+				print "branchSample %04u %02u %02u %1.4f %03u %1.2f %1.2f %1.2f %1.2f %d %1.2f %1.2f" % (nodeID0, particleIndex, k, part2["modJuncPose"][2], part2["matchCount"], part2["lastCost"], part2["distDisc"], part2["angDisc"], part2["initProb"], len(part2["newSplices"]), part2["juncDiscAngle"], part2["juncDiscDist"])
+			print "branchSample"
 
 			""" cartesian distance """
 			DISC_THRESH = 0.5
@@ -2780,10 +2834,10 @@ class MapState:
 			
 			""" get splices for new branch position """
 			""" reject branch locations whose branch angle discrepancy is too high """ 
-			for k in range(len(particles)):
-				part = particles[k]
+			for k in range(len(branchSamples)):
+				part = branchSamples[k]
 
-				newProbVal = particles[k]["initProb"] 
+				newProbVal = branchSamples[k]["initProb"] 
 
 				juncDiscAngle = part["juncDiscAngle"]
 
@@ -2794,7 +2848,7 @@ class MapState:
 				part2["initProb"] = newProbVal
 
 				#part2 = (part[0], part[1], part[2], part[3], part[4], part[5], part[6], part[7], newProbVal, part[9], part[10], part[11])
-				particles[k] = part2
+				branchSamples[k] = part2
 
 
 			junctionDetails = self.localLeaf2LeafPathJunctions[pathID]
@@ -2819,7 +2873,7 @@ class MapState:
 
 				xP2 = []
 				yP2 = []
-				for part in particles:
+				for part in branchSamples:
 
 					modControlPose = part["modControlPose"]
 					modJuncPose = part["modJuncPose"]
@@ -2868,12 +2922,12 @@ class MapState:
 
 				pylab.scatter(xP, yP, color='y', zorder=8)
 				pylab.scatter(xP2, yP2, color='k', zorder=8)
-				pylab.title("nodeID: %d hyp: %d, particleID: %d pathID: %d, localPathSegs %d" % (nodeID0, self.hypothesisID, particleIndex, pathID, len(localPathSegs)))
+				pylab.title("nodeID: %d hyp: %d, branchSampleID: %d pathID: %d, localPathSegs %d" % (nodeID0, self.hypothesisID, particleIndex, pathID, len(localPathSegs)))
 				
 				pylab.savefig("bayes_plot_%04u_%02u_%03u_%04u.png" % (nodeID0, self.hypothesisID, particleIndex, self.tempCount) )
 				self.tempCount += 1
 
-		return particles
+		return branchSamples
 
 	@logFunction
 	def getJuncSample(self, pathID, sampleIndex):

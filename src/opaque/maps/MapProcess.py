@@ -2774,7 +2774,9 @@ def addToPaths(particleIDs, hypSet, nodeID1, nodeID2):
 		return particleIDs, hypSet
 
 
-	hypSet = batchGenerate(hypSet)
+	#hypSet = batchGenerate(hypSet)
+	for pID, mapHyp in hypSet.iteritems():
+		generateMap(mapHyp)
 
 	""" check branching of local spline from member path """
 	computeLocalDivergence(hypSet, nodeID1, nodeID2)
@@ -2837,7 +2839,9 @@ def addToPaths(particleIDs, hypSet, nodeID1, nodeID2):
 			nonSet[pID] = currHyp
 
 
-	genSet = batchGenerate(genSet)
+	#genSet = batchGenerate(genSet)
+	for pID, mapHyp in genSet.iteritems():
+		generateMap(mapHyp)
 
 	#hypSet = genSet + nonSet
 	nonSet.update(genSet)
