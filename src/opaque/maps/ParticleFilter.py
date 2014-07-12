@@ -889,6 +889,10 @@ class Particle:
 		self.mapStateID = mapStateID
 
 
+		self.branchArcDists = []
+		self.branchControls = []
+
+			
 
 	def displacePose(self, pose0, pose1):
 

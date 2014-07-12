@@ -27,7 +27,7 @@ import traceback
 import alphamod
 from itertools import product
 
-from shoots import computeShootSkeleton, spliceSkeletons, computeGlobalControlPoses, batchBranch, trimBranch, getBranchPoint, ensureEnoughPoints, getInitSkeletonBranchPoint, getSkeletonBranchPoint
+from shoots import computeShootSkeleton, spliceSkeletons, computeGlobalControlPoses, batchJointBranch, batchBranch, trimBranch, getBranchPoint, ensureEnoughPoints, getInitSkeletonBranchPoint, getSkeletonBranchPoint
 #from shoots import *
 
 pylab.ioff()
@@ -796,6 +796,7 @@ class MapState:
 		if True:
 
 			jointControlSets = []
+			jointComboControlSets = []
 			pathSplines = {}
 			allPathIDs = self.getPathIDs()
 			parentPathIDs = self.getParentHash()
@@ -832,13 +833,16 @@ class MapState:
 					origBranchArcDists[pathID] = arcDist
 
 
+				newBranchArcDists = {}
+				newBranchControls = {}
+				newBranchComboControls = {}
+
+
 				if len(branchPathIDs) > 0:
 
 					#self.branchControlPoses = {}
 					#self.branchArcDists = {}
 
-					newBranchArcDists = {}
-					newBranchControls = {}
 
 					""" bin the arc distances, and then compute discrete problem set """
 					for pathID in branchPathIDs:
@@ -871,21 +875,28 @@ class MapState:
 
 							arcList = []
 							controlList = []
+							comboList = []
 							for k in range(minIndex-2,minIndex+3):
 								newArcDist = self.branchArcDists[pathID][k]
 								arcList.append(newArcDist)
 								controlList.append(self.branchControlPoses[pathID][newArcDist])
+								comboList.append((newArcDist, tuple(self.branchControlPoses[pathID][newArcDist])))
 
 							newBranchArcDists[pathID] = arcList
 							newBranchControls[pathID] = controlList
+							newBranchComboControls[pathID] = comboList
 
 						else:
 							newBranchArcDists[pathID] = [newArcDist,]
 							newBranchControls[pathID] = [self.branchControlPoses[pathID][newArcDist],]
+							newBranchComboControls[pathID] = [(newArcDist, tuple(self.branchControlPoses[pathID][newArcDist])),]
 
 					argSet = []
 					for pathID in branchPathIDs:
 						argSet.append(newBranchControls[pathID])
+					argSet2 = []
+					for pathID in branchPathIDs:
+						argSet2.append(newBranchComboControls[pathID])
 
 
 
@@ -893,13 +904,27 @@ class MapState:
 					for comb in combIterator:
 						jointControlSets.append(comb)
 
-			for val in jointControlSets:
-				print "jointControlSet:", val
+					combIterator = product(*argSet2)
+					for comb in combIterator:
+						jointComboControlSets.append(comb)
 
+				""" set the range of branches for this particular particle so we can reference them later """
+				part.branchArcDists = newBranchArcDists
+				part.branchControls = newBranchControls
+
+		#for controlSet in jointComboControlSets:
+		#	print "jointComboControl:", controlSet
+
+		print "jointComboControl:", len(jointComboControlSets)
+
+		#jointControlSets = list(set(jointControlSets))
+		jointComboControlSets = list(set(jointComboControlSets))
+
+		print "jointComboControl:", len(jointComboControlSets)
 
 		""" precompute the evaluation for branches and cache result """
 		""" each branch point is the max likelihood of each pose particle """
-		self.batchPrecomputeBranches(probSets, jointControlSets)
+		self.batchPrecomputeBranches(probSets, jointControlSets, jointComboControlSets)
 
 		parentPathIDs = self.getParentHash()
 
@@ -2219,12 +2244,14 @@ class MapState:
 		self.branchEvaluations = {}
 		self.jointBranchEvaluations = {}
 
+		parentPathIDs = self.getParentHash()
+
 		#self.DIV_LEN = 0.2
 
 		allPathIDs = self.getPathIDs()
 		for pathID in allPathIDs:
 			if self.pathClasses[pathID]["parentID"] != None:
-				parentPathID = self.pathClasses[pathID]["parentID"]
+				parentPathID = parentPathIDs[pathID]
 				pathSpline = SplineFit(self.paths[parentPathID])
 
 				totalDist = pathSpline.dist_u(1.0)
@@ -2248,8 +2275,8 @@ class MapState:
 				self.branchControlPoses[pathID] = {}
 				self.branchArcDists[pathID] = []
 
-				parentPathID = self.pathClasses[pathID]["parentID"]
-				pathSpline = SplineFit(self.paths[parentPathID])
+				parentPathID = parentPathIDs[pathID]
+				pathSpline = SplineFit(self.localPaths[parentPathID])
 
 				totalDist = pathSpline.dist_u(1.0)
 
@@ -2258,9 +2285,9 @@ class MapState:
 				self.branchArcDists[pathID].append(currDist)
 
 				""" control poses """
-				controlPose_C = pathSpline.getPointOfDist(currDist)
-				controlPose_C[2] = 0.0
-				self.branchControlPoses[pathID][currDist] = controlPose_C
+				controlPose_P = pathSpline.getPointOfDist(currDist)
+				controlPose_P[2] = 0.0
+				self.branchControlPoses[pathID][currDist] = controlPose_P
 
 
 				while currDist <= totalDist:
@@ -2270,10 +2297,10 @@ class MapState:
 					self.branchArcDists[pathID].append(currDist)
 
 					""" control poses """
-					controlPose_C = pathSpline.getPointOfDist(currDist)
-					controlPose_C[2] = 0.0
-					self.branchControlPoses[pathID][currDist] = controlPose_C
-
+					controlPose_P = pathSpline.getPointOfDist(currDist)
+					controlPose_P[2] = 0.0
+					self.branchControlPoses[pathID][currDist] = controlPose_P
+			
 
 		#if len(allPathIDs) > 1:
 
@@ -2391,7 +2418,7 @@ class MapState:
 
 
 	@logFunction
-	def batchPrecomputeBranches(self, probSets, jointControlSets):
+	def batchPrecomputeBranches(self, probSets, jointControlSets, jointComboControlSets):
 
 		""" precompute the evaluation for branches and cache result """
 		""" each branch point is the max likelihood of each pose particle """
@@ -2402,6 +2429,7 @@ class MapState:
 
 		probSets = sorted(probSets, key=itemgetter(0), reverse=True)
 		jointControlSets = sorted(jointControlSets, reverse=True)
+		jointComboControlSets = sorted(jointComboControlSets, reverse=True)
 
 		allPathIDs = self.getPathIDs()
 		branchPathIDs = deepcopy(allPathIDs)
@@ -2506,13 +2534,27 @@ class MapState:
 			junctionDetails = self.localLeaf2LeafPathJunctions[pathID]
 			localPathSegs = junctionDetails["localSegments"]
 
-			#origControlPose = copy(self.getControlPose(pathID))
-
-			#origGlobJuncPose = copy(self.pathClasses[pathID]["localJunctionPose"])
-			childPath = self.localPaths[pathID]
-			parentPath = self.localPaths[parentID]
-
 			branchJobs.append((pathID, parentID, localPathSegsByID, self.localPaths, arcDist, localSkeletons, controlPoses, junctionPoses, parentPathIDs, len(self.nodePoses)-1, self.hypothesisID ))
+
+		""" construct the joint control pose problem sets """
+		jointBranchJobs = []
+		for controlSet in jointComboControlSets:
+
+			thisControlPoses = deepcopy(controlPoses)
+			thisArcDists = {}
+
+			for k in range(len(controlSet)):
+
+				arcDist = controlSet[k][0]
+				cPose = controlSet[k][1]
+
+				pathID = branchPathIDs[k]
+				thisControlPoses[pathID] = cPose
+				thisArcDists[pathID] = arcDist
+
+			jointBranchJobs.append((localPathSegsByID, self.localPaths, localSkeletons, thisControlPoses, junctionPoses, parentPathIDs, thisArcDists, len(self.nodePoses)-1, self.hypothesisID ))
+
+
 
 
 		"""
@@ -2533,6 +2575,7 @@ class MapState:
 		"""
 
 		results = batchBranch(branchJobs)
+		#jointResults = batchJointBranch(jointBranchJobs)
 
 		""" get the maximum value for each of our features """
 		maxCost = -1e100
