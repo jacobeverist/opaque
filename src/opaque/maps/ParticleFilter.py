@@ -191,6 +191,10 @@ def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine
 	medial2 = poseData.medialAxes[nodeID2]
 	medial3 = poseData.medialAxes[nodeID3]
 
+	medialSpline2 = SplineFit(medial2, smooth=0.1)
+	medial2_vec = medialSpline2.getUniformSamples()
+	medialSpline3 = SplineFit(medial3, smooth=0.1)
+	medial3_vec = medialSpline3.getUniformSamples()
 
 	direction = poseData.travelDirs[nodeID]
 
@@ -450,9 +454,9 @@ def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine
 
 				multiDepCount = 0
 
-				result2 = getMultiDeparturePoint(orientedSplicePath, medial2, pose2, resultPose2, [], nodeID-1, pathPlotCount = multiDepCount, plotIter = False)
+				result2 = getMultiDeparturePoint(orientedSplicePath, medial2_vec, pose2, resultPose2, [], nodeID-1, pathPlotCount = multiDepCount, plotIter = False)
 				multiDepCount += 1
-				result3 = getMultiDeparturePoint(orientedSplicePath, medial3, pose3, resultPose3, [], nodeID, pathPlotCount = multiDepCount, plotIter = False)
+				result3 = getMultiDeparturePoint(orientedSplicePath, medial3_vec, pose3, resultPose3, [], nodeID, pathPlotCount = multiDepCount, plotIter = False)
 				multiDepCount += 1
 				
 				#results1.append(result+(k,))
@@ -647,7 +651,8 @@ def __remote_multiParticle(rank, qin, qout):
 
 			branchIndex = job[6]
 			spliceIndex = job[7]
-			globalPath = job[8]
+			#globalPath = job[8]
+			orientedPath0 = job[8]
 			medial0 = job[9]
 			medial1 = job[10]
 			initPose0 = job[11]
@@ -675,9 +680,9 @@ def __remote_multiParticle(rank, qin, qout):
 
 			poseOrigin = Pose(initPose0)
 			
-			globalMedial0 = []
-			for p in medial0:
-				globalMedial0.append(poseOrigin.convertLocalToGlobal(p))
+			#globalMedial0 = []
+			#for p in medial0:
+			#	globalMedial0.append(poseOrigin.convertLocalToGlobal(p))
 			
 			#globalMedial1 = []
 			#for p in medial1:
@@ -687,7 +692,7 @@ def __remote_multiParticle(rank, qin, qout):
 			globalMedialP0 = poseOrigin.convertLocalOffsetToGlobal(oldMedialP0)	
 			globalMedialP1 = poseOrigin.convertLocalOffsetToGlobal(oldMedialP1)	
 
-			orientedPath0 = orientPath(globalPath, globalMedial0)
+			#orientedPath0 = orientPath(globalPath, globalMedial0)
 			orientedPathSpline0 = SplineFit(orientedPath0, smooth=0.1)
 			pathU0 = orientedPathSpline0.findU(globalMedialP0)
 			pathU1 = orientedPathSpline0.findU(globalMedialP1)
@@ -734,8 +739,8 @@ def batchLocalizeParticle(localizeJobs):
 
 		qin_posePart = processing.Queue(maxsize=ndata/chunk_size)
 		qout_posePart = processing.Queue(maxsize=ndata/chunk_size)
-		pool_posePart = [processing.Process(target=__remote_multiParticle,
-		#pool_posePart = [processing.Process(target=__remote_prof_multiParticle,
+		#pool_posePart = [processing.Process(target=__remote_multiParticle,
+		pool_posePart = [processing.Process(target=__remote_prof_multiParticle,
 				#args=(rank, qin_posePart, qout_posePart, splices, medial, initPose, pathIDs, nodeID))
 				args=(rank, qin_posePart, qout_posePart))
 					for rank in range(nproc)]
@@ -807,12 +812,12 @@ def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, me
 
 	currGlobalMedial0 = []
 	for p in medialAxis0:
-		currGlobalMedial0.append(currPoseOrigin.convertLocalToGlobal(p))
+		currGlobalMedial0.append(currPoseOrigin.convertLocalOffsetToGlobal(p))
 
 	if prevMedialAxis0 != None:
 		prevGlobalMedial0 = []
 		for p in prevMedialAxis0:
-			prevGlobalMedial0.append(prevPoseOrigin.convertLocalToGlobal(p))
+			prevGlobalMedial0.append(prevPoseOrigin.convertLocalOffsetToGlobal(p))
 
 		#currSum = getCurveOverlap(currGlobalMedial0, prevGlobalMedial0, plotIter = True, overlapPlotCount = pathPlotCount*20+particleIndex)
 		currSum = getCurveOverlap(currGlobalMedial0, prevGlobalMedial0)
@@ -883,12 +888,8 @@ class Particle:
 		" temporary values, computed on-the-fly for each evaluation "
 
 		self.hypDist = hypDist
-
 		self.weightVal = weightVal
-
 		self.mapStateID = mapStateID
-
-
 		self.branchArcDists = []
 		self.branchControls = []
 
@@ -946,6 +947,9 @@ class Particle:
 
 		newParticle.dispPose0 = deepcopy(self.dispPose0)
 		newParticle.dispPose1 = deepcopy(self.dispPose1)
+
+		newParticle.branchArcDists = deepcopy(self.branchArcDists)
+		newParticle.branchControls = deepcopy(self.branchControls)
 
 		return newParticle
 

@@ -186,6 +186,7 @@ def batchGlobalMultiFit(initGuesses, splices, medial, initPose, pathIDs, nodeID)
 
 
 
+#resultArgs0 = getMultiDeparturePoint(orientedPath, medialAxis0, initPose0, resultPose0, pathIDs, nodeID0, pathPlotCount = pathPlotCount, hypID = hypID, particleIndex = particleIndex, spliceIndex = spliceIndex, plotIter = False)
 
 def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, nodeID, pathPlotCount = 0, hypID = 0, particleIndex = 0, spliceIndex = 0, plotIter = False):
 
@@ -213,82 +214,90 @@ def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, node
 	"Assumption:  one section of the medial axis is closely aligned with the path "
 	poseOrigin = Pose(estPose2)
 	
-	medialSpline2 = SplineFit(medial2, smooth=0.1)
-	points2 = medialSpline2.getUniformSamples(interpAngle=True)
+	#medialSpline2 = SplineFit(medial2, smooth=0.1)
+	#points2 = medialSpline2.getUniformSamples(interpAngle=True)
+	#points2 = medial2
 
 	points2_offset = []
-	for p in points2:
+	for p in medial2:
+	#for p in points2:
 		result = poseOrigin.convertLocalOffsetToGlobal(p)
+		#result = poseOrigin.convertLocalToGlobal(p)
 		points2_offset.append(result)
 
 
-	globalMedialSpline = SplineFit(points2_offset, smooth=0.1)
-	globalMedialPoints = globalMedialSpline.getUniformSamples()
+	#globalMedialSpline = SplineFit(points2_offset, smooth=0.1)
+	#globalMedialPoints = globalMedialSpline.getUniformSamples()
 
 
 
-	pathSpline = SplineFit(currPath, smooth=0.1)
-	pathPoints = pathSpline.getUniformSamples()
+	#pathSpline = SplineFit(currPath, smooth=0.1)
+	#pathPoints = pathSpline.getUniformSamples()
+
+	#pathPoints = currPath
 
 
-	currPathReverse = deepcopy(currPath)
-	currPathReverse.reverse()
-	pathSplineReverse = SplineFit(currPathReverse, smooth=0.1)
-	pathPointsReverse = pathSplineReverse.getUniformSamples()
+	#currPathReverse = deepcopy(currPath)
+	#currPathReverse.reverse()
+	#pathSplineReverse = SplineFit(currPathReverse, smooth=0.1)
+	#pathPointsReverse = pathSplineReverse.getUniformSamples()
 
-	overlapMatch = []
-	angleSum1 = 0.0
-	angleSum2 = 0.0
+	#overlapMatch = []
+	#angleSum1 = 0.0
+	#angleSum2 = 0.0
 
 
-	kdInput = []
-	for j in range(0,len(pathPoints)):
-		p_2 = pathPoints[j]
-		kdInput.append(p_2[0:2])
-	kdTree = cKDTree(array(kdInput))
+	#kdInput = []
+	#for j in range(0,len(pathPoints)):
+	#	p_2 = pathPoints[j]
+	#	kdInput.append(p_2[0:2])
+	#kdTree = cKDTree(array(kdInput))
 	
-	for i in range(0,len(points2_offset)):
-		p_1 = points2_offset[i]
-		#p_2, j, minDist = findClosestPointInA(pathPoints, p_1)
+	#for i in range(0,len(points2_offset)):
+	#	p_1 = points2_offset[i]
+	#	#p_2, j, minDist = findClosestPointInA(pathPoints, p_1)
 
-		queryPoint = p_1[0:2]
-		minDist, j = kdTree.query(array(queryPoint))
-		p_2 = pathPoints[j]
+	#	queryPoint = p_1[0:2]
+	#	minDist, j = kdTree.query(array(queryPoint))
+	#	p_2 = pathPoints[j]
 
-		if minDist < ORI_DIST:
-			overlapMatch.append((i,j,minDist))
+	#	if minDist < ORI_DIST:
+	#		overlapMatch.append((i,j,minDist))
 
-			pathU1 = globalMedialSpline.findU(p_1)	
-			pathU2 = pathSpline.findU(p_2)	
-			pathU2_R = pathSplineReverse.findU(p_2)	
+	#		pathU1 = globalMedialSpline.findU(p_1)	
+	#		pathU2 = pathSpline.findU(p_2)	
+	#		pathU2_R = pathSplineReverse.findU(p_2)	
 
-			pathVec1 = globalMedialSpline.getUVector(pathU1)
-			pathVec2 = pathSpline.getUVector(pathU2)
-			pathVec2_R = pathSplineReverse.getUVector(pathU2_R)
+	#		pathVec1 = globalMedialSpline.getUVector(pathU1)
+	#		pathVec2 = pathSpline.getUVector(pathU2)
+	#		pathVec2_R = pathSplineReverse.getUVector(pathU2_R)
 
-			val1 = pathVec1[0]*pathVec2[0] + pathVec1[1]*pathVec2[1]
-			if val1 > 1.0:
-				val1 = 1.0
-			elif val1 < -1.0:
-				val1 = -1.0
-			ang1 = acos(val1)
+	#		val1 = pathVec1[0]*pathVec2[0] + pathVec1[1]*pathVec2[1]
+	#		if val1 > 1.0:
+	#			val1 = 1.0
+	#		elif val1 < -1.0:
+	#			val1 = -1.0
+	#		ang1 = acos(val1)
 			
-			val2 = pathVec1[0]*pathVec2_R[0] + pathVec1[1]*pathVec2_R[1]
-			if val2 > 1.0:
-				val2 = 1.0
-			elif val2 < -1.0:
-				val2 = -1.0
-			ang2 = acos(val2)
-			
-			angleSum1 += ang1
-			angleSum2 += ang2
+	#		val2 = pathVec1[0]*pathVec2_R[0] + pathVec1[1]*pathVec2_R[1]
+	#		if val2 > 1.0:
+	#			val2 = 1.0
+	#		elif val2 < -1.0:
+	#			val2 = -1.0
+	#		ang2 = acos(val2)
+	#		
+	#		angleSum1 += ang1
+	#		angleSum2 += ang2
 
 	
 	" select global path orientation based on which has the smallest angle between tangent vectors "
 	#print "getDeparturePoint:", i, "angleSum1 =", angleSum1, "angleSum2 =", angleSum2
-	if angleSum1 > angleSum2:
-		pathPoints = pathPointsReverse
-		pathSpline = pathSplineReverse
+	#if angleSum1 > angleSum2:
+		#pathPoints = pathPointsReverse
+		#pathSpline = pathSplineReverse
+
+
+	pathPoints = currPath
 	
 	" tip angles "
 	angSum1 = 0.0
@@ -723,6 +732,102 @@ def orientPath(globalPath, globalRefPath, dist_thresh = 0.5):
 		orientedGlobalPath = pathPoints
 	
 	return orientedGlobalPath
+
+def orientPathLean(globalPath, globalRefPath, dist_thresh = 0.5):
+	""" orientation detection without SplineFit object """
+	
+	globalPathReverse = deepcopy(globalPath)
+	globalPathReverse.reverse()
+
+	for p in globalPathReverse:
+		currAng = p[2]
+		p[2] = normalizeAngle(currAng + pi)
+
+	refSpline1 = SplineFit(globalRefPath, smooth=0.1)
+	#globalSpline = SplineFit(globalPath, smooth=0.1)
+	#globalSplineReverse = SplineFit(globalPathReverse, smooth=0.1)
+
+	pathPoints = globalPath 
+	pathPointsReverse = globalPathReverse
+
+
+	#pathPoints = globalSpline.getUniformSamples()
+	#pathPointsReverse = globalSplineReverse.getUniformSamples()
+
+
+	overlapMatch = []
+	angleSum1 = 0.0
+	angleSum2 = 0.0
+
+	kdInput = []
+	for j in range(0,len(globalPath)):
+		p_2 = globalPath[j]
+		kdInput.append(p_2[0:2])
+	kdTree = cKDTree(array(kdInput))
+
+	kdInput_R = []
+	for j in range(0,len(globalPathReverse)):
+		p_2_R = globalPathReverse[j]
+		kdInput_R.append(p_2[0:2])
+	kdTree_R = cKDTree(array(kdInput_R))
+	
+	for i in range(0,len(globalRefPath)):
+		p_1 = globalRefPath[i]
+		#p_2, j, minDist = findClosestPointInA(globalPath, p_1)
+
+		queryPoint = p_1[0:2]
+		minDist, j = kdTree.query(array(queryPoint))
+		p_2 = globalPath[j]
+
+		minDist, j = kdTree_R.query(array(queryPoint))
+		p_2_R = globalPathReverse[j]
+
+		if minDist < dist_thresh: 
+			overlapMatch.append((i,j,minDist))
+
+			#pathU1 = refSpline1.findU(p_1)	
+			#pathU2 = globalSpline.findU(p_2)	
+			#pathU2_R = globalSplineReverse.findU(p_2)	
+
+			#pathVec1 = refSpline1.getUVector(pathU1)
+			#pathVec2 = globalSpline.getUVector(pathU2)
+			#pathVec2_R = globalSplineReverse.getUVector(pathU2_R)
+
+			pathVec1 = [cos(p_1[2]), sin(p_1[2])]
+			pathVec2 = [cos(p_2[2]), sin(p_2[2])]
+			pathVec2_R = [cos(p_2_R[2]), sin(p_2_R[2])]
+
+			val1 = pathVec1[0]*pathVec2[0] + pathVec1[1]*pathVec2[1]
+			if val1 > 1.0:
+				val1 = 1.0
+			elif val1 < -1.0:
+				val1 = -1.0
+			ang1 = acos(val1)
+			
+			val2 = pathVec1[0]*pathVec2_R[0] + pathVec1[1]*pathVec2_R[1]
+			if val2 > 1.0:
+				val2 = 1.0
+			elif val2 < -1.0:
+				val2 = -1.0
+			ang2 = acos(val2)
+	
+			angleSum1 += ang1
+			angleSum2 += ang2
+	
+	" select global path orientation based on which has the smallest angle between tangent vectors "
+	print i, "angleSum1 =", angleSum1, "angleSum2 =", angleSum2
+	if angleSum1 > angleSum2:
+
+		#for k in range(len(pathPointsReverse)):
+		#	pAngle = pathPointsReverse[k][2]
+		#	pathPointsReverse[k][2] = diffAngle(pAngle, math.pi)
+
+		orientedGlobalPath = pathPointsReverse
+	else:
+		orientedGlobalPath = pathPoints
+	
+	return orientedGlobalPath
+
 
 def getTipAngles(pathPoints):
 	
@@ -1188,10 +1293,13 @@ def getCurveOverlap(curve1, curve2, plotIter = False, overlapPlotCount = 0):
 
 	minMatchDist2 = 0.2
 		
-	curveSpline1 = SplineFit(curve1, smooth=0.1)		   
-	vecPoints1 = curveSpline1.getUniformSamples()
-	curveSpline2 = SplineFit(curve2, smooth=0.1)		   
-	vecPoints2 = curveSpline2.getUniformSamples()
+	#curveSpline1 = SplineFit(curve1, smooth=0.1)		   
+	#vecPoints1 = curveSpline1.getUniformSamples()
+	#curveSpline2 = SplineFit(curve2, smooth=0.1)		   
+	#vecPoints2 = curveSpline2.getUniformSamples()
+
+	vecPoints1 = deepcopy(curve1)
+	vecPoints2 = deepcopy(curve2)
 
 
 	curvePoints1 = addGPACVectorCovariance(vecPoints1,high_var=0.05, low_var = 0.001)

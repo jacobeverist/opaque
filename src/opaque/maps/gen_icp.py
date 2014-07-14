@@ -1786,13 +1786,13 @@ def globalPathToNodeOverlapICP2(initGuess, globalPath, medialPoints, plotIter = 
 	toLocalOffset = computeOffset(point2, point1, ang2, ang1 + currAng)
 	poseRoot = Pose([0.0,0.0,0.0])
 	deOffset = poseRoot.doInverse(toLocalOffset)
-	globalPath2 = []
-	pathLocal = []
-	for p in globalPath:
-		result = dispOffset(p, toLocalOffset)
-		pathLocal.append(result)
-		result2 = dispOffset(result, deOffset)
-		globalPath2.append(result2)
+	#globalPath2 = []
+	#pathLocal = []
+	#for p in globalPath:
+	#	result = dispOffset(p, toLocalOffset)
+	#	pathLocal.append(result)
+	#	result2 = dispOffset(result, deOffset)
+	#	globalPath2.append(result2)
 
 
 	poses_3 = []

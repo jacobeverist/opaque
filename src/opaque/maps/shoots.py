@@ -3112,6 +3112,8 @@ def getInitSkeletonBranchPoint(globalJunctionPose, currShootID, globalMedial_G, 
 
 			contigFrac = float(maxContig)/float(len(orientedMedial_G))
 
+			print "contigFrac:", maxContig, shootID, segIndex, len(orientedMedial_G), contigFrac
+
 			if contigFrac > maxContigFrac:
 				maxContigFrac = contigFrac
 				maxContigIndex = segIndex
@@ -3659,7 +3661,8 @@ def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPos
 	newBranchPoses_L = {0:None}
 	newBranchPoses_G = {0:None}
 	trimmedPaths = {}
-	longestPaths = {}
+	branchTermPaths = {}
+	longestPaths = {0 : localPaths[0]}
 	arcDist = 0.0
 	newArcDist = 0.0
 
@@ -3667,6 +3670,16 @@ def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPos
 	branchPathIDs = deepcopy(parentPathIDs.keys())
 	branchPathIDs.remove(0)
 	branchPathIDs.sort()
+
+	""" result object """
+	branchResult = {}
+	branchResult["branchPathIDs"] = branchPathIDs
+	branchResult["arcDists"] = arcDists
+	branchResult["controlSet"] = controlPoses
+	branchResult["matchCounts"] = {}
+	branchResult["costSum"] = {}
+	branchResult["branchPoses_L"] = {}
+	branchResult["splices_G"] = {}
 
 	controlPoses_G = computeGlobalControlPoses(controlPoses, parentPathIDs)
 	branchPoses_G = {}
@@ -3697,12 +3710,10 @@ def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPos
 		parentPathSegs = localPathSegsByID[parentID]
 
 		""" evaluate overlap of parent and child skeleton """
-		#lastCost1, matchCount1 = gen_icp.branchEstimateCost2(controlPose_P, childPathSegs_P, parentPath_P, plotIter = True, n1 = pathID, n2 = parentID, arcDist = arcDist)
 		lastCost1, matchCount1 = skeletonOverlapCost(childPathSegs_P, parentPathSegs, plotIter = False, n1 = 0, n2 = 0, arcDist = 0.0)
 
 
 		""" get the trimmed child shoot at the new designated branch point from parent """
-		#trimPath_L, longPath_L, newBranchPoses_L =  trimJointBranch(localPathSegsByID, localPaths, parentPathIDs, branchPoses_G, controlPoses_G, plotIter=True, arcDist = arcDist, nodeID=numNodes, hypothesisID = hypothesisID)
 		trimPath_L, branchPose_L, longPath_L =  trimBranch(pathID, parentID, controlPose_P, junctionPoses[pathID], localPathSegsByID, localPaths, parentPathIDs, controlPoses_G, plotIter=True, arcDist = arcDist, nodeID=numNodes, hypothesisID = hypothesisID)
 
 
@@ -3717,13 +3728,15 @@ def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPos
 		trimmedPaths[pathID] = trimPath_L
 		longestPaths[pathID] = longPath_L
 
+		""" store the computed branch point and evaluation results """
+		branchResult["matchCounts"][pathID] = matchCount1
+		branchResult["costSum"][pathID] = lastCost1
+		branchResult["branchPoses_L"][pathID] = branchPose_L
 
 
 	""" find the splice through skeleton """
 	spliceSkeleton_G = spliceSkeletons(localSkeletons, controlPoses_G, newBranchPoses_L, parentPathIDs)
 
-
-	branchResults = {}
 
 	for pathID in branchPathIDs:
 
@@ -3826,42 +3839,36 @@ def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPos
 			splicePoints1 = spliceSpline1.getUniformSamples()
 
 			splicedPaths_G.append(splicePoints1)
+
+		branchTermPaths[pathID] = termPaths_G
 		
-
-		""" cache the generated result and package it for later retrieval """
-
-		part2 = {}
-		part2["parentID"] = parentID
-		part2["modJuncPose"] = branchPose_L
-		part2["modControlPose"] = controlPose_P
-		part2["newArcDist"] = newArcDist
-		part2["pathID"] = pathID
-		part2["matchCount"] = matchCount1
-		part2["lastCost"] = lastCost1
-
-		""" originally designed to compute the discrepancy between initial and final poses of ICP,
-			now there is no ICP so there is no discrepancy """
-		part2["distDisc"] = 0.0
-		part2["angDisc"] = 0.0
+		""" store the splices """
+		branchResult["splices_G"][pathID] = deepcopy(splicedPaths_G)
 
 
-		part2["initProb"] = matchCount1
-		part2["newSplices"] = deepcopy(splicedPaths_G)
+	""" sum the match counts and cost across branches """
+	totalMatchCount = 0
+	totalCost = 0.0
+	for pathID in branchPathIDs:
+		totalMatchCount += branchResult["matchCounts"][pathID]
+		totalCost += branchResult["costSum"][pathID] 
+	
+	branchResult["totalMatchCount"] = totalMatchCount
+	branchResult["totalCost"] = totalCost
 
-		""" discrepancy between origin and new computed branch pose """
-		part2["juncDiscAngle"] = 0.0
-		part2["juncDiscDist"] = 0.0
-		part2["termPaths"] = termPaths_G
-		branchResults[pathID] = part2
+	branchResult["trimmedPaths"] = trimmedPaths
+	branchResult["longestPaths"] = longestPaths
 
-		#if plotIter:
-		if True:
+	#if plotIter:
+	if True:
 
-			#numNodes = 0
-			#pathPlotCount = 0
+		pylab.clf()
 
-			
-			pylab.clf()
+		for pathID in branchPathIDs:
+
+			termPaths_G = branchTermPaths[pathID]
+			trimPath_L = trimmedPaths[pathID]
+
 
 			#for splicePath in newSplices:
 
@@ -3911,35 +3918,27 @@ def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPos
 			pylab.scatter([newBranchPoses_G[pathID][0],], [newBranchPoses_G[pathID][1],], color='m')
 			pylab.scatter([controlPoses_G[pathID][0],], [controlPoses_G[pathID][1],], color='b')
 
-			pylab.axis("equal")
-			pylab.title("hyp %d nodeID %d %1.2f" % ( hypothesisID, numNodes, newBranchPoses_L[pathID][2] ))
-			pylab.savefig("computeJointBranch_%04u_%04u_%04u_%1.1f.png" % (hypothesisID, numNodes, pathID, arcDists[pathID]))
-
-			print "saving computeJointBranch_%04u_%04u_%04u_%1.1f.png" % (hypothesisID, numNodes, pathID, arcDists[pathID])
-
-			
-		#pathPlotCount += 1
-
-		"""
-		result values are as follows:
-		0 = parent ID
-		1 = pose of the branch point
-		2 = arc distance on the parent curve of the branch point
-		3 = child ID
-		4 = match count from ICP algorithm
-		5 = last cost from ICP algorithm
-		6 = discrepancy distance of new pose from old pose, zeroed for this function
-		7 = angle discrepancy difference of new pose from old pose
-		8 = initial probability value of this branch position, initialized to 0.0 in this function
-		9 = set of splices including the branch at this position
-		10 = angle discrepancy 
-		11 = dist discrepancy 
-		"""
 
 
-	return branchResults
- 
+		pylab.axis("equal")
+		pylab.title("hyp %d nodeID %d %1.2f" % ( hypothesisID, numNodes, newBranchPoses_L[pathID][2] ))
 
+		nameStr = "computeJointBranch_%04u_%04u_%04u"
+		arcDistList = []
+		for pathID in branchPathIDs:
+			nameStr += "_%1.1f"
+			arcDistList.append(arcDists[pathID])
+		nameStr += ".png"
+
+		arcDistTuple = tuple(arcDistList)
+		arcTuple = (hypothesisID, numNodes, pathID) + arcDistTuple
+		nameStr = nameStr % arcTuple
+
+		pylab.savefig(nameStr)
+		print "saving", nameStr
+
+
+	return branchResult
 
 
 @logFunction

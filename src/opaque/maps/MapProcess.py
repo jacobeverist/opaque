@@ -349,10 +349,19 @@ def computeEvalNode(mapHyp, nodeID1):
 
 	" departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2 |"
 
+	poseOrigin1 = Pose(estPose1)
+	globalMedial1 = []
+	for p in medial1:
+		globalMedial1.append(poseOrigin1.convertLocalToGlobal(p))
+
+	medialSpline1 = SplineFit(medial1, smooth=0.1)
+	medial1_vec = medialSpline1.getUniformSamples()
+
 	results1 = []		
 	for k in range(len(splicedPaths1)):
 		path = splicedPaths1[k]			
-		result = getMultiDeparturePoint(path, medial1, origPose1, estPose1, orderedPathIDs1, nodeID1)
+		path = orientPath(path, globalMedial1)
+		result = getMultiDeparturePoint(path, medial1_vec, origPose1, estPose1, orderedPathIDs1, nodeID1)
 		results1.append(result+(k,))
 
 	results1 = sorted(results1, key=itemgetter(14))
@@ -854,6 +863,11 @@ def movePath(mapHyp, nodeID, direction, distEst = 1.0):
 			medial2 = poseData.medialAxes[nodeID-1]
 			hull3 = poseData.aHulls[nodeID]
 			medial3 = poseData.medialAxes[nodeID]
+
+			medialSpline2 = SplineFit(medial2, smooth=0.1)
+			medial2_vec = medialSpline2.getUniformSamples()
+			medialSpline3 = SplineFit(medial3, smooth=0.1)
+			medial3_vec = medialSpline3.getUniformSamples()
 			
 			print "hypothesis", mapHyp.hypothesisID, len(mapHyp.paths[0])
 			allSplices, terminals, junctions = mapHyp.getAllSplices(plotIter = False)
@@ -1026,9 +1040,9 @@ def movePath(mapHyp, nodeID, direction, distEst = 1.0):
 
 				multiDepCount = 0
 
-				result2 = getMultiDeparturePoint(orientedSplicePath, medial2, pose2, resultPose2, [], nodeID-1, pathPlotCount = multiDepCount, plotIter = False)
+				result2 = getMultiDeparturePoint(orientedSplicePath, medial2_vec, pose2, resultPose2, [], nodeID-1, pathPlotCount = multiDepCount, plotIter = False)
 				multiDepCount += 1
-				result3 = getMultiDeparturePoint(orientedSplicePath, medial3, pose3, resultPose3, [], nodeID, pathPlotCount = multiDepCount, plotIter = False)
+				result3 = getMultiDeparturePoint(orientedSplicePath, medial3_vec, pose3, resultPose3, [], nodeID, pathPlotCount = multiDepCount, plotIter = False)
 				multiDepCount += 1
 				
 				#results1.append(result+(k,))

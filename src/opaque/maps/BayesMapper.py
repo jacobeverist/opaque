@@ -652,26 +652,45 @@ class BayesMapper:
 		splicedPaths1 = mapHyp.splicePathIDs(orderedPathIDs1)
 		splicedPaths2 = mapHyp.splicePathIDs(orderedPathIDs2)
 
+		
+		medialSpline1 = SplineFit(medial1, smooth=0.1)
+		medial1_vec = medialSpline1.getUniformSamples()
+		medialSpline2 = SplineFit(medial2, smooth=0.1)
+		medial2_vec = medialSpline2.getUniformSamples()
+
+
 		print "received", len(splicedPaths1), "spliced paths from path IDs", orderedPathIDs1
 		print "received", len(splicedPaths2), "spliced paths from path IDs", orderedPathIDs2
 
 		" departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2 |"
 		" departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2 "
 
+		poseOrigin1 = Pose(estPose1)
+		globalMedial1 = []
+		for p in medial1:
+			globalMedial1.append(poseOrigin1.convertLocalToGlobal(p))
+
 		results1 = []		
 		for k in range(len(splicedPaths1)):
 			path = splicedPaths1[k]			
-			result = getMultiDeparturePoint(path, medial1, estPose1, estPose1, orderedPathIDs1, nodeID1)
+			path = orientPath(path, globalMedial1)
+			result = getMultiDeparturePoint(path, medial1_vec, estPose1, estPose1, orderedPathIDs1, nodeID1)
 			results1.append(result+(k,))
 
 
 		results1 = sorted(results1, key=itemgetter(14))
 		results1 = sorted(results1, key=itemgetter(12), reverse=True)				
 
+		poseOrigin2 = Pose(estPose2)
+		globalMedial2 = []
+		for p in medial2:
+			globalMedial2.append(poseOrigin2.convertLocalToGlobal(p))
+
 		results2 = []		
 		for k in range(len(splicedPaths2)):
 			path = splicedPaths2[k]			
-			result = getMultiDeparturePoint(path, medial2, estPose2, estPose2, orderedPathIDs2, nodeID2)
+			path = orientPath(path, globalMedial2)
+			result = getMultiDeparturePoint(path, medial2_vec, estPose2, estPose2, orderedPathIDs2, nodeID2)
 			results2.append(result+(k,))
 
 		results2 = sorted(results2, key=itemgetter(14))

@@ -18,7 +18,7 @@ import pylab
 import numpy
 from operator import itemgetter
 import hashlib
-from Splices import batchGlobalMultiFit, getMultiDeparturePoint, orientPath, getTipAngles
+from Splices import batchGlobalMultiFit, getMultiDeparturePoint, orientPath, getTipAngles, orientPathLean
 from MapProcess import selectLocalCommonOrigin, selectCommonOrigin
 from ParticleFilter import multiParticleFitSplice, batchLocalizeParticle, batchDisplaceParticles, Particle
 import time
@@ -741,9 +741,15 @@ class MapState:
 		if nodeID0-2 >= 0:
 			prevMedial0 = poseData.medialAxes[nodeID0-2]
 			prevMedial1 = poseData.medialAxes[nodeID1-2]
+			prevMedialSpline0 = SplineFit(prevMedial0, smooth=0.1)
+			prevMedialSpline1 = SplineFit(prevMedial1, smooth=0.1)
+			prevMedial0_vec = prevMedialSpline0.getUniformSamples()
+			prevMedial1_vec = prevMedialSpline1.getUniformSamples()
 		else:
 			prevMedial0 = None
 			prevMedial1 = None
+			prevMedial0_vec = None
+			prevMedial1_vec = None
 
 
 		medialSpline0 = SplineFit(medial0, smooth=0.1)
@@ -751,10 +757,11 @@ class MapState:
 		minMedialDist0, oldMedialU0, oldMedialP0 = medialSpline0.findClosestPoint([0.0,0.0,0.0])
 		minMedialDist1, oldMedialU1, oldMedialP1 = medialSpline1.findClosestPoint([0.0,0.0,0.0])
 
+		medial0_vec = medialSpline0.getUniformSamples()
+		medial1_vec = medialSpline1.getUniformSamples()
 
-		localizeJobs = []
-		allSplicedPaths = []
-		spliceCount = 0
+
+
 
 		""" FIXME:  convert particle to control matrix and switch to local controls """
 
@@ -769,6 +776,7 @@ class MapState:
 		"""
 
 
+		"""
 		probSets = []
 		for particleIndex in range(len(particleDist2)):
 			part = particleDist2[particleIndex]
@@ -791,11 +799,11 @@ class MapState:
 
 					if dist1 < 3.0:
 						probSets.append((pathID, branchPose_L, controlPose_L))
+		"""
 
 
 		if True:
 
-			jointControlSets = []
 			jointComboControlSets = []
 			pathSplines = {}
 			allPathIDs = self.getPathIDs()
@@ -807,6 +815,7 @@ class MapState:
 
 			branchPathIDs = deepcopy(allPathIDs)
 			branchPathIDs.remove(0)
+			branchPathIDs.sort()
 			
 			for particleIndex in range(len(particleDist2)):
 				part = particleDist2[particleIndex]
@@ -891,18 +900,9 @@ class MapState:
 							newBranchControls[pathID] = [self.branchControlPoses[pathID][newArcDist],]
 							newBranchComboControls[pathID] = [(newArcDist, tuple(self.branchControlPoses[pathID][newArcDist])),]
 
-					argSet = []
-					for pathID in branchPathIDs:
-						argSet.append(newBranchControls[pathID])
 					argSet2 = []
 					for pathID in branchPathIDs:
 						argSet2.append(newBranchComboControls[pathID])
-
-
-
-					combIterator = product(*argSet)
-					for comb in combIterator:
-						jointControlSets.append(comb)
 
 					combIterator = product(*argSet2)
 					for comb in combIterator:
@@ -912,23 +912,51 @@ class MapState:
 				part.branchArcDists = newBranchArcDists
 				part.branchControls = newBranchControls
 
-		#for controlSet in jointComboControlSets:
-		#	print "jointComboControl:", controlSet
-
 		print "jointComboControl:", len(jointComboControlSets)
-
-		#jointControlSets = list(set(jointControlSets))
 		jointComboControlSets = list(set(jointComboControlSets))
-
 		print "jointComboControl:", len(jointComboControlSets)
 
 		""" precompute the evaluation for branches and cache result """
 		""" each branch point is the max likelihood of each pose particle """
-		self.batchPrecomputeBranches(probSets, jointControlSets, jointComboControlSets)
+		self.batchPrecomputeBranches(jointComboControlSets)
 
 		parentPathIDs = self.getParentHash()
+		localizeJobs = []
+		allSplicedPaths = []
+		spliceCount = 0
 
 		for particleIndex in range(len(particleDist2)):
+
+			#probDist = []
+			#branchPoseDist = []
+			#controlPoseDist = []
+			#branchSplices = []
+			#for branchSamp in samples:
+			#	"""
+			#	8 = initial probability value of this branch position, initialized to 0.0 in this function
+			#	1 = pose of the branch point
+			#	9 = set of splices including the branch at this position
+			#	"""
+			#	probDist.append(branchSamp["initProb"])
+			#	branchPoseDist.append(branchSamp["modJuncPose"])
+			#	controlPoseDist.append(branchSamp["modControlPose"])
+			#	branchSplices.append(branchSamp["newSplices"])
+
+			#	print "initProb, modJuncPose, modControlPose:", branchSamp["initProb"], branchSamp["modJuncPose"], branchSamp["modControlPose"]
+
+
+			#probStr = ""
+			#for probVal in probDist:
+			#	probStr += "%1.2f " % probVal
+
+			#print self.hypothesisID, particleIndex, pathID, "branch probDist:", probStr
+
+			##self.poseParticles["snapshots2"][updateCount][particleIndex].junctionData[pathID] = {}
+			#self.poseParticles["snapshots2"][0][particleIndex].junctionData[pathID]["probDist"] = probDist
+			#self.poseParticles["snapshots2"][0][particleIndex].junctionData[pathID]["branchPoseDist"] = branchPoseDist
+			#self.poseParticles["snapshots2"][0][particleIndex].junctionData[pathID]["controlPoseDist"] = controlPoseDist
+			#self.poseParticles["snapshots2"][0][particleIndex].junctionData[pathID]["branchSplices"] = branchSplices
+
 
 			time1 = time.time()
 
@@ -944,99 +972,77 @@ class MapState:
 
 			thisSplicedPaths = []
 
+			""" get control set of particle's branches indexed by arc distance """
+			# part.branchArcDists = newBranchArcDists
+			# part.branchControls = newBranchControls
 
-			""" consider single path splices """
-			""" uses hypothesize currPath to localize the trimmedPath """
-			""" FIXME: grandparent child paths should be localized in a chain up to the root """
-			""" FIXME: do we still need comparison to max likelihood?  should this only be the childless parent? """
-			for pathID in pathIDs:
+			""" build indexing tuples for this particle """
+			argSet = []
+			for pathID in branchPathIDs:
+				argSet.append(part.branchArcDists[pathID])
 
-				if pathID != 0:
-
-
-					""" FIXME:  convert particle to control matrix and switch to local controls """
-
-					globJuncPose = part.junctionData[pathID]["globalJunctionPose"]
-					controlPose = part.junctionData[pathID]["controlPose"]
-
-					dist1 = sqrt((globJuncPose[0]-hypPose0[0])**2 + (globJuncPose[1]-hypPose0[1])**2)
-					print "dist1 =", dist1
-					if dist1 < 3.0:
-
-						#time1 = time.time()
-
-						samples = self.evaluateBranches(pathID, controlPose, nodeID0, particleIndex)
-
-						probDist = []
-						branchPoseDist = []
-						controlPoseDist = []
-						branchSplices = []
-						for branchSamp in samples:
-							"""
-							8 = initial probability value of this branch position, initialized to 0.0 in this function
-							1 = pose of the branch point
-							9 = set of splices including the branch at this position
-							"""
-							probDist.append(branchSamp["initProb"])
-							branchPoseDist.append(branchSamp["modJuncPose"])
-							controlPoseDist.append(branchSamp["modControlPose"])
-							branchSplices.append(branchSamp["newSplices"])
-
-							print "initProb, modJuncPose, modControlPose:", branchSamp["initProb"], branchSamp["modJuncPose"], branchSamp["modControlPose"]
+			arcIndexes = []
+			combIterator = product(*argSet)
+			for comb in combIterator:
+				arcIndexes.append(tuple(comb))
 
 
-						probStr = ""
-						for probVal in probDist:
-							probStr += "%1.2f " % probVal
+			# TODO: consider single path longestPaths , including root
+			""" minimum 5 tuples """
+			for arcTuple in arcIndexes:
+				print "arcIndex:", arcTuple
+				branchResult = self.jointBranchEvaluations[arcTuple]
 
-						print self.hypothesisID, particleIndex, pathID, "branch probDist:", probStr
+				splices_G = branchResult["splices_G"]
 
-						#self.poseParticles["snapshots2"][updateCount][particleIndex].junctionData[pathID] = {}
-						self.poseParticles["snapshots2"][0][particleIndex].junctionData[pathID]["probDist"] = probDist
-						self.poseParticles["snapshots2"][0][particleIndex].junctionData[pathID]["branchPoseDist"] = branchPoseDist
-						self.poseParticles["snapshots2"][0][particleIndex].junctionData[pathID]["controlPoseDist"] = controlPoseDist
-						self.poseParticles["snapshots2"][0][particleIndex].junctionData[pathID]["branchSplices"] = branchSplices
+				for pathID in branchPathIDs:
 
-						#time2 = time.time()
-						#print "evaluateBranches time", self.hypothesisID, particleIndex, pathID, time2-time1
+					""" 3 splices for this branch """
+					numSplices = len(splices_G[pathID])
 
-						for j in range(len(samples)):
+					for k in range(numSplices):
+						splice = splices_G[pathID][k]
+						thisSplicedPaths.append((0, 1.0, splice, pathID, arcTuple))
 
-							controlPoses = deepcopy(self.getControlPoses())
-							controlPoses[pathID] = samples[j]["modControlPose"]
-							globalControlPoses = computeGlobalControlPoses(controlPoses, parentPathIDs)
-
-							""" FIXME:  convert branchPose to global frame that hypPose0 is in """
-							controlOrigin1 = Pose(globalControlPoses[pathID])
-							branchPose = samples[j]["modJuncPose"]
-							globalBranchPose = controlOrigin1.convertLocalOffsetToGlobal(branchPose)
-
-							probVal = samples[j]["initProb"]
-							#branchSplices = samples[j][9]
-							numSplices = len(branchSplices[j])
-
-							dist2 = sqrt((globalBranchPose[0]-hypPose0[0])**2 + (globalBranchPose[1]-hypPose0[1])**2)
-							print "dist2 =", dist2
-							if dist2 < 3.0 and probVal > 0.0:
-
-								for k in range(numSplices):
-									splice = branchSplices[j][k]
-									thisSplicedPaths.append((j, probVal, splice, pathID))
-				else:
-
-					""" static splices have 1.0 probability """
-					thisSplicedPaths.append((None, 1.0, self.paths[0], pathID))
-
+			#""" static splices have 1.0 probability """
+			#thisSplicedPaths.append((None, 1.0, self.paths[0], pathID))
 
 			print "particle:", particleIndex, ",",  len(thisSplicedPaths), "localize jobs"
+			poseFrame = Pose(hypPose0)
+			globalMedial0 = []
+			medialSpline0 = SplineFit(medial0, smooth=0.1)
+			points0 = medialSpline0.getUniformSamples()
+			#for p in points0:
+			for p in medial0_vec:
+				globalMedial0.append(poseFrame.convertLocalOffsetToGlobal(p))
+
+			globalMedialP0 = poseFrame.convertLocalOffsetToGlobal(oldMedialP0)	
+			globalMedialP1 = poseFrame.convertLocalOffsetToGlobal(oldMedialP1)	
+
 			for spliceIndex in range(len(thisSplicedPaths)):
 				
 				branchSampleIndex = thisSplicedPaths[spliceIndex][0]
 				probVal = thisSplicedPaths[spliceIndex][1]
 				path = thisSplicedPaths[spliceIndex][2]
 
+			
+
+
+
+				#orientedPath0 = orientPath(path, globalMedial0)
+				orientedPath0 = orientPathLean(path, globalMedial0)
+				#orientedPathSpline0 = SplineFit(orientedPath0, smooth=0.1)
+				#pathU0 = orientedPathSpline0.findU(globalMedialP0)
+				#pathU1 = orientedPathSpline0.findU(globalMedialP1)
+
+				#params0 = [pathU0, oldMedialU0, angGuess0]
+				#params1 = [pathU1, oldMedialU1, angGuess1]
+
+
+
+
 				
-				localizeJobs.append([oldMedialP0, oldMedialU0, 0.0, oldMedialP1, oldMedialU1, 0.0, branchSampleIndex, spliceCount, path, medial0, medial1, deepcopy(hypPose0), deepcopy(hypPose1), prevMedial0, prevMedial1, prevHypPose0, prevHypPose1, [], nodeID0, nodeID1, particleIndex, updateCount, self.hypothesisID, probVal])
+				localizeJobs.append([oldMedialP0, oldMedialU0, 0.0, oldMedialP1, oldMedialU1, 0.0, branchSampleIndex, spliceCount, orientedPath0, medial0_vec, medial1_vec, deepcopy(hypPose0), deepcopy(hypPose1), prevMedial0_vec, prevMedial1_vec, prevHypPose0, prevHypPose1, [], nodeID0, nodeID1, particleIndex, updateCount, self.hypothesisID, probVal])
 
 				self.pathPlotCount2 += 1
 				spliceCount += 1
@@ -1045,9 +1051,6 @@ class MapState:
 
 			allSplicedPaths += thisSplicedPaths
 
-			time2 = time.time()
-			print "localize construct", particleIndex, time2-time1
-			print
 
 		print len(localizeJobs), "total localize jobs"
 
@@ -1059,13 +1062,6 @@ class MapState:
 
 		print "batch localize for map hypothesis", self.hypothesisID, "=", time2-time1 
 		print len(results[0]), "result arguments"
-		#for k in range(len(results)):
-		#	resultArgs = results[k]
-
-		#results.sort
-		#sortedResults = sorted(results, key=itemgetter(0,1), reverse=False)
-
-
 
 		""" set the rejection criteria """
 		for index in range(len(results)):
@@ -1744,7 +1740,9 @@ class MapState:
 	
 	@logFunction
 	def getPathIDs(self):
-		return deepcopy(self.pathClasses.keys())
+		allPathIDs = self.pathClasses.keys()
+		allPathIDs.sort()
+		return deepcopy(allPathIDs)
 
 	@logFunction
 	def getParentHash(self):
@@ -2302,71 +2300,7 @@ class MapState:
 					self.branchControlPoses[pathID][currDist] = controlPose_P
 			
 
-		#if len(allPathIDs) > 1:
-
-			#shootIDs = self.branchArcDists.keys()
-			#shootIDs.sort()
-			#listIndexes = [0 for k in shootIDs]
-			#maxIndexes = [len(self.branchArcDists[k]) for k in shootIDs]
-
-			#jointBranches = {}
-
-			#print "keys:", shootIDs
-			#print "listIndexes:", listIndexes
-			#print "maxIndexes:", maxIndexes
-
-			#""" compute all possible combinations of branch locations """
-			#while True:
-
-				#""" current combination of arc distances """
-				#currResult = []
-				#currControl = []
-
-
-				#for k in range(len(shootIDs)):
-				#	currResult.append(self.branchArcDists[shootIDs[k]][listIndexes[k]])
-				#	currControl.append(self.branchControlPoses[shootIDs[k]][listIndexes[k]])
-
-				#print "currResult:", currResult
-				#jointBranches[tuple(currResult)] = currControl
-
-				#""" increment the next combination """
-				#revRange = range(0,len(shootIDs))
-				#revRange.reverse()
-				#isCarry = False
-
-				#""" structured like a simple carry adder """
-
-				#""" always increment the LSB """
-				#listIndexes[-1] += 1
-				#for k in revRange:
-
-				#	if isCarry:
-				#		listIndexes[k] += 1
-				#		isCarry = False
-
-				#	if k!= 0 and listIndexes[k] >= maxIndexes[k]:
-				#		isCarry = True
-				#		listIndexes[k] = 0
-
-				#""" the MSB has exceeded it's digit range, so we have incremented over all possibilities """
-				#if listIndexes[0] >= maxIndexes[0]:
-				#	break
-
-
-			#print "branchDists, maxIndexes:", branchDists, maxIndexes
-
-
 		self.jointBranchEvaluations = {}
-		#self.jointBranchControlPoses = {}
-		#if len(allPathIDs) > 1:
-		#	for jointArcs, jointControl in jointBranches.iteritems():
-		#		self.jointBranchEvaluations[jointArcs] = None
-		"""
-				self.jointBranchControlPoses[jointArcs] = jointControl
-				#print "arcs, controls:", jointArcs, jointControl
-				print "arcs, controls:", len(jointArcs), len(jointControl)
-		"""
 
 
 	@logFunction
@@ -2418,7 +2352,7 @@ class MapState:
 
 
 	@logFunction
-	def batchPrecomputeBranches(self, probSets, jointControlSets, jointComboControlSets):
+	def batchPrecomputeBranches(self, jointComboControlSets):
 
 		""" precompute the evaluation for branches and cache result """
 		""" each branch point is the max likelihood of each pose particle """
@@ -2427,89 +2361,15 @@ class MapState:
 		""" probSets:  [ (pathID, globJuncPose), ] """
 		""" possible locations of branch point shoot pathID """
 
-		probSets = sorted(probSets, key=itemgetter(0), reverse=True)
-		jointControlSets = sorted(jointControlSets, reverse=True)
 		jointComboControlSets = sorted(jointComboControlSets, reverse=True)
 
 		allPathIDs = self.getPathIDs()
 		branchPathIDs = deepcopy(allPathIDs)
 		branchPathIDs.remove(0)
-
-		""" get spline curves of each parent shoot """
-		pathSplines = {}
-		for pathID in allPathIDs:
-
-			""" path information """
-			pathDesc = self.pathClasses[pathID]
-			parentID = pathDesc["parentID"]
-
-			if parentID != None:
-				pathSpline = SplineFit(self.paths[parentID])
-				pathSplines[parentID] = pathSpline
+		branchPathIDs.sort()
 
 
-
-		""" convert branch points from poses into arc distances on parent shoot """
-		arcDists = []
-		for prob in probSets:
-
-			pathID = prob[0]
-			estJuncPose = prob[1]
-			controlPose = prob[2]
-
-			pathDesc = self.pathClasses[pathID]
-			parentID = pathDesc["parentID"]
-			pathSpline = pathSplines[parentID]
-
-			""" get the arc distance of the control point """
-			minDist, controlUVal, newControlPose = pathSpline.findClosestPoint(controlPose)
-			arcDist = pathSpline.dist_u(controlUVal)
-
-			#minDist, uVal, splinePoint = pathSpline.findClosestPoint(estJuncPose)
-			#arcDist = pathSpline.dist_u(uVal)
-
-
-			arcHigh = arcDist + self.DIV_LEN * floor(self.NUM_BRANCHES/2.0)
-			arcLow = arcDist - self.DIV_LEN * floor(self.NUM_BRANCHES/2.0)
-
-			" sample points around each probSet branch point "
-			for k in range(self.NUM_BRANCHES):
-				newArcDist = arcLow + k * self.DIV_LEN
-				arcDists.append((pathID, newArcDist))
-
-
-		""" binned arc distances, discretized state space """
-		binnedProblems = []
-
-		for prob in arcDists:
-			pathID = prob[0]
-			arcDist = prob[1]
-
-			currBranchSpace = self.branchEvaluations[pathID]
-			currKeys = currBranchSpace.keys()
-			currKeys.sort()
-
-			" find the bin for this arc distance "
-			thisKey = currKeys[0]
-			for k in range(len(currKeys)):
-				val = currKeys[k]
-				if val >= arcDist:
-					break
-				thisKey = val
-
-			" converted arc distances to bin keys "
-			binnedProblems.append((pathID, thisKey))
-
-		""" discretized space creates duplicates, remove duplicates """
-		numProbs1 = len(binnedProblems)
-		binnedProblems = list(set(binnedProblems))
-		numProbs2 = len(binnedProblems)
-
-		print "binnedProblems:", numProbs1, numProbs2
-		branchJobs = []
-
-
-		parentIDs = {}
+		""" data needed for branch computation processes """
 		localSkeletons = {}
 		controlPoses = {}
 		junctionPoses = {}
@@ -2518,23 +2378,10 @@ class MapState:
 		for pathID in pathIDs:
 			localSkeletons[pathID] = self.localLeaf2LeafPathJunctions[pathID]["skeletonGraph"]
 			controlPoses[pathID] = self.pathClasses[pathID]["controlPose"]
-			#junctionPoses[pathID] = self.pathClasses[pathID]["localJunctionPose"]
 			junctionPoses[pathID] = self.pathClasses[pathID]["localJunctionPose"]
 			localPathSegsByID[pathID] = self.localLeaf2LeafPathJunctions[pathID]["localSegments"]
 
 		parentPathIDs = self.getParentHash()
-
-		for prob in binnedProblems:
-			pathID = prob[0]
-			arcDist = prob[1]
-
-			pathDesc = self.pathClasses[pathID]
-			parentID = pathDesc["parentID"]
-
-			junctionDetails = self.localLeaf2LeafPathJunctions[pathID]
-			localPathSegs = junctionDetails["localSegments"]
-
-			branchJobs.append((pathID, parentID, localPathSegsByID, self.localPaths, arcDist, localSkeletons, controlPoses, junctionPoses, parentPathIDs, len(self.nodePoses)-1, self.hypothesisID ))
 
 		""" construct the joint control pose problem sets """
 		jointBranchJobs = []
@@ -2555,117 +2402,94 @@ class MapState:
 			jointBranchJobs.append((localPathSegsByID, self.localPaths, localSkeletons, thisControlPoses, junctionPoses, parentPathIDs, thisArcDists, len(self.nodePoses)-1, self.hypothesisID ))
 
 
-
+		jointResults = batchJointBranch(jointBranchJobs)
 
 		"""
-		result values are as follows:
-		0 = parent ID
-		1 = pose of the branch point
-		2 = pose of the control point
-		3 = arc distance on the parent curve of the branch point
-		4 = child ID
-		5 = match count from ICP algorithm
-		6 = last cost from ICP algorithm
-		7 = discrepancy distance of new pose from old pose, zeroed for this function
-		8 = angle discrepancy difference of new pose from old pose
-		9 = initial probability value of this branch position, initialized to 0.0 in this function
-		10 = set of splices including the branch at this position
-		11 = angle discrepancy 
-		12 = dist discrepancy 
-		"""
+		results indexed by shoot ID
 
-		results = batchBranch(branchJobs)
-		#jointResults = batchJointBranch(jointBranchJobs)
+		branchResult["branchPathIDs"]
+		branchResult["arcDists"]
+		branchResult["controlSet"]
+		branchResult["matchCounts"]
+		branchResult["costSum"]
+		branchResult["branchPoses_L"]
+		branchResult["splices_G"]
+		branchResult["trimmedPaths"]
+		branchResult["longestPaths"] 
+
+
+		#self.branchControlPoses
+		#self.branchArcDists 
+		#self.jointBranchEvaluations
+		#self.branchArcDists[pathID].append(currDist)
+		#self.branchControlPoses[pathID][currDist] = controlPose_P
+			
+		"""
 
 		""" get the maximum value for each of our features """
 		maxCost = -1e100
 		maxMatchCount = -1000
-		maxAngDiff = -1e100
-		maxDist = 10.0
+		for k in range(len(jointResults)):
+			branchResult = jointResults[k]
 
-		""" find maximum values for each metric """
-		for k in range(len(results)):
-			part = results[k]
-			matchCount = part["matchCount"]
-			lastCost = part["lastCost"]
-			dist = part["distDisc"]
-			angDiff = part["angDisc"]
+			totalMatchCount = branchResult["totalMatchCount"]
+			totalCost = branchResult["totalCost"]
 
-			if matchCount > maxMatchCount:
-				maxMatchCount = matchCount
+			if totalCost > maxCost:
+				maxCost = totalCost
 
-			if lastCost > maxCost:
-				maxCost = lastCost
+			if maxMatchCount > totalMatchCount:
+				maxMatchCount = totalMatchCount
 
-			if dist > maxDist:
-				maxDist = dist
+		for k in range(len(jointResults)):
+			branchResult = jointResults[k]
 
-			if angDiff > maxAngDiff:
-				maxAngDiff = angDiff
+			totalMatchCount = branchResult["totalMatchCount"]
+			totalCost = branchResult["totalCost"]
 
+			""" compute normalized cost and match count """
+			normMatchCount = float(totalMatchCount) / float(maxMatchCount)
+			normCost = totalCost / maxCost
 
-		probSum = 0.0
-		for result in results:
-			probVal = result["initProb"]
-			probSum += probVal
+			branchResult["normMatchCount"] = normMatchCount
+			branchResult["normCost"] = normCost
 
-		for result in results:
-			arcDist = result["newArcDist"]
-			pathID = result["pathID"]
-			probVal = result["initProb"] / probSum
-			currBranchSpace = self.branchEvaluations[pathID]
+			""" build indexing tuple """
+			arcDists = branchResult["arcDists"]
+			arcList = []
+			for pathID in branchPathIDs:
+				arcList.append(arcDists[pathID])
 
-			result2 = {}
-			result2["parentID"] = result["parentID"]
-			result2["modJuncPose"] = result["modJuncPose"]
-			result2["modControlPose"] = result["modControlPose"]
-			result2["newArcDist"] = result["newArcDist"]
-			result2["pathID"] = result["pathID"]
-			result2["matchCount"] = result["matchCount"]
-			result2["lastCost"] = result["lastCost"]
-			result2["distDisc"] = result["distDisc"]
-			result2["angDisc"] = result["angDisc"]
-			result2["initProb"] = probVal
-			result2["newSplices"] = result["newSplices"]
-			result2["juncDiscAngle"] = result["juncDiscAngle"]
-			result2["juncDiscDist"] = result["juncDiscDist"]
-			result2["termPaths"] = result["termPaths"]
+			arcTuple = tuple(arcList)
 
+			self.jointBranchEvaluations[arcTuple] = branchResult
 
-			#result2 = (result[0], result[1], result[3], result[4], result[5], result[6], result[7], result[8], probVal, result[10], result[11], result[12])
-
-			currBranchSpace[arcDist] = result2
-
-		maxProb = 0.0
-		for result in results:
-			probVal = result["initProb"]
-			if probVal > maxProb:
-				maxProb = probVal
-			#probSum += probVal
-
+		
 		if True:
+
+			parentPathIDs = self.getParentHash()
 
 			pylab.clf() 
 
+			for arcTuple, branchResult in self.jointBranchEvaluations.iteritems():
 
-			for result in results:
+				#modJuncPose = result["modJuncPose"]
+				#modControlPose = result["modControlPose"]
 
-				modJuncPose = result["modJuncPose"]
-				modControlPose = result["modControlPose"]
-				result2["newArcDist"] = result["newArcDist"]
-				pathID = result["pathID"]
-				matchCount = result["matchCount"]
-				lastCost = result["lastCost"]
-				probVal = result["initProb"]
+				controlPoses_L = branchResult["controlSet"]
+				controlPoses_G = computeGlobalControlPoses(controlPoses_L, parentPathIDs)
 
-				newSplices = result["newSplices"]
+				branchPoses_L = branchResult["branchPoses_L"]
 
-				junctionDetails = self.localLeaf2LeafPathJunctions[pathID]
 
-				localPathSegs = junctionDetails["localSegments"]
+				allSplices = []
+				splices_G = branchResult["splices_G"]
+				for pathID in branchPathIDs:
+					allSplices += splices_G[pathID]
+				
 
-				for path in newSplices:
-					print "path has", len(path), "points"
+
+				for path in allSplices:
 					xP = []
 					yP = []
 					for p in path:
@@ -2675,7 +2499,6 @@ class MapState:
 					pylab.plot(xP,yP,color='k', zorder=9, alpha=0.10)
 
 				for k,path in self.trimmedPaths.iteritems():
-					print "path has", len(path), "points"
 					xP = []
 					yP = []
 					for p in path:
@@ -2684,21 +2507,36 @@ class MapState:
 
 					pylab.plot(xP,yP, color = self.colors[k], linewidth=4)
 
-				controlOrigin1 = Pose(modControlPose)
-				globalJuncPose = controlOrigin1.convertLocalOffsetToGlobal(modJuncPose)
 
-				xP = []
-				yP = []
-				xP.append(globalJuncPose[0])
-				yP.append(globalJuncPose[1])
-				pylab.scatter(xP, yP, color='y', zorder=8)
+				xC = []
+				yC = []
+				xB = []
+				yB = []
+				for pathID in branchPathIDs:
+					controlPose_G = controlPoses_G[pathID]
+					currFrame = Pose(controlPose_G)
 
-				xP = []
-				yP = []
-				xP.append(modControlPose[0])
-				yP.append(modControlPose[1])
-				pylab.scatter(xP, yP, color='k', zorder=8)
+					xC.append(controlPose_G[0])
+					yC.append(controlPose_G[1])
 
+					branchPose_L = branchPoses_L[pathID]
+					branchPose_G = currFrame.convertLocalOffsetToGlobal(branchPose_L)
+
+					xB.append(branchPose_G[0])
+					yB.append(branchPose_G[1])
+			
+				pylab.scatter(xB, yB, color='y', zorder=8)
+				pylab.scatter(xC, yC, color='k', zorder=8)
+
+
+				"""
+
+				pathID = result["pathID"]
+				matchCount = result["matchCount"]
+				lastCost = result["lastCost"]
+				probVal = result["initProb"]
+				junctionDetails = self.localLeaf2LeafPathJunctions[pathID]
+				localPathSegs = junctionDetails["localSegments"]
 
 				xP = []
 				yP = []
@@ -2711,7 +2549,6 @@ class MapState:
 				pylab.scatter(xP, yP, color='r', zorder=8)
 
 
-				"""
 				offsetOrigin1 = Pose(modControlPose)
 
 				for k in range(len(localPathSegs)):
@@ -2735,7 +2572,7 @@ class MapState:
 
 
 
-			pylab.title("nodeID: %d hyp: %d, pathID: %d" % (len(self.nodePoses), self.hypothesisID, pathID))
+			pylab.title("nodeID: %d hyp: %d" % (len(self.nodePoses), self.hypothesisID))
 			pylab.savefig("all_branch_plot_%04u_%02u_%04u.png" % (len(self.nodePoses), self.hypothesisID, self.tempCount) )
 			self.tempCount += 1
 
@@ -3226,9 +3063,16 @@ class MapState:
 		hull2 = self.poseData.aHulls[nodeID]
 		medial2 = self.poseData.medialAxes[nodeID]
 
+		medialSpline2 = SplineFit(medial2, smooth=0.1)
+		medial2_vec = medialSpline2.getUniformSamples()
+
 		#estPose2 = node2.getGlobalGPACPose()		
 		estPose2 = self.getNodePose(nodeID)
 
+		poseOrigin2 = Pose(estPose2)
+		globalMedial2 = []
+		for p in medial2:
+			globalMedial2.append(poseOrigin2.convertLocalToGlobal(p))
 
 		resultSet = []
 
@@ -3238,7 +3082,8 @@ class MapState:
 			
 			currPath = splicePaths[k]
 			pathIDs = splicePathIDs[k]
-			results = getMultiDeparturePoint(currPath, medial2, estPose2, estPose2, pathIDs, nodeID, pathPlotCount = self.multiDepCount, hypID = self.hypothesisID, plotIter = False)
+			currPath = orientPath(currPath, globalMedial2)
+			results = getMultiDeparturePoint(currPath, medial2_vec, estPose2, estPose2, pathIDs, nodeID, pathPlotCount = self.multiDepCount, hypID = self.hypothesisID, plotIter = False)
 
 			self.multiDepCount += 1
 
