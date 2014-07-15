@@ -4672,10 +4672,6 @@ def trimBranch(pathID, parentPathID, controlPose_P, oldBranchPose_L, localPathSe
 
 
 
-# FIXME:  angle of tangent vectors are not guaranteed to align.
-# FIXME:  matches points by angle, but doesn't cost by angle
-# FIXME:  PI offset angles do not match
-
 @logFunction
 def skeletonOverlapCost(childPathSegs, parentPathSegs, plotIter = False, n1 = 0, n2 = 0, arcDist = 0.0):
 

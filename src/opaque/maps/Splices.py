@@ -228,7 +228,7 @@ def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, node
 		points2_offset.append(result)
 
 
-	currPath = orientPathLean(currPath,points2_offset)
+	#currPath = orientPathLean(currPath,points2_offset)
 
 	#globalMedialSpline = SplineFit(points2_offset, smooth=0.1)
 	#globalMedialPoints = globalMedialSpline.getUniformSamples()
@@ -747,7 +747,7 @@ def orientPathLean(globalPath, globalRefPath, dist_thresh = 0.5):
 		currAng = p[2]
 		p[2] = normalizeAngle(currAng + pi)
 
-	refSpline1 = SplineFit(globalRefPath, smooth=0.1)
+	#refSpline1 = SplineFit(globalRefPath, smooth=0.1)
 	#globalSpline = SplineFit(globalPath, smooth=0.1)
 	#globalSplineReverse = SplineFit(globalPathReverse, smooth=0.1)
 
@@ -772,7 +772,7 @@ def orientPathLean(globalPath, globalRefPath, dist_thresh = 0.5):
 	kdInput_R = []
 	for j in range(0,len(globalPathReverse)):
 		p_2_R = globalPathReverse[j]
-		kdInput_R.append(p_2[0:2])
+		kdInput_R.append(p_2_R[0:2])
 	kdTree_R = cKDTree(array(kdInput_R))
 	
 	for i in range(0,len(globalRefPath)):
@@ -787,7 +787,7 @@ def orientPathLean(globalPath, globalRefPath, dist_thresh = 0.5):
 		p_2_R = globalPathReverse[j]
 
 		if minDist < dist_thresh: 
-			overlapMatch.append((i,j,minDist))
+			#overlapMatch.append((i,j,minDist))
 
 			#pathU1 = refSpline1.findU(p_1)	
 			#pathU2 = globalSpline.findU(p_2)	

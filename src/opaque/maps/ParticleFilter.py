@@ -651,8 +651,8 @@ def __remote_multiParticle(rank, qin, qout):
 
 			branchIndex = job[6]
 			spliceIndex = job[7]
-			globalPath = job[8]
-			#orientedPath0 = job[8]
+			#globalPath = job[8]
+			orientedPath0 = job[8]
 			medial0 = job[9]
 			medial1 = job[10]
 			initPose0 = job[11]
@@ -692,7 +692,7 @@ def __remote_multiParticle(rank, qin, qout):
 			globalMedialP0 = poseOrigin.convertLocalOffsetToGlobal(oldMedialP0)	
 			globalMedialP1 = poseOrigin.convertLocalOffsetToGlobal(oldMedialP1)	
 
-			orientedPath0 = orientPathLean(globalPath, globalMedial0)
+			#orientedPath0 = orientPathLean(globalPath, globalMedial0)
 			orientedPathSpline0 = SplineFit(orientedPath0, smooth=0.1)
 			pathU0 = orientedPathSpline0.findU(globalMedialP0)
 			pathU1 = orientedPathSpline0.findU(globalMedialP1)
@@ -792,9 +792,9 @@ def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, me
 	resultPose1, lastCost1, matchCount1, currAng1, currU1 = gen_icp.globalPathToNodeOverlapICP2([u1, u2, angGuess], orientedPath, medialAxis1, plotIter = False, n1 = nodeID1, n2 = -1, arcLimit = 0.5, origPose = initPose1)
 
 
-	resultArgs0 = getMultiDeparturePoint(orientedPath, medialAxis0, initPose0, resultPose0, pathIDs, nodeID0, pathPlotCount = pathPlotCount, hypID = hypID, particleIndex = particleIndex, spliceIndex = spliceIndex, plotIter = True)
+	resultArgs0 = getMultiDeparturePoint(orientedPath, medialAxis0, initPose0, resultPose0, pathIDs, nodeID0, pathPlotCount = pathPlotCount, hypID = hypID, particleIndex = particleIndex, spliceIndex = spliceIndex, plotIter = False)
 
-	resultArgs1 = getMultiDeparturePoint(orientedPath, medialAxis1, initPose1, resultPose1, pathIDs, nodeID1, pathPlotCount = pathPlotCount, hypID = hypID, particleIndex = particleIndex, spliceIndex = spliceIndex, plotIter = True)
+	resultArgs1 = getMultiDeparturePoint(orientedPath, medialAxis1, initPose1, resultPose1, pathIDs, nodeID1, pathPlotCount = pathPlotCount, hypID = hypID, particleIndex = particleIndex, spliceIndex = spliceIndex, plotIter = False)
 	#resultArgs = ([0.0, 0.0],  0.0, False, False, 0.0, 0.0, [0.0, 0.0], 0.0, False, False, 0.0, 0.0, 1.0, 0.0, 0.0)
 
 	isExist1_0 = resultArgs0[3]
