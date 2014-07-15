@@ -213,10 +213,12 @@ def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, node
 	
 	"Assumption:  one section of the medial axis is closely aligned with the path "
 	poseOrigin = Pose(estPose2)
+
+
 	
 	#medialSpline2 = SplineFit(medial2, smooth=0.1)
 	#points2 = medialSpline2.getUniformSamples(interpAngle=True)
-	#points2 = medial2
+	points2 = medial2
 
 	points2_offset = []
 	for p in medial2:
@@ -225,6 +227,8 @@ def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, node
 		#result = poseOrigin.convertLocalToGlobal(p)
 		points2_offset.append(result)
 
+
+	currPath = orientPathLean(currPath,points2_offset)
 
 	#globalMedialSpline = SplineFit(points2_offset, smooth=0.1)
 	#globalMedialPoints = globalMedialSpline.getUniformSamples()

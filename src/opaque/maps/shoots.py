@@ -3866,6 +3866,9 @@ def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPos
 
 		for pathID in branchPathIDs:
 
+			childFrame = Pose(controlPoses_G[pathID])
+			#branchPose_G = childFrame.convertLocalOffsetToGlobal(branchPose_L)
+
 			termPaths_G = branchTermPaths[pathID]
 			trimPath_L = trimmedPaths[pathID]
 
@@ -3921,7 +3924,7 @@ def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPos
 
 
 		pylab.axis("equal")
-		pylab.title("hyp %d nodeID %d %1.2f" % ( hypothesisID, numNodes, newBranchPoses_L[pathID][2] ))
+		pylab.title("hyp %d nodeID %d %1.2f %d " % ( hypothesisID, numNodes, newBranchPoses_L[pathID][2], totalMatchCount ))
 
 		nameStr = "computeJointBranch_%04u_%04u_%04u"
 		arcDistList = []
@@ -4448,20 +4451,20 @@ def trimJointBranch(localPathSegsByID, localPaths, parentPathIDs, branchPoses_G,
 
 
 @logFunction
-def trimBranch(pathID, parentPathID, modControlPose, origGlobJuncPose, localPathSegsByID, localPaths, parentPathIDs, controlPoses_G, plotIter = False, hypothesisID = 0, nodeID = 0, arcDist = 0.0):
+def trimBranch(pathID, parentPathID, controlPose_P, oldBranchPose_L, localPathSegsByID, localPaths, parentPathIDs, controlPoses_G, plotIter = False, hypothesisID = 0, nodeID = 0, arcDist = 0.0):
 
 	global pathPlotCount 
 
-	offsetOrigin1 = Pose(modControlPose)
-	#offsetOrigin1 = Pose(controlPoses_G[pathID])
+	localFrame = Pose(controlPose_P)
+	#localFrame = Pose(controlPoses_G[pathID])
 
 	""" get branch point landmark """
-	globJuncPose = offsetOrigin1.convertLocalOffsetToGlobal(origGlobJuncPose)
 	currFrame = Pose(controlPoses_G[pathID])
+	oldBranchPose_G = currFrame.convertLocalOffsetToGlobal(oldBranchPose_L)
 
-	branchPose_G = getSkeletonBranchPoint(globJuncPose, pathID, parentPathIDs, localPathSegsByID, localPaths, controlPoses_G)
+	branchPose_G = getSkeletonBranchPoint(oldBranchPose_G, pathID, parentPathIDs, localPathSegsByID, localPaths, controlPoses_G)
 	branchPose_L = currFrame.convertGlobalPoseToLocal(branchPose_G)
-	branchPose_P = offsetOrigin1.convertLocalOffsetToGlobal(branchPose_L)
+	branchPose_P = localFrame.convertLocalOffsetToGlobal(branchPose_L)
 
 	""" get trimmed path """
 
@@ -4475,7 +4478,7 @@ def trimBranch(pathID, parentPathID, modControlPose, origGlobJuncPose, localPath
 
 	particlePath2 = []
 	for p in path2:
-		p1 = offsetOrigin1.convertLocalToGlobal(p)
+		p1 = localFrame.convertLocalToGlobal(p)
 		particlePath2.append(p1)
 
 	""" get departing sections of overlapped curves """
@@ -4625,7 +4628,7 @@ def trimBranch(pathID, parentPathID, modControlPose, origGlobJuncPose, localPath
 
 		
 		pylab.scatter([branchPose_P[0],], [branchPose_P[1],], color='r')
-		pylab.scatter([modControlPose[0],], [modControlPose[1],], color='b')
+		pylab.scatter([controlPose_P[0],], [controlPose_P[1],], color='b')
 		#pylab.scatter([origControlPose[0],], [origControlPose[1],], color='g')
 		#pylab.scatter([branchPose_G[0],], [branchPose_G[1],], color='m')
 
@@ -4641,15 +4644,17 @@ def trimBranch(pathID, parentPathID, modControlPose, origGlobJuncPose, localPath
 
 	localNewPath3 = []
 	for p in newPath3:
-		p1 = offsetOrigin1.convertGlobalToLocal(p)
+		p1 = localFrame.convertGlobalToLocal(p)
 		localNewPath3.append(p1)
 
 	localParticlePath2 = []
 	for p in particlePath2:
-		p1 = offsetOrigin1.convertGlobalToLocal(p)
+		p1 = localFrame.convertGlobalToLocal(p)
 		localParticlePath2.append(p1)
 
-	localJuncPose = offsetOrigin1.convertGlobalPoseToLocal(branchPose_P)
+	localJuncPose = localFrame.convertGlobalPoseToLocal(branchPose_P)
+
+	print "localJuncPose = branchPose_L", localJuncPose, branchPose_L
 
 	#return localNewPath3, localJuncPose, localParticlePath2
 	return localNewPath3, branchPose_L, localParticlePath2

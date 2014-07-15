@@ -482,50 +482,31 @@ class MapState:
 		branchPathIDs.remove(0)
 		branchPathIDs.sort()
 
-		branchResult = self.jointBranchEvaluations[partBranchTupleIndex] 
+		if partBranchTupleIndex != None:
+			branchResult = self.jointBranchEvaluations[partBranchTupleIndex] 
+		else:
+			branchResult = None
 
 		for k in range(len(branchPathIDs)):
 
 			pathID = branchPathIDs[k]
 
-			""" maximum likelihood branch point within maximum likelihood pose particle """
-			#partBranchIndex = maxParticle.junctionData[pathID]["maxLikelihoodBranch"]
+			if partBranchTupleIndex != None:
 
-			""" FIXME:  convert to control matrix and local controls """
-			#partControlPose = maxParticle.junctionData[pathID]["controlPoseDist"][partBranchIndex]
-			#partControlPose = maxParticle.junctionData[pathID]["controlPoseDist"][partBranchTupleIndex]
+				""" maximum likelihood branch point within maximum likelihood pose particle """
+				""" update of canonical branch point from maximum likelihood branch point """
+				arcDist = partBranchTupleIndex[k]
+				controlPose_P = self.branchControlPoses[pathID][arcDist]
 
-			arcDist = partBranchTupleIndex[k]
-			controlPose_P = self.branchControlPoses[pathID][arcDist]
+				origControlPose = copy(self.pathClasses[pathID]["controlPose"])
+				print "changing path", pathID, "control position from", origControlPose, "to", controlPose_P
 
+				self.pathClasses[pathID]["controlPose"] = controlPose_P
 
+				branchPose_L = branchResult["branchPoses_L"][pathID]
 
-			origControlPose = copy(self.pathClasses[pathID]["controlPose"])
-			print "changing path", pathID, "control position from", origControlPose, "to", controlPose_P
-
-			#modControlPose = copy(partControlPose)
-
-			#controlPoses = deepcopy(self.getControlPoses())
-			#controlPoses[pathID] = origControlPose
-			#oldGlobalControlPoses = computeGlobalControlPoses(controlPoses, parentPathIDs)
-
-			#controlPoses = deepcopy(self.getControlPoses())
-			#controlPoses[pathID] = modControlPose
-			#newGlobalControlPoses = computeGlobalControlPoses(controlPoses, parentPathIDs)
-
-			##oldControlOrigin1 = Pose(oldGlobalControlPoses[pathID])
-			#newControlOrigin1 = Pose(newGlobalControlPoses[pathID])
-
-			""" FIXME:  convert to control matrix and local controls """
-			self.pathClasses[pathID]["controlPose"] = controlPose_P
-
-			branchPose_L = branchResult["branchPoses_L"][pathID]
-
-			#""" update of canonical branch point from maximum likelihood branch point """
-			#partJuncPose = maxParticle.junctionData[pathID]["branchPoseDist"][partBranchIndex]
-
-			""" FIXME:  was recycling the angle, but now we are regenerating it """
-			self.setLocalJunctionPose(pathID, branchPose_L)
+				""" FIXME:  was recycling the angle, but now we are regenerating it """
+				self.setLocalJunctionPose(pathID, branchPose_L)
 
 
 		""" update the visible nodes, self.nodePoses """
@@ -1008,9 +989,10 @@ class MapState:
 				argSet.append(part.branchArcDists[pathID])
 
 			arcIndexes = []
-			combIterator = product(*argSet)
-			for comb in combIterator:
-				arcIndexes.append(tuple(comb))
+			if len(argSet) > 0:
+				combIterator = product(*argSet)
+				for comb in combIterator:
+					arcIndexes.append(tuple(comb))
 
 
 			# TODO: consider single path longestPaths , including root
@@ -1059,8 +1041,6 @@ class MapState:
 
 				self.pathPlotCount2 += 1
 				spliceCount += 1
-
-
 
 			allSplicedPaths += thisSplicedPaths
 
@@ -1148,7 +1128,8 @@ class MapState:
 				results[index] = tupleCopy
 			else:
 
-				newProb = (pi-fabs(diffAngle(initPose0[2],newPose0[2])) ) * contigFrac_0 * contigFrac_0 / overlapSum_0
+				newProb = (pi-fabs(diffAngle(initPose0[2],newPose0[2])) ) * contigFrac_0 
+				#newProb = (pi-fabs(diffAngle(initPose0[2],newPose0[2])) ) * contigFrac_0 * contigFrac_0 / overlapSum_0
 
 				""" case if splice is root path """
 				if normMatchCount != None:
@@ -1182,6 +1163,8 @@ class MapState:
 				thisParticleID = res[0]
 				distMin = res[1]
 				filteredParticles.append(res)
+
+		filteredParticles.reverse()
 
 		print "localize results:"
 		for key, values in probResults.iteritems():
@@ -2478,7 +2461,7 @@ class MapState:
 			if totalCost > self.maxCost:
 				self.maxCost = totalCost
 
-			if self.maxMatchCount > totalMatchCount:
+			if totalMatchCount > self.maxMatchCount:
 				self.maxMatchCount = totalMatchCount
 
 		for k in range(len(jointResults)):
@@ -4800,9 +4783,9 @@ class MapState:
 				
 				print "termDist =", termDist
 				
-				#if termDist < TERM_THRESH:
-				#	print "REJECT, proposed junction point is too close to parent pathID terminal", pathID, termDist, termPoint, depPoint
-				#	return False, pathID
+				if termDist < TERM_THRESH:
+					print "REJECT, proposed junction point is too close to parent pathID terminal", pathID, termDist, termPoint, depPoint
+					return False, pathID
 
 			
 			path = self.getPath(pathID)
