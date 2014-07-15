@@ -3649,7 +3649,7 @@ class MapState:
 						globalJunctionPose = self.getGlobalJunctionPose(childPathID)
 						globalControlPose = globalControlPoses[pathID]
 
-						localNewPath3, localNewGlobJuncPose, localParticlePath = trimBranch(childPathID, parentPathID, localControlPose, localJunctionPose, localPathSegsByID, self.localPaths, parentPathIDs, globalControlPoses, plotIter=True, hypothesisID=self.hypothesisID, nodeID=(self.poseData.numNodes))
+						localNewPath3, localNewGlobJuncPose, localParticlePath, isNoDiverge = trimBranch(childPathID, parentPathID, localControlPose, localJunctionPose, localPathSegsByID, self.localPaths, parentPathIDs, globalControlPoses, plotIter=True, hypothesisID=self.hypothesisID, nodeID=(self.poseData.numNodes))
 
 
 						offsetOrigin1 = Pose(globalControlPose)
