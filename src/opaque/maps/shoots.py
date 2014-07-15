@@ -5,7 +5,7 @@ import os
 import sys
 import graph
 from functions import *
-import Image
+from PIL import Image
 import hashlib
 from medialaxis import computeMedialAxis
 from SplineFit import SplineFit
@@ -3747,6 +3747,115 @@ def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPos
 
 	""" find the splice through skeleton """
 	spliceSkeleton_G = spliceSkeletons(localSkeletons, controlPoses_G, newBranchPoses_L, parentPathIDs)
+
+	
+	"""
+	# get all terminals of this shoot map's branch state 
+	allGlobalTerms = []
+	rootPath_G = localPaths[0]
+
+	# the terminals of the parent shoot
+	parentTerm1_G = rootPath_G[0]
+	parentTerm2_G = rootPath_G[-1]
+	allGlobalTerms.append(parentTerm1_G)
+	allGlobalTerms.append(parentTerm2_G)
+
+	for pathID in branchPathIDs:
+
+		childFrame = Pose(controlPoses_G[pathID])
+
+		trimPath_L = trimmedPaths[pathID]
+		branchPose_L = newBranchPoses_L[pathID]
+
+		# the terminals of the child shoot 
+		dist1 = sqrt((branchPose_L[0]-trimPath_L[0][0])**2 + (branchPose_L[1]-trimPath_L[0][1])**2)
+		dist2 = sqrt((branchPose_L[0]-trimPath_L[-1][0])**2 + (branchPose_L[1]-trimPath_L[-1][1])**2)
+
+		if dist1 < dist2:
+			childTerm_L = trimPath_L[0]
+		else:
+			childTerm_L = trimPath_L[-1]
+
+		childTerm_G = childFrame.convertLocalToGlobal(childTerm_L)
+
+		allGlobalTerms.append(childTerm_G)
+
+	# (N choose 2) splices where N is the number of terminals 
+
+	termPaths_G = []
+	for i in range(len(allGlobalTerms)):
+		term1_G = allGlobalTerms[i]
+		for j in range(len(allGlobalTerms)):
+			term2_G = allGlobalTerms[j]
+
+			splicePair = (term1_G, term2_G)
+			termPaths_G.append(splicePair)
+
+
+	splicedPaths_G = []
+	for termPath in termPaths_G:
+
+		# use splice skeleton to find shortest path 
+		startPose = termPath[0]
+		endPose = termPath[-1]
+
+		minStartDist = 1e100
+		minStartNode = None
+		minEndDist = 1e100
+		minEndNode = None
+		
+		for edge in spliceSkeleton_G.edges():
+		
+			globalNodePoint1 = edge[0]
+			globalNodePoint2 = edge[1]
+
+			dist1 = sqrt((globalNodePoint1[0]-startPose[0])**2 + (globalNodePoint1[1]-startPose[1])**2)
+			dist2 = sqrt((globalNodePoint2[0]-startPose[0])**2 + (globalNodePoint2[1]-startPose[1])**2)
+
+			if dist1 < minStartDist:
+				minStartDist = dist1
+				minStartNode = globalNodePoint1
+
+			if dist2 < minStartDist:
+				minStartDist = dist2
+				minStartNode = globalNodePoint2
+
+			dist1 = sqrt((globalNodePoint1[0]-endPose[0])**2 + (globalNodePoint1[1]-endPose[1])**2)
+			dist2 = sqrt((globalNodePoint2[0]-endPose[0])**2 + (globalNodePoint2[1]-endPose[1])**2)
+
+			if dist1 < minEndDist:
+				minEndDist = dist1
+				minEndNode = globalNodePoint1
+
+			if dist2 < minEndDist:
+				minEndDist = dist2
+				minEndNode = globalNodePoint2
+
+
+		startNode = minStartNode
+		endNode = minEndNode
+
+
+		shortestSpliceTree, shortestSpliceDist = spliceSkeleton_G.shortest_path(endNode)
+		currNode = shortestSpliceTree[startNode]					 
+		splicedSkel = [startNode]
+		while currNode != endNode:
+			splicedSkel.append(currNode)
+			nextNode = shortestSpliceTree[currNode]
+			currNode = nextNode
+		splicedSkel.append(currNode)
+
+		splicedSkel = ensureEnoughPoints(splicedSkel, max_spacing = 0.08, minPoints = 5)
+		spliceSpline1 = SplineFit(splicedSkel, smooth=0.1)
+		splicePoints1 = spliceSpline1.getUniformSamples()
+
+		splicedPaths_G.append(splicePoints1)
+
+	branchTermPaths = termPaths_G
+	"""
+	
+	""" store the splices """
+	branchResult["splices_G"] = deepcopy(splicedPaths_G)
 
 
 	for pathID in branchPathIDs:
