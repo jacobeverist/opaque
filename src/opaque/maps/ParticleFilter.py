@@ -777,7 +777,7 @@ def batchLocalizeParticle(localizeJobs):
 	return knn
 
 
-def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, medialAxis1, initPose0, initPose1, prevMedialAxis0, prevMedialAxis1, prevPose0, prevPose1, pathIDs, nodeID0, nodeID1, particleIndex, hypID = 0, pathPlotCount = 0, branchIndex =0, spliceIndex = 0, branchProbVal = 1.0):
+def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, medialAxis1, initPose0, initPose1, prevMedialAxis0, prevMedialAxis1, prevPose0, prevPose1, pathIDs, nodeID0, nodeID1, particleIndex, hypID = 0, pathPlotCount = 0, branchIndex = None, spliceIndex = 0, branchProbVal = 1.0):
 
 
 	u1 = initGuess0[0]
@@ -830,7 +830,7 @@ def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, me
 
 	utilVal0 = (1.0-contigFrac0) + (isExist1_0 or isExist2_0) + (1.0-contigFrac1) + (isExist1_1 or isExist2_1)
 
-	utilVal0 = utilVal0 * (1.0-branchProbVal)
+	#utilVal0 = utilVal0 * (1.0-branchProbVal)
 
 	#return (particleIndex, icpDist0, resultPose0, lastCost0, matchCount0, currAng0, currU0) + resultArgs0 + (isExist1_0 or isExist2_0,)
 	return (particleIndex, icpDist0, resultPose0, lastCost0, matchCount0, currAng0, currU0) + resultArgs0 + (isExist1_0 or isExist2_0,) + (icpDist1, resultPose1, lastCost1, matchCount1, currAng1, currU1) + resultArgs1 + (isExist1_1 or isExist2_1,) + (utilVal0, branchIndex, spliceIndex, initPose0, initPose1, currSum)
@@ -893,6 +893,8 @@ class Particle:
 		self.branchArcDists = []
 		self.branchControls = []
 
+		self.maxLikelihoodBranch = None
+
 			
 
 	def displacePose(self, pose0, pose1):
@@ -950,6 +952,7 @@ class Particle:
 
 		newParticle.branchArcDists = deepcopy(self.branchArcDists)
 		newParticle.branchControls = deepcopy(self.branchControls)
+		newParticle.maxLikelihoodBranch = deepcopy(self.maxLikelihoodBranch)
 
 		return newParticle
 

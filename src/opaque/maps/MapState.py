@@ -472,42 +472,60 @@ class MapState:
 
 		""" change to the maximum likelihood branch position as well """
 
-		for pathID in allPathIDs:
-			if pathID != 0:
+		""" maximum likelihood pose particle """
+		maxParticle = particleDist2[maxIndex]
+		partBranchTupleIndex = maxParticle.maxLikelihoodBranch
+		branchArcDists = maxParticle.branchArcDists
+		branchControls = maxParticle.branchControls
 
-				""" maximum likelihood pose particle """
-				maxParticle = particleDist2[maxIndex]
+		branchPathIDs = deepcopy(allPathIDs)
+		branchPathIDs.remove(0)
+		branchPathIDs.sort()
 
-				""" maximum likelihood branch point within maximum likelihood pose particle """
-				partBranchIndex = maxParticle.junctionData[pathID]["maxLikelihoodBranch"]
+		branchResult = self.jointBranchEvaluations[partBranchTupleIndex] 
 
-				""" FIXME:  convert to control matrix and local controls """
-				partControlPose = maxParticle.junctionData[pathID]["controlPoseDist"][partBranchIndex]
+		for k in range(len(branchPathIDs)):
 
-				origControlPose = copy(self.pathClasses[pathID]["controlPose"])
-				print "changing path", pathID, "control position from", origControlPose, "to", partControlPose
+			pathID = branchPathIDs[k]
 
-				modControlPose = copy(partControlPose)
+			""" maximum likelihood branch point within maximum likelihood pose particle """
+			#partBranchIndex = maxParticle.junctionData[pathID]["maxLikelihoodBranch"]
 
-				controlPoses = deepcopy(self.getControlPoses())
-				controlPoses[pathID] = origControlPose
-				oldGlobalControlPoses = computeGlobalControlPoses(controlPoses, parentPathIDs)
+			""" FIXME:  convert to control matrix and local controls """
+			#partControlPose = maxParticle.junctionData[pathID]["controlPoseDist"][partBranchIndex]
+			#partControlPose = maxParticle.junctionData[pathID]["controlPoseDist"][partBranchTupleIndex]
 
-				controlPoses = deepcopy(self.getControlPoses())
-				controlPoses[pathID] = modControlPose
-				newGlobalControlPoses = computeGlobalControlPoses(controlPoses, parentPathIDs)
+			arcDist = partBranchTupleIndex[k]
+			controlPose_P = self.branchControlPoses[pathID][arcDist]
 
-				oldControlOrigin1 = Pose(oldGlobalControlPoses[pathID])
-				newControlOrigin1 = Pose(newGlobalControlPoses[pathID])
 
-				""" FIXME:  convert to control matrix and local controls """
-				self.pathClasses[pathID]["controlPose"] = partControlPose
 
-				""" update of canonical branch point from maximum likelihood branch point """
-				partJuncPose = maxParticle.junctionData[pathID]["branchPoseDist"][partBranchIndex]
+			origControlPose = copy(self.pathClasses[pathID]["controlPose"])
+			print "changing path", pathID, "control position from", origControlPose, "to", controlPose_P
 
-				""" FIXME:  was recycling the angle, but now we are regenerating it """
-				self.setLocalJunctionPose(pathID, partJuncPose)
+			#modControlPose = copy(partControlPose)
+
+			#controlPoses = deepcopy(self.getControlPoses())
+			#controlPoses[pathID] = origControlPose
+			#oldGlobalControlPoses = computeGlobalControlPoses(controlPoses, parentPathIDs)
+
+			#controlPoses = deepcopy(self.getControlPoses())
+			#controlPoses[pathID] = modControlPose
+			#newGlobalControlPoses = computeGlobalControlPoses(controlPoses, parentPathIDs)
+
+			##oldControlOrigin1 = Pose(oldGlobalControlPoses[pathID])
+			#newControlOrigin1 = Pose(newGlobalControlPoses[pathID])
+
+			""" FIXME:  convert to control matrix and local controls """
+			self.pathClasses[pathID]["controlPose"] = controlPose_P
+
+			branchPose_L = branchResult["branchPoses_L"][pathID]
+
+			#""" update of canonical branch point from maximum likelihood branch point """
+			#partJuncPose = maxParticle.junctionData[pathID]["branchPoseDist"][partBranchIndex]
+
+			""" FIXME:  was recycling the angle, but now we are regenerating it """
+			self.setLocalJunctionPose(pathID, branchPose_L)
 
 
 		""" update the visible nodes, self.nodePoses """
@@ -722,6 +740,10 @@ class MapState:
 
 		poseData = self.poseData
 
+		""" smoothed and vectored root path """
+		rootSpline = SplineFit(self.paths[0], smooth=0.1)
+		rootSplice = rootSpline.getUniformSamples()
+
 		self.isNoLocalize = False
 		self.resetBranches()
 
@@ -819,6 +841,7 @@ class MapState:
 			
 			for particleIndex in range(len(particleDist2)):
 				part = particleDist2[particleIndex]
+				#part.maxLikelihoodBranch = None 
 				hypPose0 = part.pose0
 
 
@@ -927,6 +950,9 @@ class MapState:
 
 		for particleIndex in range(len(particleDist2)):
 
+			#branchArcDists = part.branchArcDists
+			#branchControls = part.branchControls
+
 			#probDist = []
 			#branchPoseDist = []
 			#controlPoseDist = []
@@ -992,6 +1018,8 @@ class MapState:
 			for arcTuple in arcIndexes:
 				print "arcIndex:", arcTuple
 				branchResult = self.jointBranchEvaluations[arcTuple]
+				totalMatchCount = branchResult["totalMatchCount"]
+				normMatchCount = branchResult["normMatchCount"]
 
 				splices_G = branchResult["splices_G"]
 
@@ -1002,10 +1030,10 @@ class MapState:
 
 					for k in range(numSplices):
 						splice = splices_G[pathID][k]
-						thisSplicedPaths.append((0, 1.0, splice, pathID, arcTuple))
+						thisSplicedPaths.append((arcTuple, normMatchCount, splice, pathID))
 
 			#""" static splices have 1.0 probability """
-			#thisSplicedPaths.append((None, 1.0, self.paths[0], pathID))
+			thisSplicedPaths.append((None, None, rootSplice, pathID))
 
 			print "particle:", particleIndex, ",",  len(thisSplicedPaths), "localize jobs"
 			poseFrame = Pose(hypPose0)
@@ -1025,22 +1053,7 @@ class MapState:
 				probVal = thisSplicedPaths[spliceIndex][1]
 				path = thisSplicedPaths[spliceIndex][2]
 
-			
-
-
-
-				#orientedPath0 = orientPath(path, globalMedial0)
 				orientedPath0 = orientPathLean(path, globalMedial0)
-				#orientedPathSpline0 = SplineFit(orientedPath0, smooth=0.1)
-				#pathU0 = orientedPathSpline0.findU(globalMedialP0)
-				#pathU1 = orientedPathSpline0.findU(globalMedialP1)
-
-				#params0 = [pathU0, oldMedialU0, angGuess0]
-				#params1 = [pathU1, oldMedialU1, angGuess1]
-
-
-
-
 				
 				localizeJobs.append([oldMedialP0, oldMedialU0, 0.0, oldMedialP1, oldMedialU1, 0.0, branchSampleIndex, spliceCount, orientedPath0, medial0_vec, medial1_vec, deepcopy(hypPose0), deepcopy(hypPose1), prevMedial0_vec, prevMedial1_vec, prevHypPose0, prevHypPose1, [], nodeID0, nodeID1, particleIndex, updateCount, self.hypothesisID, probVal])
 
@@ -1073,7 +1086,7 @@ class MapState:
 			utilVal = part[45]
 			spliceIndex = part[47]
 			branchIndex = allSplicedPaths[spliceIndex][0]
-			branchProbVal = allSplicedPaths[spliceIndex][1]
+			normMatchCount = allSplicedPaths[spliceIndex][1]
 			spliceCurve = allSplicedPaths[spliceIndex][2]
 			pathID = allSplicedPaths[spliceIndex][3]
 
@@ -1127,17 +1140,30 @@ class MapState:
 				isReject = True
 
 			if isReject:
-				newUtilVal = 1e100
+				newUtilVal = -1e100
 				listCopy = list(part)
 				listCopy[45] = newUtilVal
 				tupleCopy = tuple(listCopy)
 
 				results[index] = tupleCopy
+			else:
+
+				newProb = (pi-fabs(diffAngle(initPose0[2],newPose0[2])) ) * contigFrac_0 * contigFrac_0 / overlapSum_0
+
+				""" case if splice is root path """
+				if normMatchCount != None:
+					newProb *= normMatchCount
+
+				listCopy = list(part)
+				listCopy[45] = newProb
+				tupleCopy = tuple(listCopy)
+
+				results[index] = tupleCopy
 			
-			print "%d %d %d %d branchProbVal, newUtilVal, overlapSum:" % (self.hypothesisID, particleID, index, spliceIndex), branchProbVal, results[index][45], overlapSum, contigFrac_0, contigFrac_1, initPose0[2], newPose0[2], int(isExist1_0), int(isExist2_0), int(isExist1_1), int(isExist2_1), int(isInterior1_0), int(isInterior2_0), int(isInterior1_1), int(isInterior2_1), isReject, branchIndex
+			print "%d %d %d %d normMatchCount, newUtilVal, overlapSum:" % (self.hypothesisID, particleID, index, spliceIndex), normMatchCount, results[index][45], overlapSum, contigFrac_0, contigFrac_1, initPose0[2], newPose0[2], int(isExist1_0), int(isExist2_0), int(isExist1_1), int(isExist2_1), int(isInterior1_0), int(isInterior2_0), int(isInterior1_1), int(isInterior2_1), isReject, branchIndex
 
 		""" sort by pose particle index followed by utility value """
-		sortedResults = sorted(results, key=itemgetter(0,45), reverse=False)
+		sortedResults = sorted(results, key=itemgetter(0,45), reverse=True)
 
 		print "particle sort"
 		thisParticleID = -1
@@ -1176,8 +1202,8 @@ class MapState:
 
 			utilVal = part[45]
 			spliceIndex = part[47]
-			branchIndex = allSplicedPaths[spliceIndex][0]
-			branchProbVal = allSplicedPaths[spliceIndex][1]
+			branchTupleIndex = allSplicedPaths[spliceIndex][0]
+			normMatchCount = allSplicedPaths[spliceIndex][1]
 			spliceCurve = allSplicedPaths[spliceIndex][2]
 			pathID = allSplicedPaths[spliceIndex][3]
 
@@ -1196,12 +1222,15 @@ class MapState:
 				
 			""" probability is the contigFrac squared """ 
 			newProb = 0.0
-			if utilVal < 1e10:
-				newProb = (pi-fabs(diffAngle(initPose0[2],newPose0[2])) ) * contigFrac_0 * contigFrac_0 / overlapSum_0
-				newProb *= branchProbVal
+			if utilVal > 0.0:
+				newProb = utilVal
+				#newProb = (pi-fabs(diffAngle(initPose0[2],newPose0[2])) ) * contigFrac_0 * contigFrac_0 / overlapSum_0
+				#newProb *= float(normMatchCount)/float(self.maxMatchCount)
 				#utilVal0 = (1.0-contigFrac_0) + (isExist1_0 or isExist2_0) + (1.0-contigFrac_1) + (isExist1_1 or isExist2_1)
+			else:
+				newProb = 0.0
 			
-			print "%d %d %d %d branchProbVal, utilVal, newProb" % (self.hypothesisID, particleID, particleIndex, spliceIndex), branchProbVal, utilVal, newProb, contigFrac_0, overlapSum_0
+			print "%d %d %d %d normMatchCount, utilVal, newProb" % (self.hypothesisID, particleID, particleIndex, spliceIndex), normMatchCount, utilVal, newProb, contigFrac_0, overlapSum_0
 
 			particleObj = particleDist2[particleIndex].copy()
 
@@ -1212,9 +1241,32 @@ class MapState:
 			particleObj.weightVal = newProb
 			particleObj.spliceCurve = spliceCurve
 
+
+
 			""" Change branch if we are within a junction, otherwise, keep the most recent branch index """
-			if branchIndex != None:
-				particleObj.junctionData[pathID]["maxLikelihoodBranch"] = branchIndex
+			if branchTupleIndex != None:
+				#particleObj.junctionData[pathID]["maxLikelihoodBranch"] = branchIndex
+				particleObj.maxLikelihoodBranch = branchTupleIndex
+
+				""" set branch points and control poses """
+				branchResult = self.jointBranchEvaluations[branchTupleIndex] 
+				controlSet = branchResult["controlSet"]
+				branchPoses_L = branchResult["branchPoses_L"]
+
+				controlPoses_G = computeGlobalControlPoses(controlSet, self.getParentHash())
+
+				for pathID in branchPathIDs:
+					branchPose_L = branchPoses_L[pathID]
+					controlPose_G = controlPoses_G[pathID]
+					currFrame = Pose(controlPose_G)
+					branchPose_G = currFrame.convertLocalOffsetToGlobal(branchPose_L)
+					particleObj.junctionData[pathID]["controlPose"] = controlSet[pathID]
+					particleObj.junctionData[pathID]["localJunctionPose"] = branchPose_L
+					particleObj.junctionData[pathID]["globalJunctionPose"] = branchPose_G
+
+			#else:
+			#	particleObj.maxLikelihoodBranch = None 
+
 
 
 			newParticleDist2.append(particleObj)
@@ -1248,32 +1300,6 @@ class MapState:
 				self.isNoLocalize = True
 
 		print "probParticles:", self.isNoLocalize, probParticles 
-
-		""" apply branch probability """
-		probSum2 = 0.0
-		for k in range(len(probParticles)):
-			#part = particleDist2[k]
-			#part = filteredParticles[particleIndex]
-			part = filteredParticles[k]
-
-			""" branch probability """
-			spliceIndex = part[47]
-			branchProbVal = allSplicedPaths[spliceIndex][1]
-
-			probParticles[k] *= branchProbVal
-
-			probSum2 += probParticles[k]
-
-		print "applied branch probability:", probParticles
-
-		""" renormalize """
-		for k in range(len(probParticles)):
-			if probSum2 > 0.0:
-				probParticles[k] /= probSum2
-			else:
-				probParticles[k] = float(1)/float(numParticles)
-
-		print "normalized probParticles:", probParticles 
 
 		""" now resample """
 		resampledParticles2 = []
@@ -1437,15 +1463,26 @@ class MapState:
 
 
 			allPathIDs = self.getPathIDs()
+			branchPathIDs = copy(allPathIDs)
+			branchPathIDs.remove(0)
+			branchPathIDs.sort()
+
+			controlPoses_L = []
+			for pathID in allPathIDs:
+				controlPoses_L.append(deepcopy(part.junctionData[pathID]["controlPose"]))
+
+			controlPoses_G = computeGlobalControlPoses(controlPoses_L, self.getParentHash())
+
+			xP = []
+			yP = []
 			for pathID in allPathIDs:
 
 
-				xP = []
-				yP = []
 				if pathID != 0:
 
 
-					if pathID in part.junctionData.keys():
+					#if pathID in part.junctionData.keys():
+					if False:
 
 						probDist = part.junctionData[pathID]["probDist"]
 						branchPoseDist = part.junctionData[pathID]["branchPoseDist"]
@@ -1466,6 +1503,7 @@ class MapState:
 								maxIndex = k
 
 						modPose0 = deepcopy(controlPoseDist[maxIndex])
+						modPose0 = deepcopy(part.junctionData[pathID]["controlPose"])
 
 						print "probDist:", probDist
 						print "branchPoseDist:", branchPoseDist
@@ -1473,13 +1511,15 @@ class MapState:
 
 					else:
 						#modPose0 = deepcopy(part.junctionData[pathID]["globalJunctionPose"])
-						modPose0 = deepcopy(part.junctionData[pathID]["controlPose"])
+						modPose0 = deepcopy(controlPoses_G[pathID])
+						xP.append(modPose0[0])
+						yP.append(modPose0[1])
 
-					print "modPose0:", modPose0
-					modPose0[2] = 0.0
-					modOrigin0 = Pose(modPose0)
+					#print "modPose0:", modPose0
+					#modPose0[2] = 0.0
+					#modOrigin0 = Pose(modPose0)
 
-					pylab.scatter(xP, yP, color='k', linewidth=1, zorder=10, alpha=0.4)
+			pylab.scatter(xP, yP, color='k', linewidth=1, zorder=10, alpha=0.4)
 
 
 
@@ -2427,19 +2467,19 @@ class MapState:
 		"""
 
 		""" get the maximum value for each of our features """
-		maxCost = -1e100
-		maxMatchCount = -1000
+		self.maxCost = -1e100
+		self.maxMatchCount = -1000
 		for k in range(len(jointResults)):
 			branchResult = jointResults[k]
 
 			totalMatchCount = branchResult["totalMatchCount"]
 			totalCost = branchResult["totalCost"]
 
-			if totalCost > maxCost:
-				maxCost = totalCost
+			if totalCost > self.maxCost:
+				self.maxCost = totalCost
 
-			if maxMatchCount > totalMatchCount:
-				maxMatchCount = totalMatchCount
+			if self.maxMatchCount > totalMatchCount:
+				self.maxMatchCount = totalMatchCount
 
 		for k in range(len(jointResults)):
 			branchResult = jointResults[k]
@@ -2448,8 +2488,8 @@ class MapState:
 			totalCost = branchResult["totalCost"]
 
 			""" compute normalized cost and match count """
-			normMatchCount = float(totalMatchCount) / float(maxMatchCount)
-			normCost = totalCost / maxCost
+			normMatchCount = float(totalMatchCount) / float(self.maxMatchCount)
+			normCost = totalCost / self.maxCost
 
 			branchResult["normMatchCount"] = normMatchCount
 			branchResult["normCost"] = normCost
