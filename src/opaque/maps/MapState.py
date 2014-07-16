@@ -920,9 +920,14 @@ class MapState:
 		jointComboControlSets = list(set(jointComboControlSets))
 		print "jointComboControl:", len(jointComboControlSets)
 
+		time1 = time.time()
+
 		""" precompute the evaluation for branches and cache result """
 		""" each branch point is the max likelihood of each pose particle """
 		self.batchPrecomputeBranches(jointComboControlSets)
+
+		time2 = time.time()
+		print "TIME computeJointBranch", self.hypothesisID, "=", time2-time1
 
 		parentPathIDs = self.getParentHash()
 		localizeJobs = []
@@ -1004,18 +1009,21 @@ class MapState:
 				normMatchCount = branchResult["normMatchCount"]
 
 				splices_G = branchResult["splices_G"]
+				for splice in splices_G:
+					thisSplicedPaths.append((arcTuple, normMatchCount, splice, None))
 
-				for pathID in branchPathIDs:
+				#splices_G = branchResult["splices_G"]
+				#for pathID in branchPathIDs:
 
-					""" 3 splices for this branch """
-					numSplices = len(splices_G[pathID])
+				#	""" 3 splices for this branch """
+				#	numSplices = len(splices_G[pathID])
 
-					for k in range(numSplices):
-						splice = splices_G[pathID][k]
-						thisSplicedPaths.append((arcTuple, normMatchCount, splice, pathID))
+				#	for k in range(numSplices):
+				#		splice = splices_G[pathID][k]
+				#		thisSplicedPaths.append((arcTuple, normMatchCount, splice, pathID))
 
 			#""" static splices have 1.0 probability """
-			thisSplicedPaths.append((None, None, rootSplice, pathID))
+			#thisSplicedPaths.append((None, None, rootSplice, pathID))
 
 			print "particle:", particleIndex, ",",  len(thisSplicedPaths), "localize jobs"
 			poseFrame = Pose(hypPose0)
@@ -1053,7 +1061,7 @@ class MapState:
 
 		time2 = time.time()
 
-		print "batch localize for map hypothesis", self.hypothesisID, "=", time2-time1 
+		print "TIME batchLocalizeParticle", self.hypothesisID, "=", time2-time1 
 		print len(results[0]), "result arguments"
 
 		""" set the rejection criteria """
@@ -1068,7 +1076,7 @@ class MapState:
 			branchIndex = allSplicedPaths[spliceIndex][0]
 			normMatchCount = allSplicedPaths[spliceIndex][1]
 			spliceCurve = allSplicedPaths[spliceIndex][2]
-			pathID = allSplicedPaths[spliceIndex][3]
+			#pathID = allSplicedPaths[spliceIndex][3]
 
 			initPose0 = part[48]
 			initPose1 = part[49]
@@ -1188,7 +1196,7 @@ class MapState:
 			branchTupleIndex = allSplicedPaths[spliceIndex][0]
 			normMatchCount = allSplicedPaths[spliceIndex][1]
 			spliceCurve = allSplicedPaths[spliceIndex][2]
-			pathID = allSplicedPaths[spliceIndex][3]
+			#pathID = allSplicedPaths[spliceIndex][3]
 
 			initPose0 = part[48]
 			initPose1 = part[49]
@@ -2507,8 +2515,9 @@ class MapState:
 
 				allSplices = []
 				splices_G = branchResult["splices_G"]
-				for pathID in branchPathIDs:
-					allSplices += splices_G[pathID]
+				allSplices = splices_G
+				#for pathID in branchPathIDs:
+				#	allSplices += splices_G[pathID]
 				
 
 

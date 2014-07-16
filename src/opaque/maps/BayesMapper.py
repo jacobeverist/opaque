@@ -265,10 +265,14 @@ class BayesMapper:
 				if nodeID % 2 == 1:
 					#hypSet = batchMovePath(hypSet, nodeID, direction)
 
+
 					for pID, currHyp in hypSet.iteritems():
+						time1 = time.time()
 						movePath(currHyp, nodeID, direction, distEst = 1.0)
 						currHyp.batchDisplaceParticles(nodeID-1, nodeID)
 						currHyp.drawPoseParticles()
+						time2 = time.time()
+						print "TIME displace", currHyp.hypothesisID, "=", time2-time1 
 
 				"""
 				for pID, mapHyp in hypSet.iteritems():
@@ -317,9 +321,12 @@ class BayesMapper:
 
 
 			#hypSet = self.addToPaths(hypSet, nodeID1, nodeID2)
+			time1 = time.time()
 			self.particleIDs, hypSet = addToPaths(self.particleIDs, hypSet, nodeID1, nodeID2)
 			for pID, currHyp in hypSet.iteritems():
 				currHyp.drawPoseParticles()
+			time2 = time.time()
+			print "TIME addToPaths =", time2-time1 
 
 			#scurrHyps = self.addToPaths(mapHyp, nodeID1, nodeID2)
 
@@ -342,7 +349,7 @@ class BayesMapper:
 
 				time2 = time.time()
 
-				print "localizePoseParticles time", pID, time2-time1
+				print "TIME localize", pID, "=", time2-time1
 
 			for pID, currHyp in hypSet.iteritems():
 
