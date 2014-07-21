@@ -325,9 +325,9 @@ def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, node
 	" invert one angle so opposite tips have opposite angles "
 	angle1 = normalizeAngle(angle1 + pi)
 
-	#print "ang1:", angle1, angs1
-	#print "ang2:", angle2, angs2
-	#print "diff:", diffAngle(angle1, angle2)
+	print "ang1:", angle1, angs1
+	print "ang2:", angle2, angs2
+	print "diff:", diffAngle(angle1, angle2)
 	
 	distSum = 0.0
 	contigCount = 0
@@ -648,7 +648,7 @@ def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, node
 		#pylab.ylim(-8,8)
 		#pylab.title("nodeID %d: %d %d" % (nodeID, isInterior, isExist))
 		#pylab.title("%d: %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, [%d,%d] [%d,%d]" % (nodeID, maxFront, maxBack, dist1, dist2, matchVar1, matchVar2, angle1, angle2, isExist1, isExist2, isInterior1, isInterior2))
-		pylab.title("%d %s: [%d,%d] [%d,%d] %1.2f %1.2f" % (nodeID, repr(pathIDs), isExist1, isExist2, isInterior1, isInterior2, contigFrac, angDiff2))
+		pylab.title("%d %s: [%d,%d] [%d,%d] %1.2f %1.2f %1.2f %1.2f" % (nodeID, repr(pathIDs), isExist1, isExist2, isInterior1, isInterior2, contigFrac, angDiff2, angle1, angle2))
 		pylab.savefig("multi_departure_%04u_%02u_%04u_%03u_%01u.png" % (nodeID, hypID, pathPlotCount, particleIndex, spliceIndex))
 			
 	print "multi_departure %d: %1.2f %1.2f %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, [%d,%d] [%d,%d], [%d,%d]" % (nodeID, angDiff2, contigFrac, maxFront, maxBack, dist1, dist2, matchVar1, matchVar2, angle1, angle2, isExist1, isExist2, isInterior1, isInterior2, frontDepI, backDepI)

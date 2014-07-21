@@ -670,6 +670,9 @@ def __remote_multiParticle(rank, qin, qout):
 			updateCount = job[21]
 			hypID = job[22]
 			branchProbVal = job[23]
+			landmarks_G = job[24]
+			landmark0_N = job[25]
+			landmark1_N = job[26]
 
 			oldMedialP0 = job[0]
 			oldMedialU0 = job[1]
@@ -701,7 +704,7 @@ def __remote_multiParticle(rank, qin, qout):
 			params0 = [pathU0, oldMedialU0, angGuess0]
 			params1 = [pathU1, oldMedialU1, angGuess1]
 
-			result = multiParticleFitSplice(params0, params1, orientedPath0, medial0, medial1, initPose0, initPose1, prevMedial0, prevMedial1, prevPose0, prevPose1, pathIDs, nodeID0, nodeID1, particleIndex, hypID = hypID, pathPlotCount = updateCount, branchIndex = branchIndex, spliceIndex = spliceIndex, branchProbVal = branchProbVal)
+			result = multiParticleFitSplice(params0, params1, orientedPath0, medial0, medial1, initPose0, initPose1, prevMedial0, prevMedial1, prevPose0, prevPose1, pathIDs, nodeID0, nodeID1, landmarks_G, landmark0_N, landmark1_N, particleIndex, hypID = hypID, pathPlotCount = updateCount, branchIndex = branchIndex, spliceIndex = spliceIndex, branchProbVal = branchProbVal)
 			results.append(result)
 						   
 		# write to output queue
@@ -777,7 +780,7 @@ def batchLocalizeParticle(localizeJobs):
 	return knn
 
 
-def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, medialAxis1, initPose0, initPose1, prevMedialAxis0, prevMedialAxis1, prevPose0, prevPose1, pathIDs, nodeID0, nodeID1, particleIndex, hypID = 0, pathPlotCount = 0, branchIndex = None, spliceIndex = 0, branchProbVal = 1.0):
+def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, medialAxis1, initPose0, initPose1, prevMedialAxis0, prevMedialAxis1, prevPose0, prevPose1, pathIDs, nodeID0, nodeID1, landmarks_G, landmark0_N, landmark1_N, particleIndex, hypID = 0, pathPlotCount = 0, branchIndex = None, spliceIndex = 0, branchProbVal = 1.0):
 
 
 	u1 = initGuess0[0]
@@ -830,10 +833,38 @@ def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, me
 
 	utilVal0 = (1.0-contigFrac0) + (isExist1_0 or isExist2_0) + (1.0-contigFrac1) + (isExist1_1 or isExist2_1)
 
+	frame0 = Pose(resultPose0)
+	frame1 = Pose(resultPose1)
+
+	
+	LANDMARK_THRESH = 1e100
+	poseSum = 0.0
+	landmark0_G = None
+	landmark1_G = None
+
+	if landmark0_N != None:
+		landmark0_G = frame0.convertLocalToGlobal(landmark0_N)
+
+	if landmark1_N != None:
+		landmark1_G = frame1.convertLocalToGlobal(landmark1_N)
+
+	for i in range(len(landmarks_G)):
+		p1 = landmarks_G[i]
+
+		if landmark0_G != None:
+			dist0 = sqrt((p1[0]-landmark0_G[0])**2 + (p1[1]-landmark0_G[1])**2)
+			if dist0 < LANDMARK_THRESH:
+				poseSum += dist0
+
+		if landmark1_G != None:
+			dist1 = sqrt((p1[0]-landmark1_G[0])**2 + (p1[1]-landmark1_G[1])**2)
+			if dist1 < LANDMARK_THRESH:
+				poseSum += dist1
+
 	#utilVal0 = utilVal0 * (1.0-branchProbVal)
 
 	#return (particleIndex, icpDist0, resultPose0, lastCost0, matchCount0, currAng0, currU0) + resultArgs0 + (isExist1_0 or isExist2_0,)
-	return (particleIndex, icpDist0, resultPose0, lastCost0, matchCount0, currAng0, currU0) + resultArgs0 + (isExist1_0 or isExist2_0,) + (icpDist1, resultPose1, lastCost1, matchCount1, currAng1, currU1) + resultArgs1 + (isExist1_1 or isExist2_1,) + (utilVal0, branchIndex, spliceIndex, initPose0, initPose1, currSum)
+	return (particleIndex, icpDist0, resultPose0, lastCost0, matchCount0, currAng0, currU0) + resultArgs0 + (isExist1_0 or isExist2_0,) + (icpDist1, resultPose1, lastCost1, matchCount1, currAng1, currU1) + resultArgs1 + (isExist1_1 or isExist2_1,) + (utilVal0, branchIndex, spliceIndex, initPose0, initPose1, currSum, poseSum)
 
 
 class Particle:

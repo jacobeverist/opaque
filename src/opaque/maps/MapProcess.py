@@ -3,7 +3,7 @@ import ctypes, os, sys
 from SplineFit import SplineFit
 import gen_icp
 from Pose import Pose
-from Splices import batchGlobalMultiFit, getMultiDeparturePoint, orientPath
+from Splices import batchGlobalMultiFit, getMultiDeparturePoint, orientPath, orientPathLean
 from functions import *
 from StableCurve import StableCurve
 import math
@@ -2421,13 +2421,47 @@ def computeLocalDivergence(hypSet, nodeID1, nodeID2):
 		mapHyp.depAngles2 = []
 		mapHyp.contig2 = []
 
+
+
+
+
+		medialAxis1 = mapHyp.poseData.medialAxes[nodeID1]
+		medialSpline1 = SplineFit(medialAxis1, smooth=0.1)
+		medial1_vec = medialSpline1.getUniformSamples()
+		estPose1 = mapHyp.getNodePose(nodeID1)
+		poseFrame1 = Pose(estPose1)
+		globalMedial1 = []
+		for p in medial1_vec:
+			globalMedial1.append(poseFrame1.convertLocalOffsetToGlobal(p))
+
+		medialAxis2 = mapHyp.poseData.medialAxes[nodeID2]
+		medialSpline2 = SplineFit(medialAxis2, smooth=0.1)
+		medial2_vec = medialSpline2.getUniformSamples()
+		estPose2 = mapHyp.getNodePose(nodeID2)
+		poseFrame2 = Pose(estPose2)
+		globalMedial2 = []
+
+		for p in medial2_vec:
+			globalMedial2.append(poseFrame2.convertLocalOffsetToGlobal(p))
 		
 		" COMPUTE DEPARTURE EVENTS FOR EACH OVERLAPPING PATH SECTION "
 		for pathID in orderedPathIDs1:
-			resultSet = mapHyp.getDeparturePoint(mapHyp.trimmedPaths[pathID], nodeID1, plotIter = True)
-			mapHyp.departureResultSet1 = resultSet
+			#resultSet = mapHyp.getDeparturePoint(mapHyp.trimmedPaths[pathID], nodeID1, plotIter = True)
 
-			departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = resultSet
+			trimSpline = SplineFit(mapHyp.trimmedPaths[pathID])
+			path_vec = trimSpline.getUniformSamples()
+
+			#def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, nodeID, pathPlotCount = 0, hypID = 0, particleIndex = 0, spliceIndex = 0, plotIter = False):
+
+			orientedTrimPath = orientPathLean(path_vec, globalMedial1)
+			resultArgs1 = getMultiDeparturePoint(orientedTrimPath, medial1_vec, estPose1, estPose1, orderedPathIDs1, nodeID1, pathPlotCount=pathID, hypID=mapHyp.hypothesisID, plotIter=True)
+			#return departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2
+
+
+			mapHyp.departureResultSet1 = resultArgs1
+
+			departurePoint1, depAngle1, isInterior1, isExist1, discDist1, maxFront, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, maxBack, contigFrac, overlapSum, angDiff2 = resultArgs1
+			#departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = resultSet
 			mapHyp.departures1.append([isExist1,isExist2])
 			mapHyp.interiors1.append([isInterior1, isInterior2])
 			mapHyp.depPoints1.append([departurePoint1, departurePoint2])
@@ -2436,10 +2470,20 @@ def computeLocalDivergence(hypSet, nodeID1, nodeID2):
 			mapHyp.contig1.append((contigFrac, overlapSum))
 
 		for pathID in orderedPathIDs2:
-			resultSet = mapHyp.getDeparturePoint(mapHyp.trimmedPaths[pathID], nodeID2, plotIter = True)
-			mapHyp.departureResultSet2 = resultSet
 
-			departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = resultSet
+			trimSpline = SplineFit(mapHyp.trimmedPaths[pathID])
+			path_vec = trimSpline.getUniformSamples()
+
+			orientedTrimPath = orientPathLean(path_vec, globalMedial2)
+			resultArgs2 = getMultiDeparturePoint(orientedTrimPath, medial2_vec, estPose2, estPose2, orderedPathIDs2, nodeID2, pathPlotCount=pathID, hypID=mapHyp.hypothesisID, plotIter=True)
+
+			mapHyp.departureResultSet2 = resultArgs2
+			departurePoint1, depAngle1, isInterior1, isExist1, discDist1, maxFront, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, maxBack, contigFrac, overlapSum, angDiff2 = resultArgs2
+
+			#resultSet = mapHyp.getDeparturePoint(mapHyp.trimmedPaths[pathID], nodeID2, plotIter = True)
+			#mapHyp.departureResultSet2 = resultSet
+
+			#departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = resultSet
 			mapHyp.departures2.append([isExist1,isExist2])
 			mapHyp.interiors2.append([isInterior1, isInterior2])
 			mapHyp.depPoints2.append([departurePoint1, departurePoint2])

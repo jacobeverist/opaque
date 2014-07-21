@@ -1612,11 +1612,33 @@ class BayesMapper:
 				
 			pylab.plot(xP,yP, '--', color=self.colors[k], linewidth=4)
 
+		allPathIDs = mapHyp.getPathIDs()
+
+		controlPoses_L = {}
+		for pathID in pathIDs:
+			controlPoses_L[pathID] = self.pathClasses[pathID]["controlPose"]
+
+		parentPathIDs = mapHyp.getParentHash()
+		controlPoses_G = computeGlobalControlPoses(controlPoses_L, parentPathIDs)
+
+
+		xP = []
+		yP = []
+		for pathID in allPathIDs:
+			currFrame = Pose(controlPoses_G[pathID])
+			for point_L in mapHyp.localLandmarks[pathID]:
+				point_G = currFrame.convertLocalToGlobal(point_L)
+				xP.append(point_G[0])
+				yP.append(point_G[1])
+
+		pylab.scatter(xP, yP, zorder=9, color='k')
+
+
 		for k in pathIDs:
 
 			globJuncPose = mapHyp.getGlobalJunctionPose(k)
 			if globJuncPose != None:
-				pylab.scatter([globJuncPose[0],], [globJuncPose[1],], color='k', zorder=10)
+				pylab.scatter([globJuncPose[0],], [globJuncPose[1],], color='m', zorder=10)
 
 		self.plotEnv()
 		

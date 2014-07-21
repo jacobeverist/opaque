@@ -314,6 +314,7 @@ class MapState:
 		self.hulls = {0 : []}
 		self.localPaths = {0 : []}
 		self.localHulls = {0 : []}
+		self.localLandmarks = {0 : {}}
 
 		""" intermediate data structure for computing the shoot skeleton """
 		self.localLeaf2LeafPathJunctions = {}
@@ -1007,10 +1008,58 @@ class MapState:
 				branchResult = self.jointBranchEvaluations[arcTuple]
 				totalMatchCount = branchResult["totalMatchCount"]
 				normMatchCount = branchResult["normMatchCount"]
+				normLandmark = branchResult["normLandmark"]
+				landmarks_G = branchResult["landmarks_G"]
+
+				controlPoses = branchResult["controlSet"]
+				controlPoses_G = computeGlobalControlPoses(controlPoses, parentPathIDs)
+
+
+				""" collect landmarks that we can localize against """
+				candLandmarks_G = []
+				landmark0_N = None
+				landmark1_N = None
+				for pathID in pathIDs:
+
+					nodeSet = self.getNodes(pathID)
+					currFrame_L = Pose(controlPoses[pathID])
+
+					for nodeID in nodeSet:
+
+						landmarkPoint_N = self.nodeLandmarks[pathID][nodeID]
+
+						currFrame_G = Pose(controlPoses_G[pathID])
+						nodePose_L = self.pathClasses[pathID]["localNodePoses"][nodeID]
+						poseFrame_L = Pose(nodePose_L)
+
+						if landmarkPoint_N != None and nodeID != nodeID0 and nodeID != nodeID1:
+							landmarkPoint_L = poseFrame_L.convertLocalToGlobal(landmarkPoint_N)
+							landmarkPoint_G = currFrame_G.convertLocalToGlobal(landmarkPoint_L)
+							candLandmarks_G.append(landmarkPoint_G)
+
+						if nodeID == nodeID0:
+							landmark0_N = self.nodeLandmarks[pathID][nodeID]
+
+						if nodeID == nodeID1:
+							landmark1_N = self.nodeLandmarks[pathID][nodeID]
+
+
+
+				#LANDMARK_THRESH = 1e100
+				#distSum = 0.0
+				#for i in range(len(landmarks_G)):
+				#	p1 = landmarks_G[i]
+				#	for j in range(i+1, len(landmarks_G)):
+				#		p2 = landmarks_G[j]
+				#		dist = sqrt((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2)
+
+				#		if dist < LANDMARK_THRESH:
+				#			distSum += dist
+
 
 				splices_G = branchResult["splices_G"]
 				for splice in splices_G:
-					thisSplicedPaths.append((arcTuple, normMatchCount, splice, None))
+					thisSplicedPaths.append((arcTuple, normMatchCount*normLandmark, splice, None, candLandmarks_G))
 
 				#splices_G = branchResult["splices_G"]
 				#for pathID in branchPathIDs:
@@ -1042,10 +1091,11 @@ class MapState:
 				branchSampleIndex = thisSplicedPaths[spliceIndex][0]
 				probVal = thisSplicedPaths[spliceIndex][1]
 				path = thisSplicedPaths[spliceIndex][2]
+				landmarks_G = thisSplicedPaths[spliceIndex][4]
 
 				orientedPath0 = orientPathLean(path, globalMedial0)
 				
-				localizeJobs.append([oldMedialP0, oldMedialU0, 0.0, oldMedialP1, oldMedialU1, 0.0, branchSampleIndex, spliceCount, orientedPath0, medial0_vec, medial1_vec, deepcopy(hypPose0), deepcopy(hypPose1), prevMedial0_vec, prevMedial1_vec, prevHypPose0, prevHypPose1, [], nodeID0, nodeID1, particleIndex, updateCount, self.hypothesisID, probVal])
+				localizeJobs.append([oldMedialP0, oldMedialU0, 0.0, oldMedialP1, oldMedialU1, 0.0, branchSampleIndex, spliceCount, orientedPath0, medial0_vec, medial1_vec, deepcopy(hypPose0), deepcopy(hypPose1), prevMedial0_vec, prevMedial1_vec, prevHypPose0, prevHypPose1, [], nodeID0, nodeID1, particleIndex, updateCount, self.hypothesisID, probVal, landmarks_G, landmark0_N, landmark1_N])
 
 				self.pathPlotCount2 += 1
 				spliceCount += 1
@@ -1063,6 +1113,13 @@ class MapState:
 
 		print "TIME batchLocalizeParticle", self.hypothesisID, "=", time2-time1 
 		print len(results[0]), "result arguments"
+
+		maxLandmarkSum = 0.0
+		for index in range(len(results)):
+			part = results[index]
+			poseLandmarkSum = part[51]
+			if poseLandmarkSum > maxLandmarkSum:
+				maxLandmarkSum = poseLandmarkSum
 
 		""" set the rejection criteria """
 		for index in range(len(results)):
@@ -1082,6 +1139,7 @@ class MapState:
 			initPose1 = part[49]
 
 			overlapSum = part[50]
+			poseLandmarkSum = part[51]
 
 
 			newPose0 = part[2]
@@ -1136,7 +1194,12 @@ class MapState:
 				results[index] = tupleCopy
 			else:
 
-				newProb = (pi-fabs(diffAngle(initPose0[2],newPose0[2])) ) * contigFrac_0 
+				""" check to avoid divide by zero """
+				if maxLandmarkSum > poseLandmarkSum:
+					newProb = (pi-fabs(diffAngle(initPose0[2],newPose0[2])) ) * contigFrac_0  * ((maxLandmarkSum-poseLandmarkSum)/maxLandmarkSum)
+				else:
+					newProb = (pi-fabs(diffAngle(initPose0[2],newPose0[2])) ) * contigFrac_0
+
 				#newProb = (pi-fabs(diffAngle(initPose0[2],newPose0[2])) ) * contigFrac_0 * contigFrac_0 / overlapSum_0
 
 				""" case if splice is root path """
@@ -1543,7 +1606,8 @@ class MapState:
 			p1 = poseOrigin0.convertLocalToGlobal(p)
 			xP.append(p1[0])
 			yP.append(p1[1])
-		pylab.plot(xP,yP,color='k', zorder=9, alpha=0.2)
+		#pylab.plot(xP,yP,color='k', zorder=9, alpha=0.2)
+		pylab.plot(xP,yP,color='k', zorder=10, linewidth=1)
 
 		xP = []
 		yP = []
@@ -1551,7 +1615,8 @@ class MapState:
 			p1 = poseOrigin1.convertLocalToGlobal(p)
 			xP.append(p1[0])
 			yP.append(p1[1])
-		pylab.plot(xP,yP,color='k', zorder=9, alpha=0.2)
+		#pylab.plot(xP,yP,color='k', zorder=9, alpha=0.2)
+		pylab.plot(xP,yP,color='k', zorder=10, linewidth=1)
 
 		
 		pylab.xlim(-6,16.48)
@@ -1656,6 +1721,7 @@ class MapState:
 
 		newObj.localPaths = deepcopy(self.localPaths)
 		newObj.localHulls = deepcopy(self.localHulls)
+		newObj.localLandmarks = deepcopy(self.localLandmarks)
 		newObj.localLeaf2LeafPathJunctions = deepcopy(self.localLeaf2LeafPathJunctions) 
 
 		return newObj
@@ -2430,7 +2496,8 @@ class MapState:
 				thisControlPoses[pathID] = cPose
 				thisArcDists[pathID] = arcDist
 
-			jointBranchJobs.append((localPathSegsByID, self.localPaths, localSkeletons, thisControlPoses, junctionPoses, parentPathIDs, thisArcDists, len(self.nodePoses)-1, self.hypothesisID ))
+			#self.localLandmarks
+			jointBranchJobs.append((localPathSegsByID, self.localPaths, localSkeletons, thisControlPoses, junctionPoses, self.localLandmarks, parentPathIDs, thisArcDists, len(self.nodePoses)-1, self.hypothesisID ))
 
 
 		jointResults = batchJointBranch(jointBranchJobs)
@@ -2460,11 +2527,16 @@ class MapState:
 		""" get the maximum value for each of our features """
 		self.maxCost = -1e100
 		self.maxMatchCount = -1000
+		self.maxLandmarkCost = -1e100
 		for k in range(len(jointResults)):
 			branchResult = jointResults[k]
 
 			totalMatchCount = branchResult["totalMatchCount"]
 			totalCost = branchResult["totalCost"]
+			landmarkCost = branchResult["landmarkCost"]
+
+			if landmarkCost > self.maxLandmarkCost:
+				self.maxLandmarkCost = landmarkCost
 
 			if totalCost > self.maxCost:
 				self.maxCost = totalCost
@@ -2477,13 +2549,17 @@ class MapState:
 
 			totalMatchCount = branchResult["totalMatchCount"]
 			totalCost = branchResult["totalCost"]
+			landmarkCost = branchResult["landmarkCost"]
 
 			""" compute normalized cost and match count """
 			normMatchCount = float(totalMatchCount) / float(self.maxMatchCount)
 			normCost = totalCost / self.maxCost
 
+			normLandmark = (self.maxLandmarkCost-landmarkCost)/ self.maxLandmarkCost
+
 			branchResult["normMatchCount"] = normMatchCount
 			branchResult["normCost"] = normCost
+			branchResult["normLandmark"] = normLandmark
 
 			""" build indexing tuple """
 			arcDists = branchResult["arcDists"]
@@ -2873,7 +2949,49 @@ class MapState:
 	""" generate the paths from the node and pose information """
 	@logFunction
 	def generatePaths(self):
-		
+
+		pathIDs = self.getPathIDs()
+		controlPoses = {}
+		for pathID in pathIDs:
+			controlPoses[pathID] = self.pathClasses[pathID]["controlPose"]
+
+		""" store landmark points into their proper shoots """
+		self.localLandmarks = {}
+		self.nodeLandmarks = {}
+		for pathID in pathIDs:
+			self.localLandmarks[pathID] = []
+			self.nodeLandmarks[pathID] = {}
+
+			nodeSet = self.getNodes(pathID)
+			for nodeID in nodeSet:
+
+				currFrame_L = Pose(controlPoses[pathID])
+				nodePose_L = self.pathClasses[pathID]["localNodePoses"][nodeID]
+				poseFrame_L = Pose(nodePose_L)
+
+				spatialFeature = self.poseData.spatialFeatures[nodeID][0]
+
+				landmarkPoint_N = None
+				landmarkPoint_L = None
+
+				if spatialFeature["bloomPoint"] != None:
+					landmarkPoint_N = spatialFeature["bloomPoint"]
+					landmarkPoint_L = poseFrame_L.convertLocalToGlobal(landmarkPoint_N)
+
+				elif spatialFeature["archPoint"] != None:
+					landmarkPoint_N = spatialFeature["archPoint"]
+					landmarkPoint_L = poseFrame_L.convertLocalToGlobal(landmarkPoint_N)
+
+
+				if landmarkPoint_L != None:
+					self.localLandmarks[pathID].append(landmarkPoint_L)
+
+				self.nodeLandmarks[pathID][nodeID] = landmarkPoint_N
+
+
+		print self.hypothesisID, "landmarks:", self.localLandmarks
+
+	
 		" COMPUTE MEDIAL AXIS FROM UNION OF PATH-CLASSIFIED NODES "
 		self.paths = {}
 		self.hulls = {}
@@ -2889,6 +3007,7 @@ class MapState:
 										self.pathClasses[pathID]["localJunctionPose"],
 										self.getNodes(pathID),
 										self.pathClasses[pathID]["localNodePoses"],
+										self.localLandmarks[pathID],
 										self.hypothesisID,
 										self.colors[pathID],
 										self.topCount,
@@ -2903,8 +3022,6 @@ class MapState:
 
 			self.topCount += 1
 			
-
-
 		localSkeletons = {}
 		controlPoses = {}
 		junctionPoses = {}
@@ -2943,6 +3060,7 @@ class MapState:
 				globalHull.append(globalP)
 
 			self.hulls[pathID] = globalHull
+
 
 		#self.paths[pathID] = results[1]
 		#self.hulls[pathID] = results[2]
@@ -3350,6 +3468,7 @@ class MapState:
 			p.addNode(nodeID, pathID, nodePose_C)
 
 		print pathID, "has nodes", self.pathClasses[pathID]["nodeSet"]
+
 
 		self.isChanged = True
 
@@ -4224,7 +4343,8 @@ class MapState:
 		poseOrigin = Pose(estPose2)
 		
 		medialSpline2 = SplineFit(medial2, smooth=0.1)
-		points2 = medialSpline2.getUniformSamples(interpAngle=True)
+		#points2 = medialSpline2.getUniformSamples(interpAngle=True)
+		points2 = medialSpline2.getUniformSamples()
 
 		points2_offset = []
 		for p in points2:

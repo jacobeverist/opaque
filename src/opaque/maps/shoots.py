@@ -630,7 +630,7 @@ def computeGlobalControlPoses(controlPoses, parentPathIDs):
 	return finalPoses
 
 @logFunction
-def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePoses, hypothesisID, color, topCount, plotIter = False):
+def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePoses, localLandmarks, hypothesisID, color, topCount, plotIter = False):
 	
 	print "computeShootSkeleton(", pathID, globalJunctionPose, hypothesisID, topCount, ")"
 
@@ -1146,6 +1146,7 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 	leaf2LeafPathJunctions["juncDesc"] = juncDesc
 
 	
+	maxNodeID = max(nodeSet)
 	if plotIter:
 		pylab.clf()
 
@@ -1200,8 +1201,8 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 		
 		pylab.axis("equal")
 		pylab.title("Path %d %d %s %s %s" % (hypothesisID, pathID, sizes,bufStr1,bufStr2))
-		pylab.savefig("medialOut2_%02u_%04u.png" % (hypothesisID, topCount))
-		print "saving medialOut2_%02u_%04u.png" % (hypothesisID, topCount)
+		pylab.savefig("medialOut2_%02u_%03u_%04u.png" % (hypothesisID, maxNodeID, topCount))
+		print "saving medialOut2_%02u_%03u_%04u.png" % (hypothesisID, maxNodeID, topCount)
 
 		" 1) plot the pose of local splines and postures "
 		" 2) plot the alpha shape of the union of pose alpha shapes and medial axis tree "
@@ -1297,18 +1298,26 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 			
 		pylab.plot(xP,yP, '--', color=color, linewidth=4)
 
+		xP = []
+		yP = []
+		for point_L in localLandmarks:
+			xP.append(point_L[0])
+			yP.append(point_L[1])
+
+		pylab.scatter(xP, yP, zorder=9, color='k')
+
 		#globalJunctionPose = self.getGlobalJunctionPose(pathID)
 		if globalJunctionPose != None:
-			pylab.scatter([globalJunctionPose[0],], [globalJunctionPose[1],], color='k', zorder=10)
+			pylab.scatter([globalJunctionPose[0],], [globalJunctionPose[1],], color='m', zorder=10)
 
 		#self.plotEnv()
 		
 		print "pathAndHull:", topCount
 
 		pylab.axis("equal")
-		pylab.title("Path %d %d" % (hypothesisID, pathID))
+		pylab.title("Path %d %d %d" % (hypothesisID, pathID, maxNodeID))
 		#pylab.title("paths: %s numNodes: %d %d, hyp %d %3.2f" % (repr(mapHyp.getPathIDs()), poseData.numNodes, highestNodeID, mapHyp.hypothesisID, mapHyp.utility))
-		pylab.savefig("pathAndHull_%02u_%04u.png" % (hypothesisID, topCount))
+		pylab.savefig("pathAndHull_%02u_%03u_%04u.png" % (hypothesisID, maxNodeID, topCount))
 
 		#self.topCount += 1
 
@@ -1793,12 +1802,13 @@ def __remote_multiJointBranch(rank, qin, qout):
 			localSkeletons = job[2]
 			controlPoses = job[3]
 			junctionPoses = job[4]
-			parentPathIDs = job[5]
-			arcDists = job[6]
-			numNodes = job[7]
-			hypID = job[8]
+			landmarks = job[5]
+			parentPathIDs = job[6]
+			arcDists = job[7]
+			numNodes = job[8]
+			hypID = job[9]
 
-			result = computeJointBranch(localPathSegs, localPaths, localSkeletons, controlPoses, junctionPoses, parentPathIDs, arcDists, numNodes, hypID)
+			result = computeJointBranch(localPathSegs, localPaths, localSkeletons, controlPoses, junctionPoses, landmarks, parentPathIDs, arcDists, numNodes, hypID)
 			#result = None
 
 			results.append(result)
@@ -3664,7 +3674,7 @@ def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, 
 
 
 @logFunction
-def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPoses, junctionPoses, parentPathIDs, arcDists, numNodes=0, hypothesisID=0):
+def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPoses, junctionPoses, landmarks, parentPathIDs, arcDists, numNodes=0, hypothesisID=0):
 
 	newBranchPoses_L = {0:None}
 	newBranchPoses_G = {0:None}
@@ -3675,6 +3685,7 @@ def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPos
 	newArcDist = 0.0
 
 	""" operate only the non-root skeletons """
+	allPathIDs = deepcopy(parentPathIDs.keys())
 	branchPathIDs = deepcopy(parentPathIDs.keys())
 	branchPathIDs.remove(0)
 	branchPathIDs.sort()
@@ -3771,9 +3782,9 @@ def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPos
 		dist2 = sqrt((branchPose_L[0]-trimPath_L[-1][0])**2 + (branchPose_L[1]-trimPath_L[-1][1])**2)
 
 		if dist1 < dist2:
-			childTerm_L = trimPath_L[0]
-		else:
 			childTerm_L = trimPath_L[-1]
+		else:
+			childTerm_L = trimPath_L[0]
 
 		childTerm_G = childFrame.convertLocalToGlobal(childTerm_L)
 
@@ -3869,6 +3880,27 @@ def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPos
 	branchResult["trimmedPaths"] = trimmedPaths
 	branchResult["longestPaths"] = longestPaths
 
+	landmarks_G = []
+	for pathID in allPathIDs:
+		currFrame = Pose(controlPoses_G[pathID])
+		for point_L in landmarks[pathID]:
+			point_G = currFrame.convertLocalToGlobal(point_L)
+			landmarks_G.append(point_G)
+
+	LANDMARK_THRESH = 1e100
+	distSum = 0.0
+	for i in range(len(landmarks_G)):
+		p1 = landmarks_G[i]
+		for j in range(i+1, len(landmarks_G)):
+			p2 = landmarks_G[j]
+			dist = sqrt((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2)
+
+			if dist < LANDMARK_THRESH:
+				distSum += dist
+
+	branchResult["landmarkCost"] = distSum
+	branchResult["landmarks_G"] = landmarks_G
+
 	#if plotIter:
 	if True:
 
@@ -3884,14 +3916,14 @@ def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPos
 			trimPath_L = trimmedPaths[pathID]
 
 
-			#for splicePath in newSplices:
+			for splicePath in splicedPaths_G:
 
-			#	xP = []
-			#	yP = []
-			#	for p in splicePath:
-			#		xP.append(p[0])
-			#		yP.append(p[1])
-			#	pylab.plot(xP,yP, color='k', alpha=0.8)
+				xP = []
+				yP = []
+				for p in splicePath:
+					xP.append(p[0])
+					yP.append(p[1])
+				pylab.plot(xP,yP, color='r', zorder=10, alpha=0.5)
 
 
 			xP = []
@@ -3930,12 +3962,23 @@ def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPos
 				pylab.scatter(xP,yP, color='r')
 
 			pylab.scatter([newBranchPoses_G[pathID][0],], [newBranchPoses_G[pathID][1],], color='m')
-			pylab.scatter([controlPoses_G[pathID][0],], [controlPoses_G[pathID][1],], color='b')
+			#pylab.scatter([controlPoses_G[pathID][0],], [controlPoses_G[pathID][1],], color='b')
 
+
+		xP = []
+		yP = []
+		for pathID in allPathIDs:
+			currFrame = Pose(controlPoses_G[pathID])
+			for point_L in landmarks[pathID]:
+				point_G = currFrame.convertLocalToGlobal(point_L)
+				xP.append(point_G[0])
+				yP.append(point_G[1])
+
+		pylab.scatter(xP, yP, color='k')
 
 
 		pylab.axis("equal")
-		pylab.title("hyp %d nodeID %d %1.2f %d " % ( hypothesisID, numNodes, newBranchPoses_L[pathID][2], totalMatchCount ))
+		pylab.title("hyp %d nodeID %d %1.2f %d %1.2f" % ( hypothesisID, numNodes, newBranchPoses_L[pathID][2], totalMatchCount, distSum ))
 
 		nameStr = "computeJointBranch_%04u_%04u_%04u"
 		arcDistList = []
