@@ -935,6 +935,28 @@ class MapState:
 		allSplicedPaths = []
 		spliceCount = 0
 
+
+		""" collect landmarks that we can localize against for current nodes """
+		landmark0_N = None
+		landmark1_N = None
+		for pathID in pathIDs:
+
+			nodeSet = self.getNodes(pathID)
+			for nodeID in nodeSet:
+
+				landmarkPoint_N = self.nodeLandmarks[pathID][nodeID]
+
+				nodePose_L = self.pathClasses[pathID]["localNodePoses"][nodeID]
+				poseFrame_L = Pose(nodePose_L)
+
+				if nodeID == nodeID0:
+					landmark0_N = self.nodeLandmarks[pathID][nodeID]
+
+				if nodeID == nodeID1:
+					landmark1_N = self.nodeLandmarks[pathID][nodeID]
+
+
+
 		for particleIndex in range(len(particleDist2)):
 
 			#branchArcDists = part.branchArcDists
@@ -1017,8 +1039,6 @@ class MapState:
 
 				""" collect landmarks that we can localize against """
 				candLandmarks_G = []
-				landmark0_N = None
-				landmark1_N = None
 				for pathID in pathIDs:
 
 					nodeSet = self.getNodes(pathID)
@@ -1037,13 +1057,6 @@ class MapState:
 							landmarkPoint_G = currFrame_G.convertLocalToGlobal(landmarkPoint_L)
 							candLandmarks_G.append(landmarkPoint_G)
 
-						if nodeID == nodeID0:
-							landmark0_N = self.nodeLandmarks[pathID][nodeID]
-
-						if nodeID == nodeID1:
-							landmark1_N = self.nodeLandmarks[pathID][nodeID]
-
-
 
 				#LANDMARK_THRESH = 1e100
 				#distSum = 0.0
@@ -1059,7 +1072,7 @@ class MapState:
 
 				splices_G = branchResult["splices_G"]
 				for splice in splices_G:
-					thisSplicedPaths.append((arcTuple, normMatchCount*normLandmark, splice, None, candLandmarks_G))
+					thisSplicedPaths.append((arcTuple, normMatchCount*normLandmark, splice, None, []))
 
 				#splices_G = branchResult["splices_G"]
 				#for pathID in branchPathIDs:
@@ -1072,7 +1085,8 @@ class MapState:
 				#		thisSplicedPaths.append((arcTuple, normMatchCount, splice, pathID))
 
 			#""" static splices have 1.0 probability """
-			#thisSplicedPaths.append((None, None, rootSplice, pathID))
+			if len(thisSplicedPaths) == 0:
+				thisSplicedPaths.append((None, 1.0, rootSplice, None, []))
 
 			print "particle:", particleIndex, ",",  len(thisSplicedPaths), "localize jobs"
 			poseFrame = Pose(hypPose0)
@@ -2552,10 +2566,20 @@ class MapState:
 			landmarkCost = branchResult["landmarkCost"]
 
 			""" compute normalized cost and match count """
-			normMatchCount = float(totalMatchCount) / float(self.maxMatchCount)
-			normCost = totalCost / self.maxCost
+			if self.maxMatchCount > 0:
+				normMatchCount = float(totalMatchCount) / float(self.maxMatchCount)
+			else:
+				normMatchCount = 1.0
 
-			normLandmark = (self.maxLandmarkCost-landmarkCost)/ self.maxLandmarkCost
+			if self.maxMatchCount > 0:
+				normCost = totalCost / self.maxCost
+			else:
+				normCost = 1.0
+
+			if self.maxLandmarkCost > 0:
+				normLandmark = (self.maxLandmarkCost-landmarkCost)/ self.maxLandmarkCost
+			else:
+				normLandmark = 1.0
 
 			branchResult["normMatchCount"] = normMatchCount
 			branchResult["normCost"] = normCost
@@ -3492,7 +3516,7 @@ class MapState:
 		self.isChanged = True		
 
 	@logFunction
-	def addPath(self, parentID, branchNodeID, localDivergencePose_R):
+	def addPath(self, branchNodeID, localDivergencePose_R):
 
 		"""
 
@@ -3512,7 +3536,7 @@ class MapState:
 		"""
 
 
-		print "addPath(", parentID, branchNodeID, localDivergencePose_R
+		print "addPath(", branchNodeID, localDivergencePose_R
 		
 		""" the raw pose and posture pose """
 		nodePose_G = self.getNodePose(branchNodeID)
@@ -4986,7 +5010,7 @@ class MapState:
 				junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
 
 				poseOrigin = Pose(self.nodeRawPoses[branchNodeID])
-				newPathID = self.addPath(pathID, branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
+				newPathID = self.addPath(branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
 				pathBranchID = newPathID
 				isBranch = True
 				isNew = True
@@ -5060,7 +5084,7 @@ class MapState:
 
 					poseOrigin = Pose(self.nodeRawPoses[branchNodeID])
 					
-					newPathID = self.addPath(pathID, branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
+					newPathID = self.addPath(branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
 
 					pathBranchIDs[0] = newPathID
 					pathBranchIDs[1] = newPathID
@@ -5082,7 +5106,7 @@ class MapState:
 						junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
 
 						poseOrigin = Pose(self.nodeRawPoses[branchNodeID])
-						newPathID = self.addPath(pathID, branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
+						newPathID = self.addPath(branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
 						pathBranchIDs[0] = newPathID
 						isBranch[0] = True
 						isNew[0] = True
@@ -5097,7 +5121,7 @@ class MapState:
 						junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
 
 						poseOrigin = Pose(self.nodeRawPoses[branchNodeID])
-						newPathID = self.addPath(pathID, branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
+						newPathID = self.addPath(branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
 						pathBranchIDs[1] = newPathID
 						isBranch[1] = True
 						isNew[1] = True
@@ -5129,7 +5153,7 @@ class MapState:
 						junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
 
 						poseOrigin = Pose(self.nodeRawPoses[branchNodeID])
-						newPathID1 = self.addPath(pathID, branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
+						newPathID1 = self.addPath(branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
 						pathBranchIDs[0] = newPathID1
 						isBranch[0] = True
 						isNew[0] = True
@@ -5143,7 +5167,7 @@ class MapState:
 						junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
 
 						poseOrigin = Pose(self.nodeRawPoses[branchNodeID])
-						newPathID2 = self.addPath(pathID, branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
+						newPathID2 = self.addPath(branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
 						pathBranchIDs[1] = newPathID2
 						isBranch[1] = True
 						isNew[1] = True
@@ -5160,7 +5184,7 @@ class MapState:
 						junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
 
 						poseOrigin = Pose(self.nodeRawPoses[branchNodeID])
-						newPathID = self.addPath(pathID, branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
+						newPathID = self.addPath(branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
 						pathBranchIDs[0] = newPathID
 						isBranch[0] = True
 						isNew[0] = True
@@ -5175,7 +5199,7 @@ class MapState:
 						junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
 
 						poseOrigin = Pose(self.nodeRawPoses[branchNodeID])
-						newPathID = self.addPath(pathID, branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
+						newPathID = self.addPath(branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
 						pathBranchIDs[1] = newPathID
 						isBranch[1] = True
 						isNew[1] = True
@@ -5205,7 +5229,7 @@ class MapState:
 
 
 					poseOrigin = Pose(self.nodeRawPoses[branchNodeID])
-					newPathID = self.addPath(pathID, branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
+					newPathID = self.addPath(branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
 					pathBranchIDs[0] = newPathID
 					pathBranchIDs[1] = newPathID
 					isBranch[0] = True
@@ -5225,7 +5249,7 @@ class MapState:
 						junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
 
 						poseOrigin = Pose(self.nodeRawPoses[branchNodeID])
-						newPathID = self.addPath(pathID, branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
+						newPathID = self.addPath(branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
 						pathBranchIDs[0] = newPathID
 						isBranch[0] = True
 						isNew[0] = True
@@ -5251,7 +5275,7 @@ class MapState:
 					junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
 
 					poseOrigin = Pose(self.nodeRawPoses[branchNodeID])
-					newPathID = self.addPath(pathID, branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
+					newPathID = self.addPath(branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
 					pathBranchIDs[0] = newPathID
 					pathBranchIDs[1] = newPathID
 					isBranch[0] = True
@@ -5272,7 +5296,7 @@ class MapState:
 						junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
 
 						poseOrigin = Pose(self.nodeRawPoses[branchNodeID])
-						newPathID = self.addPath(pathID, branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
+						newPathID = self.addPath(branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
 						pathBranchIDs[1] = newPathID
 						isBranch[1] = True
 						isNew[1] = True
