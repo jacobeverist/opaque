@@ -1436,7 +1436,9 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 @logFunction
 def spliceSkeletons(localSkeletons, controlPoses, junctionPoses, parentPathIDs):
 
-	SPLICE_DIST = 0.05
+	#SPLICE_DIST = 0.05
+	SPLICE_DIST = 0.2
+
 
 	globalSkeletons = {}
 	junctionNodes = {}

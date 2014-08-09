@@ -2558,6 +2558,9 @@ class MapState:
 			if totalMatchCount > self.maxMatchCount:
 				self.maxMatchCount = totalMatchCount
 
+		""" add slight value so that maximum normalized landmark cost is greater than zero """
+		self.maxLandmarkCost += 0.1
+
 		for k in range(len(jointResults)):
 			branchResult = jointResults[k]
 
