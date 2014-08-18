@@ -119,6 +119,10 @@ def batchDisplaceParticles(displaceJobs):
 	for tmp in _knn:
 		knn += tmp
 
+	for p in pool_dispPosePart:
+		p.terminate()
+	pool_dispPosePart = []
+
 	print "returning"
 	return knn
 
@@ -147,9 +151,9 @@ def __remote_displaceParticle(rank, qin, qout):
 
 	while 1:
 		# read input queue (block until data arrives)
+		results = []
 		nc, args = qin.get()
 
-		results = []
 		for job in args:
 			
 			#[particleIndex, nodeID3, prevPose0, prevPose1, initPose2, initPose3, supportLine, pathSplices2, pathSplices3]
@@ -640,11 +644,11 @@ def __remote_multiParticle(rank, qin, qout):
 
 	while 1:
 		# read input queue (block until data arrives)
+		results = []
 		nc, args = qin.get()
 		#print rank, "received", nc, args
 		# process data
 		#knn = __do_nothing(data, nc, someArg2, someArg3)
-		results = []
 		for job in args:
 
 			#localizeJobs.append([pathU0, oldMedialU0, 0.0, pathU1, oldMedialU1, 0.0, spliceIndex, deepcopy(orientedPath0), deepcopy(medial0), deepcopy(medial1), deepcopy(hypPose0), deepcopy(hypPose1), [], nodeID0, particleIndex, updateCount, self.hypothesisID])
@@ -776,6 +780,10 @@ def batchLocalizeParticle(localizeJobs):
 	for tmp in _knn:
 		knn += tmp
 
+	for p in pool_posePart:
+		p.terminate()
+	pool_posePart = []
+
 	print "returning"
 	return knn
 
@@ -837,7 +845,9 @@ def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, me
 	frame1 = Pose(resultPose1)
 
 	
-	LANDMARK_THRESH = 1e100
+	#LANDMARK_THRESH = 1e100
+	LANDMARK_THRESH = 3.0
+	CLOSE_THRESH = 0.3
 	poseSum = 0.0
 	landmark0_G = None
 	landmark1_G = None
@@ -854,12 +864,18 @@ def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, me
 		if landmark0_G != None:
 			dist0 = sqrt((p1[0]-landmark0_G[0])**2 + (p1[1]-landmark0_G[1])**2)
 			if dist0 < LANDMARK_THRESH:
-				poseSum += dist0
+				if dist0 > CLOSE_THRESH:
+					poseSum += 10.0*dist0
+				else:
+					poseSum += dist0
 
 		if landmark1_G != None:
 			dist1 = sqrt((p1[0]-landmark1_G[0])**2 + (p1[1]-landmark1_G[1])**2)
 			if dist1 < LANDMARK_THRESH:
-				poseSum += dist1
+				if dist1 > CLOSE_THRESH:
+					poseSum += 10.0*dist1
+				else:
+					poseSum += dist1
 
 	#utilVal0 = utilVal0 * (1.0-branchProbVal)
 

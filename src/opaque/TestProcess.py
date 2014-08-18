@@ -143,17 +143,49 @@ class TestProcess(SnakeControl):
 			#self.mapGraph = MapLoader(self.probe, self.contacts)
 			#self.mapGraph.loadWalls(walls)
 			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 0, 237)
+			#self.mapGraph.restorePickle(".", 15)
+			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 16, 237)
 			#self.mapGraph.restorePickle(".", 11)
 			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 12, 40)
 			#self.mapGraph.restorePickle(".", 39)
 			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 40, 237)
-			#self.mapGraph.restorePickle(".", 31)
-			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 32, 237)
+			#self.mapGraph.restorePickle(".", 39)
+			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 40, 237)
+			#self.mapGraph.restorePickle(".", 45)
+			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 46, 237)
 			#self.mapGraph.restorePickle(".", 21)
 			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 22, 237)
+			#self.mapGraph.restorePickle(".", 31)
+			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 32, 237)
 
-			self.mapGraph.restorePickle(".", 15)
-			self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 16, 237)
+			self.mapGraph.restorePickle(".", 109)
+			self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 110, 237)
+
+			#self.mapGraph.restorePickle(".", 39)
+			#self.mapGraph.loadSeries("../results/result_2013_08_16_Y_junction_complete", 40, 289)
+			#self.mapGraph.restorePickle(".", 53)
+			#self.mapGraph.loadSeries("../results/result_2013_08_16_Y_junction_complete", 54, 289)
+
+			#self.mapGraph.restorePickle(".", 15)
+			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 16, 237)
+			#self.mapGraph.restorePickle(".", 17)
+			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 18, 237)
+			#self.mapGraph.restorePickle(".", 35)
+			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 36, 237)
+			#self.mapGraph.restorePickle(".", 37)
+			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 38, 237)
+			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 38, 40)
+
+			#print "junctionPose:", self.mapGraph.mapAlgorithm.mapHyps[0].getGlobalJunctionPose(1)
+			#print "junctionPose:", self.mapGraph.mapAlgorithm.mapHyps[0].pathClasses
+
+			#exit()
+
+
+			#self.mapGraph.restorePickle(".", 17)
+			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 18, 237)
+			#self.mapGraph.restorePickle(".", 45)
+			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 46, 237)
 
 			#self.mapGraph.restoreSeries("../results/result_2013_08_24_cross", 80)
 			#self.mapGraph.restoreSeries("../results/result_2013_08_24_cross", 44)

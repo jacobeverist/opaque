@@ -15,7 +15,8 @@ from behaviors.PathStep import PathStep
 from behaviors.AdaptiveStep import AdaptiveStep
 
 from pose.AverageContacts import AverageContacts
-from maps.MapGraph import MapGraph
+#from maps.MapGraph import MapGraph
+from maps.MapUser import MapUser
 #from maps.PoseGraph import computeHullAxis
 #from maps.Pose import Pose
 #from maps.SplineFit import SplineFit
@@ -254,7 +255,8 @@ class TestNavigation(SnakeControl):
 		elif self.globalState == 3:
 			
 			" create the mapping object "
-			self.mapGraph = MapGraph(self.probe, self.contacts, isStable = True)
+			#self.mapGraph = MapGraph(self.probe, self.contacts, isStable = True)
+			self.mapGraph = MapUser(self.probe, self.contacts, isStable = True)
 
 			#self.mapGraph.loadFile("testData/sweep5", 8)
 			#self.mapGraph.loadFile("testData/sweep5", 30)
@@ -519,6 +521,9 @@ class TestNavigation(SnakeControl):
 				
 				
 				frontSum = 0.0
+				print self.mapGraph.numNodes
+				print len(self.mapGraph.nodeHash)
+
 				frontProbeError = self.mapGraph.nodeHash[self.mapGraph.numNodes-2].frontProbeError
 				for n in frontProbeError:
 					frontSum += n
@@ -659,7 +664,7 @@ class TestNavigation(SnakeControl):
 			
 			if isDone:
 				if self.termPathID != -1:
-					self.mapGraph.poseGraph.paths.pathTermVisited(self.termPathID)
+					self.mapGraph.mapAlgorithm.topHyp.pathTermVisited(self.termPathID)
 					self.termPathID = -1
 				else:
 					" invert our pose so we can hit other junctions "

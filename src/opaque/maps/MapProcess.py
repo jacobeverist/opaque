@@ -57,11 +57,11 @@ def __remote_multiGenerate(rank, qin, qout):
 
 	while 1:
 		# read input queue (block until data arrives)
+		results = []
 		nc, args = qin.get()
 		print rank, "received", nc, args
 		# process data
 		#knn = __do_nothing(data, nc, someArg2, someArg3)
-		results = []
 		for arg in args:
 			mapHyp = arg[0]
 			generateMap(mapHyp)
@@ -208,10 +208,10 @@ def __remote_multiEval(rank, qin, qout):
 
 	while 1:
 		# read input queue (block until data arrives)
+		results = []
 		nc, args = qin.get()
 		print rank, "received", nc, args
 		# process data
-		results = []
 		for arg in args:
 			mapHyp = arg[0]
 			nodeID = arg[1]
@@ -418,11 +418,11 @@ def __remote_multiMovePath(rank, qin, qout):
 
 	while 1:
 		# read input queue (block until data arrives)
+		results = []
 		nc, args = qin.get()
 		print rank, "received", nc, args
 		# process data
 		#knn = __do_nothing(data, nc, someArg2, someArg3)
-		results = []
 		for arg in args:
 			mapHyp = arg[0]
 			nodeID = arg[1]
@@ -566,11 +566,11 @@ def __remote_multiLocalize(rank, qin, qout):
 
 	while 1:
 		# read input queue (block until data arrives)
+		results = []
 		nc, args = qin.get()
 		print rank, "received", nc, args
 		# process data
 		#knn = __do_nothing(data, nc, someArg2, someArg3)
-		results = []
 		for arg in args:
 			mapHyp = arg[0]
 			nodeID1 = arg[1]
@@ -2510,7 +2510,7 @@ def computeLocalDivergence(hypSet, nodeID1, nodeID2):
 
 
 @logFunction
-def checkForeBranch(hypSet, nodeID1, nodeID2, particleIDs):
+def checkForeBranch(hypSet, nodeID1, nodeID2, shootIDs, particleIDs):
 	
 	" 60 degree threshold "
 	ANG_THRESH = 1.047
@@ -2629,47 +2629,48 @@ def checkForeBranch(hypSet, nodeID1, nodeID2, particleIDs):
 
 
 		#if isUnique1 or isUnique2:
+		branchHyp = mapHyp
 		if isBranched:
 
 			" create a new map state where a branch decision is not made "
-			newHyps[particleIDs] = mapHyp.copy(particleIDs)
-			newHyps[particleIDs].isNotBranched = True
+			newMapHyp = mapHyp.copy(particleIDs)
+			newHyps[particleIDs] = newMapHyp
+			newHyps[particleIDs].isNotBranched = False 
 			newHyps[particleIDs].isNodeBranching[nodeID1] = True
 			newHyps[particleIDs].isNodeBranching[nodeID2] = True
 
 			" in case current hypothesis has already branched, this ensures that topology is regenerated when branching "
-			hypSet[pID].isNotBranched = False
+			hypSet[pID].isNotBranched = True
 
 			print "creating hyp", particleIDs, "from hyp", mapHyp.hypothesisID, ", len(paths) =", len(mapHyp.pathClasses)
 			particleIDs += 1
 
+			branchHyp = newMapHyp 
 
-		isBranch, pathBranchIDs, isNew = mapHyp.determineBranchPair(nodeID1, nodeID2, frontExist1, frontExist2, frontInterior1, frontInterior2, depAngle1, depAngle2, depPoint1, depPoint2, parentPathID1, parentPathID2, dirFlag, isUnique1, isUnique2, duplicatePathID1, duplicatePathID2)
-
+		isBranch, pathBranchIDs, isNew, shootIDs = branchHyp.determineBranchPair(nodeID1, nodeID2, frontExist1, frontExist2, frontInterior1, frontInterior2, depAngle1, depAngle2, depPoint1, depPoint2, parentPathID1, parentPathID2, dirFlag, isUnique1, isUnique2, duplicatePathID1, duplicatePathID2, shootIDs)
 
 		print "determineBranchPair:"
 		print isBranch
 		print pathBranchIDs
 
 		if isBranch[0]:
-			mapHyp.orderedPathIDs1.insert(0,pathBranchIDs[0])
-			mapHyp.departures1.insert(0, [False, False])
-			mapHyp.interiors1.insert(0, [False, False])
-			mapHyp.depPoints1.insert(0, [None, None])
+			branchHyp.orderedPathIDs1.insert(0,pathBranchIDs[0])
+			branchHyp.departures1.insert(0, [False, False])
+			branchHyp.interiors1.insert(0, [False, False])
+			branchHyp.depPoints1.insert(0, [None, None])
 
 		if isBranch[1]:
-			mapHyp.orderedPathIDs2.insert(0,pathBranchIDs[1])
-			mapHyp.departures2.insert(0, [False, False])
-			mapHyp.interiors2.insert(0, [False, False])
-			mapHyp.depPoints2.insert(0, [None, None])
-
+			branchHyp.orderedPathIDs2.insert(0,pathBranchIDs[1])
+			branchHyp.departures2.insert(0, [False, False])
+			branchHyp.interiors2.insert(0, [False, False])
+			branchHyp.depPoints2.insert(0, [None, None])
 
 	hypSet.update(newHyps)
 
-	return hypSet, particleIDs
+	return hypSet, shootIDs, particleIDs
 
 @logFunction
-def checkBackBranch(hypSet, nodeID1, nodeID2, particleIDs):
+def checkBackBranch(hypSet, nodeID1, nodeID2, shootIDs, particleIDs):
 
 	" 60 degree threshold "
 	ANG_THRESH = 1.047
@@ -2762,49 +2763,51 @@ def checkBackBranch(hypSet, nodeID1, nodeID2, particleIDs):
 					if dirFlag == 1:		
 						isBranched = True
 
-
 		#if isUnique1 or isUnique2:
+		branchHyp = mapHyp
 		if isBranched:
 
 			" create a new map state where a branch decision is not made "
-			newHyps[particleIDs] = mapHyp.copy(particleIDs)
-			newHyps[particleIDs].isNotBranched = True
+			newMapHyp = mapHyp.copy(particleIDs)
+			newHyps[particleIDs] = newMapHyp
+			newHyps[particleIDs].isNotBranched = False 
 			newHyps[particleIDs].isNodeBranching[nodeID1] = True
 			newHyps[particleIDs].isNodeBranching[nodeID2] = True
 
 			" in case current hypothesis has already branched, this ensures that topology is regenerated when branching "
-			hypSet[pID].isNotBranched = False
+			hypSet[pID].isNotBranched = True
 			print "creating hyp", particleIDs, "from hyp", mapHyp.hypothesisID, ", len(paths) =", len(mapHyp.pathClasses)
 			
 			particleIDs += 1
 
-		isBranch, pathBranchIDs, isNew = mapHyp.determineBranchPair(nodeID1, nodeID2, backExist1, backExist2, backInterior1, backInterior2, depAngle1, depAngle2, depPoint1, depPoint2, parentPathID1, parentPathID2, dirFlag, isUnique1, isUnique2, duplicatePathID1, duplicatePathID2)
+			branchHyp = newMapHyp
+
+
+		isBranch, pathBranchIDs, isNew, shootIDs = branchHyp.determineBranchPair(nodeID1, nodeID2, backExist1, backExist2, backInterior1, backInterior2, depAngle1, depAngle2, depPoint1, depPoint2, parentPathID1, parentPathID2, dirFlag, isUnique1, isUnique2, duplicatePathID1, duplicatePathID2, shootIDs)
 		print "determineBranchPair:"
 		print isBranch
 		print pathBranchIDs
 
-		#isNew1 = isNew1 or isNew[0]
-		#isNew2 = isNew2 or isNew[1]
-
 		if isBranch[0]:
-			mapHyp.orderedPathIDs1.append(pathBranchIDs[0])
-			mapHyp.departures1.append([False, False])
-			mapHyp.interiors1.append([False, False])
-			mapHyp.depPoints1.append([None, None])
+			branchHyp.orderedPathIDs1.append(pathBranchIDs[0])
+			branchHyp.departures1.append([False, False])
+			branchHyp.interiors1.append([False, False])
+			branchHyp.depPoints1.append([None, None])
 
 		if isBranch[1]:
-			mapHyp.orderedPathIDs2.append(pathBranchIDs[1])
-			mapHyp.departures2.append([False, False])
-			mapHyp.interiors2.append([False, False])
-			mapHyp.depPoints2.append([None, None])
+			branchHyp.orderedPathIDs2.append(pathBranchIDs[1])
+			branchHyp.departures2.append([False, False])
+			branchHyp.interiors2.append([False, False])
+			branchHyp.depPoints2.append([None, None])
+
 
 
 	hypSet.update(newHyps)
 	
-	return hypSet, particleIDs
+	return hypSet, shootIDs, particleIDs
 
 @logFunction
-def addToPaths(particleIDs, hypSet, nodeID1, nodeID2):
+def addToPaths(shootIDs, particleIDs, hypSet, nodeID1, nodeID2):
 
 	poseData = hypSet.values()[0].poseData
 
@@ -2829,7 +2832,7 @@ def addToPaths(particleIDs, hypSet, nodeID1, nodeID2):
 
 			mapHyp.initializePoseParticles()
 
-		return particleIDs, hypSet
+		return shootIDs, particleIDs, hypSet
 
 
 	#hypSet = batchGenerate(hypSet)
@@ -2844,9 +2847,9 @@ def addToPaths(particleIDs, hypSet, nodeID1, nodeID2):
 
 
 	""" check for branching conditions from path, spawn new hypotheses """
-	hypSet, particleIDs = checkForeBranch(hypSet, nodeID1, nodeID2, particleIDs)
+	hypSet, shootIDs, particleIDs = checkForeBranch(hypSet, nodeID1, nodeID2, shootIDs, particleIDs)
 
-	hypSet, particleIDs = checkBackBranch(hypSet, nodeID1, nodeID2, particleIDs)
+	hypSet, shootIDs, particleIDs = checkBackBranch(hypSet, nodeID1, nodeID2, shootIDs, particleIDs)
 
 
 	for pID, currHyp in hypSet.iteritems():
@@ -2911,7 +2914,8 @@ def addToPaths(particleIDs, hypSet, nodeID1, nodeID2):
 	#for pID, currHyp in hypSet.iteritems():
 	#	currHyp.drawPoseParticles()
 					
-	return particleIDs, hypSet
+	#return particleIDs, hypSet
+	return shootIDs, particleIDs, hypSet
 
 
 

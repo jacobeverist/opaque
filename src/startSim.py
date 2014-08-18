@@ -1,11 +1,11 @@
 
+from math import *
+from copy import copy
 import random
 random.seed(0)
 
 import os
 import sys
-from math import *
-from copy import copy
 
 relPath = os.path.dirname(os.path.realpath(__file__))
 print relPath
@@ -39,7 +39,7 @@ from opaque.robot.BulletProbe import BulletProbe
 
 from opaque.TestNavigation import TestNavigation
 from opaque.TestProcess import TestProcess
-from opaque.TestUnit import TestUnit
+#from opaque.TestUnit import TestUnit
 from opaque.ControlError import *
 from opaque.CmdDrawThings import CmdDrawThings
 from opaque.DrawThings import DrawThings
@@ -49,14 +49,29 @@ import cProfile
 
 sys.setrecursionlimit(10000)
 
-
 " sub process cleanup code "
 import opaque.maps.gen_icp as gen_icp
+import opaque.maps.MapProcess as MapProcess
 import atexit
 def cleanup():
 	if gen_icp.overlapPool != None:
 		for p in gen_icp.overlapPool:
 			p.terminate()
+
+	if len(MapProcess.pool_move) > 0:
+		for p in MapProcess.pool_move:
+			p.terminate()
+	if len(MapProcess.pool_localize) > 0:
+		for p in MapProcess.pool_localize:
+			p.terminate()
+	if len(MapProcess.pool_generate) > 0:
+		for p in MapProcess.pool_generate:
+			p.terminate()
+	if len(MapProcess.pool_eval) > 0:
+		for p in MapProcess.pool_eval:
+			p.terminate()
+
+			
 atexit.register(cleanup)
 
 
@@ -77,7 +92,8 @@ def createTest():
 	#probe = BulletProbe(quat,pos,40,0.15,0.1,0.15,1000.0,10.0)
 
 	
-	drawThings = DrawThings(probe, hideWindow = args.hideWindow, restoreConfig = args.restoreConfig)
+	#drawThings = DrawThings(probe, hideWindow = args.hideWindow, restoreConfig = args.restoreConfig)
+	drawThings = CmdDrawThings(probe.robotParam)
 	currControl = TestNavigation(probe, drawThings)
 	
 	probe.addControl(currControl)

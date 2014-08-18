@@ -287,6 +287,8 @@ class MapState:
 		self.poseParticles["updateCount"] = 0
 		self.poseParticles["snapshots2"] = {0 : ()}
 
+		self.parentParticle = None
+
 
 		""" pose information for each of the spatial map nodes """
 		self.isNodeBranching = {}
@@ -358,7 +360,7 @@ class MapState:
 		self.allSplices = {}
 		self.isChanged = True
 
-
+		self.shootIDs = 1
 
 		""" plotting colors """
 		self.colors = []
@@ -939,6 +941,9 @@ class MapState:
 		""" collect landmarks that we can localize against for current nodes """
 		landmark0_N = None
 		landmark1_N = None
+		#landmark0_L = None
+		#landmark1_L = None
+
 		for pathID in pathIDs:
 
 			nodeSet = self.getNodes(pathID)
@@ -951,10 +956,13 @@ class MapState:
 
 				if nodeID == nodeID0:
 					landmark0_N = self.nodeLandmarks[pathID][nodeID]
+					#if landmark0_N != None:
+					#	landmark0_L = poseFrame_L.convertLocalToGlobal(landmark0_N)
 
 				if nodeID == nodeID1:
 					landmark1_N = self.nodeLandmarks[pathID][nodeID]
-
+					#if landmark1_N != None:
+					#	landmark1_L = poseFrame_L.convertLocalToGlobal(landmark1_N)
 
 
 		for particleIndex in range(len(particleDist2)):
@@ -1072,7 +1080,8 @@ class MapState:
 
 				splices_G = branchResult["splices_G"]
 				for splice in splices_G:
-					thisSplicedPaths.append((arcTuple, normMatchCount*normLandmark, splice, None, []))
+					#thisSplicedPaths.append((arcTuple, normMatchCount*normLandmark, splice, None, []))
+					thisSplicedPaths.append((arcTuple, normMatchCount*normLandmark, splice, None, candLandmarks_G))
 
 				#splices_G = branchResult["splices_G"]
 				#for pathID in branchPathIDs:
@@ -1674,6 +1683,7 @@ class MapState:
 		for part in particleDist2:
 			part.mapStateID = hypothesisID
 
+		newObj.parentParticle = self.hypothesisID 
 
 		newObj.pathClasses = deepcopy(self.pathClasses)
 		newObj.pathTermsVisisted = deepcopy(self.pathTermsVisited)
@@ -3539,7 +3549,7 @@ class MapState:
 		"""
 
 
-		print "addPath(", branchNodeID, localDivergencePose_R
+		print "addPath(", self.shootIDs, branchNodeID, localDivergencePose_R
 		
 		""" the raw pose and posture pose """
 		nodePose_G = self.getNodePose(branchNodeID)
@@ -3553,7 +3563,8 @@ class MapState:
 		allPathIDs = self.getPathIDs()
 
 		""" new shoot ID """
-		newPathID = self.pathIDs
+		#newPathID = self.pathIDs
+		newPathID = self.shootIDs
 
 		""" posture curve of local spatial map """
 		medial0_L = self.poseData.medialAxes[branchNodeID]
@@ -3642,6 +3653,7 @@ class MapState:
 		self.pathTermsVisited[newPathID] = False
 		
 		self.pathIDs += 1
+		self.shootIDs += 1
 
 
 		updateCount = self.poseParticles["updateCount"] 
@@ -5034,7 +5046,7 @@ class MapState:
 		
 
 	@logFunction
-	def determineBranchPair(self, nodeID1, nodeID2, frontExist1, frontExist2, frontInterior1, frontInterior2, depAngle1, depAngle2, depPoint1, depPoint2, parentPathID1, parentPathID2, dirFlag, isUnique1, isUnique2, duplicatePathID1, duplicatePathID2):
+	def determineBranchPair(self, nodeID1, nodeID2, frontExist1, frontExist2, frontInterior1, frontInterior2, depAngle1, depAngle2, depPoint1, depPoint2, parentPathID1, parentPathID2, dirFlag, isUnique1, isUnique2, duplicatePathID1, duplicatePathID2, shootIDs):
 		
 		"""
 		1)	both nodes departing
@@ -5056,6 +5068,9 @@ class MapState:
 
 		print "determineBranchPair(", nodeID1, ",", nodeID2, ",", frontExist1, ",", frontExist2, ",", frontInterior1, ",", frontInterior2, ",", depAngle1, ",", depAngle2, ",", depPoint1, ",", depPoint2, ",", parentPathID1, ",", parentPathID2, ",", dirFlag, ")"
 		
+		self.shootIDs = shootIDs
+
+
 		foreTerm1 = frontInterior1 and frontExist1
 		foreTerm2 = frontInterior2 and frontExist2
 
@@ -5324,7 +5339,7 @@ class MapState:
 				raise
 		"""	
 		
-		return isBranch, pathBranchIDs, isNew
+		return isBranch, pathBranchIDs, isNew, self.shootIDs
 		
 		
 	@logFunction

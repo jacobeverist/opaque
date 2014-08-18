@@ -62,6 +62,8 @@ class BayesMapper:
 		#self.mapHyps[self.particleIDs] = MapState(self.poseData, self.particleIDs)
 		#self.particleIDs += 1
 
+		self.shootIDs = 1
+
 
 		self.poseData.medialAxes = {}
 		self.poseData.aHulls = {}
@@ -125,6 +127,15 @@ class BayesMapper:
 							[ 0.0, 0.05, 0.0],
 							[ 0.0, 0.0, pi/16.0 ]])
 
+	@property
+	def numNodes(self):
+		return self.poseData.numNodes
+
+	@property
+	def topHyp(self):
+		hypIDs = self.mapHyps.keys()
+		topID = hypIDs[0]
+		return self.mapHyps[topID]
 
 	@logFunction
 	def loadNewNode(self, newNode):
@@ -322,7 +333,7 @@ class BayesMapper:
 
 			#hypSet = self.addToPaths(hypSet, nodeID1, nodeID2)
 			time1 = time.time()
-			self.particleIDs, hypSet = addToPaths(self.particleIDs, hypSet, nodeID1, nodeID2)
+			self.shootIDs, self.particleIDs, hypSet = addToPaths(self.shootIDs, self.particleIDs, hypSet, nodeID1, nodeID2)
 			for pID, currHyp in hypSet.iteritems():
 				currHyp.drawPoseParticles()
 			time2 = time.time()

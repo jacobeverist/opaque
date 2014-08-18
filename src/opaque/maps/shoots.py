@@ -1510,16 +1510,17 @@ def spliceSkeletons(localSkeletons, controlPoses, junctionPoses, parentPathIDs):
 
 
 	spliceSkeleton = graph.graph()
-	for k in range(len(globalSkeletons)):
+	#for k in range(len(globalSkeletons)):
+	for k, skel in globalSkeletons.iteritems():
 		#nodes = globalSkeletons[k].nodes()
-		edges = globalSkeletons[k].edges()
+		edges = skel.edges()
 		#spliceSkeleton.add_nodes(nodes)
 
 		for edge in edges:
 			globalNodePoint1 = edge[0]
 			globalNodePoint2 = edge[1]
 
-			weight = globalSkeletons[k].get_edge_weight(globalNodePoint1, globalNodePoint2)
+			weight = skel.get_edge_weight(globalNodePoint1, globalNodePoint2)
 
 			#dist = sqrt((globalNodePoint1[0]-globalNodePoint2[0])**2 + (globalNodePoint1[1]-globalNodePoint2[1])**2)
 			spliceSkeleton.add_node(globalNodePoint1)
@@ -1557,11 +1558,18 @@ def spliceSkeletons(localSkeletons, controlPoses, junctionPoses, parentPathIDs):
 			print "add parent junc edge", juncNode, minParentNode, minParentDist
 			spliceSkeleton.add_edge(juncNode, minParentNode, wt=minParentDist)
 	
+	skelIDs = globalSkeletons.keys()
 
-	for j in range(len(globalSkeletons)):
-		for k in range(j, len(globalSkeletons)):
-			nodes1 = globalSkeletons[j].nodes()
-			nodes2 = globalSkeletons[k].nodes()
+	#for j in range(len(globalSkeletons)):
+	#	for k in range(j, len(globalSkeletons)):
+
+	for j in range(len(skelIDs)):
+		for k in range(j, len(skelIDs)):
+			jID = skelIDs[j]
+			kID = skelIDs[k]
+
+			nodes1 = globalSkeletons[jID].nodes()
+			nodes2 = globalSkeletons[kID].nodes()
 
 			distances1, indices1 = getClosestPairs(nodes1, nodes2)
 			distances2, indices2 = getClosestPairs(nodes2, nodes1)
@@ -1649,9 +1657,9 @@ def __remote_multiBranch(rank, qin, qout):
 
 	while 1:
 		# read input queue (block until data arrives)
+		results = []
 		nc, args = qin.get()
 		# process data
-		results = []
 		for job in args:
 
 			#branchJobs.append((pathID, parentID, origGlobJuncPose, childPath, parentPath, trimmedParent, smoothPathSegs, arcDist))
@@ -1750,10 +1758,11 @@ def batchJointBranch(branchJobs):
 
 	#print "terminating pool"
 	# terminate workers
-	#for p in pool_branch:
+	for p in pool_branch:
 	#	print "terminate"
-	#	p.terminate()
+		p.terminate()
 	#	print "terminated"
+	pool_branch = []
 		
 	print "returning"
 	return knn
@@ -1794,9 +1803,9 @@ def __remote_multiJointBranch(rank, qin, qout):
 
 	while 1:
 		# read input queue (block until data arrives)
+		results = []
 		nc, args = qin.get()
 		# process data
-		results = []
 		for job in args:
 
 			localPathSegs = job[0]
@@ -3889,7 +3898,10 @@ def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPos
 			point_G = currFrame.convertLocalToGlobal(point_L)
 			landmarks_G.append(point_G)
 
-	LANDMARK_THRESH = 1e100
+	#LANDMARK_THRESH = 1e100
+	LANDMARK_THRESH = 3.0
+	CLOSE_THRESH = 0.3
+
 	distSum = 0.0
 	for i in range(len(landmarks_G)):
 		p1 = landmarks_G[i]
@@ -3898,7 +3910,10 @@ def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPos
 			dist = sqrt((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2)
 
 			if dist < LANDMARK_THRESH:
-				distSum += dist
+				if dist > CLOSE_THRESH:
+					distSum += 10.0*dist
+				else:
+					distSum += dist
 
 	branchResult["landmarkCost"] = distSum
 	branchResult["landmarks_G"] = landmarks_G

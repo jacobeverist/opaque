@@ -44,11 +44,11 @@ def __remote_multiFit(rank, qin, qout):
 
 	while 1:
 		# read input queue (block until data arrives)
+		results = []
 		nc, args = qin.get()
 		print rank, "received", nc, args
 		# process data
 		#knn = __do_nothing(data, nc, someArg2, someArg3)
-		results = []
 		for arg in args:
 			print "multiFitSplice(", arg
 			globalPath = arg[0][4]

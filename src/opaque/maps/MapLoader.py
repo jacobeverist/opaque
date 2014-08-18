@@ -28,6 +28,8 @@ class MapLoader:
 		#self.mapAlgorithm = PoseGraph.PoseGraph(self.probe, self.contacts)	
 		self.mapAlgorithm = BayesMapper.BayesMapper(self.probe.getWalls())	
 
+		print "mapAlgorithm:", self
+
 		self.localNodes = []
 
 		MAPSIZE = 20.0
@@ -35,9 +37,15 @@ class MapLoader:
 
 	def restorePickle(self, dirName, nodeID):
 		PIXELSIZE = 0.05
+		print self
 
-		with open('map_%04u.obj' % nodeID, 'rb') as input:
-			self.mapAlgorithm = pickle.load(input)
+		with open('map_%04u.obj' % nodeID, 'rb') as inputVal:
+			print pickle
+			print inputVal
+			print self
+			print self.mapAlgorithm
+			self.mapAlgorithm = pickle.load(inputVal)
+			print self.mapAlgorithm
 			self.mapAlgorithm.saveState()
 
 			for val in self.mapAlgorithm.mapHyps.values():
@@ -169,13 +177,13 @@ class MapLoader:
 	def getWalls(self):
 		return self.walls
 
-	def __getattr__(self, name):
+	@property
+	def numNodes(self):
+		return self.mapAlgorithm.numNodes
 
-		if name == "numNodes":
-			return self.mapAlgorithm.numNodes
-
-		if name == "nodeHash":
-			return self.mapAlgorithm.nodeHash
+	@property
+	def nodeHash(self):
+		return self.mapAlgorithm.nodeHash
 
 	def newNode(self, stepDist, direction):
 

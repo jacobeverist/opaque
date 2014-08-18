@@ -1,17 +1,12 @@
-from PoseGraph import PoseGraph, computeBareHull
+import BayesMapper
+from LocalNode import LocalNode, getLongestPath, computeHullAxis
 from Pose import Pose
-
-from LocalNode import LocalNode
-from StablePose import StablePose
-from SplineFit import SplineFit
-from PoseGraph import computeHullAxis
-
-import gen_icp
-
-
 import pylab
-from math import *
-from random import random
+from SplineFit import SplineFit
+
+import cPickle as pickle
+from StablePose import StablePose
+#from math import *
 
 # Map Space Parameters
 PIXELSIZE = 0.05
@@ -36,6 +31,7 @@ class MapUser:
 		self.currNode = 0
 		self.foreNode = 0
 		self.backNode = 0
+		self.localNodes = []
 
 		self.pixelSize = PIXELSIZE
 
@@ -56,15 +52,17 @@ class MapUser:
 		
 		self.mapAlgorithm.loadNewNode(self.foreNode)
 		self.mapAlgorithm.loadNewNode(self.backNode)
-		
 
-	def __getattr__(self, name):
+		self.localNodes.append(self.foreNode)
+		self.localNodes.append(self.backNode)
 
-		if name == "numNodes":
-			return self.mapAlgorithm.numNodes
+	@property
+	def numNodes(self):
+		return self.mapAlgorithm.numNodes
 
-		if name == "nodeHash":
-			return self.mapAlgorithm.nodeHash
+	@property
+	def nodeHash(self):
+		return self.mapAlgorithm.localNodes
 
 	def restoreSeries(self, dirName, num_poses):
 
@@ -366,8 +364,8 @@ class MapUser:
 			self.synch()
 		
 		" get the termination point and orientation of each path "
-		terms = self.mapAlgorithm.paths.getPathTerms()
-		termsVisited = self.mapAlgorithm.paths.getPathTermsVisited()
+		terms = self.mapAlgorithm.topHyp.getPathTerms()
+		termsVisited = self.mapAlgorithm.topHyp.getPathTermsVisited()
 		
 		print "Terms:", terms
 		print "TermsVisited:", termsVisited
@@ -376,12 +374,12 @@ class MapUser:
 			#term = terms[k]
 			
 			if not termsVisited[k]:
-				#self.mapAlgorithm.paths.pathTermVisited(k)
+				#self.mapAlgorithm.topHyp.pathTermVisited(k)
 				print "selecting term", k
 				return term,k
 		
 		" if all terms visited, reset and go to root "
-		self.mapAlgorithm.paths.resetTerms()
+		self.mapAlgorithm.topHyp.resetTerms()
 		
 		return self.mapAlgorithm.paths.rootPoint, -1
 		
