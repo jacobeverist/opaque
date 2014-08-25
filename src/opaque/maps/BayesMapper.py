@@ -65,6 +65,9 @@ class BayesMapper:
 		self.shootIDs = 1
 
 
+		self.activeHypID = None
+
+
 		self.poseData.medialAxes = {}
 		self.poseData.aHulls = {}
 		self.poseData.isBowties = {}
@@ -409,8 +412,10 @@ class BayesMapper:
 		for pID, currHyp in hypSet.iteritems():
 			print pID, "mapOverlapSum =", currHyp.mapOverlapSum, "isNoLocalize =", currHyp.isNoLocalize
 			#if currHyp.mapOverlapSum > 0.0 or currHyp.isNoLocalize:
+			#if currHyp.mapOverlapSum > 6 or currHyp.isNoLocalize:
 			if currHyp.mapOverlapSum > 4.0 or currHyp.isNoLocalize:
-				toDelete.append(pID)	
+				if pID != self.activeHypID:
+					toDelete.append(pID)
 				
 		for pID in toDelete:
 			del hypSet[pID]
@@ -524,145 +529,6 @@ class BayesMapper:
 		self.nodeHash[nodeID] = newNode
 		self.poseData.numNodes += 1
 
-
-	@logFunction
-	def insertPose(self, foreNode, backNode, initLocation = [0.0,0.0,0.0]):
-		
-		" CHECK FOR A BRANCHING EVENT "
-
-			
-
-		for abc in range(0,2):
-			
-			if abc == 0:
-				nodeID1 = self.poseData.numNodes-2
-				nodeID2 = self.poseData.numNodes-1
-			else:
-				self.currNode = foreNode
-				self.currNode.setEstPose(initLocation)
-				nodeID = self.poseData.numNodes
-				self.nodeHash[nodeID] = self.currNode
-				self.currNode.nodeID = nodeID
-				self.poseData.numNodes += 1
-				
-				self.currNode = backNode
-				self.currNode.setEstPose(initLocation)
-				nodeID = self.poseData.numNodes
-				self.nodeHash[nodeID] = self.currNode
-				self.currNode.nodeID = nodeID
-				self.poseData.numNodes += 1
-		
-				foreNode.setPartnerNodeID(backNode.nodeID)
-				backNode.setPartnerNodeID(foreNode.nodeID)
-		
-				" DIRECTION OF TRAVEL FROM PREVIOUS POSE PAIR "
-				direction = foreNode.travelDir
-		
-				nodeID1 = foreNode.nodeID
-				nodeID2 = backNode.nodeID
-
-				
-						
-				" ensure the axes are computed before this check "
-				#computeHullAxis(nodeID1, foreNode, tailCutOff = False)
-				#computeHullAxis(nodeID2, backNode, tailCutOff = False)
-		
-				" COMPUTE MEDIAL AXIS FROM UNION OF PATH-CLASSIFIED NODES "
-				self.paths.generatePaths()
-
-				" ESTIMATE TRAVEL WITH MEDIAL OVERLAP CONSTRAINT OF EVEN NUMBER POSE "
-				if nodeID1 % 2 == 1:		
-					" Move node along path "
-					movePath(mapHyp, nodeID1, direction, distEst = 0.0)
-				elif nodeID2 % 2 == 1:		
-					" Move node along path "
-					movePath(mapHyp, nodeID2, direction, distEst = 0.0)
-
-
-
-			" if these nodes are already path-classified, return"
-			isContained1 = False
-			isContained2 = False
-			
-			pathIDs = self.paths.getPathIDs()
-			for k in pathIDs:
-				if self.paths.getNodes(k).count(nodeID1) > 0:
-					isContained1 = True
-				if self.paths.getNodes(k).count(nodeID2) > 0:
-					isContained2 = True
-					
-					
-			if not isContained1 and not isContained2:
-				
-				" COMPUTE MEDIAL AXIS FROM UNION OF PATH-CLASSIFIED NODES "
-				self.paths.generatePaths()
-	
-				#self.drawPathAndHull(mapHyp)
-				
-	
-				self.addToPaths(mapHyp, nodeID1, nodeID2)
-	
-				" IF THIS IS THE FIRST NODES IN THE FIRST PATH, JUST ADD THEM AS DEFAULT, DO NOTHING "
-				if len(self.paths.paths[0]) > 0:
-					
-					self.mergePaths(mapHyp)
-	
-					paths = {}
-					pathIDs = self.paths.getPathIDs()
-	
-	
-	
-					orderedPathIDs1 = self.paths.getOrderedOverlappingPaths(nodeID1)
-					print nodeID1, "recompute orderedPathIDs1:", orderedPathIDs1
-	
-				
-					orderedPathIDs2 = self.paths.getOrderedOverlappingPaths(nodeID2)
-					print nodeID2, "recompute orderedPathIDs2:", orderedPathIDs2
-	
-	
-					for k in pathIDs:
-						path = self.paths.paths[k]
-						if len(path) > 0:
-							paths[k] = path 
-					trimmedPaths = self.paths.trimPaths(paths)
-	
-					
-					#self.drawTrimmedPaths(trimmedPaths)
-					print "trimmed paths:", len(trimmedPaths)
-	
-	
-	
-					"1)  guess pose in front if there is a departure with local and path junction points (not first node) "
-					"2)  guess pose in back if there is a departure with local and path junction points (not first node) "
-					"3)  select choice with the lowest cost "
-					"4)  guess pose with no departure point with guessed control points len(orderedPathIDs) == 1"
-					
-					" nodeID1:	is it in a junction or a single path? "
-	
-					#hull1, medial1 = computeHullAxis(nodeID1, self.nodeHash[nodeID1], tailCutOff = False)
-					#hull2, medial2 = computeHullAxis(nodeID2, self.nodeHash[nodeID2], tailCutOff = False)
-					hull1 = self.poseData.aHulls[nodeID1]
-					medial1 = self.poseData.medialAxes[nodeID1]
-					hull2 = self.poseData.aHulls[nodeID2]
-					medial2 = self.poseData.medialAxes[nodeID2]
-
-					estPose1 = mapHyp.getNodePose(nodeID1)
-					estPose2 = mapHyp.getNodePose(nodeID2)
-					self.currSplicePath = self.selectSplice(mapHyp, nodeID1, nodeID2, medial1, medial2, estPose1, estPose2, orderedPathIDs1, orderedPathIDs2)
-					
-					self.paths.generatePaths()
-					#self.drawPathAndHull(mapHyp)
-					#self.drawTrimmedPaths(trimmedPaths)
-
-			
-			self.paths.generatePaths()
-			#self.drawPathAndHull(mapHyp)
-
-
-		" ESTIMATE TRAVEL WITH MEDIAL OVERLAP CONSTRAINT OF EVEN NUMBER POSE "
-		if self.poseData.numNodes >= 4:
-			pass
-		
 
 	@logFunction
 	def selectSplice(self, mapHyp, nodeID1, nodeID2, medial1, medial2, estPose1, estPose2, orderedPathIDs1, orderedPathIDs2):
@@ -1194,14 +1060,25 @@ class BayesMapper:
 	@logFunction
 	def getNearestPathPoint(self, originPoint):
 
-		newPoint = self.paths.getNearestPathPoint(originPoint)
+		candPoints = {}
+		minDist = 1e100
+		minHypID = -1 
 
-		return newPoint
+		for hypID, mapHyp in self.mapHyps.iteritems():
+			newPoint = mapHyp.getNearestPathPoint(originPoint)
+			candPoints[hypID] = newPoint
+
+			dist = sqrt((newPoint[0]-originPoint[0])**2 + (newPoint[1]-originPoint[1])**2)
+
+			if dist < minDist:
+				minDist = dist
+				minHypID = hypID
+
+		return candPoints[minHypID]
 
 	@logFunction
 	def computeNavigationPath(self, startPose, endPose):
-		return self.paths.computeNavigationPath(startPose, endPose)
-
+		return self.mapHyps[self.activeHypID].computeNavigationPath(startPose, endPose)
 
 	@logFunction
 	def plotEnv(self, axes=0):

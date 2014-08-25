@@ -39,7 +39,7 @@ class MapLoader:
 		PIXELSIZE = 0.05
 		print self
 
-		with open('map_%04u.obj' % nodeID, 'rb') as inputVal:
+		with open(dirName + '/' + 'map_%04u.obj' % nodeID, 'rb') as inputVal:
 			print pickle
 			print inputVal
 			print self

@@ -158,13 +158,21 @@ class TestProcess(SnakeControl):
 			#self.mapGraph.restorePickle(".", 31)
 			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 32, 237)
 
-			self.mapGraph.restorePickle(".", 109)
-			self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 110, 237)
+			#self.mapGraph.restorePickle(".", 109)
+			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 110, 237)
 
 			#self.mapGraph.restorePickle(".", 39)
 			#self.mapGraph.loadSeries("../results/result_2013_08_16_Y_junction_complete", 40, 289)
 			#self.mapGraph.restorePickle(".", 53)
 			#self.mapGraph.loadSeries("../results/result_2013_08_16_Y_junction_complete", 54, 289)
+
+			#self.mapGraph.restorePickle(".", 83)
+			#self.mapGraph.loadSeries("../results/result_2013_08_16_Y_junction_complete", 84, 289)
+
+			self.mapGraph.restorePickle("../testDir5", 117)
+			self.mapGraph.loadSeries("../testDir5", 118, 121)
+
+			#self.mapGraph.loadSeries("../results/result_2013_08_16_Y_junction_complete", 0, 289)
 
 			#self.mapGraph.restorePickle(".", 15)
 			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 16, 237)

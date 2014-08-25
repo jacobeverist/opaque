@@ -3,6 +3,7 @@ from LocalNode import LocalNode, getLongestPath, computeHullAxis
 from Pose import Pose
 import pylab
 from SplineFit import SplineFit
+from math import *
 
 import cPickle as pickle
 from StablePose import StablePose
@@ -55,6 +56,9 @@ class MapUser:
 
 		self.localNodes.append(self.foreNode)
 		self.localNodes.append(self.backNode)
+#
+		with open("map_%04u.obj" % self.backNode.nodeID, 'wb') as output:
+			pickle.dump(self.mapAlgorithm, output, pickle.HIGHEST_PROTOCOL)
 
 	@property
 	def numNodes(self):
@@ -62,7 +66,45 @@ class MapUser:
 
 	@property
 	def nodeHash(self):
-		return self.mapAlgorithm.localNodes
+		return self.mapAlgorithm.nodeHash
+		#return self.mapAlgorithm.localNodes
+
+
+	def restorePickle(self, dirName, nodeID):
+		PIXELSIZE = 0.05
+		print self
+
+		with open('map_%04u.obj' % nodeID, 'rb') as inputVal:
+			print pickle
+			print inputVal
+			print self
+			print self.mapAlgorithm
+			self.mapAlgorithm = pickle.load(inputVal)
+			print self.mapAlgorithm
+			self.mapAlgorithm.saveState()
+
+			for val in self.mapAlgorithm.mapHyps.values():
+				self.mapAlgorithm.drawPathAndHull2(val)
+
+			#self.mapAlgorithm.loadSeries("../results/result_2013_08_24_cross", 238)
+
+			"""
+			print "loading node", 12		
+			currNode = LocalNode(self.probe, self.contacts, 12, 19, PIXELSIZE)
+			currNode.readFromFile2("../results/result_2013_08_24_cross", 12)
+			self.localNodes.append(currNode)
+			self.mapAlgorithm.loadNewNode(currNode)
+			self.mapAlgorithm.saveState()
+		
+			print "loading node", 13		
+			currNode = LocalNode(self.probe, self.contacts, 13, 19, PIXELSIZE)
+			currNode.readFromFile2("../results/result_2013_08_24_cross", 13)
+			self.localNodes.append(currNode)
+			self.mapAlgorithm.loadNewNode(currNode)
+			self.mapAlgorithm.saveState()
+			"""
+		
+
 
 	def restoreSeries(self, dirName, num_poses):
 
@@ -255,8 +297,14 @@ class MapUser:
 		
 		" - get GPAC of pose "
 		nodeID = self.numNodes-1
-		hull1, medial1 = computeHullAxis(nodeID, self.nodeHash[nodeID], tailCutOff = False)
-		estPose1 = self.nodeHash[nodeID].getGlobalGPACPose()
+		#hull1, medial1 = computeHullAxis(nodeID, self.nodeHash[nodeID], tailCutOff = False)
+
+		#hull2, medial2 = computeHullAxis(nodeID, node2, tailCutOff = False)
+		hull1 = self.mapAlgorithm.poseData.aHulls[nodeID]
+		medial1 = self.mapAlgorithm.poseData.medialAxes[nodeID]
+
+		#estPose1 = self.nodeHash[nodeID].getGlobalGPACPose()
+		estPose1 = self.mapAlgorithm.mapHyps[self.mapAlgorithm.activeHypID].getNodePose(nodeID)
 
 		poseOrigin = Pose(estPose1)
 
@@ -358,30 +406,49 @@ class MapUser:
 		
 		return totalDist + minDist1 + minDist2
 
+	def pathTermVisited(self, pathID):
+		for hypID, mapHyp in self.mapAlgorithm.mapHyps.iteritems():
+			mapHyp.pathTermVisited(pathID)
 		
 	def selectNextDestination(self):
+
 		if self.isDirty:
 			self.synch()
-		
+
+		allTerms = {}
+		allTermsVisited = {}
+		termToHypID = {}
+
 		" get the termination point and orientation of each path "
-		terms = self.mapAlgorithm.topHyp.getPathTerms()
-		termsVisited = self.mapAlgorithm.topHyp.getPathTermsVisited()
+		for hypID, mapHyp in self.mapAlgorithm.mapHyps.iteritems():
+			terms = mapHyp.getPathTerms()
+			termsVisited = mapHyp.getPathTermsVisited()
+
+			print "selectNextDestination for hyp", hypID
+			print "terms:", terms
+			print "termsVisited:", termsVisited
+
+			for key, val in terms.iteritems():
+				allTerms[key] = val
+				allTermsVisited[key] = termsVisited[key]
+				termToHypID[key] = hypID
+
+		print "allTerms:", allTerms
+		print "allTermsVisited:", allTermsVisited
 		
-		print "Terms:", terms
-		print "TermsVisited:", termsVisited
-		
-		for k, term in terms.iteritems():
-			#term = terms[k]
-			
-			if not termsVisited[k]:
-				#self.mapAlgorithm.topHyp.pathTermVisited(k)
-				print "selecting term", k
+		for k, term in allTerms.iteritems():
+			if not allTermsVisited[k]:
+				print "selecting term", k, "for hyp ID", termToHypID[k]
+
+				self.mapAlgorithm.activeHypID = termToHypID[k]
 				return term,k
 		
 		" if all terms visited, reset and go to root "
-		self.mapAlgorithm.topHyp.resetTerms()
+		for hypID, mapHyp in self.mapAlgorithm.mapHyps.iteritems():
+			mapHyp.resetTerms()
 		
-		return self.mapAlgorithm.paths.rootPoint, -1
+		for hypID, mapHyp in self.mapAlgorithm.mapHyps.iteritems():
+			return mapHyp.rootPoint, -1
 		
 	def getNodeOccMap(self, nodeNum):
 		localNode = self.nodeHash[nodeNum]

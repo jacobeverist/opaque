@@ -2446,22 +2446,18 @@ def computeLocalDivergence(hypSet, nodeID1, nodeID2):
 		
 		" COMPUTE DEPARTURE EVENTS FOR EACH OVERLAPPING PATH SECTION "
 		for pathID in orderedPathIDs1:
-			#resultSet = mapHyp.getDeparturePoint(mapHyp.trimmedPaths[pathID], nodeID1, plotIter = True)
 
 			trimSpline = SplineFit(mapHyp.trimmedPaths[pathID])
 			path_vec = trimSpline.getUniformSamples()
 
-			#def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, nodeID, pathPlotCount = 0, hypID = 0, particleIndex = 0, spliceIndex = 0, plotIter = False):
-
 			orientedTrimPath = orientPathLean(path_vec, globalMedial1)
 			resultArgs1 = getMultiDeparturePoint(orientedTrimPath, medial1_vec, estPose1, estPose1, orderedPathIDs1, nodeID1, pathPlotCount=pathID, hypID=mapHyp.hypothesisID, plotIter=True)
-			#return departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2
 
 
 			mapHyp.departureResultSet1 = resultArgs1
 
 			departurePoint1, depAngle1, isInterior1, isExist1, discDist1, maxFront, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, maxBack, contigFrac, overlapSum, angDiff2 = resultArgs1
-			#departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = resultSet
+
 			mapHyp.departures1.append([isExist1,isExist2])
 			mapHyp.interiors1.append([isInterior1, isInterior2])
 			mapHyp.depPoints1.append([departurePoint1, departurePoint2])
@@ -2479,11 +2475,8 @@ def computeLocalDivergence(hypSet, nodeID1, nodeID2):
 
 			mapHyp.departureResultSet2 = resultArgs2
 			departurePoint1, depAngle1, isInterior1, isExist1, discDist1, maxFront, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, maxBack, contigFrac, overlapSum, angDiff2 = resultArgs2
+			#return departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2
 
-			#resultSet = mapHyp.getDeparturePoint(mapHyp.trimmedPaths[pathID], nodeID2, plotIter = True)
-			#mapHyp.departureResultSet2 = resultSet
-
-			#departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = resultSet
 			mapHyp.departures2.append([isExist1,isExist2])
 			mapHyp.interiors2.append([isInterior1, isInterior2])
 			mapHyp.depPoints2.append([departurePoint1, departurePoint2])
@@ -2575,6 +2568,10 @@ def checkForeBranch(hypSet, nodeID1, nodeID2, shootIDs, particleIDs):
 			raise	
 
 
+		""" call with depAngle instead of depPoint[2] angle
+			since depPoint[2] angle refers to orientation of medial axis curve """
+		""" depAngle refers to tip angle, which is not necessarily what we want """
+		""" depPoint[2] is now inverted for forward angle """
 		if depPoint1 != 0:
 			#isUnique1, duplicatePathID1 = mapHyp.checkUniqueBranch(parentPathID1, nodeID1, depAngle1, depPoint1)
 			isUnique1, duplicatePathID1 = mapHyp.checkUniqueBranch(parentPathID1, nodeID1, depPoint1[2], depPoint1)

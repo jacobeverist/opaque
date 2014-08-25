@@ -1544,10 +1544,11 @@ class MapState:
 			branchPathIDs.remove(0)
 			branchPathIDs.sort()
 
-			controlPoses_L = []
+			controlPoses_L = {}
 			for pathID in allPathIDs:
-				controlPoses_L.append(deepcopy(part.junctionData[pathID]["controlPose"]))
+				controlPoses_L[pathID] = deepcopy(part.junctionData[pathID]["controlPose"])
 
+			print "checkA:", controlPoses_L, self.getParentHash()
 			controlPoses_G = computeGlobalControlPoses(controlPoses_L, self.getParentHash())
 
 			xP = []
@@ -1686,7 +1687,8 @@ class MapState:
 		newObj.parentParticle = self.hypothesisID 
 
 		newObj.pathClasses = deepcopy(self.pathClasses)
-		newObj.pathTermsVisisted = deepcopy(self.pathTermsVisited)
+		newObj.pathTermsVisited = deepcopy(self.pathTermsVisited)
+		newObj.topDict = deepcopy(self.topDict)
 		newObj.pathIDs = deepcopy(self.pathIDs)
 		newObj.paths = deepcopy(self.paths)
 		newObj.hulls = deepcopy(self.hulls)
@@ -1756,13 +1758,45 @@ class MapState:
 		keys = self.trimmedPaths.keys()
 		keys.sort()
 
+
+		parentHash = self.getParentHash()
+
+		for j in keys:
+			parentID = parentHash[j]
+			if parentID != None:
+				path1 = self.trimmedPaths[j]
+				path2 = self.trimmedPaths[parentID]
+
+				branchPose_G = self.branchPoses_G[j]
+
+				#pathSpline1 = SplineFit(path1)
+				#pathPoints1 = pathSpline1.getUniformSamples()
+				pathSpline2 = SplineFit(path2)
+				pathPoints2 = pathSpline2.getUniformSamples()
+
+				minPoint, minI, minDist = gen_icp.findClosestPointInA(pathPoints2, branchPose_G)
+
+				ang1 = branchPose_G[2]
+				ang2 = pathPoints2[minI][2]
+
+				ang1 = normalizeAngle(ang1)
+				ang2 = normalizeAngle(ang2)
+				branchDiffAngle = fabs(normalizeAngle(diffAngle(ang1, ang2)))
+
+				print "computeEval:", self.hypothesisID, parentID, j, ang1, ang2, branchDiffAngle, minDist
+
 		totalSum = 0.0
 		for j in keys:
 			path1 = self.trimmedPaths[j]
+
+
+
 			for k in keys:
 				path2 = self.trimmedPaths[k]
 
 				if j < k:
+
+
 					resultSum = self.getPathOverlapSum(path1, path2, j, k, plotIter = True)
 					print "computing sum of", j, "and", k, "=", resultSum
 					totalSum += resultSum
@@ -3019,6 +3053,9 @@ class MapState:
 					landmarkPoint_N = spatialFeature["archPoint"]
 					landmarkPoint_L = poseFrame_L.convertLocalToGlobal(landmarkPoint_N)
 
+				elif spatialFeature["inflectionPoint"] != None:
+					landmarkPoint_N = spatialFeature["inflectionPoint"]
+					landmarkPoint_L = poseFrame_L.convertLocalToGlobal(landmarkPoint_N)
 
 				if landmarkPoint_L != None:
 					self.localLandmarks[pathID].append(landmarkPoint_L)
@@ -3243,7 +3280,7 @@ class MapState:
 
 		nodePose = self.getNodePose(nodeID)
 		splicePaths, spliceTerms, splicePathIDs = self.getSplicesByNearJunction(nodePose)
-		
+
 		#node2 = self.nodeHash[nodeID]
 
 		#hull2, medial2 = computeHullAxis(nodeID, node2, tailCutOff = False)
@@ -3299,7 +3336,7 @@ class MapState:
 
 				#medial2 = self.poseData.medialAxes[nodeID]
 				#estPose2 = self.nodePoses[nodeID]
-				sum1 = getOverlapCondition(self.poseData.medialAxes[nodeID], self.getNodePose(nodeID), self.trimmedPaths[pathID], nodeID, plotIter = False, overlapPlotCount = self.overlapPlotCount)
+				sum1 = getOverlapCondition(self.poseData.medialAxes[nodeID], self.getNodePose(nodeID), self.trimmedPaths[pathID], nodeID, plotIter = True, overlapPlotCount = self.overlapPlotCount)
 				self.overlapPlotCount += 1
 
 				#sum1 = self.getOverlapCondition(self.trimmedPaths[pathID], nodeID, plotIter = False)
@@ -3751,6 +3788,7 @@ class MapState:
 		paths = self.paths
 		localPaths = self.localPaths
 		trimmedPaths = {}
+		branchPoses_G = {}
 		localTrimmedPaths = {}
 		
 		print "path lengths:"
@@ -3816,8 +3854,11 @@ class MapState:
 						globalJunctionPose = self.getGlobalJunctionPose(childPathID)
 						globalControlPose = globalControlPoses[pathID]
 
-						localNewPath3, localNewGlobJuncPose, localParticlePath, isNoDiverge = trimBranch(childPathID, parentPathID, localControlPose, localJunctionPose, localPathSegsByID, self.localPaths, parentPathIDs, globalControlPoses, plotIter=True, hypothesisID=self.hypothesisID, nodeID=(self.poseData.numNodes))
+						localNewPath3, branchPose_L, localParticlePath, isNoDiverge = trimBranch(childPathID, parentPathID, localControlPose, localJunctionPose, localPathSegsByID, self.localPaths, parentPathIDs, globalControlPoses, plotIter=True, hypothesisID=self.hypothesisID, nodeID=(self.poseData.numNodes))
 
+
+						currFrame = Pose(globalControlPose)
+						branchPose_G = currFrame.convertLocalOffsetToGlobal(branchPose_L)
 
 						offsetOrigin1 = Pose(globalControlPose)
 						globalPath3 = []
@@ -3826,11 +3867,13 @@ class MapState:
 
 						trimmedPaths[pathID] = deepcopy(globalPath3)
 						localTrimmedPaths[pathID] = deepcopy(localNewPath3)
+						branchPoses_G[pathID] = branchPose_G
 
 					for childID in pathIDs:
 						if self.pathClasses[childID]["parentID"] == pathID:
 							isParentComputed[childID] = True
 
+		self.branchPoses_G = branchPoses_G
 		self.trimmedPaths = trimmedPaths
 		self.localTrimmedPaths = localTrimmedPaths
 			
@@ -3840,7 +3883,12 @@ class MapState:
 	@logFunction
 	def pathTermVisited(self, pathID):
 		
-		self.pathTermsVisited[pathID] = True
+		try:
+			self.pathTermsVisited[pathID]
+		except:
+			pass
+		else:
+			self.pathTermsVisited[pathID] = True
 
 	@logFunction
 	def getPathTermsVisited(self):
@@ -3867,6 +3915,7 @@ class MapState:
 			
 		print "returning path terms:", terms
 
+		#self.topDict["t%u" % (pathID+1)] = (pathID,0)
 		return terms
 
 	@logFunction
@@ -4683,119 +4732,6 @@ class MapState:
 		print "returning:", contigFrac, overlapSum
 		return departurePoint1, angle1, isInterior1, isExist1, dist1, departurePoint2, angle2, isInterior2, isExist2, dist2, contigFrac, overlapSum
 		
-
-	@logFunction
-	def getPathOverlapCondition(self, path1, path2, pathID1, pathID2, plotIter = False):
-
-
-		if len(path1) == 0:
-			return 1e100
-	
-		medial2 = path2
-			   
-		minMatchDist2 = 0.2
-					
-	
-		supportSpline = SplineFit(path1, smooth=0.1)		
-		vecPoints1 = supportSpline.getUniformSamples()
-		supportPoints = gen_icp.addGPACVectorCovariance(vecPoints1,high_var=0.05, low_var = 0.001)
-			
-		medialSpline2 = SplineFit(medial2, smooth=0.1)
-		vecPoints2 = medialSpline2.getUniformSamples()
-		points2 = gen_icp.addGPACVectorCovariance(vecPoints2,high_var=0.05, low_var = 0.001)
-
-		" transformed points without associated covariance "
-		poly2 = []
-		for p in points2:
-			poly2.append([p[0],p[1]])			 
-		
-		support_pairs = []
-		for i in range(len(vecPoints2)):
-			
-			p_2 = vecPoints2[i]
-	
-			try:
-				p_1, minI, minDist = gen_icp.findClosestPointWithAngle(vecPoints1, p_2, math.pi/8.0)
-	
-				if minDist <= minMatchDist2:
-					C2 = points2[i][2]
-					C1 = supportPoints[minI][2]
-	
-					" we store the untransformed point, but the transformed covariance of the A point "
-					support_pairs.append([points2[i],supportPoints[minI],C2,C1])
-			except:
-				pass
-
-		cost = 0.0
-		if len(support_pairs) == 0:
-			cost = 1e100
-		else:
-			vals = []
-			sum1 = 0.0
-			for pair in support_pairs:
-		
-				a = pair[0]
-				b = pair[1]
-				Ca = pair[2]
-				Cb = pair[3]
-		
-				ax = a[0]
-				ay = a[1]		 
-				bx = b[0]
-				by = b[1]
-		
-				c11 = Ca[0][0]
-				c12 = Ca[0][1]
-				c21 = Ca[1][0]
-				c22 = Ca[1][1]
-						
-				b11 = Cb[0][0]
-				b12 = Cb[0][1]
-				b21 = Cb[1][0]
-				b22 = Cb[1][1]	  
-			
-				val = gen_icp.computeMatchErrorP([0.0,0.0,0.0], [ax,ay], [bx,by], [c11,c12,c21,c22], [b11,b12,b21,b22])
-				
-				vals.append(val)
-				sum1 += val
-				
-			cost = sum1 / len(support_pairs)
-			
-
-		if plotIter:
-			pylab.clf()
-			xP = []
-			yP = []
-			for p in supportPoints:
-				xP.append(p[0])
-				yP.append(p[1])
-			pylab.plot(xP,yP, color='b')
-	
-			xP = []
-			yP = []
-			for p in poly2:
-				xP.append(p[0])
-				yP.append(p[1])
-			pylab.plot(xP,yP, color='r')
-			
-			for pair in support_pairs:
-				p1 = pair[0]
-				p2 = pair[1]
-				xP = [p1[0],p2[0]]
-				yP = [p1[1],p2[1]]
-				pylab.plot(xP,yP)
-			
-			pylab.xlim(-5,10)
-			pylab.ylim(-8,8)
-			pylab.title("%d %d cost = %f, count = %d" % (pathID1, pathID2, cost, len(support_pairs)))
-			pylab.savefig("pathOverlapCost_%04u.png" % self.overlapPlotCount)
-			self.overlapPlotCount += 1
-		
-		if len(support_pairs) == 0:
-			return 1e100
-
-		return cost
-
 
 	@logFunction
 	def getPathOverlapSum(self, path1, path2, pathID1, pathID2, plotIter = False):

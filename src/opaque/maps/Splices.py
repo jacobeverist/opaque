@@ -508,7 +508,8 @@ def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, node
 	if maxFront > DEP_THRESH:
 		departurePoint1 = pathPoints[max1]
 		
-		departurePoint1 = points2_offset[newFrontDepI]
+		departurePoint1 = deepcopy(points2_offset[newFrontDepI])
+		departurePoint1[2] = normalizeAngle(departurePoint1[2] + pi)
 		
 		isExist1 = True
 

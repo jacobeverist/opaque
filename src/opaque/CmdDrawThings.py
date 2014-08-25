@@ -15,7 +15,14 @@ class CmdDrawThings():
 	
 	def setRenderView(self, renderView):
 		pass
-		
+	
+
+	def updateCamera(self, pos, angQuat):
+		pass
+
+	def setWalls(self, walls):
+		pass
+
 	def plotRobotConfiguration(self, poses, clr = (0.0,0.0,0.0)):
 				
 		segWidth = self.robotParam['segWidth']
@@ -55,6 +62,9 @@ class CmdDrawThings():
 	def drawPath(self, pnts, color = (0.0,0.0,0.0)):
 		pass
 				
+
+	def render(self):
+		pass
 
 	def renderLines(self, pnts, color = (0.0,0.0,0.0)):
 		pass

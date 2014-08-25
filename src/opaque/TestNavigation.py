@@ -269,6 +269,9 @@ class TestNavigation(SnakeControl):
 			initPose = [-0.83215373754501343, 0.046221695840358734, -2.1473097801208496]
 			#initpose = [-0.70651340484619141, 0.02392122894525528, -2.0914869430965584]
 
+			#self.mapGraph.restorePickle(".", 31)
+			self.mapGraph.restorePickle(".", 117)
+
 			#self.mapGraph.restoreSeries("result_2013_07_05a",60)
 
 			#self.mapGraph.restoreSeries("../results/result_2013_08_01_complete_45junction",38)
@@ -489,49 +492,22 @@ class TestNavigation(SnakeControl):
 
 				self.isCapture = False
 
-				#exit()
-				
-				#self.mapGraph.correctPoses2()
 				self.mapGraph.correctPosture()
-				#self.mapGraph.localizeCurrentNode()
 				self.mapGraph.pairDone()
-				self.mapGraph.localizePose()
-				self.contacts.resetPose(self.mapGraph.currNode.getEstPose())
-				self.lastPose = self.contacts.getAverageSegPose(0)
 
-				#self.mapGraph.relaxCorrect()
-				#self.mapGraph.synch()
-				#self.mapGraph.saveMap()
-				self.mapGraph.saveLocalMap()
-				self.mapGraph.saveState()
-				self.mapGraph.drawConstraints()				
-				
 
-				#if self.mapGraph.numNodes > 24:
-				#	exit()
-				
-				#self.currPose = self.contacts.getAverageSegPose(0)
-				#deltaDist = sqrt((self.currPose[0]-self.lastPose[0])**2 + (self.currPose[1]-self.lastPose[1])**2)
-
-				" FORCE to the probe to continue walking forward "
-				#deltaDist = 1.0
-				#print "deltaDist =", deltaDist
-	
-				#self.lastPose = self.currPose
-				
-				
+				""" check for collisions so we know when to stop """
 				frontSum = 0.0
 				print self.mapGraph.numNodes
-				print len(self.mapGraph.nodeHash)
 
-				frontProbeError = self.mapGraph.nodeHash[self.mapGraph.numNodes-2].frontProbeError
+				frontProbeError = self.mapGraph.foreNode.frontProbeError
 				for n in frontProbeError:
 					frontSum += n
 				foreAvg = frontSum / len(frontProbeError)
 				
 
 				backSum = 0.0
-				backProbeError = self.mapGraph.nodeHash[self.mapGraph.numNodes-1].backProbeError
+				backProbeError = self.mapGraph.backNode.backProbeError
 				for n in backProbeError:
 					backSum += n
 				backAvg = backSum / len(backProbeError)
@@ -581,8 +557,16 @@ class TestNavigation(SnakeControl):
 						self.collisionCount = 0		
 					
 				print "collisionCount =", self.collisionCount, self.isCollided, self.globalState, foreAvg, backAvg, self.inversion, self.travelDir
+				self.mapGraph.localizePose()
+				self.contacts.resetPose(self.mapGraph.currNode.getEstPose())
+				self.lastPose = self.contacts.getAverageSegPose(0)
+
+				self.mapGraph.saveLocalMap()
+				self.mapGraph.saveState()
+				self.mapGraph.drawConstraints()				
+				
 				#self.globalState = 10
-					
+
 				#if self.mapGraph.numNodes > 26:
 				#	self.travelDir = False	
 				#if self.mapGraph.numNodes > 40:
@@ -664,7 +648,7 @@ class TestNavigation(SnakeControl):
 			
 			if isDone:
 				if self.termPathID != -1:
-					self.mapGraph.mapAlgorithm.topHyp.pathTermVisited(self.termPathID)
+					self.mapGraph.pathTermVisited(self.termPathID)
 					self.termPathID = -1
 				else:
 					" invert our pose so we can hit other junctions "
@@ -1323,13 +1307,15 @@ class TestNavigation(SnakeControl):
 				
 				
 				frontSum = 0.0
-				frontProbeError = self.mapGraph.nodeHash[self.mapGraph.numNodes-2].frontProbeError
+				#frontProbeError = self.mapGraph.nodeHash[self.mapGraph.numNodes-2].frontProbeError
+				frontProbeError = self.mapGraph.foreNode.frontProbeError
 				for n in frontProbeError:
 					frontSum += n
 				foreAvg = frontSum / len(frontProbeError)
 
 				backSum = 0.0
-				backProbeError = self.mapGraph.nodeHash[self.mapGraph.numNodes-1].backProbeError
+				#backProbeError = self.mapGraph.nodeHash[self.mapGraph.numNodes-1].backProbeError
+				backProbeError = self.mapGraph.backNode.backProbeError
 				for n in backProbeError:
 					backSum += n
 				backAvg = backSum / len(backProbeError)

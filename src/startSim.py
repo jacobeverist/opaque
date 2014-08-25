@@ -92,8 +92,8 @@ def createTest():
 	#probe = BulletProbe(quat,pos,40,0.15,0.1,0.15,1000.0,10.0)
 
 	
-	#drawThings = DrawThings(probe, hideWindow = args.hideWindow, restoreConfig = args.restoreConfig)
-	drawThings = CmdDrawThings(probe.robotParam)
+	drawThings = DrawThings(probe, hideWindow = args.hideWindow, restoreConfig = args.restoreConfig)
+	#drawThings = CmdDrawThings(probe.robotParam)
 	currControl = TestNavigation(probe, drawThings)
 	
 	probe.addControl(currControl)

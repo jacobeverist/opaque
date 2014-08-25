@@ -3069,7 +3069,7 @@ def getInitSkeletonBranchPoint(globalJunctionPose, currShootID, globalMedial_G, 
 
 	allPathIDs = localPathSegsByID.keys()
 
-	pathSegsByID_G = []
+	pathSegsByID_G = {}
 	for shootID in allPathIDs:
 
 		localSegs_L = localPathSegsByID[shootID]
@@ -3086,7 +3086,7 @@ def getInitSkeletonBranchPoint(globalJunctionPose, currShootID, globalMedial_G, 
 				newSeg.append(newPose)
 			localSegs_G.append(newSeg)
 
-		pathSegsByID_G.append(localSegs_G)
+		pathSegsByID_G[shootID] = localSegs_G
 
 		localPath_G = []
 		for p in localPath_L:
@@ -3237,7 +3237,7 @@ def getSkeletonBranchPoint(globalJunctionPose, currShootID, parentShootIDs, loca
 	allPointSoup_G = []
 	CONTIG_DIST = 0.2
 
-	pathSegsByID_G = []
+	pathSegsByID_G = {}
 	for shootID in nonDescentIDs:
 
 		localSegs_L = localPathSegsByID[shootID]
@@ -3254,7 +3254,7 @@ def getSkeletonBranchPoint(globalJunctionPose, currShootID, parentShootIDs, loca
 				newSeg.append(newPose)
 			localSegs_G.append(newSeg)
 
-		pathSegsByID_G.append(localSegs_G)
+		pathSegsByID_G[shootID] = localSegs_G
 
 		localPath_G = []
 		for p in localPath_L:

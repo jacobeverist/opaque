@@ -1800,17 +1800,21 @@ class LocalNode:
 				nextU = medialSpline2.getUOfDist(currU, 0.04, distIter = 0.001)			
 				currU = nextU
 
+	
+			#DERIV_WIDTH = 6
+			DERIV_WIDTH = 16
+
 
 			for k in range(len(medialWidth)):
 				
-				if (k-6) > 0 and (k+6) < len(medialWidth):
+				if (k-DERIV_WIDTH) > 0 and (k+DERIV_WIDTH) < len(medialWidth):
 
 					diffs = []
 
-					for l in range(0,7):
+					for l in range(0,DERIV_WIDTH+1):
 
-						if (k-6+l) >= 0 and (k+l) < len(medialWidth):
-							ang1 = medialWidth[k-6+l]["linePoint"][2]
+						if (k-DERIV_WIDTH+l) >= 0 and (k+l) < len(medialWidth):
+							ang1 = medialWidth[k-DERIV_WIDTH+l]["linePoint"][2]
 							ang2 = medialWidth[k+l]["linePoint"][2]
 							diffs.append(fabs(ang1-ang2))
 
@@ -2050,8 +2054,10 @@ class LocalNode:
 
 
 
-				#if maxDeriv >= 0.25:
-				inflectionPoint = copy(longPathWidth[contigInflection]["linePoint"])
+				if maxDeriv >= 0.35:
+					inflectionPoint = copy(longPathWidth[contigInflection]["linePoint"])
+				else:
+					inflectionPoint = None
 
 			" conditions for a bloom detection "
 			bloomPoint = None
@@ -2426,8 +2432,9 @@ class LocalNode:
 				#	ax1.scatter([inflectionPoint[0]],[inflectionPoint[1]], color='r')
 				#	ax1.annotate("%1.2f" % maxDeriv, xy=(inflectionPoint[0], 0.3), xytext=(inflectionPoint[0], 0.8))
 
-				ax1.scatter([inflectionPoint[0]],[inflectionPoint[1]], color='r')
-				ax1.annotate("%1.2f" % maxDeriv, xy=(inflectionPoint[0], 0.3), xytext=(inflectionPoint[0], 0.8), color='r')
+				if inflectionPoint != None:
+					ax1.scatter([inflectionPoint[0]],[inflectionPoint[1]], color='r')
+					ax1.annotate("%1.2f" % maxDeriv, xy=(inflectionPoint[0], 0.3), xytext=(inflectionPoint[0], 0.8), color='r')
 
 			ax1.set_title("Medial %d, %s, %d" % (self.nodeID, repr(contigBoundaries), numPoints))
 			plt.savefig("medialOut_%04u.png" % self.nodeID)
