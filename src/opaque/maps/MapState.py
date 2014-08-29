@@ -722,6 +722,8 @@ class MapState:
 
 		#cProfile.run('runTest(probe)', 'test_prof')
 
+		JOINT_DIST = 3.0
+
 		poseData = self.poseData
 
 		""" smoothed and vectored root path """
@@ -880,7 +882,7 @@ class MapState:
 
 						""" determine the range of values for this particular branch """
 						newArcDist = self.branchArcDists[pathID][minIndex]
-						if origBranchDists[pathID] < 3.0:
+						if origBranchDists[pathID] < JOINT_DIST:
 
 							if minIndex < 2:
 								minIndex = 2
@@ -4868,6 +4870,8 @@ class MapState:
 		" cartesian distance "
 		DISC_THRESH = 0.5
 
+		JOINT_DIST = 3.0
+
 		" 60 degree threshold "
 		#ANG_THRESH = 0.523 # pi/6
 		ANG_THRESH = pi/8
@@ -4876,6 +4880,55 @@ class MapState:
 		TERM_THRESH = 0.8
 		
 		pathIDs = self.getPathIDs()
+
+
+		""" enforce too many neighbors constraint """
+		neighborCount = 0
+
+		for pathID in pathIDs:
+			if pathID != 0:
+				junctionPoint = self.getGlobalJunctionPose(pathID)
+				neighDist = sqrt((depPoint[0]-junctionPoint[0])**2 + (depPoint[1]-junctionPoint[1])**2)
+
+				if neighDist < JOINT_DIST:
+					neighborCount += 1
+
+		if neighborCount >= 2:
+			print "REJECT, too many neighbors", pathID, neighborCount, depPoint
+			return False, parentPathID
+
+
+		""" check over all spatial landmarks to determine if we are close to a junction """
+
+		controlPoses_L = {}
+		for pathID in pathIDs:
+			controlPoses_L[pathID] = self.pathClasses[pathID]["controlPose"]
+
+		parentPathIDs = self.getParentHash()
+		controlPoses_G = computeGlobalControlPoses(controlPoses_L, parentPathIDs)
+
+		minLandmark = None
+		minLandDist = 1e100
+
+		for pathID in pathIDs:
+			currFrame = Pose(controlPoses_G[pathID])
+			for point_L in self.localLandmarks[pathID]:
+				point_G = currFrame.convertLocalToGlobal(point_L)
+				landmarkDist = sqrt((depPoint[0]-point_G[0])**2 + (depPoint[1]-point_G[1])**2)
+
+				if landmarkDist < minLandDist:
+					minLandDist = landmarkDist
+					minLandmark = point_G
+
+		if minLandDist >= 0.5:
+			print "REJECT, proposed branch point is not close enough to a spatial landmark", pathID, neighborCount, depPoint
+			return False, parentPathID
+
+		sF0 = self.poseData.spatialFeatures[nodeID1][0]
+		if sF0["bloomPoint"] == None and sF0["archPoint"] == None and sF0["inflectionPoint"] == None:
+			print "REJECT, diverging pose has no spatial landmark feature", pathID, neighborCount, depPoint
+			return False, parentPathID
+
 		
 		for pathID in pathIDs:
 

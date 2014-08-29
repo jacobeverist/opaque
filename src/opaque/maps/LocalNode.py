@@ -2073,8 +2073,10 @@ class LocalNode:
 				slopes = contigSlopes[0]
 
 
-				if (frontBoundIndex <= 6 or backBoundIndex >= len(longPathWidth)-7) and cLen < 25 and dens >= 0.03:
+				if (frontBoundIndex <= 6 or backBoundIndex >= len(longPathWidth)-7) and cLen < 25 and dens >= 0.05:
 					bloomPoint = longPathWidth[pointIndex]["linePoint"]
+
+					#ax2.annotate("%1.2f %1.2f %1.2f %1.3f %s" % (dens, asymm, area, negArea, repr(slopes[0]+slopes[1])), xy=(contigCenterMass[0], 0.3), xytext=(contigCenterMass[0], 0.8), color='k')
 
 					print self.nodeID, "bloom boundaries:", frontBoundIndex, backBoundIndex, len(longPathWidth), cLen, dens, angDeriv, asymm, area, negArea, slopes[0]+slopes[1]
 
