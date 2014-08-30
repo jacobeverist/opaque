@@ -2,6 +2,9 @@ import BayesMapper
 from LocalNode import LocalNode, getLongestPath, computeHullAxis
 from Pose import Pose
 import pylab
+import numpy
+from math import pi
+import matplotlib.patches as mpatches
 from SplineFit import SplineFit
 from math import *
 
@@ -36,14 +39,82 @@ class MapUser:
 
 		self.pixelSize = PIXELSIZE
 
+		self.navPlotCount = 0
+
 		" whether or not the data needs to be synchronized "
 		self.isDirty = False
 
 	def drawConstraints(self, id = []):
+
 		pass
+
 
 	def drawWalls(self):
 		pass
+
+	def drawNavigation(self, path, goalPoint):
+
+		pylab.clf()
+
+		segWidth = self.probe.segWidth
+		segLength = self.probe.segLength
+
+		print "segWidth, segLength:", segWidth, segLength
+
+		walls = self.probe.getWalls()
+
+		for wall in walls:
+			xP = []
+			yP = []
+			for p in wall:
+				xP.append(p[0])
+				yP.append(p[1])
+
+			pylab.plot(xP,yP, color='k', alpha=0.5)
+
+		for i in range(0,40):
+			#pose = self.probe.getActualJointPose(i)
+			pose = self.probe.getActualSegPose(i)
+			xTotal = pose[0]
+			zTotal = pose[1]
+			totalAngle = pose[2] - pi
+
+			print "pose", i, pose
+
+
+			p1 = [xTotal + 0.5*segLength*cos(totalAngle) - 0.5*segWidth*sin(totalAngle), zTotal + 0.5*segLength*sin(totalAngle) + 0.5*segWidth*cos(totalAngle)]
+			p2 = [xTotal + 0.5*segLength*cos(totalAngle) + 0.5*segWidth*sin(totalAngle), zTotal + 0.5*segLength*sin(totalAngle) - 0.5*segWidth*cos(totalAngle)]
+			p3 = [xTotal - 0.5*segLength*cos(totalAngle) + 0.5*segWidth*sin(totalAngle), zTotal - 0.5*segLength*sin(totalAngle) - 0.5*segWidth*cos(totalAngle)]
+			p4 = [xTotal - 0.5*segLength*cos(totalAngle) - 0.5*segWidth*sin(totalAngle), zTotal - 0.5*segLength*sin(totalAngle) + 0.5*segWidth*cos(totalAngle)]
+			#p1 = [xTotal - 0.5*segWidth*sin(totalAngle), zTotal + 0.5*segWidth*cos(totalAngle)]
+			#p2 = [xTotal + 0.5*segWidth*sin(totalAngle), zTotal - 0.5*segWidth*cos(totalAngle)]
+			#p3 = [xTotal - segLength*cos(totalAngle) + 0.5*segWidth*sin(totalAngle), zTotal - segLength*sin(totalAngle) - 0.5*segWidth*cos(totalAngle)]
+			#p4 = [xTotal - segLength*cos(totalAngle) - 0.5*segWidth*sin(totalAngle), zTotal - segLength*sin(totalAngle) + 0.5*segWidth*cos(totalAngle)]
+			
+			xP = []
+			yP = []
+			xP.append(p4[0])
+			xP.append(p3[0])
+			xP.append(p2[0])
+			xP.append(p1[0])
+			xP.append(p4[0])
+			yP.append(p4[1])
+			yP.append(p3[1])
+			yP.append(p2[1])
+			yP.append(p1[1])
+			yP.append(p4[1])
+
+			xy = numpy.array([p4,p3,p2,p1])
+
+			# add a rectangle
+			polygon = mpatches.Polygon(xy, closed=True, color='k', alpha=0.2)
+			pylab.gca().add_patch(polygon)
+			#pylab.plot(xP,yP, color='k', alpha=0.5)
+
+		pylab.gca().invert_yaxis()
+		pylab.axis("equal")
+		pylab.savefig("navEstimate_%04u.png" % self.navPlotCount)
+		self.navPlotCount += 1
 
 	def localizePose(self):
 		

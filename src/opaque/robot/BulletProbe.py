@@ -276,20 +276,24 @@ class BulletProbe:
 
 		currPos = self.bullet_snake.getGlobalPosition(i)
 		quat_vars = self.bullet_snake.getGlobalOrientation(i)
-		x = quat_vars[3]
-		y = quat_vars[0]
-		z = quat_vars[1]
-		w = quat_vars[2]
+		#x = quat_vars[3]
+		#y = quat_vars[0]
+		#z = quat_vars[1]
+		#w = quat_vars[2]
+		x = quat_vars[0]
+		y = quat_vars[1]
+		z = quat_vars[2]
+		w = quat_vars[3]
 		angQuat = [x,y,z,w]
 
 		currVec, currAngle = self.quatToAngleAxis(angQuat)
 
 		if currVec[1] < 0:
-			#pose = [currPos[0], currPos[2], curAngle - pi]
-			pose = [currPos[0], currPos[2], curAngle]
+			pose = [currPos[0], currPos[2], currAngle - pi]
+			#pose = [currPos[0], currPos[2], currAngle]
 		else:
-			#pose = [currPos[0], currPos[2], -curAngle - pi]
-			pose = [currPos[0], currPos[2], -curAngle]
+			pose = [currPos[0], currPos[2], -currAngle - pi]
+			#pose = [currPos[0], currPos[2], -currAngle]
 		#pose = [currPos[0], currPos[2], -curAngle]  # angle negated for display reasons
 
 		return pose
@@ -323,12 +327,18 @@ class BulletProbe:
 			currPos = self.bullet_snake.getGlobalPosition(i)
 			quat_vars = self.bullet_snake.getGlobalOrientation(i)
 
-			x = quat_vars[3]
-			y = quat_vars[0]
-			z = quat_vars[1]
-			w = quat_vars[2]
+			#x = quat_vars[3]
+			#y = quat_vars[0]
+			#z = quat_vars[1]
+			#w = quat_vars[2]
+			x = quat_vars[0]
+			y = quat_vars[1]
+			z = quat_vars[2]
+			w = quat_vars[3]
 			angQuat = [x,y,z,w]
 			currVec, currAngle = self.quatToAngleAxis(angQuat)
+
+			print i, "currPos,currVec,currAngle:", currPos, quat_vars, currVec, currAngle
 			
 			#vec = ogre.Vector3(0.0,0.0,0.0)
 			#radAngle = ogre.Radian(0.0)
@@ -337,11 +347,11 @@ class BulletProbe:
 			#curAngle = self.normalizeAngle(curAngle)
 			
 			if currVec[1] < 0:
-				#pose = [currPos[0], currPos[2], curAngle - pi]
-				pose = [currPos[0], currPos[2], curAngle]
+				pose = [currPos[0], currPos[2], currAngle - pi]
+				#pose = [currPos[0], currPos[2], currAngle]
 			else:
-				#pose = [currPos[0], currPos[2], -curAngle - pi]
-				pose = [currPos[0], currPos[2], -curAngle]
+				pose = [currPos[0], currPos[2], -currAngle - pi]
+				#pose = [currPos[0], currPos[2], -currAngle]
 
 			
 			pose[0] = pose[0] + (self.segLength/2)*cos(pose[2])
@@ -354,12 +364,19 @@ class BulletProbe:
 		currPos = self.bullet_snake.getGlobalPosition(i+1)
 		quat_vars = self.bullet_snake.getGlobalOrientation(i+1)
 
-		x = quat_vars[3]
-		y = quat_vars[0]
-		z = quat_vars[1]
-		w = quat_vars[2]
+		#x = quat_vars[3]
+		#y = quat_vars[0]
+		#z = quat_vars[1]
+		#w = quat_vars[2]
+		x = quat_vars[0]
+		y = quat_vars[1]
+		z = quat_vars[2]
+		w = quat_vars[3]
 		angQuat = [x,y,z,w]
 		currVec, currAngle = self.quatToAngleAxis(angQuat)
+
+		#print i, "currVec,currAngle:", currVec, currAngle
+		print i, "currPos,currVec,currAngle:", currPos, quat_vars, currVec, currAngle
 
 		#vec = ogre.Vector3(0.0,0.0,0.0)
 		#radAngle = ogre.Radian(0.0)
@@ -371,11 +388,11 @@ class BulletProbe:
 
 		# curAngle is negated because the returned angle of the body is upside down wrt to the global frame
 		if currVec[1] < 0:
-			#pose = [currPos[0], currPos[2], curAngle - pi]
-			pose = [currPos[0], currPos[2], currAngle]
+			pose = [currPos[0], currPos[2], currAngle - pi]
+			#pose = [currPos[0], currPos[2], currAngle]
 		else:
-			#pose = [currPos[0], currPos[2], -curAngle - pi]
-			pose = [currPos[0], currPos[2], -currAngle]
+			pose = [currPos[0], currPos[2], -currAngle - pi]
+			#pose = [currPos[0], currPos[2], -currAngle]
 
 		# adding constant offset so that we are on the joint
 		pose[0] = pose[0] - (self.segLength/2)*cos(pose[2])

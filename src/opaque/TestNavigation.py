@@ -258,6 +258,8 @@ class TestNavigation(SnakeControl):
 			#self.mapGraph = MapGraph(self.probe, self.contacts, isStable = True)
 			self.mapGraph = MapUser(self.probe, self.contacts, isStable = True)
 
+			self.mapGraph.drawNavigation([],[])
+
 			#self.mapGraph.loadFile("testData/sweep5", 8)
 			#self.mapGraph.loadFile("testData/sweep5", 30)
 			#self.mapGraph.loadFile("testData/sweep5", 10)
@@ -270,7 +272,7 @@ class TestNavigation(SnakeControl):
 			#initpose = [-0.70651340484619141, 0.02392122894525528, -2.0914869430965584]
 
 			#self.mapGraph.restorePickle(".", 31)
-			self.mapGraph.restorePickle(".", 117)
+			#self.mapGraph.restorePickle(".", 117)
 
 			#self.mapGraph.restoreSeries("result_2013_07_05a",60)
 
@@ -407,6 +409,7 @@ class TestNavigation(SnakeControl):
 			if isDone:
 				self.globalState = 5
 				#self.globalState = 7
+				self.mapGraph.drawNavigation([],[])
 
 		elif self.globalState == 5:
 
@@ -439,6 +442,8 @@ class TestNavigation(SnakeControl):
 				#self.probe.restorePose()
 				self.isCapture = True
 				#self.grabPosture(True)
+
+				self.mapGraph.drawNavigation([],[])
 				
 		elif self.globalState == 6:
 
@@ -1150,11 +1155,7 @@ class TestNavigation(SnakeControl):
 
 				deltaDist1 = self.mapGraph.getPathLength(frontPathPoint, lastFrontPathPoint, self.localWayPaths[0])
 				deltaDist2 = self.mapGraph.getPathLength(backPathPoint, lastBackPathPoint, self.localWayPaths[0])
-
-				#deltaDist1 = sqrt((self.currPose1[0]-self.lastPose1[0])**2 + (self.currPose1[1]-self.lastPose1[1])**2)
-				#deltaDist2 = sqrt((self.currPose2[0]-self.lastPose2[0])**2 + (self.currPose2[1]-self.lastPose2[1])**2)
 				print "deltaDist1,deltaDist2 =", deltaDist1, deltaDist2
-
 
 				self.localPathState = 2
 
@@ -1247,6 +1248,12 @@ class TestNavigation(SnakeControl):
 				self.mapGraph.newNode(faceDir, self.localPathDirection)
 				self.mapGraph.forceUpdate(faceDir)
 				self.contacts.resetPose(self.mapGraph.currNode.getEstPose())
+				
+				self.lastPose1 = self.contacts.getAverageSegPose(0)
+				self.lastPose2 = self.contacts.getAverageSegPose(39)
+				
+				self.currPose1 = copy(self.lastPose1)
+				self.currPose2 = copy(self.lastPose2)
 
 		elif self.localPathState == 2:
 
@@ -1293,14 +1300,6 @@ class TestNavigation(SnakeControl):
 
 				self.mapGraph.correctPosture()
 				self.mapGraph.pairDone()
-				self.mapGraph.localizePose()
-				self.contacts.resetPose(self.mapGraph.currNode.getEstPose())
-				self.lastPose1 = self.contacts.getAverageSegPose(0)
-				self.lastPose2 = self.contacts.getAverageSegPose(39)
-
-				self.mapGraph.saveLocalMap()
-				self.mapGraph.saveState()
-				self.mapGraph.drawConstraints()				
 
 
 				self.localPathState = 1
@@ -1323,6 +1322,15 @@ class TestNavigation(SnakeControl):
 				print "PathFollow: foreAvg =", foreAvg
 				print "PathFollow: backAvg =", backAvg
 															
+				self.mapGraph.localizePose()
+				self.contacts.resetPose(self.mapGraph.currNode.getEstPose())
+				self.lastPose1 = self.contacts.getAverageSegPose(0)
+				self.lastPose2 = self.contacts.getAverageSegPose(39)
+
+				self.mapGraph.saveLocalMap()
+				self.mapGraph.saveState()
+				self.mapGraph.drawConstraints()				
+
 		return False				
 
 		
