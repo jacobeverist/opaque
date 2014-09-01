@@ -134,7 +134,7 @@ class SplineFit:
 
 		#iterVal = 1.0 / float(numSamples)
 		iterVal = 1.0 / float(approxSamples)
-		iterVal = round(iterVal, 3)
+		#iterVal = round(iterVal, 3)
 		samples = scipy.arange(0.0, 1.0, iterVal)
 		samples = append(samples, [1.0])
 		#samples.append(1.0)
