@@ -246,8 +246,11 @@ class TestNavigation(SnakeControl):
 			" get stable reference nodes on the snake body "
 			self.contacts.setMask( [1.0 for i in range(self.numJoints)] )	
 			self.contacts.step(probeState)
+
 			
 			if self.contacts.isStable():
+				self.contacts.resetPose(self.probe.getActualJointPose(19))
+				print "CHECK FOO", self.contacts.getAveragePose(19)
 				self.globalState = 3
 				self.lastPose1 = self.contacts.getAveragePose(0)
 				self.lastPose2 = self.contacts.getAveragePose(39)
@@ -258,8 +261,9 @@ class TestNavigation(SnakeControl):
 			#self.mapGraph = MapGraph(self.probe, self.contacts, isStable = True)
 			self.mapGraph = MapUser(self.probe, self.contacts, isStable = True)
 
-			self.mapGraph.drawNavigation([],[])
+			#self.mapGraph.drawNavigation([],[])
 
+			#exit()
 			#self.mapGraph.loadFile("testData/sweep5", 8)
 			#self.mapGraph.loadFile("testData/sweep5", 30)
 			#self.mapGraph.loadFile("testData/sweep5", 10)
@@ -273,6 +277,8 @@ class TestNavigation(SnakeControl):
 
 			#self.mapGraph.restorePickle(".", 31)
 			#self.mapGraph.restorePickle(".", 117)
+			#self.mapGraph.restorePickle("results/2014_08_29", 53)
+			#self.mapGraph.restorePickle("results/2014_08_29", 45)
 
 			#self.mapGraph.restoreSeries("result_2013_07_05a",60)
 
@@ -384,7 +390,7 @@ class TestNavigation(SnakeControl):
 			self.mapGraph.newNode(faceDir, self.travelDir)
 			self.mapGraph.forceUpdate(faceDir)
 
-			self.contacts.resetPose(self.mapGraph.currNode.getEstPose())
+			self.contacts.resetPose(self.mapGraph.getMaxPose())
 			self.lastPose1 = self.contacts.getAverageSegPose(0)
 			self.lastPose2 = self.contacts.getAverageSegPose(39)
 
@@ -398,6 +404,7 @@ class TestNavigation(SnakeControl):
 			self.currPose1 = self.contacts.getAverageSegPose(0)
 
 			print "Start Time:", time.clock()
+			self.mapGraph.drawNavigation([],[])
 
 
 			
@@ -409,7 +416,7 @@ class TestNavigation(SnakeControl):
 			if isDone:
 				self.globalState = 5
 				#self.globalState = 7
-				self.mapGraph.drawNavigation([],[])
+				#self.mapGraph.drawNavigation([],[])
 
 		elif self.globalState == 5:
 
@@ -431,7 +438,7 @@ class TestNavigation(SnakeControl):
 				self.mapGraph.newNode(faceDir, self.travelDir)
 				self.mapGraph.forceUpdate(faceDir)
 				
-				self.contacts.resetPose(self.mapGraph.currNode.getEstPose())
+				self.contacts.resetPose(self.mapGraph.getMaxPose())
 				self.lastPose1 = self.contacts.getAverageSegPose(0)
 				self.lastPose2 = self.contacts.getAverageSegPose(39)
 				
@@ -464,7 +471,7 @@ class TestNavigation(SnakeControl):
 
 				self.mapGraph.correctPosture()
 				#self.mapGraph.localizeCurrentNode()
-				self.contacts.resetPose(self.mapGraph.currNode.getEstPose())
+				self.contacts.resetPose(self.mapGraph.getMaxPose())
 				self.lastPose1 = self.contacts.getAverageSegPose(0)
 				self.lastPose2 = self.contacts.getAverageSegPose(39)
 
@@ -478,6 +485,8 @@ class TestNavigation(SnakeControl):
 				faceDir = False		
 				self.mapGraph.newNode(faceDir, self.travelDir)
 				self.mapGraph.forceUpdate(faceDir)
+
+				self.mapGraph.drawNavigation([],[])
 
 		elif self.globalState == 8:
 	
@@ -563,13 +572,14 @@ class TestNavigation(SnakeControl):
 					
 				print "collisionCount =", self.collisionCount, self.isCollided, self.globalState, foreAvg, backAvg, self.inversion, self.travelDir
 				self.mapGraph.localizePose()
-				self.contacts.resetPose(self.mapGraph.currNode.getEstPose())
+				self.contacts.resetPose(self.mapGraph.getMaxPose())
 				self.lastPose = self.contacts.getAverageSegPose(0)
 
 				self.mapGraph.saveLocalMap()
 				self.mapGraph.saveState()
 				self.mapGraph.drawConstraints()				
 				
+				self.mapGraph.drawNavigation([],[])
 				#self.globalState = 10
 
 				#if self.mapGraph.numNodes > 26:
@@ -638,6 +648,7 @@ class TestNavigation(SnakeControl):
 			print "self.wayPoints =", self.wayPoints
 			print "self.wayPaths =", self.wayPaths
 
+			self.mapGraph.drawNavigation(self.wayPaths[0],self.wayPoints[0])
 
 			self.globalState = 11
 
@@ -672,7 +683,7 @@ class TestNavigation(SnakeControl):
 				faceDir = True
 				self.mapGraph.newNode(faceDir, self.travelDir)
 				self.mapGraph.forceUpdate(faceDir)
-				self.contacts.resetPose(self.mapGraph.currNode.getEstPose())
+				self.contacts.resetPose(self.mapGraph.getMaxPose())
 				self.lastPose1 = self.contacts.getAverageSegPose(0)
 				self.lastPose2 = self.contacts.getAverageSegPose(39)
 				self.globalState = 6
@@ -680,6 +691,8 @@ class TestNavigation(SnakeControl):
 				
 				self.globalState = 6
 				self.contacts.setCautious(False)			
+
+				self.mapGraph.drawNavigation([],[])
 
 		
 		elif self.globalState == 12:
@@ -1247,7 +1260,9 @@ class TestNavigation(SnakeControl):
 				faceDir = True
 				self.mapGraph.newNode(faceDir, self.localPathDirection)
 				self.mapGraph.forceUpdate(faceDir)
-				self.contacts.resetPose(self.mapGraph.currNode.getEstPose())
+				self.contacts.resetPose(self.mapGraph.getMaxPose())
+
+				self.mapGraph.drawNavigation(self.localWayPaths[0],self.localWayPoints[0])
 				
 				self.lastPose1 = self.contacts.getAverageSegPose(0)
 				self.lastPose2 = self.contacts.getAverageSegPose(39)
@@ -1271,7 +1286,7 @@ class TestNavigation(SnakeControl):
 			if isDone:
 				
 				self.mapGraph.correctPosture()
-				self.contacts.resetPose(self.mapGraph.currNode.getEstPose())
+				self.contacts.resetPose(self.mapGraph.getMaxPose())
 				self.lastPose1 = self.contacts.getAverageSegPose(0)
 				self.lastPose2 = self.contacts.getAverageSegPose(39)
 				self.mapGraph.drawConstraints()				
@@ -1279,6 +1294,8 @@ class TestNavigation(SnakeControl):
 				self.mapGraph.newNode(faceDir, self.localPathDirection)
 				self.mapGraph.forceUpdate(faceDir)
 				
+				self.mapGraph.drawNavigation(self.localWayPaths[0],self.localWayPoints[0])
+
 				self.localPathState = 4			
 				
 		elif self.localPathState == 4:
@@ -1323,13 +1340,15 @@ class TestNavigation(SnakeControl):
 				print "PathFollow: backAvg =", backAvg
 															
 				self.mapGraph.localizePose()
-				self.contacts.resetPose(self.mapGraph.currNode.getEstPose())
+				self.contacts.resetPose(self.mapGraph.getMaxPose())
 				self.lastPose1 = self.contacts.getAverageSegPose(0)
 				self.lastPose2 = self.contacts.getAverageSegPose(39)
 
 				self.mapGraph.saveLocalMap()
 				self.mapGraph.saveState()
 				self.mapGraph.drawConstraints()				
+
+				self.mapGraph.drawNavigation(self.localWayPaths[0], self.localWayPoints[0])
 
 		return False				
 

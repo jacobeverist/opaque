@@ -289,11 +289,11 @@ class BulletProbe:
 		currVec, currAngle = self.quatToAngleAxis(angQuat)
 
 		if currVec[1] < 0:
-			pose = [currPos[0], currPos[2], currAngle - pi]
-			#pose = [currPos[0], currPos[2], currAngle]
+			#pose = [currPos[0], currPos[2], currAngle - pi]
+			pose = [currPos[0], currPos[2], currAngle]
 		else:
-			pose = [currPos[0], currPos[2], -currAngle - pi]
-			#pose = [currPos[0], currPos[2], -currAngle]
+			#pose = [currPos[0], currPos[2], -currAngle - pi]
+			pose = [currPos[0], currPos[2], -currAngle]
 		#pose = [currPos[0], currPos[2], -curAngle]  # angle negated for display reasons
 
 		return pose
@@ -338,7 +338,7 @@ class BulletProbe:
 			angQuat = [x,y,z,w]
 			currVec, currAngle = self.quatToAngleAxis(angQuat)
 
-			print i, "currPos,currVec,currAngle:", currPos, quat_vars, currVec, currAngle
+			#print i, "currPos,quat_vars,currVec,currAngle,segPose:", currPos, quat_vars, currVec, currAngle, self.getActualSegPose(i)
 			
 			#vec = ogre.Vector3(0.0,0.0,0.0)
 			#radAngle = ogre.Radian(0.0)
@@ -347,15 +347,24 @@ class BulletProbe:
 			#curAngle = self.normalizeAngle(curAngle)
 			
 			if currVec[1] < 0:
-				pose = [currPos[0], currPos[2], currAngle - pi]
-				#pose = [currPos[0], currPos[2], currAngle]
-			else:
-				pose = [currPos[0], currPos[2], -currAngle - pi]
+				#pose = [currPos[0], currPos[2], currAngle - pi]
+				#pose = [currPos[0], currPos[2], currAngle - pi/2.0]
+				pose = [currPos[0], currPos[2], currAngle]
 				#pose = [currPos[0], currPos[2], -currAngle]
+				pass
+			else:
+				#pose = [currPos[0], currPos[2], -currAngle - pi]
+				#pose = [currPos[0], currPos[2], -currAngle - pi/2.0]
+				pose = [currPos[0], currPos[2], -currAngle]
+				#pose = [currPos[0], currPos[2], currAngle]
+				pass
 
+			#pose = [currPos[0], currPos[2], -currAngle]
 			
 			pose[0] = pose[0] + (self.segLength/2)*cos(pose[2])
 			pose[1] = pose[1] + (self.segLength/2)*sin(pose[2])
+
+			print i, "currPos,quat_vars,currVec,currAngle,pose,segPose:", currPos, quat_vars, currVec, currAngle, pose, self.getActualSegPose(i)
 			
 			return pose
 
@@ -376,7 +385,7 @@ class BulletProbe:
 		currVec, currAngle = self.quatToAngleAxis(angQuat)
 
 		#print i, "currVec,currAngle:", currVec, currAngle
-		print i, "currPos,currVec,currAngle:", currPos, quat_vars, currVec, currAngle
+		#print i, "currPos,currVec,currAngle:", currPos, quat_vars, currVec, currAngle
 
 		#vec = ogre.Vector3(0.0,0.0,0.0)
 		#radAngle = ogre.Radian(0.0)
@@ -388,16 +397,25 @@ class BulletProbe:
 
 		# curAngle is negated because the returned angle of the body is upside down wrt to the global frame
 		if currVec[1] < 0:
-			pose = [currPos[0], currPos[2], currAngle - pi]
-			#pose = [currPos[0], currPos[2], currAngle]
-		else:
-			pose = [currPos[0], currPos[2], -currAngle - pi]
+			#pose = [currPos[0], currPos[2], currAngle - pi]
+			#pose = [currPos[0], currPos[2], currAngle - pi/2.0]
+			pose = [currPos[0], currPos[2], currAngle]
 			#pose = [currPos[0], currPos[2], -currAngle]
+			pass
+		else:
+			#pose = [currPos[0], currPos[2], -currAngle - pi]
+			#pose = [currPos[0], currPos[2], -currAngle - pi/2.0]
+			pose = [currPos[0], currPos[2], -currAngle]
+			#pose = [currPos[0], currPos[2], currAngle]
+			pass
+
+		#pose = [currPos[0], currPos[2], -currAngle]
 
 		# adding constant offset so that we are on the joint
 		pose[0] = pose[0] - (self.segLength/2)*cos(pose[2])
 		pose[1] = pose[1] - (self.segLength/2)*sin(pose[2])
 
+		print i, "currPos,quat_vars,currVec,currAngle,pose,segPose:", currPos, quat_vars, currVec, currAngle, pose, self.getActualSegPose(i+1)
 		return pose
 
 	def getJointPose(self, originPose, originJoint, targetJoint):

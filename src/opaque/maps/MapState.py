@@ -2346,9 +2346,9 @@ class MapState:
 
 			#self.drawWalls()
 	
-			print "saving splicedPath"
+			print "saving splicedPath_%04u_%04u_%04u.png" % (self.hypothesisID, self.poseData.numNodes, self.spliceCount)
 			pylab.title("Spliced Paths, pathIDs = %s" %  self.getPathIDs())
-			pylab.savefig("splicedPath_%04u_%04u.png" % (self.hypothesisID, self.spliceCount))
+			pylab.savefig("splicedPath_%04u_%04u_%04u.png" % (self.hypothesisID, self.poseData.numNodes, self.spliceCount))
 			self.spliceCount += 1
 
 		self.allSplices = results
@@ -4860,7 +4860,7 @@ class MapState:
 		#foreTerm2 = frontInterior2 and frontExist2
 
 		if depPoint == 0:
-			print "REJECT, no departure point!", depPoint
+			print "REJECT, no departure point!", nodeID1, depPoint
 			return False, -1
 
 		" check cartesian distance to similar junction points from parent path "
@@ -4894,7 +4894,7 @@ class MapState:
 					neighborCount += 1
 
 		if neighborCount >= 2:
-			print "REJECT, too many neighbors", pathID, neighborCount, depPoint
+			print "REJECT, too many neighbors", nodeID1, pathID, neighborCount, depPoint
 			return False, parentPathID
 
 
@@ -4921,12 +4921,12 @@ class MapState:
 					minLandmark = point_G
 
 		if minLandDist >= 0.5:
-			print "REJECT, proposed branch point is not close enough to a spatial landmark", pathID, neighborCount, depPoint
+			print "REJECT, proposed branch point is not close enough to a spatial landmark", nodeID1, pathID, neighborCount, depPoint
 			return False, parentPathID
 
 		sF0 = self.poseData.spatialFeatures[nodeID1][0]
 		if sF0["bloomPoint"] == None and sF0["archPoint"] == None and sF0["inflectionPoint"] == None:
-			print "REJECT, diverging pose has no spatial landmark feature", pathID, neighborCount, depPoint
+			print "REJECT, diverging pose has no spatial landmark feature", nodeID1, pathID, neighborCount, depPoint
 			return False, parentPathID
 
 		
@@ -5526,8 +5526,19 @@ class MapState:
 		" splice minJ1 and minJ2 "
 		orderPathIDs = self.getPathPath(minI1, minI2)		 
 		
-		splicedPaths = self.splicePathIDs(orderPathIDs)
+		#splicedPaths = self.splicePathIDs(orderPathIDs)
 		
+		
+		allSplices, terminals, junctions = self.getAllSplices()
+
+		splicedPaths = []
+		for k, result in allSplices.iteritems():
+			print "allSplices key:", k
+			for sPath in result:
+				#path = sPath['path']
+				path = sPath['skelPath']
+				splicedPaths.append(path)
+	
 		print len(splicedPaths), "spliced paths for path finding "
 		
 		" again, find closest point of start and end pose "
@@ -5572,17 +5583,18 @@ class MapState:
 		
 		" return splicePath[startIndex:endIndex+1]"
 		if spliceIndex[0] < spliceIndex[1]:
-			pathSpline = SplineFit(splicedPaths[minSplicePathID])
-			newPath = pathSpline.getUniformSamples()
-			return newPath
+			return splicedPaths[minSplicePathID]
+			#pathSpline = SplineFit(splicedPaths[minSplicePathID])
+			#newPath = pathSpline.getUniformSamples()
+			#return newPath
 		else:
 			path = splicedPaths[minSplicePathID]
 			path.reverse()
-			pathSpline = SplineFit(path)
-			newPath = pathSpline.getUniformSamples()
-			return newPath
-
 			return path
+			#pathSpline = SplineFit(path)
+			#newPath = pathSpline.getUniformSamples()
+			#return newPath
+
 
 			
 

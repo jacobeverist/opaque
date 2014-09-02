@@ -7,6 +7,7 @@ from math import pi
 import matplotlib.patches as mpatches
 from SplineFit import SplineFit
 from math import *
+from functions import *
 
 import cPickle as pickle
 from StablePose import StablePose
@@ -77,7 +78,8 @@ class MapUser:
 			pose = self.probe.getActualSegPose(i)
 			xTotal = pose[0]
 			zTotal = pose[1]
-			totalAngle = pose[2] - pi
+			#totalAngle = pose[2] - pi
+			totalAngle = pose[2]
 
 			print "pose", i, pose
 
@@ -111,8 +113,217 @@ class MapUser:
 			pylab.gca().add_patch(polygon)
 			#pylab.plot(xP,yP, color='k', alpha=0.5)
 
+		#rootPose = self.contacts.getAverageSegPose(19)
+		rootPose = self.contacts.getAveragePose(19)
+		mapHyps = self.mapAlgorithm.mapHyps
+
+		for hypID, mapHyp in mapHyps.iteritems():
+
+			if len(mapHyp.nodePoses) > 0:
+
+				rootPose = mapHyp.getNodeRawPose(len(mapHyp.nodePoses)-1)
+
+				#xTotal = 0.0
+				#zTotal = 0.0
+				#totalAngle = 0.0
+				xTotal = rootPose[0]
+				zTotal = rootPose[1]
+				totalAngle = rootPose[2]
+
+				joints = range(-1,19)
+				joints.reverse()
+
+				for i in joints:
+
+					totalAngle = totalAngle + self.probe.getServo(i+1)
+					totalAngle = normalizeAngle(totalAngle)
+
+					p1 = [xTotal - 0.5*segWidth*sin(totalAngle), zTotal + 0.5*segWidth*cos(totalAngle)]
+					p2 = [xTotal + 0.5*segWidth*sin(totalAngle), zTotal - 0.5*segWidth*cos(totalAngle)]
+					p3 = [xTotal - segLength*cos(totalAngle) + 0.5*segWidth*sin(totalAngle), zTotal - segLength*sin(totalAngle) - 0.5*segWidth*cos(totalAngle)]
+					p4 = [xTotal - segLength*cos(totalAngle) - 0.5*segWidth*sin(totalAngle), zTotal - segLength*sin(totalAngle) + 0.5*segWidth*cos(totalAngle)]
+
+					xTotal = xTotal - segLength*cos(totalAngle)
+					zTotal = zTotal - segLength*sin(totalAngle)
+
+					xP = []
+					yP = []
+					xP.append(p4[0])
+					xP.append(p3[0])
+					xP.append(p2[0])
+					xP.append(p1[0])
+					xP.append(p4[0])
+					yP.append(p4[1])
+					yP.append(p3[1])
+					yP.append(p2[1])
+					yP.append(p1[1])
+					yP.append(p4[1])
+
+					xy = numpy.array([p4,p3,p2,p1])
+
+					# add a rectangle
+					polygon = mpatches.Polygon(xy, closed=True, color='b', alpha=0.2)
+					pylab.gca().add_patch(polygon)
+					#pylab.plot(xP,yP, color='k', alpha=0.5)
+					#actualConfig.append([i, [p4,p3,p2,p1], self.contacts.initMask[i]])
+
+				joints = range(19, self.probe.numSegs-1)
+				
+				#xTotal = 0.0
+				#zTotal = 0.0
+				#totalAngle = 0.0
+				xTotal = rootPose[0]
+				zTotal = rootPose[1]
+				totalAngle = rootPose[2]
+
+				for i in joints:
+					xTotal = xTotal + segLength*cos(totalAngle)
+					zTotal = zTotal + segLength*sin(totalAngle)
+				
+					p1 = [xTotal - 0.5*segWidth*sin(totalAngle), zTotal + 0.5*segWidth*cos(totalAngle)]
+					p2 = [xTotal + 0.5*segWidth*sin(totalAngle), zTotal - 0.5*segWidth*cos(totalAngle)]
+					p3 = [xTotal - segLength*cos(totalAngle) + 0.5*segWidth*sin(totalAngle), zTotal - segLength*sin(totalAngle) - 0.5*segWidth*cos(totalAngle)]
+					p4 = [xTotal - segLength*cos(totalAngle) - 0.5*segWidth*sin(totalAngle), zTotal - segLength*sin(totalAngle) + 0.5*segWidth*cos(totalAngle)]
+
+					xP = []
+					yP = []
+					xP.append(p4[0])
+					xP.append(p3[0])
+					xP.append(p2[0])
+					xP.append(p1[0])
+					xP.append(p4[0])
+					yP.append(p4[1])
+					yP.append(p3[1])
+					yP.append(p2[1])
+					yP.append(p1[1])
+					yP.append(p4[1])
+
+					xy = numpy.array([p4,p3,p2,p1])
+
+					# add a rectangle
+					polygon = mpatches.Polygon(xy, closed=True, color='b', alpha=0.2)
+					pylab.gca().add_patch(polygon)
+					#pylab.plot(xP,yP, color='k', alpha=0.5)
+					#actualConfig.append([i, [p4,p3,p2,p1], self.contacts.initMask[i]])
+					
+					if i < self.probe.numSegs-2:
+						totalAngle = totalAngle - self.probe.getServo(i+1)
+						totalAngle = normalizeAngle(totalAngle)
+
+
+		"""
+		for i in range(0,39):
+
+			#pose = self.probe.getActualJointPose(i)
+			#pose = self.probe.getActualSegPose(i)
+			#pose = self.probe.getJointPose(rootPose, 19, i)
+			#pose = self.probe.getJointPose([0.0,0.0,0.0], 19, i)
+			pose = self.currNode.getJointPose(i)
+			#pose = self.contacts.getAverageSegPose(i)
+			xTotal = pose[0]
+			zTotal = pose[1]
+			#totalAngle = pose[2] - pi
+			totalAngle = pose[2]
+
+			print "pose", i, pose
+
+			p1 = [xTotal - 0.5*segWidth*sin(totalAngle), zTotal + 0.5*segWidth*cos(totalAngle)]
+			p2 = [xTotal + 0.5*segWidth*sin(totalAngle), zTotal - 0.5*segWidth*cos(totalAngle)]
+			p3 = [xTotal - segLength*cos(totalAngle) + 0.5*segWidth*sin(totalAngle), zTotal - segLength*sin(totalAngle) - 0.5*segWidth*cos(totalAngle)]
+			p4 = [xTotal - segLength*cos(totalAngle) - 0.5*segWidth*sin(totalAngle), zTotal - segLength*sin(totalAngle) + 0.5*segWidth*cos(totalAngle)]
+
+
+	
+			xP = []
+			yP = []
+			xP.append(p4[0])
+			xP.append(p3[0])
+			xP.append(p2[0])
+			xP.append(p1[0])
+			xP.append(p4[0])
+			yP.append(p4[1])
+			yP.append(p3[1])
+			yP.append(p2[1])
+			yP.append(p1[1])
+			yP.append(p4[1])
+
+			xy = numpy.array([p4,p3,p2,p1])
+
+			# add a rectangle
+			polygon = mpatches.Polygon(xy, closed=True, color='b', alpha=0.2)
+			pylab.gca().add_patch(polygon)
+			#pylab.plot(xP,yP, color='k', alpha=0.5)
+		"""
+
+		if len(path) > 0:
+
+			xP = []
+			yP = []
+			for p in path:
+				xP.append(p[0])
+				yP.append(p[1])
+
+			pylab.plot(xP,yP, color='r', alpha=0.5, zorder=2)
+
+		if len(goalPoint) > 0:
+			pylab.scatter([goalPoint[0],], [goalPoint[1],], color='k', alpha=0.5)
+
+		activeHypID = self.mapAlgorithm.activeHypID
+		mapHyps = self.mapAlgorithm.mapHyps
+
+		for hypID, mapHyp in mapHyps.iteritems():
+
+			if len(mapHyp.nodePoses) > 0:
+				allSplices, terminals, junctions = mapHyp.getAllSplices()
+				for k, result in allSplices.iteritems():
+					for sPath in result:
+						#path = sPath['path']
+						path = sPath['skelPath']
+		
+						xP = []
+						yP = []
+						for p in path:
+							xP.append(p[0])
+							yP.append(p[1])
+						pylab.plot(xP,yP, color='g', zorder=1)
+
+
+
+		if activeHypID != None:
+			pass
+
+			#print "activeHypID:", activeHypID, mapHyps[activeHypID].pathClasses.keys()
+
+			#allSplices, terminals, junctions = mapHyps[activeHypID].getAllSplices()
+
+			#for k, result in allSplices.iteritems():
+			#	for sPath in result:
+			#		#path = sPath['path']
+			#		path = sPath['skelPath']
+	
+			#		xP = []
+			#		yP = []
+			#		for p in path:
+			#			xP.append(p[0])
+			#			yP.append(p[1])
+			#		pylab.plot(xP,yP, color='g', zorder=1)
+
+
+
+			#for k,trimPath in mapHyps[activeHypID].trimmedPaths.iteritems():
+			#	print "path has", len(trimPath), "points"
+			#	xP = []
+			#	yP = []
+			#	for p in trimPath:
+			#		xP.append(p[0])
+			#		yP.append(p[1])
+
+			#	pylab.plot(xP,yP, color = 'g', alpha=0.7)
+
 		pylab.gca().invert_yaxis()
 		pylab.axis("equal")
+		#pylab.xlim(-4.0,2.0)
+		#pylab.ylim(-2.0,2.0)
 		pylab.savefig("navEstimate_%04u.png" % self.navPlotCount)
 		self.navPlotCount += 1
 
@@ -145,7 +356,9 @@ class MapUser:
 		PIXELSIZE = 0.05
 		print self
 
-		with open('map_%04u.obj' % nodeID, 'rb') as inputVal:
+		#with open('map_%04u.obj' % nodeID, 'rb') as inputVal:
+		with open(dirName + '/' + 'map_%04u.obj' % nodeID, 'rb') as inputVal:
+		
 			print pickle
 			print inputVal
 			print self
@@ -360,6 +573,30 @@ class MapUser:
 		
 		return newPoint
 	
+	def getMaxPose(self):
+
+		nodeID = self.numNodes-1
+
+		activeHypID = self.mapAlgorithm.activeHypID
+		mapHyps = self.mapAlgorithm.mapHyps
+
+		if activeHypID != None:
+			""" return active """
+			print "return active:", nodeID
+			estPose1 = mapHyps[activeHypID].getNodeRawPose(nodeID)
+
+			return estPose1
+
+		else:
+			""" return first """
+			print "return first:", nodeID
+			for hypID, mapHyp in mapHyps.iteritems():
+				if len(mapHyp.nodePoses) > self.numNodes:
+					return mapHyp.getNodeRawPose(nodeID)
+
+		print "return currNode.getEstPose():", nodeID
+		return self.currNode.getEstPose()
+
 	
 	def isDestReached(self, dest, wayPath):
 		#dest = self.localWayPoints[0]			
