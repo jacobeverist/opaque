@@ -1087,11 +1087,14 @@ class TestNavigation(SnakeControl):
 			frontPathPoint = self.mapGraph.getNearestPathPoint(self.currPose1)
 			backPathPoint = self.mapGraph.getNearestPathPoint(self.currPose2)
 
-			self.frontDivDist = sqrt((self.currPose1[0]-frontPathPoint[0])**2 + (self.currPose1[1]-frontPathPoint[1])**2)
-			self.backDivDist = sqrt((self.currPose2[0]-backPathPoint[0])**2 + (self.currPose2[1]-backPathPoint[1])**2)
+			#self.frontDivDist = sqrt((self.currPose1[0]-frontPathPoint[0])**2 + (self.currPose1[1]-frontPathPoint[1])**2)
+			#self.backDivDist = sqrt((self.currPose2[0]-backPathPoint[0])**2 + (self.currPose2[1]-backPathPoint[1])**2)
 			
-			self.lastFrontDivDist = self.frontDivDist
-			self.lastBackDivDist = self.backDivDist
+			self.lastFrontDivDist = 0.0
+			self.lastBackDivDist = 0.0
+
+			self.frontDivDist = self.mapGraph.getDistanceToPath(self.currPose1, self.localWayPaths[0])
+			self.backDivDist = self.mapGraph.getDistanceToPath(self.currPose2, self.localWayPaths[0])
 
 			print "path divergence distance:", self.frontDivDist, self.backDivDist, self.lastFrontDivDist, self.lastBackDivDist
 
@@ -1122,11 +1125,16 @@ class TestNavigation(SnakeControl):
 					#self.lastDist1 = self.mapGraph.getPathLength(frontPathPoint, dest, self.localWayPaths[0])
 					#self.lastDist2 = self.mapGraph.getPathLength(backPathPoint, dest, self.localWayPaths[0])
 
-					self.frontDivDist = sqrt((self.currPose1[0]-frontPathPoint[0])**2 + (self.currPose1[1]-frontPathPoint[1])**2)
-					self.backDivDist = sqrt((self.currPose2[0]-backPathPoint[0])**2 + (self.currPose2[1]-backPathPoint[1])**2)
+					self.lastFrontDivDist = 0.0
+					self.lastBackDivDist = 0.0
+
+					self.frontDivDist = self.mapGraph.getDistanceToPath(self.currPose1, self.localWayPaths[0])
+					self.backDivDist = self.mapGraph.getDistanceToPath(self.currPose2, self.localWayPaths[0])
+					#self.frontDivDist = sqrt((self.currPose1[0]-frontPathPoint[0])**2 + (self.currPose1[1]-frontPathPoint[1])**2)
+					#self.backDivDist = sqrt((self.currPose2[0]-backPathPoint[0])**2 + (self.currPose2[1]-backPathPoint[1])**2)
 					
-					self.lastFrontDivDist = self.frontDivDist
-					self.lastBackDivDist = self.backDivDist
+					#self.lastFrontDivDist = self.frontDivDist
+					#self.lastBackDivDist = self.backDivDist
 
 					print "path divergence distance:", self.frontDivDist, self.backDivDist, self.lastFrontDivDist, self.lastBackDivDist
 
@@ -1191,6 +1199,7 @@ class TestNavigation(SnakeControl):
 
 				self.currPose1 = self.contacts.getAverageSegPose(0)
 				self.currPose2 = self.contacts.getAverageSegPose(39)
+
 				frontPathPoint = self.mapGraph.getNearestPathPoint(self.currPose1)
 				backPathPoint = self.mapGraph.getNearestPathPoint(self.currPose2)
 
@@ -1216,11 +1225,15 @@ class TestNavigation(SnakeControl):
 				self.currPose1 = copy(self.lastPose1)
 				self.currPose2 = copy(self.lastPose2)
 
-				self.frontDivDist = sqrt((self.currPose1[0]-frontPathPoint[0])**2 + (self.currPose1[1]-frontPathPoint[1])**2)
-				self.backDivDist = sqrt((self.currPose2[0]-backPathPoint[0])**2 + (self.currPose2[1]-backPathPoint[1])**2)
-				
 				self.lastFrontDivDist = self.frontDivDist
 				self.lastBackDivDist = self.backDivDist
+
+				self.frontDivDist = self.mapGraph.getDistanceToPath(self.currPose1, self.localWayPaths[0])
+				self.backDivDist = self.mapGraph.getDistanceToPath(self.currPose2, self.localWayPaths[0])
+
+				#self.frontDivDist = sqrt((self.currPose1[0]-frontPathPoint[0])**2 + (self.currPose1[1]-frontPathPoint[1])**2)
+				#self.backDivDist = sqrt((self.currPose2[0]-backPathPoint[0])**2 + (self.currPose2[1]-backPathPoint[1])**2)
+				
 
 				print "path divergence distance:", self.frontDivDist, self.backDivDist, self.lastFrontDivDist, self.lastBackDivDist
 

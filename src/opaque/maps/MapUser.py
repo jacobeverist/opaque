@@ -628,7 +628,14 @@ class MapUser:
 
 				self.backNode.setGPACPose(newPose3)
 
+
+	def getDistanceToPath(self, point, wayPath):
 		
+		pathSpline = SplineFit(wayPath)
+		minDist, uVal, uPoint = pathSpline.findClosestPoint(point)
+		
+		return minDist
+
 	def update(self, isForward=True):
 
 		self.isDirty = True
