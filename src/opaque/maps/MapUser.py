@@ -1,5 +1,6 @@
 import BayesMapper
 from LocalNode import LocalNode, getLongestPath, computeHullAxis
+from MapProcess import getInPlaceGuess, getStepGuess
 from Pose import Pose
 import pylab
 import numpy
@@ -119,9 +120,10 @@ class MapUser:
 
 		for hypID, mapHyp in mapHyps.iteritems():
 
-			if len(mapHyp.nodePoses) > 0:
+			#if len(mapHyp.nodePoses) > 0:
+			if True:
 
-				rootPose = mapHyp.getNodeRawPose(len(mapHyp.nodePoses)-1)
+				#rootPose = mapHyp.getNodeRawPose(len(mapHyp.nodePoses)-1)
 
 				#xTotal = 0.0
 				#zTotal = 0.0
@@ -554,6 +556,78 @@ class MapUser:
 	def forceUpdate(self, isForward=True):
 		self.stablePose.setDirection(isForward)
 		self.currNode.update()
+
+
+		nodeID = self.currNode.nodeID
+		direction = self.currNode.travelDir
+		distEst = 1.0
+
+
+		mapHyp = self.getMaxHyp()
+
+		poseData = deepcopy(mapHyp.poseData)
+
+	
+		if nodeID > 0:
+
+			foreNodeID = self.foreNode.nodeID
+
+			hull1, medial1 = computeHullAxis(foreNodeID, self.foreNode, tailCutOff = False)
+			poseData.aHulls[foreNodeID] = hull1
+			poseData.medialAxes[foreNodeID] = medial1
+			poseData.numLeafs[foreNodeID] = self.foreNode.getNumLeafs()
+			poseData.faceDirs[foreNodeID] = self.foreNode.faceDir
+			poseData.isBowties[foreNodeID] = self.foreNode.isBowtie			
+			poseData.medialLongPaths[foreNodeID] = self.foreNode.medialLongPaths
+			poseData.correctedPostures[foreNodeID] = self.foreNode.getStableGPACPosture()
+			poseData.isNodeFeatureless[foreNodeID] = self.foreNode.getIsFeatureless()
+			poseData.frontProbeError[foreNodeID] = self.foreNode.frontProbeError
+			poseData.backProbeError[foreNodeID] = self.foreNode.backProbeError
+			poseData.travelDirs[foreNodeID] = self.foreNode.travelDir
+			poseData.spatialFeatures[foreNodeID] = self.foreNode.spatialFeatures
+
+			if nodeID % 2 == 0:
+
+				estPose0 = mapHyp.getNodePose(nodeID-2)
+				estPose2 = self.foreNode.getGlobalGPACPose()
+			
+				#estPose0 = mapHyp.getNodePose(nodeID-2)
+				#estPose2 = mapHyp.getNodePose(nodeID)
+				newPose2 = getStepGuess(poseData, nodeID-2, nodeID, estPose0, estPose2, direction)
+
+				self.foreNode.setGPACPose(newPose2)
+
+			if nodeID % 2 == 1:
+				
+				foreNodeID = self.foreNode.nodeID
+				backNodeID = self.backNode.nodeID
+
+				hull1, medial1 = computeHullAxis(backNodeID, self.backNode, tailCutOff = False)
+				poseData.aHulls[backNodeID] = hull1
+				poseData.medialAxes[backNodeID] = medial1
+				poseData.numLeafs[backNodeID] = self.backNode.getNumLeafs()
+				poseData.faceDirs[backNodeID] = self.backNode.faceDir
+				poseData.isBowties[backNodeID] = self.backNode.isBowtie			
+				poseData.medialLongPaths[backNodeID] = self.backNode.medialLongPaths
+				poseData.correctedPostures[backNodeID] = self.backNode.getStableGPACPosture()
+				poseData.isNodeFeatureless[backNodeID] = self.backNode.getIsFeatureless()
+				poseData.frontProbeError[backNodeID] = self.backNode.frontProbeError
+				poseData.backProbeError[backNodeID] = self.backNode.backProbeError
+				poseData.travelDirs[backNodeID] = self.backNode.travelDir
+				poseData.spatialFeatures[backNodeID] = self.backNode.spatialFeatures
+
+				" the guess process gives a meaningful guess for these node's poses "
+				" before this, it is meaningless "
+
+				estPose2 = self.foreNode.getGlobalGPACPose()
+				estPose3 = self.backNode.getGlobalGPACPose()
+
+				#estPose3 = mapHyp.getNodePose(nodeID)
+				supportLine = mapHyp.paths[0]
+				newPose3 = getInPlaceGuess(poseData, foreNodeID, backNodeID, estPose2, estPose3, supportLine, direction)
+
+				self.backNode.setGPACPose(newPose3)
+
 		
 	def update(self, isForward=True):
 
@@ -572,6 +646,21 @@ class MapUser:
 		newPoint = self.mapAlgorithm.getNearestPathPoint(originPoint)
 		
 		return newPoint
+	
+	def getMaxHyp(self):
+
+		activeHypID = self.mapAlgorithm.activeHypID
+		mapHyps = self.mapAlgorithm.mapHyps
+
+		if activeHypID != None:
+			return mapHyps[activeHypID]
+
+		else:
+			""" return first """
+			for hypID, mapHyp in mapHyps.iteritems():
+				return mapHyp
+
+		raise
 	
 	def getMaxPose(self):
 
