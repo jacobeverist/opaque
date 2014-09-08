@@ -3899,7 +3899,7 @@ def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPos
 			landmarks_G.append(point_G)
 
 	#LANDMARK_THRESH = 1e100
-	LANDMARK_THRESH = 3.0
+	LANDMARK_THRESH = 4.5
 	CLOSE_THRESH = 0.3
 
 	distSum = 0.0

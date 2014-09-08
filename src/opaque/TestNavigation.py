@@ -546,7 +546,8 @@ class TestNavigation(SnakeControl):
 					
 					#if foreAvg >= 1.4:
 					if foreAvg >= 1.1:
-						if self.collisionCount >= 2:
+						#if self.collisionCount >= 2:
+						if self.collisionCount >= 1:
 							self.globalState = 10
 							self.isCollided = True
 							self.collisionCount = 0		
@@ -563,7 +564,8 @@ class TestNavigation(SnakeControl):
 
 					#if backAvg >= 1.4:
 					if backAvg >= 1.1:
-						if self.collisionCount >= 2:
+						#if self.collisionCount >= 2:
+						if self.collisionCount >= 1:
 							self.globalState = 10
 							self.isCollided = True
 							self.collisionCount = 0		
@@ -605,7 +607,8 @@ class TestNavigation(SnakeControl):
 			else:
 				frontierPoint = self.targetPoint
 				self.termPathID = -1
-				
+
+
 							
 			"""
 			self.currPose1 = self.contacts.getAverageSegPose(0)
@@ -624,6 +627,9 @@ class TestNavigation(SnakeControl):
 				" generate the path "
 			"""
 
+			self.wayPoints, self.wayPaths = self.mapGraph.recomputePath(self.termPathID)
+
+			"""
 			frontPose = self.contacts.getAverageSegPose(0)
 			backPose = self.contacts.getAverageSegPose(39)
 
@@ -649,6 +655,7 @@ class TestNavigation(SnakeControl):
 				#self.wayPoints = [frontierPoint]
 				self.wayPoints = [frontierPathPoint]
 				self.wayPaths = [goalPath2]
+			"""
 				
 			
 			
@@ -1087,6 +1094,7 @@ class TestNavigation(SnakeControl):
 			frontPathPoint = self.mapGraph.getNearestPathPoint(self.currPose1)
 			backPathPoint = self.mapGraph.getNearestPathPoint(self.currPose2)
 
+
 			#self.frontDivDist = sqrt((self.currPose1[0]-frontPathPoint[0])**2 + (self.currPose1[1]-frontPathPoint[1])**2)
 			#self.backDivDist = sqrt((self.currPose2[0]-backPathPoint[0])**2 + (self.currPose2[1]-backPathPoint[1])**2)
 			
@@ -1403,6 +1411,8 @@ class TestNavigation(SnakeControl):
 				self.mapGraph.saveLocalMap()
 				self.mapGraph.saveState()
 				self.mapGraph.drawConstraints()				
+
+				self.localWayPoints, self.localWayPaths = self.mapGraph.recomputePath(self.termPathID)
 
 				self.mapGraph.drawNavigation(self.localWayPaths[0], self.localWayPoints[0])
 

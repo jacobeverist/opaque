@@ -853,7 +853,61 @@ class MapUser:
 		
 		for hypID, mapHyp in self.mapAlgorithm.mapHyps.iteritems():
 			return mapHyp.rootPoint, -1
+	
+	def getDestination(self, termID):
+
+		if self.isDirty:
+			self.synch()
+
+		allTerms = {}
+		allTermsVisited = {}
+		termToHypID = {}
+
+		" get the termination point and orientation of each path "
+		for hypID, mapHyp in self.mapAlgorithm.mapHyps.iteritems():
+			terms = mapHyp.getPathTerms()
+			termsVisited = mapHyp.getPathTermsVisited()
+
+			print "selectNextDestination for hyp", hypID
+			print "terms:", terms
+			print "termsVisited:", termsVisited
+
+			for key, val in terms.iteritems():
+				allTerms[key] = val
+				allTermsVisited[key] = termsVisited[key]
+				termToHypID[key] = hypID
+
+
+		termPoint = allTerms[termID]
+
+		return termPoint
+
+	def recomputePath(self, termID):
+
+		frontierPoint = self.getDestination(termID)
+
+		frontPose = self.contacts.getAverageSegPose(0)
+		backPose = self.contacts.getAverageSegPose(39)
+
+		frontPathPoint = self.getNearestPathPoint(frontPose)
+		backPathPoint = self.getNearestPathPoint(backPose)
+		frontierPathPoint = self.getNearestPathPoint(frontierPoint)
 		
+		goalPath1 = self.computeGraphPath(frontPathPoint, frontierPathPoint)
+		goalPath2 = self.computeGraphPath(backPathPoint, frontierPathPoint)
+
+		len1 = self.getPathLength(frontPathPoint, frontierPathPoint, goalPath1)
+		len2 = self.getPathLength(backPathPoint, frontierPathPoint, goalPath2)
+
+		if len1 > len2:
+			wayPoints = [frontierPathPoint]
+			wayPaths = [goalPath1]
+		else:
+			wayPoints = [frontierPathPoint]
+			wayPaths = [goalPath2]
+				
+		return wayPoints, wayPaths
+								
 	def getNodeOccMap(self, nodeNum):
 		localNode = self.nodeHash[nodeNum]
 		return localNode.getOccMap()
