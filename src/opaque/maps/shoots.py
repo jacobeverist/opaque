@@ -1647,8 +1647,10 @@ def __remote_prof_multiBranch(rank, qin, qout):
 
 def __remote_multiBranch(rank, qin, qout):
 
-	sys.stdout = open("branch_" + str(os.getpid()) + ".out", "w")
-	sys.stderr = open("branch_" + str(os.getpid()) + ".err", "w")
+	#sys.stdout = open("branch_" + str(os.getpid()) + ".out", "w")
+	#sys.stderr = open("branch_" + str(os.getpid()) + ".err", "w")
+	sys.stdout = open("branch_" + str(rank) + ".out", "a")
+	sys.stderr = open("branch_" + str(rank) + ".err", "a")
 	print 'module name:', __name__
 	print 'parent process:', os.getppid()
 	print 'process id:', os.getpid()
@@ -1793,8 +1795,10 @@ def __remote_prof_multiJointBranch(rank, qin, qout):
 
 def __remote_multiJointBranch(rank, qin, qout):
 
-	sys.stdout = open("jointbranch_" + str(os.getpid()) + ".out", "w")
-	sys.stderr = open("jointbranch_" + str(os.getpid()) + ".err", "w")
+	#sys.stdout = open("jointbranch_" + str(os.getpid()) + ".out", "w")
+	#sys.stderr = open("jointbranch_" + str(os.getpid()) + ".err", "w")
+	sys.stdout = open("jointbranch_" + str(rank) + ".out", "w")
+	sys.stderr = open("jointbranch_" + str(rank) + ".err", "w")
 	print 'module name:', __name__
 	print 'parent process:', os.getppid()
 	print 'process id:', os.getpid()
@@ -3899,7 +3903,9 @@ def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPos
 			landmarks_G.append(point_G)
 
 	#LANDMARK_THRESH = 1e100
-	LANDMARK_THRESH = 4.5
+	#LANDMARK_THRESH = 3.0
+	#LANDMARK_THRESH = 4.5
+	LANDMARK_THRESH = 6.0
 	CLOSE_THRESH = 0.3
 
 	distSum = 0.0

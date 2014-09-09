@@ -1816,7 +1816,7 @@ class LocalNode:
 						if (k-DERIV_WIDTH+l) >= 0 and (k+l) < len(medialWidth):
 							ang1 = medialWidth[k-DERIV_WIDTH+l]["linePoint"][2]
 							ang2 = medialWidth[k+l]["linePoint"][2]
-							diffs.append(fabs(ang1-ang2))
+							diffs.append(fabs(diffAngle(normalizeAngle(ang1),normalizeAngle(ang2))))
 
 
 					angDeriv = sum(diffs) / float(len(diffs))
@@ -2055,7 +2055,9 @@ class LocalNode:
 
 
 				if maxDeriv >= 0.35:
+					angDeriv = longPathWidth[contigInflection]["angDeriv"]
 					inflectionPoint = copy(longPathWidth[contigInflection]["linePoint"])
+					print self.nodeID, "inflection boundaries:", inflectionPoint, contigInflection, angDeriv, maxDeriv, len(longPathWidth)
 				else:
 					inflectionPoint = None
 
@@ -2271,7 +2273,6 @@ class LocalNode:
 
 				results = self.spatialFeatures[0]
 
-				inflectionPoint = results["inflectionPoint"]
 				maxDeriv = results["maxDeriv"]
 				contigCenterMass = results["centerMasses"]
 				contigCounts = results["contigCounts"]
@@ -2434,6 +2435,7 @@ class LocalNode:
 				#	ax1.scatter([inflectionPoint[0]],[inflectionPoint[1]], color='r')
 				#	ax1.annotate("%1.2f" % maxDeriv, xy=(inflectionPoint[0], 0.3), xytext=(inflectionPoint[0], 0.8))
 
+				inflectionPoint = results["inflectionPoint"]
 				if inflectionPoint != None:
 					ax1.scatter([inflectionPoint[0]],[inflectionPoint[1]], color='r')
 					ax1.annotate("%1.2f" % maxDeriv, xy=(inflectionPoint[0], 0.3), xytext=(inflectionPoint[0], 0.8), color='r')

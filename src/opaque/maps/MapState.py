@@ -1763,6 +1763,8 @@ class MapState:
 
 		parentHash = self.getParentHash()
 
+		totalSum = 0.0
+
 		for j in keys:
 			parentID = parentHash[j]
 			if parentID != None:
@@ -1783,15 +1785,17 @@ class MapState:
 
 				ang1 = normalizeAngle(ang1)
 				ang2 = normalizeAngle(ang2)
-				branchDiffAngle = fabs(normalizeAngle(diffAngle(ang1, ang2)))
+				branchDiffAngle1 = fabs(normalizeAngle(diffAngle(ang1, ang2)))
+				branchDiffAngle2 = fabs(normalizeAngle(diffAngle(ang1, normalizeAngle(ang2 + math.pi))))
 
-				print "computeEval:", self.hypothesisID, parentID, j, ang1, ang2, branchDiffAngle, minDist
+				print "computeEval:", self.hypothesisID, parentID, j, ang1, ang2, branchDiffAngle1, branchDiffAngle2
 
-		totalSum = 0.0
+				if branchDiffAngle1 < 0.1 or branchDiffAngle2 < 0.1:
+						totalSum = 1e100
+
+		"""
 		for j in keys:
 			path1 = self.trimmedPaths[j]
-
-
 
 			for k in keys:
 				path2 = self.trimmedPaths[k]
@@ -1802,10 +1806,11 @@ class MapState:
 					resultSum = self.getPathOverlapSum(path1, path2, j, k, plotIter = True)
 					print "computing sum of", j, "and", k, "=", resultSum
 					totalSum += resultSum
+		"""
 
 
-		#self.mapOverlapSum = totalSum
-		self.mapOverlapSum = 0.0
+		self.mapOverlapSum = totalSum
+		#self.mapOverlapSum = 0.0
 
 		return totalSum
 	
@@ -3048,14 +3053,17 @@ class MapState:
 				landmarkPoint_L = None
 
 				if spatialFeature["bloomPoint"] != None:
+					print self.hypothesisID, "adding bloomPoint for node", nodeID, "in path", pathID
 					landmarkPoint_N = spatialFeature["bloomPoint"]
 					landmarkPoint_L = poseFrame_L.convertLocalToGlobal(landmarkPoint_N)
 
 				elif spatialFeature["archPoint"] != None:
+					print self.hypothesisID, "adding archPoint for node", nodeID, "in path", pathID
 					landmarkPoint_N = spatialFeature["archPoint"]
 					landmarkPoint_L = poseFrame_L.convertLocalToGlobal(landmarkPoint_N)
 
 				elif spatialFeature["inflectionPoint"] != None:
+					print self.hypothesisID, "adding inflectionPoint for node", nodeID, "in path", pathID
 					landmarkPoint_N = spatialFeature["inflectionPoint"]
 					landmarkPoint_L = poseFrame_L.convertLocalToGlobal(landmarkPoint_N)
 

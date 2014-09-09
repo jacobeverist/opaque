@@ -141,8 +141,10 @@ def __remote_prof_displaceParticle(rank, qin, qout):
 
 def __remote_displaceParticle(rank, qin, qout):
 
-	sys.stdout = open("displaceParticle_" + str(os.getpid()) + ".out", "w")
-	sys.stderr = open("displaceParticle_" + str(os.getpid()) + ".err", "w")
+	#sys.stdout = open("displaceParticle_" + str(os.getpid()) + ".out", "w")
+	#sys.stderr = open("displaceParticle_" + str(os.getpid()) + ".err", "w")
+	sys.stdout = open("displaceParticle_" + str(rank) + ".out", "a")
+	sys.stderr = open("displaceParticle_" + str(rank) + ".err", "a")
 	print 'module name:', __name__
 	print 'parent process:', os.getppid()
 	print 'process id:', os.getpid()
@@ -634,8 +636,10 @@ def __remote_prof_multiParticle(rank, qin, qout):
 
 def __remote_multiParticle(rank, qin, qout):
 
-	sys.stdout = open("particle_" + str(os.getpid()) + ".out", "w")
-	sys.stderr = open("particle_" + str(os.getpid()) + ".err", "w")
+	#sys.stdout = open("particle_" + str(os.getpid()) + ".out", "w")
+	#sys.stderr = open("particle_" + str(os.getpid()) + ".err", "w")
+	sys.stdout = open("particle_" + str(rank) + ".out", "a")
+	sys.stderr = open("particle_" + str(rank) + ".err", "a")
 	print 'module name:', __name__
 	print 'parent process:', os.getppid()
 	print 'process id:', os.getpid()
