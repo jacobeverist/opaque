@@ -1206,9 +1206,17 @@ class MapState:
 				print "reject because no overlap"
 				isReject = True
 
-			if fabs(diffAngle(initPose0[2],newPose0[2])) > 2.0*pi/3.0:
+			#ANG_THRESH = 2.0*pi/3.0
+			ANG_THRESH = 1.0*pi/3.0
+
+			#if fabs(diffAngle(initPose0[2],newPose0[2])) > 2.0*pi/3.0 or fabs(diffAngle(initPose1[2],newPose1[2])) > 2.0*pi/3.0:
+
+			if fabs(diffAngle(initPose0[2],newPose0[2])) > ANG_THRESH or fabs(diffAngle(initPose1[2],newPose1[2])) > ANG_THRESH:
 				print "reject because change in pose angle is too different"
 				isReject = True
+			else:
+				pass
+				#print "localize angle diff:", particleID, initPose0[2], newPose0[2], initPose1[2], newPose1[2], fabs(diffAngle(initPose0[2],newPose0[2])), fabs(diffAngle(initPose1[2],newPose1[2]))
 
 			if isReject:
 				newUtilVal = -1e100
@@ -1310,6 +1318,8 @@ class MapState:
 				newProb = 0.0
 			
 			print "%d %d %d %d normMatchCount, utilVal, newProb" % (self.hypothesisID, particleID, particleIndex, spliceIndex), normMatchCount, utilVal, newProb, contigFrac_0, overlapSum_0
+
+			print "localize angle diff:", particleID, initPose0[2], newPose0[2], initPose1[2], newPose1[2], fabs(diffAngle(initPose0[2],newPose0[2])), fabs(diffAngle(initPose1[2],newPose1[2]))
 
 			particleObj = particleDist2[particleIndex].copy()
 
@@ -3639,6 +3649,11 @@ class MapState:
 	
 
 		controlPose_G, controlParentID, branchPose_G = getInitSkeletonBranchPoint(globalJunctionPose_G, newPathID, globalMedial0_G, parentPathIDs, localPathSegsByID, self.localPaths, globalControlPoses_G, plotIter = False, hypothesisID = self.hypothesisID, nodeID = branchNodeID)
+
+		#try:
+		#	branchPose_G, isNoDiverge = getSkeletonBranchPoint(oldBranchPose_G, pathID, parentPathIDs, localPathSegsByID, localPaths, controlPoses_G)
+		#except:
+		#	branchPose_G, isNoDiverge = getSkeletonBranchPoint(oldBranchPose_G, pathID, parentPathIDs, localPathSegsByID, localPaths, controlPoses_G, angThresh = pi)
 
 		#""" compute branch point of posture curve diverging from parent shoot """
 		#newGlobJuncPose1_G, controlPoint1_G, angDeriv1 = getBranchPoint(globalJunctionPose_G, parentID, newPathID, trimmedParent_G, globalMedial0_G, plotIter = False, hypothesisID = self.hypothesisID, nodeID = branchNodeID)

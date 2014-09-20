@@ -1168,6 +1168,9 @@ class TestNavigation(SnakeControl):
 			
 			self.distCount = 0
 			self.localPathState = 1
+
+			self.backtrackCount = 0
+			self.isBacktrack = False
 			
 		elif self.localPathState == 1:
 
@@ -1245,6 +1248,19 @@ class TestNavigation(SnakeControl):
 
 				print "path divergence distance:", self.frontDivDist, self.backDivDist, self.lastFrontDivDist, self.lastBackDivDist
 
+				""" collision detection """
+				frontSum = 0.0
+				frontProbeError = self.mapGraph.foreNode.frontProbeError
+				for n in frontProbeError:
+					frontSum += n
+				foreAvg = frontSum / len(frontProbeError)
+
+				backSum = 0.0
+				backProbeError = self.mapGraph.backNode.backProbeError
+				for n in backProbeError:
+					backSum += n
+				backAvg = backSum / len(backProbeError)
+							
 				if len(self.localWayPoints) > 0:
 					
 
@@ -1256,7 +1272,7 @@ class TestNavigation(SnakeControl):
 					self.drawThings.drawPoints(self.localWayPoints)
 
 
-					destReached, goalDist = self.mapGraph.isDestReached(dest,path)
+					destReached, goalDist = self.mapGraph.isDestReached(dest,path, foreAvg, backAvg)
 
 
 					frontPathPoint = self.mapGraph.getNearestPathPoint(self.currPose1)
@@ -1281,10 +1297,21 @@ class TestNavigation(SnakeControl):
 					#self.lastDist2 = totalDist2
 
 
+					if self.isBacktrack:
+						self.backtrackCount += 1
+						if self.backtrackCount > 1:
+							self.isBacktrack = False
+							self.localDirection = not self.localDirection
 
-					" if we've reached our target after this step, go to next waypoint "
-					#if self.targetReached:
-					if destReached:
+					elif self.frontDivDist > 1.0 or self.backDivDist > 1.0:
+						print "backtracking:", self.frontDivDist, self.backDivDist
+						self.isBacktrack = True
+						self.localDirection = not self.localDirection
+						
+
+						" if we've reached our target after this step, go to next waypoint "
+						#if self.targetReached:
+					elif destReached:
 						
 						" if there is another way point, set the path and begin "
 						self.localWayPoints = self.localWayPoints[1:]
@@ -1309,7 +1336,8 @@ class TestNavigation(SnakeControl):
 							return True
 							
 						#elif self.distCount >= 2:
-					elif self.distCount >= 1:
+					#elif self.distCount >= 1:
+					elif False:
 						print "changing direction from", self.localDirection, "to", not self.localDirection
 						" if we're going the wrong way, reverse our direction "
 						self.localDirection = not self.localDirection

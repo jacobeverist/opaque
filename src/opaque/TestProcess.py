@@ -142,7 +142,7 @@ class TestProcess(SnakeControl):
 
 			#self.mapGraph = MapLoader(self.probe, self.contacts)
 			#self.mapGraph.loadWalls(walls)
-			self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 0, 237)
+			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 0, 237)
 			#self.mapGraph.restorePickle(".", 15)
 			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 16, 237)
 			#self.mapGraph.restorePickle(".", 11)
@@ -172,6 +172,15 @@ class TestProcess(SnakeControl):
 			#self.mapGraph.restorePickle("../testDir5/results/2014_08_25", 117)
 			#self.mapGraph.loadSeries("../testDir5/results/2014_08_25", 118, 121)
 			#self.mapGraph.loadSeries("../testDir5/results/2014_08_25", 0, 121)
+
+			#self.mapGraph.restorePickle("../testDir5/", 17)
+			#self.mapGraph.loadSeries("../testDir5/", 18, 22)
+			#self.mapGraph.restorePickle("../testDir5/", 53)
+			#self.mapGraph.loadSeries("../testDir5/", 54, 56)
+			#self.mapGraph.loadSeries("../testDir5/", 54, 120)
+
+			self.mapGraph.restorePickle("../testDir5/", 23)
+			self.mapGraph.loadSeries("../testDir5/", 24, 28)
 
 			#self.mapGraph.loadSeries("../results/result_2013_08_16_Y_junction_complete", 0, 289)
 

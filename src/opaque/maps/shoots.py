@@ -1536,7 +1536,7 @@ def spliceSkeletons(localSkeletons, controlPoses, junctionPoses, parentPathIDs):
 		if parentPathID != None and juncNode != None:
 			parentSkel = globalSkeletons[parentPathID]
 
-			minParentdNode = None
+			minParentNode = None
 			minParentDist = 1e100
 		
 			for edge in parentSkel.edges():
@@ -2648,11 +2648,15 @@ def getSimpleDeparture(globalJunctionPose, path1, path2, plotIter = False):
 
 	currI = len(distances)-1
 	try:
-		while distances[currI] > DIST_THRESH:
+		#while distances[currI] > DIST_THRESH:
+		while currI >= 0 and distances[currI] > DIST_THRESH:
 			currI -= 1
 	except:
 		""" index out of bounds, back track """
 		currI += 1
+
+	if currI < 0:
+		currI = 0
 
 	backPoint = pathPoints1[indices[currI]]
 	backIndex = currI
@@ -2723,7 +2727,7 @@ def getSimpleDeparture(globalJunctionPose, path1, path2, plotIter = False):
 
 
 @logFunction
-def getSimpleSoupDeparture(globalJunctionPose, pointSoup, path2, plotIter = False):
+def getSimpleSoupDeparture(globalJunctionPose, pointSoup, path2, angThresh = 0.8, plotIter = False):
 
 	" return exception if we receive an invalid path "		  
 	if len(path2) == 0:
@@ -2765,11 +2769,14 @@ def getSimpleSoupDeparture(globalJunctionPose, pointSoup, path2, plotIter = Fals
 
 	currI = len(distances)-1
 	try:
-		while distances[currI] > DIST_THRESH:
+		while currI >= 0 and distances[currI] > DIST_THRESH:
 			currI -= 1
 	except:
 		""" index out of bounds, back track """
 		currI += 1
+	
+	if currI < 0:
+		currI = 0
 
 	backPoint = pointSoup[indices[currI]]
 	backIndex = currI
@@ -2837,16 +2844,34 @@ def getSimpleSoupDeparture(globalJunctionPose, pointSoup, path2, plotIter = Fals
 		#backPose = None
 		backNoDiverge = True
 		backPose = [backPoint[0], backPoint[1], 0.0]
+	
+	angDiff1 = fabs(diffAngle(globalJunctionPose[2], frontPose[2]))
+	angDiff2 = fabs(diffAngle(globalJunctionPose[2], backPose[2]))
 
-	print "getSimpleSoupDeparture:", frontPoint, backPoint, frontPose, backPose, juncDist1, juncDist2, len(pathPoints2), frontIndex, backIndex, frontNoDiverge, backNoDiverge
+	print "getSimpleSoupDeparture:", juncDist1, angDiff1, juncDist2, angDiff2, frontPose, backPose, len(pathPoints2), frontIndex, backIndex, frontNoDiverge, backNoDiverge, globalJunctionPose
 
+	if juncDist1 < juncDist2 and angDiff1 < angThresh:
+		return frontPose, frontNoDiverge
+
+	if juncDist2 < juncDist1 and angDiff2 < angThresh:
+		return backPose, backNoDiverge
+
+	if angDiff1 < angThresh:
+		return frontPose, frontNoDiverge
+
+	if angDiff2 < angThresh:
+		return backPose, backNoDiverge
+
+	""" no suitable answer, exception """
+	raise
+
+	# DEAD CODE 
 	if juncDist1 < juncDist2:
 		return frontPose, frontNoDiverge
 	else:
 		return backPose, backNoDiverge
 
 
-	# DEAD CODE 
 	if juncDist1 < juncDist2:
 		if frontPose != None:
 			return frontPose
@@ -3061,6 +3086,8 @@ def ensureEnoughPoints(newPath2, max_spacing = 0.08, minPoints = 5):
 @logFunction
 def getInitSkeletonBranchPoint(globalJunctionPose, currShootID, globalMedial_G, parentShootIDs, localPathSegsByID, localPaths, globalControlPoses, plotIter = False, hypothesisID = 0, nodeID = 0, arcDist = 0.0):
 
+
+
 	"""
 	1)  get the control point, common length between current and most senior parent 
 	2)  branch point is the part of current skeleton that diverges from all non-descendent skeletons
@@ -3164,7 +3191,8 @@ def getInitSkeletonBranchPoint(globalJunctionPose, currShootID, globalMedial_G, 
 
 
 	""" get branch point from all skeletons """
-	branchPose_G, isDiverge = getSimpleSoupDeparture(globalJunctionPose, allPointSoup_G, globalMedial_G)
+	branchPose_G, isDiverge = getSimpleSoupDeparture(globalJunctionPose, allPointSoup_G, globalMedial_G, angThresh = 2*pi)
+
 
 	""" convert control pose from global to parent frame """
 	controlPose_G = commonP1
@@ -3187,7 +3215,7 @@ def getInitSkeletonBranchPoint(globalJunctionPose, currShootID, globalMedial_G, 
 
 
 @logFunction
-def getSkeletonBranchPoint(globalJunctionPose, currShootID, parentShootIDs, localPathSegsByID, localPaths, globalControlPoses, plotIter = False, hypothesisID = 0, nodeID = 0, arcDist = 0.0):
+def getSkeletonBranchPoint(globalJunctionPose, currShootID, parentShootIDs, localPathSegsByID, localPaths, globalControlPoses, angThresh = 0.8, plotIter = False, hypothesisID = 0, nodeID = 0, arcDist = 0.0):
 
 	"""
 	2)  branch point is the part of current skeleton that diverges from all non-descendent skeletons
@@ -3279,7 +3307,7 @@ def getSkeletonBranchPoint(globalJunctionPose, currShootID, parentShootIDs, loca
 
 		try:
 			""" get branch point from all skeletons """
-			branchPose_G, isNoDiverge = getSimpleSoupDeparture(globalJunctionPose, allPointSoup_G, seg_G)
+			branchPose_G, isNoDiverge = getSimpleSoupDeparture(globalJunctionPose, allPointSoup_G, seg_G, angThresh = angThresh)
 
 			dist = sqrt((branchPose_G[0]-globalJunctionPose[0])**2 + (branchPose_G[1]-globalJunctionPose[1])**2)
 
@@ -3295,8 +3323,8 @@ def getSkeletonBranchPoint(globalJunctionPose, currShootID, parentShootIDs, loca
 
 	print "skeletonBranchPoint:", minBranchPose
 
-	#if minBranchPose == None:
-	#	raise
+	if minBranchPose == None:
+		raise
 
 	return minBranchPose, minIsNoDiverge
 	
@@ -4539,7 +4567,11 @@ def trimBranch(pathID, parentPathID, controlPose_P, oldBranchPose_L, localPathSe
 	currFrame = Pose(controlPoses_G[pathID])
 	oldBranchPose_G = currFrame.convertLocalOffsetToGlobal(oldBranchPose_L)
 
-	branchPose_G, isNoDiverge = getSkeletonBranchPoint(oldBranchPose_G, pathID, parentPathIDs, localPathSegsByID, localPaths, controlPoses_G)
+	try:
+		branchPose_G, isNoDiverge = getSkeletonBranchPoint(oldBranchPose_G, pathID, parentPathIDs, localPathSegsByID, localPaths, controlPoses_G)
+	except:
+		branchPose_G, isNoDiverge = getSkeletonBranchPoint(oldBranchPose_G, pathID, parentPathIDs, localPathSegsByID, localPaths, controlPoses_G, angThresh = pi)
+
 	branchPose_L = currFrame.convertGlobalPoseToLocal(branchPose_G)
 	branchPose_P = localFrame.convertLocalOffsetToGlobal(branchPose_L)
 
@@ -4696,12 +4728,12 @@ def trimBranch(pathID, parentPathID, controlPose_P, oldBranchPose_L, localPathSe
 			yP.append(p[1])
 		pylab.plot(xP,yP, color=(1.0,0.5,0.5))
 
-		#xP = []
-		#yP = []
-		#for p in particlePath2:
-		#	xP.append(p[0])
-		#	yP.append(p[1])
-		#	pylab.plot(xP,yP, color='m', alpha=0.5)
+		xP = []
+		yP = []
+		for p in particlePath2:
+			xP.append(p[0])
+			yP.append(p[1])
+			pylab.plot(xP,yP, color='m', alpha=0.5)
 
 		
 		pylab.scatter([branchPose_P[0],], [branchPose_P[1],], color='r')

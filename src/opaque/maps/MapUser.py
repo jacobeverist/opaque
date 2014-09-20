@@ -694,7 +694,7 @@ class MapUser:
 		return self.currNode.getEstPose()
 
 	
-	def isDestReached(self, dest, wayPath):
+	def isDestReached(self, dest, wayPath, foreAvg = 0.0, backAvg = 0.0):
 		#dest = self.localWayPoints[0]			
 
 		" - get splice of wayPath "
@@ -748,6 +748,12 @@ class MapUser:
 		else:
 			goalDist = backMag
 
+		if frontMag < 0.8 and foreAvg >= 1.1:
+			destReached = True
+
+		if backMag < 0.8 and backAvg >= 1.1:
+			destReached = True
+
 		destReached = False
 		if frontDist >= destDist and destDist >= backDist:
 			" objective achieved!"
@@ -756,9 +762,15 @@ class MapUser:
 		elif frontDist <= destDist and destDist <= backDist:
 			" objective achieved!"
 			destReached = True
+
+		elif goalDist < 0.5:
+			" objective achieved!"
+			destReached = True
+
+		print "isDestReached:", destReached, frontMag, backMag, foreAvg, backAvg, goalDist
 			
-		if destReached:
-			goalDist = 0.0
+		#if destReached:
+		#	goalDist = 0.0
 
 		return destReached, goalDist
 				

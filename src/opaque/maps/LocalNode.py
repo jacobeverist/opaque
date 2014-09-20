@@ -2054,7 +2054,8 @@ class LocalNode:
 
 
 
-				if maxDeriv >= 0.35:
+				#if maxDeriv >= 0.35:
+				if maxDeriv >= 0.6:
 					angDeriv = longPathWidth[contigInflection]["angDeriv"]
 					inflectionPoint = copy(longPathWidth[contigInflection]["linePoint"])
 					print self.nodeID, "inflection boundaries:", inflectionPoint, contigInflection, angDeriv, maxDeriv, len(longPathWidth)
@@ -2370,7 +2371,7 @@ class LocalNode:
 					p1 = slopes[2]
 					p2 = slopes[3]
 					p3 = slopes[4]
-					ax1.scatter([bloomPoint[0],],[bloomPoint[1],], color='k')
+					ax1.scatter([bloomPoint[0],],[bloomPoint[1],], color='k', zorder=4)
 					ax2.scatter([contigCenterMass[0],],[THRESH_WIDTH,], color='k')
 					ax2.annotate("%1.2f %1.2f %1.2f %1.3f %s" % (dens, asymm, area, negArea, repr(slopes[0]+slopes[1])), xy=(contigCenterMass[0], 0.3), xytext=(contigCenterMass[0], 0.8), color='k')
 					ax2.plot([p1[0],p2[0],p3[0]],[p1[1],p2[1],p3[1]], color='y')
@@ -2386,7 +2387,7 @@ class LocalNode:
 					p1 = slopes[2]
 					p2 = slopes[3]
 					p3 = slopes[4]
-					ax1.scatter([archPoint[0],],[archPoint[1],], color='b')
+					ax1.scatter([archPoint[0],],[archPoint[1],], color='b', zorder=4)
 					ax2.scatter([contigCenterMass[0],],[THRESH_WIDTH,], color='b')
 					ax2.annotate("%1.2f %1.2f %1.2f %1.3f %s" % (dens, asymm, area, negArea, repr(slopes[0]+slopes[1])), xy=(contigCenterMass[0], 0.3), xytext=(contigCenterMass[0], 0.8), color='b')
 					ax2.plot([p1[0],p2[0],p3[0]],[p1[1],p2[1],p3[1]], color='y')
@@ -2438,7 +2439,12 @@ class LocalNode:
 				inflectionPoint = results["inflectionPoint"]
 				if inflectionPoint != None:
 					ax1.scatter([inflectionPoint[0]],[inflectionPoint[1]], color='r')
-					ax1.annotate("%1.2f" % maxDeriv, xy=(inflectionPoint[0], 0.3), xytext=(inflectionPoint[0], 0.8), color='r')
+					ax1.annotate("%1.2f" % maxDeriv, xy=(inflectionPoint[0], 0.3), xytext=(inflectionPoint[0], 0.8), color='r', zorder=4)
+
+					#ax1.scatter([bloomPoint[0],],[bloomPoint[1],], color='k')
+					#ax2.scatter([contigCenterMass[0],],[THRESH_WIDTH,], color='k')
+					#ax2.annotate("%1.2f %1.2f %1.2f %1.3f %s" % (dens, asymm, area, negArea, repr(slopes[0]+slopes[1])), xy=(contigCenterMass[0], 0.3), xytext=(contigCenterMass[0], 0.8), color='k')
+					#ax2.plot([p1[0],p2[0],p3[0]],[p1[1],p2[1],p3[1]], color='y')
 
 			ax1.set_title("Medial %d, %s, %d" % (self.nodeID, repr(contigBoundaries), numPoints))
 			plt.savefig("medialOut_%04u.png" % self.nodeID)
