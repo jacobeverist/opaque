@@ -2451,7 +2451,7 @@ def computeLocalDivergence(hypSet, nodeID1, nodeID2):
 			path_vec = trimSpline.getUniformSamples()
 
 			orientedTrimPath = orientPathLean(path_vec, globalMedial1)
-			resultArgs1 = getMultiDeparturePoint(orientedTrimPath, medial1_vec, estPose1, estPose1, orderedPathIDs1, nodeID1, pathPlotCount=pathID, hypID=mapHyp.hypothesisID, plotIter=True)
+			resultArgs1 = getMultiDeparturePoint(orientedTrimPath, medial1_vec, estPose1, estPose1, orderedPathIDs1, nodeID1, pathPlotCount=pathID, hypID=mapHyp.hypothesisID, plotIter=False)
 
 
 			mapHyp.departureResultSet1 = resultArgs1
@@ -2471,7 +2471,7 @@ def computeLocalDivergence(hypSet, nodeID1, nodeID2):
 			path_vec = trimSpline.getUniformSamples()
 
 			orientedTrimPath = orientPathLean(path_vec, globalMedial2)
-			resultArgs2 = getMultiDeparturePoint(orientedTrimPath, medial2_vec, estPose2, estPose2, orderedPathIDs2, nodeID2, pathPlotCount=pathID, hypID=mapHyp.hypothesisID, plotIter=True)
+			resultArgs2 = getMultiDeparturePoint(orientedTrimPath, medial2_vec, estPose2, estPose2, orderedPathIDs2, nodeID2, pathPlotCount=pathID, hypID=mapHyp.hypothesisID, plotIter=False)
 
 			mapHyp.departureResultSet2 = resultArgs2
 			departurePoint1, depAngle1, isInterior1, isExist1, discDist1, maxFront, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, maxBack, contigFrac, overlapSum, angDiff2 = resultArgs2
@@ -2630,11 +2630,12 @@ def checkForeBranch(hypSet, nodeID1, nodeID2, shootIDs, particleIDs):
 		if isBranched:
 
 			" create a new map state where a branch decision is not made "
+			mapHyp.isNodeBranching[nodeID1] = True
+			mapHyp.isNodeBranching[nodeID2] = True
+
 			newMapHyp = mapHyp.copy(particleIDs)
 			newHyps[particleIDs] = newMapHyp
 			newHyps[particleIDs].isNotBranched = False 
-			newHyps[particleIDs].isNodeBranching[nodeID1] = True
-			newHyps[particleIDs].isNodeBranching[nodeID2] = True
 
 			" in case current hypothesis has already branched, this ensures that topology is regenerated when branching "
 			hypSet[pID].isNotBranched = True
@@ -2765,11 +2766,12 @@ def checkBackBranch(hypSet, nodeID1, nodeID2, shootIDs, particleIDs):
 		if isBranched:
 
 			" create a new map state where a branch decision is not made "
+			mapHyp.isNodeBranching[nodeID1] = True
+			mapHyp.isNodeBranching[nodeID2] = True
+
 			newMapHyp = mapHyp.copy(particleIDs)
 			newHyps[particleIDs] = newMapHyp
 			newHyps[particleIDs].isNotBranched = False 
-			newHyps[particleIDs].isNodeBranching[nodeID1] = True
-			newHyps[particleIDs].isNodeBranching[nodeID2] = True
 
 			" in case current hypothesis has already branched, this ensures that topology is regenerated when branching "
 			hypSet[pID].isNotBranched = True
@@ -2841,6 +2843,7 @@ def addToPaths(shootIDs, particleIDs, hypSet, nodeID1, nodeID2):
 
 	for pID, mapHyp in hypSet.iteritems():
 		mapHyp.isNotBranched = False
+		mapHyp.isSplit = False
 
 
 	""" check for branching conditions from path, spawn new hypotheses """

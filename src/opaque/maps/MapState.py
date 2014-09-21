@@ -1097,7 +1097,32 @@ class MapState:
 
 			#""" static splices have 1.0 probability """
 			if len(thisSplicedPaths) == 0:
-				thisSplicedPaths.append((None, 1.0, rootSplice, None, []))
+
+				controlPoses = deepcopy(self.getControlPoses())
+				controlPoses_G = computeGlobalControlPoses(controlPoses, parentPathIDs)
+
+				""" collect landmarks that we can localize against """
+				candLandmarks_G = []
+				for pathID in pathIDs:
+
+					nodeSet = self.getNodes(pathID)
+					currFrame_L = Pose(controlPoses[pathID])
+
+					for nodeID in nodeSet:
+
+						landmarkPoint_N = self.nodeLandmarks[pathID][nodeID]
+
+						currFrame_G = Pose(controlPoses_G[pathID])
+						nodePose_L = self.pathClasses[pathID]["localNodePoses"][nodeID]
+						poseFrame_L = Pose(nodePose_L)
+
+						if landmarkPoint_N != None and nodeID != nodeID0 and nodeID != nodeID1:
+							landmarkPoint_L = poseFrame_L.convertLocalToGlobal(landmarkPoint_N)
+							landmarkPoint_G = currFrame_G.convertLocalToGlobal(landmarkPoint_L)
+							candLandmarks_G.append(landmarkPoint_G)
+
+
+				thisSplicedPaths.append((None, 1.0, rootSplice, None, candLandmarks_G))
 
 			print "particle:", particleIndex, ",",  len(thisSplicedPaths), "localize jobs"
 			poseFrame = Pose(hypPose0)
@@ -1146,106 +1171,126 @@ class MapState:
 			if poseLandmarkSum > maxLandmarkSum:
 				maxLandmarkSum = poseLandmarkSum
 
-		""" set the rejection criteria """
-		for index in range(len(results)):
+		isAllReject = True
+		rejectDivergence = True
 
-			part = results[index]
+		""" if all rejected, try again without divergence filter """
+		while isAllReject:
 
-			particleID = part[0]
+			""" set the rejection criteria """
+			for index in range(len(results)):
 
-			utilVal = part[45]
-			spliceIndex = part[47]
-			branchIndex = allSplicedPaths[spliceIndex][0]
-			normMatchCount = allSplicedPaths[spliceIndex][1]
-			spliceCurve = allSplicedPaths[spliceIndex][2]
-			#pathID = allSplicedPaths[spliceIndex][3]
+				part = results[index]
 
-			initPose0 = part[48]
-			initPose1 = part[49]
+				particleID = part[0]
 
-			overlapSum = part[50]
-			poseLandmarkSum = part[51]
+				utilVal = part[45]
+				spliceIndex = part[47]
+				branchIndex = allSplicedPaths[spliceIndex][0]
+				normMatchCount = allSplicedPaths[spliceIndex][1]
+				spliceCurve = allSplicedPaths[spliceIndex][2]
+				#pathID = allSplicedPaths[spliceIndex][3]
 
+				initPose0 = part[48]
+				initPose1 = part[49]
 
-			newPose0 = part[2]
-
-			isInterior1_0 = part[9]
-			isExist1_0 = part[10]
-			isInterior2_0 = part[15]
-			isExist2_0 = part[16]
-			contigFrac_0 = part[19]
-			overlapSum_0 = part[20]
-
-			newPose1 = part[24]
-			isInterior1_1 = part[31]
-			isExist1_1 = part[32]
-			isInterior2_1 = part[37]
-			isExist2_1 = part[38]
-			contigFrac_1 = part[41]
-			overlapSum_1 = part[42]
+				overlapSum = part[50]
+				poseLandmarkSum = part[51]
 
 
-			isReject = False
-			""" divergence is prohibited """
-			if isInterior1_0 or isInterior2_0 or isInterior1_1 or isInterior2_1:
-				print "reject because divergence"
-				isReject = True
+				newPose0 = part[2]
 
-			""" only a single extension is permitted, but not two """
-			if isExist1_0 and isExist2_0 or isExist1_1 and isExist2_1:
-				print "reject because double extension"
-				isReject = True
-			
-			""" horrifically low contiguity is rejected out of hand """
-			if contigFrac_0 <= 0.5 or contigFrac_1 <= 0.5:
-				print "reject because low contiguity"
-				isReject = True
+				isInterior1_0 = part[9]
+				isExist1_0 = part[10]
+				isInterior2_0 = part[15]
+				isExist2_0 = part[16]
+				contigFrac_0 = part[19]
+				overlapSum_0 = part[20]
 
-			""" contiguity between current and previous pose """
-			if overlapSum > 1e10:
-				print "reject because no overlap"
-				isReject = True
+				newPose1 = part[24]
+				isInterior1_1 = part[31]
+				isExist1_1 = part[32]
+				isInterior2_1 = part[37]
+				isExist2_1 = part[38]
+				contigFrac_1 = part[41]
+				overlapSum_1 = part[42]
 
-			#ANG_THRESH = 2.0*pi/3.0
-			ANG_THRESH = 1.0*pi/3.0
 
-			#if fabs(diffAngle(initPose0[2],newPose0[2])) > 2.0*pi/3.0 or fabs(diffAngle(initPose1[2],newPose1[2])) > 2.0*pi/3.0:
+				isReject = False
+				""" divergence is prohibited """
+				if rejectDivergence and (isInterior1_0 or isInterior2_0 or isInterior1_1 or isInterior2_1):
+					print "reject because divergence"
+					isReject = True
 
-			if fabs(diffAngle(initPose0[2],newPose0[2])) > ANG_THRESH or fabs(diffAngle(initPose1[2],newPose1[2])) > ANG_THRESH:
-				print "reject because change in pose angle is too different"
-				isReject = True
-			else:
-				pass
-				#print "localize angle diff:", particleID, initPose0[2], newPose0[2], initPose1[2], newPose1[2], fabs(diffAngle(initPose0[2],newPose0[2])), fabs(diffAngle(initPose1[2],newPose1[2]))
+				""" only a single extension is permitted, but not two """
+				if isExist1_0 and isExist2_0 or isExist1_1 and isExist2_1:
+					print "reject because double extension"
+					isReject = True
+				
+				""" horrifically low contiguity is rejected out of hand """
+				if contigFrac_0 <= 0.5 or contigFrac_1 <= 0.5:
+					print "reject because low contiguity"
+					isReject = True
 
-			if isReject:
-				newUtilVal = -1e100
-				listCopy = list(part)
-				listCopy[45] = newUtilVal
-				tupleCopy = tuple(listCopy)
+				""" contiguity between current and previous pose """
+				if overlapSum > 1e10:
+					print "reject because no overlap"
+					isReject = True
 
-				results[index] = tupleCopy
-			else:
+				#ANG_THRESH = 2.0*pi/3.0
+				ANG_THRESH = 1.0*pi/3.0
 
-				""" check to avoid divide by zero """
-				if maxLandmarkSum > poseLandmarkSum:
-					newProb = (pi-fabs(diffAngle(initPose0[2],newPose0[2])) ) * contigFrac_0  * ((maxLandmarkSum-poseLandmarkSum)/maxLandmarkSum)
+				#if fabs(diffAngle(initPose0[2],newPose0[2])) > 2.0*pi/3.0 or fabs(diffAngle(initPose1[2],newPose1[2])) > 2.0*pi/3.0:
+
+				if fabs(diffAngle(initPose0[2],newPose0[2])) > ANG_THRESH or fabs(diffAngle(initPose1[2],newPose1[2])) > ANG_THRESH:
+					print "reject because change in pose angle is too different"
+					isReject = True
 				else:
-					newProb = (pi-fabs(diffAngle(initPose0[2],newPose0[2])) ) * contigFrac_0
+					pass
+					#print "localize angle diff:", particleID, initPose0[2], newPose0[2], initPose1[2], newPose1[2], fabs(diffAngle(initPose0[2],newPose0[2])), fabs(diffAngle(initPose1[2],newPose1[2]))
 
-				#newProb = (pi-fabs(diffAngle(initPose0[2],newPose0[2])) ) * contigFrac_0 * contigFrac_0 / overlapSum_0
+				if isReject:
+					newUtilVal = -1e100
+					listCopy = list(part)
+					listCopy[45] = newUtilVal
+					tupleCopy = tuple(listCopy)
 
-				""" case if splice is root path """
-				if normMatchCount != None:
-					newProb *= normMatchCount
+					results[index] = tupleCopy
+				else:
 
-				listCopy = list(part)
-				listCopy[45] = newProb
-				tupleCopy = tuple(listCopy)
+					isAllReject = False
 
-				results[index] = tupleCopy
-			
-			print "%d %d %d %d normMatchCount, newUtilVal, overlapSum:" % (self.hypothesisID, particleID, index, spliceIndex), normMatchCount, results[index][45], overlapSum, contigFrac_0, contigFrac_1, initPose0[2], newPose0[2], int(isExist1_0), int(isExist2_0), int(isExist1_1), int(isExist2_1), int(isInterior1_0), int(isInterior2_0), int(isInterior1_1), int(isInterior2_1), isReject, branchIndex
+					""" check to avoid divide by zero """
+					if maxLandmarkSum > poseLandmarkSum:
+						newProb = (pi-fabs(diffAngle(initPose0[2],newPose0[2])) ) * contigFrac_0  * ((maxLandmarkSum-poseLandmarkSum)/maxLandmarkSum)
+					else:
+						newProb = (pi-fabs(diffAngle(initPose0[2],newPose0[2])) ) * contigFrac_0
+
+					#newProb = (pi-fabs(diffAngle(initPose0[2],newPose0[2])) ) * contigFrac_0 * contigFrac_0 / overlapSum_0
+
+					""" case if splice is root path """
+					if normMatchCount != None:
+						newProb *= normMatchCount
+
+					listCopy = list(part)
+					listCopy[45] = newProb
+					tupleCopy = tuple(listCopy)
+
+					results[index] = tupleCopy
+				
+				print "%d %d %d %d normMatchCount, newUtilVal, overlapSum:" % (self.hypothesisID, particleID, index, spliceIndex), normMatchCount, results[index][45], overlapSum, contigFrac_0, contigFrac_1, initPose0[2], newPose0[2], int(isExist1_0), int(isExist2_0), int(isExist1_1), int(isExist2_1), int(isInterior1_0), int(isInterior2_0), int(isInterior1_1), int(isInterior2_1), isReject, branchIndex, poseLandmarkSum, len(landmarks_G)
+
+			""" break condition, do not accept divergence if we have already branched """
+			if not rejectDivergence or self.isNodeBranching[nodeID0] or self.isNodeBranching[nodeID1]:
+				#isAllReject = False
+				break
+
+			""" turn off divergence filter """
+			rejectDivergence = False
+
+
+
+
 
 		""" sort by pose particle index followed by utility value """
 		sortedResults = sorted(results, key=itemgetter(0,45), reverse=True)
