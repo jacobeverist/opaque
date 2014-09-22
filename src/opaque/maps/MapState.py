@@ -317,6 +317,7 @@ class MapState:
 		self.localPaths = {0 : []}
 		self.localHulls = {0 : []}
 		self.localLandmarks = {0 : {}}
+		self.branchDiverges = {0 : True}
 
 		""" intermediate data structure for computing the shoot skeleton """
 		self.localLeaf2LeafPathJunctions = {}
@@ -340,7 +341,7 @@ class MapState:
 		self.pathIDs = 1
 
 		""" travel destinations on the shoot map """
-		self.pathTermsVisited = {0: False}
+		self.pathTermsVisited = {-1: False, 0: False}
 
 		""" number of branch hypotheses and spacing between them for a branch point distribution """
 		self.DIV_LEN = 0.2
@@ -1807,6 +1808,8 @@ class MapState:
 		newObj.localLandmarks = deepcopy(self.localLandmarks)
 		newObj.localLeaf2LeafPathJunctions = deepcopy(self.localLeaf2LeafPathJunctions) 
 
+		newObj.branchDiverges = deepcopy(self.branchDiverges)
+
 		return newObj
 
 	@logFunction
@@ -1843,9 +1846,8 @@ class MapState:
 				branchDiffAngle1 = fabs(normalizeAngle(diffAngle(ang1, ang2)))
 				branchDiffAngle2 = fabs(normalizeAngle(diffAngle(ang1, normalizeAngle(ang2 + math.pi))))
 
-				print "computeEval:", self.hypothesisID, parentID, j, ang1, ang2, branchDiffAngle1, branchDiffAngle2
-
-				if branchDiffAngle1 < 0.1 or branchDiffAngle2 < 0.1:
+				print "computeEval:", self.hypothesisID, parentID, j, ang1, ang2, branchDiffAngle1, branchDiffAngle2, self.branchDiverges
+				if branchDiffAngle1 < 0.1 or branchDiffAngle2 < 0.1 or False in self.branchDiverges.values():
 						totalSum = 1e100
 
 		"""
@@ -3860,6 +3862,7 @@ class MapState:
 		trimmedPaths = {}
 		branchPoses_G = {}
 		localTrimmedPaths = {}
+		branchDiverges = {}
 		
 		print "path lengths:"
 		for k,v in paths.iteritems():
@@ -3914,6 +3917,7 @@ class MapState:
 					if childParents[pathID] == None:
 						trimmedPaths[pathID] = deepcopy(paths[pathID])
 						localTrimmedPaths[pathID] = deepcopy(paths[pathID])
+						branchDiverges[0] = True
 
 					else:
 						parentPathID = childParents[pathID]
@@ -3938,6 +3942,7 @@ class MapState:
 						trimmedPaths[pathID] = deepcopy(globalPath3)
 						localTrimmedPaths[pathID] = deepcopy(localNewPath3)
 						branchPoses_G[pathID] = branchPose_G
+						branchDiverges[pathID] = not isNoDiverge
 
 					for childID in pathIDs:
 						if self.pathClasses[childID]["parentID"] == pathID:
@@ -3946,19 +3951,20 @@ class MapState:
 		self.branchPoses_G = branchPoses_G
 		self.trimmedPaths = trimmedPaths
 		self.localTrimmedPaths = localTrimmedPaths
+		self.branchDiverges = branchDiverges
 			
 		return trimmedPaths
 
 
 	@logFunction
-	def pathTermVisited(self, pathID):
+	def pathTermVisited(self, termID):
 		
 		try:
-			self.pathTermsVisited[pathID]
+			self.pathTermsVisited[termID]
 		except:
 			pass
 		else:
-			self.pathTermsVisited[pathID] = True
+			self.pathTermsVisited[termID] = True
 
 	@logFunction
 	def getPathTermsVisited(self):
@@ -3982,6 +3988,11 @@ class MapState:
 			pID, pathI = self.topDict["t%u" % (pathID+1)]
 			path = self.trimmedPaths[pID]
 			terms[pathID] = [path[pathI][0],path[pathI][1], 0.0]
+
+		""" root terminal point """
+		pID, pathI = self.topDict["t%u" % 0]
+		path = self.trimmedPaths[pID]
+		terms[-1] = [path[pathI][0],path[pathI][1], 0.0]
 			
 		print "returning path terms:", terms
 

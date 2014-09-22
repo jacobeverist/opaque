@@ -3776,7 +3776,7 @@ def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPos
 
 
 		""" get the trimmed child shoot at the new designated branch point from parent """
-		trimPath_L, branchPose_L, longPath_L, isNoDiverge =  trimBranch(pathID, parentID, controlPose_P, junctionPoses[pathID], localPathSegsByID, localPaths, parentPathIDs, controlPoses_G, plotIter=True, arcDist = arcDist, nodeID=numNodes, hypothesisID = hypothesisID)
+		trimPath_L, branchPose_L, longPath_L, isNoDiverge =  trimBranch(pathID, parentID, controlPose_P, junctionPoses[pathID], localPathSegsByID, localPaths, parentPathIDs, controlPoses_G, plotIter=False, arcDist = arcDist, nodeID=numNodes, hypothesisID = hypothesisID)
 
 
 
@@ -4106,7 +4106,7 @@ def computeBranch(pathID, parentID, localPathSegsByID, localPaths, arcDist, loca
 		controlPoses_G = computeGlobalControlPoses(controlPoses, parentPathIDs)
 
 		""" get the trimmed child shoot at the new designated branch point from parent """
-		newPath3, localJuncPose_C, particlePath, isNoDiverge =  trimBranch(pathID, parentID, modControlPose_P, oldLocalJuncPose_C, localPathSegsByID, localPaths, parentPathIDs, controlPoses_G, plotIter=True, arcDist = arcDist, nodeID=numNodes, hypothesisID = hypothesisID)
+		newPath3, localJuncPose_C, particlePath, isNoDiverge =  trimBranch(pathID, parentID, modControlPose_P, oldLocalJuncPose_C, localPathSegsByID, localPaths, parentPathIDs, controlPoses_G, plotIter=False, arcDist = arcDist, nodeID=numNodes, hypothesisID = hypothesisID)
 
 		juncDiscDist = 0.0
 		juncDiscAngle = 0.0
