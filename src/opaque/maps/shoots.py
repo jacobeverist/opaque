@@ -2725,9 +2725,169 @@ def getSimpleDeparture(globalJunctionPose, path1, path2, plotIter = False):
 	else:
 		return backPoint
 
+@logFunction
+def getSoupDivergence(globalJunctionPose, pointSoup, path2, angThresh = 0.8, hypothesisID = 0, numNodes = 0, pathID = 0, plotIter = False):
+
+	" return exception if we receive an invalid path "		  
+	if len(path2) == 0:
+		print "path2 has zero length"
+		raise
+
+	pointSoupTree = cKDTree(array(pointSoup))
+
+	" for each point on the child path, find its closest pair on the parent path "
+	path2Spline = SplineFit(path2, smooth=0.1)
+	pathPoints2 = path2Spline.getUniformSamples()
+
+	distances = []
+	indices = []
+	for i in range(0,len(pathPoints2)):
+		p_2 = pathPoints2[i]
+		queryPoint = p_2[0:2]
+		minDist, i_1 = pointSoupTree.query(array(queryPoint))
+		#p_1, i_1, minDist = gen_icp.findClosestPointInA(pathPoints1, p_2)
+		
+		" keep the distance information "
+		distances.append(minDist)
+		" and the associated index of the point on the parent path "
+		indices.append(i_1)
+
+	DIST_THRESH = 0.3
+
+	""" find the point that first crosses distance threshold """
+	currI = 0
+	try:
+		while distances[currI] > DIST_THRESH:
+			currI += 1
+	except:
+		""" index out of bounds, back track """
+		currI -= 1
+	
+	frontPoint = pointSoup[indices[currI]]
+	frontIndex = currI
+	frontDist = distances[0]
+
+	currI = len(distances)-1
+	try:
+		while currI >= 0 and distances[currI] > DIST_THRESH:
+			currI -= 1
+	except:
+		""" index out of bounds, back track """
+		currI += 1
+	
+	if currI < 0:
+		currI = 0
+
+	backPoint = pointSoup[indices[currI]]
+	backIndex = currI
+	backDist = distances[-1]
+	
+	juncDist1 = sqrt((globalJunctionPose[0]-frontPoint[0])**2 + (globalJunctionPose[1]-frontPoint[1])**2)
+	juncDist2 = sqrt((globalJunctionPose[0]-backPoint[0])**2 + (globalJunctionPose[1]-backPoint[1])**2)
+
+
+	frontNoDiverge = False
+	backNoDiverge = False
+
+	#pathPoints2[0:frontIndex+1]
+	frontIndexEnd = frontIndex-20
+	if frontIndexEnd < 0:
+		frontIndexEnd = 0
+	if frontIndex-frontIndexEnd > 0:
+		frontVecSum = [0.0,0.0]
+
+		revRange = range(frontIndexEnd+1, frontIndex+1)
+		revRange.reverse()
+		for k in revRange:
+			p1 = pathPoints2[k]
+			p2 = pathPoints2[k-1]
+			frontVecSum[0] += p2[0]-p1[0]
+			frontVecSum[1] += p2[1]-p1[1]
+		
+		vecMag = sqrt(frontVecSum[0]**2 + frontVecSum[1]**2)
+
+		frontVec = [frontVecSum[0]/vecMag, frontVecSum[1]/vecMag]
+
+		frontVecAngle = acos(frontVec[0])
+		if frontVec[1] < 0.0:
+			frontVecAngle = -frontVecAngle
+
+		frontPose = [frontPoint[0], frontPoint[1], frontVecAngle]
+	else:
+		#frontPose = None
+		frontNoDiverge = True
+		frontPose = [frontPoint[0], frontPoint[1], 0.0]
+
+
+	#pathPoints2[backIndex:len(distances)]
+
+	backIndexEnd = backIndex+20
+	if backIndexEnd >= len(distances):
+		backIndexEnd = len(distances)-1
+	if backIndexEnd-backIndex > 0:
+		backVecSum = [0.0,0.0]
+		for k in range(backIndex, backIndexEnd):
+			p1 = pathPoints2[k]
+			p2 = pathPoints2[k+1]
+			backVecSum[0] += p2[0]-p1[0]
+			backVecSum[1] += p2[1]-p1[1]
+		
+		vecMag = sqrt(backVecSum[0]**2 + backVecSum[1]**2)
+
+		backVec = [backVecSum[0]/vecMag, backVecSum[1]/vecMag]
+
+		backVecAngle = acos(backVec[0])
+		if backVec[1] < 0.0:
+			backVecAngle = -backVecAngle
+
+		backPose = [backPoint[0], backPoint[1], backVecAngle]
+	else:
+		#backPose = None
+		backNoDiverge = True
+		backPose = [backPoint[0], backPoint[1], 0.0]
+	
+	angDiff1 = fabs(diffAngle(globalJunctionPose[2], frontPose[2]))
+	angDiff2 = fabs(diffAngle(globalJunctionPose[2], backPose[2]))
+
+	print "getSoupDivergence:", juncDist1, angDiff1, juncDist2, angDiff2, frontPose, backPose, len(pathPoints2), frontIndex, backIndex, frontNoDiverge, backNoDiverge, globalJunctionPose
+
+	if plotIter:
+
+		pylab.clf()
+
+		xP = []
+		yP = []
+		for p in pointSoup:
+			xP.append(p[0])
+			yP.append(p[1])
+		pylab.scatter(xP,yP, color='k', linewidth=1, alpha=0.1)
+
+		xP = []
+		yP = []
+		for p in pathPoints2:
+			xP.append(p[0])
+			yP.append(p[1])
+		pylab.plot(xP,yP, color='r', linewidth=1)
+
+		xP = [frontPose[0], backPose[0]]
+		yP = [frontPose[1], backPose[1]]
+
+		pylab.scatter(xP,yP, color='b', linewidth=1,zorder=2)
+
+		pylab.axis("equal")
+		#pylab.title("hyp %d nodeID %d %1.2f %d %1.2f" % ( hypothesisID, numNodes, newBranchPoses_L[pathID][2], totalMatchCount, distSum ))
+		pylab.title("hyp %d nodeID %d %d %d %1.2f %1.2f" % ( hypothesisID, numNodes, frontNoDiverge, backNoDiverge, frontDist, backDist ))
+		nameStr = "soupDivergence_%04u_%04u_%04u.png" % (hypothesisID, numNodes, pathID)
+
+		pylab.savefig(nameStr)
+		print "saving", nameStr
+
+
+	return frontNoDiverge, backNoDiverge
+
 
 @logFunction
-def getSimpleSoupDeparture(globalJunctionPose, pointSoup, path2, angThresh = 0.8, plotIter = False):
+def getSimpleSoupDeparture(globalJunctionPose, pointSoup, path2, angThresh = 0.8, hypothesisID = 0, numNodes = 0, pathID = 0, plotIter = False):
 
 	" return exception if we receive an invalid path "		  
 	if len(path2) == 0:
@@ -2849,6 +3009,39 @@ def getSimpleSoupDeparture(globalJunctionPose, pointSoup, path2, angThresh = 0.8
 	angDiff2 = fabs(diffAngle(globalJunctionPose[2], backPose[2]))
 
 	print "getSimpleSoupDeparture:", juncDist1, angDiff1, juncDist2, angDiff2, frontPose, backPose, len(pathPoints2), frontIndex, backIndex, frontNoDiverge, backNoDiverge, globalJunctionPose
+
+	if plotIter:
+
+		pylab.clf()
+
+		xP = []
+		yP = []
+		for p in pointSoup:
+			xP.append(p[0])
+			yP.append(p[1])
+		pylab.scatter(xP,yP, color='k', linewidth=1, alpha=0.1)
+
+		xP = []
+		yP = []
+		for p in pathPoints2:
+			xP.append(p[0])
+			yP.append(p[1])
+		pylab.plot(xP,yP, color='r', linewidth=1)
+
+		xP = [frontPose[0], backPose[0]]
+		yP = [frontPose[1], backPose[1]]
+
+		pylab.scatter(xP,yP, color='b', linewidth=1,zorder=2)
+
+		pylab.axis("equal")
+		#pylab.title("hyp %d nodeID %d %1.2f %d %1.2f" % ( hypothesisID, numNodes, newBranchPoses_L[pathID][2], totalMatchCount, distSum ))
+		pylab.title("hyp %d nodeID %d %d %d" % ( hypothesisID, numNodes, frontNoDiverge, backNoDiverge ))
+		nameStr = "simpleSoupDivergence_%04u_%04u_%04u.png" % (hypothesisID, numNodes, pathID)
+
+		pylab.savefig(nameStr)
+		print "saving", nameStr
+
+
 
 	if juncDist1 < juncDist2 and angDiff1 < angThresh:
 		return frontPose, frontNoDiverge
@@ -3100,7 +3293,21 @@ def getInitSkeletonBranchPoint(globalJunctionPose, currShootID, globalMedial_G, 
 
 	allPathIDs = localPathSegsByID.keys()
 
+	#isAncestor = {}
+	#parentID = parentShootIDs[currShootID]
+	#while parentID != None:
+	#	isAncestor[parentID] = True
+	#	parentID = parentShootIDs[parentID]
+
+	#ancestorIDs = []
+	#for shootID, isAncestor in isAncestor.iteritems():
+	#	if isAncestor:
+	#		ancestorIDs.append(shootID)
+
+	#print currShootID, "ancestorIDs:", ancestorIDs
+
 	pathSegsByID_G = {}
+	#for shootID in ancestorIDs:
 	for shootID in allPathIDs:
 
 		localSegs_L = localPathSegsByID[shootID]
@@ -3223,9 +3430,17 @@ def getSkeletonBranchPoint(globalJunctionPose, currShootID, parentShootIDs, loca
 
 	""" bookkeeping, find all descendants of current shoot """
 	isDescendant = {}
+	isAncestor = {}
 
 	for key in parentShootIDs.keys():
 		isDescendant[key] = False
+		isAncestor[key] = False
+
+	parentID = parentShootIDs[currShootID]
+	while parentID != None:
+		isAncestor[parentID] = True
+		parentID = parentShootIDs[parentID]
+
 
 	currID = currShootID
 	currDescen = [currShootID]
@@ -3252,6 +3467,12 @@ def getSkeletonBranchPoint(globalJunctionPose, currShootID, parentShootIDs, loca
 		if not isDescen:
 			nonDescentIDs.append(shootID)
 	
+	ancestorIDs = []
+	for shootID, isAncestor in isAncestor.iteritems():
+		if isAncestor:
+			ancestorIDs.append(shootID)
+
+	
 
 	currSegs_L = localPathSegsByID[currShootID]
 	currControlPose_G = globalControlPoses[currShootID]
@@ -3266,11 +3487,15 @@ def getSkeletonBranchPoint(globalJunctionPose, currShootID, parentShootIDs, loca
 		currSegs_G.append(newSeg)
 
 
+	print currShootID, "ancestorIDs:", ancestorIDs
+
+	ancestorPointSoup_G = []
 	allPointSoup_G = []
 	CONTIG_DIST = 0.2
 
 	pathSegsByID_G = {}
-	for shootID in nonDescentIDs:
+	#for shootID in nonDescentIDs:
+	for shootID in ancestorIDs:
 
 		localSegs_L = localPathSegsByID[shootID]
 		controlPose_G = globalControlPoses[shootID]
@@ -3291,8 +3516,20 @@ def getSkeletonBranchPoint(globalJunctionPose, currShootID, parentShootIDs, loca
 		localPath_G = []
 		for p in localPath_L:
 			newPose = descenFrame.convertLocalOffsetToGlobal(p)
-			allPointSoup_G.append(newPose[0:2])
+			ancestorPointSoup_G.append(newPose[0:2])
 			localPath_G.append(newPose)
+
+	pathSegsByID_G = {}
+	for shootID in nonDescentIDs:
+
+		controlPose_G = globalControlPoses[shootID]
+		localPath_L = SplineFit(localPaths[shootID]).getUniformSamples()
+
+		descenFrame = Pose(controlPose_G)
+
+		for p in localPath_L:
+			newPose = descenFrame.convertLocalOffsetToGlobal(p)
+			allPointSoup_G.append(newPose[0:2])
 
 	"""
 	2)  branch point is the part of current skeleton that diverges from all non-descendent skeletons
@@ -3307,7 +3544,8 @@ def getSkeletonBranchPoint(globalJunctionPose, currShootID, parentShootIDs, loca
 
 		try:
 			""" get branch point from all skeletons """
-			branchPose_G, isNoDiverge = getSimpleSoupDeparture(globalJunctionPose, allPointSoup_G, seg_G, angThresh = angThresh)
+			branchPose_G, isNoDiverge = getSimpleSoupDeparture(globalJunctionPose, ancestorPointSoup_G, seg_G, angThresh = angThresh, plotIter = plotIter, hypothesisID = hypothesisID, numNodes = nodeID, pathID = arcDist)
+			print "returned", k, branchPose_G, isNoDiverge
 
 			dist = sqrt((branchPose_G[0]-globalJunctionPose[0])**2 + (branchPose_G[1]-globalJunctionPose[1])**2)
 
@@ -3316,12 +3554,20 @@ def getSkeletonBranchPoint(globalJunctionPose, currShootID, parentShootIDs, loca
 				minBranchPose = branchPose_G
 				minIsNoDiverge = isNoDiverge
 
+				""" clarify that we are diverging from non-descendants """
+				try:
+					frontNoDiverge, backNoDiverge = getSoupDivergence(branchPose_G, allPointSoup_G, seg_G, angThresh = angThresh, plotIter = plotIter, hypothesisID = hypothesisID, numNodes = nodeID, pathID = arcDist)
+					print "returned", k, frontNoDiverge, backNoDiverge
+					minIsNoDiverge = frontNoDiverge and backNoDiverge
+				except:
+					minIsNoDiverge = True
+
 		except:
 			branchPose_G = None
 
 
 
-	print "skeletonBranchPoint:", minBranchPose
+	print "skeletonBranchPoint:", minBranchPose, minIsNoDiverge
 
 	if minBranchPose == None:
 		raise
@@ -4568,9 +4814,11 @@ def trimBranch(pathID, parentPathID, controlPose_P, oldBranchPose_L, localPathSe
 	oldBranchPose_G = currFrame.convertLocalOffsetToGlobal(oldBranchPose_L)
 
 	try:
-		branchPose_G, isNoDiverge = getSkeletonBranchPoint(oldBranchPose_G, pathID, parentPathIDs, localPathSegsByID, localPaths, controlPoses_G)
+		branchPose_G, isNoDiverge = getSkeletonBranchPoint(oldBranchPose_G, pathID, parentPathIDs, localPathSegsByID, localPaths, controlPoses_G, plotIter= plotIter, hypothesisID = hypothesisID, nodeID=nodeID, arcDist = arcDist)
+		#getSkeletonBranchPoint(globalJunctionPose, currShootID, parentShootIDs, localPathSegsByID, localPaths, globalControlPoses, angThresh = 0.8, plotIter = False, hypothesisID = 0, nodeID = 0, arcDist = 0.0):
 	except:
-		branchPose_G, isNoDiverge = getSkeletonBranchPoint(oldBranchPose_G, pathID, parentPathIDs, localPathSegsByID, localPaths, controlPoses_G, angThresh = pi)
+		#branchPose_G, isNoDiverge = getSkeletonBranchPoint(oldBranchPose_G, pathID, parentPathIDs, localPathSegsByID, localPaths, controlPoses_G, angThresh = pi)
+		branchPose_G, isNoDiverge = getSkeletonBranchPoint(oldBranchPose_G, pathID, parentPathIDs, localPathSegsByID, localPaths, controlPoses_G, angThresh=pi, plotIter= plotIter, hypothesisID = hypothesisID, nodeID=nodeID, arcDist = arcDist)
 
 	branchPose_L = currFrame.convertGlobalPoseToLocal(branchPose_G)
 	branchPose_P = localFrame.convertLocalOffsetToGlobal(branchPose_L)

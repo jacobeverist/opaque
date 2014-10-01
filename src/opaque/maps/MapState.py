@@ -1847,7 +1847,8 @@ class MapState:
 				branchDiffAngle2 = fabs(normalizeAngle(diffAngle(ang1, normalizeAngle(ang2 + math.pi))))
 
 				print "computeEval:", self.hypothesisID, parentID, j, ang1, ang2, branchDiffAngle1, branchDiffAngle2, self.branchDiverges
-				if branchDiffAngle1 < 0.1 or branchDiffAngle2 < 0.1 or False in self.branchDiverges.values():
+				#if branchDiffAngle1 < 0.1 or branchDiffAngle2 < 0.1 or False in self.branchDiverges.values():
+				if False in self.branchDiverges.values():
 						totalSum = 1e100
 
 		"""
@@ -3374,24 +3375,31 @@ class MapState:
 			currPath = splicePaths[k]
 			pathIDs = splicePathIDs[k]
 			currPath = orientPath(currPath, globalMedial2)
-			results = getMultiDeparturePoint(currPath, medial2_vec, estPose2, estPose2, pathIDs, nodeID, pathPlotCount = self.multiDepCount, hypID = self.hypothesisID, plotIter = False)
+			results = getMultiDeparturePoint(currPath, medial2_vec, estPose2, estPose2, pathIDs, nodeID, pathPlotCount = self.multiDepCount, hypID = self.hypothesisID, plotIter = True) 
 
 			self.multiDepCount += 1
 
 			resultSet.append(results+(k,))
 
-			"departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departu rePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2"
+			"departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2"
 
 		for result in resultSet:
 			print "result:", result
 		
+		""" overlapSum secondary, contigFrac primary """
+		resultSet = sorted(resultSet, key=itemgetter(13), reverse=False)
 		resultSet = sorted(resultSet, key=itemgetter(12), reverse=True)
 		
 		print "getOrderedOverlappingPaths() sorted node", nodeID, ":"
 		for result in resultSet:
-			print result[15]
+			print result[15], result[12], result[13]
 
+		# FIXME:  temporary forced result 
+		result = resultSet[0]	 
+		spliceIndex = result[15]
+		overlappedPathIDs = splicePathIDs[spliceIndex]
 
+		"""
 		for k in range(len(resultSet)):
 			result = resultSet[k]	 
 			spliceIndex = result[15]
@@ -3415,6 +3423,7 @@ class MapState:
 			if not isNotOverlapped:
 				print "selected", k, "'th result"
 				break
+		"""
 			
 		
 		orderedPathIDs = self.getPathOrdering(nodeID, overlappedPathIDs)
@@ -3693,7 +3702,7 @@ class MapState:
 
 		#self.localPaths[pathID] = localResults[1]
 		#localPathSegsByID[newPathID] 
-	
+
 
 		controlPose_G, controlParentID, branchPose_G = getInitSkeletonBranchPoint(globalJunctionPose_G, newPathID, globalMedial0_G, parentPathIDs, localPathSegsByID, self.localPaths, globalControlPoses_G, plotIter = False, hypothesisID = self.hypothesisID, nodeID = branchNodeID)
 
@@ -3928,7 +3937,7 @@ class MapState:
 						globalJunctionPose = self.getGlobalJunctionPose(childPathID)
 						globalControlPose = globalControlPoses[pathID]
 
-						localNewPath3, branchPose_L, localParticlePath, isNoDiverge = trimBranch(childPathID, parentPathID, localControlPose, localJunctionPose, localPathSegsByID, self.localPaths, parentPathIDs, globalControlPoses, plotIter=True, hypothesisID=self.hypothesisID, nodeID=(self.poseData.numNodes))
+						localNewPath3, branchPose_L, localParticlePath, isNoDiverge = trimBranch(childPathID, parentPathID, localControlPose, localJunctionPose, localPathSegsByID, self.localPaths, parentPathIDs, globalControlPoses, plotIter=True, hypothesisID=self.hypothesisID, nodeID=(self.poseData.numNodes), arcDist = childPathID)
 
 
 						currFrame = Pose(globalControlPose)
@@ -5134,7 +5143,7 @@ class MapState:
 		dirFlag specifies which node we want to check branches on.	We do not want to branch with the anchored end of a probe sweep   
 		"""
 
-		print "determineBranchPair(", nodeID1, ",", nodeID2, ",", frontExist1, ",", frontExist2, ",", frontInterior1, ",", frontInterior2, ",", depAngle1, ",", depAngle2, ",", depPoint1, ",", depPoint2, ",", parentPathID1, ",", parentPathID2, ",", dirFlag, ")"
+		print self.hypothesisID, "determineBranchPair(", nodeID1, ",", nodeID2, ",", frontExist1, ",", frontExist2, ",", frontInterior1, ",", frontInterior2, ",", depAngle1, ",", depAngle2, ",", depPoint1, ",", depPoint2, ",", parentPathID1, ",", parentPathID2, ",", dirFlag, ",", isUnique1, ",", isUnique2, ",", duplicatePathID1, ",", duplicatePathID2, ",", shootIDs, ")"
 		
 		self.shootIDs = shootIDs
 

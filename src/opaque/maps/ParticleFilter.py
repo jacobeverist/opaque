@@ -171,13 +171,13 @@ def __remote_displaceParticle(rank, qin, qout):
 			pathSplices2 = job[9]
 			pathSplices3 = job[10]
 
-			result = displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine, nodeID3, initPose2, initPose3, prevPose0, prevPose1)
+			result = displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine, nodeID3, initPose2, initPose3, prevPose0, prevPose1, particleIndex)
 			results.append((particleIndex,) + result)
 						   
 		# write to output queue
 		qout.put((nc,results))
 
-def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine, nodeID3, initPose2, initPose3, prevPose0, prevPose1):
+def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine, nodeID3, initPose2, initPose3, prevPose0, prevPose1, particleIndex):
 
 	#print "movePath(", nodeID, ",", direction, ",", distEst, ")"
 
@@ -275,7 +275,8 @@ def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine
 
 
 			sF0 = poseData.spatialFeatures[nodeID][0]
-			if len(partObj.junctionData) > 0 and (sF0["bloomPoint"] != None or sF0["archPoint"] != None):
+			#if len(partObj.junctionData) > 0 and (sF0["bloomPoint"] != None or sF0["archPoint"] != None ):
+			if len(partObj.junctionData) > 0 and (sF0["bloomPoint"] != None or sF0["archPoint"] != None or sF0["inflectionPoint"] != None):
 
 				""" FIXME: assume one landmark feature """
 
@@ -286,6 +287,11 @@ def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine
 				elif sF0["archPoint"] != None:
 					print "DO arch localize to landmark feature", nodeID
 					localJunctionPoint = sF0["archPoint"]
+
+				elif sF0["inflectionPoint"] != None:
+					print "DO inflection localize to landmark feature", nodeID
+					localJunctionPoint = sF0["inflectionPoint"]
+
 
 				""" starting pose of nodeID """
 				nodePose0 = currPoses[nodeID]
@@ -398,7 +404,10 @@ def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine
 			resultMoves2 = []
 			resultMoves3 = []
 
-			for path in splicePaths:		
+			#for path in splicePaths:		
+			for spliceIndex in range(len(splicePaths)):		
+
+				path = splicePaths[spliceIndex]
 
 				" 2) get pose of previous node, get point on path curve "
 				#pose0 = mapHyp.nodePoses[nodeID-3]
@@ -460,9 +469,10 @@ def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine
 
 				multiDepCount = 0
 
-				result2 = getMultiDeparturePoint(orientedSplicePath, medial2_vec, pose2, resultPose2, [], nodeID-1, pathPlotCount = multiDepCount, plotIter = False)
+				#self.mapStateID = mapStateID
+				result2 = getMultiDeparturePoint(orientedSplicePath, medial2_vec, pose2, resultPose2, [], nodeID-1, hypID = partObj.mapStateID, pathPlotCount = 0, particleIndex=particleIndex, spliceIndex=spliceIndex, plotIter = False)
 				multiDepCount += 1
-				result3 = getMultiDeparturePoint(orientedSplicePath, medial3_vec, pose3, resultPose3, [], nodeID, pathPlotCount = multiDepCount, plotIter = False)
+				result3 = getMultiDeparturePoint(orientedSplicePath, medial3_vec, pose3, resultPose3, [], nodeID, hypID = partObj.mapStateID, pathPlotCount = 0, particleIndex=particleIndex, spliceIndex=spliceIndex, plotIter = False)
 				multiDepCount += 1
 				
 				#results1.append(result+(k,))

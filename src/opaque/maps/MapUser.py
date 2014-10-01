@@ -265,10 +265,11 @@ class MapUser:
 				xP.append(p[0])
 				yP.append(p[1])
 
-			pylab.plot(xP,yP, color='r', alpha=0.5, zorder=2)
+			#pylab.plot(xP,yP, color='r', alpha=0.5, zorder=2)
+			pylab.plot(xP,yP, color='r', linewidth=2, zorder=2)
 
 		if len(goalPoint) > 0:
-			pylab.scatter([goalPoint[0],], [goalPoint[1],], color='k', alpha=0.5)
+			pylab.scatter([goalPoint[0],], [goalPoint[1],], color='k', zorder=3)
 
 		activeHypID = self.mapAlgorithm.activeHypID
 		mapHyps = self.mapAlgorithm.mapHyps
@@ -287,7 +288,7 @@ class MapUser:
 						for p in path:
 							xP.append(p[0])
 							yP.append(p[1])
-						pylab.plot(xP,yP, color='g', zorder=1)
+						pylab.plot(xP,yP, color='g', linewidth=2, zorder=1)
 
 
 

@@ -1440,6 +1440,11 @@ class TestNavigation(SnakeControl):
 				self.mapGraph.saveState()
 				self.mapGraph.drawConstraints()				
 
+				""" map state hypothesis no longer active, terminate path following """
+				if self.mapGraph.mapAlgorithm.activeHypID == None:
+					self.mapGraph.drawNavigation([],[])
+					return True
+
 				self.localWayPoints, self.localWayPaths = self.mapGraph.recomputePath(self.termPathID)
 
 				self.mapGraph.drawNavigation(self.localWayPaths[0], self.localWayPoints[0])

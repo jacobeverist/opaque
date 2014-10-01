@@ -749,7 +749,12 @@ def movePath(mapHyp, nodeID, direction, distEst = 1.0):
 
 
 				sF0 = poseData.spatialFeatures[nodeID0][0]
-				if len(mapHyp.pathClasses) > 1 and (sF0["bloomPoint"] != None or sF0["archPoint"] != None):
+
+				#print nodeID0, "spatialFeatures:", sF0
+
+
+				#if len(mapHyp.pathClasses) > 1 and (sF0["bloomPoint"] != None or sF0["archPoint"] != None):
+				if len(mapHyp.pathClasses) > 1 and (sF0["bloomPoint"] != None or sF0["archPoint"] != None or sF0["inflectionPoint"] != None):
 
 					""" FIXME: assume one landmark feature """
 
@@ -760,6 +765,11 @@ def movePath(mapHyp, nodeID, direction, distEst = 1.0):
 					elif sF0["archPoint"] != None:
 						print "DO arch localize to landmark feature", nodeID0
 						localJunctionPoint = sF0["archPoint"]
+
+					elif sF0["inflectionPoint"] != None:
+						print "DO inflection localize to landmark feature", nodeID0
+						localJunctionPoint = sF0["inflectionPoint"]
+
 
 					""" starting pose of nodeID """
 					nodePose0 = currPoses[nodeID0]
@@ -2678,6 +2688,22 @@ def checkBackBranch(hypSet, nodeID1, nodeID2, shootIDs, particleIDs):
 
 	for pID, mapHyp in hypSet.iteritems():
 
+		print "B node departures", nodeID1, ":", mapHyp.departures1
+		print "B node departures", nodeID2, ":", mapHyp.departures2
+		print "B node  interiors", nodeID1, ":", mapHyp.interiors1
+		print "B node  interiors", nodeID2, ":", mapHyp.interiors2
+		print "B node contiguity", nodeID1, ":", mapHyp.contig1
+		print "B node contiguity", nodeID2, ":", mapHyp.contig2
+		print "B node depPoints", nodeID1, ":", mapHyp.depPoints1
+		print "B node depPoints", nodeID2, ":", mapHyp.depPoints2
+		print "B node distances", nodeID1, ":", mapHyp.distances1
+		print "B node distances", nodeID2, ":", mapHyp.distances2
+		print "B node depAngles", nodeID1, ":", mapHyp.depAngles1
+		print "B node depAngles", nodeID2, ":", mapHyp.depAngles2
+		print "B node contig", nodeID1, ":", mapHyp.contig1
+		print "B node contig", nodeID2, ":", mapHyp.contig2
+
+
 		backExist1 = mapHyp.departures1[-1][1]
 		backInterior1 = mapHyp.interiors1[-1][1]
 		backTerm1 = backExist1 and backInterior1
@@ -2857,37 +2883,82 @@ def addToPaths(shootIDs, particleIDs, hypSet, nodeID1, nodeID2):
 		orderedPathIDs1 = currHyp.orderedPathIDs1
 		orderedPathIDs2 = currHyp.orderedPathIDs2
 
-		" determine which paths are leaves "
+
+		""" we wish to add nodes to shoots that are not ancestors """
+		ancestorHash = {}
+		parentHash = currHyp.getParentHash()
 		pathIDs = currHyp.getPathIDs()
-		isAParent = {}
 		for k in pathIDs:
-			isAParent[k] = False
-		for k in orderedPathIDs1:
-			print "index:", k
-			currPath = currHyp.getPath(k)
-			currParent = currPath["parentID"]
-			if currParent != None:
-				isAParent[currParent] = True
+			ancestorHash[k] = []
+			parentID = parentHash[k]
+			while parentID != None:
+				ancestorHash[k].append(parentID)
+				parentID = parentHash[parentID]
+
+
+		" determine which paths are descendants "
+		pathIDs = currHyp.getPathIDs()
+		isADescendant = {}
+		for k in pathIDs:
+			isADescendant[k] = True
+
+		for index1 in range(len(orderedPathIDs1)):
+			pathID1 = orderedPathIDs1[index1]
+			for index2 in range(index1+1, len(orderedPathIDs1)):
+				pathID2 = orderedPathIDs1[index2]
+
+				if pathID2 in ancestorHash[pathID1]:
+					isADescendant[pathID2] = False
+
+				if pathID1 in ancestorHash[pathID2]:
+					isADescendant[pathID1] = False
+
+
+		#for k in orderedPathIDs1:
+		#	print "index:", k
+		#	currPath = currHyp.getPath(k)
+		#	currParent = currPath["parentID"]
+		#	if currParent != None:
+		#		isAParent[currParent] = True
 
 		
 		"add nodes to paths that are the leaves "
 		for pathID in orderedPathIDs1:
-			if not isAParent[pathID]:				
+			#if not isAParent[pathID]:				
+			if isADescendant[pathID]:				
 				currHyp.addNode(nodeID1,pathID)
 
 		pathIDs = currHyp.getPathIDs()
-		isAParent = {}
+		isADescendant = {}
 		for k in pathIDs:
-			isAParent[k] = False
-		for k in orderedPathIDs2:
-			print "index:", k
-			currPath = currHyp.getPath(k)
-			currParent = currPath["parentID"]
-			if currParent != None:
-				isAParent[currParent] = True
+			isADescendant[k] = True
+
+		for index1 in range(len(orderedPathIDs2)):
+			pathID1 = orderedPathIDs2[index1]
+			for index2 in range(index1+1, len(orderedPathIDs2)):
+				pathID2 = orderedPathIDs2[index2]
+
+				if pathID2 in ancestorHash[pathID1]:
+					isADescendant[pathID2] = False
+
+				if pathID1 in ancestorHash[pathID2]:
+					isADescendant[pathID1] = False
+
+
+		#pathIDs = currHyp.getPathIDs()
+		#isAParent = {}
+		#for k in pathIDs:
+		#	isAParent[k] = False
+		#for k in orderedPathIDs2:
+		#	print "index:", k
+		#	currPath = currHyp.getPath(k)
+		#	currParent = currPath["parentID"]
+		#	if currParent != None:
+		#		isAParent[currParent] = True
 
 		for pathID in orderedPathIDs2:
-			if not isAParent[pathID]:				
+			#if not isAParent[pathID]:				
+			if isADescendant[pathID]:				
 				currHyp.addNode(nodeID2,pathID)
 
 	#generateAll(hypSet)

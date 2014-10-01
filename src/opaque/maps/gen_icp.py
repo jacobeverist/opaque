@@ -1999,7 +1999,7 @@ def globalPathToNodeOverlapICP2(initGuess, globalPath, medialPoints, plotIter = 
 			pylab.ylim(-8, 8)					   
 			
 			pylab.plot(xP,yP,linewidth=1, color=(0.0,0.0,1.0))	
-			pylab.savefig("ICP_plot_%06u_000.png" % globalPlotCount)
+			pylab.savefig("ICP_plot_%06u.png" % globalPlotCount)
 
 			globalPlotCount += 1
 
@@ -2143,7 +2143,7 @@ def globalPathToNodeOverlapICP2(initGuess, globalPath, medialPoints, plotIter = 
 		globalPlotCount += 1
 
 	" draw final position "
-	if False:
+	if plotIter:
 		
 		
 		trueCost = shapeCostC(currPose, match_pairs)
