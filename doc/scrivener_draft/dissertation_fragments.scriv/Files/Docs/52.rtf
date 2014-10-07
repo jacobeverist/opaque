@@ -1,0 +1,14 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fnil\fcharset0 Cochin;}
+{\colortbl;\red255\green255\blue255;}
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\f0\fs28 \cf0 \
+This approach works well for environments that are just a single continuous path.  If we encounter an environment with a junction, we will need to modify this approach.   One of the challenges of environments with junctions is that they are only partially observable.  The robot may be passing through a junction without detecting it as such.   Only by passing through all arms of the junction over time are we able to infer the location and properties of the junction.  \
+\
+Given that a junction is not visible on its first pass except for special circumstances, the best approach is to assume there is none and continue to add the pose\'92s single posture image to the global union and compute the resultant global medial axis.  Evidence for the existence of a junction is given by a posture image\'92s medial axis curve partially overlapping a section of the global medial axis and then diverging from it at a sharp angle.  \
+\
+We must recognize that there are three possible ways for a new pose\'92s medial axis to fit onto an existing global medial axis.  It can either 1) completely overlap, finding a localized position in the map, 2) partially overlap by extension, pushing forward past the termination point of the global medial axis, or 3) partially overlap by divergence, curving off the global medial axis at a sharp angle signifying a junction-like feature.\
+\
+\
+}

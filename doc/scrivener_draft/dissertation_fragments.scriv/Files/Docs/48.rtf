@@ -1,0 +1,22 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fnil\fcharset0 Cochin;}
+{\colortbl;\red255\green255\blue255;}
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\f0\fs28 \cf0 \
+Now that we have curve representations for each pose\'92s posture image, we can apply an overlapping constraint.  That is, assuming the invariant condition that two poses\'92 posture images partially overlap each other, in what way(s) do the medial axis representations overlap each other.  The best way to do this is with a generalized ICP algorithm, with an initial guess that is generated from the motion estimation method.\
+\
+Although the two curves are guaranteed to overlap in some contiguous way, this does not mean they all overlap in the same way.  The medial axis could be more than just a single curve segment, but a graph if their are some junction-like elements.  Then the question is, how do you select which parts of the medial axis to match to the consecutive pose medial axis.\
+\
+In a multi-curve medial axis, we can try all possible combinations.  The result whose offset is the most consistent with the initial guess should be the proper result.  In practice, a really great test for measuring the correctness of a particular ICP fit is to select the one with the lowest angle difference from the initial guess.  This assumes that initial guess of the angle was reasonable.  Getting good angle guesses is possible with the GPAC frame in \'93Defining Pose and Direction\'94 section.\
+\
+Technically, the relative offset between two poses is a 3 dimension problem (x,y,\\theta).  However, this can be reduced to a 2 dimensional problem by defining an intersection point between the two curve segments.  If the point on curve A remains fixed, if we vary the point on curve B and the angle of curve B, then the ICP problem is in a 2 dimensional space.  This intersection constraint enforces a particular type of solution that ensures the curve segments are overlapped.\
+\
+So long as the initial guess from the motion estimation method is reasonable, performing an ICP fit of the two posture medial axes enforces a sanity check on their invariant overlapping. \
+\
+Now that we have two medial axes, we show that the step motion model is defined by a constant arc length displacement between the GPAC origins of two consecutive poses.  The step motion model combines the displacement estimate with the constraints of the locally perceived environment.  Of course, the direction of that estimate may be erroneous if their are multiple splices of a multi-medial axis tree.  Particularly, if we are in a junction that is sensed by a pose with two curves going to left or right, a displacement can choose to go left or right but the correct result is only determined after comparing macro-feature fit of the subsequent pose.\
+\
+The step motion model is a combination of local tracking of macro-features of the environment and a model of the robot\'92s average displacement during locomotion.    As shown in the figure, the results of the naive motion model, the self-posture motion model, and the step motion model show clearly the best answer for initial guess of the robot\'92s pose between consecutive poses.  See our earlier discussion in \'93Motion Models\'94\
+\
+\
+}

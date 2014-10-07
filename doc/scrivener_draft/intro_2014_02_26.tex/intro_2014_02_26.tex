@@ -1,0 +1,589 @@
+\input{mmd-scrivcustom-header}
+\def\mytitle{Exploring and Mapping Confined and Sensor-Challenged Environments with Proprioception of an Articulated Mobile Robot}
+\def\myauthor{Jacob Everist}
+\def\bibliocommand{\bibliography{/Users/jse26711/Dropbox/dissertation}}
+\input{mmd-scrivcustom-begin-doc}
+\chapter{Introduction}
+\label{introduction}
+
+In this dissertation, we develop an algorithmic approach for robotically mapping confined environments using internal sensors only. Some challenging environments such as underground caves and pipes are impossible to explore and map with the currently external sensor technology. Such environments can be too confined or too hostile for humans to explore. Robotic solutions are possible, but such environments often cause available external sensors to fail. A robotic solution that can explore and map without external sensors would allow access to previously inaccessible environments. 
+
+For example, an approach that is invariant to ambient fluid (air, water, muddy water, etc.) would significantly impact cave exploration and underground science by the access to still deeper and smaller cave arteries regardless of whether they are submerged in water. Search and rescue operations would have additional tools for locating survivors in complicated debris piles or collapsed mines. Utility service workers would be able to map and inspect pipe networks without having to excavate or interrupt services.
+
+\section{Limitations of Exteroceptive Sensors}
+\label{limitationsofexteroceptivesensors}
+
+Exteroceptive sensors are sensors that are affixed externally and designed to sense information about the robot’s environment. They’re biological equivalent include such things as vision, hearing, touch, taste and smell. The robot equivalent include touch, cameras, sonar, and laser range-finders.
+
+Currently we cannot effectively explore and map these environments with exteroceptive sensors. Current state-of-the-art mapping methods depend on exteroceptive sensors such as vision, range, or touch sensors that are sensitive the ambient properties of the environment. Sonar and laser-range finders are sensitive to the ambient fluid properties for which they are calibrated. They are also often ineffective due to occlusions, distortions, reflections, and time-of-flight issues. Changing visibility, lighting conditions and ambient fluid opacity impact the usefulness of vision sensors. Hazardous environments may also damage fragile external touch sensors.
+
+\section{Tracking Position}
+\label{trackingposition}
+
+In addition to the challenges of sensing the environment, we also have the challenge of tracking the robot’s position in the confined environment. Due to the enclosed nature of the environment, global positioning information is often unavailable. Therefore, any mapping method will need an accurate motion estimation approach for the robot. Wheeled dead-reckoning may be very difficult or impossible if the environment is highly unstructured or otherwise untenable to a wheeled locomotion approach. Even a well designed motion estimation approach will be susceptible to accumulation of errors and will require localization techniques that will reduce and bound the positional error of the robot.
+
+\section{Proprioceptive Sensors}
+\label{proprioceptivesensors}
+
+Given these restrictions, developing an approach that will work on all the most challenging conditions forces us to rely on a strictly proprioceptive approach for collecting environmental information and building the map. Such proprioceptive sensors include accelerometers, gyros, INS (inertial navigation systems), and joint angle sensors. Examples of biological proprioception includes sense of hunger, fatigue, shortness of breath, pain, sense of hot, sense of cold, perceived configuration of the body, and numerous others.
+
+Exteroceptive mapping approaches directly sense large sweeps of the environment at a distance and allow us to make multiple observations of environmental features from multiple poses, integrating this into a map. With a proprioceptive approach, the information is by definition internal to the robot’s body and local to the robot’s position. Any inferred information about the environment is limited to the immediate vicinity of the robot’s pose. The challenge is to explore the environment and construct a map with fundamentally less information.
+
+\section{Void Space and Features}
+\label{voidspaceandfeatures}
+
+Limited information about the immediate vicinity of an articulated robot can be obtained by sweeping the robot’s body to cover all of the void space that is reachable. By taking posture snapshots while the robot is sweeping and plotting them into an image, we can create a rudimentary void space image of the local environment. The challenge then becomes how to utilize this particular type of data in a robotic mapping approach. 
+
+In the exteroceptive approach (external sensors), one would use the ability to sense landmark features at a distance and identify and merge their position across several views. However, in a proprioceptive approach, all sensed information is local. Not only will the opportunities for spotting landmark features between consecutive views be limited, but we must also define what exactly we will use as landmark features. In exteroceptive mapping, the boundaries of the environment are sensed and landmark features are extracted that represent corners, curves, structures, and visual characteristics. With proprioceptive sensors, we present the different kinds of features that can be extracted and used from void space information.
+
+In the event of visiting the same place twice, we wish to detect the sameness of the location and correct the map to make it consistent. This is often called the loop-closing or data association problem. In the case of exteroceptive mapping, this is often achieved by finding a correspondence between sets of landmark features that are similar and then merging the two places in the map. In the proprioceptive case, the availability of landmark features is scarce. The current best-practice methods for solving the data association problem depend on an abundance of landmark features with which multiple combinations of associations are attempted until an optimal correspondence is found. In our approach, with only a few landmarks to use, performing data association in this way becomes ineffective at best, destructive at worst. We determine a different approach to data association using void space information.
+
+\section{Related Work}
+\label{relatedwork}
+
+The mapping of confined spaces is a recurring theme in the research literature. Work has been done to navigate and map underground abandoned mines [Thrun04] with large wheeled robots traveling through the constructed corridors. Although the environment is large enough and clear enough to make use of vision and range sensors, its location underground makes the use of GPS technologies problematic. This work can be applied to confined environments where exteroceptive sensors are still applicable.
+
+Robotic pipe inspection has been studied for a long time [Fukuda89], but usually requires that the pipe be evacuated. The robotic solutions are often tailored for a specific pipe size and pipe structure with accompanying sensors that are selected for the task. Often the solutions are manually remote-controlled with a light and camera for navigation.
+
+Other work has focused on the exploration of flooded subterranean environments such as sinkholes [Gary08] and beneath sea-ice or glaciers. This involves the use of a submersible robot and underwater sonar for sensing.
+
+Other work has approach the problem of identifying features in the absence of external sensors. This work comes from the literature on robotic grasping and is described as “contact detection”. That is, the identification and reconstruction of object contacts from the joint sensors of the grasping end effector. Various methods to this approach are described in [Kaneko], [Grupen], [Haidacher], [Mimura].
+
+Our earlier paper [Everist09] established the basic concept of mapping using void space information with a rudimentary motion estimation technique. This early work attempted to merge the information from contact detection with the new void space concept. We did not yet have an approach for localization, feature extraction, and data association.
+
+Another researcher [Mazzini11] tackled the problem of mapping a confined and opaque environment of a pipe junction in an oil well bore hole deep underground where high temperature, high pressure, and mud make external sensors infeasible. Mazzini’s approach focuses on mapping one local area of the underground oil well. They use physical probing with a robotic finger to reconstruct the walls of the pipe. The robot remains anchored and immobile so there are no need for motion estimation. Our dissertation differs from this work in that we use void space information instead of contact or obstacle information, our robot is mobile instead of anchored to one location, and that we are exploring and constructing a complete map instead of one local environment of interest.
+
+\section{Approach}
+\label{approach}
+
+To address these challenges, our approach is to develop algorithmic methods for utilizing proprioceptive joint angle information on an articulated mobile robot to enable exploration and mapping of a confined environment. From a series of complete posture information sets, we build up void space information into a posture image and integrate it into a whole map. We hypothesize that with the posture images taken at multiple robot poses in the environment, we can integrate them into a map; we believe this approach will serve as effective alternative for mapping confined environments when exteroceptive sensors have failed or are unavailable.
+
+Our claim here is that “the type of robot used and its method of locomotion are not important so long as the robot is articulated and with many joints”. The more joint sensors the robot has, the better capable the robot is of mapping.
+
+In this design we use a simulator that enables us to rapidly develop and test different algorithmic techniques without becoming overly worried about the hardware and locomotive aspects of the robot. We use a simplified flat pipe-like environment with a snake robot that is capable of anchoring to the sides of the walls and pushing and pulling itself through the pipe on a near frictionless floor. 
+
+We do not simulate any sensor-inhibiting fluid in the environment or sensor-failure scenarios, nor do use any type of external sensor, be it touch sensors, vision sensors, or range sensors such laser range-finders and sonar. Additionally, no global positioning system is used since it is not practical to expect GPS to function underground. The only sensors we permit ourselves to use are joint sensors.
+
+For capturing the posture images, we examine a number of difficulties and pitfalls to capturing this information. Notably, the prevalence of slip of the robot can corrupt the posture image because the robot loses its stable frame of reference to the environment. We develop a number of techniques for safely capturing the void space information, reducing the likelihood of slip, detecting slip, and mitigating the damage if slip should occur.
+
+We examine several possibilities for extracting landmark features from the posture images. We try several traditional forms of features such as corners and edges, but in the end we develop our own macro-feature which is the overall shape of the local environment captured by the posture image and reduced to the form of a medial axis.
+
+When the robot is moving through the environment, we must also have techniques for estimating the motion between the poses at which we capture the posture images. We show a highly accurate but very slow method [Sec Motion 1] for our particular snake robot morphology, and compare it to a coarse but fast motion estimation method [Sec Motion 2]. We discover that the coarse method is sufficient so long as we rely on the macro-features of the posture images to constrain the possibilities.
+
+Given these basics, we then delve into the heart of the matter: the actual integration of poses, motion estimates, and posture images into a coherent map. We develop and experiment with a few techniques using the constraints from the macro-features in a variety of ways [Sec Constrain 1]. We finally settle on an aggregate pose constraint method where the whole set of past poses is used to generate a feature that constrains the next pose [Sec Constrain 2].
+
+We show how our mapping approach works in a variety of different environments for example, a single path pipe where there are no branches in the environment. The environment only contains a single path that includes a different variety of turns and angles. We then complicate matters by adding in different types of junctions such as T-junctions, Y-junctions, and X-junctions. We do not yet consider environments that have loops in them.
+
+The adding of junctions adds significant complications and requires us to have a better understanding of the structure of our map. We establish a new type of mapping structure called a “shoot map”. A shoot is a section of the environment that is a single path. The shoot has an origin and a termination point which indicates either the boundary of the environment or more space yet to be explored. New shoots are created when a junction is detected, where the new shoot’s origin is at the location of the parent shoot where the junction was detected. That representation allows us to deal with the restrictions on the type of information we can acquire and the often incompleteness of the posture image capture with respect to the actual local environment.
+
+Finally, given the fundamental mapping structures and methods we have developed, we cast them into a probabilistic framework. This allows us to keep track of different map possibilities, discarding improbable ones, and selecting the most probable. Our mapping approach has certain ambiguities in the type of environmental information we can acquire. The probabilistic framework keeps track of these ambiguities until they can be resolved when more information is acquired.
+
+\section{Contributions}
+\label{contributions}
+
+Our contributions in this dissertation are the following:
+
+\begin{itemize}
+\item Snake movement without external sensors (Closed-loop control)
+
+\item Proprioceptive odometer
+
+\item Sensing with only proprioception
+
+\item Build map with poses of local profiles that are not remotely sensible
+
+\item Junction detection and loop-closing
+
+\item Navigation and exploration with a proprioceptive map
+
+\item Able to map and navigate several types of environments: Y-junction, T-junction, X-junction, L-junction, etc.
+
+\end{itemize}
+
+We present our contributions in each of the subsequent chapters.
+
+\pagebreak 
+
+\chapter{Sensing Space}
+\label{chap:sensing}
+
+\section{Proprioceptive Sensing}
+\label{proprioceptivesensing}
+
+\begin{itemize}
+\item Sweep the space. Limited using the geometry of the robot.
+
+\item Posture Images I\_1:t
+
+\item More here
+
+\end{itemize}
+
+Integrate (Posture vector \textbackslash{}phi\_t, t) = posture image
+
+Breaking up the posture image into forward sweep and backward sweep. The transition between backward anchoring and forward anchoring causes the reference frame to slip and the posture image to be distorted. We show that is better to have two separate images that do not disrupt the anchored reference frames.
+
+In the event, we have local correction that sanitizes the data. If there should be a sudden breach of the arm outside of the containing polygon of the posture image, we classify this as a slip and adjust the local coordinate system to keep the instantaneous posture within the boundaries of the polygon.
+
+Should the data be too hopelessly corrupted from a bow tie effect in the posture image, we can reject the overall data and take the instantaneous shot of the current posture as the only data. This gives a sparse snapshot of the environment and leaves the exploratory data out, but if will capture the gross shape of the local environments.
+
+\section{Pose Map}
+\label{posemap}
+
+Actions and posture images are raw input.
+
+Images I\_1:t
+
+Actions: U\_1:t
+
+Find poses P\_1:t to solve mapping problem
+
+Combine the elements to get a naive map. Simple motion estimation and plotting of poses and posture images to a grid map. No capability for correction.
+
+\pagebreak 
+
+\chapter{Control and Locomotion}
+\label{controlandlocomotion}
+
+\section{Control Methodology}
+\label{controlmethodology}
+
+Backbone curve fitting, IK method, segmented behaviors
+
+\section{Behaviors}
+\label{behaviors}
+
+Locomotion steps, extensions, path-following, anchoring
+
+\pagebreak 
+
+\chapter{Defining Position}
+\label{definingposition}
+
+\section{Defining Pose and Direction}
+\label{definingposeanddirection}
+
+Articulated robot has no high-inertia center of mass to serve as its coordinate frame. Require method to establish “forward” direction of an articulated robot.
+
+Establishes stability of robot frame under error of anchoring.
+
+\section{Motion Models}
+\label{motionmodels}
+
+\emph{Naive motion model (fast time, low accuracy )
+}Self-Posture motion model (cost of time, increase accuracy)
+*Step model with inter-pose overlap invariance (fast time, medium accuracy)
+
+Examples of motion estimation results.
+
+\emph{Naive + GPAC Frame
+}Self-Posture + Body Frame
+\emph{Pose Step + GPAC Frame (discussed later)
+}Shoot Step (discussed later)
+
+\pagebreak 
+
+\chapter{Environmental Landmarks}
+\label{environmentallandmarks}
+
+\section{Finding Landmarks}
+\label{findinglandmarks}
+
+Seeking landmark features for which we can correct the map and localize the robot. Most approaches use point features such as corners, environmental landmarks such as doors, visual features. Our options are very limited because we do not have sensing at a distance capability. All things that we can sense must be within touching distance. Any feature we choose is highly local.
+
+One option is to find corner features by probing the walls. There are two approaches: 1) deliberate contact probing of the wall to produce corner features, 2) serendipitous corner features. Problem: 1 is feasible but slow, see [Mazzini]. 2) is also possible but the false positive rate is too high. Pull some data out of my archives.
+
+Also try and find “obstacles” and “openings” . That is, non-obstacle openings. This presupposes that we can distinguish obstacles. Only contact probing methods can truly classify an obstacle boundary. Again, these methods suffer from time-consuming actions. Furthermore, this does not exactly give us a true positive for open space. So door openings cannot be a landmark since we cannot detect them directly.
+
+What about the walls of the environment? The shape of the obstacles? This requires that we fully mark the boundaries of walls and obstacles. Either this is done through laborious contact detection or we make assumptions about what are obstacles based on the data we receive serendipitously. Given a posture image, we could make varying degrees of assumptions about where the boundaries of the environment lie. None of them are likely to be correct, but we can use this information as a “feature”. However, this approach suffers when our probing actions are deficient for a particular pose. We receive a degenerate posture image that leaves out a lot of data. 
+
+Another approach we could take is a sort of approximation and averaging of boundaries of the posture images. This can be accomplished by the use of the alpha shape algorithm developed in [3]. It is a form of generalized convex hull algorithm that is capable of non convex polygons. This can give us our desired “approximation” effect for identifying the location of walls.
+
+\section{Corner Examples and Results}
+\label{cornerexamplesandresults}
+
+Corners are high false positive and too many false negatives.
+
+Requires tuning of parameters, but does not guarantee correction selection.
+
+Corners through serendipitous detection are not seen very often. Will not be seen through consecutive poses or even being in the same location. Not guaranteed to view.
+
+Information too sparse to be useful. False correlation is very costly.
+
+\section{Wall Detection}
+\label{walldetection}
+
+Contact detection literature. Reference 2009 paper.
+
+Time spent probing walls. Amount of information is broken up. Example information should walls from contact detection.
+
+Punch probing. Hit the wall and measure the error incurred by the joints in the control loop. Avoids the need for torque sensor. Uses existing control algorithm parameter as error terms.
+
+Broken information, time-consuming. Error prone and often will mark free space as wall. Not detailed enough for a landmark feature.
+
+\section{Pipe Shape, Macro Features}
+\label{pipeshapemacrofeatures}
+
+Use the contours and shape of the occupied space as our landmark feature. 
+
+Introduces strong lateral correlation, but weak forward-backward correlation. If the local environment is curved in any way, this provides stronger localization.
+
+\emph{1st order curve is straight line. Only coaxial localization between poses
+}2nd order curve is a constant curve. Localization to any place with same curve constant.
+*3rd order curve is changing curvature. Localization to unique point with particular change profile.s
+
+\section{Macro Feature Extraction}
+\label{macrofeatureextraction}
+
+\begin{enumerate}
+\item curve of anchor points, represents walls. Does not include sensed data
+
+\end{enumerate}
+
+Posture Image -$>$ Alpha Shape -$>$ Medial Axis -$>$ Characteristic Curve
+
+Medial axis is generated from an image and a tree is built. I most cases the tree has only two leafs and is a “path graph”, but sometimes the tree has more than two leafs and represents more complex space.
+
+Represents local description of space. 
+
+Like scan-matching, we can use curves and ICP to find an alignment of the poses. The curves themselves becomes the landmarks.
+
+\section{Different Macro Features}
+\label{differentmacrofeatures}
+
+The possibilities for curves representing the overall macro structure of the local environment are as follows:
+
+\begin{enumerate}
+\item Curves fitting through the anchor points of the articulated robot. Anchor points are the “confirmed” contacts and can approximate the walls. However, these are sparse data points, and cannot handle complex environments such as junctions or gaps between the anchor points. Data is sparse and not well-representative of the environment.
+
+\item Polygon created from alpha shape of posture image. Use the edges of the polygon and perform scan-matching of edges to edges. Problem, how to select the points pairs between two polygons. Use angle filter and match two sides together. Is sensitive to missing data. Unsweeped gap will distort the polygon. Performing matches on a distorted polygon will result in poor ICP fitting.
+
+\item Given alpha shape, compute the medial axis of the interior. This is known to be a reduction and representation of the the space. This approach is resistant to noisy edges. Shown are some example of the results with simple single path pipes, and pipes with some junction features. Notice that the information on the width of the environment is lost using this approach. 
+
+\end{enumerate}
+
+\pagebreak 
+
+\chapter{Pose-Based Mapping}
+\label{pose-basedmapping}
+
+\section{Inter-Pose Correction}
+\label{inter-posecorrection}
+
+Now that we have curve representations for each pose’s posture image, we can apply an overlapping constraint. That is, assuming the invariant condition that two poses’ posture images partially overlap each other, in what way(s) do the medial axis representations overlap each other. The best way to do this is with a generalized ICP algorithm, with an initial guess that is generated from the motion estimation method.
+
+Although the two curves are guaranteed to overlap in some contiguous way, this does not mean they all overlap in the same way. The medial axis could be more than just a single curve segment, but a graph if their are some junction-like elements. Then the question is, how do you select which parts of the medial axis to match to the consecutive pose medial axis.
+
+In a multi-curve medial axis, we can try all possible combinations. The result whose offset is the most consistent with the initial guess should be the proper result. In practice, a really great test for measuring the correctness of a particular ICP fit is to select the one with the lowest angle difference from the initial guess. This assumes that initial guess of the angle was reasonable. Getting good angle guesses is possible with the GPAC frame in “Defining Pose and Direction” section.
+
+Technically, the relative offset between two poses is a 3 dimension problem (x,y,\textbackslash{}theta). However, this can be reduced to a 2 dimensional problem by defining an intersection point between the two curve segments. If the point on curve A remains fixed, if we vary the point on curve B and the angle of curve B, then the ICP problem is in a 2 dimensional space. This intersection constraint enforces a particular type of solution that ensures the curve segments are overlapped.
+
+So long as the initial guess from the motion estimation method is reasonable, performing an ICP fit of the two posture medial axes enforces a sanity check on their invariant overlapping. 
+
+Now that we have two medial axes, we show that the step motion model is defined by a constant arc length displacement between the GPAC origins of two consecutive poses. The step motion model combines the displacement estimate with the constraints of the locally perceived environment. Of course, the direction of that estimate may be erroneous if their are multiple splices of a multi-medial axis tree. Particularly, if we are in a junction that is sensed by a pose with two curves going to left or right, a displacement can choose to go left or right but the correct result is only determined after comparing macro-feature fit of the subsequent pose.
+
+The step motion model is a combination of local tracking of macro-features of the environment and a model of the robot’s average displacement during locomotion. As shown in the figure, the results of the naive motion model, the self-posture motion model, and the step motion model show clearly the best answer for initial guess of the robot’s pose between consecutive poses. See our earlier discussion in “Motion Models”
+
+\section{Paired Pose Correction}
+\label{pairedposecorrection}
+
+For two poses that are theoretically at the same location but are split for the forward and backward sweep, we need some way for reconciling their relative offset. Taking the raw pose data and posture images, we see there are some discrepancies caused by the slip during the anchor transition. We can fix this by performing an overlap fit using the same method between consecutive steps in inter-pose correction.
+
+The initial condition will be the poses located on top of each other and their medial axes intersecting near the origin points. After performing an ICP fit to change the angle and the arc length displacement in the neighborhood, this creates a reasonable estimate transform between the two.
+
+\section{Constraint Mapping}
+\label{constraintmapping}
+
+Combining the motion model estimates and the inter-pose constraints, we can create an improved map that is better than just the simple motion estimation maps. The inter-pose constraints give a better trajectory for the environment. However, they are still deficient in a number of ways.
+
+They do not provide any means of resolving the unique correlations of a junction, nor do they provide any consistency when backtracking through a local environment we have been before. That is, they do not have provide a solution for the “loop-closing” or “data association” problem.
+
+A possible solution to this is to attempt to make additional hypothetical constraints between poses that are in the same neighborhood. Following [Olson], we can establish covariances between the constraints and generate consistency matrices to determine the most optimal constraint hypothesis set. This is the Graph SLAM [Probabilistic Robotics] approach that use a pose graph representation for generating the map.
+
+The weakness of our problem domain is that we do not have available landmark features that fit into this framework. Landmark features are given their own positions and then observed from multiple robot poses which are then correlated. 1) Our data does not have point features with positions, we have macroscopic shapes of the environment. 2) Secondly, we are not guaranteed to observe the feature between consecutive poses or even poses that are in the same location. 
+
+The Graph SLAM approach becomes increasingly difficult because there is no clear way how to generate covariance matrices between poses. We could generate the covariance with a coaxial variance for greater variance in arc distance and low variance for lateral offset off the overlapping axes. This is clear for simple straight posture images. However it is less clear for curved or multi-axis junction environments. Furthermore, using a graph optimizer can result in two hard constrained poses to be corrected to be off-center their medial axes to “globally minimize” the overall error. This is not the type of corrections we want to see since the local constraint is so certain in only one dimension. Any correction method should take advantage of that.
+
+\section{Aggregate Pose Constraint Mapping}
+\label{aggregateposeconstraintmapping}
+
+Instead of creating geometric constraints between individual poses and struggling to search for which acceptable matches between poses, another approach we can take is to make a constraint between a new posture image and all of the other posture images in aggregate. In this way, we can avoid the difficulty of making individual pairwise constraints between poses.
+
+The approach we take is to find the union of all past posture images together and compute the alpha shape from that. From the alpha shape we then compute the medial axis. This results in a much larger version of the medial axis curve representation.
+
+To constrain the pose of the new posture image, simply perform ICP between the pose’s medial axis curve and the past whole map medial axis. The result can be seen in the figure X. Like the inter-pose constraint, we have the invariant condition that the new pose’s medial axis curve partially overlaps the global medial axis. Therefore, there exists a section of the global medial axis curve that the new pose at least partially overlaps. For poses that are backtracking through previously visited territory, the new pose will be completely overlapped by the global medial axis.
+
+This is a maximum likelihood mapping approach. That is, the mapping method looks for the best possible result for the current pose. All past poses are fixed and unable to be changed. Should we ever make a significant mistake in the placement of the current pose, this will be permanently reflected in the map for the future.
+
+Even using this simplistic approach, a significant translational error along the axis of travel in a straight section of the environment does not have severe consequences to the map. Along a straight section of the pipe, the current pose can be placed anywhere along that section with little consequence to the structural and topological properties of the map. The only thing that is affected is the current best estimate of the robot’s pose.
+
+The mapping system is able to localize the pose much better with respect to curved shape features in the environment. If there are sharp junctions or curved sections, the current pose can be localized with much better accuracy.
+
+Once the current pose’s posture image given it’s most likely location, it is added to the existing set S and the union-$>$alpha shape-$>$global medial axis is recomputed. If the robot is pushing the frontier of the map, this will result in an extension of the medial axis. If the posture image pose is an incorrect position, the resultant global medial axis can be corrupted and result in kinks (distortions, discrepancies). These kinks can compound future errors and result in even further distorted maps.
+
+\pagebreak 
+
+\chapter{Mapping with Junctions}
+\label{mappingwithjunctions}
+
+\section{Junctions}
+\label{junctions}
+
+This approach works well for environments that are just a single continuous path. If we encounter an environment with a junction, we will need to modify this approach. One of the challenges of environments with junctions is that they are only partially observable. The robot may be passing through a junction without detecting it as such. Only by passing through all arms of the junction over time are we able to infer the location and properties of the junction. 
+
+Given that a junction is not visible on its first pass except for special circumstances, the best approach is to assume there is none and continue to add the pose’s single posture image to the global union and compute the resultant global medial axis. Evidence for the existence of a junction is given by a posture image’s medial axis curve partially overlapping a section of the global medial axis and then diverging from it at a sharp angle. 
+
+We must recognize that there are three possible ways for a new pose’s medial axis to fit onto an existing global medial axis. It can either 1) completely overlap, finding a localized position in the map, 2) partially overlap by extension, pushing forward past the termination point of the global medial axis, or 3) partially overlap by divergence, curving off the global medial axis at a sharp angle signifying a junction-like feature.
+
+\section{Shoot Map Representation}
+\label{shootmaprepresentation}
+
+To represent and keep track of junctions and any instance of “branching off” from the main global medial axis, we introduce a new map representation called a shoot map. First we define the concept of a shoot to be a single path with an origin and termination point that represents a continuous representation of space with no junctions. In the previous section, our global medial axis of the entire environment represented a single shoot, since there were no instances of branching. Once a new junction is found, a new shoot is created with origin starting at the branching off point from the original shoot and termination point ending at the extent the posture images map the branch’s space. 
+
+Corresponding to the three cases of how a posture curve overlaps an existing global medial axis, 1) either the pose is contained within an existing shoot, 2) the pose extends the shoot, or 3) the pose is added to a new shoot that branches off. Given the nature of the shoot structure, their is a parent-child relationship between shoots, with the stem being the root shoot. All shoots except for the root, have an origin placed from another shoot.
+
+The curve of a shoot is represented by an ordered series of points that are generated from the medial axis computation of the union of member posture images. We say a pose is a member of a shoot S\_p if it has some overlap with S\_p but does not overlap a child, S\_c, of S\_p. That is, if any portion of a pose overlaps a child S\_c, the pose is a member of S\_c and not S\_p. A pose can be a member of more than one shoot if there are more than one child shoots. The member shoots can be siblings or any other combination where the shoots are not direct ancestors or descendants.
+
+The complete representation for a shoot map is the following parameters:
+
+Poses: X\_1:t
+Images: I\_1:t
+Shoots: S\_1:N
+ - Shoot member pose sets, c\_1 = \{1,2,…,k\}, …, c\_N = \{k+1,…,t\}
+ - Branch point: b\_1:N = (x,y,\textbackslash{}theta)
+
+The first half are the same parameters used for the pose map. We add the additional parameters of shoots. A shoot is composed of a set of member poses and a branch point. For a non-root shoot, the branch point is a location on its parent shoot and an accompanied direction.
+
+\section{Generating Shoots}
+\label{generatingshoots}
+
+Compute the union of posture images for a shoot set. Cut and paste each medial axis at the designated branch points between the parent and child shoots.
+
+For each shoot S\_j,
+ For each pose k that is member of S\_j,
+ Plot posture image I\_k to pose X\_k
+
+\begin{verbatim}
+Find alpha shape A_j of union of pixels
+Find medial axis M_j of alpha shape.
+\end{verbatim}
+
+
+For every pair of shoots S\_j, S\_k,
+ If S\_j = isParentOf(S\_k)
+ Find closest point on M\_k to b\_k.
+ Cut section from the extra portion of medial axis starting at b\_k in the direction of b\_k
+ Add section to trimmed shoot map T\_k
+
+\begin{verbatim}
+If isRoot(S_k):
+    Add M_k to trimmed shoot map as T_k
+\end{verbatim}
+
+
+Medial axis from union of set of posture images of particular shoot S where exists vertices degree $>$ 2.
+Trim the section closest point to the branch point in the direction oriented by the branch point b\_k.
+
+\section{Adding Poses to Shoots}
+\label{addingposestoshoots}
+
+If first poses, add to root shoot.
+
+Check for branching conditions
+
+Best Overlap, get ordered overlapping path ids
+
+Select child shoot IDs, add pose to the shoot.
+
+\section{Detecting Branch}
+\label{detectingbranch}
+
+If a posture medial axis is detected that does not completely fit on the existing shoot, it is possible that we have discovered a branch. It is vital that we properly and detect branching events in order to fit them properly into the map. In the event that we add a posture image to a shoot that is not completely contained into the target shoot, this will distort the medial axis computation of the union of images and result in kinks the shoot curve. 
+
+Branching is detected on the individual pose level. For the medial axis of a single posture image, if the single medial axis curve diverges from a shoot, then it is said to be branching and a new child shoot should be formed.
+
+Care must me taken in determining the parameters for when a curve is “diverging”. We define divergence distance to be the distance between the target curve endpoint and the diverging point on the parent curve. The diverging point is defined by the difference between the tangent angle of the point at which the curve last leaves the parent curve and the next point along the curve at which the minimum angle threshold has been made. The closest point on the parent curve to this minimum angle threshold point is the diverging point.
+
+There are two constants that must be set that determine the threshold parameters for divergence detection. The first parameter is A, the angle difference between the departure point and the divergence point. The second parameter is D, the minimum distance threshold between the divergence point and the target curve endpoint.
+
+The points are: departure point, divergence point, and end point.
+
+\section{Localizing On Shoot Map}
+\label{localizingonshootmap}
+
+Assuming that the decision of making a branch or not has been made by the branch detection method, and that all the current poses have been added to their respective shoots, we can assume that current pose can be completely localized on some location of the shoot map. There are two possibilities for the locations of the posture curve. Either it is 1) completely contained within a single shoot or it is 2) overlapping two or more shoots at once. In the latter case, to overlap more than one shoot, the posture curve must be inside of a map junction. 
+
+Initially, the only information we have is the initial guessed location of the new pose from the chosen motion estimation method and the categorization of the pose into a particular shoot. 
+
+\begin{center}\rule{3in}{0.4pt}\end{center}
+
+
+One use of the maps is to be able to localize the pose of the robot. Given the current state of the shoot map, we need methods by which we can localize the robot’s pose.
+
+Why should we want to localize the robot? Though we have used motion estimation techniques and local constraints to iteratively construct the map and robot’s trajectory to the best of our ability, for circumstances when the robot is backtracking or returning to a location we have visited before, a localization technique will give us a way to perform “loop-closing” or “data association”. If we are traveling down a pipe in only one direction, loop-closing is not necessary since there is no chance of visiting the same location twice. 
+
+In the event of visiting the same location, there are two questions that must be answered: 1) is the robot at a location that it has visited before and 2) if so, where is its best fit? Since we have already decided if this pose is branching and have added all the necessary branch points, and categorized this pose into individual shoots, it is already true that this pose is somewhere on the map. However, the location that we chose for the pose may be incorrect or may have broken the map.
+
+1) Cases where the pose is in the wrong location:
+ - Poorly overlapped poses add kinks to shoot
+ - Many locally identical indistinguishable locations
+ - Shoot map self-intersects
+
+If the current pose is wrong, but all past poses are correct, then it is a simple matter of fixing the current pose. However, as is often the case, if a whole history of poses is incorrect, it becomes more challenging to fix an entire history of poses. We have an approach to selecting different histories of poses in the next chapter on Probabilistic Mapping, but for this section we will only focus on fixing the current pose.
+
+Finding the Best Fitted Location
+
+At every step immediately after motion estimation, branch detection, and shoot categorization, our next task is to find the best likely location for the current pose. We measure the likelihood in terms of the best possible fit of the current posture curve to the current shoot map. To do this, we again utilize ICP between the posture curve and different permutations of curves representing spliced sections of the shoot map.
+
+For instance, if we wanted to test whether the posture curve fits into a junction shown in Figure X, there are three different spliced curve permutations of this junction. By performing ICP of the posture curve onto each of these splice curves, we receive different candidate localized poses for the robot’s current position. By performing several such ICP experiments with several splice curves, we can apply a selection criteria to be our “best fit”, use that as our maximum likelihood pose, and make any necessary changes to the shoot map.
+
+We now describe the steps we take during the localization phase:
+
+1) Choose the shoot splices that we wish to localize on
+2) Select a set of initial poses for each splice to input to our ICP algorithm
+3) Perform ICP on each initial pose on each splice
+4) Collate, sort, and filter results
+5) Choose most likely result and set as the current pose.
+
+\section{Choosing Shoot Splices}
+\label{choosingshootsplices}
+
+In step 1), if there is only one shoot in the shoot map then the resultant splice is simply the parent shoot itself. However, if there is more than one shoot, a number of possible splices are possible. We can take an exhaustive approach and select all possible splices, including splices with multiple junctions contained within them.
+
+One approach we can take is to select all splices that terminate at every possible combination of terminal points in the shoot map. So for instance, for a map with N shoot and N--1 junctions, the number of possible splices is represented by (2 + N - 1) choose 2. However this can be problematic if we consider junctions that are not in the neighborhood of the pose in question. In particular, if we have three junctions A, B, and C, there will be (4 choose 2) = 10 possible splices between all possible terminals. However, if only A is in the neighborhood of our pose, many of the possible splices are locally identical so there is no value in using splices that include junctions B and C unless B and C are in the neighborhood of the pose.
+
+We can discriminate the type of splices we will use by excluding some junctions from consideration if they are not in the neighborhood. If the pose of P is less than some distance D to the branch point J of the junction, then we can instead treat the junction J as a termination point. For instance, in figure X, if we turn junctions B and C into termination points for the number of splices and include A as a junction of interest, we result in (3 choose 2 ) = 3 possible splices.
+
+\section{Selecting Initial Poses for ICP}
+\label{selectinginitialposesforicp}
+
+Now that we have our set of shoot splices on which we will localize the current pose, we must determine the initial pose for each splice to input to our ICP algorithm. The ICP algorithm takes two sets of points and an initial transform between them and outputs another transform that represents the best possible fit. In our case, the points are uniform samples from the posture curve and the shoot splice curve. The initial transform represents the initial pose of the posture curve and the output transform is the pose of the best locally optimal pose. Since the results are locally optimal, it makes sense to run the algorithm with multiple initial pose inputs to find a more globally optimal result.
+
+Globally, there are multiple local minima that represent best fits of the posture curve. However, only one of these is the true location. We can bound the space of possibilities by only selecting initial poses that are near the initial pose from the motion estimation step. That is, we can select sets of input poses that are within a diameter of the initial pose P.
+
+For each shoot splice, select the closest point to the initial pose P. Given a spacing of S\_d, select new points along the curve such that the arc distance between them is S\_d and the cartesian distance of P\_s to P is less than some neighborhood diameter D\_n. These represent the inputs to the ICP algorithm for each run. If we assume nnthat we have 10 initial poses for each shoot splice and 3 shoot splices, we have 10x3 executions of the ICP algorithm and 10x3 output result poses.
+
+\section{ICP Algorithm}
+\label{icpalgorithm}
+
+\begin{itemize}
+\item Orientation
+
+\item Closest pairs intersection point
+
+\item Closest pairs computation
+
+\begin{itemize}
+\item Local angle variance
+
+\item Closest point A -$>$ B
+
+\item Closest point B -$>$ A
+
+\item Select pair that has lowest angular variance
+
+\end{itemize}
+
+\item Result serves as intersection point between two curves. 
+
+\item 3DOF -$>$ 2DOF conversion
+
+\item (x,y,o) transform -$>$ (u,o) transform
+
+\item Covariance and mahalanobis distance? 
+
+\item Point-to-line constraint
+
+\item Point-matching search
+
+\item Cost function
+
+\end{itemize}
+
+\section{Collate, Sort, Filter}
+\label{collatesortfilter}
+
+Given all of the results, we need to select just one as our final localized pose. We need some criteria to evaluate the fitness of each pose. There are a number of metrics that we can use in this evaluation. However, there is no straightforward method for choosing the “best” pose since there is ambiguity in the map, identically featured locations, and sometimes there is not enough discriminatory information to make a good localization fit. Therefore, the process by which we select a single pose to be our best fit is derived empirically and experimentally which we show here. The ambiguity and uncertainty of this problem is handled more formally in the next chapter on Probabilistic Mapping.
+
+\begin{enumerate}
+\item Curve extension
+
+\item Curve divergence
+
+\item Contiguity Fraction
+
+\item Angle difference
+
+\item Position displacement
+
+\item Match count *
+
+\item Overlap sum *
+
+\item Utility function
+
+\end{enumerate}
+
+utilVal = (0.5 - angDiff ) \slash  0.5 + ( contigFrac - 0.5)\slash 0.5 + (3.0- posDist )\slash 3.0 + 1-(isExtension OR isDivergence)*0.5
+
+Filter criteria:
+
+\begin{itemize}
+\item isExtension =$>$ Reject
+
+\item isDiverge =$>$ Reject
+
+\item contigFrac $<$= 0.5 =$>$ Reject
+
+\item posDist $>$= 3.0 =$>$ Reject
+
+\item angDiff $>$ 0.7 =$>$ Reject
+
+\end{itemize}
+
+Sort by utility value
+Take result with highest utility
+
+\section{Curve Segment Algorithms}
+\label{curvesegmentalgorithms}
+
+\emph{IsOverlapped()
+}getOrientation()
+\emph{getContiguity()
+}GetOrderedOverlappingPaths()
+
+\section{Map Algorithm}
+\label{mapalgorithm}
+
+1) Estimation motion of step
+
+2) Collect posture image
+
+3) Determine if there is a branch, if so, fork process (yes\slash no cases)
+
+4) Add pose to best fit shoot, generate new map
+
+5) Localize pose to most likely location in existing shoot map, fix map
+
+6) go to 1)
+
+\pagebreak 
+
+\chapter{Probabilistic Mapping}
+\label{probabilisticmapping}
+
+\section{Space of Possibilities}
+\label{spaceofpossibilities}
+
+\section{Pose Particle Filter}
+\label{poseparticlefilter}
+
+\section{Pose + Branch Location Particles}
+\label{posebranchlocationparticles}
+
+\section{Branch Decision}
+\label{branchdecision}
+
+\input{mmd-scrivcustom-footer}
+
+\end{document}

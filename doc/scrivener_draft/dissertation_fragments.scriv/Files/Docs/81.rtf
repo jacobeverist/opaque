@@ -1,0 +1,38 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fnil\fcharset0 Cochin;}
+{\colortbl;\red255\green255\blue255;}
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\f0\b\fs28 \cf0 ##Limitations of Exteroceptive Sensors
+\b0 \
+\
+Exteroceptive sensors are sensors that are affixed externally and designed to sense information about the robot's environment.  They're biological equivalent include such things as vision, hearing, touch, taste and smell.  The robot equivalent include touch, cameras, sonar, and laser range-finders.\
+\
+Currently we cannot effectively explore and map these environments with exteroceptive sensors.  Current state-of-the-art mapping methods depend on exteroceptive sensors such as vision, range, or touch sensors that are sensitive the ambient properties of the environment.  Sonar and laser-range finders are sensitive to the ambient fluid properties for which they are calibrated.  They are also often ineffective due to occlusions, distortions, reflections, and time-of-flight issues.  Changing visibility, lighting conditions and ambient fluid opacity impact the usefulness of vision sensors.  Hazardous environments may also damage fragile external touch sensors.\
+\
+
+\b ##Tracking Position\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\b0 \cf0 \
+In addition to the challenges of sensing the environment, we also have the challenge of tracking the robot's position in the confined environment.  Due to the enclosed nature of the environment, global positioning information is often unavailable.  Therefore, any mapping method will need an accurate motion estimation approach for the robot.  Wheeled dead-reckoning may be very difficult or impossible if the environment is highly unstructured or otherwise untenable to a wheeled locomotion approach.  Even a well designed motion estimation approach will be susceptible to accumulation of errors and will require localization techniques that will reduce and bound the positional error of the robot.\
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\b \cf0 ##Proprioceptive Sensors
+\b0 \
+\
+Given these restrictions, developing an approach that will work on all the most challenging conditions forces us to rely on a strictly proprioceptive approach for collecting environmental information and building the map.  Such proprioceptive sensors include accelerometers, gyros, INS (inertial navigation systems), and joint angle sensors.  Examples of biological proprioception includes sense of hunger, fatigue, shortness of breath, pain, sense of hot, sense of cold, perceived configuration of the body, and numerous others.\
+\
+Exteroceptive mapping approaches directly sense large sweeps of the environment at a distance and allow us to make multiple observations of environmental features from multiple poses, integrating this into a map.  With a proprioceptive approach, the information is by definition internal to the robot's body and local to the robot's position.   Any inferred information about the environment is limited to the immediate vicinity of the robot's pose.  The challenge is to explore the environment and construct a map with fundamentally less information.\
+\
+
+\b ##Void Space and Features
+\b0 \
+\
+Limited information about the immediate vicinity of an articulated robot can be obtained by sweeping the robot's body to cover all of the void space that is reachable.    By taking posture snapshots while the robot is sweeping and plotting them into an image, we can create a rudimentary void space image of the local environment.   The challenge then becomes how to utilize this particular type of data in a robotic mapping approach.  \
+\
+In the exteroceptive approach (external sensors), one would use the ability to sense landmark features at a distance and identify and merge their position across several views.  However, in a proprioceptive approach, all sensed information is local.  Not only will the opportunities for spotting landmark features between consecutive views be limited, but we must also define what exactly we will use as landmark features.  In exteroceptive mapping, the boundaries of the environment are sensed and landmark features are extracted that represent corners, curves, structures, and visual characteristics.  With proprioceptive sensors, we present the different kinds of features that can be extracted and used from void space information.\
+\
+In the event of visiting the same place twice, we wish to detect the sameness of the location and correct the map to make it consistent.  This is often called the loop-closing or data association problem.  In the case of exteroceptive mapping, this is often achieved by finding a correspondence between sets of landmark features that are similar and then merging the two places in the map.  In the proprioceptive case, the availability of landmark features is scarce.   The current best-practice methods for solving the data association problem depend on an abundance of landmark features with which multiple combinations of associations are attempted until an optimal correspondence is found.  In our approach, with only a few landmarks to use, performing data association in this way becomes ineffective at best, destructive at worst.  We determine a different approach to data association using void space information.\
+}

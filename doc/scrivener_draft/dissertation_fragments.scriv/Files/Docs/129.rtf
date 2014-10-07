@@ -1,0 +1,39 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fnil\fcharset0 Cochin;}
+{\colortbl;\red255\green255\blue255;}
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\f0\fs28 \cf0 ##Localizing On Shoot Map\
+\
+Assuming that the decision of making a branch or not has been made by the branch detection method, and that all the current poses have been added to their respective shoots, we can assume that the current pose can be completely localized on some location of the shoot map.  There are two possibilities for the locations of the posture curve.  Either it is 1) completely contained within a single shoot or it is 2) overlapping two or more shoots at once.    In the latter case, to overlap more than one shoot, the posture curve must be inside of a map junction.  \
+\
+Initially, the only information we have is the initial guessed location of the new pose from the chosen motion estimation method and the categorization of the pose into a particular shoot.  \
+\
+-----\
+\
+One use of the maps is to be able to localize the pose of the robot.  Given the current state of the shoot map, we need methods by which we can localize the robot's pose.\
+\
+Why should we want to localize the robot?  Though we have used motion estimation techniques and local constraints to iteratively construct the map and robot's trajectory to the best of our ability, for circumstances when the robot is backtracking or returning to a location we have visited before, a localization technique will give us a way to perform \'93loop-closing\'94 or \'93data association\'94.  If we are traveling down a pipe in only one direction, loop-closing is not necessary since there is no chance of visiting the same location twice. \
+\
+In the event of visiting the same location, there are two questions that must be answered:  1)  is the robot at a location that it has visited before and 2) if so, where is its best fit?  Since we have already decided if this pose is branching and have added all the necessary branch points, and categorized this pose into individual shoots, it is already true that this pose is somewhere on the map.  However, the location that we chose for the pose may be incorrect or may have broken the map.\
+\
+1) Cases where the pose is in the wrong location:\
+	- Poorly overlapped poses add kinks to shoot\
+	- Many locally identical indistinguishable locations\
+	- Shoot map self-intersects\
+\
+If the current pose is wrong, but all past poses are correct, then it is a simple matter of fixing the current pose.  However, as is often the case, if a whole history of poses is incorrect, it becomes more challenging to fix an entire history of poses.  We have an approach to selecting different histories of poses in the next chapter on Probabilistic Mapping, but for this section we will only focus on fixing the current pose.\
+\
+## Finding the Best Fitted Location\
+\
+Immediately after motion estimation, branch detection, and shoot categorization, our next task is to find the best likely location for the current pose.  We measure the likelihood in terms of the best possible fit of the current posture curve to the current shoot map.  To do this, we again utilize ICP between the posture curve and splice curves representing different permutations of spliced sections of the shoot map.\
+\
+For instance, if we wanted to test whether the posture curve fits into a junction shown in Figure X, there are three different spliced curve permutations of this junction.  By performing ICP of the posture curve onto each of these splice curves, we receive different candidate localized poses for the robot's current position.  By performing several such ICP experiments with several splice curves, we can apply a selection criteria to be our \'93best fit\'94, use that as our maximum likelihood pose, and make any necessary changes to the shoot map.\
+\
+We now describe the steps we take during the localization phase:\
+\
+1)  Choose the shoot splices that we wish to localize on\
+2)  Select a set of initial poses for each splice to input to our ICP algorithm\
+3)  Perform ICP on each initial pose on each splice\
+4)  Collate, sort, and filter results\
+5)  Choose most likely result and set as the current pose.}

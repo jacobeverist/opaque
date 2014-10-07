@@ -1,0 +1,23 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fnil\fcharset0 Cochin;}
+{\colortbl;\red255\green255\blue255;}
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\f0\b\fs28 \cf0 ##Related Work\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\b0 \cf0 \
+The mapping of confined spaces is a recurring theme in the research literature.  Work has been done to navigate and map underground abandoned mines [Thrun04] with large wheeled robots traveling through the constructed corridors.  Although the environment is large enough and clear enough to make use of vision and range sensors, its location underground makes the use of GPS technologies problematic.  This work can be applied to confined environments where exteroceptive sensors are still applicable.\
+\
+Robotic pipe inspection has been studied for a long time [Fukuda89], but usually requires that the pipe be evacuated. The robotic solutions are often tailored for a specific pipe size and pipe structure with accompanying sensors that are selected for the task.  Often the solutions are manually remote-controlled with a light and camera for navigation.\
+\
+Other work has focused on the exploration of flooded subterranean environments such as sinkholes [Gary08] and beneath sea-ice or glaciers.  This involves the use of a submersible robot and underwater sonar for sensing.\
+\
+Other work has approach the problem of identifying features in the absence of external sensors.  This work comes from the literature on robotic grasping and is described as 
+\i \'93contact detection\'94
+\i0 .  That is, the identification and reconstruction of object contacts from the joint sensors of the grasping end effector.  Various methods to this approach are described in [Kaneko], [Grupen], [Haidacher], [Mimura].\
+\
+Our earlier paper [Everist09] established the basic concept of mapping using void space information with a rudimentary motion estimation technique.  This early work attempted to merge the information from contact detection with the new void space concept.   We did not yet have an approach for localization, feature extraction, and data association.\
+\
+Another researcher [Mazzini11] tackled the problem of mapping a confined and opaque environment of a pipe junction in an oil well bore hole deep underground where high temperature, high pressure, and mud make external sensors infeasible.  Mazzini's approach focuses on mapping one local area of the underground oil well.  They use physical probing with a robotic finger to reconstruct the walls of the pipe.  The robot remains anchored and immobile so there are no need for motion estimation.  Our dissertation differs from this work in that we use void space information instead of contact or obstacle information, our robot is mobile instead of anchored to one location, and that we are exploring and constructing a complete map instead of one local environment of interest.\
+   }

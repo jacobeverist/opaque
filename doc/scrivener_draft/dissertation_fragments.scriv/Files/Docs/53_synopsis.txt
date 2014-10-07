@@ -1,0 +1,1 @@
+Each shoot is path graph, with two leaves.  Except for root, all shoots have origin from a parent shoot at the branch point

@@ -1,0 +1,4 @@
+[pp][#<$publications>
+<$citeKey.stringByRemovingCurlyBraces/><?$publications>
+,</$publications>
+]

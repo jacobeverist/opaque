@@ -1,0 +1,38 @@
+\begin{thebibliography}{EKS83}
+
+\bibitem[CB95]{Chirikijan:1995p774}
+Gregory~S Chirikijan and Joel~W Burdick.
+\newblock The kinematics of hyper-redundant robot locomotion.
+\newblock {\em IEEE Transactions on Robotics and Automation}, 11(6):781--793,
+  1995.
+
+\bibitem[Da12]{cgal:d-as2-12b}
+Tran Kai~Frank Da.
+\newblock {2D} alpha shapes.
+\newblock In {\em {CGAL} User and Reference Manual}. {CGAL Editorial Board},
+  {4.1} edition, 2012.
+\newblock http\string://www.cgal.org.
+
+\bibitem[EKS83]{Edelsbrunner:1983p772}
+H~Edelsbrunner, David~G Kirkpatrick, and Raimund Seidel.
+\newblock On the shape of a set of points in the plane.
+\newblock {\em IEEE Transactions on Information Theory}, 29(4):551--559, 1983.
+
+\bibitem[Gan80]{Gans:1980p775}
+C~Gans.
+\newblock Biomechanics approach to vertebrate biology.
+\newblock {\em The University of Michigan Press}, 1980.
+
+\bibitem[HS12]{cgal:hs-chep2-12b}
+Susan Hert and Stefan Schirra.
+\newblock {2D} convex hulls and extreme points.
+\newblock In {\em {CGAL} User and Reference Manual}. {CGAL Editorial Board},
+  {4.1} edition, 2012.
+\newblock http\string://www.cgal.org.
+
+\bibitem[O'R98]{orourke98}
+J~O'Rourke.
+\newblock {\em Computational Geometry in C}.
+\newblock 1998.
+
+\end{thebibliography}

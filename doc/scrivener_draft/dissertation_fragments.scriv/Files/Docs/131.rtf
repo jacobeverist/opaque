@@ -1,0 +1,13 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fnil\fcharset0 Cochin;}
+{\colortbl;\red255\green255\blue255;}
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\f0\b\fs28 \cf0 ###Selecting Initial Poses for ICP
+\b0 \
+\
+Now that we have our set of shoot splices on which we will localize the current pose, we must determine the initial pose for each splice to input to our ICP algorithm.  The ICP algorithm takes two sets of points and an initial transform between them and outputs another transform that represents the best possible fit.  In our case, the two sets of points are uniform samples from the posture curve and the shoot splice curve respectively.   The initial transform represents the initial pose of the posture curve and the output transform is the pose of the best locally optimal pose.  Since the results are locally optimal, it makes sense to run the algorithm with multiple initial pose inputs to find a more globally optimal result.\
+\
+Globally, there are multiple local minima that represent best fits of the posture curve.  However, only one of these is the true location.  We can bound the space of possibilities by only selecting initial poses that are near the initial pose from the motion estimation step.  That is, we can select sets of input poses that are within a diameter of the initial pose P.\
+\
+For each shoot splice, select the closest point to the initial pose P.  Given a spacing of S_d, select new points along the curve such that the arc distance between them is S_d and the cartesian distance of P_s to P is less than some neighborhood diameter D_n.  These represent the inputs to the ICP algorithm for each run.    If we assume that we have 10 initial poses for each shoot splice and 3 shoot splices, we have 10x3 executions of the ICP algorithm and 10x3 output result poses.}

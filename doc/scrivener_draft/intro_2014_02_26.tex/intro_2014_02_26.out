@@ -1,0 +1,51 @@
+\BOOKMARK [0][-]{chapter*.1}{Dedication}{}% 1
+\BOOKMARK [0][-]{chapter*.2}{List of Figures}{}% 2
+\BOOKMARK [0][-]{chapter*.3}{List of Tables}{}% 3
+\BOOKMARK [0][-]{chapter*.4}{List of Algorithms}{}% 4
+\BOOKMARK [0][-]{chapter.1}{Introduction}{}% 5
+\BOOKMARK [1][-]{section.1.1}{Limitations of Exteroceptive Sensors}{chapter.1}% 6
+\BOOKMARK [1][-]{section.1.2}{Tracking Position}{chapter.1}% 7
+\BOOKMARK [1][-]{section.1.3}{Proprioceptive Sensors}{chapter.1}% 8
+\BOOKMARK [1][-]{section.1.4}{Void Space and Features}{chapter.1}% 9
+\BOOKMARK [1][-]{section.1.5}{Related Work}{chapter.1}% 10
+\BOOKMARK [1][-]{section.1.6}{Approach}{chapter.1}% 11
+\BOOKMARK [1][-]{section.1.7}{Contributions}{chapter.1}% 12
+\BOOKMARK [0][-]{chapter.2}{Sensing Space}{}% 13
+\BOOKMARK [1][-]{section.2.1}{Proprioceptive Sensing}{chapter.2}% 14
+\BOOKMARK [1][-]{section.2.2}{Pose Map}{chapter.2}% 15
+\BOOKMARK [0][-]{chapter.3}{Control and Locomotion}{}% 16
+\BOOKMARK [1][-]{section.3.1}{Control Methodology}{chapter.3}% 17
+\BOOKMARK [1][-]{section.3.2}{Behaviors}{chapter.3}% 18
+\BOOKMARK [0][-]{chapter.4}{Defining Position}{}% 19
+\BOOKMARK [1][-]{section.4.1}{Defining Pose and Direction}{chapter.4}% 20
+\BOOKMARK [1][-]{section.4.2}{Motion Models}{chapter.4}% 21
+\BOOKMARK [0][-]{chapter.5}{Environmental Landmarks}{}% 22
+\BOOKMARK [1][-]{section.5.1}{Finding Landmarks}{chapter.5}% 23
+\BOOKMARK [1][-]{section.5.2}{Corner Examples and Results}{chapter.5}% 24
+\BOOKMARK [1][-]{section.5.3}{Wall Detection}{chapter.5}% 25
+\BOOKMARK [1][-]{section.5.4}{Pipe Shape, Macro Features}{chapter.5}% 26
+\BOOKMARK [1][-]{section.5.5}{Macro Feature Extraction}{chapter.5}% 27
+\BOOKMARK [1][-]{section.5.6}{Different Macro Features}{chapter.5}% 28
+\BOOKMARK [0][-]{chapter.6}{Pose-Based Mapping}{}% 29
+\BOOKMARK [1][-]{section.6.1}{Inter-Pose Correction}{chapter.6}% 30
+\BOOKMARK [1][-]{section.6.2}{Paired Pose Correction}{chapter.6}% 31
+\BOOKMARK [1][-]{section.6.3}{Constraint Mapping}{chapter.6}% 32
+\BOOKMARK [1][-]{section.6.4}{Aggregate Pose Constraint Mapping}{chapter.6}% 33
+\BOOKMARK [0][-]{chapter.7}{Mapping with Junctions}{}% 34
+\BOOKMARK [1][-]{section.7.1}{Junctions}{chapter.7}% 35
+\BOOKMARK [1][-]{section.7.2}{Shoot Map Representation}{chapter.7}% 36
+\BOOKMARK [1][-]{section.7.3}{Generating Shoots}{chapter.7}% 37
+\BOOKMARK [1][-]{section.7.4}{Adding Poses to Shoots}{chapter.7}% 38
+\BOOKMARK [1][-]{section.7.5}{Detecting Branch}{chapter.7}% 39
+\BOOKMARK [1][-]{section.7.6}{Localizing On Shoot Map}{chapter.7}% 40
+\BOOKMARK [1][-]{section.7.7}{Choosing Shoot Splices}{chapter.7}% 41
+\BOOKMARK [1][-]{section.7.8}{Selecting Initial Poses for ICP}{chapter.7}% 42
+\BOOKMARK [1][-]{section.7.9}{ICP Algorithm}{chapter.7}% 43
+\BOOKMARK [1][-]{section.7.10}{Collate, Sort, Filter}{chapter.7}% 44
+\BOOKMARK [1][-]{section.7.11}{Curve Segment Algorithms}{chapter.7}% 45
+\BOOKMARK [1][-]{section.7.12}{Map Algorithm}{chapter.7}% 46
+\BOOKMARK [0][-]{chapter.8}{Probabilistic Mapping}{}% 47
+\BOOKMARK [1][-]{section.8.1}{Space of Possibilities}{chapter.8}% 48
+\BOOKMARK [1][-]{section.8.2}{Pose Particle Filter}{chapter.8}% 49
+\BOOKMARK [1][-]{section.8.3}{Pose + Branch Location Particles}{chapter.8}% 50
+\BOOKMARK [1][-]{section.8.4}{Branch Decision}{chapter.8}% 51

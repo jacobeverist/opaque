@@ -1,0 +1,51 @@
+\contentsline {chapter}{Dedication}{ii}{chapter*.1}
+\contentsline {chapter}{List of Figures}{v}{chapter*.2}
+\contentsline {chapter}{List of Tables}{vi}{chapter*.3}
+\contentsline {chapter}{List of Algorithms}{1}{chapter*.4}
+\contentsline {chapter}{\numberline {1}Introduction}{2}{chapter.1}
+\contentsline {section}{\numberline {1.1}Limitations of Exteroceptive Sensors}{2}{section.1.1}
+\contentsline {section}{\numberline {1.2}Tracking Position}{3}{section.1.2}
+\contentsline {section}{\numberline {1.3}Proprioceptive Sensors}{3}{section.1.3}
+\contentsline {section}{\numberline {1.4}Void Space and Features}{4}{section.1.4}
+\contentsline {section}{\numberline {1.5}Related Work}{5}{section.1.5}
+\contentsline {section}{\numberline {1.6}Approach}{6}{section.1.6}
+\contentsline {section}{\numberline {1.7}Contributions}{9}{section.1.7}
+\contentsline {chapter}{\numberline {2}Sensing Space}{10}{chapter.2}
+\contentsline {section}{\numberline {2.1}Proprioceptive Sensing}{10}{section.2.1}
+\contentsline {section}{\numberline {2.2}Pose Map}{10}{section.2.2}
+\contentsline {chapter}{\numberline {3}Control and Locomotion}{12}{chapter.3}
+\contentsline {section}{\numberline {3.1}Control Methodology}{12}{section.3.1}
+\contentsline {section}{\numberline {3.2}Behaviors}{12}{section.3.2}
+\contentsline {chapter}{\numberline {4}Defining Position}{13}{chapter.4}
+\contentsline {section}{\numberline {4.1}Defining Pose and Direction}{13}{section.4.1}
+\contentsline {section}{\numberline {4.2}Motion Models}{13}{section.4.2}
+\contentsline {chapter}{\numberline {5}Environmental Landmarks}{14}{chapter.5}
+\contentsline {section}{\numberline {5.1}Finding Landmarks}{14}{section.5.1}
+\contentsline {section}{\numberline {5.2}Corner Examples and Results}{15}{section.5.2}
+\contentsline {section}{\numberline {5.3}Wall Detection}{15}{section.5.3}
+\contentsline {section}{\numberline {5.4}Pipe Shape, Macro Features}{16}{section.5.4}
+\contentsline {section}{\numberline {5.5}Macro Feature Extraction}{16}{section.5.5}
+\contentsline {section}{\numberline {5.6}Different Macro Features}{16}{section.5.6}
+\contentsline {chapter}{\numberline {6}Pose-Based Mapping}{18}{chapter.6}
+\contentsline {section}{\numberline {6.1}Inter-Pose Correction}{18}{section.6.1}
+\contentsline {section}{\numberline {6.2}Paired Pose Correction}{19}{section.6.2}
+\contentsline {section}{\numberline {6.3}Constraint Mapping}{20}{section.6.3}
+\contentsline {section}{\numberline {6.4}Aggregate Pose Constraint Mapping}{21}{section.6.4}
+\contentsline {chapter}{\numberline {7}Mapping with Junctions}{23}{chapter.7}
+\contentsline {section}{\numberline {7.1}Junctions}{23}{section.7.1}
+\contentsline {section}{\numberline {7.2}Shoot Map Representation}{24}{section.7.2}
+\contentsline {section}{\numberline {7.3}Generating Shoots}{25}{section.7.3}
+\contentsline {section}{\numberline {7.4}Adding Poses to Shoots}{25}{section.7.4}
+\contentsline {section}{\numberline {7.5}Detecting Branch}{26}{section.7.5}
+\contentsline {section}{\numberline {7.6}Localizing On Shoot Map}{26}{section.7.6}
+\contentsline {section}{\numberline {7.7}Choosing Shoot Splices}{28}{section.7.7}
+\contentsline {section}{\numberline {7.8}Selecting Initial Poses for ICP}{29}{section.7.8}
+\contentsline {section}{\numberline {7.9}ICP Algorithm}{30}{section.7.9}
+\contentsline {section}{\numberline {7.10}Collate, Sort, Filter}{31}{section.7.10}
+\contentsline {section}{\numberline {7.11}Curve Segment Algorithms}{32}{section.7.11}
+\contentsline {section}{\numberline {7.12}Map Algorithm}{32}{section.7.12}
+\contentsline {chapter}{\numberline {8}Probabilistic Mapping}{33}{chapter.8}
+\contentsline {section}{\numberline {8.1}Space of Possibilities}{33}{section.8.1}
+\contentsline {section}{\numberline {8.2}Pose Particle Filter}{33}{section.8.2}
+\contentsline {section}{\numberline {8.3}Pose + Branch Location Particles}{33}{section.8.3}
+\contentsline {section}{\numberline {8.4}Branch Decision}{33}{section.8.4}

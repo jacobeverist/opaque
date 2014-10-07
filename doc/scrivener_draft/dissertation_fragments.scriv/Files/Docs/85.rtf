@@ -1,0 +1,35 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fnil\fcharset0 Cochin;}
+{\colortbl;\red255\green255\blue255;}
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\f0\b\fs28 \cf0 ##Approach
+\b0 \
+\
+To address these challenges, our approach is to develop algorithmic methods for utilizing proprioceptive joint angle information on an articulated mobile robot to enable exploration and mapping of a confined environment.  From a series of complete posture information sets, we build up void space information into a posture image and integrate it into a whole map.  We hypothesize that with the posture images taken at multiple robot poses in the environment, we can integrate them into a map;  we believe this approach will serve as effective alternative for mapping confined environments when exteroceptive sensors have failed or are unavailable.\
+\
+Our claim here is that \'93
+\i the type of robot used and its method of locomotion are not important so long as the robot is articulated and with many joints\'94
+\i0 .  The more joint sensors the robot has, the better capable the robot is of mapping.\
+\
+In this design we use a simulator that enables us to rapidly develop and test different algorithmic techniques without becoming overly worried about the hardware and locomotive aspects of the robot.   We use a simplified flat pipe-like environment with a snake robot that is capable of anchoring to the sides of the walls and pushing and pulling itself through the pipe on a near frictionless floor.   \
+\
+We do not simulate any sensor-inhibiting fluid in the environment or sensor-failure scenarios, nor do use any type of external sensor, be it touch sensors, vision sensors, or range sensors such laser range-finders and sonar.  Additionally, no global positioning system is used since it is not practical to expect GPS to function underground.  The only sensors we permit ourselves to use are joint sensors.\
+\
+For capturing the posture images, we examine a number of difficulties and pitfalls to capturing this information.  Notably, the prevalence of slip of the robot can corrupt the posture image because the robot loses its stable frame of reference to the environment.  We develop a number of techniques for safely capturing the void space information, reducing the likelihood of slip, detecting slip, and mitigating the damage if slip should occur.\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+\cf0 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+\cf0 We examine several possibilities for extracting landmark features from the posture images.  We try several traditional forms of features such as corners and edges, but in the end we develop our own macro-feature which is the overall shape of the local environment captured by the posture image and reduced to the form of a medial axis.\
+\
+When the robot is moving through the environment, we must also have techniques for estimating the motion between the poses at which we capture the posture images.   We show a highly accurate but very slow method [Sec Motion 1] for our particular snake robot morphology, and compare it to a coarse but fast motion estimation method [Sec Motion 2].  We discover that the coarse method is sufficient so long as we rely on the macro-features of the posture images to constrain the possibilities.\
+\
+Given these basics, we then delve into the heart of the matter:  the actual integration of poses, motion estimates, and posture images into a coherent map.  We develop and experiment with a few techniques using the constraints from the macro-features in a variety of ways [Sec Constrain 1].  We finally settle on an aggregate pose constraint method where the whole set of past poses is used to generate a feature that constrains the next pose [Sec Constrain 2].\
+\
+We show how our mapping approach works in a variety of different environments for example, a single path pipe where there are no branches in the environment.  The environment only contains a single path that includes a different variety of turns and angles.  We then complicate matters by adding in different types of junctions such as T-junctions, Y-junctions, and X-junctions.  We do not yet consider environments that have loops in them.\
+\
+The adding of junctions adds significant complications and requires us to have a better understanding of the structure of our map.  We establish a new type of mapping structure called a \'93shoot map\'94.  A shoot is a section of the environment that is a single path.  The shoot has an origin and a termination point which indicates either the boundary of the environment or more space yet to be explored.  New shoots are created when a junction is detected, where the new shoot's origin is at the location of the parent shoot where the junction was detected.   That representation allows us to deal with the restrictions on the type of information we can acquire and the often incompleteness of the posture image capture with respect to the actual local environment.\
+\
+Finally, given the fundamental mapping structures and methods we have developed, we cast them into a probabilistic framework.  This allows us to keep track of different map possibilities, discarding improbable ones, and selecting the most probable.   Our mapping approach has certain ambiguities in the type of environmental information we can acquire.  The probabilistic framework keeps track of these ambiguities until they can be resolved when more information is acquired.\
+\
+}

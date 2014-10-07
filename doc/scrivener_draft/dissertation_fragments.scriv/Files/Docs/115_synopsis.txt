@@ -1,0 +1,1 @@
+Use general shape of environment, can be approximated with sparse data

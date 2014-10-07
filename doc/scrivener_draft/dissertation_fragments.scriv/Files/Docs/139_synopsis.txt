@@ -1,0 +1,1 @@
+Pose + Small grid of branch locations.  Evaluated by overlapCost of full medial axis of child on parent.

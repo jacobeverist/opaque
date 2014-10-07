@@ -1,0 +1,16 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fnil\fcharset0 Cochin;}
+{\colortbl;\red255\green255\blue255;}
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\f0\fs28 \cf0 ##Detecting Branch\
+\
+If a posture medial axis is detected that does not completely fit on the existing shoot, it is possible that we have discovered a branch.  It is vital that we properly and detect branching events in order to fit them properly into the map.  In the event that we add a posture image to a shoot that is not completely contained into the target shoot, this will distort the medial axis computation of the union of images and result in kinks the shoot curve.		\
+Branching is detected on the individual pose level.  For the medial axis of a single posture image, if the single medial axis curve diverges from a shoot, then it is said to be branching and a new child shoot should be formed.\
+\
+Care must me taken in determining the parameters for when a curve is \'93diverging\'94.    We define divergence distance to be the distance between the target curve endpoint and the diverging point on the parent curve.  The diverging point is defined by the difference between the tangent angle of the point at which the curve last leaves the parent curve and the next point along the curve at which the minimum angle threshold has been made.  The closest point on the parent curve to this minimum angle threshold point is the diverging point.\
+\
+There are two constants that must be set that determine the threshold parameters for divergence detection.  The first parameter is A, the angle difference between the departure point and the divergence point.   The second parameter is D, the minimum distance threshold between the divergence point and the target curve endpoint.\
+\
+The points are:  departure point, divergence point, and end point.\
+}
