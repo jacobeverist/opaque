@@ -1,0 +1,1 @@
+Population of pose hypotheses, localized, evaluated, resampled.

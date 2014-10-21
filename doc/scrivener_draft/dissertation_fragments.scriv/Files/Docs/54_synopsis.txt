@@ -1,0 +1,1 @@
+Basic algorithm to generate medial axis of each shoot set, and cut the medial axis to create the shoots.

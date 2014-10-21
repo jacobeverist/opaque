@@ -1,0 +1,1 @@
+Breaking off from main medial axis indicates junction.  Junctions only partially observable.

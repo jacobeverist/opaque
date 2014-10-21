@@ -1,0 +1,1 @@
+Landmark features to track environment, difficult using only proprioceptive sensing

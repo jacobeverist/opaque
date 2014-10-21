@@ -1,0 +1,14 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fnil\fcharset0 Cochin;}
+{\colortbl;\red255\green255\blue255;}
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\f0\b\fs28 \cf0 ###Choosing Shoot Splices\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\b0 \cf0 \
+In step 1), if there is only one shoot in the shoot map then the resultant splice is simply the parent shoot itself.  However, if there is more than one shoot, a number of possible splices are possible.   We can take an exhaustive approach and select all possible splices, including splices with multiple junctions contained within them.\
+\
+One approach we can take is to select all splices that terminate at every possible combination of terminal points in the shoot map.  So for instance, for a map with N shoot and N-1 junctions, the number of possible splices is represented by (2 + N - 1)  choose 2.  However this can be problematic if we consider junctions that are not in the neighborhood of the pose in question.  In particular, if we have three junctions A, B, and C, there will be (4 choose 2) = 10 possible splices between all possible terminals.  However, if only A is in the neighborhood of our pose, many of the possible splices are locally identical so there is no value in using splices that include junctions B and C unless B and C are in the neighborhood of the pose.\
+\
+We can discriminate the type of splices we will use by excluding some junctions from consideration if they are not in the neighborhood.  If the pose of P is less than some distance D to the branch point J of the junction, then we can instead treat the junction J as a termination point.  For instance, in figure X, if we turn junctions B and C into termination points for the number of splices and include A as a junction of interest, we result in (3 choose 2 ) = 3 possible splices.}

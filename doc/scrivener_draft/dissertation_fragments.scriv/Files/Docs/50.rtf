@@ -1,0 +1,14 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fnil\fcharset0 Cochin;}
+{\colortbl;\red255\green255\blue255;}
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\f0\fs28 \cf0 Combining the motion model estimates and the inter-pose constraints, we can create an improved map that is better than just the simple motion estimation maps.  The inter-pose constraints give a better trajectory for the environment.  However, they are still deficient in a number of ways.\
+\
+They do not provide any means of resolving the unique correlations of a junction, nor do they provide any consistency when backtracking through a local environment we have been before.  That is, they do not have provide a solution for the \'93loop-closing\'94 or \'93data association\'94 problem.\
+\
+A possible solution to this is to attempt to make additional hypothetical constraints between poses that are in the same neighborhood.  Following [Olson], we can establish covariances between the constraints and generate consistency matrices to determine the most optimal constraint hypothesis set.  This is the Graph SLAM [Probabilistic Robotics] approach that use a pose graph representation for generating the map.\
+\
+The weakness of our problem domain is that we do not have available landmark features that fit into this framework.  Landmark features are given their own positions and then observed from multiple robot poses which are then correlated.  1) Our data does not have point features with positions, we have macroscopic shapes of the environment.  2) Secondly, we are not guaranteed to observe the feature between consecutive poses or even poses that are in the same location.  \
+\
+The Graph SLAM approach becomes increasingly difficult because there is no clear way how to generate covariance matrices between poses.  We could generate the covariance with a coaxial variance for greater variance in arc distance and low variance for lateral offset off the overlapping axes.  This is clear for simple straight posture images.  However it is less clear for curved or multi-axis junction environments.  Furthermore, using a graph optimizer can result in two hard constrained poses to be corrected to be off-center their medial axes to \'93globally minimize\'94 the overall error.  This is not the type of corrections we want to see since the local constraint is so certain in only one dimension.  Any correction method should take advantage of that.}

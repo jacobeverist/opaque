@@ -1,0 +1,69 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fnil\fcharset0 Cochin;}
+{\colortbl;\red255\green255\blue255;}
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\f0\fs28 \cf0 ##Experimental System\
+\
+Robot setup, joints and geometry, environmental parameters, simulation.\
+\
+We explicitly chose to develop our approach in a simulation environment in order to rapidly develop a theoretical framework to the problem of mapping without external sensing.  In future work, we will apply these techniques to physical robots.\
+\
+We choose to use the Bullet physics engine (version 2.77) because it is free, open source, mature, and actively developed.  Though it is primarily designed for games and animation, it is acceptable to our robotics application.  Our primary requisites are simulation stability and accurate modeling of friction and contact forces.   True friction and contact modeling are not available to us without specially designed simulation software at a monetary and performance speed cost.  Our choice of Bullet gives us believable results so long as we do not demand too much and try to simulate challenging situations (e.g. high speed, high mass, 1000s of contact points).\
+\
+\
+![Example environment.][env1]\
+\
+[env1]: {\field{\*\fldinst{HYPERLINK "scrivlnk://144"}}{\fldrslt rectv2-red.eps}} width=400px\
+\
+\
+We focus our attention on environments such as the one depicted in [](#env1).  We build a flat plane and place a number of vertical walls to create a pipe-like maze environment.  All environments we study are flat and have no vertical components.  This means we need only focus on building 2D maps to represent the environment.  From here on in this paper, we refer to such environments as pipes even though they may not correspond to the even and regular structures of physical utility pipes.\
+\
+A snake robot is placed in the pipe environment as shown in [](#env1).  The snake robot consists of regular rectangular segments connected by actuated hinge joints.  Each of the joint axes is parallel and coming out of the ground plane.  This means the snake has no means to lift its body off the ground because all of its joints rotate in the plane of the ground.  It is only capable of pushing against the walls and sliding along the ground.  We choose a reduced capability snake robot because we wish to focus on the mapping problem instead of the more general serpentine control problem.\
+\
+![Definitions of snake and pipe parameters.][env2]\
+\
+[env2]: {\field{\*\fldinst{HYPERLINK "scrivlnk://184"}}{\fldrslt CurveDiagram.png}} width=400px\
+\
+We can parameterize the snake and the pipe environment.  For the snake robot, \\\\(l\\\\) is the snake segment length, \\\\(w\\\\) is the segment width, \\\\(N\\\\) is the number of segments connected by \\\\(N-1\\\\) joints, and \\\\(m\\\\) is the maximum torque capable by each of the joint motors. \
+\
+<!-- \\cite\{Vona:2010p391\} -->\
+\
+For the environment, we can begin by defining the pipe width \\\\(W\\\\).  For a pipe with parallel and constant walls, this is a straightforward definition as seen in [](#env2).  For non-regular features, we define the pipe width at a given point on one wall to be the distance to the closest point on the opposing wall.  This correctly captures the fact that a robot that is wider than the smallest pipe width \\\\(W\\\\) will be unable to travel through that smallest width and will create a non-traversable pinch point.  Conversely, a pipe width \\\\(W\\\\) that is larger than the reach of a robot will become a void space that the robot will have difficulty completely sensing without the aid of external sensors.  For both the minimum and maximum pipe widths of a given environment, we define \\\\(W_\{min\}\\\\) and \\\\(W_\{max\}\\\\) respectively where \\\\(W_\{min\} \\leq W_i \\leq W_\{max\}\\\\) where \\\\(W_i\\\\) is the pipe width at some point on wall \\\\(p_i\\\\) of the pipe environment.\
+\
+Each joint on the robot is actuated by a motor and PID controller.  It can actuate the joint anywhere from \\\\(\\pm160\\\\) degrees.   It uses the built-in motor capabilities of Bullet that allows us to set the joint angular velocity at run-time.  Therefore, all outputs of the PID controller set velocity commands to the joint and the physics engine does its best to satisfy those as velocity constraints.  \
+\
+<!--\
+\\begin\{algorithm\}\
+\\caption\{PID Controller\}          % give the algorithm a caption\
+\\label\{alg1\}\
+\\begin\{algorithmic\}\
+\
+\\State $\\epsilon \\Leftarrow (\\alpha - \\phi)$\
+\
+\\If\{$| \\epsilon | > \\mathrm\{tol\} $\}\
+\
+  \\State $\\epsilon_\{sum\} \\Leftarrow \\epsilon_\{sum\} + \\delta t \\times \\epsilon$\
+  \\State $\\delta \\epsilon \\Leftarrow \\epsilon-\\epsilon_\{last\}$\
+  \\State $\\epsilon_\{last\} \\Leftarrow \\epsilon$\
+  \\State $\\hat\{v\} \\Leftarrow \\mathrm\{P\} \\times \\epsilon +\\mathrm\{I\} \\times \\epsilon_\{sum\}+\\mathrm\{D\} \\times \\delta \\epsilon/\\delta t$ \
+\
+  \\If\{$\\hat\{v\} > v_\{max\}$\}\
+    \\State $\\hat\{v\} \\Leftarrow v_\{max\}$\
+  \\EndIf\
+  \\If\{$\\hat\{v\} < -v_\{max\}$\}\
+    \\State $\\hat\{v\} \\Leftarrow -v_\{max\}$\
+  \\EndIf\
+\
+\
+\\EndIf\
+\
+\\end\{algorithmic\}\
+\\end\{algorithm\}\
+-->\
+\
+The structure of the PID controller is shown in Algorithm [](#alg1).  Line 1 defines the error as the difference between the target and the actual joint angle.  Line 2 prevents the controller from executing if the error falls below an acceptable threshold.  This prevents the motor from attempting to perform minor corrections to an already near-correct angle in order to avert oscillations or error-producing compensations.   Line 3 is the summation term for error over time while line 4 and 5 is the instantaneous error change from the previous controller iteration.  The actual PID control law is shown on line 6 where P is the proportional term coefficient, I is the integration term coefficient, and D is the derivative term coefficient.  The result outputs a command velocity for the Bullet engine.  Finally, lines 7-10 limit this velocity to a maximum.\
+\
+Each of the joints gives angle position information to simulate a shaft encoder or potentiometer.  For this study, we do not simulate calibration error, sensor noise, resolution error, or gear backlash.  Calibration error has been studied elsewhere /cite and there exists correction mechanisms for it.  In the case of sensor noise, the noise on potentiometers is small enough not to affect our algorithms.  Gear backlash was encountered and studied in /cite Mazzini.  The primary error of concern is resolution error caused by the discretization process of a shaft encoder or an A/D converter.   This problem has been studied /cite.  Given a sensitive enough A/D converter (really?), this problem can be eliminated.  In this study, we assume correct and noise-free joint sensors.\
+\
+A joint provides an API to the controlling program with 2 read-write parameters and 1 read-only parameter.  The read-write parameters are the target joint angle \\\\(\\alpha_i\\\\) and the maximum torque \\\\(m_i\\\\), with the actual angle \\\\(\\phi_i\\\\) being the read-only parameter.  \\\\(\\alpha_i\\\\) is the angle in radians that we desire the joint to rotate to.  \\\\(\\phi_i\\\\) is the actual angle of the joint that reflects the current physical configuration of the robot.  \\\\(m_i\\\\) is the maximum permitted torque that we wish to limit the individual motors to.  The maximum torque can be lowered to make the joints more compliant to the environment.}

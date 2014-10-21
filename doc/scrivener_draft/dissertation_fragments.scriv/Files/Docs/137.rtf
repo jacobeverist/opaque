@@ -1,0 +1,60 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fnil\fcharset0 Cochin;}
+{\colortbl;\red255\green255\blue255;\red247\green247\blue247;}
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\f0\fs28 \cf0 ##Space of Possibilities\
+\
+Given our shoot map representation in the previous chapter, our mapping decisions were based on a maximum likelihood evaluation of the pose's fitness.  The best possible fit at the given moment is made and the decision remains committed.  There is no opportunity to resolve ambiguity or correct decisions made in error.  For some applications, this is sufficient.  However, incorrect decisions can lead to irrevocable consequences in the map.  Such things can include multiple repeated instances of a junction, misidentification of a junction, distortion of the shoots, and self-intersecting shoots.\
+\
+Some examples of maps where the decisions of whether or not to branch or fit into an existing junction, and the accumulation of pose error over time, are shown in Figure X.  (Y junction, 3-pass new branches) (T-junction backtracking fail)\
+\
+We wish to broaden the number of scenarios that our mapping can handle.  We wish to explicitly represent different possible valid maps given the input data.  We need some way to explicitly represent the variety of different mapping choices and weigh them in terms of likelihood.    Following the Bayes' Rule formalization of the SLAM problem, we first identify the sensor percepts, the robot actions, and the state space representation of the environment.\
+\
+In our formulation, there are three possible actions that can be taken.  Either the robot moves forward, it moves backward, or it moves not at all.   The total distance traveled is not subject to control in our formulation, so there are only 3 possible actions.  The robot simply takes a step.  The series of actions is denoted by:\
+\
+<!--\
+\\begin\{equation\}\
+U_\{1:t\} = \\\{\\mathrm\{fore\}, \\mathrm\{back\}, 0\\\}_\{1:t\}\
+\\end\{equation\}\
+-->\
+\
+The percepts are represented by the posture images we created from Chapter 2.  The percepts are represented as: \
+\
+<!--\
+\\begin\{equation\}\
+I_\{1:t\} = \\\{ f(i,j) \\mathrm\{for\} 0 \\leq i \\leq N_g, 0  \\leq j \\leq N_g \\\}_\{1:t\} \\mathrm\{where\} f(i,j) = \{0, 1\}\
+\\end\{equation\}\
+-->\
+\
+Starting from Chapter 6, we represented the map in terms of poses of each posture image in the environment.  Representing and improving the map was approached in terms of finding better poses to make the map the most consistent.  Different techniques were used to approximate motion and localize the pose based on previous poses.  The poses are represented with the following notation:\
+\
+<!--\
+\\begin\{equation\}\
+X_\{1:t\} = \\( x_t, y_t, \\theta_t \\)\
+\\end\{equation\}\
+-->\
+\
+With the introduction of the shoot map representation in Chapter 7, we have add the shoot structure composed of pose node membership set and a branch point pose.\
+\
+<!--\
+\\begin\{equation\}\
+S_\{1:N\} = \\\{b_i, c_i  \\mathrm\{for\} 0 \\leq i \\leq N \\\}\
+\\end\{equation\}\
+\
+\\begin\{equation\}\
+c_i = 
+\fs26 \cb2 \\\{\\exists k \\mathrm\{s.t.\} 0 \\leq k, k \\leq t\\\}, |c_i\} \\geq 1, \\mathrm\{for\} i = 1 \\mathrm\{to\} N
+\fs28 \cb1 \
+\\end\{equation\}\
+ \
+\\begin\{equation\}\
+b_i = (x_i,y_i,\\theta_i), 
+\fs26 \cb2 \\mathrm\{for\} i = 2 \\mathrm\{to\} N, b_1 \\mathrm\{is undefined\}
+\fs28 \cb1 \
+\\end\{equation\}\
+-->\
+\
+We can begin to gradually introduce a probabilistic framework by defining the state space representation for each variable, representing it with a random variable, and approximating the Bayes' Rule.\
+\
+}

@@ -1,0 +1,1 @@
+Global medial axis from union of posture images

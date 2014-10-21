@@ -1,0 +1,206 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fnil\fcharset0 Cochin;}
+{\colortbl;\red255\green255\blue255;}
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\f0\fs28 \cf0 \
+##Problem Definition\
+\
+In the previous chapter we discussed the basics of creating a map using the pose graph representation.  In the examples, our robot was traveling forward through a pipe-like environment while building a map of its traversal.  Each pose created a node in the pose graph and an edge forming a geometric constraint between its neighbors.\
+\
+Each geometric constraint between poses was either an in-place constraint between a pair of nodes at the same anchored location, or a step constraint between either two consecutive forward poses or two consecutive backtrackkward poses.  In the latter case, the step constraints encode the movement of the robot through the environment.   In the former case, the in-place constraint encodes the likelihood of the poses being at the same location.\
+\
+However, if our robot should decide to reverse direction and backtrack through the previously explored environment, using only the geometric constraints we have previously described, the backward path will begin to drift from the forward path as shown in Figure X.  We need some approach to constrain the old poses from the forward traversal to the new poses of the backward traversal.\
+\'df\
+This problem is called both the place recognition problem and the loop-closing problem.  For the place recognition problem, we wish to be able to identify whether or not we have arrived at a location we've previously visited.  In the loop-closing problem, we want to ensure that the old poses and the new poses of the same location are accurately and consistently integrated into the map.  This would fix the problem shown in Figure X and hopefully produce Figure Y.\
+\
+To solve both of these problems, we need some way of hypothesizing pairs of poses that are close together and possibly overlapping each other.  Furthermore, we need an approach to test our hypothesis and then build the geometric constraint that will become the edge in the pose graph.  Finally, if we later discover that we have made a mistake in choosing this constraint, we need some way of detecting this mistake and a way of removing it and replacing it with a better solution.\
+\
+A standard approach to this problem is to solve the feature correspondence problem by matching feature landmarks between different poses and then adding constraints between the features.  However, in our work, we have no feature landmarks with which to work.  We must find a solution that works with the local free space maps of each pose.\
+\
+<!--\
+% How to recognize when we've returned to a place we've previously visited, and how to reintegrate this information into a consistent map.  \
+\
+% Select which old poses are close to new pose, select which of these poses should have edges between them, how should the constraints be built?  How can we correct mistakes when we erroneously constrain two poses?\
+\
+% No landmark features, so we cannot do place recognition based on feature matching between poses.\
+-->\
+\
+##Backtracking Along a Single Path\
+\
+The simplest manifestation of this problem is the case where a robot travels down a single pipe and then backtracks in the other direction.  Our interest is for the new poses created while traveling backward to be correctly constrained with the old poses created by originally traveling forward.\
+\
+The remains of Chapter 5 are sufficient to create a map of a robot traveling a single direction down a non-branching pipe or tunnel.  We now explain our approach to reversing the direction and building constraint between the new poses and the past.\
+\
+We present a sequence of decision-making to determine whether or not a new pose node \\\\(P_c\\\\) is to be constrained to a given past node \\\\(P_k\\\\) where \\\\(k \\leq c - 4\\\\).  So by definition, \\\\(c \\geq 4\\\\) and \\\\(n_v \\geq 4\\\\).  This decision-making process is shown in the decision tree in Figure X.  We explain each of these steps and the processes involved therein.\
+\
+\
+<!--\
+% Invariant: there are \\\\(n_v\\\\) nodes.   Node to be constrained \\\\(v_c\\\\).   Only attempt constrain nodes \\\\(v_k\\\\) for \\\\(k < c\\\\).  All other nodes \\\\(v_k\\\\) have been constrained.\
+\
+%1.	Optimize graph with TORO\
+%2.	Choose k such that $k <= c \'96 4$.\
+%3.	Is $c > k$ and $c \'96 k >= 4$?\
+%4.	Is deg($v_c$) > 2?\
+%5.	Does an edge $e_\{kc\}$ already exist?\
+%6.	Perform a bounded guess $P'_c$ given initial pose $P_c$ by doing ICP with the path of the medial axis.\
+%7.	Is cart($P_k$, $P_c$) < 1.0?\
+%8.	Is angdiff($P_k$, $P_c$) < 0.3?\
+%9.	Featured($P_k$) AND Featured($P_c$) or Featured($P_k$)' AND Featured($P_c$)'\
+%10.	Apply overlap ICP to $P_k$ and $P_c$\
+%11.	Is new cart($e_\{kc\}$) < 1.0?\
+%12.	If not previously constrained, accept new $e_\{kc\}$\
+%13.	If Featured($P_k$), covE = [1e-4,1e-4,2e-2], else covE = [1e-1,1e-2,2e-2]\
+%\
+%Figure X\
+-->\
+\
+\
+If there are \\\\(n_v\\\\) nodes in the pose graph, where \\\\(n_v = 6\\\\), we know that at least \\\\(n_2\\\\) and \\\\(n_3\\\\) have degree \\\\(3\\\\) with two step constraints and one in-place constraint as in Figure X.  We now wish to check whether these nodes need to be constrained to nodes in the past.  However, we do not constrain between nodes for which edges already exist.  That is, we will not add an extra edge \\\\(e_\{02\}\\\\), \\\\(e_\{13\}\\\\), or \\\\(e_\{23\}\\\\) since these constraints already exist.  Since there are no other nodes earlier than \\\\(v_0\\\\) or \\\\(v_1\\\\), no extra constraints are added.\
+\
+We only check for new constraints to the past at every even number of nodes so that we include both the forward and backward sweep information of an anchored location.  The next point of consideration is when \\\\(n_v = 8\\\\) and we consider the nodes \\\\(v_4\\\\) and \\\\(v_5\\\\).  We disregard the possibility of edges \\\\(e_\{45\}\\\\), \\\\(e_\{42\}\\\\), and \\\\(e_\{53\}\\\\) since these edges already exist.  We then consider the possibility of constraining to \\\\(v_0\\\\) or \\\\(v_1\\\\).\
+\
+###Bounding \\\\(P_c\\\\) to the Path\
+\
+As the robot travels backward through the pipe, it is likely that its estimated pose will veer off the path of its initial forward trajectory.  In order to perform constraints to the past nodes, we must first perform a bounded guess of where the current node is likely to be on the previous trajectory.\
+\
+Our approach is to represent the topology of the currently known environment with a curve that represents its free space known as the  *path*.  The path represents the navigable space through the environment.  This approach is computed similarly to the medial axis of the local free space in Section 4.3.2.\
+\
+Once we have the path of the explored environment, we can bound the pose \\\\(\\acute\{P_c\}\\\\) to somewhere on the path continuum.  For now, we will assume that the new node is somewhere on the path and nowhere else.  We address the situation when this is not the case in Section 3.\
+\
+First we show how the path is generated.  Next we show how we compute the bounded guess of the pose \\\\(\\acute\{P_c\}\\\\) using the path \\\\(C_0\\\\).\
+\
+####Generating the path\
+\
+We define the path to be the medial axis of the union of the globally situated local free space maps.  The path is computed from a collection of nodes that represent the past robot's trajectory.  For some node \\\\(v_c\\\\), the nodes of the path include \\\\(v_k \\in V\\\\) for \\\\(k <= c-4\\\\).\
+\
+Each local map \\\\(M_k\\\\) attached to a node \\\\(v_k\\\\) is plotted into the global space at the appropriately attached pose \\\\(P_k\\\\).  The complete alpha hull of the resulting union of all the maps is computed from which the medial axis is computed as in Section 4.3.2.\
+\
+This approach can result in over 100k points which can be very time-consuming.  A short cut that we use is to take the alpha hull \\\\(H_k\\\\) of each map \\\\(M_k\\\\), transform the hull points to the global frame at \\\\(P_k\\\\), and add them to the set \\\\(S\\\\).  After each node's alpha hull is added to the set \\\\(S\\\\), we compute the alpha hull \\\\(Q\\\\) of the points of \\\\(S\\\\).  We then compute the medial axis following Section 4.3.2.  This is a much faster approach since we reduce the number of points by at least two orders of magnitudes and the alpha hulls \\\\(H_k\\\\) are already computed.\
+\
+The resultant medial axis of alpha hull \\\\(Q\\\\) gives us the path \\\\(r_0\\\\).  This path represents the topology of the traveled space.\
+\
+####Forming the Bounded Pose Guess\
+\
+Now that we have the complete path \\\\(r_0\\\\), we will use the path and the node's current pose \\\\(P_c\\\\) to formulate a bounded guess of the node's pose \\\\(\\acute\{P_c\}\\\\) in the map.  We do the following procedure.\
+\
+First, given the curve function \\\\(\\beta_\{r0\}\\\\) of the path \\\\(r_0\\\\), we find the closest point \\\\((x_g,y_g)\\\\) on the curve to \\\\((x_c, y_c)\\\\), the position of the node \\\\(v_c\\\\).  This gives us \\\\(\\beta_\{r0\}(u_\{r0\}) = I_\{r0\} = (x_g,y_g,\\theta_g)\\\\).   Together with \\\\(\\beta_c(u_c) = I_c\\\\) for the medial axis of the node \\\\(v_c\\\\), we have the tools to perform the ICP search for the bounded guess \\\\(\\acute\{P_c\}\\\\).  Following Equation 5.10, we compute the new pose \\\\(\\acute\{P_c\}\\\\) by searching for \\\\(u_v\\\\) and \\\\(\\theta_v\\\\) with the following equation:\
+\
+\
+<!--\
+\\begin\{equation\}\
+\\acute\{P_c\} = \\beta_\{r0\}(u_v) +\
+\\begin\{bmatrix\}\
+0 \\\\\
+0 \\\\\
+\\theta_v\
+\\end\{bmatrix\}\
+\\end\{equation\}\
+-->\
+\
+The ICP algorithm searches for the best fit for the medial axis \\\\(\\beta_c\\\\) onto the path \\\\(\\beta_\{r0\}\\\\).  This serves as our bounded guess for the location of node \\\\(v_c\\\\) in the map before hypothesizing constraints to the neighboring nodes.\
+\
+###Finding nodes that are \'93Close\'94\
+\
+The first step in checking the suitability of whether two nodes should be constrained together is by checking their physical proximity.  There are two types of spatial comparisons we wish to make between the poses \\\\(P_c\\\\) and \\\\(P_k\\\\).   They are the Cartesian distance and angular difference.\
+\
+The Cartesian distance \\\\(d_\{ck\}\\\\) is computed by:\
+\
+<!--\
+\\begin\{equation\}\
+d_\{ck\} = sqrt( (x_c - x_k)^2 + (y_c - y_k)^2 )\
+\\end\{equation\}\
+-->\
+\
+The angular difference \\\\(\\theta_\{ck\}\\\\) is computed by:\
+\
+<!--\
+\\begin\{equation\}\
+\\theta_\{ck\} = | \\theta_c - \\theta_k |\
+\\end\{equation\}\
+-->\
+\
+The threshold level for deciding whether or not two poses are close is determined experimentally.  In our configuration, the maximum Cartesian distance \\\\(D_\{ck\} = 1.0\\\\).   The maximum angular difference is \\\\(\\Theta_\{ck\} = 0.3\\\\).  By far, the angular threshold is more restrictive than the Cartesian threshold.  This reflects the fact that the angular components of our constraints are far stricter than the Cartesian components.   If we have two poses that are on top of each other but with significant angular difference, we will not make a constraint between the two because of the likelihood that the robot's posture was not in the same configuration.  This reason for this will become more apparent in the next section when we introduce junctions.\
+\
+###Should nodes be Constrained\
+\
+Once we have satisfied the conditions \\\\(d_\{ck\} <= D_\{ck\}\\\\) and \\\\(\\theta_\{ck\} <= \\Theta_\{ck\}\\\\), we now have the opportunity of performing a constraint between the two poses using an overlap constraint.  This is similar in approach to the step constraint but unlike the step constraint, we do not necessarily know how the medial axes of the two nodes should overlap since they are not consecutive poses.  \
+\
+The first thing we must determine is if performing an overlap of the two medial axes will produce a meaningful result.  One way to diagnose this is by measuring the amount of curvature of the medial axes.  Curved medial axes should be constrained to other curved axes and straight axes should be constrained to other straight axes.  We develop a metric to determine if a medial axis is curved called  *arch*.\
+\
+To determine if a pose has arch, we measure how far off from a straight line the medial axis is.  A straight line is drawn from each tip of the medial axis curve and the average distance between the medial axis and the straight line is computed.  A uniform set of points along the straight line is selected.  The shortest distance to the medial axis from the selected point is computed.   The result is summed and averaged.  A visualized example of a straight and arched medial axes are shown in Figure X.\
+\
+Experimentally, the arch is determined if the average distance is less than \\\\(0.04\\\\).  If both \\\\(v_c\\\\) and \\\\(v_k\\\\) have arch then we attempt a constraint.  If both \\\\(v_c\\\\) and \\\\(v_k\\\\) don't have arch and are straight, then we constrain them.  Any other combination, we reject the pair as a hypothesis.\
+\
+###Building the Constraint\
+\
+Now that we have narrowed down the possibilities, we will form a hypothesized constraint for \\\\(v_k\\\\) and \\\\(v_c\\\\).  We call this form of a constraint an overlap constraint since we are attempting to overlap the medial axes of the two nodes using the same approach as the step constraint described in Section 5.3.3. \
+\
+In all respects, the overlap constraint approach is identical to the step constraint with exception to the initial values for the ICP search and the final result for the geometric constraint.  The visualization is the same as the step constraint and is shown again in Figure X.\
+\
+If \\\\(\\beta_c\\\\) and \\\\(\\beta_k\\\\) are the medial axis curves for the respective nodes \\\\(v_c\\\\) and \\\\(v_k\\\\), the initial \\\\(u\\\\) value for the curves are \\\\(u_c\\\\) and \\\\(u_k\\\\) respectively.  The value for \\\\(u_c\\\\) is initialized to the location for the GPAC origin at \\\\(\\beta_c(u_c) = (0,0,0)\\\\) in the local frame.  The initial value for \\\\(u_k\\\\) is set to the closest point on \\\\(\\beta_k\\\\) to the point \\\\(\\beta_c(u_c)\\\\) in the global frame.  That is:\
+\
+<!--\
+\\begin\{equation\}\
+u_k = min_\{u_k\}( dist( \\beta^g_c(u_c), \\beta^g_k(u_k) )\
+\\end\{equation\}\
+-->\
+\
+For the ICP search, the values of \\\\(u_v = u_k\\\\) and \\\\(\\theta_v = 0.0\\\\) are optimized using the iterative closest point optimization algorithm described in Section 5.4.  After the result is finalized, the relative geometric offset between the two GPAC origins is taken as the geometric portion of the constraint.\
+\
+The associated covariance is determined as follows.  If the two medial axes have arch, the covariance is:\
+\
+<!--\
+\\begin\{equation\}\
+C_v =\
+\\begin\{bmatrix\}\
+0.0001 & 0 & 0 \\\\\
+0 & 0.0001 & 0 \\\\\
+0 & 0 & 0.02\
+\\end\{bmatrix\}\
+\\end\{equation\}\
+-->\
+\
+If the two nodes have straight medial axes, then the covariance is:\
+\
+<!--\
+\\begin\{equation\}\
+C_v =\
+\\begin\{bmatrix\}\
+0.1 & 0 & 0 \\\\\
+0 & 0.01 & 0 \\\\\
+0 & 0 & 0.02\
+\\end\{bmatrix\}\
+\\end\{equation\}\
+-->\
+\
+We can see that a straight medial axis includes considerable uncertainty along the coaxial direction.  This is because there is no curvature to act as a feature during the ICP search.  Any \\\\(u_v\\\\) value will be a locally optimal solution.   However, the angular component remains tight.\
+\
+For medial axes with arch, the curves have features with which to find more globally optimal solutions given reasonable initial conditions.  The resultant overlap fit remains very unique and very closely overlapped, resulting in a more tight solution as shown in the covariance matrix in Equation X.\
+\
+###Accepting or Rejecting Constraint Hypothesis\
+\
+As a final step, we perform a sanity check to determine if the resultant constraint should be accepted into the pose graph.  The test is a simple reevaluation of the Cartesian distance between the two poses with only the hypothesized constraint.\
+\
+We perform the following test:\
+\
+<!--\
+\\begin\{equation\}\
+sqrt( (x_\{ck\})^2 + (y_\{ck\})^2 ) < D_\{ck\}\
+\\end\{equation\}\
+-->\
+\
+If the test fails, than it most likely means that the resultant constraint was either optimized to a degenerate case as in Figure X, or the two nodes are only peripherally overlapped on not enough to create a reliable and meaningful geometric constraint.  We reject the constraint hypothesis.\
+\
+If the test succeeds, we add the new edge \\\\(e_\{ck\}\\\\) with \\\\(T_\{ck\}\\\\) and \\\\(C_\{ck\}\\\\) to the pose graph.\
+\
+###Results\
+\
+Our results show that various examples of single path environments will produce usable maps at all stages of the mapping.  The primary source of error occurs from coaxial translational error along the path.  Nodes can fall somewhere along the path that is off by some amount.  However, the combination of the bounded guess of the target node and constraints to the neighbors both produce good angular constraints that leave the orientation error quite small.\
+\
+The primary failure mode is when a node situated within a significant curve in the path is erroneously localized to some alternate location where the curve is not located.  This results in a situation shown in Figure X.  We do not resolve this error here but address in the next section.  Regardless of this erroneous positioning, the resultant path is still functional as shown in Figure X.  However, if these bad constraints accumulate, the map will eventually be non-functional.\
+\
+Regardless if there is a severe positional error of a node, the resultant path will still be topologically correct.  The path still indicates the travel trajectory of the robot.  We can also see that the more curves in the pipe the better because this gives arch to the nodes with which to create more accurate constraints.  Environments that are straight will produce nodes that have straight medial axes that are more prone to coaxial translational error.\
+\
+##Loop-Closing with Junctions\
+}

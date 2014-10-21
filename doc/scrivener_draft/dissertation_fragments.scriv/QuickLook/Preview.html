@@ -1,0 +1,390 @@
+<html>
+
+<head>
+<title>dissertation_fragments</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+	body {background-color: #bac0c7}
+    p.binderItem {margin: 10.0px 0.0px 0.0px 05.0px; font-family:Cochin, Times, Courier, Arial, serif; font-size:14.0px;}
+    .page {border: 1px solid #727272; background: #fff}
+    hr {
+      border-top: 1px dashed #000;
+      border-bottom: 0px solid #fff;
+      color: #fff;
+      background-color: #fff;
+      height: 0px;
+  </style>
+</head>
+
+<body>
+
+<table border="0" width="100%" cellspacing="3">
+<tr>
+<td>
+
+<table class="page" width="100%" cellspacing="10" cellpadding="2">
+<tr>
+<td valign="top">
+
+<ul>
+<li>
+<p class="binderItem"><strong>First Paragraph</strong><br/>#Introduction<br/>
+<br/>
+ In this dissertation, we develop an algorithmic approach for robotically mapping confined environments using internal sensors only.  Some challenging environments such as underground caves and pipes are impossible to explore and map with the currently external sensor technology.  Such environments can be too confined or too hostile for humans to explore.  Robotic solutions are possible, but such environments often cause available external sensors to fail.  A robotic solution that...</p>
+</li>
+<hr/>
+<ul>
+<li>
+<p class="binderItem"><strong>Motivations</strong><br/>For example, an approach that is invariant to ambient fluid (air, water, muddy water, etc.) would significantly impact cave exploration and underground science by the access to still deeper and smaller cave arteries regardless of whether they are submerged in water.  Search and rescue operations would have additional tools for locating survivors in complicated debris piles or collapsed mines.  Utility service workers would be able to map and inspect pipe networks without having to excavate or in...</p>
+</li>
+<li>
+<p class="binderItem"><strong>Challenges</strong><br/>##Limitations of Exteroceptive Sensors<br/>
+<br/>
+Exteroceptive sensors are sensors that are affixed externally and designed to sense information about the robot's environment.  They're biological equivalent include such things as vision, hearing, touch, taste and smell.  The robot equivalent include touch, cameras, sonar, and laser range-finders.<br/>
+<br/>
+Currently we cannot effectively explore and map these environments with exteroceptive sensors.  Current state-of-the-art mapping methods depend on exteroceptiv...</p>
+</li>
+<li>
+<p class="binderItem"><strong>Related Work</strong><br/>##Related Work<br/>
+<br/>
+The mapping of confined spaces is a recurring theme in the research literature.  Work has been done to navigate and map underground abandoned mines [Thrun04] with large wheeled robots traveling through the constructed corridors.  Although the environment is large enough and clear enough to make use of vision and range sensors, its location underground makes the use of GPS technologies problematic.  This work can be applied to confined environments where exteroceptive sensors are ...</p>
+</li>
+<li>
+<p class="binderItem"><strong>Approach</strong><br/>##Approach<br/>
+<br/>
+To address these challenges, our approach is to develop algorithmic methods for utilizing proprioceptive joint angle information on an articulated mobile robot to enable exploration and mapping of a confined environment.  From a series of complete posture information sets, we build up void space information into a posture image and integrate it into a whole map.  We hypothesize that with the posture images taken at multiple robot poses in the environment, we can integrate them into a...</p>
+</li>
+</ul>
+<hr/>
+<li>
+<p class="binderItem"><strong>Sensing Space</strong><br/>#Sensing Space [chap:sensing]<br/>
+</p>
+</li>
+<hr/>
+<ul>
+<li>
+<p class="binderItem"><strong>Proprioceptive Sensing</strong><br/>Sense the environment with internal sensors</p>
+</li>
+<li>
+<p class="binderItem"><strong>Pose Map</strong><br/>Simple map, just sensor data and poses in the environment</p>
+</li>
+</ul>
+<hr/>
+<li>
+<p class="binderItem"><strong>Control and Locomotion</strong><br/>#Control and Locomotion</p>
+</li>
+<hr/>
+<ul>
+<li>
+<p class="binderItem"><strong>Control Methodology</strong><br/>##Control Methodology<br/>
+<br/>
+Backbone curve fitting, IK method, segmented behaviors</p>
+</li>
+<li>
+<p class="binderItem"><strong>Behaviors</strong><br/>##Behaviors<br/>
+<br/>
+Locomotion steps, extensions, path-following, anchoring</p>
+</li>
+</ul>
+<hr/>
+<li>
+<p class="binderItem"><strong>Defining Position</strong><br/>#Defining Position</p>
+</li>
+<hr/>
+<ul>
+<li>
+<p class="binderItem"><strong>Defining Pose and Direction</strong><br/>Orientation and coordinate frame on articulated robot</p>
+</li>
+<li>
+<p class="binderItem"><strong>Motion Models</strong><br/>Estimating travel of articulated robot</p>
+</li>
+</ul>
+<hr/>
+<li>
+<p class="binderItem"><strong>Environmental Landmarks</strong><br/>#Environmental Landmarks</p>
+</li>
+<hr/>
+<ul>
+<li>
+<p class="binderItem"><strong>Finding Landmarks</strong><br/>Landmark features to track environment, difficult using only proprioceptive sensing</p>
+</li>
+<li>
+<p class="binderItem"><strong>Corner Examples and Results</strong><br/>Corner features extracted from posture image, much difficulties</p>
+</li>
+<li>
+<p class="binderItem"><strong>Wall Detection</strong><br/>Detect and measure the wall, time-consuming and sparse.</p>
+</li>
+<li>
+<p class="binderItem"><strong>Pipe Shape, Macro Feature</strong><br/>Use general shape of environment, can be approximated with sparse data</p>
+</li>
+<li>
+<p class="binderItem"><strong>Macro Feature Extraction</strong><br/>postureimage->alpha shape->medial axis</p>
+</li>
+<li>
+<p class="binderItem"><strong>Different Macro Features</strong><br/>1) anchor points spline, 2) polygon walls, 3) medial axis</p>
+</li>
+</ul>
+<hr/>
+<li>
+<p class="binderItem"><strong>Pose-Based Mapping</strong><br/>#Pose-Based Mapping</p>
+</li>
+<hr/>
+<ul>
+<li>
+<p class="binderItem"><strong>Inter-Pose Correction</strong><br/>Correct transform between poses by ICP on medial axis</p>
+</li>
+<li>
+<p class="binderItem"><strong>Paired Pose Correction</strong><br/>Same, ICP on medial axis between forward-backward probe pairs</p>
+</li>
+<li>
+<p class="binderItem"><strong>Constraint Mapping</strong><br/>Show map using simple pose constraints between poses.  Unclear how to solve data association problem</p>
+</li>
+<li>
+<p class="binderItem"><strong>Aggregate Pose Constraint Mapping</strong><br/>Global medial axis from union of posture images</p>
+</li>
+<hr/>
+<ul>
+<li>
+<p class="binderItem"><strong>compute path topology</strong><br/>To compute the raw medial axis of a path, we must take the union of the set of its constituent poses.  For every pose, we take the set of points that constitute the polygon representing the pose's alpha shape in the local coordinate frame.  For every point set B of every pose P, we transform the set B to B' in the global frame.  The union of all sets B' is the resultant point set C.<br/>
+<br/>
+We then compute the alpha shape of C with a radius of [0.2].   The resultant alpha shape is mapped onto an image ...</p>
+</li>
+<li>
+<p class="binderItem"><strong>computeTopology</strong><br/>The topology of a path is computed from the union of all of the poses' alpha hulls classified into that particular path.  The hull is populated with points in a grid and the medial axis is computed using the skeletonization (?) algorithm.  <br/>
+<br/>
+Given the set of points that are the skeletonization image, the pixels are converted into nodes of a graph, and edges are added between them if they are adjacent or diagonal neighbors.  The pixel indices are converted back into global coordinates to give us ...</p>
+</li>
+</ul>
+</ul>
+<hr/>
+<li>
+<p class="binderItem"><strong>Mapping with Junctions</strong><br/>#Mapping with Junctions</p>
+</li>
+<hr/>
+<ul>
+<li>
+<p class="binderItem"><strong>Map Algorithm</strong><br/>## Map Algorithm<br/>
+<br/>
+1) Estimation motion of step<br/>
+<br/>
+2) Collect posture image<br/>
+<br/>
+3) Determine if there is a branch, if so, fork process (yes/no cases)  (NEW)<br/>
+<br/>
+4) Add pose to best fit shoot, generate new map  (NEW)<br/>
+<br/>
+5) Localize pose to most likely location in existing shoot map, fix map (NEW)<br/>
+<br/>
+6) go to 1)</p>
+</li>
+<hr/>
+<ul>
+<li>
+<p class="binderItem"><strong>mapping algorithm</strong><br/><br/>
+ESTIMATE MOTION<br/>
+- estimate position of pose based on motion estimation from the previous fore pose: {f, b}<br/>
+<br/>
+SENSE ENVIRONMENT<br/>
+- capture environmental information through probing<br/>
+ - perform forward sweep for front pose<br/>
+ - generate local spline<br/>
+<br/>
+ESTIMATE MOTION<br/>
+- estimate position of pose based on a zero move estimation from the paired fore pose: {0}<br/>
+<br/>
+SENSE ENVIRONMENT<br/>
+- capture environmental information through probing<br/>
+ - perform backward sweep for back pose<br/>
+ - generate local spline<br/>
+<br/>
+CLASSIFY PO...</p>
+</li>
+</ul>
+<hr/>
+<li>
+<p class="binderItem"><strong>Junctions</strong><br/>Breaking off from main medial axis indicates junction.  Junctions only partially observable.</p>
+</li>
+<hr/>
+<ul>
+<li>
+<p class="binderItem"><strong>Partial Observability of Junctions</strong><br/>One of the fundamental challenges of exploring environments with no ability to sense at a distance, there is no quick way to distinguish a wall from the limit of arm extension.  That is, when the robot's body sweeps and reaches the limit of its motion, by either collision, slip, or complete extension, there is no way to immediately distinguish that the boundary of its swept space is an obstacle or just more free space. [complete extension is well-defined, therefore, it can be tagged when complet...</p>
+</li>
+</ul>
+<hr/>
+<li>
+<p class="binderItem"><strong>Shoot Map Representation</strong><br/>Each shoot is path graph, with two leaves.  Except for root, all shoots have origin from a parent shoot at the branch point</p>
+</li>
+<li>
+<p class="binderItem"><strong>Generating Shoots</strong><br/>Basic algorithm to generate medial axis of each shoot set, and cut the medial axis to create the shoots.</p>
+</li>
+<li>
+<p class="binderItem"><strong>Adding Poses to Shoots</strong><br/>##Adding Poses to Shoots<br/>
+<br/>
+If first poses, add to root shoot.<br/>
+<br/>
+Check for branching conditions<br/>
+<br/>
+Best Overlap, get ordered overlapping path ids<br/>
+<br/>
+Select child shoot IDs, add pose to the shoot.</p>
+</li>
+<hr/>
+<ul>
+<li>
+<p class="binderItem"><strong>add pose algorithm</strong><br/>MOVE ESTIMATION<br/>
+- estimate position of nodes based on motion estimation from the previous pose<br/>
+<br/>
+<br/>
+MAP INTEGRATION<br/>
+- integrate the new pose into the map<br/>
+<br/>
+<br/>
+ADD NEW POSES, CREATE NEW PATHS<br/>
+- Which path or set of paths does this pose currently overlap?<br/>
+ getOrderedOverlappingPaths()<br/>
+ - of all splices in local neighborhood, find the best fit based on highest contiguity with initial estimated pose<br/>
+ - in order of best fits, pick the first that overlaps all constituent paths, that is, does not have paths ...</p>
+</li>
+</ul>
+<hr/>
+<li>
+<p class="binderItem"><strong>Detecting branch</strong><br/>Algorithm to detect a divergence of a pose from a shoot and deciding there is a branch.</p>
+</li>
+<li>
+<p class="binderItem"><strong>Localizing on Shoot Map</strong><br/>Splicing shoots together, performing ICP on splices.  Take best guess.  </p>
+</li>
+<hr/>
+<ul>
+<li>
+<p class="binderItem"><strong>Choosing Shoot Splices</strong><br/>###Choosing Shoot Splices<br/>
+<br/>
+In step 1), if there is only one shoot in the shoot map then the resultant splice is simply the parent shoot itself.  However, if there is more than one shoot, a number of possible splices are possible.   We can take an exhaustive approach and select all possible splices, including splices with multiple junctions contained within them.<br/>
+<br/>
+One approach we can take is to select all splices that terminate at every possible combination of terminal points in the shoot map.  S...</p>
+</li>
+<li>
+<p class="binderItem"><strong>Selecting Initial Poses for ICP</strong><br/>###Selecting Initial Poses for ICP<br/>
+<br/>
+Now that we have our set of shoot splices on which we will localize the current pose, we must determine the initial pose for each splice to input to our ICP algorithm.  The ICP algorithm takes two sets of points and an initial transform between them and outputs another transform that represents the best possible fit.  In our case, the two sets of points are uniform samples from the posture curve and the shoot splice curve respectively.   The initial transform ...</p>
+</li>
+<li>
+<p class="binderItem"><strong>ICP Algorithm</strong><br/>###ICP Algorithm<br/>
+<br/>
+* Orientation<br/>
+* Closest pairs intersection point<br/>
+* Closest pairs computation<br/>
+ * Local angle variance<br/>
+ * Closest point A -> B<br/>
+ * Closest point B -> A<br/>
+ * Select pair that has lowest angular variance<br/>
+<br/>
+* Result serves as intersection point between two curves.  <br/>
+* 3DOF -> 2DOF conversion<br/>
+* (x,y,o) transform -> (u,o) transform<br/>
+<br/>
+* Covariance and mahalanobis distance?  <br/>
+* Point-to-line constraint<br/>
+* Point-matching search<br/>
+* Cost function<br/>
+* Repeat N number of times or convergence (c1-c2) ...</p>
+</li>
+<li>
+<p class="binderItem"><strong>Collate, Sort, Filter</strong><br/>###Collate, Sort, Filter<br/>
+<br/>
+Given all of the results, we need to select just one as our final localized pose.  We need some criteria to evaluate the fitness of each pose.  There are a number of metrics that we can use in this evaluation.  However, there is no straightforward method for choosing the “best” pose since there is ambiguity in the map, identically featured locations, and sometimes there is not enough discriminatory information to make a good localization fit.  Therefore, the process by ...</p>
+</li>
+</ul>
+<hr/>
+<li>
+<p class="binderItem"><strong>Curve segment algorithms</strong><br/>isOverlapped(), getOrientation(), getContiguity(), etc.</p>
+</li>
+<hr/>
+<ul>
+<li>
+<p class="binderItem"><strong>computeDivergence</strong><br/><br/>
+The purpose of the divergence computation is to detect the concrete event of the target curve diverging from the host curve.  This is used to classify whether or not a junction has been detected or whether the host path is simply being extended.<br/>
+<br/>
+The difficulty associated with this task is that there is no discrete event to determine a divergence.  It is measured by passing a threshold that must be calibrated to the task.  The thresholds are both sensitive to cartesian distance and angular diff...</p>
+</li>
+<li>
+<p class="binderItem"><strong>getOrderedOverlappingPaths</strong><br/>getOrderedOverlappingPaths()<br/>
+<br/>
+The purpose of this function is to find the minimum fitting path splice for a given target local spline curve.  <br/>
+<br/>
+We define the minimum fitting splice as the shortest curve splice in which the target curve is completely contained.  <br/>
+<br/>
+For all possible combinations of path splices and for the target curve in its designated global pose, find the splice that has the highest contiguity and passes overlap condition for all of the splice's constituent path fragment.<br/>
+<br/>
+The f...</p>
+</li>
+<li>
+<p class="binderItem"><strong>computeOverlapCondition</strong><br/>The purpose of the overlap condition computation is to determine if a proposed path splice curve is at all overlapping another curve such as a local spline or another path splice curve.  The actual value of the overlap sum is not necessarily interesting, only that it is a tractable value instead of infinity.<br/>
+<br/>
+It has two possible conditions:  1) is overlapping partially, and 2) does not overlap at all.<br/>
+<br/>
+The computation is achieved by taking the target curve, which is usually the local spline, and...</p>
+</li>
+<li>
+<p class="binderItem"><strong>orientPath</strong></p>
+</li>
+<li>
+<p class="binderItem"><strong>getContiguityFraction</strong><br/>The purpose of this particular computation is to determine how much of two curves are contiguously overlapped. This is a complement to the overlap sum computation which computes scalar quantity which is an average of point-to-point closeseness over the whole curve.<br/>
+<br/>
+The contiguity calculation determines what percentage of the target curve is completely overlapped and assumes that the remained of the portions are diverging from the host curve.<br/>
+<br/>
+Contiguity is computed by counting the number of poi...</p>
+</li>
+<li>
+<p class="binderItem"><strong>computeOverlapSum</strong><br/>The purpose of the overlap sum computation is to determine how well a proposed path splice curve overlaps another target curve such as a local spline or another path splice curve.<br/>
+<br/>
+The computation is achieved by taking the target curve, which is usually the local spline, and for each point along the local spline, find its closest matched point on the secondary curve, usually the path.  The sum of all the cartesian distances is added up and the result is the overlap sum divided by the number of p...</p>
+</li>
+<li>
+<p class="binderItem"><strong>Divergence of Curves</strong><br/>A fundamental primitive problem when mapping confined environments is determing when two partially overlapping curve segments diverge from each other.  That is, at which point does curve A diverge from curve B.  See the attached figure.<br/>
+<br/>
+The definition of the divergence point is not obvious from the offset.  Given that the two curves are not exactly overlapping and that the instance where curve A begins its divergence, it is not clear where the point should be defined.  Generally, we want an ext...</p>
+</li>
+<li>
+<p class="binderItem"><strong>getOverlapDeparture</strong></p>
+</li>
+<li>
+<p class="binderItem"><strong>getTangentIntersections</strong></p>
+</li>
+<li>
+<p class="binderItem"><strong>isFeatureless</strong></p>
+</li>
+</ul>
+</ul>
+<hr/>
+<li>
+<p class="binderItem"><strong>Probabilistic Mapping</strong><br/>#Probabilistic Mapping</p>
+</li>
+<hr/>
+<ul>
+<li>
+<p class="binderItem"><strong>Space of Possibilities</strong><br/>Poses, Branches, Branch Locations.   Some decisions can lead to irrevocable consequences.  Replicated shoots, circular cases.</p>
+</li>
+<li>
+<p class="binderItem"><strong>Pose Particle Filter</strong><br/>Population of pose hypotheses, localized, evaluated, resampled.</p>
+</li>
+<li>
+<p class="binderItem"><strong>Pose+BranchLoc Particles</strong><br/>Pose + Small grid of branch locations.  Evaluated by overlapCost of full medial axis of child on parent.</p>
+</li>
+<li>
+<p class="binderItem"><strong>Branch Decision</strong><br/>Shoot map for each go/nogo branch decision.   Eliminate options based on degenerate conditions.</p>
+</li>
+</ul>
+</ul>
+
+</td>
+<td width="8">
+</td>
+</tr>
+</table>
+
+</td>
+</tr>
+</table>
+
+</body>
+</html>

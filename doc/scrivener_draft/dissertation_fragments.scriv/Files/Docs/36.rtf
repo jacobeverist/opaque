@@ -1,0 +1,18 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fnil\fcharset0 Cochin;}
+{\colortbl;\red255\green255\blue255;}
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\f0\fs28 \cf0 Seeking landmark features for which we can correct the map and localize the robot.      Most approaches use point features such as corners, environmental landmarks such as doors, visual features.     Our options are very limited because we do not have sensing at a distance capability.  All things that we can sense must be within touching distance.   Any feature we choose is 
+\i highly local
+\i0 .\
+\
+One option is to find corner features by probing the walls.  There are two approaches:  1) deliberate contact probing of the wall to produce corner features, 2) serendipitous corner features.   Problem:  1 is feasible but slow, see [Mazzini].  2)  is also possible but the false positive rate is too high.  Pull some data out of my archives.\
+\
+Also try and find \'93obstacles\'94 and \'93openings\'94 .  That is, non-obstacle openings.  This presupposes that we can distinguish obstacles.   Only contact probing methods can truly classify an obstacle boundary.  Again, these methods suffer from time-consuming actions.   Furthermore, this does not exactly give us a true positive for open space.  So door openings cannot be a landmark since we cannot detect them directly.\
+\
+What about the walls of the environment?  The shape of the obstacles?  This requires that we fully mark the boundaries of walls and obstacles.  Either this is done through laborious contact detection or we make assumptions about what are obstacles based on the data we receive serendipitously.  Given a posture image, we could make varying degrees of assumptions about where the boundaries of the environment lie.   None of them are likely to be correct, but we can use this information as a \'93feature\'94.     However, this approach suffers when our probing actions are deficient for a particular pose.  We receive a degenerate posture image that leaves out a lot of data.  \
+\
+Another approach we could take is a sort of approximation and averaging of boundaries of the posture images.   This can be accomplished by the use of the alpha shape algorithm developed in [3].  It is a form of generalized convex hull algorithm that is capable of non convex polygons.    This can give us our desired \'93approximation\'94 effect for identifying the location of walls.\
+ \
+}

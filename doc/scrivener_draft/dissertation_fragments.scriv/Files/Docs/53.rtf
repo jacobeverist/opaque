@@ -1,0 +1,24 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fnil\fcharset0 Cochin;}
+{\colortbl;\red255\green255\blue255;}
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\f0\fs28 \cf0 To represent and keep track of junctions and any instance of \'93branching off\'94 from the main global medial axis, we introduce a new map representation called a shoot map.   First we define the concept of a 
+\i shoot
+\i0  to be a single path with an origin and termination point that represents a continuous representation of space with no junctions.  In the previous section, our global medial axis of the entire environment represented a single shoot, since there were no instances of branching.   Once a new junction is found, a new shoot is created with origin starting at the branching off point from the original shoot and termination point ending at the extent the posture images map the branch\'92s space.  \
+\
+Corresponding to the three cases of how a posture curve overlaps an existing global medial axis, 1) either the pose is contained within an existing shoot, 2) the pose extends the shoot, or 3) the pose is added to a new shoot that branches off.   Given the nature of the shoot structure, their is a parent-child relationship between shoots, with the stem being the root shoot.  All shoots except for the root, have an origin placed from another shoot.\
+\
+The curve of a shoot is represented by an ordered series of points that are generated from the medial axis computation of the union of member posture images.  We say a pose is a member of a shoot S_p if it has some overlap with S_p but does not overlap a child, S_c, of S_p.   That is, if any portion of a pose overlaps a child S_c, the pose is a member of S_c and not S_p.  A pose can be a member of more than one shoot if there are more than one child shoots.   The member shoots can be siblings or any other combination where the shoots are not direct ancestors or descendants.\
+\
+The complete representation for a shoot map is the following parameters:\
+\
+Poses: X_1:t\
+Images: I_1:t\
+Shoots: S_1:N\
+	- Shoot member pose sets, c_1 = \{1,2,\'85,k\}, \'85, c_N = \{k+1,\'85,t\}\
+	- Branch point: b_1:N = (x,y,\\theta)\
+\
+The first half are the same parameters used for the pose map.  We add the additional parameters of shoots.  A shoot is composed of a set of member poses and a branch point.  For a non-root shoot, the branch point is a location on its parent shoot and an accompanied direction.\
+\
+}

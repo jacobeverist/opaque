@@ -1,0 +1,44 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fmodern\fcharset0 CourierNewPSMT;}
+{\colortbl;\red255\green255\blue255;}
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\f0\fs24 \cf0 \
+ESTIMATE MOTION\
+- estimate position of pose based on motion estimation from the previous fore pose: \{f, b\}\
+\
+SENSE ENVIRONMENT\
+- capture environmental information through probing\
+	- perform forward sweep for front pose\
+	- generate local spline\
+\
+ESTIMATE MOTION\
+- estimate position of pose based on a zero move estimation from the paired fore pose: \{0\}\
+\
+SENSE ENVIRONMENT\
+- capture environmental information through probing\
+	- perform backward sweep for back pose\
+	- generate local spline\
+\
+CLASSIFY POSES TO PATHS \
+- Find each best fitting path splice for the front and back pose's local spline\
+	- If the pose's local spline does not diverge from the path splice, we add the pose to the splice's constituent leaf path(s)\
+	- Otherwise, if it diverges and branching parameters are sufficiently unique, create a new path from the branching point and add the new pose\
+\
+PATH COMPARISONS FOR SIMILARITY\
+- compare sibling paths to see if they are similar\
+	- queue them to be merged if they are similar	\
+- compare parent-child paths to see if they are similar,\
+	- queue them to be merged if they are similar\
+\
+MERGE PATHS THAT ARE SIMILAR \
+- merge sibling pairs\
+- merge parent-child pairs\
+\
+- recheck for branching events from the constituent poses after merging\
+\
+LOCALIZE POSE\
+- Localize fore and back poses to their classified paths.\
+- Maximum likelihood localization to classified path\
+\
+}

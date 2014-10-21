@@ -1,0 +1,23 @@
+\documentclass{USC-Thesis}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{algorithm}
+%\usepackage{algorithmic}
+%\usepackage{algorithmicx}
+\usepackage{algpseudocode}
+
+\usepackage{hyperref}
+
+
+\let\oldlistofalgorithms = \listofalgorithms
+\renewcommand{\listofalgorithms}{  
+\newpage
+    \addcontentsline{toc}{chapter}{\listalgorithmname}
+    \pagestyle{plain}
+    \begin{singlespace} 
+    \oldlistofalgorithms
+    \end{singlespace}}
+
+\begin{document}

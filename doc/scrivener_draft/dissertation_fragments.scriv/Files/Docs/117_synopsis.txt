@@ -1,0 +1,1 @@
+1) anchor points spline, 2) polygon walls, 3) medial axis

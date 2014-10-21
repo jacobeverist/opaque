@@ -1,0 +1,1 @@
+Shoot map for each go/nogo branch decision.   Eliminate options based on degenerate conditions.

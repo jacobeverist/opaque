@@ -1,0 +1,106 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1038\cocoasubrtf360
+{\fonttbl\f0\fmodern\fcharset0 CourierNewPSMT;}
+{\colortbl;\red255\green255\blue255;}
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\f0\fs24 \cf0 MOVE ESTIMATION\
+- estimate position of nodes based on motion estimation from the previous pose\
+\
+\
+MAP INTEGRATION\
+- integrate the new pose into the map\
+\
+\
+ADD NEW POSES, CREATE NEW PATHS\
+- Which path or set of paths does this pose currently overlap?\
+	getOrderedOverlappingPaths()\
+	- of all splices in local neighborhood, find the best fit based on highest contiguity with initial estimated pose\
+	- in order of best fits, pick the first that overlaps all constituent paths, that is, does not have paths in the splice beyond the range of the pose sensor data\
+	- for the constituent path IDs of the chosen splice, order them according to sequence they are overlapped by the pose curve\
+	- return the ordered list of path IDs that this pose curve overlaps\
+\
+- Does this pose fit on the path splice or does it depart internally?\
+	getDeparturePoint() of orderedPathIDs\
+	- get departure state of the front pathID and back pathID with pose curve\
+	- if the pose curve does not depart internally, add this node to the leaf path(s)\
+\
+- If it internally departs, given the departure state of the splice, are the pose departure parameters sufficient for a new branch?\
+	- is the proposed new branch sufficiently unique\
+		- is the distance from the parent's branch point sufficiently far?  (0.8)\
+		- is a path sibling's sufficiently close (0.5) branch point not angled in the same direction (PI/6 tolerance)?\
+		- is the pose curve featured?\
+		- if all true, then this new branch is sufficiently unique\
+\
+- If the new branch is sufficiently unique, then create the new branch with the current pose\
+- Regenerate the paths with the new node data\
+\
+\
+- select parent and child path pairs\
+- select sibling path pairs\
+\
+PATH COMPARISONS FOR SIMILARITY\
+- if sibling pairs,\
+	- create a stitched path of parent with section between two child junction points excised and the relative orientations of the junction points are aligned\
+	- select common point between parent path and stitched parent path\
+	- perform ICP fit between stitched parent and original parent\
+	- return the resulting pose offsets for both sibling paths and their relative junction angle\
+	- if the angle of both offsets is < 0.5 and the junction angle difference is < PI/4, than we queue the sibilngs to be merged\
+	\
+\
+- if parent-child pairs,\
+	- create a set of splices for the parent path and the child path	\
+		- if grandparent exists,\
+			- generate gparent/parent splices and gparent/parent/child splices\
+		- else\
+			- generate parent splices and parent/child splices\
+	- select common point between parent splice and child splice\
+	- perform ICP fit between parent splice and child splice pathOverlapICP()\
+	- return the resulting offset between the two\
+	- if the resulting offset angle < 0.5 radians\
+		- compute the departure state of the two paths given their relative offset getPathDeparture()\
+		- if one path does not internally depart from the other\
+			- and if the two paths with their relative offset partially overlap getPathOverlapConditionn()\
+				- then we queue the child and parent paths for merging\
+\
+MERGE PATHS THAT ARE SIMILAR \
+- merge sibling pairs\
+	- for the pair of sibling paths to be merged\
+	- transform the nodes in path1 by the offset from the previous ICP fitting\
+	- transform the nodes in path2 by the offset from the previous ICP fitting\
+	- perform consistentFit() of each node from path2 into best possible splice (NOTE: should be onto a spliced parent-path1 curve)\
+	- for each merged node, perform the "ADD NEW POSES, CREATE NEW PATHS" procedure for checking for branching events and classifying nodes into leaf paths\
+\
+\
+\
+\
+- merge parent-child pairs\
+	- select child nodes\
+	- move them by earlier ICP-fitted offset\
+	- find the most consistent fit of all set of splices in the node's new neighborhood using consistentFit()\
+	- change their membership from child path to parent path\
+\
+\
+- Finally, if the node hasn't been made fitted already to its path, do so now using consistentFit()\
+\
+\
+\
+FUNCTION\
+consistentFit()\
+	- find the most consistent fit in all set of splices in the node's new neighborhood consistentFit()\
+		- for each possible splice, find the common point betwen pose curve and splice path\
+		- perform 11 guesses of where the pose should be along the length of the splice path curve in the neighborhood of the its starting location\
+		- perform ICP between pose curve and path curve for each starting guess\
+		- compute the departure state, contiguity, and overlap sum for each final position\
+		- discard result if\
+			- internal departure exists\
+			- terminal departures on both ends of pose curve\
+			- contiguity is less than 0.5\
+			- the resultant pose is > 3.0 from original estimated pose\
+			- difference between starting guess angle and corrected angle is > 0.7 radians\
+		- select the splice and fit location with the best utility given by following equation:\
+			- utilVal = (0.5-angDiff2)/0.5 + (contigFrac-0.5)/0.5 + (3.0-dist)/3.0 + 1-isDeparture*0.5\
+			- weighting angle difference from initial guess, contiguity %, distance from starting estimate, and if any internal or terminal departure exists\
+		\
+\
+\
+}
