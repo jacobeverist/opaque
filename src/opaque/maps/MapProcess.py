@@ -779,10 +779,18 @@ def movePath(mapHyp, nodeID, direction, distEst = 1.0):
 					# self.pathClasses[0] = {"parentID" : None, "branchNodeID" : None, "localJunctionPose" : None, 
 									#"sameProb" : {}, "nodeSet" : [], "globalJunctionPose" : None}
 
+					#LANDMARK_THRESH = 3.0
+					#LANDMARK_THRESH = 6.0
+					LANDMARK_THRESH = 4.5
+
 					minPathID = None
 					minJuncDist = 1e100
 					junctionPose0 = None
 					#for pathID, values in partObj.junctionData.iteritems():
+
+
+					# FIXME: only localizes to branch points.... will disregard if branch point has not been made yet 
+
 					for pathID, values in mapHyp.pathClasses.iteritems():
 
 						if pathID != 0 and values["branchNodeID"] != nodeID0:
@@ -791,7 +799,7 @@ def movePath(mapHyp, nodeID, direction, distEst = 1.0):
 
 							currDist = sqrt((currJuncPose[0]-globalLandmarkPoint[0])**2 + (currJuncPose[1]-globalLandmarkPoint[1])**2)
 
-							if currDist < minJuncDist:
+							if currDist < minJuncDist and currDist < LANDMARK_THRESH:
 								minJuncDist = currDist
 								minPathID = pathID
 								junctionPose0 = currJuncPose
@@ -1125,6 +1133,7 @@ def movePath(mapHyp, nodeID, direction, distEst = 1.0):
 			" move the pose particles along their paths "	
 
 
+			"""
 			"FIXME:  choose a splice that is common to the paired old and new poses "
 			orientedPathSpline2 = SplineFit(currSplice2, smooth=0.1)
 			orientedPathSpline3 = SplineFit(currSplice3, smooth=0.1)
@@ -1155,8 +1164,8 @@ def movePath(mapHyp, nodeID, direction, distEst = 1.0):
 			
 			orientedPoints2 = orientedPathSpline2.getUniformSamples()
 			orientedPoints3 = orientedPathSpline3.getUniformSamples()
+			"""
 
-			#mapHyp.displacePoseParticles(nodeID-1, nodeID, travelDist2, travelDist3)
 
 			if False:
 
@@ -2578,6 +2587,28 @@ def checkForeBranch(hypSet, nodeID1, nodeID2, shootIDs, particleIDs):
 			raise	
 
 
+		sF1 = poseData.spatialFeatures[nodeID1][0]
+		sF2 = poseData.spatialFeatures[nodeID2][0]
+
+		hasLandmark1 = True
+		hasLandmark2 = True
+
+		if sF1["bloomPoint"] == None and sF1["archPoint"] == None and sF1["inflectionPoint"] == None:
+			hasLandmark1 = False
+
+		if sF2["bloomPoint"] == None and sF2["archPoint"] == None and sF2["inflectionPoint"] == None:
+			hasLandmark2 = False
+
+		if hasLandmark1 or hasLandmark2:
+			hasSpatialFeature = True
+			print "current pair", nodeID1, nodeID2, "has spatial landmark feature(s)", parentPathID1, parentPathID2, depPoint1, depPoint2
+		else:
+			hasSpatialFeature = False
+			print "current pair", nodeID1, nodeID2, "has no spatial landmark feature and cannot branch", parentPathID1, parentPathID2, depPoint1, depPoint2
+
+			#print "REJECT, diverging pose has no spatial landmark feature", nodeID1, pathID, neighborCount, depPoint
+			#return False, parentPathID
+
 		""" call with depAngle instead of depPoint[2] angle
 			since depPoint[2] angle refers to orientation of medial axis curve """
 		""" depAngle refers to tip angle, which is not necessarily what we want """
@@ -2595,6 +2626,21 @@ def checkForeBranch(hypSet, nodeID1, nodeID2, shootIDs, particleIDs):
 		else:
 			isUnique2 = False
 			duplicatePathID2 = -1
+
+
+		""" temporarily disable this branch requirement """
+		hasSpatialFeature = True
+
+		if isUnique1 and duplicatePathID1 != -1:
+			if not hasSpatialFeature:
+				isUnique1 = False
+				duplicatePathID1 = parentPathID1
+
+		if isUnique2 and duplicatePathID2 != -1:
+			if not hasSpatialFeature:
+				isUnique2 = False
+				duplicatePathID2 = parentPathID2
+
 
 		isBranched = False
 		if foreTerm1 and foreTerm2:
@@ -2734,6 +2780,26 @@ def checkBackBranch(hypSet, nodeID1, nodeID2, shootIDs, particleIDs):
 			print isFront1, isFront2
 			raise	
 
+		sF1 = poseData.spatialFeatures[nodeID1][0]
+		sF2 = poseData.spatialFeatures[nodeID2][0]
+
+		hasLandmark1 = True
+		hasLandmark2 = True
+
+		if sF1["bloomPoint"] == None and sF1["archPoint"] == None and sF1["inflectionPoint"] == None:
+			hasLandmark1 = False
+
+		if sF2["bloomPoint"] == None and sF2["archPoint"] == None and sF2["inflectionPoint"] == None:
+			hasLandmark2 = False
+
+		if hasLandmark1 or hasLandmark2:
+			hasSpatialFeature = True
+			print "current pair", nodeID1, nodeID2, "has spatial landmark feature(s)", parentPathID1, parentPathID2, depPoint1, depPoint2
+		else:
+			hasSpatialFeature = False
+			print "current pair", nodeID1, nodeID2, "has no spatial landmark feature and cannot branch", parentPathID1, parentPathID2, depPoint1, depPoint2
+
+
 		if depPoint1 != 0:
 			#isUnique1, duplicatePathID1 = mapHyp.checkUniqueBranch(parentPathID1, nodeID1, depAngle1, depPoint1)
 			isUnique1, duplicatePathID1 = mapHyp.checkUniqueBranch(parentPathID1, nodeID1, depPoint1[2], depPoint1)
@@ -2747,6 +2813,19 @@ def checkBackBranch(hypSet, nodeID1, nodeID2, shootIDs, particleIDs):
 		else:
 			isUnique2 = False
 			duplicatePathID2 = -1
+
+		""" temporarily disable this branch requirement """
+		hasSpatialFeature = True
+
+		if isUnique1 and duplicatePathID1 != -1:
+			if not hasSpatialFeature:
+				isUnique1 = False
+				duplicatePathID1 = parentPathID1
+
+		if isUnique2 and duplicatePathID2 != -1:
+			if not hasSpatialFeature:
+				isUnique2 = False
+				duplicatePathID2 = parentPathID2
 
 
 		isBranched = False

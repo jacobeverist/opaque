@@ -142,119 +142,22 @@ class TestProcess(SnakeControl):
 
 			#self.mapGraph = MapLoader(self.probe, self.contacts)
 			#self.mapGraph.loadWalls(walls)
-			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 0, 237)
-			#self.mapGraph.restorePickle(".", 15)
-			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 16, 237)
-			#self.mapGraph.restorePickle(".", 11)
-			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 12, 40)
-			#self.mapGraph.restorePickle(".", 39)
-			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 40, 237)
-			#self.mapGraph.restorePickle(".", 39)
-			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 40, 237)
-			#self.mapGraph.restorePickle(".", 45)
-			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 46, 237)
-			#self.mapGraph.restorePickle(".", 21)
-			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 22, 237)
-			#self.mapGraph.restorePickle(".", 31)
-			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 32, 237)
 
-			#self.mapGraph.restorePickle(".", 109)
-			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 110, 237)
+			#self.mapGraph.loadSeries("../testDir5/results/2014_09_24/", 0, 206)
+			#self.mapGraph.restorePickle("../testDir5", 47)
+			#self.mapGraph.loadSeries("../testDir5", 48, 52)
+			#self.mapGraph.restorePickle("../testDir5/results/2014_09_28", 49)
+			#self.mapGraph.loadSeries("../testDir5/result/2014_09_28", 50, 52)
+			#self.mapGraph.restorePickle("../testDir5/", 83)
+			#self.mapGraph.loadSeries("../testDir5/", 84, 100)
+			#self.mapGraph.loadData("../testDir5/results/2014_09_29_cross_junction", 250)
+			#self.mapGraph.loadData("../testDir5/", 250)
+			self.mapGraph.loadSeries("../testDir5/", 0, 250)
+			#self.mapGraph.restorePickle("../testDir5", 143)
+			#self.mapGraph.loadSeries("../testDir5", 144, 190)
+			#self.mapGraph.restorePickle("../testDir6/results/2014_09_25_divergence_and_branching", 103)
+			#self.mapGraph.loadSeries("../testDir6/results/2014_09_25_divergence_and_branching", 104, 108)
 
-			#self.mapGraph.restorePickle(".", 39)
-			#self.mapGraph.loadSeries("../results/result_2013_08_16_Y_junction_complete", 40, 289)
-			#self.mapGraph.restorePickle(".", 53)
-			#self.mapGraph.loadSeries("../results/result_2013_08_16_Y_junction_complete", 54, 289)
-
-			#self.mapGraph.restorePickle(".", 83)
-			#self.mapGraph.loadSeries("../results/result_2013_08_16_Y_junction_complete", 84, 289)
-
-			#self.mapGraph.restorePickle("../testDir5/results/2014_08_25", 117)
-			#self.mapGraph.loadSeries("../testDir5/results/2014_08_25", 118, 121)
-			#self.mapGraph.loadSeries("../testDir5/results/2014_08_25", 0, 121)
-
-			#self.mapGraph.restorePickle("../testDir5/", 17)
-			#self.mapGraph.loadSeries("../testDir5/", 18, 22)
-			#self.mapGraph.restorePickle("../testDir5/", 53)
-			#self.mapGraph.loadSeries("../testDir5/", 54, 56)
-			#self.mapGraph.loadSeries("../testDir5/", 54, 120)
-
-			self.mapGraph.restorePickle("../testDir5/", 23)
-			self.mapGraph.loadSeries("../testDir5/", 24, 28)
-
-			#self.mapGraph.loadSeries("../results/result_2013_08_16_Y_junction_complete", 0, 289)
-
-			#self.mapGraph.restorePickle(".", 15)
-			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 16, 237)
-			#self.mapGraph.restorePickle(".", 17)
-			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 18, 237)
-			#self.mapGraph.restorePickle(".", 35)
-			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 36, 237)
-			#self.mapGraph.restorePickle(".", 37)
-			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 38, 237)
-			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 38, 40)
-
-			#print "junctionPose:", self.mapGraph.mapAlgorithm.mapHyps[0].getGlobalJunctionPose(1)
-			#print "junctionPose:", self.mapGraph.mapAlgorithm.mapHyps[0].pathClasses
-
-			#exit()
-
-
-			#self.mapGraph.restorePickle(".", 17)
-			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 18, 237)
-			#self.mapGraph.restorePickle(".", 45)
-			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 46, 237)
-
-			#self.mapGraph.restoreSeries("../results/result_2013_08_24_cross", 80)
-			#self.mapGraph.restoreSeries("../results/result_2013_08_24_cross", 44)
-			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 6)
-
-			#self.mapGraph.loadDataSeries("../results/result_2013_11_04_cross", 40)
-			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 60)
-			#self.mapGraph.loadSeries("../results/result_2013_08_24_cross", 236)
-
-			#self.mapGraph.loadDataSeries("../results/result_2013_11_04_Y_junction", 60)
-
-			#self.mapGraph.loadSeries("../results/result_2013_08_16_Y_junction_complete", 60)
-			#self.mapGraph.loadSeries("../results/result_2013_08_16_Y_junction_complete", 290)
-			
-			#self.mapGraph.newNode(0.0, self.direction)
-			#self.mapGraph.forceUpdate(False)
-			#self.mapGraph.synch()
-			#self.mapGraph.saveMap()
-
-			#retvalue = os.system("mkdir data1")
-			#retvalue = os.system("mv *.png data1")
-
-			#self.mapGraph = MapLoader(self.probe, self.contacts)
-			#exec(str_f)
-			#self.mapGraph.loadWalls(walls)
-			#self.mapGraph.loadSeries("../results/result_2013_08_16_Y_junction_complete", 290)
-
-			#retvalue = os.system("mkdir data2")
-			#retvalue = os.system("mv *.png data2")
-
-			#self.mapGraph.restoreSeries("resultProcess_2013_07_06a", 56)
-
-
-			#self.mapGraph.loadSeries("result_2013_08_02_complete_curve3", 108)
-			#self.mapGraph.loadSeries("result_2013_07_15b", 104)
-			#self.mapGraph.restoreSeries("resultProcess_2013_06_07b", 64)
-			#self.mapGraph.restoreSeries("result_2013_07_15b", 102)
-
-
-			#self.mapGraph.restoreSeries("resultProcess_2013_06_24b", 38)
-
-
-			exit()
-			
-			#self.mapGraph.newNode(0.0, self.direction)
-			#self.mapGraph.forceUpdate(False)
-			#self.mapGraph.synch()
-			#self.mapGraph.saveMap()
-			#self.mapGraph.poseGraph.drawConstraints(0)
-			#self.mapGraph.saveLocalMap()
-	
 			exit()
 	
 			#self.mapGraph.numNodes

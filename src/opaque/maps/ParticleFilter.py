@@ -170,14 +170,15 @@ def __remote_displaceParticle(rank, qin, qout):
 			supportLine = job[8]
 			pathSplices2 = job[9]
 			pathSplices3 = job[10]
+			landmarks_G = job[11]
 
-			result = displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine, nodeID3, initPose2, initPose3, prevPose0, prevPose1, particleIndex)
+			result = displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine, nodeID3, initPose2, initPose3, prevPose0, prevPose1, particleIndex, landmarks_G)
 			results.append((particleIndex,) + result)
 						   
 		# write to output queue
 		qout.put((nc,results))
 
-def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine, nodeID3, initPose2, initPose3, prevPose0, prevPose1, particleIndex):
+def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine, nodeID3, initPose2, initPose3, prevPose0, prevPose1, particleIndex, landmarks_G):
 
 	#print "movePath(", nodeID, ",", direction, ",", distEst, ")"
 
@@ -301,10 +302,14 @@ def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine
 				# self.pathClasses[0] = {"parentID" : None, "branchNodeID" : None, "localJunctionPose" : None, 
 								#"sameProb" : {}, "nodeSet" : [], "globalJunctionPose" : None}
 
+				#LANDMARK_THRESH = 3.0
+				#LANDMARK_THRESH = 6.0
+				LANDMARK_THRESH = 4.5
+
+				"""
 				minPathID = None
 				minJuncDist = 1e100
 				junctionPose0 = None
-				#for pathID, values in pathClasses.iteritems():
 				for pathID, values in partObj.junctionData.iteritems():
 
 					if pathID != 0 and values["branchNodeID"] != nodeID:
@@ -313,20 +318,56 @@ def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine
 
 						currDist = sqrt((currJuncPose[0]-globalLandmarkPoint[0])**2 + (currJuncPose[1]-globalLandmarkPoint[1])**2)
 
-						if currDist < minJuncDist:
+						if currDist < minJuncDist and currDist < LANDMARK_THRESH:
 							minJuncDist = currDist
 							minPathID = pathID
 							junctionPose0 = currJuncPose
+				"""
 
-				if minPathID != None:
+
+				CLOSE_THRESH = 0.3
+
+				minPoseSum = 1e100
+				minLandmark = None
+
+				for i in range(len(landmarks_G)):
+
+					poseSum = 0.0
+
+					p1 = landmarks_G[i]
+					dist0 = sqrt((p1[0]-globalLandmarkPoint[0])**2 + (p1[1]-globalLandmarkPoint[1])**2)
+
+					if dist0 < LANDMARK_THRESH:
+
+						for j in range(len(landmarks_G)):
+							p2 = landmarks_G[j]
+
+							dist1 = sqrt((p2[0]-p1[0])**2 + (p2[1]-p1[1])**2)
+							if dist1 < LANDMARK_THRESH:
+								if dist1 > CLOSE_THRESH:
+									poseSum += 10.0*dist1
+								else:
+									poseSum += dist1
+
+						if poseSum < minPoseSum:
+							minPoseSum = poseSum
+							minLandmark = p1
+
+					print "landmarks:", globalLandmarkPoint, p1, poseSum, minPoseSum, minLandmark
+
+				#if minPathID != None:
+				if minLandmark != None:
 
 					print "nodePose0 =", nodePose0
 					print "global landmark =", globalLandmarkPoint
 					print "localJunctionPoint =", localJunctionPoint
-					print "junction pose =", junctionPose0
-					print "nodeID, pathID =", nodeID, minPathID
+					#print "junction pose =", junctionPose0
+					print "minLandmark =", minLandmark
+					#print "nodeID, pathID =", nodeID, minPathID
+					print "nodeI =", nodeID
 
-					modJuncPose0 = [junctionPose0[0], junctionPose0[1], nodePose0[2]]
+					#modJuncPose0 = [junctionPose0[0], junctionPose0[1], nodePose0[2]]
+					modJuncPose0 = [minLandmark[0], minLandmark[1], nodePose0[2]]
 
 
 					juncOrigin0 = Pose(modJuncPose0)
@@ -542,6 +583,9 @@ def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine
 			" move the pose particles along their paths "	
 
 
+			print "fitted poses:", currPose2, currPose3
+
+			"""
 			"FIXME:  choose a splice that is common to the paired old and new poses "
 			orientedPathSpline2 = SplineFit(currSplice2, smooth=0.1)
 			orientedPathSpline3 = SplineFit(currSplice3, smooth=0.1)
@@ -628,6 +672,8 @@ def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine
 			" choose angle of fit to selected splice "
 			currPose3[2] = newPose3[2]
 
+			print "displaced poses:", currPose2, currPose3
+			"""
 
 		return currPose2, currPose3
 
@@ -860,7 +906,9 @@ def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, me
 
 	
 	#LANDMARK_THRESH = 1e100
-	LANDMARK_THRESH = 3.0
+	#LANDMARK_THRESH = 3.0
+	LANDMARK_THRESH = 6.0
+	#LANDMARK_THRESH = 4.5
 	CLOSE_THRESH = 0.3
 	poseSum = 0.0
 	landmark0_G = None
