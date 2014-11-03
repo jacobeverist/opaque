@@ -282,8 +282,19 @@ class BayesMapper:
 
 					for pID, currHyp in hypSet.iteritems():
 						time1 = time.time()
-						movePath(currHyp, nodeID, direction, distEst = 1.0)
+						#movePath(currHyp, nodeID, direction, distEst = 1.0)
 						currHyp.batchDisplaceParticles(nodeID-1, nodeID)
+
+
+						particleDist2 = currHyp.poseParticles["snapshots2"][0]
+						maxParticle = particleDist2[currHyp.currMaxIndex]
+
+						currHyp.setNodePose(nodeID-1, maxParticle.pose0)
+						currHyp.setNodePose(nodeID, maxParticle.pose1)
+
+						#currHyp.updateMaxParticle(currHyp.currMaxIndex)
+
+
 						currHyp.drawPoseParticles()
 						time2 = time.time()
 						print "TIME displace", currHyp.hypothesisID, "=", time2-time1 

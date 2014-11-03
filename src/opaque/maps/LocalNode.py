@@ -1662,6 +1662,7 @@ class LocalNode:
 			
 			print "len(medial2) =", len(medial2)
 			medialSpline2 = SplineFit(medial2, smooth=0.1)
+			#medialSpline2 = SplineFit(medial2, smooth=0.05)
 	
 	
 			mPoints = medialSpline2.getUniformSamples()
@@ -1826,6 +1827,22 @@ class LocalNode:
 					medialWidth[k]["angDeriv"] = 0.0
 
 
+				if k > 1:
+
+					diffs = []
+					ang1 = medialWidth[k-2]["linePoint"][2]
+					ang2 = medialWidth[k]["linePoint"][2]
+
+					distU1 = medialWidth[k-2]["distU"]
+					distU2 = medialWidth[k]["distU"]
+
+					angDeriv = fabs(diffAngle(normalizeAngle(ang1),normalizeAngle(ang2))/(distU2-distU1))
+
+					medialWidth[k]["angDeriv2"] = angDeriv
+				else:
+					medialWidth[k]["angDeriv2"] = 0.0
+
+
 			self.longMedialWidths.append(medialWidth)
 
 
@@ -1868,6 +1885,9 @@ class LocalNode:
 				contigStartIndex = 0
 				contigFinalIndex = 0
 
+
+				TURN_WIDTH = 15
+
 				#for val in longPathWidth:
 				for kIndex in range(len(longPathWidth)):
 
@@ -1875,11 +1895,11 @@ class LocalNode:
 					distR = val["distR"]
 					distL = val["distL"]
 					widthSum = val["widthSum"]
-					angDeriv = val["angDeriv"]
+					angDeriv = val["angDeriv2"]
 					distU = val["distU"]
 					asymm = val["asymm"]
 
-					if angDeriv > maxDeriv:
+					if angDeriv > maxDeriv and kIndex > TURN_WIDTH and kIndex < (len(longPathWidth)-TURN_WIDTH):
 						maxDeriv = angDeriv
 						contigInflection = kIndex
 
@@ -2053,12 +2073,35 @@ class LocalNode:
 							contigAsymm = []
 
 
+				contigBoundaries.append((contigStartIndex, contigFinalIndex))
+
+				print "spatial", self.nodeID, contigInflection, maxDeriv, len(longPathWidth), contigBoundaries
+				print "mass deriv:", [(k, contigLen[k], contigArea[k], contigDensity[k], longPathWidth[contigPointIndex[k]]["angDeriv2"]) for k in range(len(contigPointIndex))]
 
 				#if maxDeriv >= 0.35:
+				#if maxDeriv >= 0.6 and longPathWidth[contigInflection-1]["angDeriv2"] < maxDeriv and longPathWidth[contigInflection+1]["angDeriv2"] < maxDeriv:
 				if maxDeriv >= 0.6:
-					angDeriv = longPathWidth[contigInflection]["angDeriv"]
-					inflectionPoint = copy(longPathWidth[contigInflection]["linePoint"])
-					print self.nodeID, "inflection boundaries:", inflectionPoint, contigInflection, angDeriv, maxDeriv, len(longPathWidth)
+
+					inflectionPoint = None
+
+					for k in range(len(contigBoundaries)):
+						lowIndex, highIndex = contigBoundaries[k]
+						if contigInflection >= lowIndex and contigInflection <= highIndex:
+
+							centerMassIndex = contigPointIndex[k]
+
+							angDeriv = longPathWidth[centerMassIndex]["angDeriv2"]
+							inflectionPoint = copy(longPathWidth[centerMassIndex]["linePoint"])
+							#print self.nodeID, "inflection boundaries:", inflectionPoint, contigInflection, angDeriv, maxDeriv, len(longPathWidth)
+							print self.nodeID, "inflection boundaries:", inflectionPoint, centerMassIndex, angDeriv, maxDeriv, len(longPathWidth)
+
+					if inflectionPoint == None:
+						if longPathWidth[contigInflection-1]["angDeriv2"] < maxDeriv and longPathWidth[contigInflection+1]["angDeriv2"] < maxDeriv:
+							angDeriv = longPathWidth[contigInflection]["angDeriv2"]
+							inflectionPoint = copy(longPathWidth[contigInflection]["linePoint"])
+							print self.nodeID, "inflection boundaries:", inflectionPoint, contigInflection, angDeriv, maxDeriv, len(longPathWidth)
+
+
 				else:
 					inflectionPoint = None
 
@@ -2109,6 +2152,7 @@ class LocalNode:
 			results = {}
 			results["inflectionPoint"] = inflectionPoint
 			results["maxDeriv"] = maxDeriv
+			results["maxDerivU"] = longPathWidth[contigInflection]["distU"]
 			results["centerMasses"] = contigCenterMass
 			results["contigCounts"] = contigCounts
 			results["contigDensities"] = contigDensity
@@ -2244,13 +2288,17 @@ class LocalNode:
 
 		if True:
 
-			fig, (ax1, ax2) = plt.subplots(2,  sharex=False, sharey=False)
+			fig, (ax1, ax2, ax3) = plt.subplots(3,  sharex=False, sharey=False)
 
 			ax1.set_xlim(-3, 3)
 			ax1.set_aspect("equal")
 
 			ax2.set_ylim(0.0, 1.0)
 			ax2.set_aspect("equal")
+
+			ax3.set_ylim(-pi, pi)
+			#ax3.set_aspect("equal")
+
 
 			xP = []
 			yP = []
@@ -2259,7 +2307,7 @@ class LocalNode:
 				xP.append(p[0])
 				yP.append(p[1])
 
-			ax1.plot(xP,yP)
+			ax1.plot(xP,yP, color='b')
 	
 			xP = []
 			yP = []
@@ -2295,8 +2343,16 @@ class LocalNode:
 					cLen = contigLen[kIndex]
 					frontBoundIndex, backBoundIndex = contigBoundaries[kIndex]
 
+				pointX = []
+				pointY = []
 				widthX = []
 				widthY = []
+				angDerivX = []
+				angDerivY = []
+				angDeriv2X = []
+				angDeriv2Y = []
+				angX = []
+				angY = []
 
 				#for val in longPathWidth:
 				for kIndex in range(len(longPathWidth)):
@@ -2309,11 +2365,21 @@ class LocalNode:
 					leftPoint = val["leftPoint"]
 					widthSum = val["widthSum"]
 					angDeriv = val["angDeriv"]
+					angDeriv2 = val["angDeriv2"]
 					distU = val["distU"]
+
+					pointX.append(linePoint[0])
+					pointY.append(linePoint[1])
 
 
 					widthX.append(distU)
 					widthY.append(widthSum)
+					angDerivX.append(distU)
+					angDerivY.append(angDeriv)
+					angDeriv2X.append(distU)
+					angDeriv2Y.append(angDeriv2)
+					angX.append(distU)
+					angY.append(linePoint[2])
 
 					#if len(widthX) > 0:
 					#	widthX.append(widthX[-1] + 0.04)
@@ -2342,6 +2408,10 @@ class LocalNode:
 						else:
 							ax1.plot(xP,yP, color='b')
 
+				ax1.plot(pointX,pointY, color='k')
+				ax3.plot(angDerivX,angDerivY, color='k')
+				ax3.plot(angDeriv2X,angDeriv2Y, color='b')
+				ax3.plot(angX,angY, color='r')
 				ax2.plot(widthX,widthY, color='k')
 				ax2.plot([0.0,widthX[-1]], [THRESH_WIDTH,THRESH_WIDTH], color='r')
 				#contigY = [THRESH_WIDTH for k in range(len(contigCenterMass))]
@@ -2436,15 +2506,20 @@ class LocalNode:
 				#	ax1.scatter([inflectionPoint[0]],[inflectionPoint[1]], color='r')
 				#	ax1.annotate("%1.2f" % maxDeriv, xy=(inflectionPoint[0], 0.3), xytext=(inflectionPoint[0], 0.8))
 
+				maxDeriv = results["maxDeriv"]
+				inflectionU = results["maxDerivU"]
 				inflectionPoint = results["inflectionPoint"]
 				if inflectionPoint != None:
 					ax1.scatter([inflectionPoint[0]],[inflectionPoint[1]], color='r')
 					ax1.annotate("%1.2f" % maxDeriv, xy=(inflectionPoint[0], 0.3), xytext=(inflectionPoint[0], 0.8), color='r', zorder=4)
 
+					ax3.scatter([inflectionU,],[maxDeriv,], color='k')
+
 					#ax1.scatter([bloomPoint[0],],[bloomPoint[1],], color='k')
 					#ax2.scatter([contigCenterMass[0],],[THRESH_WIDTH,], color='k')
 					#ax2.annotate("%1.2f %1.2f %1.2f %1.3f %s" % (dens, asymm, area, negArea, repr(slopes[0]+slopes[1])), xy=(contigCenterMass[0], 0.3), xytext=(contigCenterMass[0], 0.8), color='k')
 					#ax2.plot([p1[0],p2[0],p3[0]],[p1[1],p2[1],p3[1]], color='y')
+
 
 			ax1.set_title("Medial %d, %s, %d" % (self.nodeID, repr(contigBoundaries), numPoints))
 			plt.savefig("medialOut_%04u.png" % self.nodeID)

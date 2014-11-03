@@ -289,6 +289,9 @@ class MapState:
 
 		self.parentParticle = None
 
+		""" max index of particle """
+		self.currMaxIndex = 0
+
 
 		""" pose information for each of the spatial map nodes """
 		self.isNodeBranching = {}
@@ -460,6 +463,7 @@ class MapState:
 
 		print "updateMaxParticle(", maxIndex, ")"
 
+
 		particleDist2 = self.poseParticles["snapshots2"][0]
 		maxParticle = particleDist2[maxIndex]
 		allPathIDs = self.getPathIDs()
@@ -511,6 +515,9 @@ class MapState:
 
 				""" FIXME:  was recycling the angle, but now we are regenerating it """
 				self.setLocalJunctionPose(pathID, branchPose_L)
+
+
+		""" update the recent nodes if we are displaced """
 
 
 		""" update the visible nodes, self.nodePoses """
@@ -611,6 +618,9 @@ class MapState:
 	def batchDisplaceParticles(self, nodeID0, nodeID1):
 
 		batchJobs = []
+		pathIDs = self.getPathIDs()
+		parentPathIDs = self.getParentHash()
+
 
 		particleDist2 = self.poseParticles["snapshots2"][0]
 		for particleIndex in range(len(particleDist2)):
@@ -625,7 +635,33 @@ class MapState:
 			staticSplicedPaths0, spliceTerms0, staticSplicePathIDs0 = self.getSplicesByNearJunction(hypPose0)
 			staticSplicedPaths1, spliceTerms1, staticSplicePathIDs1 = self.getSplicesByNearJunction(hypPose1)
 
-			batchJobs.append([self.poseData, part, particleIndex, nodeID1, prevPose0, prevPose1, hypPose0, hypPose1, self.paths[0], staticSplicedPaths0, staticSplicedPaths1])
+
+
+			controlPoses = deepcopy(self.getControlPoses())
+			controlPoses_G = computeGlobalControlPoses(controlPoses, parentPathIDs)
+
+			""" collect landmarks that we can localize against """
+			candLandmarks_G = []
+			for pathID in pathIDs:
+
+				nodeSet = self.getNodes(pathID)
+				currFrame_L = Pose(controlPoses[pathID])
+
+				for nodeID in nodeSet:
+
+					landmarkPoint_N = self.nodeLandmarks[pathID][nodeID]
+
+					currFrame_G = Pose(controlPoses_G[pathID])
+					nodePose_L = self.pathClasses[pathID]["localNodePoses"][nodeID]
+					poseFrame_L = Pose(nodePose_L)
+
+					if landmarkPoint_N != None and nodeID != nodeID0 and nodeID != nodeID1:
+						landmarkPoint_L = poseFrame_L.convertLocalToGlobal(landmarkPoint_N)
+						landmarkPoint_G = currFrame_G.convertLocalToGlobal(landmarkPoint_L)
+						candLandmarks_G.append(landmarkPoint_G)
+
+
+			batchJobs.append([self.poseData, part, particleIndex, nodeID1, prevPose0, prevPose1, hypPose0, hypPose1, self.paths[0], staticSplicedPaths0, staticSplicedPaths1, candLandmarks_G])
 
 		results = batchDisplaceParticles(batchJobs)
 
@@ -1462,6 +1498,8 @@ class MapState:
 			#self.nodePoses[nodeID0] = deepcopy(particleDist2[maxIndex].pose0)
 			#self.nodePoses[nodeID1] = deepcopy(particleDist2[maxIndex].pose1)
 
+			self.currMaxIndex = maxIndex
+
 			""" change to the maximum likelihood branch position as well """
 			self.updateMaxParticle(maxIndex)
 
@@ -1550,6 +1588,7 @@ class MapState:
 		pylab.ioff()
 		print pylab.isinteractive()
 		pylab.clf()
+		#pylab.axis("equal")
 
 		for k,path in  self.trimmedPaths.iteritems():
 			print "path has", len(path), "points"
@@ -1609,6 +1648,33 @@ class MapState:
 			print "checkA:", controlPoses_L, self.getParentHash()
 			controlPoses_G = computeGlobalControlPoses(controlPoses_L, self.getParentHash())
 
+			junctionPoses = {}
+			for pathID in allPathIDs:
+				if pathID != 0:
+					junctionPoses[pathID] = self.pathClasses[pathID]["globalJunctionPose"]
+
+			xP = []
+			yP = []
+			for pathID in allPathIDs:
+				currFrame = Pose(controlPoses_G[pathID])
+				for point_L in self.localLandmarks[pathID]:
+					point_G = currFrame.convertLocalToGlobal(point_L)
+
+					xP.append(point_G[0])
+					yP.append(point_G[1])
+
+			if len(xP) > 0:
+				pylab.scatter(xP, yP, color='k', linewidth=1, zorder=9, alpha=0.4)
+
+			xP = []
+			yP = []
+			for pathID, branchPoint in junctionPoses.iteritems():
+				xP.append(branchPoint[0])
+				yP.append(branchPoint[1])
+
+			if len(xP) > 0:
+				pylab.scatter(xP, yP, color='r', linewidth=1, zorder=10, alpha=0.4)
+
 			xP = []
 			yP = []
 			for pathID in allPathIDs:
@@ -1651,11 +1717,13 @@ class MapState:
 						xP.append(modPose0[0])
 						yP.append(modPose0[1])
 
+
 					#print "modPose0:", modPose0
 					#modPose0[2] = 0.0
 					#modOrigin0 = Pose(modPose0)
 
-			pylab.scatter(xP, yP, color='k', linewidth=1, zorder=10, alpha=0.4)
+			#if len(xP) > 0:
+			#	pylab.scatter(xP, yP, color='k', linewidth=1, zorder=10, alpha=0.4)
 
 
 
@@ -1690,6 +1758,7 @@ class MapState:
 			yP.append(p1[1])
 		#pylab.plot(xP,yP,color='k', zorder=9, alpha=0.2)
 		pylab.plot(xP,yP,color='k', zorder=10, linewidth=1)
+		#pylab.plot(xP,yP,color='k', zorder=8, linewidth=1)
 
 		xP = []
 		yP = []
@@ -1699,13 +1768,14 @@ class MapState:
 			yP.append(p1[1])
 		#pylab.plot(xP,yP,color='k', zorder=9, alpha=0.2)
 		pylab.plot(xP,yP,color='k', zorder=10, linewidth=1)
+		#pylab.plot(xP,yP,color='k', zorder=8, linewidth=1)
 
 		
-		pylab.xlim(-6,16.48)
-		#pylab.xlim(-5,10)
-		pylab.ylim(-8,8)
-		#pylab.ylim(-5.85,5.85)
-		#pylab.axis("equal")
+		#pylab.xlim(-6,16.48)
+		
+		#pylab.ylim(-16,16)
+		pylab.axis("equal")
+		#pylab.xlim(-16,16)
 		#pylab.title("%d particles" % len(particleDist))
 		pylab.title("nodeIDs %d %d hypID %d" % (nodeID0, nodeID1, self.hypothesisID))
 
@@ -3081,10 +3151,11 @@ class MapState:
 			samplePath2.append(p1)
 
 		return samplePath2
-				
-	""" generate the paths from the node and pose information """
-	@logFunction
-	def generatePaths(self):
+
+
+	""" update landmark data structures """
+	def updateLandmarks(self):
+
 
 		pathIDs = self.getPathIDs()
 		controlPoses = {}
@@ -3132,6 +3203,15 @@ class MapState:
 
 
 		print self.hypothesisID, "landmarks:", self.localLandmarks
+
+	
+				
+	""" generate the paths from the node and pose information """
+	@logFunction
+	def generatePaths(self):
+
+
+		self.updateLandmarks()
 
 	
 		" COMPUTE MEDIAL AXIS FROM UNION OF PATH-CLASSIFIED NODES "
@@ -3395,9 +3475,32 @@ class MapState:
 			print result[15], result[12], result[13]
 
 		# FIXME:  temporary forced result 
-		result = resultSet[0]	 
-		spliceIndex = result[15]
-		overlappedPathIDs = splicePathIDs[spliceIndex]
+		if len(resultSet) > 1:
+			contigFrac0 = resultSet[0][12]
+			contigFrac1 = resultSet[1][12]
+			spliceIndex0 = resultSet[0][15]
+			spliceIndex1 = resultSet[1][15]
+
+			diff = fabs(contigFrac0-contigFrac1)
+
+			if diff < 0.05:
+				if len(splicePathIDs[spliceIndex0]) < len(splicePathIDs[spliceIndex1]): 
+					result = resultSet[0]	 
+					spliceIndex = result[15]
+					overlappedPathIDs = splicePathIDs[spliceIndex]
+				else:
+					result = resultSet[1]	 
+					spliceIndex = result[15]
+					overlappedPathIDs = splicePathIDs[spliceIndex]
+			else:
+				result = resultSet[0]	 
+				spliceIndex = result[15]
+				overlappedPathIDs = splicePathIDs[spliceIndex]
+
+		else:
+			result = resultSet[0]	 
+			spliceIndex = result[15]
+			overlappedPathIDs = splicePathIDs[spliceIndex]
 
 		"""
 		for k in range(len(resultSet)):
@@ -3858,6 +3961,8 @@ class MapState:
 			part.addPath(newPathID, controlParentID, branchNodeID, nodePose_C, localDivergencePose_R, modJunctionPose_G, localJunctionPose_C, localParticleControlPose_P, self.NUM_BRANCHES, arcDists, controlPoses_P)
 
 		print "newPath", newPathID, "=", self.pathClasses[newPathID]
+
+		self.updateLandmarks()
 
 		self.isChanged = True
 
@@ -4965,7 +5070,8 @@ class MapState:
 		ANG_THRESH = pi/8
 		
 		" maximum distance to the parent terminal point before creating a junction point "
-		TERM_THRESH = 0.8
+		#TERM_THRESH = 0.8
+		TERM_THRESH = 0.5
 		
 		pathIDs = self.getPathIDs()
 
@@ -5008,14 +5114,15 @@ class MapState:
 					minLandDist = landmarkDist
 					minLandmark = point_G
 
-		if minLandDist >= 0.5:
-			print "REJECT, proposed branch point is not close enough to a spatial landmark", nodeID1, pathID, neighborCount, depPoint
+		#if minLandDist >= 0.5:
+		if minLandDist >= 1.0:
+			print "REJECT, proposed branch point is not close enough to a spatial landmark", nodeID1, pathID, minLandDist, minLandmark, neighborCount, depPoint
 			return False, parentPathID
 
-		sF0 = self.poseData.spatialFeatures[nodeID1][0]
-		if sF0["bloomPoint"] == None and sF0["archPoint"] == None and sF0["inflectionPoint"] == None:
-			print "REJECT, diverging pose has no spatial landmark feature", nodeID1, pathID, neighborCount, depPoint
-			return False, parentPathID
+		#sF0 = self.poseData.spatialFeatures[nodeID1][0]
+		#if sF0["bloomPoint"] == None and sF0["archPoint"] == None and sF0["inflectionPoint"] == None:
+		#	print "REJECT, diverging pose has no spatial landmark feature", nodeID1, pathID, neighborCount, depPoint
+		#	return False, parentPathID
 
 		
 		for pathID in pathIDs:
