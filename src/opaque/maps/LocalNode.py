@@ -2073,12 +2073,35 @@ class LocalNode:
 							contigAsymm = []
 
 
+				contigBoundaries.append((contigStartIndex, contigFinalIndex))
+
+				print "spatial", self.nodeID, contigInflection, maxDeriv, len(longPathWidth), contigBoundaries
+				print "mass deriv:", [(k, contigLen[k], contigArea[k], contigDensity[k], longPathWidth[contigPointIndex[k]]["angDeriv2"]) for k in range(len(contigPointIndex))]
 
 				#if maxDeriv >= 0.35:
-				if maxDeriv >= 0.6 and longPathWidth[contigInflection-1]["angDeriv2"] < maxDeriv and longPathWidth[contigInflection+1]["angDeriv2"] < maxDeriv:
-					angDeriv = longPathWidth[contigInflection]["angDeriv2"]
-					inflectionPoint = copy(longPathWidth[contigInflection]["linePoint"])
-					print self.nodeID, "inflection boundaries:", inflectionPoint, contigInflection, angDeriv, maxDeriv, len(longPathWidth)
+				#if maxDeriv >= 0.6 and longPathWidth[contigInflection-1]["angDeriv2"] < maxDeriv and longPathWidth[contigInflection+1]["angDeriv2"] < maxDeriv:
+				if maxDeriv >= 0.6:
+
+					inflectionPoint = None
+
+					for k in range(len(contigBoundaries)):
+						lowIndex, highIndex = contigBoundaries[k]
+						if contigInflection >= lowIndex and contigInflection <= highIndex:
+
+							centerMassIndex = contigPointIndex[k]
+
+							angDeriv = longPathWidth[centerMassIndex]["angDeriv2"]
+							inflectionPoint = copy(longPathWidth[centerMassIndex]["linePoint"])
+							#print self.nodeID, "inflection boundaries:", inflectionPoint, contigInflection, angDeriv, maxDeriv, len(longPathWidth)
+							print self.nodeID, "inflection boundaries:", inflectionPoint, centerMassIndex, angDeriv, maxDeriv, len(longPathWidth)
+
+					if inflectionPoint == None:
+						if longPathWidth[contigInflection-1]["angDeriv2"] < maxDeriv and longPathWidth[contigInflection+1]["angDeriv2"] < maxDeriv:
+							angDeriv = longPathWidth[contigInflection]["angDeriv2"]
+							inflectionPoint = copy(longPathWidth[contigInflection]["linePoint"])
+							print self.nodeID, "inflection boundaries:", inflectionPoint, contigInflection, angDeriv, maxDeriv, len(longPathWidth)
+
+
 				else:
 					inflectionPoint = None
 

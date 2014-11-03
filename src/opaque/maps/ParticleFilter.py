@@ -303,8 +303,8 @@ def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine
 								#"sameProb" : {}, "nodeSet" : [], "globalJunctionPose" : None}
 
 				#LANDMARK_THRESH = 3.0
-				#LANDMARK_THRESH = 6.0
-				LANDMARK_THRESH = 4.5
+				LANDMARK_THRESH = 6.0
+				#LANDMARK_THRESH = 4.5
 
 				"""
 				minPathID = None

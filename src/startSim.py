@@ -56,20 +56,20 @@ import atexit
 def cleanup():
 	if gen_icp.overlapPool != None:
 		for p in gen_icp.overlapPool:
-			p.terminate()
+			p.kill()
 
 	if len(MapProcess.pool_move) > 0:
 		for p in MapProcess.pool_move:
-			p.terminate()
+			p.kill()
 	if len(MapProcess.pool_localize) > 0:
 		for p in MapProcess.pool_localize:
-			p.terminate()
+			p.kill()
 	if len(MapProcess.pool_generate) > 0:
 		for p in MapProcess.pool_generate:
-			p.terminate()
+			p.kill()
 	if len(MapProcess.pool_eval) > 0:
 		for p in MapProcess.pool_eval:
-			p.terminate()
+			p.kill()
 
 			
 atexit.register(cleanup)

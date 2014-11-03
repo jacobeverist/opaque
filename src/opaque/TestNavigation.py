@@ -595,6 +595,8 @@ class TestNavigation(SnakeControl):
 				#	self.travelDir = False	
 				#if self.mapGraph.numNodes > 40:
 				#	exit()	
+				if self.mapGraph.numNodes > 4:
+					exit()	
 					
 		elif self.globalState == 10:
 
@@ -1448,6 +1450,9 @@ class TestNavigation(SnakeControl):
 				self.localWayPoints, self.localWayPaths = self.mapGraph.recomputePath(self.termPathID)
 
 				self.mapGraph.drawNavigation(self.localWayPaths[0], self.localWayPoints[0])
+
+				if self.mapGraph.numNodes > 4:
+					exit()	
 
 		return False				
 

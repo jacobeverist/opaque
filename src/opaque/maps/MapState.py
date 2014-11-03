@@ -1757,8 +1757,8 @@ class MapState:
 			xP.append(p1[0])
 			yP.append(p1[1])
 		#pylab.plot(xP,yP,color='k', zorder=9, alpha=0.2)
-		#pylab.plot(xP,yP,color='k', zorder=10, linewidth=1)
-		pylab.plot(xP,yP,color='k', zorder=8, linewidth=1)
+		pylab.plot(xP,yP,color='k', zorder=10, linewidth=1)
+		#pylab.plot(xP,yP,color='k', zorder=8, linewidth=1)
 
 		xP = []
 		yP = []
@@ -1767,8 +1767,8 @@ class MapState:
 			xP.append(p1[0])
 			yP.append(p1[1])
 		#pylab.plot(xP,yP,color='k', zorder=9, alpha=0.2)
-		#pylab.plot(xP,yP,color='k', zorder=10, linewidth=1)
-		pylab.plot(xP,yP,color='k', zorder=8, linewidth=1)
+		pylab.plot(xP,yP,color='k', zorder=10, linewidth=1)
+		#pylab.plot(xP,yP,color='k', zorder=8, linewidth=1)
 
 		
 		#pylab.xlim(-6,16.48)
@@ -3475,9 +3475,32 @@ class MapState:
 			print result[15], result[12], result[13]
 
 		# FIXME:  temporary forced result 
-		result = resultSet[0]	 
-		spliceIndex = result[15]
-		overlappedPathIDs = splicePathIDs[spliceIndex]
+		if len(resultSet) > 1:
+			contigFrac0 = resultSet[0][12]
+			contigFrac1 = resultSet[1][12]
+			spliceIndex0 = resultSet[0][15]
+			spliceIndex1 = resultSet[1][15]
+
+			diff = fabs(contigFrac0-contigFrac1)
+
+			if diff < 0.05:
+				if len(splicePathIDs[spliceIndex0]) < len(splicePathIDs[spliceIndex1]): 
+					result = resultSet[0]	 
+					spliceIndex = result[15]
+					overlappedPathIDs = splicePathIDs[spliceIndex]
+				else:
+					result = resultSet[1]	 
+					spliceIndex = result[15]
+					overlappedPathIDs = splicePathIDs[spliceIndex]
+			else:
+				result = resultSet[0]	 
+				spliceIndex = result[15]
+				overlappedPathIDs = splicePathIDs[spliceIndex]
+
+		else:
+			result = resultSet[0]	 
+			spliceIndex = result[15]
+			overlappedPathIDs = splicePathIDs[spliceIndex]
 
 		"""
 		for k in range(len(resultSet)):
@@ -5047,7 +5070,8 @@ class MapState:
 		ANG_THRESH = pi/8
 		
 		" maximum distance to the parent terminal point before creating a junction point "
-		TERM_THRESH = 0.8
+		#TERM_THRESH = 0.8
+		TERM_THRESH = 0.5
 		
 		pathIDs = self.getPathIDs()
 

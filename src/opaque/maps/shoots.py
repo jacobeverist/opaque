@@ -4194,6 +4194,19 @@ def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPos
 					distSum += 10.0*dist
 				else:
 					distSum += dist
+	
+	""" add the distance from branch points if they exist """
+	for pathID in branchPathIDs:
+		p1 = newBranchPoses_G[pathID]
+		for j in range(0, len(landmarks_G)):
+			p2 = landmarks_G[j]
+			dist = sqrt((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2)
+
+			if dist < LANDMARK_THRESH:
+				if dist > CLOSE_THRESH:
+					distSum += 10.0*dist
+				else:
+					distSum += dist
 
 	branchResult["landmarkCost"] = distSum
 	branchResult["landmarks_G"] = landmarks_G
