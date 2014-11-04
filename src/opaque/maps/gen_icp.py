@@ -1453,7 +1453,7 @@ def overlapICP_GPU2(estPose1, initGuess, medialPoints1, medialPoints2, rootPose1
 		
 		numIterations += 1
 
-	if False:
+	if plotIter:
 
 		" set the origin of pose 1 "
 		poseOrigin = Pose(estPose1)
@@ -1504,10 +1504,10 @@ def overlapICP_GPU2(estPose1, initGuess, medialPoints1, medialPoints2, rootPose1
 
 		plotEnv(axes2)		  
 		
-		axes2.set_title("%s %s, ang = %1.3f" % (repr(n1), repr(n2), currAng))
+		axes2.set_title("%s %s, ang = %1.3f, inplace=%d" % (repr(n1), repr(n2), currAng, inPlace))
 		axes2.set_xlim(estPose1[0]-4, estPose1[0]+4)					
 		axes2.set_ylim(estPose1[1]-3, estPose1[1]+3)
-		fig1.savefig("ICP_plot_%06u_0.png" % globalPlotCount)
+		fig1.savefig("ICP_plot_%06u_%06u_%06u.png" % (n1,n2,globalPlotCount))
 		globalPlotCount += 1
 		pylab.clf()			   
 		pylab.figure(1)

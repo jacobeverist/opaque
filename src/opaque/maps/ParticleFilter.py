@@ -13,7 +13,8 @@ from operator import itemgetter
 
 from functions import diffAngle
 from Splices import getMultiDeparturePoint, orientPath, getCurveOverlap, orientPathLean
-from MapProcess import getStepGuess, getInPlaceGuess, selectLocalCommonOrigin
+from MapProcess import getStepGuess, getInPlaceGuess
+from shoots import selectLocalCommonOrigin
 
 from scipy.spatial import KDTree, cKDTree
 from scipy.cluster.hierarchy import fclusterdata, fcluster
@@ -242,6 +243,8 @@ def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine
 			#supportLine = mapHyp.paths[0]
 
 			currPose3 = getInPlaceGuess(poseData, nodeID-1, nodeID, currPose2, estPose3, supportLine, direction)
+
+			print "displace old to new poses:", estPose0, estPose2, estPose3, currPose2, currPose3
 
 		else:
 			print "movePath:  DO NOTHING"
@@ -863,9 +866,9 @@ def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, me
 	resultPose1, lastCost1, matchCount1, currAng1, currU1 = gen_icp.globalPathToNodeOverlapICP2([u1, u2, angGuess], orientedPath, medialAxis1, plotIter = False, n1 = nodeID1, n2 = -1, arcLimit = 0.5, origPose = initPose1)
 
 
-	resultArgs0 = getMultiDeparturePoint(orientedPath, medialAxis0, initPose0, resultPose0, pathIDs, nodeID0, pathPlotCount = pathPlotCount, hypID = hypID, particleIndex = particleIndex, spliceIndex = spliceIndex, plotIter = False)
+	resultArgs0 = getMultiDeparturePoint(orientedPath, medialAxis0, initPose0, resultPose0, pathIDs, nodeID0, pathPlotCount = pathPlotCount, hypID = hypID, particleIndex = particleIndex, spliceIndex = spliceIndex, plotIter = True)
 
-	resultArgs1 = getMultiDeparturePoint(orientedPath, medialAxis1, initPose1, resultPose1, pathIDs, nodeID1, pathPlotCount = pathPlotCount, hypID = hypID, particleIndex = particleIndex, spliceIndex = spliceIndex, plotIter = False)
+	resultArgs1 = getMultiDeparturePoint(orientedPath, medialAxis1, initPose1, resultPose1, pathIDs, nodeID1, pathPlotCount = pathPlotCount, hypID = hypID, particleIndex = particleIndex, spliceIndex = spliceIndex, plotIter = True)
 	#resultArgs = ([0.0, 0.0],  0.0, False, False, 0.0, 0.0, [0.0, 0.0], 0.0, False, False, 0.0, 0.0, 1.0, 0.0, 0.0)
 
 	isExist1_0 = resultArgs0[3]
@@ -891,7 +894,7 @@ def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, me
 			prevGlobalMedial0.append(prevPoseOrigin.convertLocalOffsetToGlobal(p))
 
 		#currSum = getCurveOverlap(currGlobalMedial0, prevGlobalMedial0, plotIter = True, overlapPlotCount = pathPlotCount*20+particleIndex)
-		currSum = getCurveOverlap(currGlobalMedial0, prevGlobalMedial0)
+		currSum = getCurveOverlap(currGlobalMedial0, prevGlobalMedial0, plotIter = True, overlapPlotCount=nodeID0)
 	else:
 		currSum = None
 

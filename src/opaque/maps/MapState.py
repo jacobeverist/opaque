@@ -19,7 +19,7 @@ import numpy
 from operator import itemgetter
 import hashlib
 from Splices import batchGlobalMultiFit, getMultiDeparturePoint, orientPath, getTipAngles, orientPathLean
-from MapProcess import selectLocalCommonOrigin, selectCommonOrigin
+#from MapProcess import selectLocalCommonOrigin, selectCommonOrigin
 from ParticleFilter import multiParticleFitSplice, batchLocalizeParticle, batchDisplaceParticles, Particle
 import time
 import traceback
@@ -281,7 +281,9 @@ class MapState:
 		
 		""" pose particles for different combinations of poses and branch points """
 		#self.numPoseParticles = 100
-		self.numPoseParticles = 40
+		#self.numPoseParticles = 40
+		self.numPoseParticles = 10
+		#self.numPoseParticles = 1
 		self.poseParticles = {}
 		self.poseParticles["numParticles"] = self.numPoseParticles
 		self.poseParticles["updateCount"] = 0
@@ -3157,6 +3159,11 @@ class MapState:
 	def updateLandmarks(self):
 
 
+		BEND_THRESH = 0.9
+		ARCH_THRESH = 0.3
+		BLOOM_THRESH = 0.3
+
+
 		pathIDs = self.getPathIDs()
 		controlPoses = {}
 		for pathID in pathIDs:
@@ -3455,7 +3462,7 @@ class MapState:
 			currPath = splicePaths[k]
 			pathIDs = splicePathIDs[k]
 			currPath = orientPath(currPath, globalMedial2)
-			results = getMultiDeparturePoint(currPath, medial2_vec, estPose2, estPose2, pathIDs, nodeID, pathPlotCount = self.multiDepCount, hypID = self.hypothesisID, plotIter = True) 
+			results = getMultiDeparturePoint(currPath, medial2_vec, estPose2, estPose2, pathIDs, nodeID, pathPlotCount = self.multiDepCount, hypID = self.hypothesisID, plotIter = False) 
 
 			self.multiDepCount += 1
 

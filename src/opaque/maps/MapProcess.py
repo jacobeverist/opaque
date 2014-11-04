@@ -10,6 +10,8 @@ import math
 from operator import itemgetter
 import time
 import pylab
+from landmarks import *
+from shoots import *
 
 import traceback 
 import cProfile
@@ -696,30 +698,34 @@ def movePath(mapHyp, nodeID, direction, distEst = 1.0):
 
 	poseData = mapHyp.poseData
 
-	pathIDs = self.getPathIDs()
-	parentPathIDs = self.getParentHash()
-	controlPoses = deepcopy(mapHyp.getControlPoses())
-	controlPoses_G = computeGlobalControlPoses(controlPoses, parentPathIDs)
+	#pathIDs = mapHyp.getPathIDs()
+	#parentPathIDs = mapHyp.getParentHash()
+	#controlPoses = deepcopy(mapHyp.getControlPoses())
+	#controlPoses_G = computeGlobalControlPoses(controlPoses, parentPathIDs)
 
+	#""" collect landmarks that we can localize against """
+	#landmarks_G = []
+	#for pathID in pathIDs:
+
+	#	nodeSet = mapHyp.getNodes(pathID)
+	#	currFrame_L = Pose(controlPoses[pathID])
+
+	#	for nodeID in nodeSet:
+
+	#		landmarkPoint_N = mapHyp.nodeLandmarks[pathID][nodeID]
+
+	#		currFrame_G = Pose(controlPoses_G[pathID])
+	#		nodePose_L = mapHyp.pathClasses[pathID]["localNodePoses"][nodeID]
+	#		poseFrame_L = Pose(nodePose_L)
+
+	#		if landmarkPoint_N != None and nodeID != nodeID0 and nodeID != nodeID1:
+	#			landmarkPoint_L = poseFrame_L.convertLocalToGlobal(landmarkPoint_N)
+	#			landmarkPoint_G = currFrame_G.convertLocalToGlobal(landmarkPoint_L)
+	#			landmarks_G.append(landmarkPoint_G)
+	
 	""" collect landmarks that we can localize against """
-	landmarks_G = []
-	for pathID in pathIDs:
-
-		nodeSet = mapHyp.getNodes(pathID)
-		currFrame_L = Pose(controlPoses[pathID])
-
-		for nodeID in nodeSet:
-
-			landmarkPoint_N = mapHyp.nodeLandmarks[pathID][nodeID]
-
-			currFrame_G = Pose(controlPoses_G[pathID])
-			nodePose_L = mapHyp.pathClasses[pathID]["localNodePoses"][nodeID]
-			poseFrame_L = Pose(nodePose_L)
-
-			if landmarkPoint_N != None and nodeID != nodeID0 and nodeID != nodeID1:
-				landmarkPoint_L = poseFrame_L.convertLocalToGlobal(landmarkPoint_N)
-				landmarkPoint_G = currFrame_G.convertLocalToGlobal(landmarkPoint_L)
-				landmarks_G.append(landmarkPoint_G)
+	#landmarks_G = nodeToGlobalLandmarks(controlPoses_G, mapHyp.getPathIDs(), mapHyp.getParentHash(), mapHyp.nodeLandmarks, mapHyp.pathClasses)
+	landmarks_G = nodeToGlobalLandmarks(mapHyp.getControlPoses(), mapHyp.getPathIDs(), mapHyp.getParentHash(), mapHyp.nodeLandmarks, mapHyp.pathClasses, exemptNodes = [nodeID-1,nodeID])
 
 
 
@@ -741,6 +747,8 @@ def movePath(mapHyp, nodeID, direction, distEst = 1.0):
 			#mapHyp.nodePoses[nodeID] = getInPlaceGuess(poseData, nodeID-1, nodeID, estPose2, estPose3, supportLine, direction)
 			newPose3 = getInPlaceGuess(poseData, nodeID-1, nodeID, newPose2, estPose3, supportLine, direction)
 			mapHyp.setNodePose(nodeID, newPose3)
+
+			print "displace old to new poses:", estPose0, estPose2, estPose3, newPose2, newPose3
 
 
 		else:
@@ -2182,309 +2190,14 @@ def makeMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose1, estPose2, 
 	u1 = originU1
 	angGuess = 0.0
 
-	result, hist = gen_icp.overlapICP_GPU2(estPose1, [u1, u2, angGuess], medial1, medial2, [0.0,0.0], [0.0,0.0], inPlace = inPlace, plotIter = False, n1 = nodeID1, n2 = nodeID2, uRange = uRange)
+	#result, hist = gen_icp.overlapICP_GPU2(estPose1, [u1, u2, angGuess], medial1, medial2, [0.0,0.0], [0.0,0.0], inPlace = inPlace, plotIter = False, n1 = nodeID1, n2 = nodeID2, uRange = uRange)
+	result, hist = gen_icp.overlapICP_GPU2(estPose1, [u1, u2, angGuess], medial1, medial2, [0.0,0.0], [0.0,0.0], inPlace = inPlace, plotIter = True, n1 = nodeID1, n2 = nodeID2, uRange = uRange)
 
 	transform = matrix([[result[0]], [result[1]], [result[2]]])
 	
 	print "making overlap constraint:", result[0], result[1], result[2]
 
 	return transform, hist
-
-@logFunction
-def selectCommonOrigin(globalPath1, globalPath2):
-
-	""" FIXME:  change function so that it always returns a common pair, biasing towards it's current location """
-	""" alternately, make a new function that gives the option to enforce locality to common pair """
-	
-	globalSpline1 = SplineFit(globalPath1, smooth=0.1)
-	globalSpline2 = SplineFit(globalPath2, smooth=0.1)
-
-	globalSamples1 = globalSpline1.getUniformSamples(spacing = 0.04)
-	globalSamples2 = globalSpline2.getUniformSamples(spacing = 0.04)
-	
-	""" compute the local variance of the angle """
-	globalVar1 = computePathAngleVariance(globalSamples1)
-	globalVar2 = computePathAngleVariance(globalSamples2)
-
-  
-	""" now lets find closest points and save their local variances """			
-	closestPairs = []
-	allPairs = []
-	TERM_DIST = 20
-
-	""" stay 1/20th away from terminators of both shoot curves """
-	pathRail1 = int(len(globalSamples1) / 20.0)
-	pathRail2 = int(len(globalSamples2) / 20.0)
-
-	print "rails:", len(globalSamples1), len(globalSamples2), pathRail1, pathRail2
-
-	
-	for i in range(pathRail1, len(globalSamples1)-pathRail1):
-		pG = globalSamples1[i]
-		minDist = 1e100
-		minJ = -1
-		for j in range(pathRail2, len(globalSamples2)-pathRail2):
-			pM = globalSamples2[j]
-			dist = math.sqrt((pG[0]-pM[0])**2 + (pG[1]-pM[1])**2)
-			
-			
-			
-			if dist < minDist:
-				minDist = dist
-				minJ = j
-		
-		if True:
-			allPairs.append((i,minJ,minDist,globalVar1[i][0],globalVar2[minJ][0],globalVar1[i][1],globalVar2[minJ][1]))
-
-	for j in range(pathRail2, len(globalSamples2)-pathRail2):
-		pM = globalSamples2[j]
-		minDist = 1e100
-		minI = -1
-		for i in range(pathRail1, len(globalSamples1)-pathRail1):
-			pG = globalSamples1[i]
-			dist = math.sqrt((pG[0]-pM[0])**2 + (pG[1]-pM[1])**2)
-			
-			
-			
-			if dist < minDist:
-				minDist = dist
-				minI = i
-
-		if True:		
-			allPairs.append((minI,j,minDist,globalVar1[minI][0],globalVar2[j][0],globalVar1[minI][1],globalVar2[j][1]))
-		
-	" remove duplicates "
-	allPairs = list(set(allPairs))
-
-	""" sorty by match distance """
-	allPairs = sorted(allPairs, key=itemgetter(2))
-	
-	maxDistThresh = allPairs[-1][2]
-	minDistThresh = 0.1
-
-	""" ensure that the while loop is executed at least once """
-	if minDistThresh > maxDistThresh:
-		maxDistThresh = minDistThresh
-	
-	print "minDistThresh,maxDistThresh =", allPairs[0][2], allPairs[-1][2]
-
-	if len(allPairs) == 0:
-		raise
-
-	
-	originU2 = 0.5
-	originU1 = 0.5
-
-	cPoint2 = []
-	cPoint1 = []
-	
-	while minDistThresh <= maxDistThresh:
-		closestPairs = []
-		for pair in allPairs:			
-			if pair[2] < minDistThresh:				
-				closestPairs.append(pair)
-		
-		" sort by lowest angular variance"
-		closestPairs = sorted(closestPairs, key=itemgetter(5,6))
-
-		print len(closestPairs), "closest pairs for dist", minDistThresh
-
-		if len(closestPairs) > 0:
-			originU2 = globalSpline2.findU(globalSamples2[closestPairs[0][1]])	
-			originU1 = globalSpline1.findU(globalSamples1[closestPairs[0][0]])
-
-			cPoint2 = globalSamples2[closestPairs[0][1]]
-			cPoint1 = globalSamples1[closestPairs[0][0]]
-			
-			break
-		
-		minDistThresh += 0.1
-	
-	u2 = originU2
-	u1 = originU1
-	angGuess = 0.0
-	
-	return u1, u2, cPoint1, cPoint2
-
-
-@logFunction
-def selectLocalCommonOrigin(globalPath, medial1, estPose1):
-
-	poseOrigin = Pose(estPose1)
-	
-	" FIXME:  change function so that it always returns a common pair, biasing towards it's current location "
-	" alternately, make a new function that gives the option to enforce locality to common pair "
-	
-	
-	#globalMedial = []
-	#for p in medial1:
-	#	globalMedial.append(poseOrigin.convertLocalToGlobal(p))
-	
-	#medialSpline1 = SplineFit(globalMedial, smooth=0.1)
-
-	globalSpline = SplineFit(globalPath, smooth=0.1)
-	medialSpline1 = SplineFit(medial1, smooth=0.1)
-
-
-	globalSamples = globalSpline.getUniformSamples(spacing = 0.04)
-	medialSamples = medialSpline1.getUniformSamples(spacing = 0.04)
-	
-	globalMedialSamples = []
-	for p in medialSamples:
-		result = poseOrigin.convertLocalOffsetToGlobal(p)	
-		globalMedialSamples.append(result)
-	
-	" compute the local variance of the angle "
-	globalVar = computePathAngleVariance(globalSamples)
-	medialVar = computePathAngleVariance(globalMedialSamples)
-
-  
-	" now lets find closest points and save their local variances "			
-	closestPairs = []
-	allPairs = []
-	TERM_DIST = 20
-
-	pathRail = int(len(globalSamples) / 20.0)
-	medialRail = int(len(globalMedialSamples) / 20.0)
-
-	print "rails:", len(globalSamples), len(globalMedialSamples), pathRail, medialRail
-
-	
-	for i in range(pathRail, len(globalSamples)-pathRail):
-		pG = globalSamples[i]
-		minDist = 1e100
-		minJ = -1
-		for j in range(medialRail, len(globalMedialSamples)-medialRail):
-			pM = globalMedialSamples[j]
-			dist = math.sqrt((pG[0]-pM[0])**2 + (pG[1]-pM[1])**2)
-			
-			
-			
-			if dist < minDist:
-				minDist = dist
-				minJ = j
-		
-		#poseDist = math.sqrt((pG[0]-estPose1[0])**2 + (pG[1]-estPose1[1])**2)
-		#if poseDist < 0.3:
-		if True:
-			allPairs.append((i,minJ,minDist,globalVar[i][0],medialVar[minJ][0],globalVar[i][1],medialVar[minJ][1]))
-				
-		#if minDist < 0.1:
-		#	closestPairs.append((i,minJ,minDist,globalVar[i][0],medialVar[minJ][0],globalVar[i][1],medialVar[minJ][1]))
-
-	for j in range(medialRail, len(globalMedialSamples)-medialRail):
-		pM = globalMedialSamples[j]
-		minDist = 1e100
-		minI = -1
-		for i in range(pathRail, len(globalSamples)-pathRail):
-			pG = globalSamples[i]
-			dist = math.sqrt((pG[0]-pM[0])**2 + (pG[1]-pM[1])**2)
-			
-			
-			
-			if dist < minDist:
-				minDist = dist
-				minI = i
-
-		#pG = globalSamples[minI]
-		#poseDist = math.sqrt((pG[0]-estPose1[0])**2 + (pG[1]-estPose1[1])**2)
-		#if poseDist < 0.3:
-		if True:		
-			allPairs.append((minI,j,minDist,globalVar[minI][0],medialVar[j][0],globalVar[minI][1],medialVar[j][1]))
-		
-		#if minDist < 0.1:
-		#	closestPairs.append((minI,j,minDist,globalVar[minI][0],medialVar[j][0],globalVar[minI][1],medialVar[j][1]))
-
-
-
-	" remove duplicates "
-	allPairs = list(set(allPairs))
-
-
-
-	
-	allPairs = sorted(allPairs, key=itemgetter(2))
-	
-	maxDistThresh = allPairs[-1][2]
-	minDistThresh = 0.1
-
-	""" ensure that the while loop is executed at least once """
-	if minDistThresh > maxDistThresh:
-		maxDistThresh = minDistThresh
-	
-	print "minDistThresh,maxDistThresh =", allPairs[0][2], allPairs[-1][2]
-
-
-	if len(allPairs) == 0:
-		raise
-
-	
-	originU2 = 0.5
-	originU1 = 0.5
-	
-	while minDistThresh <= maxDistThresh:
-		closestPairs = []
-		for pair in allPairs:			
-			if pair[2] < minDistThresh:				
-				closestPairs.append(pair)
-		
-		" sort by lowest angular variance"
-		closestPairs = sorted(closestPairs, key=itemgetter(5,6))
-
-		print len(closestPairs), "closest pairs for dist", minDistThresh
-
-		if len(closestPairs) > 0:
-			originU2 = medialSpline1.findU(medialSamples[closestPairs[0][1]])	
-			originU1 = globalSpline.findU(globalSamples[closestPairs[0][0]])
-			
-			break
-		
-		minDistThresh += 0.1
-	
-	u2 = originU2
-	u1 = originU1
-	angGuess = 0.0
-	
-	return u1, u2
-
-
-def computePathAngleVariance(pathSamples):
-	pathVar = []
-	
-	" compute the local variance of the angle "
-	VAR_WIDTH = 40
-	for i in range(len(pathSamples)):
-		
-		lowK = i - VAR_WIDTH/2
-		if lowK < 0:
-			lowK = 0
-			
-		highK = i + VAR_WIDTH/2
-		if highK >= len(pathSamples):
-			highK = len(pathSamples)-1
-		
-		localSamp = []
-		for k in range(lowK, highK+1):
-			localSamp.append(pathSamples[k][2])
-		
-		sum = 0.0
-		for val in localSamp:
-			sum += val
-			
-		meanSamp = sum / float(len(localSamp))
-		
-
-		sum = 0
-		for k in range(len(localSamp)):
-			sum += (localSamp[k] - meanSamp)*(localSamp[k] - meanSamp)
-	
-		varSamp = sum / float(len(localSamp))
-		
-		pathVar.append((meanSamp, varSamp))		 
-
-	return pathVar
-
-
 
 @logFunction
 def generateAll(hypSet):
