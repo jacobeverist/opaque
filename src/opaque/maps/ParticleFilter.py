@@ -345,9 +345,9 @@ def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine
 							dist1 = sqrt((p2[0]-p1[0])**2 + (p2[1]-p1[1])**2)
 							if dist1 < LANDMARK_THRESH:
 								if dist1 > CLOSE_THRESH:
-									poseSum += 10.0*dist1
-								else:
 									poseSum += dist1
+								else:
+									poseSum += 0.1*dist1
 
 						if poseSum < minPoseSum:
 							minPoseSum = poseSum
@@ -927,17 +927,17 @@ def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, me
 			dist0 = sqrt((p1[0]-landmark0_G[0])**2 + (p1[1]-landmark0_G[1])**2)
 			if dist0 < LANDMARK_THRESH:
 				if dist0 > CLOSE_THRESH:
-					poseSum += 10.0*dist0
-				else:
 					poseSum += dist0
+				else:
+					poseSum += 0.1*dist0
 
 		if landmark1_G != None:
 			dist1 = sqrt((p1[0]-landmark1_G[0])**2 + (p1[1]-landmark1_G[1])**2)
 			if dist1 < LANDMARK_THRESH:
 				if dist1 > CLOSE_THRESH:
-					poseSum += 10.0*dist1
-				else:
 					poseSum += dist1
+				else:
+					poseSum += 0.1*dist1
 
 	#utilVal0 = utilVal0 * (1.0-branchProbVal)
 

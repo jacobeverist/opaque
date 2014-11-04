@@ -595,7 +595,7 @@ class TestNavigation(SnakeControl):
 				#	self.travelDir = False	
 				#if self.mapGraph.numNodes > 40:
 				#	exit()	
-				if self.mapGraph.numNodes > 4:
+				if self.mapGraph.numNodes > 100:
 					exit()	
 					
 		elif self.globalState == 10:
@@ -606,9 +606,26 @@ class TestNavigation(SnakeControl):
 			" select the point to go to "
 			if self.targetPoint == []:
 				frontierPoint, self.termPathID = self.mapGraph.selectNextDestination()
+				self.wayPoints, self.wayPaths = self.mapGraph.recomputePath(self.termPathID)
+
+				" determine if we are already at the destination, otherwise recompute "
+				dest = self.wayPoints[0]
+				wayPath = self.wayPaths[0]		
+
+				destReached, goalDist = self.mapGraph.isDestReached(dest, wayPath)
+				if destReached:
+
+					self.mapGraph.pathTermVisited(self.termPathID)
+					self.termPathID = -1
+
+
 			else:
 				frontierPoint = self.targetPoint
 				self.termPathID = -1
+
+
+			frontierPoint, self.termPathID = self.mapGraph.selectNextDestination()
+			self.wayPoints, self.wayPaths = self.mapGraph.recomputePath(self.termPathID)
 
 
 							
@@ -629,7 +646,7 @@ class TestNavigation(SnakeControl):
 				" generate the path "
 			"""
 
-			self.wayPoints, self.wayPaths = self.mapGraph.recomputePath(self.termPathID)
+			#self.wayPoints, self.wayPaths = self.mapGraph.recomputePath(self.termPathID)
 
 			"""
 			frontPose = self.contacts.getAverageSegPose(0)
@@ -670,8 +687,8 @@ class TestNavigation(SnakeControl):
 
 		elif self.globalState == 11:
 
-			#if self.mapGraph.numNodes > 40:
-			#	exit()
+			if self.mapGraph.numNodes > 100:
+				exit()
 			
 			" Instantiate the Path Step behavior and give it the path to follow "
 		
@@ -1451,7 +1468,7 @@ class TestNavigation(SnakeControl):
 
 				self.mapGraph.drawNavigation(self.localWayPaths[0], self.localWayPoints[0])
 
-				if self.mapGraph.numNodes > 4:
+				if self.mapGraph.numNodes > 60:
 					exit()	
 
 		return False				

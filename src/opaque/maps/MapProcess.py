@@ -835,9 +835,9 @@ def movePath(mapHyp, nodeID, direction, distEst = 1.0):
 								dist1 = sqrt((p2[0]-p1[0])**2 + (p2[1]-p1[1])**2)
 								if dist1 < LANDMARK_THRESH:
 									if dist1 > CLOSE_THRESH:
-										poseSum += 10.0*dist1
-									else:
 										poseSum += dist1
+									else:
+										poseSum += 0.1*dist1
 
 							if poseSum < minPoseSum:
 								minPoseSum = poseSum
@@ -2790,7 +2790,7 @@ def checkForeBranch(hypSet, nodeID1, nodeID2, shootIDs, particleIDs):
 			newHyps[particleIDs].isNotBranched = False 
 
 			" in case current hypothesis has already branched, this ensures that topology is regenerated when branching "
-			hypSet[pID].isNotBranched = True
+			#hypSet[pID].isNotBranched = True
 
 			print "creating hyp", particleIDs, "from hyp", mapHyp.hypothesisID, ", len(paths) =", len(mapHyp.pathClasses)
 			particleIDs += 1
@@ -2975,7 +2975,7 @@ def checkBackBranch(hypSet, nodeID1, nodeID2, shootIDs, particleIDs):
 			newHyps[particleIDs].isNotBranched = False 
 
 			" in case current hypothesis has already branched, this ensures that topology is regenerated when branching "
-			hypSet[pID].isNotBranched = True
+			#hypSet[pID].isNotBranched = True
 			print "creating hyp", particleIDs, "from hyp", mapHyp.hypothesisID, ", len(paths) =", len(mapHyp.pathClasses)
 			
 			particleIDs += 1
@@ -3043,7 +3043,7 @@ def addToPaths(shootIDs, particleIDs, hypSet, nodeID1, nodeID2):
 	computeLocalDivergence(hypSet, nodeID1, nodeID2)
 
 	for pID, mapHyp in hypSet.iteritems():
-		mapHyp.isNotBranched = False
+		mapHyp.isNotBranched = True
 		mapHyp.isSplit = False
 
 

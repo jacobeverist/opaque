@@ -2055,7 +2055,7 @@ class LocalNode:
 								distU1 = longPathWidth[k]["distU"]
 								distU2 = longPathWidth[k+1]["distU"]
 
-								if distU1 < centerMass and distU2 > centerMass:
+								if distU1 <= centerMass and distU2 > centerMass:
 									if fabs(distU1-centerMass) > fabs(distU2-centerMass):
 										contigPointIndex.append(k+1)
 									else:
@@ -2073,9 +2073,9 @@ class LocalNode:
 							contigAsymm = []
 
 
-				contigBoundaries.append((contigStartIndex, contigFinalIndex))
+				#contigBoundaries.append((contigStartIndex, contigFinalIndex))
 
-				print "spatial", self.nodeID, contigInflection, maxDeriv, len(longPathWidth), contigBoundaries
+				print "spatial", self.nodeID, contigInflection, maxDeriv, len(longPathWidth), contigPointIndex, contigBoundaries
 				print "mass deriv:", [(k, contigLen[k], contigArea[k], contigDensity[k], longPathWidth[contigPointIndex[k]]["angDeriv2"]) for k in range(len(contigPointIndex))]
 
 				#if maxDeriv >= 0.35:

@@ -160,8 +160,10 @@ class TestProcess(SnakeControl):
 
 			#self.mapGraph.restorePickle("../testDir6/", 17)
 			#self.mapGraph.loadSeries("../testDir5/", 18, 250)
-			self.mapGraph.restorePickle("../testDir6/", 33)
-			self.mapGraph.loadSeries("../testDir5/", 34, 250)
+			self.mapGraph.restorePickle("../testDir4/results_L_right_junction.py/", 9)
+			self.mapGraph.loadSeries("../testDir4/results_L_right_junction.py/", 10, 14)
+			#self.mapGraph.restorePickle("../testDir6/", 33)
+			#self.mapGraph.loadSeries("../testDir5/", 34, 250)
 
 			exit()
 	

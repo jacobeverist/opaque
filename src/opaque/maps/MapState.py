@@ -3776,7 +3776,10 @@ class MapState:
 		globalJunctionPose_G = rawPoseFrame.convertLocalOffsetToGlobal(localDivergencePose_R)
 	
 		
-		allPathIDs = self.getPathIDs()
+		""" pathIDs from self.localLeaf2LeafPathJunctions structure because recent shoots may not be generated yet """
+		#allPathIDs = self.getPathIDs()
+		allPathIDs = self.localLeaf2LeafPathJunctions.keys()
+		
 
 		""" new shoot ID """
 		#newPathID = self.pathIDs
