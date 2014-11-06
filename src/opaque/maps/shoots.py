@@ -1301,7 +1301,7 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 
 		xP = []
 		yP = []
-		for point_L in localLandmarks:
+		for point_L, pThresh, pName in localLandmarks:
 			xP.append(point_L[0])
 			yP.append(point_L[1])
 
@@ -3966,6 +3966,9 @@ def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, 
 @logFunction
 def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPoses, junctionPoses, landmarks, parentPathIDs, arcDists, numNodes=0, hypothesisID=0):
 
+	print "computeJointBranch()", numNodes
+	sys.stdout.flush()
+
 	newBranchPoses_L = {0:None}
 	newBranchPoses_G = {0:None}
 	trimmedPaths = {}
@@ -4173,9 +4176,9 @@ def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPos
 	landmarks_G = []
 	for pathID in allPathIDs:
 		currFrame = Pose(controlPoses_G[pathID])
-		for point_L in landmarks[pathID]:
+		for point_L, pointThresh, pointName in landmarks[pathID]:
 			point_G = currFrame.convertLocalToGlobal(point_L)
-			landmarks_G.append(point_G)
+			landmarks_G.append((point_G, pointThresh, pointName))
 
 	#LANDMARK_THRESH = 1e100
 	#LANDMARK_THRESH = 3.0
@@ -4185,13 +4188,19 @@ def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPos
 
 	distSum = 0.0
 	for i in range(len(landmarks_G)):
-		p1 = landmarks_G[i]
+		p1 = landmarks_G[i][0]
+		thresh1 = landmarks_G[i][1]
 		for j in range(i+1, len(landmarks_G)):
-			p2 = landmarks_G[j]
+			p2 = landmarks_G[j][0]
+			thresh2 = landmarks_G[j][1]
 			dist = sqrt((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2)
 
+			maxThresh = thresh1
+			if thresh2 > thresh1:
+				maxThresh = thresh2
+
 			if dist < LANDMARK_THRESH:
-				if dist > CLOSE_THRESH:
+				if dist > maxThresh:
 					distSum += dist
 				else:
 					distSum += 0.1*dist
@@ -4200,11 +4209,14 @@ def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPos
 	for pathID in branchPathIDs:
 		p1 = newBranchPoses_G[pathID]
 		for j in range(0, len(landmarks_G)):
-			p2 = landmarks_G[j]
+			p2 = landmarks_G[j][0]
+			thresh2 = landmarks_G[j][1]
 			dist = sqrt((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2)
 
+			maxThresh = thresh2
+
 			if dist < LANDMARK_THRESH:
-				if dist > CLOSE_THRESH:
+				if dist > maxThresh:
 					distSum += dist
 				else:
 					distSum += 0.1*dist
@@ -4280,7 +4292,7 @@ def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPos
 		yP = []
 		for pathID in allPathIDs:
 			currFrame = Pose(controlPoses_G[pathID])
-			for point_L in landmarks[pathID]:
+			for point_L, pointThresh, pointName in landmarks[pathID]:
 				point_G = currFrame.convertLocalToGlobal(point_L)
 				xP.append(point_G[0])
 				yP.append(point_G[1])

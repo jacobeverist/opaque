@@ -28,6 +28,7 @@ import alphamod
 from itertools import product
 
 from shoots import computeShootSkeleton, spliceSkeletons, computeGlobalControlPoses, batchJointBranch, batchBranch, trimBranch, getBranchPoint, ensureEnoughPoints, getInitSkeletonBranchPoint, getSkeletonBranchPoint
+from landmarks import *
 #from shoots import *
 
 pylab.ioff()
@@ -624,6 +625,35 @@ class MapState:
 		parentPathIDs = self.getParentHash()
 
 
+		controlPoses = deepcopy(self.getControlPoses())
+		controlPoses_G = computeGlobalControlPoses(controlPoses, parentPathIDs)
+
+		candLandmarks_G = nodeToGlobalLandmarks(self.getControlPoses(), self.getPathIDs(), self.getParentHash(), self.nodeLandmarks, self.pathClasses, exemptNodes = [nodeID0,nodeID1])
+
+		targetNodeLandmarks_N = {nodeID0 : None, nodeID1 : None}
+		targetNodeLandmarks_N[nodeID0] = getNodeLandmark(nodeID0, self.poseData)
+		targetNodeLandmarks_N[nodeID1] = getNodeLandmark(nodeID1, self.poseData)
+
+		""" collect landmarks that we can localize against """
+		#candLandmarks_G = []
+		#for pathID in pathIDs:
+
+		#	nodeSet = self.getNodes(pathID)
+		#	currFrame_L = Pose(controlPoses[pathID])
+
+		#	for nodeID in nodeSet:
+
+		#		landmarkPoint_N, pointThresh, pointName = self.nodeLandmarks[pathID][nodeID]
+
+		#		currFrame_G = Pose(controlPoses_G[pathID])
+		#		nodePose_L = self.pathClasses[pathID]["localNodePoses"][nodeID]
+		#		poseFrame_L = Pose(nodePose_L)
+
+		#		if landmarkPoint_N != None and nodeID != nodeID0 and nodeID != nodeID1:
+		#			landmarkPoint_L = poseFrame_L.convertLocalToGlobal(landmarkPoint_N)
+		#			landmarkPoint_G = currFrame_G.convertLocalToGlobal(landmarkPoint_L)
+		#			candLandmarks_G.append(landmarkPoint_G)
+
 		particleDist2 = self.poseParticles["snapshots2"][0]
 		for particleIndex in range(len(particleDist2)):
 
@@ -639,31 +669,7 @@ class MapState:
 
 
 
-			controlPoses = deepcopy(self.getControlPoses())
-			controlPoses_G = computeGlobalControlPoses(controlPoses, parentPathIDs)
-
-			""" collect landmarks that we can localize against """
-			candLandmarks_G = []
-			for pathID in pathIDs:
-
-				nodeSet = self.getNodes(pathID)
-				currFrame_L = Pose(controlPoses[pathID])
-
-				for nodeID in nodeSet:
-
-					landmarkPoint_N = self.nodeLandmarks[pathID][nodeID]
-
-					currFrame_G = Pose(controlPoses_G[pathID])
-					nodePose_L = self.pathClasses[pathID]["localNodePoses"][nodeID]
-					poseFrame_L = Pose(nodePose_L)
-
-					if landmarkPoint_N != None and nodeID != nodeID0 and nodeID != nodeID1:
-						landmarkPoint_L = poseFrame_L.convertLocalToGlobal(landmarkPoint_N)
-						landmarkPoint_G = currFrame_G.convertLocalToGlobal(landmarkPoint_L)
-						candLandmarks_G.append(landmarkPoint_G)
-
-
-			batchJobs.append([self.poseData, part, particleIndex, nodeID1, prevPose0, prevPose1, hypPose0, hypPose1, self.paths[0], staticSplicedPaths0, staticSplicedPaths1, candLandmarks_G])
+			batchJobs.append([self.poseData, part, particleIndex, nodeID1, prevPose0, prevPose1, hypPose0, hypPose1, self.paths[0], staticSplicedPaths0, staticSplicedPaths1, candLandmarks_G, targetNodeLandmarks_N])
 
 		results = batchDisplaceParticles(batchJobs)
 
@@ -674,6 +680,61 @@ class MapState:
 			part.pose1 = result[2]
 
 			part.displacePose(result[1], result[2])
+
+
+		#targetNodeLandmarks_N[nodeID0] = getNodeLandmark(nodeID0, self.poseData)
+		#targetNodeLandmarks_N[nodeID1] = getNodeLandmark(nodeID1, self.poseData)
+
+		""" evaluate the landmark consistency to select the max hypothesis """
+		landmarkPoint0_N = targetNodeLandmarks_N[nodeID0]
+		landmarkPoint1_N = targetNodeLandmarks_N[nodeID1]
+
+		minSum = 1e100
+		minPartIndex = self.currMaxIndex
+
+		if landmarkPoint0_N != None or landmarkPoint1_N != None: 
+
+			for partIndex in range(len(particleDist2)):
+
+				part = particleDist2[partIndex]
+
+				currLandmarks = deepcopy(candLandmarks_G)
+
+				currPose0 = part.pose0
+				currPose1 = part.pose1
+
+				poseFrame0_G = Pose(currPose0)
+				poseFrame1_G = Pose(currPose1)
+
+				if landmarkPoint0_N != None:
+					landmarkPoint0_G = (poseFrame0_G.convertLocalToGlobal(landmarkPoint0_N[0]), landmarkPoint0_N[1], landmarkPoint0_N[2])
+					currLandmarks.append(landmarkPoint0_G)
+
+					print "landmark0:", landmarkPoint0_G
+
+				if landmarkPoint1_N != None:
+					landmarkPoint1_G = (poseFrame1_G.convertLocalToGlobal(landmarkPoint1_N[0]), landmarkPoint1_N[1], landmarkPoint1_N[2])
+					currLandmarks.append(landmarkPoint1_G)
+
+					print "landmark1:", landmarkPoint1_G
+
+				currSum = computeConsistency(currLandmarks)
+
+				print "poseSum:", partIndex, currSum
+
+				if currSum < minSum:
+					minSum = currSum
+					minPartIndex = partIndex
+
+		print "setting max particle:", minPartIndex
+
+		self.currMaxIndex = minPartIndex
+
+		""" change to the maximum likelihood branch position as well """
+		self.updateMaxParticle(self.currMaxIndex)
+		self.setNodePose(nodeID0, deepcopy(particleDist2[self.currMaxIndex].pose0))
+		self.setNodePose(nodeID1, deepcopy(particleDist2[self.currMaxIndex].pose1))
+
 
 	@logFunction
 	def displacePoseParticles(self, nodeID0, nodeID1, travelDist0, travelDist1):
@@ -1087,25 +1148,26 @@ class MapState:
 
 
 				""" collect landmarks that we can localize against """
-				candLandmarks_G = []
-				for pathID in pathIDs:
+				#candLandmarks_G = []
+				#for pathID in pathIDs:
 
-					nodeSet = self.getNodes(pathID)
-					currFrame_L = Pose(controlPoses[pathID])
+				#	nodeSet = self.getNodes(pathID)
+				#	currFrame_L = Pose(controlPoses[pathID])
 
-					for nodeID in nodeSet:
+				#	for nodeID in nodeSet:
 
-						landmarkPoint_N = self.nodeLandmarks[pathID][nodeID]
+				#		landmarkPoint_N = self.nodeLandmarks[pathID][nodeID]
 
-						currFrame_G = Pose(controlPoses_G[pathID])
-						nodePose_L = self.pathClasses[pathID]["localNodePoses"][nodeID]
-						poseFrame_L = Pose(nodePose_L)
+				#		currFrame_G = Pose(controlPoses_G[pathID])
+				#		nodePose_L = self.pathClasses[pathID]["localNodePoses"][nodeID]
+				#		poseFrame_L = Pose(nodePose_L)
 
-						if landmarkPoint_N != None and nodeID != nodeID0 and nodeID != nodeID1:
-							landmarkPoint_L = poseFrame_L.convertLocalToGlobal(landmarkPoint_N)
-							landmarkPoint_G = currFrame_G.convertLocalToGlobal(landmarkPoint_L)
-							candLandmarks_G.append(landmarkPoint_G)
+				#		if landmarkPoint_N != None and nodeID != nodeID0 and nodeID != nodeID1:
+				#			landmarkPoint_L = poseFrame_L.convertLocalToGlobal(landmarkPoint_N)
+				#			landmarkPoint_G = currFrame_G.convertLocalToGlobal(landmarkPoint_L)
+				#			candLandmarks_G.append(landmarkPoint_G)
 
+				candLandmarks_G = nodeToGlobalLandmarks(controlPoses, self.getPathIDs(), self.getParentHash(), self.nodeLandmarks, self.pathClasses, exemptNodes = [nodeID0,nodeID1])
 
 				#LANDMARK_THRESH = 1e100
 				#distSum = 0.0
@@ -1141,25 +1203,26 @@ class MapState:
 				controlPoses_G = computeGlobalControlPoses(controlPoses, parentPathIDs)
 
 				""" collect landmarks that we can localize against """
-				candLandmarks_G = []
-				for pathID in pathIDs:
+				#candLandmarks_G = []
+				#for pathID in pathIDs:
 
-					nodeSet = self.getNodes(pathID)
-					currFrame_L = Pose(controlPoses[pathID])
+				#	nodeSet = self.getNodes(pathID)
+				#	currFrame_L = Pose(controlPoses[pathID])
 
-					for nodeID in nodeSet:
+				#	for nodeID in nodeSet:
 
-						landmarkPoint_N = self.nodeLandmarks[pathID][nodeID]
+				#		landmarkPoint_N = self.nodeLandmarks[pathID][nodeID]
 
-						currFrame_G = Pose(controlPoses_G[pathID])
-						nodePose_L = self.pathClasses[pathID]["localNodePoses"][nodeID]
-						poseFrame_L = Pose(nodePose_L)
+				#		currFrame_G = Pose(controlPoses_G[pathID])
+				#		nodePose_L = self.pathClasses[pathID]["localNodePoses"][nodeID]
+				#		poseFrame_L = Pose(nodePose_L)
 
-						if landmarkPoint_N != None and nodeID != nodeID0 and nodeID != nodeID1:
-							landmarkPoint_L = poseFrame_L.convertLocalToGlobal(landmarkPoint_N)
-							landmarkPoint_G = currFrame_G.convertLocalToGlobal(landmarkPoint_L)
-							candLandmarks_G.append(landmarkPoint_G)
+				#		if landmarkPoint_N != None and nodeID != nodeID0 and nodeID != nodeID1:
+				#			landmarkPoint_L = poseFrame_L.convertLocalToGlobal(landmarkPoint_N)
+				#			landmarkPoint_G = currFrame_G.convertLocalToGlobal(landmarkPoint_L)
+				#			candLandmarks_G.append(landmarkPoint_G)
 
+				candLandmarks_G = nodeToGlobalLandmarks(controlPoses, self.getPathIDs(), self.getParentHash(), self.nodeLandmarks, self.pathClasses, exemptNodes = [nodeID0,nodeID1])
 
 				thisSplicedPaths.append((None, 1.0, rootSplice, None, candLandmarks_G))
 
@@ -1659,7 +1722,7 @@ class MapState:
 			yP = []
 			for pathID in allPathIDs:
 				currFrame = Pose(controlPoses_G[pathID])
-				for point_L in self.localLandmarks[pathID]:
+				for point_L, pointThresh, pointName in self.localLandmarks[pathID]:
 					point_G = currFrame.convertLocalToGlobal(point_L)
 
 					xP.append(point_G[0])
@@ -3188,25 +3251,36 @@ class MapState:
 				landmarkPoint_N = None
 				landmarkPoint_L = None
 
+
+
+				self.nodeLandmarks[pathID][nodeID] = None
+
 				if spatialFeature["bloomPoint"] != None:
 					print self.hypothesisID, "adding bloomPoint for node", nodeID, "in path", pathID
 					landmarkPoint_N = spatialFeature["bloomPoint"]
 					landmarkPoint_L = poseFrame_L.convertLocalToGlobal(landmarkPoint_N)
+					self.localLandmarks[pathID].append((landmarkPoint_L, BLOOM_THRESH, "bloomPoint"))
+					self.nodeLandmarks[pathID][nodeID] = (landmarkPoint_N, BLOOM_THRESH, "bloomPoint")
 
 				elif spatialFeature["archPoint"] != None:
 					print self.hypothesisID, "adding archPoint for node", nodeID, "in path", pathID
 					landmarkPoint_N = spatialFeature["archPoint"]
 					landmarkPoint_L = poseFrame_L.convertLocalToGlobal(landmarkPoint_N)
+					self.localLandmarks[pathID].append((landmarkPoint_L, ARCH_THRESH, "archPoint"))
+					self.nodeLandmarks[pathID][nodeID] = (landmarkPoint_N, ARCH_THRESH, "archPoint")
 
 				elif spatialFeature["inflectionPoint"] != None:
 					print self.hypothesisID, "adding inflectionPoint for node", nodeID, "in path", pathID
 					landmarkPoint_N = spatialFeature["inflectionPoint"]
 					landmarkPoint_L = poseFrame_L.convertLocalToGlobal(landmarkPoint_N)
+					self.localLandmarks[pathID].append((landmarkPoint_L, BEND_THRESH, "bendPoint"))
+					self.nodeLandmarks[pathID][nodeID] = (landmarkPoint_N, BEND_THRESH, "bendPoint")
 
-				if landmarkPoint_L != None:
-					self.localLandmarks[pathID].append(landmarkPoint_L)
+				#if landmarkPoint_L != None:
+				#	#self.localLandmarks[pathID].append(landmarkPoint_L)
+				#	self.localLandmarks[pathID].append((landmarkPoint_L, 0.3, "bloomPoint"))
 
-				self.nodeLandmarks[pathID][nodeID] = landmarkPoint_N
+				#self.nodeLandmarks[pathID][nodeID] = landmarkPoint_N
 
 
 		print self.hypothesisID, "landmarks:", self.localLandmarks
@@ -5116,7 +5190,7 @@ class MapState:
 
 		for pathID in pathIDs:
 			currFrame = Pose(controlPoses_G[pathID])
-			for point_L in self.localLandmarks[pathID]:
+			for point_L, pointThresh, pointName in self.localLandmarks[pathID]:
 				point_G = currFrame.convertLocalToGlobal(point_L)
 				landmarkDist = sqrt((depPoint[0]-point_G[0])**2 + (depPoint[1]-point_G[1])**2)
 

@@ -172,16 +172,19 @@ def __remote_displaceParticle(rank, qin, qout):
 			pathSplices2 = job[9]
 			pathSplices3 = job[10]
 			landmarks_G = job[11]
+			landmarks_N = job[12]
 
-			result = displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine, nodeID3, initPose2, initPose3, prevPose0, prevPose1, particleIndex, landmarks_G)
+			result = displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine, nodeID3, initPose2, initPose3, prevPose0, prevPose1, particleIndex, landmarks_G, landmarks_N)
 			results.append((particleIndex,) + result)
 						   
 		# write to output queue
 		qout.put((nc,results))
 
-def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine, nodeID3, initPose2, initPose3, prevPose0, prevPose1, particleIndex, landmarks_G):
+def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine, nodeID3, initPose2, initPose3, prevPose0, prevPose1, particleIndex, landmarks_G, landmarks_N):
 
 	#print "movePath(", nodeID, ",", direction, ",", distEst, ")"
+	print "displaceParticle()"
+	sys.stdout.flush()
 
 	estPose0 = prevPose0
 	estPose1 = prevPose1
@@ -260,148 +263,172 @@ def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine
 		poseOffsets = {nodeID2: [0.0,0.0,0.0], nodeID3: [0.0,0.0,0.0]}
 		isPoseChanged = {nodeID2: False, nodeID3: False}
 
-		for nodeID in [nodeID2, nodeID3]:
-
-			"""
-			self.junctionData[pathID] = {
-										"parentID" : parentID,
-										"branchNodeID" : branchNodeID,
-										"localJunctionPose" : localJunctionPose, 
-										"globalJunctionPose" : globalJunctionPose,
-										"probDist" : [ 1.0 / float(numBranches) for k in range(numBranches) ],
-										"branchPoseDist" : [deepcopy(globalJunctionPose) for k in range(numBranches)],
-										"controlPoseDist" : [deepcopy(controlPose) for k in range(numBranches)],
-										"arcDists" : [deepcopy(arcDists)],
-										"maxLikelihoodBranch" : 0
-										}		
-			"""
-
-
-
-			sF0 = poseData.spatialFeatures[nodeID][0]
-			#if len(partObj.junctionData) > 0 and (sF0["bloomPoint"] != None or sF0["archPoint"] != None ):
-			if len(partObj.junctionData) > 0 and (sF0["bloomPoint"] != None or sF0["archPoint"] != None or sF0["inflectionPoint"] != None):
-
-				""" FIXME: assume one landmark feature """
-
-				if sF0["bloomPoint"] != None:
-					print "DO bloom localize to landmark feature", nodeID
-					localJunctionPoint = sF0["bloomPoint"]
-
-				elif sF0["archPoint"] != None:
-					print "DO arch localize to landmark feature", nodeID
-					localJunctionPoint = sF0["archPoint"]
-
-				elif sF0["inflectionPoint"] != None:
-					print "DO inflection localize to landmark feature", nodeID
-					localJunctionPoint = sF0["inflectionPoint"]
-
-
-				""" starting pose of nodeID """
-				nodePose0 = currPoses[nodeID]
-				poseOrigin0 = Pose(nodePose0)
-				globalLandmarkPoint = poseOrigin0.convertLocalToGlobal(localJunctionPoint)
-
-				# self.pathClasses[0] = {"parentID" : None, "branchNodeID" : None, "localJunctionPose" : None, 
-								#"sameProb" : {}, "nodeSet" : [], "globalJunctionPose" : None}
-
-				#LANDMARK_THRESH = 3.0
-				LANDMARK_THRESH = 6.0
-				#LANDMARK_THRESH = 4.5
+		if False:
+			for nodeID in [nodeID2, nodeID3]:
 
 				"""
-				minPathID = None
-				minJuncDist = 1e100
-				junctionPose0 = None
-				for pathID, values in partObj.junctionData.iteritems():
-
-					if pathID != 0 and values["branchNodeID"] != nodeID:
-
-						currJuncPose = values["globalJunctionPose"]
-
-						currDist = sqrt((currJuncPose[0]-globalLandmarkPoint[0])**2 + (currJuncPose[1]-globalLandmarkPoint[1])**2)
-
-						if currDist < minJuncDist and currDist < LANDMARK_THRESH:
-							minJuncDist = currDist
-							minPathID = pathID
-							junctionPose0 = currJuncPose
+				self.junctionData[pathID] = {
+											"parentID" : parentID,
+											"branchNodeID" : branchNodeID,
+											"localJunctionPose" : localJunctionPose, 
+											"globalJunctionPose" : globalJunctionPose,
+											"probDist" : [ 1.0 / float(numBranches) for k in range(numBranches) ],
+											"branchPoseDist" : [deepcopy(globalJunctionPose) for k in range(numBranches)],
+											"controlPoseDist" : [deepcopy(controlPose) for k in range(numBranches)],
+											"arcDists" : [deepcopy(arcDists)],
+											"maxLikelihoodBranch" : 0
+											}		
 				"""
 
 
-				CLOSE_THRESH = 0.3
 
-				minPoseSum = 1e100
-				minLandmark = None
+				sF0 = poseData.spatialFeatures[nodeID][0]
 
-				for i in range(len(landmarks_G)):
+				if len(partObj.junctionData) > 0 and landmarks_N[nodeID] != None:
+				#if len(partObj.junctionData) > 0 and (sF0["bloomPoint"] != None or sF0["archPoint"] != None ):
+				#if len(partObj.junctionData) > 0 and (sF0["bloomPoint"] != None or sF0["archPoint"] != None or sF0["inflectionPoint"] != None):
 
-					poseSum = 0.0
+					""" FIXME: assume one landmark feature """
 
-					p1 = landmarks_G[i]
-					dist0 = sqrt((p1[0]-globalLandmarkPoint[0])**2 + (p1[1]-globalLandmarkPoint[1])**2)
+					#if sF0["bloomPoint"] != None:
+					#	print "DO bloom localize to landmark feature", nodeID
+					#	localJunctionPoint = sF0["bloomPoint"]
 
-					if dist0 < LANDMARK_THRESH:
+					#elif sF0["archPoint"] != None:
+					#	print "DO arch localize to landmark feature", nodeID
+					#	localJunctionPoint = sF0["archPoint"]
 
-						for j in range(len(landmarks_G)):
-							p2 = landmarks_G[j]
-
-							dist1 = sqrt((p2[0]-p1[0])**2 + (p2[1]-p1[1])**2)
-							if dist1 < LANDMARK_THRESH:
-								if dist1 > CLOSE_THRESH:
-									poseSum += dist1
-								else:
-									poseSum += 0.1*dist1
-
-						if poseSum < minPoseSum:
-							minPoseSum = poseSum
-							minLandmark = p1
-
-					print "landmarks:", globalLandmarkPoint, p1, poseSum, minPoseSum, minLandmark
-
-				#if minPathID != None:
-				if minLandmark != None:
-
-					print "nodePose0 =", nodePose0
-					print "global landmark =", globalLandmarkPoint
-					print "localJunctionPoint =", localJunctionPoint
-					#print "junction pose =", junctionPose0
-					print "minLandmark =", minLandmark
-					#print "nodeID, pathID =", nodeID, minPathID
-					print "nodeI =", nodeID
-
-					#modJuncPose0 = [junctionPose0[0], junctionPose0[1], nodePose0[2]]
-					modJuncPose0 = [minLandmark[0], minLandmark[1], nodePose0[2]]
+					#elif sF0["inflectionPoint"] != None:
+					#	print "DO inflection localize to landmark feature", nodeID
+					#	localJunctionPoint = sF0["inflectionPoint"]
 
 
-					juncOrigin0 = Pose(modJuncPose0)
-					invPoint0 = [-localJunctionPoint[0], -localJunctionPoint[1]]
-					newNodePoint0 = juncOrigin0.convertLocalToGlobal(invPoint0)
+					""" starting pose of nodeID """
+					nodePose0 = currPoses[nodeID]
+					poseOrigin0 = Pose(nodePose0)
+					#globalLandmarkPoint = poseOrigin0.convertLocalToGlobal(localJunctionPoint)
 
-					""" set pose of node0 to compute offset, but keep same angle """
-					junctionNodePose0 = [newNodePoint0[0], newNodePoint0[1], nodePose0[2]]
-					
-					poseOffset = [newNodePoint0[0]-nodePose0[0], newNodePoint0[1]-nodePose0[1]]
-					print "poseOffset =", poseOffset
-					#poseOffset = poseOrigin0.convertGlobalToLocal(newNodePoint0)
-					#print "poseOffset =", poseOffset
-					
-					print "junctionNodePose0 =", junctionNodePose0
+					localJunctionPoint = landmarks_N[nodeID][0]
+					globalLandmarkPoint = poseOrigin0.convertLocalToGlobal(landmarks_N[nodeID][0])
 
-			
-					print "changing nodeID", nodeID, "from ", nodePose0, "to", junctionNodePose0, "with offset", poseOffset
-					poseOffsets[nodeID] = poseOffset
-					currPoses[nodeID] = junctionNodePose0
-					isPoseChanged[nodeID] = True
+					# self.pathClasses[0] = {"parentID" : None, "branchNodeID" : None, "localJunctionPose" : None, 
+									#"sameProb" : {}, "nodeSet" : [], "globalJunctionPose" : None}
 
-					#self.setNodePose(nodeID, junctionNodePose0)
+					#LANDMARK_THRESH = 3.0
+					LANDMARK_THRESH = 6.0
+					#LANDMARK_THRESH = 4.5
 
-					
-				"""
-				global pose of node0
-				local pose of landmark feature  (localOffset0)
-				global pose of existing junction (junction0)
-				assuming that existing junction is landmark, convert back to get global pose of node
-				"""
+					"""
+					minPathID = None
+					minJuncDist = 1e100
+					junctionPose0 = None
+					for pathID, values in partObj.junctionData.iteritems():
+
+						if pathID != 0 and values["branchNodeID"] != nodeID:
+
+							currJuncPose = values["globalJunctionPose"]
+
+							currDist = sqrt((currJuncPose[0]-globalLandmarkPoint[0])**2 + (currJuncPose[1]-globalLandmarkPoint[1])**2)
+
+							if currDist < minJuncDist and currDist < LANDMARK_THRESH:
+								minJuncDist = currDist
+								minPathID = pathID
+								junctionPose0 = currJuncPose
+					"""
+
+
+					CLOSE_THRESH = 0.3
+
+					minPoseSum = 1e100
+					minLandmark = None
+
+					#maxThresh = thresh1
+					#if thresh2 > thresh1:
+					#	maxThresh = thresh2
+
+					#if dist < LANDMARK_THRESH:
+					#	if dist > maxThresh:
+					#		distSum += dist
+					#	else:
+					#		distSum += 0.1*dist
+
+					for i in range(len(landmarks_G)):
+
+						poseSum = 0.0
+
+						p1 = landmarks_G[i][0]
+						thresh1 = landmarks_G[i][1]
+
+						dist0 = sqrt((p1[0]-globalLandmarkPoint[0])**2 + (p1[1]-globalLandmarkPoint[1])**2)
+
+						if dist0 < LANDMARK_THRESH:
+
+							for j in range(len(landmarks_G)):
+								p2 = landmarks_G[j][0]
+								thresh2 = landmarks_G[j][1]
+
+								maxThresh = thresh1
+								if thresh2 > thresh1:
+									maxThresh = thresh2
+
+								dist1 = sqrt((p2[0]-p1[0])**2 + (p2[1]-p1[1])**2)
+								if dist1 < LANDMARK_THRESH:
+									#if dist1 > CLOSE_THRESH:
+									if dist1 > maxThresh:
+										poseSum += dist1
+									else:
+										poseSum += 0.1*dist1
+
+							if poseSum < minPoseSum:
+								minPoseSum = poseSum
+								minLandmark = p1
+
+						print "landmarks:", globalLandmarkPoint, p1, poseSum, minPoseSum, minLandmark
+
+					#if minPathID != None:
+					if minLandmark != None:
+
+						print "nodePose0 =", nodePose0
+						print "global landmark =", globalLandmarkPoint
+						print "localJunctionPoint =", localJunctionPoint
+						#print "junction pose =", junctionPose0
+						print "minLandmark =", minLandmark
+						#print "nodeID, pathID =", nodeID, minPathID
+						print "nodeI =", nodeID
+
+						#modJuncPose0 = [junctionPose0[0], junctionPose0[1], nodePose0[2]]
+						modJuncPose0 = [minLandmark[0], minLandmark[1], nodePose0[2]]
+
+
+						juncOrigin0 = Pose(modJuncPose0)
+						invPoint0 = [-localJunctionPoint[0], -localJunctionPoint[1]]
+						newNodePoint0 = juncOrigin0.convertLocalToGlobal(invPoint0)
+
+						""" set pose of node0 to compute offset, but keep same angle """
+						junctionNodePose0 = [newNodePoint0[0], newNodePoint0[1], nodePose0[2]]
+						
+						poseOffset = [newNodePoint0[0]-nodePose0[0], newNodePoint0[1]-nodePose0[1]]
+						print "poseOffset =", poseOffset
+						#poseOffset = poseOrigin0.convertGlobalToLocal(newNodePoint0)
+						#print "poseOffset =", poseOffset
+						
+						print "junctionNodePose0 =", junctionNodePose0
+
+				
+						print "changing nodeID", nodeID, "from ", nodePose0, "to", junctionNodePose0, "with offset", poseOffset
+						poseOffsets[nodeID] = poseOffset
+						currPoses[nodeID] = junctionNodePose0
+						isPoseChanged[nodeID] = True
+
+						#self.setNodePose(nodeID, junctionNodePose0)
+
+						
+					"""
+					global pose of node0
+					local pose of landmark feature  (localOffset0)
+					global pose of existing junction (junction0)
+					assuming that existing junction is landmark, convert back to get global pose of node
+					"""
 	
 		if isPoseChanged[nodeID2] and not isPoseChanged[nodeID3]:
 			poseOffset2 = poseOffsets[nodeID2]
@@ -853,6 +880,9 @@ def batchLocalizeParticle(localizeJobs):
 
 def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, medialAxis1, initPose0, initPose1, prevMedialAxis0, prevMedialAxis1, prevPose0, prevPose1, pathIDs, nodeID0, nodeID1, landmarks_G, landmark0_N, landmark1_N, particleIndex, hypID = 0, pathPlotCount = 0, branchIndex = None, spliceIndex = 0, branchProbVal = 1.0):
 
+	print "multiParticleFitSplice()"
+	sys.stdout.flush()
+
 
 	u1 = initGuess0[0]
 	u2 = initGuess0[1]
@@ -866,9 +896,9 @@ def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, me
 	resultPose1, lastCost1, matchCount1, currAng1, currU1 = gen_icp.globalPathToNodeOverlapICP2([u1, u2, angGuess], orientedPath, medialAxis1, plotIter = False, n1 = nodeID1, n2 = -1, arcLimit = 0.5, origPose = initPose1)
 
 
-	resultArgs0 = getMultiDeparturePoint(orientedPath, medialAxis0, initPose0, resultPose0, pathIDs, nodeID0, pathPlotCount = pathPlotCount, hypID = hypID, particleIndex = particleIndex, spliceIndex = spliceIndex, plotIter = True)
+	resultArgs0 = getMultiDeparturePoint(orientedPath, medialAxis0, initPose0, resultPose0, pathIDs, nodeID0, pathPlotCount = pathPlotCount, hypID = hypID, particleIndex = particleIndex, spliceIndex = spliceIndex, plotIter = False)
 
-	resultArgs1 = getMultiDeparturePoint(orientedPath, medialAxis1, initPose1, resultPose1, pathIDs, nodeID1, pathPlotCount = pathPlotCount, hypID = hypID, particleIndex = particleIndex, spliceIndex = spliceIndex, plotIter = True)
+	resultArgs1 = getMultiDeparturePoint(orientedPath, medialAxis1, initPose1, resultPose1, pathIDs, nodeID1, pathPlotCount = pathPlotCount, hypID = hypID, particleIndex = particleIndex, spliceIndex = spliceIndex, plotIter = False)
 	#resultArgs = ([0.0, 0.0],  0.0, False, False, 0.0, 0.0, [0.0, 0.0], 0.0, False, False, 0.0, 0.0, 1.0, 0.0, 0.0)
 
 	isExist1_0 = resultArgs0[3]
@@ -916,28 +946,45 @@ def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, me
 	poseSum = 0.0
 	landmark0_G = None
 	landmark1_G = None
+	thresh0 = None
+	thresh1 = None
 
 	if landmark0_N != None:
-		landmark0_G = frame0.convertLocalToGlobal(landmark0_N)
+		landmark0_G = (frame0.convertLocalToGlobal(landmark0_N[0]), landmark0_N[1], landmark0_N[2])
+		thresh0 = landmark0_G[1]
 
 	if landmark1_N != None:
-		landmark1_G = frame1.convertLocalToGlobal(landmark1_N)
+		landmark1_G = (frame1.convertLocalToGlobal(landmark1_N[0]), landmark1_N[1], landmark1_N[2])
+		thresh1 = landmark1_G[1]
 
 	for i in range(len(landmarks_G)):
-		p1 = landmarks_G[i]
+		p1 = landmarks_G[i][0]
+		threshG = landmarks_G[i][1]
 
 		if landmark0_G != None:
-			dist0 = sqrt((p1[0]-landmark0_G[0])**2 + (p1[1]-landmark0_G[1])**2)
+
+			maxThresh = thresh0
+			if threshG > thresh0:
+				maxThresh = threshG
+
+			dist0 = sqrt((p1[0]-landmark0_G[0][0])**2 + (p1[1]-landmark0_G[0][1])**2)
 			if dist0 < LANDMARK_THRESH:
-				if dist0 > CLOSE_THRESH:
+				#if dist0 > CLOSE_THRESH:
+				if dist0 > maxThresh:
 					poseSum += dist0
 				else:
 					poseSum += 0.1*dist0
 
 		if landmark1_G != None:
-			dist1 = sqrt((p1[0]-landmark1_G[0])**2 + (p1[1]-landmark1_G[1])**2)
+
+			maxThresh = thresh1
+			if threshG > thresh1:
+				maxThresh = threshG
+
+			dist1 = sqrt((p1[0]-landmark1_G[0][0])**2 + (p1[1]-landmark1_G[0][1])**2)
 			if dist1 < LANDMARK_THRESH:
-				if dist1 > CLOSE_THRESH:
+				#if dist1 > CLOSE_THRESH:
+				if dist1 > maxThresh:
 					poseSum += dist1
 				else:
 					poseSum += 0.1*dist1

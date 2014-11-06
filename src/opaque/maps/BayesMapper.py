@@ -282,7 +282,7 @@ class BayesMapper:
 
 					for pID, currHyp in hypSet.iteritems():
 						time1 = time.time()
-						movePath(currHyp, nodeID, direction, distEst = 1.0)
+						#movePath(currHyp, nodeID, direction, distEst = 1.0)
 						currHyp.batchDisplaceParticles(nodeID-1, nodeID)
 
 

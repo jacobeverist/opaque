@@ -595,7 +595,9 @@ class TestNavigation(SnakeControl):
 				#	self.travelDir = False	
 				#if self.mapGraph.numNodes > 40:
 				#	exit()	
-				if self.mapGraph.numNodes > 100:
+				if self.mapGraph.numNodes > 300:
+				#if self.mapGraph.numNodes > 100:
+				#if self.mapGraph.numNodes > 6:
 					exit()	
 					
 		elif self.globalState == 10:
@@ -687,7 +689,9 @@ class TestNavigation(SnakeControl):
 
 		elif self.globalState == 11:
 
-			if self.mapGraph.numNodes > 100:
+			if self.mapGraph.numNodes > 300:
+			#if self.mapGraph.numNodes > 100:
+			#if self.mapGraph.numNodes > 6:
 				exit()
 			
 			" Instantiate the Path Step behavior and give it the path to follow "
@@ -1468,7 +1472,9 @@ class TestNavigation(SnakeControl):
 
 				self.mapGraph.drawNavigation(self.localWayPaths[0], self.localWayPoints[0])
 
-				if self.mapGraph.numNodes > 60:
+				if self.mapGraph.numNodes > 300:
+				#if self.mapGraph.numNodes > 100:
+				#if self.mapGraph.numNodes > 6:
 					exit()	
 
 		return False				

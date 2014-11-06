@@ -727,6 +727,10 @@ def movePath(mapHyp, nodeID, direction, distEst = 1.0):
 	#landmarks_G = nodeToGlobalLandmarks(controlPoses_G, mapHyp.getPathIDs(), mapHyp.getParentHash(), mapHyp.nodeLandmarks, mapHyp.pathClasses)
 	landmarks_G = nodeToGlobalLandmarks(mapHyp.getControlPoses(), mapHyp.getPathIDs(), mapHyp.getParentHash(), mapHyp.nodeLandmarks, mapHyp.pathClasses, exemptNodes = [nodeID-1,nodeID])
 
+	targetNodeLandmarks_N = {nodeID-1 : None, nodeID : None}
+	targetNodeLandmarks_N[nodeID-1] = getNodeLandmark(nodeID-1, mapHyp.poseData)
+	targetNodeLandmarks_N[nodeID] = getNodeLandmark(nodeID, mapHyp.poseData)
+
 
 
 	if nodeID > 0:
@@ -767,162 +771,126 @@ def movePath(mapHyp, nodeID, direction, distEst = 1.0):
 			poseOffsets = {nodeID2: [0.0,0.0,0.0], nodeID3: [0.0,0.0,0.0]}
 			isPoseChanged = {nodeID2: False, nodeID3: False}
 
-			for nodeID0 in [nodeID2, nodeID3]:
+			if False:
 
-				"""
-				self.junctionData[pathID] = {
-											"parentID" : parentID,
-											"branchNodeID" : branchNodeID,
-											"localJunctionPose" : localJunctionPose, 
-											"globalJunctionPose" : globalJunctionPose,
-											"probDist" : [ 1.0 / float(numBranches) for k in range(numBranches) ],
-											"branchPoseDist" : [deepcopy(globalJunctionPose) for k in range(numBranches)],
-											"maxLikelihoodBranch" : 0
-											}		
-				"""
+				for nodeID0 in [nodeID2, nodeID3]:
 
-
-
-				sF0 = poseData.spatialFeatures[nodeID0][0]
-
-				#print nodeID0, "spatialFeatures:", sF0
+					"""
+					self.junctionData[pathID] = {
+												"parentID" : parentID,
+												"branchNodeID" : branchNodeID,
+												"localJunctionPose" : localJunctionPose, 
+												"globalJunctionPose" : globalJunctionPose,
+												"probDist" : [ 1.0 / float(numBranches) for k in range(numBranches) ],
+												"branchPoseDist" : [deepcopy(globalJunctionPose) for k in range(numBranches)],
+												"maxLikelihoodBranch" : 0
+												}		
+					"""
 
 
-				#if len(mapHyp.pathClasses) > 1 and (sF0["bloomPoint"] != None or sF0["archPoint"] != None):
-				if len(mapHyp.pathClasses) > 1 and (sF0["bloomPoint"] != None or sF0["archPoint"] != None or sF0["inflectionPoint"] != None):
 
-					""" FIXME: assume one landmark feature """
+					sF0 = poseData.spatialFeatures[nodeID0][0]
 
-					if sF0["bloomPoint"] != None:
-						print "DO bloom localize to landmark feature", nodeID0
-						localJunctionPoint = sF0["bloomPoint"]
+					#print nodeID0, "spatialFeatures:", sF0
 
-					elif sF0["archPoint"] != None:
-						print "DO arch localize to landmark feature", nodeID0
-						localJunctionPoint = sF0["archPoint"]
+					if len(mapHyp.pathClasses) > 1 and targetNodeLandmarks_N[nodeID] != None:
 
-					elif sF0["inflectionPoint"] != None:
-						print "DO inflection localize to landmark feature", nodeID0
-						localJunctionPoint = sF0["inflectionPoint"]
+					#if len(mapHyp.pathClasses) > 1 and (sF0["bloomPoint"] != None or sF0["archPoint"] != None):
+					#if len(mapHyp.pathClasses) > 1 and (sF0["bloomPoint"] != None or sF0["archPoint"] != None or sF0["inflectionPoint"] != None):
 
+						""" FIXME: assume one landmark feature """
 
-					""" starting pose of nodeID """
-					nodePose0 = currPoses[nodeID0]
-					poseOrigin0 = Pose(nodePose0)
-					globalLandmarkPoint = poseOrigin0.convertLocalToGlobal(localJunctionPoint)
+						#if sF0["bloomPoint"] != None:
+						#	print "DO bloom localize to landmark feature", nodeID0
+						#	localJunctionPoint = sF0["bloomPoint"]
 
-					# self.pathClasses[0] = {"parentID" : None, "branchNodeID" : None, "localJunctionPose" : None, 
-									#"sameProb" : {}, "nodeSet" : [], "globalJunctionPose" : None}
+						#elif sF0["archPoint"] != None:
+						#	print "DO arch localize to landmark feature", nodeID0
+						#	localJunctionPoint = sF0["archPoint"]
 
-					#LANDMARK_THRESH = 3.0
-					LANDMARK_THRESH = 6.0
-					#LANDMARK_THRESH = 4.5
-
-					minPathID = None
-					minJuncDist = 1e100
-					junctionPose0 = None
-					#for pathID, values in partObj.junctionData.iteritems():
-
-					CLOSE_THRESH = 0.3
-
-					minPoseSum = 1e100
-					minLandmark = None
-
-					for i in range(len(landmarks_G)):
-
-						poseSum = 0.0
-
-						p1 = landmarks_G[i]
-						dist0 = sqrt((p1[0]-globalLandmarkPoint[0])**2 + (p1[1]-globalLandmarkPoint[1])**2)
-
-						if dist0 < LANDMARK_THRESH:
-
-							for j in range(len(landmarks_G)):
-								p2 = landmarks_G[j]
-
-								dist1 = sqrt((p2[0]-p1[0])**2 + (p2[1]-p1[1])**2)
-								if dist1 < LANDMARK_THRESH:
-									if dist1 > CLOSE_THRESH:
-										poseSum += dist1
-									else:
-										poseSum += 0.1*dist1
-
-							if poseSum < minPoseSum:
-								minPoseSum = poseSum
-								minLandmark = p1
-
-						print "landmarks:", globalLandmarkPoint, p1, poseSum, minPoseSum, minLandmark
-
-					#if minPathID != None:
-					if minLandmark != None:
-
-						print "nodePose0 =", nodePose0
-						print "global landmark =", globalLandmarkPoint
-						print "localJunctionPoint =", localJunctionPoint
-						#print "junction pose =", junctionPose0
-						print "minLandmark =", minLandmark
-						#print "nodeID, pathID =", nodeID, minPathID
-						print "nodeI =", nodeID
-
-						#modJuncPose0 = [junctionPose0[0], junctionPose0[1], nodePose0[2]]
-						modJuncPose0 = [minLandmark[0], minLandmark[1], nodePose0[2]]
+						#elif sF0["inflectionPoint"] != None:
+						#	print "DO inflection localize to landmark feature", nodeID0
+						#	localJunctionPoint = sF0["inflectionPoint"]
 
 
-						juncOrigin0 = Pose(modJuncPose0)
-						invPoint0 = [-localJunctionPoint[0], -localJunctionPoint[1]]
-						newNodePoint0 = juncOrigin0.convertLocalToGlobal(invPoint0)
+						""" starting pose of nodeID """
+						nodePose0 = currPoses[nodeID0]
+						poseOrigin0 = Pose(nodePose0)
+						#globalLandmarkPoint = poseOrigin0.convertLocalToGlobal(localJunctionPoint)
 
-						""" set pose of node0 to compute offset, but keep same angle """
-						junctionNodePose0 = [newNodePoint0[0], newNodePoint0[1], nodePose0[2]]
-						
-						poseOffset = [newNodePoint0[0]-nodePose0[0], newNodePoint0[1]-nodePose0[1]]
-						print "poseOffset =", poseOffset
-						#poseOffset = poseOrigin0.convertGlobalToLocal(newNodePoint0)
-						#print "poseOffset =", poseOffset
-						
-						print "junctionNodePose0 =", junctionNodePose0
+						globalLandmarkPoint = poseOrigin0.convertLocalToGlobal(targetNodeLandmarks_N[nodeID][0])
+						localJunctionPoint = targetNodeLandmarks_N[nodeID][0]
 
-				
-						print "changing nodeID", nodeID, "from ", nodePose0, "to", junctionNodePose0, "with offset", poseOffset
-						poseOffsets[nodeID] = poseOffset
-						currPoses[nodeID] = junctionNodePose0
-						isPoseChanged[nodeID] = True
+						# self.pathClasses[0] = {"parentID" : None, "branchNodeID" : None, "localJunctionPose" : None, 
+										#"sameProb" : {}, "nodeSet" : [], "globalJunctionPose" : None}
 
-						#self.setNodePose(nodeID, junctionNodePose0)
+						#LANDMARK_THRESH = 3.0
+						LANDMARK_THRESH = 6.0
+						#LANDMARK_THRESH = 4.5
 
+						minPathID = None
+						minJuncDist = 1e100
+						junctionPose0 = None
+						#for pathID, values in partObj.junctionData.iteritems():
 
-						# FIXME: only localizes to branch points.... will disregard if branch point has not been made yet 
+						CLOSE_THRESH = 0.3
 
-						"""
-						for pathID, values in mapHyp.pathClasses.iteritems():
+						minPoseSum = 1e100
+						minLandmark = None
 
-							if pathID != 0 and values["branchNodeID"] != nodeID0:
+						for i in range(len(landmarks_G)):
 
-								currJuncPose = values["globalJunctionPose"]
+							# FIXME:  add thresholds
+							poseSum = 0.0
 
-								currDist = sqrt((currJuncPose[0]-globalLandmarkPoint[0])**2 + (currJuncPose[1]-globalLandmarkPoint[1])**2)
+							p1 = landmarks_G[i][0]
+							thresh1 = landmarks_G[i][1]
+							dist0 = sqrt((p1[0]-globalLandmarkPoint[0])**2 + (p1[1]-globalLandmarkPoint[1])**2)
 
-								if currDist < minJuncDist and currDist < LANDMARK_THRESH:
-									minJuncDist = currDist
-									minPathID = pathID
-									junctionPose0 = currJuncPose
+							if dist0 < LANDMARK_THRESH:
 
-						if minPathID != None:
+								for j in range(len(landmarks_G)):
+									p2 = landmarks_G[j][0]
+									thresh2 = landmarks_G[j][1]
+
+									maxThresh = thresh1
+									if thresh2 > thresh1:
+										maxThresh = thresh2
+
+									dist1 = sqrt((p2[0]-p1[0])**2 + (p2[1]-p1[1])**2)
+									if dist1 < LANDMARK_THRESH:
+										#if dist1 > CLOSE_THRESH:
+										if dist1 > maxThresh:
+											poseSum += dist1
+										else:
+											poseSum += 0.1*dist1
+
+								if poseSum < minPoseSum:
+									minPoseSum = poseSum
+									minLandmark = p1
+
+							print "landmarks:", globalLandmarkPoint, p1, poseSum, minPoseSum, minLandmark
+
+						#if minPathID != None:
+						if minLandmark != None:
 
 							print "nodePose0 =", nodePose0
 							print "global landmark =", globalLandmarkPoint
 							print "localJunctionPoint =", localJunctionPoint
-							print "junction pose =", junctionPose0
-							print "nodeID, pathID =", nodeID0, minPathID
+							#print "junction pose =", junctionPose0
+							print "minLandmark =", minLandmark
+							#print "nodeID, pathID =", nodeID, minPathID
+							print "nodeI =", nodeID
 
-							modJuncPose0 = [junctionPose0[0], junctionPose0[1], nodePose0[2]]
+							#modJuncPose0 = [junctionPose0[0], junctionPose0[1], nodePose0[2]]
+							modJuncPose0 = [minLandmark[0], minLandmark[1], nodePose0[2]]
 
 
 							juncOrigin0 = Pose(modJuncPose0)
 							invPoint0 = [-localJunctionPoint[0], -localJunctionPoint[1]]
 							newNodePoint0 = juncOrigin0.convertLocalToGlobal(invPoint0)
 
-							# set pose of node0 to compute offset, but keep same angle
+							""" set pose of node0 to compute offset, but keep same angle """
 							junctionNodePose0 = [newNodePoint0[0], newNodePoint0[1], nodePose0[2]]
 							
 							poseOffset = [newNodePoint0[0]-nodePose0[0], newNodePoint0[1]-nodePose0[1]]
@@ -933,20 +901,70 @@ def movePath(mapHyp, nodeID, direction, distEst = 1.0):
 							print "junctionNodePose0 =", junctionNodePose0
 
 					
-							poseOffsets[nodeID0] = poseOffset
-							currPoses[nodeID0] = junctionNodePose0
-							isPoseChanged[nodeID0] = True
+							print "changing nodeID", nodeID, "from ", nodePose0, "to", junctionNodePose0, "with offset", poseOffset
+							poseOffsets[nodeID] = poseOffset
+							currPoses[nodeID] = junctionNodePose0
+							isPoseChanged[nodeID] = True
 
 							#self.setNodePose(nodeID, junctionNodePose0)
-						"""
 
-							
-					"""
-					global pose of node0
-					local pose of landmark feature  (localOffset0)
-					global pose of existing junction (junction0)
-					assuming that existing junction is landmark, convert back to get global pose of node
-					"""
+
+							# FIXME: only localizes to branch points.... will disregard if branch point has not been made yet 
+
+							"""
+							for pathID, values in mapHyp.pathClasses.iteritems():
+
+								if pathID != 0 and values["branchNodeID"] != nodeID0:
+
+									currJuncPose = values["globalJunctionPose"]
+
+									currDist = sqrt((currJuncPose[0]-globalLandmarkPoint[0])**2 + (currJuncPose[1]-globalLandmarkPoint[1])**2)
+
+									if currDist < minJuncDist and currDist < LANDMARK_THRESH:
+										minJuncDist = currDist
+										minPathID = pathID
+										junctionPose0 = currJuncPose
+
+							if minPathID != None:
+
+								print "nodePose0 =", nodePose0
+								print "global landmark =", globalLandmarkPoint
+								print "localJunctionPoint =", localJunctionPoint
+								print "junction pose =", junctionPose0
+								print "nodeID, pathID =", nodeID0, minPathID
+
+								modJuncPose0 = [junctionPose0[0], junctionPose0[1], nodePose0[2]]
+
+
+								juncOrigin0 = Pose(modJuncPose0)
+								invPoint0 = [-localJunctionPoint[0], -localJunctionPoint[1]]
+								newNodePoint0 = juncOrigin0.convertLocalToGlobal(invPoint0)
+
+								# set pose of node0 to compute offset, but keep same angle
+								junctionNodePose0 = [newNodePoint0[0], newNodePoint0[1], nodePose0[2]]
+								
+								poseOffset = [newNodePoint0[0]-nodePose0[0], newNodePoint0[1]-nodePose0[1]]
+								print "poseOffset =", poseOffset
+								#poseOffset = poseOrigin0.convertGlobalToLocal(newNodePoint0)
+								#print "poseOffset =", poseOffset
+								
+								print "junctionNodePose0 =", junctionNodePose0
+
+						
+								poseOffsets[nodeID0] = poseOffset
+								currPoses[nodeID0] = junctionNodePose0
+								isPoseChanged[nodeID0] = True
+
+								#self.setNodePose(nodeID, junctionNodePose0)
+							"""
+
+								
+						"""
+						global pose of node0
+						local pose of landmark feature  (localOffset0)
+						global pose of existing junction (junction0)
+						assuming that existing junction is landmark, convert back to get global pose of node
+						"""
 		
 			if isPoseChanged[nodeID2] and not isPoseChanged[nodeID3]:
 				poseOffset2 = poseOffsets[nodeID2]
@@ -1155,16 +1173,16 @@ def movePath(mapHyp, nodeID, direction, distEst = 1.0):
 				print "input: uMedialOrigin3, u3, pose3:", uMedialOrigin3, u3, pose3
 
 				
-				resultPose2, lastCost2, matchCount2, currAng2, currU2 = gen_icp.globalPathToNodeOverlapICP2([u2, uMedialOrigin2, 0.0], orientedSplicePath, medial2, plotIter = False, n1 = nodeID-1, n2 = -1, arcLimit = 0.1)
-				resultPose3, lastCost3, matchCount3, currAng3, currU3 = gen_icp.globalPathToNodeOverlapICP2([u3, uMedialOrigin3, 0.0], orientedSplicePath, medial3, plotIter = False, n1 = nodeID, n2 = -1, arcLimit = 0.1)
+				resultPose2, lastCost2, matchCount2, currAng2, currU2 = gen_icp.globalPathToNodeOverlapICP2([u2, uMedialOrigin2, 0.0], orientedSplicePath, medial2, plotIter = True, n1 = nodeID-1, n2 = -1, arcLimit = 0.1)
+				resultPose3, lastCost3, matchCount3, currAng3, currU3 = gen_icp.globalPathToNodeOverlapICP2([u3, uMedialOrigin3, 0.0], orientedSplicePath, medial3, plotIter = True, n1 = nodeID, n2 = -1, arcLimit = 0.1)
 				
 				print "resultPoses:", resultPose2, resultPose3
 
 				multiDepCount = 0
 
-				result2 = getMultiDeparturePoint(orientedSplicePath, medial2_vec, pose2, resultPose2, [], nodeID-1, pathPlotCount = multiDepCount, plotIter = False)
+				result2 = getMultiDeparturePoint(orientedSplicePath, medial2_vec, pose2, resultPose2, [], nodeID-1, pathPlotCount = multiDepCount, plotIter = True)
 				multiDepCount += 1
-				result3 = getMultiDeparturePoint(orientedSplicePath, medial3_vec, pose3, resultPose3, [], nodeID, pathPlotCount = multiDepCount, plotIter = False)
+				result3 = getMultiDeparturePoint(orientedSplicePath, medial3_vec, pose3, resultPose3, [], nodeID, pathPlotCount = multiDepCount, plotIter = True)
 				multiDepCount += 1
 				
 				#results1.append(result+(k,))

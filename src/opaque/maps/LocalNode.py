@@ -2080,7 +2080,8 @@ class LocalNode:
 
 				#if maxDeriv >= 0.35:
 				#if maxDeriv >= 0.6 and longPathWidth[contigInflection-1]["angDeriv2"] < maxDeriv and longPathWidth[contigInflection+1]["angDeriv2"] < maxDeriv:
-				if maxDeriv >= 0.6:
+				#if maxDeriv >= 0.6:
+				if False:
 
 					inflectionPoint = None
 
