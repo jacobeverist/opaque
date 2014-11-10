@@ -111,9 +111,28 @@ def batchDisplaceParticles(displaceJobs):
 	
 	# read output queue
 	knn = []
+	isFail = False
 	while len(knn) < nc:
-		knn += [qout_dispPosePart.get()]
+		thisKnn = qout_dispPosePart.get()
+		if thisKnn[0] != None:
+			knn += [thisKnn]
+		else:
+			isFail = True
+			break
 	
+	if isFail:
+		qin_dispPosePart.close()
+		qin_dispPosePart.join_thread()
+
+		qout_dispPosePart.close()
+		qout_dispPosePart.cancel_join_thread()
+
+		for p in pool_dispPosePart:
+			p.terminate()
+
+		raise
+
+
 	# avoid race condition
 	_knn = [n for i,n in sorted(knn)]
 	knn = []
@@ -142,43 +161,55 @@ def __remote_prof_displaceParticle(rank, qin, qout):
 
 def __remote_displaceParticle(rank, qin, qout):
 
-	#sys.stdout = open("displaceParticle_" + str(os.getpid()) + ".out", "w")
-	#sys.stderr = open("displaceParticle_" + str(os.getpid()) + ".err", "w")
-	sys.stdout = open("displaceParticle_" + str(rank) + ".out", "a")
-	sys.stderr = open("displaceParticle_" + str(rank) + ".err", "a")
-	print 'module name:', __name__
-	print 'parent process:', os.getppid()
-	print 'process id:', os.getpid()
 
-	print "started __remote_displaceParticle"
+	try:
 
-	while 1:
-		# read input queue (block until data arrives)
-		results = []
-		nc, args = qin.get()
+		#sys.stdout = open("displaceParticle_" + str(os.getpid()) + ".out", "w")
+		#sys.stderr = open("displaceParticle_" + str(os.getpid()) + ".err", "w")
+		sys.stdout = open("displaceParticle_" + str(rank) + ".out", "a")
+		sys.stderr = open("displaceParticle_" + str(rank) + ".err", "a")
+		print 'module name:', __name__
+		print 'parent process:', os.getppid()
+		print 'process id:', os.getpid()
 
-		for job in args:
-			
-			#[particleIndex, nodeID3, prevPose0, prevPose1, initPose2, initPose3, supportLine, pathSplices2, pathSplices3]
-			poseData = job[0]
-			partObj = job[1]
-			particleIndex = job[2]
-			nodeID3 = job[3]
-			prevPose0 = job[4]
-			prevPose1 = job[5]
-			initPose2 = job[6]
-			initPose3 = job[7]
-			supportLine = job[8]
-			pathSplices2 = job[9]
-			pathSplices3 = job[10]
-			landmarks_G = job[11]
-			landmarks_N = job[12]
+		print "started __remote_displaceParticle"
 
-			result = displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine, nodeID3, initPose2, initPose3, prevPose0, prevPose1, particleIndex, landmarks_G, landmarks_N)
-			results.append((particleIndex,) + result)
-						   
-		# write to output queue
-		qout.put((nc,results))
+		while 1:
+			# read input queue (block until data arrives)
+			results = []
+			nc, args = qin.get()
+
+			#foo = None
+			#badVal = foo[0] 
+
+			for job in args:
+				
+				#[particleIndex, nodeID3, prevPose0, prevPose1, initPose2, initPose3, supportLine, pathSplices2, pathSplices3]
+				poseData = job[0]
+				partObj = job[1]
+				particleIndex = job[2]
+				nodeID3 = job[3]
+				prevPose0 = job[4]
+				prevPose1 = job[5]
+				initPose2 = job[6]
+				initPose3 = job[7]
+				supportLine = job[8]
+				pathSplices2 = job[9]
+				pathSplices3 = job[10]
+				landmarks_G = job[11]
+				landmarks_N = job[12]
+
+				result = displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine, nodeID3, initPose2, initPose3, prevPose0, prevPose1, particleIndex, landmarks_G, landmarks_N)
+				results.append((particleIndex,) + result)
+							   
+			# write to output queue
+			qout.put((nc,results))
+
+	except:
+		print "Worker process failed. Exiting"
+		qout.put((None,None))
+		raise
+
 
 def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine, nodeID3, initPose2, initPose3, prevPose0, prevPose1, particleIndex, landmarks_G, landmarks_N):
 
@@ -722,87 +753,98 @@ def __remote_prof_multiParticle(rank, qin, qout):
 
 def __remote_multiParticle(rank, qin, qout):
 
-	#sys.stdout = open("particle_" + str(os.getpid()) + ".out", "w")
-	#sys.stderr = open("particle_" + str(os.getpid()) + ".err", "w")
-	sys.stdout = open("particle_" + str(rank) + ".out", "a")
-	sys.stderr = open("particle_" + str(rank) + ".err", "a")
-	print 'module name:', __name__
-	print 'parent process:', os.getppid()
-	print 'process id:', os.getpid()
 
-	print "started __remote_multiParticle"
+	try:
+		#sys.stdout = open("particle_" + str(os.getpid()) + ".out", "w")
+		#sys.stderr = open("particle_" + str(os.getpid()) + ".err", "w")
+		sys.stdout = open("particle_" + str(rank) + ".out", "a")
+		sys.stderr = open("particle_" + str(rank) + ".err", "a")
+		print 'module name:', __name__
+		print 'parent process:', os.getppid()
+		print 'process id:', os.getpid()
 
-	while 1:
-		# read input queue (block until data arrives)
-		results = []
-		nc, args = qin.get()
-		#print rank, "received", nc, args
-		# process data
-		#knn = __do_nothing(data, nc, someArg2, someArg3)
-		for job in args:
+		print "started __remote_multiParticle"
 
-			#localizeJobs.append([pathU0, oldMedialU0, 0.0, pathU1, oldMedialU1, 0.0, spliceIndex, deepcopy(orientedPath0), deepcopy(medial0), deepcopy(medial1), deepcopy(hypPose0), deepcopy(hypPose1), [], nodeID0, particleIndex, updateCount, self.hypothesisID])
+		while 1:
+			# read input queue (block until data arrives)
+			results = []
+			nc, args = qin.get()
+			#print rank, "received", nc, args
+			# process data
+			#knn = __do_nothing(data, nc, someArg2, someArg3)
 
-			branchIndex = job[6]
-			spliceIndex = job[7]
-			#globalPath = job[8]
-			orientedPath0 = job[8]
-			medial0 = job[9]
-			medial1 = job[10]
-			initPose0 = job[11]
-			initPose1 = job[12]
+			#foo = None
+			#badVal = foo[0] 
 
-			prevMedial0 = job[13]
-			prevMedial1 = job[14]
-			prevPose0 = job[15]
-			prevPose1 = job[16]
+			for job in args:
 
-			pathIDs = job[17]
-			nodeID0 = job[18]
-			nodeID1 = job[19]
-			particleIndex = job[20]
-			updateCount = job[21]
-			hypID = job[22]
-			branchProbVal = job[23]
-			landmarks_G = job[24]
-			landmark0_N = job[25]
-			landmark1_N = job[26]
+				#localizeJobs.append([pathU0, oldMedialU0, 0.0, pathU1, oldMedialU1, 0.0, spliceIndex, deepcopy(orientedPath0), deepcopy(medial0), deepcopy(medial1), deepcopy(hypPose0), deepcopy(hypPose1), [], nodeID0, particleIndex, updateCount, self.hypothesisID])
 
-			oldMedialP0 = job[0]
-			oldMedialU0 = job[1]
-			angGuess0 = job[2]
-			oldMedialP1 = job[3]
-			oldMedialU1 = job[4]
-			angGuess1 = job[5]
+				branchIndex = job[6]
+				spliceIndex = job[7]
+				#globalPath = job[8]
+				orientedPath0 = job[8]
+				medial0 = job[9]
+				medial1 = job[10]
+				initPose0 = job[11]
+				initPose1 = job[12]
 
-			poseOrigin = Pose(initPose0)
-			
-			globalMedial0 = []
-			for p in medial0:
-				globalMedial0.append(poseOrigin.convertLocalOffsetToGlobal(p))
-			
-			#globalMedial1 = []
-			#for p in medial1:
-			#	globalMedial1.append(poseOrigin.convertLocalOffsetToGlobal(p))
+				prevMedial0 = job[13]
+				prevMedial1 = job[14]
+				prevPose0 = job[15]
+				prevPose1 = job[16]
 
+				pathIDs = job[17]
+				nodeID0 = job[18]
+				nodeID1 = job[19]
+				particleIndex = job[20]
+				updateCount = job[21]
+				hypID = job[22]
+				branchProbVal = job[23]
+				landmarks_G = job[24]
+				landmark0_N = job[25]
+				landmark1_N = job[26]
 
-			globalMedialP0 = poseOrigin.convertLocalOffsetToGlobal(oldMedialP0)	
-			globalMedialP1 = poseOrigin.convertLocalOffsetToGlobal(oldMedialP1)	
+				oldMedialP0 = job[0]
+				oldMedialU0 = job[1]
+				angGuess0 = job[2]
+				oldMedialP1 = job[3]
+				oldMedialU1 = job[4]
+				angGuess1 = job[5]
 
-			#orientedPath0 = orientPathLean(globalPath, globalMedial0)
-			orientedPathSpline0 = SplineFit(orientedPath0, smooth=0.1)
-			pathU0 = orientedPathSpline0.findU(globalMedialP0)
-			pathU1 = orientedPathSpline0.findU(globalMedialP1)
+				poseOrigin = Pose(initPose0)
+				
+				globalMedial0 = []
+				for p in medial0:
+					globalMedial0.append(poseOrigin.convertLocalOffsetToGlobal(p))
+				
+				#globalMedial1 = []
+				#for p in medial1:
+				#	globalMedial1.append(poseOrigin.convertLocalOffsetToGlobal(p))
 
 
-			params0 = [pathU0, oldMedialU0, angGuess0]
-			params1 = [pathU1, oldMedialU1, angGuess1]
+				globalMedialP0 = poseOrigin.convertLocalOffsetToGlobal(oldMedialP0)	
+				globalMedialP1 = poseOrigin.convertLocalOffsetToGlobal(oldMedialP1)	
 
-			result = multiParticleFitSplice(params0, params1, orientedPath0, medial0, medial1, initPose0, initPose1, prevMedial0, prevMedial1, prevPose0, prevPose1, pathIDs, nodeID0, nodeID1, landmarks_G, landmark0_N, landmark1_N, particleIndex, hypID = hypID, pathPlotCount = updateCount, branchIndex = branchIndex, spliceIndex = spliceIndex, branchProbVal = branchProbVal)
-			results.append(result)
-						   
-		# write to output queue
-		qout.put((nc,results))
+				#orientedPath0 = orientPathLean(globalPath, globalMedial0)
+				orientedPathSpline0 = SplineFit(orientedPath0, smooth=0.1)
+				pathU0 = orientedPathSpline0.findU(globalMedialP0)
+				pathU1 = orientedPathSpline0.findU(globalMedialP1)
+
+
+				params0 = [pathU0, oldMedialU0, angGuess0]
+				params1 = [pathU1, oldMedialU1, angGuess1]
+
+				result = multiParticleFitSplice(params0, params1, orientedPath0, medial0, medial1, initPose0, initPose1, prevMedial0, prevMedial1, prevPose0, prevPose1, pathIDs, nodeID0, nodeID1, landmarks_G, landmark0_N, landmark1_N, particleIndex, hypID = hypID, pathPlotCount = updateCount, branchIndex = branchIndex, spliceIndex = spliceIndex, branchProbVal = branchProbVal)
+				results.append(result)
+							   
+			# write to output queue
+			qout.put((nc,results))
+	except:
+		print "Worker process failed. Exiting"
+		qout.put((None,None))
+		raise
+
 
 def batchLocalizeParticle(localizeJobs):
 
@@ -861,9 +903,27 @@ def batchLocalizeParticle(localizeJobs):
 	
 	# read output queue
 	knn = []
+	isFail = False
 	while len(knn) < nc:
-		knn += [qout_posePart.get()]
+		thisKnn = qout_posePart.get()
+		if thisKnn[0] != None:
+			knn += [thisKnn]
+		else:
+			isFail = True
+			break
 	
+	if isFail:
+		qin_posePart.close()
+		qin_posePart.join_thread()
+
+		qout_posePart.close()
+		qout_posePart.cancel_join_thread()
+
+		for p in pool_posePart:
+			p.terminate()
+
+		raise
+
 	# avoid race condition
 	_knn = [n for i,n in sorted(knn)]
 	knn = []

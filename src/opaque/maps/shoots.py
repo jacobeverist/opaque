@@ -1648,43 +1648,53 @@ def __remote_prof_multiBranch(rank, qin, qout):
 
 def __remote_multiBranch(rank, qin, qout):
 
-	#sys.stdout = open("branch_" + str(os.getpid()) + ".out", "w")
-	#sys.stderr = open("branch_" + str(os.getpid()) + ".err", "w")
-	sys.stdout = open("branch_" + str(rank) + ".out", "a")
-	sys.stderr = open("branch_" + str(rank) + ".err", "a")
-	print 'module name:', __name__
-	print 'parent process:', os.getppid()
-	print 'process id:', os.getpid()
 
-	print "started __remote_multiBranch"
+	try:
+		#sys.stdout = open("branch_" + str(os.getpid()) + ".out", "w")
+		#sys.stderr = open("branch_" + str(os.getpid()) + ".err", "w")
+		sys.stdout = open("branch_" + str(rank) + ".out", "a")
+		sys.stderr = open("branch_" + str(rank) + ".err", "a")
+		print 'module name:', __name__
+		print 'parent process:', os.getppid()
+		print 'process id:', os.getpid()
 
-	while 1:
-		# read input queue (block until data arrives)
-		results = []
-		nc, args = qin.get()
-		# process data
-		for job in args:
+		print "started __remote_multiBranch"
 
-			#branchJobs.append((pathID, parentID, origGlobJuncPose, childPath, parentPath, trimmedParent, smoothPathSegs, arcDist))
+		while 1:
+			# read input queue (block until data arrives)
+			results = []
+			nc, args = qin.get()
 
-			pathID = job[0]
-			parentID = job[1]
-			localPathSegs = job[2]
-			localPaths = job[3]
-			arcDist = job[4]
-			localSkeletons = job[5]
-			controlPoses = job[6]
-			junctionPoses = job[7]
-			parentPathIDs = job[8]
-			numNodes = job[9]
-			hypID = job[10]
+			foo = None
+			badVal = foo[0]
+			# process data
+			for job in args:
 
-			result = computeBranch(pathID, parentID, localPathSegs, localPaths, arcDist, localSkeletons, controlPoses, junctionPoses, parentPathIDs, numNodes, hypID)
+				#branchJobs.append((pathID, parentID, origGlobJuncPose, childPath, parentPath, trimmedParent, smoothPathSegs, arcDist))
 
-			results.append(result)
-						   
-		# write to output queue
-		qout.put((nc,results))
+				pathID = job[0]
+				parentID = job[1]
+				localPathSegs = job[2]
+				localPaths = job[3]
+				arcDist = job[4]
+				localSkeletons = job[5]
+				controlPoses = job[6]
+				junctionPoses = job[7]
+				parentPathIDs = job[8]
+				numNodes = job[9]
+				hypID = job[10]
+
+				result = computeBranch(pathID, parentID, localPathSegs, localPaths, arcDist, localSkeletons, controlPoses, junctionPoses, parentPathIDs, numNodes, hypID)
+
+				results.append(result)
+							   
+			# write to output queue
+			qout.put((nc,results))
+	except:
+		print "Worker process failed. Exiting"
+		qout.put((None,None))
+		raise
+
 
 def batchJointBranch(branchJobs):
 
@@ -1742,11 +1752,35 @@ def batchJointBranch(branchJobs):
 	
 	print "BATCH FINISHED"
 	
-	
 	# read output queue
 	knn = []
+	isFail = False
 	while len(knn) < nc:
-		knn += [qout_branch.get()]
+		thisKnn = qout_branch.get()
+		if thisKnn[0] != None:
+			knn += [thisKnn]
+		else:
+			isFail = True
+			break
+	
+	if isFail:
+		qin_branch.close()
+		qin_branch.join_thread()
+
+		qout_branch.close()
+		qout_branch.cancel_join_thread()
+
+		for p in pool_branch:
+			p.terminate()
+		pool_branch = []
+
+		raise
+
+	
+	# read output queue
+	#knn = []
+	#while len(knn) < nc:
+	#	knn += [qout_branch.get()]
 	
 	#print "received output:", knn
 		
@@ -1796,43 +1830,53 @@ def __remote_prof_multiJointBranch(rank, qin, qout):
 
 def __remote_multiJointBranch(rank, qin, qout):
 
-	#sys.stdout = open("jointbranch_" + str(os.getpid()) + ".out", "w")
-	#sys.stderr = open("jointbranch_" + str(os.getpid()) + ".err", "w")
-	sys.stdout = open("jointbranch_" + str(rank) + ".out", "w")
-	sys.stderr = open("jointbranch_" + str(rank) + ".err", "w")
-	print 'module name:', __name__
-	print 'parent process:', os.getppid()
-	print 'process id:', os.getpid()
+	try:
 
-	print "started __remote_multiJointBranch"
+		#sys.stdout = open("jointbranch_" + str(os.getpid()) + ".out", "w")
+		#sys.stderr = open("jointbranch_" + str(os.getpid()) + ".err", "w")
+		sys.stdout = open("jointbranch_" + str(rank) + ".out", "w")
+		sys.stderr = open("jointbranch_" + str(rank) + ".err", "w")
+		print 'module name:', __name__
+		print 'parent process:', os.getppid()
+		print 'process id:', os.getpid()
 
-	while 1:
-		# read input queue (block until data arrives)
-		results = []
-		nc, args = qin.get()
-		# process data
-		for job in args:
+		print "started __remote_multiJointBranch"
 
-			localPathSegs = job[0]
-			localPaths = job[1]
-			localSkeletons = job[2]
-			controlPoses = job[3]
-			junctionPoses = job[4]
-			landmarks = job[5]
-			parentPathIDs = job[6]
-			arcDists = job[7]
-			numNodes = job[8]
-			hypID = job[9]
+		while 1:
+			# read input queue (block until data arrives)
+			results = []
+			nc, args = qin.get()
 
-			result = computeJointBranch(localPathSegs, localPaths, localSkeletons, controlPoses, junctionPoses, landmarks, parentPathIDs, arcDists, numNodes, hypID)
-			#result = None
+			#foo = None
+			#badVal = foo[0]
 
-			results.append(result)
-						   
-		# write to output queue
-		qout.put((nc,results))
+			# process data
+			for job in args:
+
+				localPathSegs = job[0]
+				localPaths = job[1]
+				localSkeletons = job[2]
+				controlPoses = job[3]
+				junctionPoses = job[4]
+				landmarks = job[5]
+				parentPathIDs = job[6]
+				arcDists = job[7]
+				numNodes = job[8]
+				hypID = job[9]
+
+				result = computeJointBranch(localPathSegs, localPaths, localSkeletons, controlPoses, junctionPoses, landmarks, parentPathIDs, arcDists, numNodes, hypID)
+				#result = None
+
+				results.append(result)
+							   
+			# write to output queue
+			qout.put((nc,results))
 
 
+	except:
+		print "Worker process failed. Exiting"
+		qout.put((None,None))
+		raise
 
 
 def batchBranch(branchJobs):
