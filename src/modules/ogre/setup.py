@@ -7,7 +7,7 @@ from Cython.Distutils import build_ext
 if os.name == 'posix':
 
 	OGRE_INC = '/usr/local/include/OGRE'
-	OIS_INC = '/usr/include/ois'
+	OIS_INC = '/usr/include/OIS'
 
 	ext_modules = [Extension("ogreprobe",
 			["ogreprobe.pyx", "BaseApplication.cpp", "ProbeApp.cpp"],
