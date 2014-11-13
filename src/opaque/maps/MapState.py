@@ -8,7 +8,7 @@ from copy import copy, deepcopy
 from functions import *
 import random
 from subprocess import Popen, PIPE
-import Image
+from PIL import Image
 from medialaxis import computeMedialAxis
 import graph
 from LocalNode import getLongestPath

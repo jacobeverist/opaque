@@ -21,7 +21,7 @@ import alphamod
 import random
 import functions
 from functions import decimatePoints
-#import Image
+#from PIL import Image
 from numpy import array, dot, transpose
 
 estPlotCount = 0

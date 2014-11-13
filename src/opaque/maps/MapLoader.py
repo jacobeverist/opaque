@@ -13,7 +13,7 @@ import math
 import graph
 from subprocess import Popen, PIPE
 from medialaxis import computeMedialAxis
-import Image
+from PIL import Image
 import sys
 import alphamod
 

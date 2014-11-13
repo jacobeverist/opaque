@@ -6,14 +6,14 @@ import shlex
 import time
 import shutil
 
-maps = ['60_left_junction.py', '60_right_junction.py', 'L_left_junction.py', 'L_right_junction.py']
+#maps = ['60_left_junction.py', '60_right_junction.py', 'L_left_junction.py', 'L_right_junction.py']
 hardMaps = ['T_side_junction.py', 'T_bottom_junction.py', 'Y_junction.py', 'cross_junction.py']
 #maps = ['L_left_junction.py', 'L_right_junction.py']
-#maps = ['L_right_junction.py']
+maps = ['L_right_junction.py', 'T_bottom_junction.py']
 
 #maps += hardMaps
 #maps = ['cross_junction.py', 'Y_junction.py', 'Y_Y_junction.py']
-maps = ['cross_junction.py']
+#maps = ['cross_junction.py']
 
 comboMaps = ['Y_Y_junction.py', 'Y_right_Y_junction.py', 'Y_right_cross_junction.py', 'Y_left_Y_junction.py', 'T_side_T_junction.py', 'T_bottom_T_junction.py', 'L_right_left_junction.py', 'L_left_right_junction.py', '60_right_left_junction.py', '60_left_right_junction.py', 'cross_cross_junction.py', 'gen_function.py', 'gen_function2.py', 'gen_junction.py', 'gen_junction2.py']
 
@@ -41,10 +41,12 @@ for mapFile in maps:
 	command_line = "/usr/bin/python ../startSim.py --mapfile=../mapLibrary/%s --restoreConfig=True --hideWindow=True" % mapFile 
 	args = shlex.split(command_line)
 	print "args:", args
-	p = subprocess.Popen(args, stdout=fileOut, stderr=fileOut)
+	#p = subprocess.Popen(args, stdout=fileOut, stderr=fileOut)
 
+	subprocess.check_call(args, stdout=fileOut, stderr=fileOut)
 
 	""" monitor whether or not the execution has halted by watching out files """
+	"""
 	while True:
 		outFiles = glob.glob(os.path.join("*.out")) + glob.glob(os.path.join("out.txt"))
 		outFiles.sort(key=lambda x: os.path.getmtime(x), reverse=True)
@@ -61,7 +63,7 @@ for mapFile in maps:
 			break
 
 		time.sleep(1)
-
+	"""
 
 	#p.wait()
 

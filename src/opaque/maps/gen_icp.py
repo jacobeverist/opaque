@@ -62,7 +62,7 @@ from copy import deepcopy
 from Pose import Pose
 from SplineFit import SplineFit
 
-import Image
+from PIL import Image
 
 from icp import shapeCostC
 from icp import computeMatchErrorP

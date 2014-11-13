@@ -1,7 +1,7 @@
 
 from Map import Map
-import Image
-import ImageDraw
+from PIL import Image
+from PIL import ImageDraw
 
 class LocalBoundaryMap(Map):
 

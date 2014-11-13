@@ -1,5 +1,5 @@
 
-import Image
+from PIL import Image
 import pylab
 import scipy.optimize
 from numpy import *
