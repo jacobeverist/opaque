@@ -103,7 +103,7 @@ def getLongestPath(node, currSum, currPath, tree, isVisited, nodePath, nodeSum):
 
 class LocalNode:
 
-	def __init__(self, probe, contacts, nodeID, rootNode, pixelSize, stabilizePose = False, faceDir = True, travelDir = True):
+	def __init__(self, probe, contacts, nodeID, rootNode, pixelSize, stabilizePose = False, faceDir = True, travelDir = True, useBloom = True, useBend = True):
 
 		self.pixelSize = pixelSize
 
@@ -116,6 +116,9 @@ class LocalNode:
 		self.faceDir = faceDir
 		self.travelDir = travelDir
 		self.partnerNodeID = 0
+
+		self.useBloom = useBloom
+		self.useBend = useBend
 
 		self.nodeID = nodeID
 		self.probe = probe
@@ -2081,7 +2084,8 @@ class LocalNode:
 				#if maxDeriv >= 0.35:
 				#if maxDeriv >= 0.6 and longPathWidth[contigInflection-1]["angDeriv2"] < maxDeriv and longPathWidth[contigInflection+1]["angDeriv2"] < maxDeriv:
 				#if maxDeriv >= 0.6:
-				if False:
+				#if False:
+				if self.useBend and maxDeriv >= 0.6:
 
 					inflectionPoint = None
 
@@ -2108,7 +2112,7 @@ class LocalNode:
 
 			" conditions for a bloom detection "
 			bloomPoint = None
-			if len(contigPointIndex) == 1:
+			if self.useBloom and len(contigPointIndex) == 1:
 				dens = contigDensity[0]
 				area = contigArea[0]
 				cLen = contigLen[0]
@@ -2129,7 +2133,7 @@ class LocalNode:
 
 			" conditions for a arch detection "
 			archPoint = None
-			if len(contigPointIndex) == 1 and bloomPoint == None:
+			if self.useBloom and len(contigPointIndex) == 1 and bloomPoint == None:
 				dens = contigDensity[0]
 				area = contigArea[0]
 				cLen = contigLen[0]

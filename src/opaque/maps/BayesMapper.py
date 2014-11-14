@@ -41,8 +41,15 @@ def printStack():
 
 class BayesMapper:
 
-	def __init__(self, walls):
+	def __init__(self, walls, args = None):
 		
+		#self.maxNumPoses = maxNumPoses
+		#self.numPoseParticles = numPoseParticles
+		#self.bloomFeature = bloomFeature
+		#self.bendFeature = bendFeature
+
+		self.args = args
+
 		#self.probe = probe
 		
 		#self.walls = self.probe.getWalls()
@@ -56,7 +63,7 @@ class BayesMapper:
 		""" initialize to a single map hypothesis """
 		self.particleIDs = 0
 		self.mapHyps = {}
-		self.mapHyps[self.particleIDs] = MapState(self.poseData, self.particleIDs)
+		self.mapHyps[self.particleIDs] = MapState(self.poseData, self.particleIDs, args = self.args)
 		self.particleIDs += 1
 		#self.mapHyps[self.particleIDs] = self.mapHyps[0].copy(self.particleIDs)
 		#self.mapHyps[self.particleIDs] = MapState(self.poseData, self.particleIDs)

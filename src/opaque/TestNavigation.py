@@ -24,12 +24,17 @@ from maps.MapUser import MapUser
 import numpy
 import sys
 
+#MAX_NODES = 300
+#MAX_NODES = 100
+MAX_NODES = 60
+
 class TestNavigation(SnakeControl):
 
 	# 3 Steps, go right path, go left path, go back to origin
 	# compute path at each step
 
-	def __init__(self, probe, drawThings):
+	def __init__(self, probe, drawThings, args):
+	
 		SnakeControl.__init__(self)
 		
 		self.drawThings = drawThings
@@ -41,6 +46,13 @@ class TestNavigation(SnakeControl):
 		#robotParam['segLength'] = self.probe.segLength
 		#robotParam['segWidth'] = self.probe.segWidth
 		#robotParam['maxTorque'] = self.probe.maxTorque
+
+
+		self.args = args
+
+		self.maxNumPoses = self.args.maxNumPoses
+
+
 		
 		self.numJoints = robotParam['numJoints']
 		
@@ -262,7 +274,9 @@ class TestNavigation(SnakeControl):
 			
 			" create the mapping object "
 			#self.mapGraph = MapGraph(self.probe, self.contacts, isStable = True)
-			self.mapGraph = MapUser(self.probe, self.contacts, isStable = True)
+			#self.mapGraph = MapUser(self.probe, self.contacts, isStable = True, self.maxNumPoses, self.numPoseParticles, self.bloomFeature, self.bendFeature)
+			self.mapGraph = MapUser(self.probe, self.contacts, isStable = True, args = self.args)
+			#self.maxNumPoses, self.numPoseParticles, self.bloomFeature, self.bendFeature)
 
 			#self.mapGraph.drawNavigation([],[])
 
@@ -593,11 +607,7 @@ class TestNavigation(SnakeControl):
 
 				#if self.mapGraph.numNodes > 26:
 				#	self.travelDir = False	
-				#if self.mapGraph.numNodes > 40:
-				#	exit()	
-				if self.mapGraph.numNodes > 300:
-				#if self.mapGraph.numNodes > 100:
-				#if self.mapGraph.numNodes > 6:
+				if self.mapGraph.numNodes > self.maxNumPoses:
 					exit()	
 					
 		elif self.globalState == 10:
@@ -689,9 +699,7 @@ class TestNavigation(SnakeControl):
 
 		elif self.globalState == 11:
 
-			if self.mapGraph.numNodes > 300:
-			#if self.mapGraph.numNodes > 100:
-			#if self.mapGraph.numNodes > 6:
+			if self.mapGraph.numNodes > self.maxNumPoses:
 				exit()
 			
 			" Instantiate the Path Step behavior and give it the path to follow "
@@ -1472,9 +1480,7 @@ class TestNavigation(SnakeControl):
 
 				self.mapGraph.drawNavigation(self.localWayPaths[0], self.localWayPoints[0])
 
-				if self.mapGraph.numNodes > 300:
-				#if self.mapGraph.numNodes > 100:
-				#if self.mapGraph.numNodes > 6:
+				if self.mapGraph.numNodes > self.maxNumPoses:
 					exit()	
 
 		return False				

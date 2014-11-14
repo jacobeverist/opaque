@@ -275,7 +275,7 @@ def getOverlapCondition(medial2, estPose2, supportLine, nodeID, plotIter = False
 
 class MapState:
 	
-	def __init__(self, poseData, hypothesisID):
+	def __init__(self, poseData, hypothesisID, args = None):
 		
 		""" raw sensor data products """
 		self.poseData = deepcopy(poseData)
@@ -283,7 +283,13 @@ class MapState:
 		""" pose particles for different combinations of poses and branch points """
 		#self.numPoseParticles = 100
 		#self.numPoseParticles = 40
-		self.numPoseParticles = 10
+
+		if args:
+			self.numPoseParticles = args.numPoseParticles
+		else:
+			self.numPoseParticles = 40
+
+
 		#self.numPoseParticles = 1
 		self.poseParticles = {}
 		self.poseParticles["numParticles"] = self.numPoseParticles

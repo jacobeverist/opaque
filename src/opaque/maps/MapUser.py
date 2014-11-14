@@ -21,16 +21,18 @@ MAPSIZE = 40.0
 
 class MapUser:
 
-	def __init__(self, probe, contacts, isStable = False):
+	def __init__(self, probe, contacts, isStable = False, args = None):
 		
 		#
 		self.isStable = isStable
 		self.probe = probe
 		self.contacts = contacts
 		self.stablePose = StablePose(self.probe)
+
+		self.args = args
 		
 		#self.mapAlgorithm = PoseGraph(self.probe, self.contacts)
-		self.mapAlgorithm = BayesMapper.BayesMapper(self.probe.getWalls())	
+		self.mapAlgorithm = BayesMapper.BayesMapper(self.probe.getWalls(), args = self.args)	
 
 		self.initPose = self.probe.getActualJointPose(19)
 		
@@ -494,10 +496,10 @@ class MapUser:
 
 		
 		if faceDir:
-			self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, self.pixelSize, stabilizePose = self.isStable, faceDir = faceDir, travelDir = travelDir)		
+			self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, self.pixelSize, stabilizePose = self.isStable, faceDir = faceDir, travelDir = travelDir, useBloom = self.args.bloomFeature, useBend = self.args.bendFeature)		
 			self.foreNode = self.currNode
 		else:
-			self.currNode = LocalNode(self.probe, self.contacts, self.numNodes+1, 19, self.pixelSize, stabilizePose = self.isStable, faceDir = faceDir, travelDir = travelDir)		
+			self.currNode = LocalNode(self.probe, self.contacts, self.numNodes+1, 19, self.pixelSize, stabilizePose = self.isStable, faceDir = faceDir, travelDir = travelDir, useBloom = self.args.bloomFeature, useBend = self.args.bendFeature)		
 			self.backNode = self.currNode
 		
 		#self.mapAlgorithm.addNode(self.currNode)

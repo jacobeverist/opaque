@@ -23,10 +23,21 @@ sys.path.insert(1,relPath + "/modules/ogre")
 
 import argparse
 
+
 parser = argparse.ArgumentParser(description='DarkMapper Simulator')
-parser.add_argument('--mapfile', type=str, help="text file containing environment map")
+parser.add_argument('--mapFile', type=str, help="text file containing environment map")
 parser.add_argument('--restoreConfig', type=bool, default=False, help="restore ogre config from file instead of diplaying dialog")
 parser.add_argument('--hideWindow', type=bool, default=False, help="hide Ogre window")
+# maxNumPoses
+parser.add_argument('--maxNumPoses', type=int, default=300, help="max number of poses")
+# numPoseParticles
+parser.add_argument('--numPoseParticles', type=int, default=40, help="number of pose particles")
+# bloomFeature
+parser.add_argument('--bloomFeature', type=bool, default=True, help="use bloom spatial features")
+# bendFeature 
+parser.add_argument('--bendFeature', type=bool, default=True, help="use bend spatial features")
+# startOffset
+parser.add_argument('--startOffset', type=float, default=0.0, help="probe start displacement offset")
 args = parser.parse_args()
 
 
@@ -78,6 +89,7 @@ atexit.register(cleanup)
 def createTest():
 	#probe = QuickProbe(40,0.15,0.05,30.0*2.5)
 
+
 	numSegs = 40
 	segLength = 0.15
 	segHeight = 0.1
@@ -85,7 +97,7 @@ def createTest():
 	maxTorque = 1000.0
 	friction = 1.0
 	quat = [0.0, 1.0, 0.0, -1.62920684943e-07]
-	pos = [1.65, 0.04, 0.0]
+	pos = [1.65 + args.startOffset, 0.04, 0.0]
 	#pos = [1.35, 0.04, 0.0]
 	probe = BulletProbe(quat, pos, numSegs, segLength, segHeight, segWidth, maxTorque, friction)
 	#probe = BulletProbe(quat,pos,40,0.15,0.1,0.15,1000.0,1.0)
@@ -94,12 +106,18 @@ def createTest():
 	
 	drawThings = DrawThings(probe, hideWindow = args.hideWindow, restoreConfig = args.restoreConfig)
 	#drawThings = CmdDrawThings(probe.robotParam)
-	currControl = TestNavigation(probe, drawThings)
+
+	# args.maxNumPoses
+	# args.numPoseParticles
+	# args.bloomFeature
+	# args.bendFeature 
+	currControl = TestNavigation(probe, drawThings, args)
+	#maxNumPoses = args.maxNumPoses, numPoseParticles = args.numPoseParticles, bloomFeature = args.bloomFeature, bendFeature=args.bendFeature)
 	
 	probe.addControl(currControl)
 
-	if args.mapfile != None:
-		f = open(args.mapfile, 'r')
+	if args.mapFile != None:
+		f = open(args.mapFile, 'r')
 		saveStr = f.read()
 		f.close()
 		exec(saveStr)
