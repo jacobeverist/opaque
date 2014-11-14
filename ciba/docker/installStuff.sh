@@ -1,7 +1,7 @@
 #!/bin/bash
 
 cd /src
-tar bullet-2.77.tgz
+tar zxf bullet-2.77.tgz
 cd bullet-2.77
 cmake -DBUILD_SHARED_LIBS=true -DCMAKE_CXX_FLAGS=-fpermissive .
 make

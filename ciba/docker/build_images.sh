@@ -8,7 +8,7 @@ rm opaque_0.1.tar
 rm -rf opaque_0.1
 
 git clone $WORKING_COPY_PATH opaque_0.1
-tar cf opaque_0.1.tar opaque_0.1
+#tar cf opaque_0.1.tar opaque_0.1
 
 #rm -rf output_centos_dark_mapper
 
