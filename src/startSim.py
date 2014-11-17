@@ -33,9 +33,19 @@ parser.add_argument('--maxNumPoses', type=int, default=300, help="max number of 
 # numPoseParticles
 parser.add_argument('--numPoseParticles', type=int, default=40, help="number of pose particles")
 # bloomFeature
-parser.add_argument('--bloomFeature', type=bool, default=True, help="use bloom spatial features")
+#parser.add_argument('--bloomFeature', type=bool, default=True, help="use bloom spatial features")
 # bendFeature 
-parser.add_argument('--bendFeature', type=bool, default=True, help="use bend spatial features")
+#parser.add_argument('--bendFeature', type=bool, default=True, help="use bend spatial features")
+
+parser.add_argument('--bloomFeature', dest='bloomFeature', action='store_true')
+parser.add_argument('--no-bloomFeature', dest='bloomFeature', action='store_false')
+parser.set_defaults(bloomFeature=True)
+
+parser.add_argument('--bendFeature', dest='bendFeature', action='store_true')
+parser.add_argument('--no-bendFeature', dest='bendFeature', action='store_false')
+parser.set_defaults(bendFeature=False)
+
+
 # startOffset
 parser.add_argument('--startOffset', type=float, default=0.0, help="probe start displacement offset")
 args = parser.parse_args()
@@ -102,6 +112,8 @@ def createTest():
 	probe = BulletProbe(quat, pos, numSegs, segLength, segHeight, segWidth, maxTorque, friction)
 	#probe = BulletProbe(quat,pos,40,0.15,0.1,0.15,1000.0,1.0)
 	#probe = BulletProbe(quat,pos,40,0.15,0.1,0.15,1000.0,10.0)
+
+	print "args:", args
 
 	
 	drawThings = DrawThings(probe, hideWindow = args.hideWindow, restoreConfig = args.restoreConfig)
