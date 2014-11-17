@@ -42,6 +42,8 @@ qout_branch =  None
 pool_branch = []
 
 def __num_processors():
+
+	return processing.cpu_count()
 	
 	return 4
 	

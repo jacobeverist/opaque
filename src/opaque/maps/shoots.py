@@ -1623,6 +1623,8 @@ def getClosestPairs(pathPoints2, pathPoints1):
 
 def __num_processors():
 	
+	return processing.cpu_count()
+	
 	return 4
 	
 	if os.name == 'nt': # Windows
