@@ -861,9 +861,9 @@ def movePath(mapHyp, nodeID, direction, distEst = 1.0):
 									if dist1 < LANDMARK_THRESH:
 										#if dist1 > CLOSE_THRESH:
 										if dist1 > maxThresh:
-											poseSum += dist1
+											poseSum += 10.0*dist1
 										else:
-											poseSum += 0.1*dist1
+											poseSum += dist1
 
 								if poseSum < minPoseSum:
 									minPoseSum = poseSum
