@@ -1369,9 +1369,14 @@ class MapState:
 					isAllReject = False
 
 					""" check to avoid divide by zero """
-					if maxLandmarkSum > poseLandmarkSum:
-						newProb = (pi-fabs(diffAngle(initPose0[2],newPose0[2])) ) * contigFrac_0  * ((maxLandmarkSum-poseLandmarkSum)/maxLandmarkSum)
+					if maxLandmarkSum > 0.0:
+						if maxLandmarkSum > poseLandmarkSum:
+							newProb = (pi-fabs(diffAngle(initPose0[2],newPose0[2])) ) * contigFrac_0  * ((maxLandmarkSum-poseLandmarkSum)/maxLandmarkSum)
+						else:
+							newProb = 0.0
 					else:
+						""" maximum landmark cost, means utility is zeroed """
+						#newProb = (pi-fabs(diffAngle(initPose0[2],newPose0[2])) ) * contigFrac_0  * 0.0
 						newProb = (pi-fabs(diffAngle(initPose0[2],newPose0[2])) ) * contigFrac_0
 
 					#newProb = (pi-fabs(diffAngle(initPose0[2],newPose0[2])) ) * contigFrac_0 * contigFrac_0 / overlapSum_0

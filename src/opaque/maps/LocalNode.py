@@ -1189,15 +1189,19 @@ class LocalNode:
 		
 		return self.numLeafs
 
+	@logFunction
 	def computeFullSkeleton(self, alphaHull):
 		
 		global splineCount
+
+		print "computeFullSkeleton(", self.nodeID, ")"
 
 		" DO NOT RECOMPUTE, RETURN PREVIOUS "
 		if len(self.longPaths) > 0:
 			print "returning caseE"
 			return self.longPaths, self.medialLongPaths, self.medialTailCuts, self.longMedialWidths, self.bowtieValues
 
+			self.spatialFeatures.append(results)
 
 
 		
@@ -1434,7 +1438,7 @@ class LocalNode:
 			
 			self.longPaths[k] = realPath
 					
-		if False:
+		if True:
 			pylab.clf()
 	
 			for path in self.longPaths:
@@ -2110,70 +2114,84 @@ class LocalNode:
 				else:
 					inflectionPoint = None
 
-			" conditions for a bloom detection "
-			bloomPoint = None
-			if self.useBloom and len(contigPointIndex) == 1:
-				dens = contigDensity[0]
-				area = contigArea[0]
-				cLen = contigLen[0]
-				frontBoundIndex, backBoundIndex = contigBoundaries[0]
-				pointIndex = contigPointIndex[0]
-				angDeriv = longPathWidth[pointIndex]["angDeriv"]
-				asymm = contigAsymmSum[0]
-				negArea = contigNegArea[0]
-				slopes = contigSlopes[0]
-
-
-				if (frontBoundIndex <= 6 or backBoundIndex >= len(longPathWidth)-7) and cLen < 25 and dens >= 0.05:
-					bloomPoint = longPathWidth[pointIndex]["linePoint"]
-
-					#ax2.annotate("%1.2f %1.2f %1.2f %1.3f %s" % (dens, asymm, area, negArea, repr(slopes[0]+slopes[1])), xy=(contigCenterMass[0], 0.3), xytext=(contigCenterMass[0], 0.8), color='k')
+				" conditions for a bloom detection "
+				bloomPoint = None
+				if self.useBloom and len(contigPointIndex) == 1:
+					dens = contigDensity[0]
+					area = contigArea[0]
+					cLen = contigLen[0]
+					frontBoundIndex, backBoundIndex = contigBoundaries[0]
+					pointIndex = contigPointIndex[0]
+					angDeriv = longPathWidth[pointIndex]["angDeriv"]
+					asymm = contigAsymmSum[0]
+					negArea = contigNegArea[0]
+					slopes = contigSlopes[0]
 
 					print self.nodeID, "bloom boundaries:", frontBoundIndex, backBoundIndex, len(longPathWidth), cLen, dens, angDeriv, asymm, area, negArea, slopes[0]+slopes[1]
 
-			" conditions for a arch detection "
-			archPoint = None
-			if self.useBloom and len(contigPointIndex) == 1 and bloomPoint == None:
-				dens = contigDensity[0]
-				area = contigArea[0]
-				cLen = contigLen[0]
-				frontBoundIndex, backBoundIndex = contigBoundaries[0]
-				pointIndex = contigPointIndex[0]
-				angDeriv = longPathWidth[pointIndex]["angDeriv"]
-				asymm = contigAsymmSum[0]
-				negArea = contigNegArea[0]
-				slopes = contigSlopes[0]
+					print frontBoundIndex <= 6, backBoundIndex >= len(longPathWidth)-7, cLen < 25, dens >= 0.05
+
+					if (frontBoundIndex <= 6 or backBoundIndex >= len(longPathWidth)-7) and cLen < 25 and dens >= 0.05:
+						bloomPoint = longPathWidth[pointIndex]["linePoint"]
+
+						#ax2.annotate("%1.2f %1.2f %1.2f %1.3f %s" % (dens, asymm, area, negArea, repr(slopes[0]+slopes[1])), xy=(contigCenterMass[0], 0.3), xytext=(contigCenterMass[0], 0.8), color='k')
+
+						print "bloom ACCEPT"
+					else:
+						print "bloom REJECT"
 
 
-				#if (frontBoundIndex > 6 and backBoundIndex < len(longPathWidth)-7) and angDeriv < 0.03 and cLen > 5 and cLen <= 20 and area > 0.2 and dens >= 0.03:
-				if (frontBoundIndex > 6 and backBoundIndex < len(longPathWidth)-7) and angDeriv < 0.03 and cLen > 5 and cLen <= 20 and area > 0.2 and (slopes[0]+slopes[1]) > 0.37:
-					# and angDeriv < 0.1:
-					#pass and cLen < 25 and dens >= 0.03:
-					archPoint = longPathWidth[pointIndex]["linePoint"]
+				" conditions for a arch detection "
+				archPoint = None
+				if self.useBloom and len(contigPointIndex) == 1 and bloomPoint == None:
+					dens = contigDensity[0]
+					area = contigArea[0]
+					cLen = contigLen[0]
+					frontBoundIndex, backBoundIndex = contigBoundaries[0]
+					pointIndex = contigPointIndex[0]
+					angDeriv = longPathWidth[pointIndex]["angDeriv"]
+					asymm = contigAsymmSum[0]
+					negArea = contigNegArea[0]
+					slopes = contigSlopes[0]
 
 					print self.nodeID, "arch boundaries:", frontBoundIndex, backBoundIndex, len(longPathWidth), cLen, dens, angDeriv, asymm, area, negArea, slopes[0]+slopes[1]
+					#print frontBoundIndex > 6, backBoundIndex < len(longPathWidth)-7, angDeriv < 0.03, cLen > 5, cLen <= 20, area > 0.1, (slopes[0]+slopes[1]) > 0.37
+					print frontBoundIndex > 6, backBoundIndex < len(longPathWidth)-7, angDeriv < 0.1, cLen > 5, cLen <= 20, area > 0.1, (slopes[0]+slopes[1]) > 0.37
 
 
-			results = {}
-			results["inflectionPoint"] = inflectionPoint
-			results["maxDeriv"] = maxDeriv
-			results["maxDerivU"] = longPathWidth[contigInflection]["distU"]
-			results["centerMasses"] = contigCenterMass
-			results["contigCounts"] = contigCounts
-			results["contigDensities"] = contigDensity
-			results["contigAreas"] = contigArea
-			results["contigLens"] = contigLen
-			results["contigPointIndex"] = contigPointIndex
-			results["contigBoundaries"] = contigBoundaries
-			results["contigAsymmSum"] = contigAsymmSum
-			results["contigNegArea"] = contigNegArea
-			results["contigSlopes"] = contigSlopes
-			results["medialWidths"] = longPathWidth
-			results["bloomPoint"] = bloomPoint
-			results["archPoint"] = archPoint
+					#if (frontBoundIndex > 6 and backBoundIndex < len(longPathWidth)-7) and angDeriv < 0.03 and cLen > 5 and cLen <= 20 and area > 0.2 and dens >= 0.03:
+					#if (frontBoundIndex > 6 and backBoundIndex < len(longPathWidth)-7) and angDeriv < 0.03 and cLen > 5 and cLen <= 20 and area > 0.2 and (slopes[0]+slopes[1]) > 0.37:
+					if (frontBoundIndex > 6 and backBoundIndex < len(longPathWidth)-7) and angDeriv < 0.1 and cLen > 5 and cLen <= 20 and area > 0.1 and (slopes[0]+slopes[1]) > 0.37:
+						# and angDeriv < 0.1:
+						#pass and cLen < 25 and dens >= 0.03:
+						archPoint = longPathWidth[pointIndex]["linePoint"]
+
+						print "arch ACCEPT"
+					else:
+						print "arch REJECT"
 
 
-			self.spatialFeatures.append(results)
+
+				results = {}
+				results["inflectionPoint"] = inflectionPoint
+				results["maxDeriv"] = maxDeriv
+				results["maxDerivU"] = longPathWidth[contigInflection]["distU"]
+				results["centerMasses"] = contigCenterMass
+				results["contigCounts"] = contigCounts
+				results["contigDensities"] = contigDensity
+				results["contigAreas"] = contigArea
+				results["contigLens"] = contigLen
+				results["contigPointIndex"] = contigPointIndex
+				results["contigBoundaries"] = contigBoundaries
+				results["contigAsymmSum"] = contigAsymmSum
+				results["contigNegArea"] = contigNegArea
+				results["contigSlopes"] = contigSlopes
+				results["medialWidths"] = longPathWidth
+				results["bloomPoint"] = bloomPoint
+				results["archPoint"] = archPoint
+
+
+				self.spatialFeatures.append(results)
 
 
 			widthStr = ""

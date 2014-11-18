@@ -3,6 +3,7 @@ from copy import *
 from func import IsContained
 from numpy import matrix
 import sys
+import traceback
 
 def logFunction(func):
 
@@ -11,6 +12,9 @@ def logFunction(func):
 		sys.stdout.flush()
 		retVal = func(*args, **kwargs)
 		#print "return: " + func.__name__ + " %s " % repr(retVal)
+
+		#traceback.print_stack()
+		#print "Exception:", sys.exc_info()[0]
 		sys.stdout.flush()
 		return retVal
 	
