@@ -1715,7 +1715,7 @@ def batchJointBranch(branchJobs):
 	
 	nproc = __num_processors()
 	
-	nproc *= 2
+	#nproc *= 2
 	print "nproc =", nproc
 	
 	# compute chunk size
@@ -1898,7 +1898,7 @@ def batchBranch(branchJobs):
 	
 	nproc = __num_processors()
 	
-	nproc *= 2
+	#nproc *= 2
 	print "nproc =", nproc
 	
 	# compute chunk size

@@ -72,7 +72,7 @@ def batchDisplaceParticles(displaceJobs):
 	
 	nproc = __num_processors()
 	
-	nproc *= 2
+	#nproc *= 2
 	print "nproc =", nproc
 	
 	# compute chunk size
@@ -865,7 +865,7 @@ def batchLocalizeParticle(localizeJobs):
 	
 	nproc = __num_processors()
 	
-	nproc *= 2
+	#nproc *= 2
 	print "nproc =", nproc
 	
 	# compute chunk size
