@@ -21,11 +21,15 @@ class TestProcess(SnakeControl):
 	# 3 Steps, go right path, go left path, go back to origin
 	# compute path at each step
 
-	def __init__(self, probe, drawThings):
+	def __init__(self, probe, drawThings, args):
 		SnakeControl.__init__(self)
 	
 		self.drawThings = drawThings
 		self.probe = probe
+
+		self.args = args
+
+		self.maxNumPoses = self.args.maxNumPoses
 		
 		robotParam = {}
 		robotParam['numJoints'] = self.probe.numSegs-1
@@ -115,7 +119,7 @@ class TestProcess(SnakeControl):
 		elif self.globalState == 3:
 			
 			" create the mapping object "
-			self.mapGraph = MapLoader(self.probe, self.contacts)
+			self.mapGraph = MapLoader(self.probe, self.contacts, args = self.args)
 
 			targetMapFile = "../mapLibrary/cross_junction.py"
 			#targetMapFile = "../mapLibrary/Y_junction.py"
@@ -160,8 +164,10 @@ class TestProcess(SnakeControl):
 
 			#self.mapGraph.restorePickle("../testDir6/", 17)
 			#self.mapGraph.loadSeries("../testDir5/", 18, 250)
-			self.mapGraph.restorePickle("../testDir4/results_L_right_junction.py/", 9)
-			self.mapGraph.loadSeries("../testDir4/results_L_right_junction.py/", 10, 14)
+			#self.mapGraph.restorePickle("../testDir4/results_L_right_junction.py/", 9)
+			#self.mapGraph.loadSeries("../testDir4/results_L_right_junction.py/", 10, 14)
+
+			self.mapGraph.loadSeries("../testDir4/", 0, 1000)
 			#self.mapGraph.restorePickle("../testDir6/", 33)
 			#self.mapGraph.loadSeries("../testDir5/", 34, 250)
 

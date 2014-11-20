@@ -21,12 +21,15 @@ import cPickle as pickle
 
 class MapLoader:
 
-	def __init__(self, probe, contacts):
+	def __init__(self, probe, contacts, args = None):
 
 		self.probe = probe
 		self.contacts = contacts		
+
+		self.args = args
+
 		#self.mapAlgorithm = PoseGraph.PoseGraph(self.probe, self.contacts)	
-		self.mapAlgorithm = BayesMapper.BayesMapper(self.probe.getWalls())	
+		self.mapAlgorithm = BayesMapper.BayesMapper(self.probe.getWalls(), args = self.args)	
 
 		print "mapAlgorithm:", self
 
@@ -78,7 +81,7 @@ class MapLoader:
 		for i in range(startID, endID+1):
 
 			print "loading node", i		
-			currNode = LocalNode(self.probe, self.contacts, i, 19, PIXELSIZE)
+			currNode = LocalNode(self.probe, self.contacts, i, 19, PIXELSIZE, useBloom = self.args.bloomFeature, useBend = self.args.bendFeature)		
 
 			currNode.readFromFile2(dirName, i)
 
@@ -101,7 +104,7 @@ class MapLoader:
 		PIXELSIZE = 0.05
 		for i in range(0, num_poses):
 			print "loading node", i		
-			currNode = LocalNode(self.probe, self.contacts, i, 19, PIXELSIZE)
+			currNode = LocalNode(self.probe, self.contacts, i, 19, PIXELSIZE, useBloom = self.args.bloomFeature, useBend = self.args.bendFeature)
 			currNode.readFromFile2(dirName, i)
 			self.localNodes.append(currNode)
 			
@@ -134,15 +137,15 @@ class MapLoader:
 		for i in range(0, num_poses):
 
 			print "loading node", i			
-			currNode = LocalNode(self.probe, self.contacts, i, 19, PIXELSIZE)
+			currNode = LocalNode(self.probe, self.contacts, i, 19, PIXELSIZE, useBloom = self.args.bloomFeature, useBend = self.args.bendFeature)
 			currNode.readFromFile2(dirName, i)
 			self.localNodes.append(currNode)
 			currNode.setGPACPose(self.mapAlgorithm.nodePoses[i])
 			self.mapAlgorithm.nodeHash[i] = currNode
 
-		foreNode = LocalNode(self.probe, self.contacts, num_poses, 19, PIXELSIZE)
+		foreNode = LocalNode(self.probe, self.contacts, num_poses, 19, PIXELSIZE, useBloom = self.args.bloomFeature, useBend = self.args.bendFeature)
 		foreNode.readFromFile2(dirName, num_poses)
-		backNode = LocalNode(self.probe, self.contacts, num_poses+1, 19, PIXELSIZE)
+		backNode = LocalNode(self.probe, self.contacts, num_poses+1, 19, PIXELSIZE, useBloom = self.args.bloomFeature, useBend = self.args.bendFeature)
 		backNode.readFromFile2(dirName, num_poses+1)
 		self.mapAlgorithm.insertPose(foreNode, backNode, initLocation = foreNode.getEstPose())
 		
@@ -150,7 +153,7 @@ class MapLoader:
 		for i in range(num_poses+2, num_poses+70):
 
 			print "loading node", i		
-			currNode = LocalNode(self.probe, self.contacts, i, 19, PIXELSIZE)
+			currNode = LocalNode(self.probe, self.contacts, i, 19, PIXELSIZE,  useBloom = self.args.bloomFeature, useBend = self.args.bendFeature)
 			currNode.readFromFile2(dirName, i)
 			self.localNodes.append(currNode)
 			self.mapAlgorithm.loadNewNode(currNode)
@@ -203,7 +206,7 @@ class MapLoader:
 
 			self.currNode.saveToFile()
 
-		self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, self.pixelSize, stabilizePose = self.isStable, faceDir = True)		
+		self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, self.pixelSize, stabilizePose = self.isStable, faceDir = True,  useBloom = self.args.bloomFeature, useBend = self.args.bendFeature)		
 		
 		self.mapAlgorithm.addNode(self.currNode)
 
@@ -212,7 +215,7 @@ class MapLoader:
 
 	def initNode(self, estPose, direction):
 
-		self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, self.pixelSize, stabilizePose = self.isStable, faceDir = True)
+		self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, self.pixelSize, stabilizePose = self.isStable, faceDir = True,  useBloom = self.args.bloomFeature, useBend = self.args.bendFeature)
 
 		self.mapAlgorithm.addInitNode(self.currNode, estPose)
 		

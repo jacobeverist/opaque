@@ -3,7 +3,7 @@ import random
 from copy import deepcopy
 from SplineFit import SplineFit
 import pylab
-from math import sqrt
+from math import sqrt, pi
 from Pose import Pose
 import gen_icp
 from math import acos, asin, fabs
@@ -260,7 +260,8 @@ def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine
 			
 			if moveChance >= 0.1:
 				#distEst = 0.5 + (0.5-moveDist)/2.0
-				distEst = random.gauss(0.7,0.6)
+				#distEst = random.gauss(0.7,0.6)
+				distEst = random.gauss(1.0,0.6)
 			else:
 				#distEst = -0.5 - (0.5-moveDist)/2.0
 				distEst = random.gauss(-0.5,0.6)
@@ -406,11 +407,13 @@ def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine
 
 								dist1 = sqrt((p2[0]-p1[0])**2 + (p2[1]-p1[1])**2)
 								if dist1 < LANDMARK_THRESH:
-									#if dist1 > CLOSE_THRESH:
-									if dist1 > maxThresh:
-										poseSum += 10.0*dist1
-									else:
-										poseSum += dist1
+
+									poseSum += sqrt(dist1*dist1/(maxThresh*maxThresh))
+
+									#if dist1 > maxThresh:
+									#	poseSum += 10.0*dist1*dist1
+									#else:
+									#	poseSum += dist1*dist1
 
 							if poseSum < minPoseSum:
 								minPoseSum = poseSum
@@ -484,6 +487,9 @@ def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine
 		currPose3 = currPoses[nodeID3]
 
 		print "final poses:", currPose2, currPose3
+		currProb2 = 0.0
+		currProb3 = 0.0
+
 
 		
 		" now we fit the guessed pose to a splice of the paths "
@@ -583,20 +589,39 @@ def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine
 				" (departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2 )"
 				
 				" (resultPose2,lastCost2,matchCount2,fabs(currAng2)) "
+
+				contigFrac_2 = result2[12]
+				contigFrac_3 = result3[12]
+				overlapSum2 = result2[13]
+				overlapSum3 = result3[13]
 				
 				angDiff2 = abs(diffAngle(pose2[2],resultPose2[2]))
 				angDiff3 = abs(diffAngle(pose3[2],resultPose3[2]))
+
+				if overlapSum2 > 1e10:
+					newProb2 = 0.0	
+				else:
+					newProb2 = (pi-angDiff2) * contigFrac_2
+
+				if overlapSum3 > 1e10:
+					newProb3 = 0.0	
+				else:
+					newProb3 = (pi-angDiff3) * contigFrac_3
 				
 				print "angDiff:", angDiff2, angDiff3
+				print "overlapSum:", overlapSum2, overlapSum3
+				print "newProb:", newProb2, newProb3
 				
+
+
 				" NOTE:  added minimum threshold to angle difference "
 				" NOTE:  guess pose is now the inter-nodal estimate instead of path-based estimate "
 				if angDiff2 < 0.5:
 					#resultMoves2.append((resultPose2,lastCost2,matchCount2,fabs(currAng2)) + result2)
-					resultMoves2.append((resultPose2,lastCost2,matchCount2,fabs(0.0)) + result2 + (orientedSplicePath,))
+					resultMoves2.append((resultPose2,lastCost2,matchCount2,fabs(0.0)) + result2 + (orientedSplicePath, newProb2))
 				if angDiff3 < 0.5:
 					#resultMoves3.append((resultPose3,lastCost3,matchCount3,fabs(currAng3)) + result3)				
-					resultMoves3.append((resultPose3,lastCost3,matchCount3,fabs(0.0)) + result3 + (orientedSplicePath,))				
+					resultMoves3.append((resultPose3,lastCost3,matchCount3,fabs(0.0)) + result3 + (orientedSplicePath, newProb3))				
 			
 			
 			
@@ -621,14 +646,20 @@ def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine
 			if len(resultMoves2) > 0:
 				currPose2 = resultMoves2[0][0]
 				currSplice2 = resultMoves2[0][19]
+				currProb2 = resultMoves2[0][20]
+
 			else:
 				print "node", nodeID-1, "not movePathed because no valid pose"
+				currProb2 = 0.0
 
 			if len(resultMoves3) > 0:
 				currPose3 = resultMoves3[0][0]
 				currSplice3 = resultMoves3[0][19]
+				currProb3 = resultMoves3[0][20]
+
 			else:
 				print "node", nodeID, "not movePathed because no valid pose"
+				currProb3 = 0.0
 
 			if len(currSplice2) == 0 and len(currSplice3) > 0:
 				currSplice2 = currSplice3
@@ -647,6 +678,7 @@ def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine
 
 
 			print "fitted poses:", currPose2, currPose3
+			print "currProbs:", currProb2, currProb3
 
 			"""
 			"FIXME:  choose a splice that is common to the paired old and new poses "
@@ -738,7 +770,7 @@ def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine
 			print "displaced poses:", currPose2, currPose3
 			"""
 
-		return currPose2, currPose3
+		return currPose2, currPose3, currProb2, currProb3
 
 def __remote_prof_multiParticle(rank, qin, qout):
 
@@ -1031,11 +1063,13 @@ def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, me
 
 			dist0 = sqrt((p1[0]-landmark0_G[0][0])**2 + (p1[1]-landmark0_G[0][1])**2)
 			if dist0 < LANDMARK_THRESH:
-				#if dist0 > CLOSE_THRESH:
-				if dist0 > maxThresh:
-					poseSum += 10.0*dist0
-				else:
-					poseSum += dist0
+
+				poseSum += sqrt(dist0*dist0/(maxThresh*maxThresh))
+
+				#if dist0 > maxThresh:
+				#	poseSum += 10.0*dist0*dist0
+				#else:
+				#	poseSum += dist0*dist0
 
 		if landmark1_G != None:
 
@@ -1045,11 +1079,12 @@ def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, me
 
 			dist1 = sqrt((p1[0]-landmark1_G[0][0])**2 + (p1[1]-landmark1_G[0][1])**2)
 			if dist1 < LANDMARK_THRESH:
-				#if dist1 > CLOSE_THRESH:
-				if dist1 > maxThresh:
-					poseSum += 10.0*dist1
-				else:
-					poseSum += dist1
+				poseSum += sqrt(dist1*dist1/(maxThresh*maxThresh))
+				
+				#if dist1 > maxThresh:
+				#	poseSum += 10.0*dist1*dist1
+				#else:
+				#	poseSum += dist1*dist1
 
 	#utilVal0 = utilVal0 * (1.0-branchProbVal)
 
@@ -1107,6 +1142,11 @@ class Particle:
 		self.addNode(1,0, pose1)
 
 		" temporary values, computed on-the-fly for each evaluation "
+
+		self.displaceProb0 = 0.0
+		self.displaceProb1 = 0.0
+
+		self.landmarkSum = 0.0
 
 		self.hypDist = hypDist
 		self.weightVal = weightVal

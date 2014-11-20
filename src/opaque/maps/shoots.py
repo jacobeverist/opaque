@@ -4246,10 +4246,11 @@ def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPos
 				maxThresh = thresh2
 
 			if dist < LANDMARK_THRESH:
-				if dist > maxThresh:
-					distSum += 10.0*dist
-				else:
-					distSum += dist
+				distSum += sqrt(dist*dist/(maxThresh*maxThresh))
+				#if dist > maxThresh:
+				#	distSum += 10.0*dist*dist
+				#else:
+				#	distSum += dist*dist
 	
 	""" add the distance from branch points if they exist """
 	for pathID in branchPathIDs:
@@ -4262,10 +4263,13 @@ def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPos
 			maxThresh = thresh2
 
 			if dist < LANDMARK_THRESH:
-				if dist > maxThresh:
-					distSum += 10.0*dist
-				else:
-					distSum += dist
+				
+				distSum += sqrt(dist*dist/(maxThresh*maxThresh))
+
+				#if dist > maxThresh:
+				#	distSum += 10.0*dist*dist
+				#else:
+				#	distSum += dist*dist
 
 	branchResult["landmarkCost"] = distSum
 	branchResult["landmarks_G"] = landmarks_G

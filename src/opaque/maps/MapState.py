@@ -687,6 +687,9 @@ class MapState:
 
 			part.displacePose(result[1], result[2])
 
+			part.displaceProb0 = result[3]
+			part.displaceProb1 = result[4]
+
 
 		#targetNodeLandmarks_N[nodeID0] = getNodeLandmark(nodeID0, self.poseData)
 		#targetNodeLandmarks_N[nodeID1] = getNodeLandmark(nodeID1, self.poseData)
@@ -697,6 +700,8 @@ class MapState:
 
 		minSum = 1e100
 		minPartIndex = self.currMaxIndex
+		maxLandmarkSum = 0.0
+		maxPartIndex = 0
 
 		if landmarkPoint0_N != None or landmarkPoint1_N != None: 
 
@@ -726,15 +731,49 @@ class MapState:
 
 				currSum = computeConsistency(currLandmarks)
 
+				part.landmarkSum = currSum
+
+
 				print "poseSum:", partIndex, currSum
 
 				if currSum < minSum:
 					minSum = currSum
 					minPartIndex = partIndex
 
-		print "setting max particle:", minPartIndex
+				if currSum > maxLandmarkSum:
+					maxLandmarkSum = currSum
+					maxPartIndex = partIndex
 
-		self.currMaxIndex = minPartIndex
+		maxProb = 0.0
+		maxPart = 0
+
+		for partIndex in range(len(particleDist2)):
+			part = particleDist2[partIndex]
+			currProb0 = part.displaceProb0
+			currProb1 = part.displaceProb1
+
+			poseLandmarkSum = part.landmarkSum
+
+			""" check to avoid divide by zero """
+			if maxLandmarkSum > 0.0:
+				if maxLandmarkSum > poseLandmarkSum:
+					#newProb0 = currProb0 * ((maxLandmarkSum-poseLandmarkSum)/maxLandmarkSum)
+					newProb0 = (maxLandmarkSum-poseLandmarkSum)/maxLandmarkSum
+				else:
+					""" maximum landmark cost, means utility is zeroed """
+					newProb0 = 0.0
+			else:
+				newProb0 = currProb0
+
+			if newProb0 > maxProb:
+				maxProb = newProb0
+				maxPart = partIndex
+
+		#print "setting max particle:", minPartIndex
+		print "setting max particle:", maxPart, maxProb
+
+		#self.currMaxIndex = minPartIndex
+		self.currMaxIndex = maxPart
 
 		""" change to the maximum likelihood branch position as well """
 		self.updateMaxParticle(self.currMaxIndex)
@@ -1279,6 +1318,8 @@ class MapState:
 			if poseLandmarkSum > maxLandmarkSum:
 				maxLandmarkSum = poseLandmarkSum
 
+		print "maxLandmarkSum =", maxLandmarkSum
+
 		isAllReject = True
 		rejectDivergence = True
 
@@ -1357,6 +1398,9 @@ class MapState:
 					pass
 					#print "localize angle diff:", particleID, initPose0[2], newPose0[2], initPose1[2], newPose1[2], fabs(diffAngle(initPose0[2],newPose0[2])), fabs(diffAngle(initPose1[2],newPose1[2]))
 
+				normLandmarkSum = 0.0
+				normAngDiff = pi-fabs(diffAngle(initPose0[2],newPose0[2])) 
+
 				if isReject:
 					newUtilVal = -1e100
 					listCopy = list(part)
@@ -1371,13 +1415,16 @@ class MapState:
 					""" check to avoid divide by zero """
 					if maxLandmarkSum > 0.0:
 						if maxLandmarkSum > poseLandmarkSum:
-							newProb = (pi-fabs(diffAngle(initPose0[2],newPose0[2])) ) * contigFrac_0  * ((maxLandmarkSum-poseLandmarkSum)/maxLandmarkSum)
+							normLandmarkSum = (maxLandmarkSum-poseLandmarkSum)/maxLandmarkSum
+							#newProb = (pi-fabs(diffAngle(initPose0[2],newPose0[2])) ) * contigFrac_0  * normLandmarkSum 
+							#newProb = contigFrac_0 * normLandmarkSum 
+							newProb = normLandmarkSum 
 						else:
+							""" maximum landmark cost, means utility is zeroed """
 							newProb = 0.0
 					else:
-						""" maximum landmark cost, means utility is zeroed """
 						#newProb = (pi-fabs(diffAngle(initPose0[2],newPose0[2])) ) * contigFrac_0  * 0.0
-						newProb = (pi-fabs(diffAngle(initPose0[2],newPose0[2])) ) * contigFrac_0
+						newProb = contigFrac_0
 
 					#newProb = (pi-fabs(diffAngle(initPose0[2],newPose0[2])) ) * contigFrac_0 * contigFrac_0 / overlapSum_0
 
@@ -1391,7 +1438,7 @@ class MapState:
 
 					results[index] = tupleCopy
 				
-				print "%d %d %d %d normMatchCount, newUtilVal, overlapSum:" % (self.hypothesisID, particleID, index, spliceIndex), normMatchCount, results[index][45], overlapSum, contigFrac_0, contigFrac_1, initPose0[2], newPose0[2], int(isExist1_0), int(isExist2_0), int(isExist1_1), int(isExist2_1), int(isInterior1_0), int(isInterior2_0), int(isInterior1_1), int(isInterior2_1), isReject, branchIndex, poseLandmarkSum, len(landmarks_G)
+				print "%d %d %d %d %d normMatchCount, newUtilVal, overlapSum:" % (nodeID0, self.hypothesisID, particleID, index, spliceIndex), normMatchCount, results[index][45], overlapSum, contigFrac_0, contigFrac_1, initPose0[2], newPose0[2], int(isExist1_0), int(isExist2_0), int(isExist1_1), int(isExist2_1), int(isInterior1_0), int(isInterior2_0), int(isInterior1_1), int(isInterior2_1), isReject, branchIndex, poseLandmarkSum, len(landmarks_G), normLandmarkSum, normAngDiff 
 
 			""" break condition, do not accept divergence if we have already branched """
 			if not rejectDivergence or self.isNodeBranching[nodeID0] or self.isNodeBranching[nodeID1]:
@@ -1475,7 +1522,7 @@ class MapState:
 			else:
 				newProb = 0.0
 			
-			print "%d %d %d %d normMatchCount, utilVal, newProb" % (self.hypothesisID, particleID, particleIndex, spliceIndex), normMatchCount, utilVal, newProb, contigFrac_0, overlapSum_0
+			print "%d %d %d %d %d normMatchCount, utilVal, newProb" % (nodeID0, self.hypothesisID, particleID, particleIndex, spliceIndex), normMatchCount, utilVal, newProb, contigFrac_0, overlapSum_0
 
 			print "localize angle diff:", particleID, initPose0[2], newPose0[2], initPose1[2], newPose1[2], fabs(diffAngle(initPose0[2],newPose0[2])), fabs(diffAngle(initPose1[2],newPose1[2]))
 
@@ -3234,8 +3281,8 @@ class MapState:
 
 
 		BEND_THRESH = 0.9
-		ARCH_THRESH = 0.3
-		BLOOM_THRESH = 0.3
+		ARCH_THRESH = 0.05
+		BLOOM_THRESH = 0.05
 
 
 		pathIDs = self.getPathIDs()

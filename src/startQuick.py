@@ -21,8 +21,27 @@ sys.path.insert(1,relPath + "/modules/ogre")
 import argparse
 
 parser = argparse.ArgumentParser(description='DarkMapper Simulator')
-parser.add_argument('--mapfile', type=str, help="text file containing environment map")
+parser.add_argument('--mapFile', type=str, help="text file containing environment map")
+# maxNumPoses
+parser.add_argument('--maxNumPoses', type=int, default=300, help="max number of poses")
+# numPoseParticles
+parser.add_argument('--numPoseParticles', type=int, default=40, help="number of pose particles")
+
+# bloomFeature
+parser.add_argument('--bloomFeature', dest='bloomFeature', action='store_true')
+parser.add_argument('--no-bloomFeature', dest='bloomFeature', action='store_false')
+parser.set_defaults(bloomFeature=True)
+
+# bendFeature
+parser.add_argument('--bendFeature', dest='bendFeature', action='store_true')
+parser.add_argument('--no-bendFeature', dest='bendFeature', action='store_false')
+parser.set_defaults(bendFeature=False)
+
+
+# startOffset
+parser.add_argument('--startOffset', type=float, default=0.0, help="probe start displacement offset")
 args = parser.parse_args()
+
 
 
 
@@ -87,7 +106,7 @@ def createTest():
 	probe = QuickProbe(40,0.15,0.05,30.0*2.5)
 	
 	drawThings = CmdDrawThings(probe.robotParam)
-	currControl = TestProcess(probe, drawThings)
+	currControl = TestProcess(probe, drawThings, args)
 	#currControl = TestUnit(probe, drawThings)
 	
 	probe.addControl(currControl)
