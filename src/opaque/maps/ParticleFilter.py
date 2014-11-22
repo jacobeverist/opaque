@@ -260,8 +260,8 @@ def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine
 			
 			if moveChance >= 0.1:
 				#distEst = 0.5 + (0.5-moveDist)/2.0
-				#distEst = random.gauss(0.7,0.6)
-				distEst = random.gauss(1.0,0.6)
+				distEst = random.gauss(0.7,0.6)
+				#distEst = random.gauss(1.0,0.6)
 			else:
 				#distEst = -0.5 - (0.5-moveDist)/2.0
 				distEst = random.gauss(-0.5,0.6)
@@ -349,7 +349,7 @@ def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine
 									#"sameProb" : {}, "nodeSet" : [], "globalJunctionPose" : None}
 
 					#LANDMARK_THRESH = 3.0
-					LANDMARK_THRESH = 6.0
+					LANDMARK_THRESH = 7.0
 					#LANDMARK_THRESH = 4.5
 
 					"""
@@ -1034,7 +1034,7 @@ def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, me
 	
 	#LANDMARK_THRESH = 1e100
 	#LANDMARK_THRESH = 3.0
-	LANDMARK_THRESH = 6.0
+	LANDMARK_THRESH = 7.0
 	#LANDMARK_THRESH = 4.5
 	CLOSE_THRESH = 0.3
 	poseSum = 0.0
@@ -1043,6 +1043,7 @@ def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, me
 	thresh0 = None
 	thresh1 = None
 
+
 	if landmark0_N != None:
 		landmark0_G = (frame0.convertLocalToGlobal(landmark0_N[0]), landmark0_N[1], landmark0_N[2])
 		thresh0 = landmark0_G[1]
@@ -1050,6 +1051,8 @@ def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, me
 	if landmark1_N != None:
 		landmark1_G = (frame1.convertLocalToGlobal(landmark1_N[0]), landmark1_N[1], landmark1_N[2])
 		thresh1 = landmark1_G[1]
+
+	print hypID, nodeID0, particleIndex, spliceIndex, "landmarks:", landmark0_G, landmark1_G, landmarks_G
 
 	for i in range(len(landmarks_G)):
 		p1 = landmarks_G[i][0]

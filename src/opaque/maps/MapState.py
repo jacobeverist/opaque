@@ -1193,25 +1193,6 @@ class MapState:
 
 
 				""" collect landmarks that we can localize against """
-				#candLandmarks_G = []
-				#for pathID in pathIDs:
-
-				#	nodeSet = self.getNodes(pathID)
-				#	currFrame_L = Pose(controlPoses[pathID])
-
-				#	for nodeID in nodeSet:
-
-				#		landmarkPoint_N = self.nodeLandmarks[pathID][nodeID]
-
-				#		currFrame_G = Pose(controlPoses_G[pathID])
-				#		nodePose_L = self.pathClasses[pathID]["localNodePoses"][nodeID]
-				#		poseFrame_L = Pose(nodePose_L)
-
-				#		if landmarkPoint_N != None and nodeID != nodeID0 and nodeID != nodeID1:
-				#			landmarkPoint_L = poseFrame_L.convertLocalToGlobal(landmarkPoint_N)
-				#			landmarkPoint_G = currFrame_G.convertLocalToGlobal(landmarkPoint_L)
-				#			candLandmarks_G.append(landmarkPoint_G)
-
 				candLandmarks_G = nodeToGlobalLandmarks(controlPoses, self.getPathIDs(), self.getParentHash(), self.nodeLandmarks, self.pathClasses, exemptNodes = [nodeID0,nodeID1])
 
 				#LANDMARK_THRESH = 1e100
@@ -1229,7 +1210,8 @@ class MapState:
 				splices_G = branchResult["splices_G"]
 				for splice in splices_G:
 					#thisSplicedPaths.append((arcTuple, normMatchCount*normLandmark, splice, None, []))
-					thisSplicedPaths.append((arcTuple, normMatchCount*normLandmark, splice, None, candLandmarks_G))
+					#thisSplicedPaths.append((arcTuple, normMatchCount*normLandmark, splice, None, candLandmarks_G))
+					thisSplicedPaths.append((arcTuple, normLandmark, splice, None, candLandmarks_G))
 
 				#splices_G = branchResult["splices_G"]
 				#for pathID in branchPathIDs:
@@ -1339,6 +1321,12 @@ class MapState:
 				normMatchCount = allSplicedPaths[spliceIndex][1]
 				spliceCurve = allSplicedPaths[spliceIndex][2]
 				#pathID = allSplicedPaths[spliceIndex][3]
+				
+				branchNormLandmarkCost = 1.0
+				if branchIndex != None:
+					branchResult = self.jointBranchEvaluations[branchIndex]
+					branchNormLandmarkCost = branchResult["normLandmark"]
+
 
 				initPose0 = part[48]
 				initPose1 = part[49]
@@ -1429,8 +1417,10 @@ class MapState:
 					#newProb = (pi-fabs(diffAngle(initPose0[2],newPose0[2])) ) * contigFrac_0 * contigFrac_0 / overlapSum_0
 
 					""" case if splice is root path """
-					if normMatchCount != None:
-						newProb *= normMatchCount
+					#if normMatchCount != None:
+					#	newProb *= normMatchCount
+
+					newProb *= branchNormLandmarkCost
 
 					listCopy = list(part)
 					listCopy[45] = newProb

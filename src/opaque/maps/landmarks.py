@@ -66,7 +66,7 @@ def getNodeLandmark(nodeID, poseData):
 
 def computeConsistency(landmarks_G):
 
-	LANDMARK_THRESH = 6.0
+	LANDMARK_THRESH = 7.0
 	poseSum = 0.0
 
 

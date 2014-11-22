@@ -825,7 +825,7 @@ def movePath(mapHyp, nodeID, direction, distEst = 1.0):
 										#"sameProb" : {}, "nodeSet" : [], "globalJunctionPose" : None}
 
 						#LANDMARK_THRESH = 3.0
-						LANDMARK_THRESH = 6.0
+						LANDMARK_THRESH = 7.0
 						#LANDMARK_THRESH = 4.5
 
 						minPathID = None

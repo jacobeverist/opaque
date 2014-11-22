@@ -11,6 +11,11 @@ parser = argparse.ArgumentParser(description='DarkMapper Batch')
 parser.add_argument('--startOffset', type=float, default=0.0, help="probe start displacement offset")
 parser.add_argument('--maxNumPoses', type=int, default=100, help="max number of poses")
 
+# bendFeature
+parser.add_argument('--bendFeature', dest='bendFeature', action='store_true')
+parser.set_defaults(bendFeature=False)
+
+
 args = parser.parse_args()
 
 
@@ -39,7 +44,11 @@ for mapFile in maps:
 	" run the test "
 	fileOut = open('out.txt', 'a')
 	#command_line = "/usr/bin/python ../startSim.py --mapfile=../mapLibrary/%s --restoreConfig=True --hideWindow=True" % mapFile 
-	command_line = "/usr/bin/python ../startSim.py --hideWindow=True --restoreConfig=True --mapFile=../mapLibrary/%s --maxNumPoses=%d --startOffset=%f" % (mapFile, maxNumPoses, startOffset)
+	if args.bendFeature:
+		command_line = "/usr/bin/python ../startSim.py --hideWindow=True --restoreConfig=True --mapFile=../mapLibrary/%s --maxNumPoses=%d --startOffset=%f --bendFeature" % (mapFile, maxNumPoses, startOffset)
+	else:
+		command_line = "/usr/bin/python ../startSim.py --hideWindow=True --restoreConfig=True --mapFile=../mapLibrary/%s --maxNumPoses=%d --startOffset=%f" % (mapFile, maxNumPoses, startOffset)
+
 	
 	args = shlex.split(command_line)
 	print "args:", args
@@ -79,7 +88,7 @@ for mapFile in maps:
 		
 	" mkdir "
 	testDir = "results_%s" % mapFile
-	os.system("mkdir " + testDir)
+	os.mkdir(testDir)
 
 	outFiles = glob.glob(os.path.join("*.out"))
 	outFiles += glob.glob(os.path.join("*.err"))
@@ -88,11 +97,10 @@ for mapFile in maps:
 	outFiles += glob.glob(os.path.join("*.png"))
 
 
+	" move files "
 	for outFile in outFiles:
 		shutil.move(outFile, testDir)
 		
-	" move files "
-	#os.system("mv *.png *.obj *.txt *.out *.err " + testDir )
 	
 	" clean up "
 	pass
