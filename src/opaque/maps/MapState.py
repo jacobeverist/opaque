@@ -2039,6 +2039,50 @@ class MapState:
 				if False in self.branchDiverges.values():
 						totalSum = 1e100
 
+		""" look for outlier landmarks to invalidate a map state """
+		LANDMARK_THRESH = 7.0
+		OUTLIER_THRESH = 1.5
+
+		controlPoses_G = computeGlobalControlPoses(self.getControlPoses(), self.getParentHash())
+
+		""" collect the current landmarks """
+		landmarks_G = nodeToGlobalLandmarks(controlPoses_G, self.getPathIDs(), self.getParentHash(), self.nodeLandmarks, self.pathClasses)
+
+		isOutlier = False
+
+		for j in range(len(landmarks_G)):
+
+			p1 = landmarks_G[j][0]
+			p2 = p1
+
+			minDist = 1e100
+			minK = 0
+
+			for k in range(0, len(landmarks_G)):
+
+				if j != k:
+
+					p2 = landmarks_G[k][0]
+					dist = sqrt((p2[0]-p1[0])**2 + (p2[1]-p1[1])**2)
+
+					if dist < minDist:
+						minDist = dist
+						minK = k
+
+			if minDist <= LANDMARK_THRESH and minDist > OUTLIER_THRESH:
+				print "outlier:", minDist, p1, p2
+				isOutlier = True
+			else:
+				print "inlier:", minDist, p1, p2
+
+
+
+		if isOutlier:
+			totalSum = 5e100
+
+
+
+
 		"""
 		for j in keys:
 			path1 = self.trimmedPaths[j]
