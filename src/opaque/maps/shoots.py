@@ -3606,8 +3606,8 @@ def getSkeletonBranchPoint(tipPoint_G, globalJunctionPose, currShootID, parentSh
 
 		try:
 			""" get branch point from all skeletons """
-			branchPose_G, isNoDiverge, tipDist, tipPoint_G = getSimpleSoupDeparture(tipPoint_G, globalJunctionPose, ancestorPointSoup_G, seg_G, angThresh = angThresh, plotIter = plotIter, hypothesisID = hypothesisID, numNodes = nodeID, pathID = arcDist)
-			print "returned", k, branchPose_G, isNoDiverge
+			branchPose_G, isNoDiverge, tipDist, newTipPoint_G = getSimpleSoupDeparture(tipPoint_G, globalJunctionPose, ancestorPointSoup_G, seg_G, angThresh = angThresh, plotIter = plotIter, hypothesisID = hypothesisID, numNodes = nodeID, pathID = arcDist)
+			print "simpleSoup returned", k, branchPose_G, isNoDiverge, tipDist, tipPoint_G, newTipPoint_G
 
 			#dist = sqrt((branchPose_G[0]-globalJunctionPose[0])**2 + (branchPose_G[1]-globalJunctionPose[1])**2)
 			dist = tipDist
@@ -3630,7 +3630,8 @@ def getSkeletonBranchPoint(tipPoint_G, globalJunctionPose, currShootID, parentSh
 
 
 
-	print "skeletonBranchPoint:", minBranchPose, minIsNoDiverge
+
+	print "skeletonBranchPoint:", minBranchPose, minIsNoDiverge, "minDist =", minDist
 
 	if minBranchPose == None:
 		raise
