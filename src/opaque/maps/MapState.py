@@ -1863,14 +1863,14 @@ class MapState:
 		controlPoses_G = computeGlobalControlPoses(self.getControlPoses(), self.getParentHash())
 		#landmarks_G = nodeToGlobalLandmarks(self.getControlPoses(), self.getPathIDs(), self.getParentHash(), self.nodeLandmarks, self.pathClasses)
 
-		xP = []
-		yP = []
-		for point_G, pointThresh, pointName in landmarks_G:
-			xP.append(point_G[0])
-			yP.append(point_G[1])
+		#xP = []
+		#yP = []
+		#for point_G, pointThresh, pointName in landmarks_G:
+		#	xP.append(point_G[0])
+		#	yP.append(point_G[1])
 
-		if len(xP) > 0:
-			pylab.scatter(xP, yP, color='k', linewidth=1, zorder=9, alpha=0.9)
+		#if len(xP) > 0:
+		#	pylab.scatter(xP, yP, color='k', linewidth=1, zorder=9, alpha=0.9)
 
 		xP = []
 		yP = []
