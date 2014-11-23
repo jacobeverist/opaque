@@ -342,6 +342,7 @@ class MapState:
 		self.pathClasses[0] = {"parentID" : None,
 					"branchNodeID" : None,
 					"localJunctionPose" : None, 
+					"tipPoint_L" : None,
 					"localDivergencePose" : None, 
 					"sameProb" : {},
 					"nodeSet" : [],
@@ -521,9 +522,13 @@ class MapState:
 				self.pathClasses[pathID]["controlPose"] = controlPose_P
 
 				branchPose_L = branchResult["branchPoses_L"][pathID]
+				tipPoint_L = branchResult["tipPoints_L"][pathID]
+
+				print "updating local tip point", self.hypothesisID, pathID, tipPoint_L
 
 				""" FIXME:  was recycling the angle, but now we are regenerating it """
 				self.setLocalJunctionPose(pathID, branchPose_L)
+				self.setLocalTipPoint(pathID, tipPoint_L)
 
 
 		""" update the recent nodes if we are displaced """
@@ -2102,6 +2107,24 @@ class MapState:
 		return controlPose
 
 	@logFunction
+	def setLocalTipPoint(self, pathID, tipPoint_L):
+
+		if pathID != 0:
+
+			self.pathClasses[pathID]["tipPoint_L"] = tipPoint_L
+
+			globalControlPoses = computeGlobalControlPoses(self.getControlPoses(), self.getParentHash())
+
+			#""" convert the controlPose to coordinates local to the parent frame """
+			shootControlPose = globalControlPoses[pathID]
+			currFrame = Pose(shootControlPose)
+			tipPoint_G = currFrame.convertLocalToGlobal(tipPoint_L)
+
+			print "tipPoint_G =", tipPoint_G
+
+			#self.pathClasses[pathID]["globalJunctionPose"] = globalJuncPose
+
+	@logFunction
 	def setLocalJunctionPose(self, pathID, localJuncPose):
 
 		if pathID != 0:
@@ -2776,12 +2799,14 @@ class MapState:
 		localSkeletons = {}
 		controlPoses = {}
 		junctionPoses = {}
+		tipPoints = {}
 		localPathSegsByID = {}
 		pathIDs = self.getPathIDs()
 		for pathID in pathIDs:
 			localSkeletons[pathID] = self.localLeaf2LeafPathJunctions[pathID]["skeletonGraph"]
 			controlPoses[pathID] = self.pathClasses[pathID]["controlPose"]
 			junctionPoses[pathID] = self.pathClasses[pathID]["localJunctionPose"]
+			tipPoints[pathID] = self.pathClasses[pathID]["tipPoint_L"]
 			localPathSegsByID[pathID] = self.localLeaf2LeafPathJunctions[pathID]["localSegments"]
 
 		parentPathIDs = self.getParentHash()
@@ -2803,7 +2828,7 @@ class MapState:
 				thisArcDists[pathID] = arcDist
 
 			#self.localLandmarks
-			jointBranchJobs.append((localPathSegsByID, self.localPaths, localSkeletons, thisControlPoses, junctionPoses, self.localLandmarks, parentPathIDs, thisArcDists, len(self.nodePoses)-1, self.hypothesisID ))
+			jointBranchJobs.append((localPathSegsByID, self.localPaths, localSkeletons, thisControlPoses, tipPoints, junctionPoses, self.localLandmarks, parentPathIDs, thisArcDists, len(self.nodePoses)-1, self.hypothesisID ))
 
 
 		jointResults = batchJointBranch(jointBranchJobs)
@@ -3412,6 +3437,14 @@ class MapState:
 
 			self.hulls[pathID] = globalHull
 
+		""" get terminals from previous data """
+		#self.localTerms = {0 : None}
+		#for pathID in pathIDs:
+		#	if pathID != 0:
+		#		shootFrame = Pose(finalPoses[pathID])
+		#		termPoint_G = self.terminals[pathID+1][1]
+		#		termPoint_L = shootFrame.convertGlobalToLocal(termPoint_G)
+		#		self.localTerms[pathID] = termPoint_L
 
 		#self.paths[pathID] = results[1]
 		#self.hulls[pathID] = results[2]
@@ -3505,6 +3538,8 @@ class MapState:
 
 
 		self.topDict = {}
+
+		#self.localTerms = {0 : None}
 		
 		
 		" get terminals "
@@ -3534,6 +3569,7 @@ class MapState:
 						self.rootPoint = self.trimmedPaths[pathID][len(path)-1]
 					
 				else:
+
 					
 					self.topDict["j%u" % pathID] = self.junctions[pathID][2]
 					minI1 = self.junctions[pathID][4]
@@ -3545,6 +3581,12 @@ class MapState:
 					else:
 						self.terminals[pathID+1] = [(pathID,len(path)-1), path[len(path)-1]]
 						self.topDict["t%u" % (pathID+1)] = (pathID,len(path)-1)
+
+
+					#shootFrame = Pose(finalPoses[pathID])
+					#termPoint_G = self.terminals[pathID+1][1]
+					#termPoint_L = shootFrame.convertGlobalToLocal(termPoint_G)
+					#self.localTerms[pathID] = termPoint_L
 
 
 		#if len(self.trimmedPaths[pathID]) > 0:
@@ -3939,7 +3981,7 @@ class MapState:
 		#localPathSegsByID[newPathID] 
 
 
-		controlPose_G, controlParentID, branchPose_G = getInitSkeletonBranchPoint(globalJunctionPose_G, newPathID, globalMedial0_G, parentPathIDs, localPathSegsByID, self.localPaths, globalControlPoses_G, plotIter = False, hypothesisID = self.hypothesisID, nodeID = branchNodeID)
+		controlPose_G, controlParentID, tipPoint_G, branchPose_G = getInitSkeletonBranchPoint(globalJunctionPose_G, newPathID, globalMedial0_G, parentPathIDs, localPathSegsByID, self.localPaths, globalControlPoses_G, plotIter = False, hypothesisID = self.hypothesisID, nodeID = branchNodeID)
 
 		#try:
 		#	branchPose_G, isNoDiverge = getSkeletonBranchPoint(oldBranchPose_G, pathID, parentPathIDs, localPathSegsByID, localPaths, controlPoses_G)
@@ -3988,12 +4030,14 @@ class MapState:
 		currFrame = Pose(controlPose_G)
 		nodePose_C = currFrame.convertGlobalPoseToLocal(nodePose_G)
 		junctionPose_C = currFrame.convertGlobalPoseToLocal(newGlobJuncPose_G)
+		tipPoint_C = currFrame.convertGlobalPoseToLocal(tipPoint_G)
 
 		""" basic shoot data structure """
 		self.pathClasses[newPathID] = {"parentID" : controlParentID,
 						"branchNodeID" : branchNodeID,
 						"localDivergencePose" : localDivergencePose_R, 
 						"localJunctionPose" : junctionPose_C, 
+						"tipPoint_L" : tipPoint_C, 
 						"sameProb" : {},
 						"nodeSet" : [branchNodeID,],
 						"localNodePoses" : {branchNodeID : nodePose_C},
@@ -4107,6 +4151,7 @@ class MapState:
 		localPaths = self.localPaths
 		trimmedPaths = {}
 		branchPoses_G = {}
+		tipPoints_G = {}
 		localTrimmedPaths = {}
 		branchDiverges = {}
 		
@@ -4169,16 +4214,18 @@ class MapState:
 						parentPathID = childParents[pathID]
 						childPathID = pathID
 
+						tipPoint_L = self.pathClasses[childPathID]["tipPoint_L"]
 						localJunctionPose = self.pathClasses[childPathID]["localJunctionPose"]
 						localControlPose = self.pathClasses[childPathID]["controlPose"]
 						globalJunctionPose = self.getGlobalJunctionPose(childPathID)
 						globalControlPose = globalControlPoses[pathID]
 
-						localNewPath3, branchPose_L, localParticlePath, isNoDiverge = trimBranch(childPathID, parentPathID, localControlPose, localJunctionPose, localPathSegsByID, self.localPaths, parentPathIDs, globalControlPoses, plotIter=True, hypothesisID=self.hypothesisID, nodeID=(self.poseData.numNodes), arcDist = childPathID)
+						localNewPath3, tipPoint_L, branchPose_L, localParticlePath, isNoDiverge = trimBranch(childPathID, parentPathID, localControlPose, tipPoint_L, localJunctionPose, localPathSegsByID, self.localPaths, parentPathIDs, globalControlPoses, plotIter=True, hypothesisID=self.hypothesisID, nodeID=(self.poseData.numNodes), arcDist = childPathID)
 
 
 						currFrame = Pose(globalControlPose)
 						branchPose_G = currFrame.convertLocalOffsetToGlobal(branchPose_L)
+						tipPoint_G = currFrame.convertLocalToGlobal(tipPoint_L)
 
 						offsetOrigin1 = Pose(globalControlPose)
 						globalPath3 = []
@@ -4188,12 +4235,16 @@ class MapState:
 						trimmedPaths[pathID] = deepcopy(globalPath3)
 						localTrimmedPaths[pathID] = deepcopy(localNewPath3)
 						branchPoses_G[pathID] = branchPose_G
+
+						tipPoints_G[pathID] = tipPoint_G
+
 						branchDiverges[pathID] = not isNoDiverge
 
 					for childID in pathIDs:
 						if self.pathClasses[childID]["parentID"] == pathID:
 							isParentComputed[childID] = True
 
+		self.tipPoints_G = tipPoints_G
 		self.branchPoses_G = branchPoses_G
 		self.trimmedPaths = trimmedPaths
 		self.localTrimmedPaths = localTrimmedPaths

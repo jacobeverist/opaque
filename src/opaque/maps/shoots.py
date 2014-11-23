@@ -1859,14 +1859,15 @@ def __remote_multiJointBranch(rank, qin, qout):
 				localPaths = job[1]
 				localSkeletons = job[2]
 				controlPoses = job[3]
-				junctionPoses = job[4]
-				landmarks = job[5]
-				parentPathIDs = job[6]
-				arcDists = job[7]
-				numNodes = job[8]
-				hypID = job[9]
+				tipPoints = job[4]
+				junctionPoses = job[5]
+				landmarks = job[6]
+				parentPathIDs = job[7]
+				arcDists = job[8]
+				numNodes = job[9]
+				hypID = job[10]
 
-				result = computeJointBranch(localPathSegs, localPaths, localSkeletons, controlPoses, junctionPoses, landmarks, parentPathIDs, arcDists, numNodes, hypID)
+				result = computeJointBranch(localPathSegs, localPaths, localSkeletons, controlPoses, tipPoints, junctionPoses, landmarks, parentPathIDs, arcDists, numNodes, hypID)
 				#result = None
 
 				results.append(result)
@@ -2772,6 +2773,7 @@ def getSimpleDeparture(globalJunctionPose, path1, path2, plotIter = False):
 	else:
 		return backPoint
 
+
 @logFunction
 def getSoupDivergence(globalJunctionPose, pointSoup, path2, angThresh = 0.8, hypothesisID = 0, numNodes = 0, pathID = 0, plotIter = False):
 
@@ -2934,7 +2936,7 @@ def getSoupDivergence(globalJunctionPose, pointSoup, path2, angThresh = 0.8, hyp
 
 
 @logFunction
-def getSimpleSoupDeparture(globalJunctionPose, pointSoup, path2, angThresh = 0.8, hypothesisID = 0, numNodes = 0, pathID = 0, plotIter = False):
+def getSimpleSoupDeparture(tipPoint_G, globalJunctionPose, pointSoup, path2, angThresh = 0.8, hypothesisID = 0, numNodes = 0, pathID = 0, plotIter = False):
 
 	" return exception if we receive an invalid path "		  
 	if len(path2) == 0:
@@ -2991,6 +2993,12 @@ def getSimpleSoupDeparture(globalJunctionPose, pointSoup, path2, angThresh = 0.8
 	juncDist1 = sqrt((globalJunctionPose[0]-frontPoint[0])**2 + (globalJunctionPose[1]-frontPoint[1])**2)
 	juncDist2 = sqrt((globalJunctionPose[0]-backPoint[0])**2 + (globalJunctionPose[1]-backPoint[1])**2)
 
+	if tipPoint_G != None:
+		p_1, i_1, tipDist1 = gen_icp.findClosestPointInA(pathPoints2[0:frontIndex+1], tipPoint_G)
+		p_2, i_2, tipDist2 = gen_icp.findClosestPointInA(pathPoints2[backIndex:], tipPoint_G)
+	else:
+		tipDist1 = 0.0
+		tipDist2 = 0.0
 
 	frontNoDiverge = False
 	backNoDiverge = False
@@ -3090,17 +3098,24 @@ def getSimpleSoupDeparture(globalJunctionPose, pointSoup, path2, angThresh = 0.8
 
 
 
+	if tipPoint_G != None:
+		if tipDist1 < tipDist2:
+			return frontPose, frontNoDiverge, tipDist1, pathPoints2[0]
+
+		if tipDist2 <= tipDist1:
+			return backPose, backNoDiverge, tipDist2, pathPoints2[-1]
+
 	if juncDist1 < juncDist2 and angDiff1 < angThresh:
-		return frontPose, frontNoDiverge
+		return frontPose, frontNoDiverge, None, pathPoints2[0]
 
 	if juncDist2 < juncDist1 and angDiff2 < angThresh:
-		return backPose, backNoDiverge
+		return backPose, backNoDiverge, None, pathPoints2[-1]
 
 	if angDiff1 < angThresh:
-		return frontPose, frontNoDiverge
+		return frontPose, frontNoDiverge, None, pathPoints2[0]
 
 	if angDiff2 < angThresh:
-		return backPose, backNoDiverge
+		return backPose, backNoDiverge, None, pathPoints2[-1]
 
 	""" no suitable answer, exception """
 	raise
@@ -3445,7 +3460,7 @@ def getInitSkeletonBranchPoint(globalJunctionPose, currShootID, globalMedial_G, 
 
 
 	""" get branch point from all skeletons """
-	branchPose_G, isDiverge = getSimpleSoupDeparture(globalJunctionPose, allPointSoup_G, globalMedial_G, angThresh = 2*pi)
+	branchPose_G, isDiverge, noTipDist, tipPoint_G = getSimpleSoupDeparture(None, globalJunctionPose, allPointSoup_G, globalMedial_G, angThresh = 2*pi)
 
 
 	""" convert control pose from global to parent frame """
@@ -3464,12 +3479,12 @@ def getInitSkeletonBranchPoint(globalJunctionPose, currShootID, globalMedial_G, 
 
 	print "skeletonBranchPoint:", maxSkeletonID, maxSkeletonSegID, maxSkeletonContigFrac, controlPose_G, branchPose_G
 
-	return controlPose_G, controlParentID, branchPose_G
+	return controlPose_G, controlParentID, tipPoint_G, branchPose_G
 	
 
 
 @logFunction
-def getSkeletonBranchPoint(globalJunctionPose, currShootID, parentShootIDs, localPathSegsByID, localPaths, globalControlPoses, angThresh = 0.8, plotIter = False, hypothesisID = 0, nodeID = 0, arcDist = 0.0):
+def getSkeletonBranchPoint(tipPoint_G, globalJunctionPose, currShootID, parentShootIDs, localPathSegsByID, localPaths, globalControlPoses, angThresh = 0.8, plotIter = False, hypothesisID = 0, nodeID = 0, arcDist = 0.0):
 
 	"""
 	2)  branch point is the part of current skeleton that diverges from all non-descendent skeletons
@@ -3591,10 +3606,11 @@ def getSkeletonBranchPoint(globalJunctionPose, currShootID, parentShootIDs, loca
 
 		try:
 			""" get branch point from all skeletons """
-			branchPose_G, isNoDiverge = getSimpleSoupDeparture(globalJunctionPose, ancestorPointSoup_G, seg_G, angThresh = angThresh, plotIter = plotIter, hypothesisID = hypothesisID, numNodes = nodeID, pathID = arcDist)
+			branchPose_G, isNoDiverge, tipDist, tipPoint_G = getSimpleSoupDeparture(tipPoint_G, globalJunctionPose, ancestorPointSoup_G, seg_G, angThresh = angThresh, plotIter = plotIter, hypothesisID = hypothesisID, numNodes = nodeID, pathID = arcDist)
 			print "returned", k, branchPose_G, isNoDiverge
 
-			dist = sqrt((branchPose_G[0]-globalJunctionPose[0])**2 + (branchPose_G[1]-globalJunctionPose[1])**2)
+			#dist = sqrt((branchPose_G[0]-globalJunctionPose[0])**2 + (branchPose_G[1]-globalJunctionPose[1])**2)
+			dist = tipDist
 
 			if dist < minDist:
 				minDist = dist
@@ -4010,13 +4026,15 @@ def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, 
 
 
 @logFunction
-def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPoses, junctionPoses, landmarks, parentPathIDs, arcDists, numNodes=0, hypothesisID=0):
+def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPoses, tipPoints, junctionPoses, landmarks, parentPathIDs, arcDists, numNodes=0, hypothesisID=0):
 
 	print "computeJointBranch()", numNodes
 	sys.stdout.flush()
 
 	newBranchPoses_L = {0:None}
 	newBranchPoses_G = {0:None}
+	newTipPoints_L = {0:None}
+	newTipPoints_G = {0:None}
 	trimmedPaths = {}
 	branchTermPaths = {}
 	longestPaths = {0 : localPaths[0]}
@@ -4037,6 +4055,7 @@ def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPos
 	branchResult["matchCounts"] = {}
 	branchResult["costSum"] = {}
 	branchResult["branchPoses_L"] = {}
+	branchResult["tipPoints_L"] = {}
 	#branchResult["splices_G"] = {}
 
 	controlPoses_G = computeGlobalControlPoses(controlPoses, parentPathIDs)
@@ -4071,8 +4090,9 @@ def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPos
 		lastCost1, matchCount1 = skeletonOverlapCost(childPathSegs_P, parentPathSegs, plotIter = False, n1 = 0, n2 = 0, arcDist = 0.0)
 
 
+
 		""" get the trimmed child shoot at the new designated branch point from parent """
-		trimPath_L, branchPose_L, longPath_L, isNoDiverge =  trimBranch(pathID, parentID, controlPose_P, junctionPoses[pathID], localPathSegsByID, localPaths, parentPathIDs, controlPoses_G, plotIter=False, arcDist = arcDist, nodeID=numNodes, hypothesisID = hypothesisID)
+		trimPath_L, tipPoint_L, branchPose_L, longPath_L, isNoDiverge =  trimBranch(pathID, parentID, controlPose_P, tipPoints[pathID], junctionPoses[pathID], localPathSegsByID, localPaths, parentPathIDs, controlPoses_G, plotIter=False, arcDist = arcDist, nodeID=numNodes, hypothesisID = hypothesisID)
 
 
 
@@ -4082,6 +4102,10 @@ def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPos
 		newBranchPoses_G[pathID] = branchPose_G
 		newBranchPoses_L[pathID] = branchPose_L
 
+
+		#newTipPoints_L = {0:None}
+		#newTipPoints_G = {0:None}
+		#branchResult["tipPoints_L"] = {}
 
 		trimmedPaths[pathID] = trimPath_L
 		longestPaths[pathID] = longPath_L
@@ -4093,6 +4117,7 @@ def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPos
 			branchResult["matchCounts"][pathID] = matchCount1
 		branchResult["costSum"][pathID] = lastCost1
 		branchResult["branchPoses_L"][pathID] = branchPose_L
+		branchResult["tipPoints_L"][pathID] = tipPoint_L
 
 
 	""" find the splice through skeleton """
@@ -4427,7 +4452,7 @@ def computeBranch(pathID, parentID, localPathSegsByID, localPaths, arcDist, loca
 		controlPoses_G = computeGlobalControlPoses(controlPoses, parentPathIDs)
 
 		""" get the trimmed child shoot at the new designated branch point from parent """
-		newPath3, localJuncPose_C, particlePath, isNoDiverge =  trimBranch(pathID, parentID, modControlPose_P, oldLocalJuncPose_C, localPathSegsByID, localPaths, parentPathIDs, controlPoses_G, plotIter=False, arcDist = arcDist, nodeID=numNodes, hypothesisID = hypothesisID)
+		newPath3, newTipPoint_L, localJuncPose_C, particlePath, isNoDiverge =  trimBranch(pathID, parentID, modControlPose_P, oldLocalJuncPose_C, localPathSegsByID, localPaths, parentPathIDs, controlPoses_G, plotIter=False, arcDist = arcDist, nodeID=numNodes, hypothesisID = hypothesisID)
 
 		juncDiscDist = 0.0
 		juncDiscAngle = 0.0
@@ -4875,9 +4900,8 @@ def trimJointBranch(localPathSegsByID, localPaths, parentPathIDs, branchPoses_G,
 
 
 
-
 @logFunction
-def trimBranch(pathID, parentPathID, controlPose_P, oldBranchPose_L, localPathSegsByID, localPaths, parentPathIDs, controlPoses_G, plotIter = False, hypothesisID = 0, nodeID = 0, arcDist = 0.0):
+def trimBranch(pathID, parentPathID, controlPose_P, oldTipPoint_L, oldBranchPose_L, localPathSegsByID, localPaths, parentPathIDs, controlPoses_G, plotIter = False, hypothesisID = 0, nodeID = 0, arcDist = 0.0):
 
 	global pathPlotCount 
 
@@ -4887,13 +4911,15 @@ def trimBranch(pathID, parentPathID, controlPose_P, oldBranchPose_L, localPathSe
 	""" get branch point landmark """
 	currFrame = Pose(controlPoses_G[pathID])
 	oldBranchPose_G = currFrame.convertLocalOffsetToGlobal(oldBranchPose_L)
+	oldTipPoint_G = currFrame.convertLocalToGlobal(oldTipPoint_L)
+
 
 	try:
-		branchPose_G, isNoDiverge = getSkeletonBranchPoint(oldBranchPose_G, pathID, parentPathIDs, localPathSegsByID, localPaths, controlPoses_G, plotIter= plotIter, hypothesisID = hypothesisID, nodeID=nodeID, arcDist = arcDist)
+		branchPose_G, isNoDiverge = getSkeletonBranchPoint(oldTipPoint_G, oldBranchPose_G, pathID, parentPathIDs, localPathSegsByID, localPaths, controlPoses_G, plotIter= plotIter, hypothesisID = hypothesisID, nodeID=nodeID, arcDist = arcDist)
 		#getSkeletonBranchPoint(globalJunctionPose, currShootID, parentShootIDs, localPathSegsByID, localPaths, globalControlPoses, angThresh = 0.8, plotIter = False, hypothesisID = 0, nodeID = 0, arcDist = 0.0):
 	except:
 		#branchPose_G, isNoDiverge = getSkeletonBranchPoint(oldBranchPose_G, pathID, parentPathIDs, localPathSegsByID, localPaths, controlPoses_G, angThresh = pi)
-		branchPose_G, isNoDiverge = getSkeletonBranchPoint(oldBranchPose_G, pathID, parentPathIDs, localPathSegsByID, localPaths, controlPoses_G, angThresh=pi, plotIter= plotIter, hypothesisID = hypothesisID, nodeID=nodeID, arcDist = arcDist)
+		branchPose_G, isNoDiverge = getSkeletonBranchPoint(oldTipPoint_G, oldBranchPose_G, pathID, parentPathIDs, localPathSegsByID, localPaths, controlPoses_G, angThresh=pi, plotIter= plotIter, hypothesisID = hypothesisID, nodeID=nodeID, arcDist = arcDist)
 
 	branchPose_L = currFrame.convertGlobalPoseToLocal(branchPose_G)
 	branchPose_P = localFrame.convertLocalOffsetToGlobal(branchPose_L)
@@ -4991,6 +5017,7 @@ def trimBranch(pathID, parentPathID, controlPose_P, oldBranchPose_L, localPathSe
 		
 		newPath2 = particlePath2[:index+1]
 		newPath2.reverse()
+
 	
 	elif minI == 1:
 		"""secP1 is terminal N"""
@@ -5003,7 +5030,6 @@ def trimBranch(pathID, parentPathID, controlPose_P, oldBranchPose_L, localPathSe
 
 		newPath2 = particlePath2[index:]
 
-		
 	elif minI == 2:
 		"""secP2 is terminal 0"""
 		#index = juncI-10
@@ -5074,6 +5100,10 @@ def trimBranch(pathID, parentPathID, controlPose_P, oldBranchPose_L, localPathSe
 
 	""" convert back to local coordinate system for each shoot """
 
+
+	newTipPoint_P = newPath2[-1]
+	newTipPoint_L = localFrame.convertGlobalToLocal(newTipPoint_P)
+
 	localNewPath3 = []
 	for p in newPath3:
 		p1 = localFrame.convertGlobalToLocal(p)
@@ -5089,7 +5119,7 @@ def trimBranch(pathID, parentPathID, controlPose_P, oldBranchPose_L, localPathSe
 	print "localJuncPose = branchPose_L", localJuncPose, branchPose_L
 
 	#return localNewPath3, localJuncPose, localParticlePath2
-	return localNewPath3, branchPose_L, localParticlePath2, isNoDiverge
+	return localNewPath3, newTipPoint_L, branchPose_L, localParticlePath2, isNoDiverge
 
 
 
