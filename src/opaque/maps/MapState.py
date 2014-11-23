@@ -1751,7 +1751,7 @@ class MapState:
 				xP.append(p1[0])
 				yP.append(p1[1])
 
-			pylab.plot(xP,yP, color = 'r', alpha = 0.2, zorder=9)
+			pylab.plot(xP,yP, color = 'r', alpha = 0.2, zorder=7)
 
 
 			allPathIDs = self.getPathIDs()
@@ -1771,27 +1771,27 @@ class MapState:
 				if pathID != 0:
 					junctionPoses[pathID] = self.pathClasses[pathID]["globalJunctionPose"]
 
-			xP = []
-			yP = []
-			for pathID in allPathIDs:
-				currFrame = Pose(controlPoses_G[pathID])
-				for point_L, pointThresh, pointName in self.localLandmarks[pathID]:
-					point_G = currFrame.convertLocalToGlobal(point_L)
+			#xP = []
+			#yP = []
+			#for pathID in allPathIDs:
+			#	currFrame = Pose(controlPoses_G[pathID])
+			#	for point_L, pointThresh, pointName in self.localLandmarks[pathID]:
+			#		point_G = currFrame.convertLocalToGlobal(point_L)
 
-					xP.append(point_G[0])
-					yP.append(point_G[1])
+			#		xP.append(point_G[0])
+			#		yP.append(point_G[1])
 
-			if len(xP) > 0:
-				pylab.scatter(xP, yP, color='k', linewidth=1, zorder=9, alpha=0.4)
+			#if len(xP) > 0:
+			#	pylab.scatter(xP, yP, color='k', linewidth=1, zorder=9, alpha=0.4)
 
-			xP = []
-			yP = []
-			for pathID, branchPoint in junctionPoses.iteritems():
-				xP.append(branchPoint[0])
-				yP.append(branchPoint[1])
+			#xP = []
+			#yP = []
+			#for pathID, branchPoint in junctionPoses.iteritems():
+			#	xP.append(branchPoint[0])
+			#	yP.append(branchPoint[1])
 
-			if len(xP) > 0:
-				pylab.scatter(xP, yP, color='r', linewidth=1, zorder=10, alpha=0.4)
+			#if len(xP) > 0:
+			#	pylab.scatter(xP, yP, color='r', linewidth=1, zorder=10, alpha=0.4)
 
 			xP = []
 			yP = []
@@ -1855,10 +1855,37 @@ class MapState:
 				xP.append(p1[0])
 				yP.append(p1[1])
 
-			pylab.plot(xP,yP, color = 'b', alpha = 0.2, zorder=9)
+			pylab.plot(xP,yP, color = 'b', alpha = 0.2, zorder=7)
 
 		#pylab.scatter(hypPointsX_0, hypPointsY_0, color='r', linewidth=1, zorder=10, alpha=0.2)
 		#pylab.scatter(hypPointsX_1, hypPointsY_1, color='b', linewidth=1, zorder=10, alpha=0.2)
+
+		controlPoses_G = computeGlobalControlPoses(self.getControlPoses(), self.getParentHash())
+		landmarks_G = nodeToGlobalLandmarks(self.getControlPoses(), self.getPathIDs(), self.getParentHash(), self.nodeLandmarks, self.pathClasses)
+
+		xP = []
+		yP = []
+		for point_G, pointThresh, pointName in landmarks_G:
+			xP.append(point_G[0])
+			yP.append(point_G[1])
+
+		if len(xP) > 0:
+			pylab.scatter(xP, yP, color='k', linewidth=1, zorder=9, alpha=0.9)
+
+		junctionPoses = {}
+		for pathID in allPathIDs:
+			if pathID != 0:
+				junctionPoses[pathID] = self.pathClasses[pathID]["globalJunctionPose"]
+
+		xP = []
+		yP = []
+		for pathID, branchPoint in junctionPoses.iteritems():
+			xP.append(branchPoint[0])
+			yP.append(branchPoint[1])
+
+		if len(xP) > 0:
+			pylab.scatter(xP, yP, color='r', linewidth=1, zorder=10, alpha=0.9)
+
 
 		pose0 = self.getNodePose(nodeID0)
 		pose1 = self.getNodePose(nodeID1)
@@ -2043,17 +2070,23 @@ class MapState:
 		LANDMARK_THRESH = 7.0
 		OUTLIER_THRESH = 1.5
 
+		print "controlPoses_L:", self.getControlPoses()
+
 		controlPoses_G = computeGlobalControlPoses(self.getControlPoses(), self.getParentHash())
 
+		print "controlPoses_G:", controlPoses_G
+
 		""" collect the current landmarks """
-		landmarks_G = nodeToGlobalLandmarks(controlPoses_G, self.getPathIDs(), self.getParentHash(), self.nodeLandmarks, self.pathClasses)
+		landmarks_G = nodeToGlobalLandmarks(self.getControlPoses(), self.getPathIDs(), self.getParentHash(), self.nodeLandmarks, self.pathClasses)
+
+		print "check for outliers:", landmarks_G
 
 		isOutlier = False
 
 		for j in range(len(landmarks_G)):
 
 			p1 = landmarks_G[j][0]
-			p2 = p1
+			p2 = deepcopy(p1)
 
 			minDist = 1e100
 			minK = 0
@@ -2070,10 +2103,10 @@ class MapState:
 						minK = k
 
 			if minDist <= LANDMARK_THRESH and minDist > OUTLIER_THRESH:
-				print "outlier:", minDist, p1, p2
+				print "outlier:", minDist, p1, landmarks_G[minK][0]
 				isOutlier = True
 			else:
-				print "inlier:", minDist, p1, p2
+				print "inlier:", minDist, p1, landmarks_G[minK][0]
 
 
 
