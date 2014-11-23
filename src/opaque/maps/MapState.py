@@ -1861,13 +1861,26 @@ class MapState:
 		#pylab.scatter(hypPointsX_1, hypPointsY_1, color='b', linewidth=1, zorder=10, alpha=0.2)
 
 		controlPoses_G = computeGlobalControlPoses(self.getControlPoses(), self.getParentHash())
-		landmarks_G = nodeToGlobalLandmarks(self.getControlPoses(), self.getPathIDs(), self.getParentHash(), self.nodeLandmarks, self.pathClasses)
+		#landmarks_G = nodeToGlobalLandmarks(self.getControlPoses(), self.getPathIDs(), self.getParentHash(), self.nodeLandmarks, self.pathClasses)
 
 		xP = []
 		yP = []
 		for point_G, pointThresh, pointName in landmarks_G:
 			xP.append(point_G[0])
 			yP.append(point_G[1])
+
+		if len(xP) > 0:
+			pylab.scatter(xP, yP, color='k', linewidth=1, zorder=9, alpha=0.9)
+
+		xP = []
+		yP = []
+		for pathID in allPathIDs:
+			currFrame = Pose(controlPoses_G[pathID])
+			for point_L, pointThresh, pointName in self.localLandmarks[pathID]:
+				point_G = currFrame.convertLocalToGlobal(point_L)
+
+				xP.append(point_G[0])
+				yP.append(point_G[1])
 
 		if len(xP) > 0:
 			pylab.scatter(xP, yP, color='k', linewidth=1, zorder=9, alpha=0.9)
