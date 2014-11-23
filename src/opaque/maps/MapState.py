@@ -2081,7 +2081,8 @@ class MapState:
 
 		""" look for outlier landmarks to invalidate a map state """
 		LANDMARK_THRESH = 7.0
-		OUTLIER_THRESH = 1.5
+		#OUTLIER_THRESH = 1.5
+		OUTLIER_THRESH = 0.7
 
 		print "controlPoses_L:", self.getControlPoses()
 
