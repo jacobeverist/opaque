@@ -2082,8 +2082,8 @@ class MapState:
 		""" look for outlier landmarks to invalidate a map state """
 		LANDMARK_THRESH = 7.0
 		#OUTLIER_THRESH = 1.5
-		#OUTLIER_THRESH = 0.7
-		OUTLIER_THRESH = 0.4
+		OUTLIER_THRESH = 0.7
+		#OUTLIER_THRESH = 0.4
 
 		print "controlPoses_L:", self.getControlPoses()
 
@@ -2212,7 +2212,7 @@ class MapState:
 			currFrame = Pose(shootControlPose)
 			tipPoint_G = currFrame.convertLocalToGlobal(tipPoint_L)
 
-			print "tipPoint_G =", tipPoint_G
+			print "tipPoint_G =", self.hypothesisID, tipPoint_G
 
 			#self.pathClasses[pathID]["globalJunctionPose"] = globalJuncPose
 
@@ -3476,6 +3476,7 @@ class MapState:
 										self.getNodes(pathID),
 										self.pathClasses[pathID]["localNodePoses"],
 										self.localLandmarks[pathID],
+										self.pathClasses[pathID]["tipPoint_L"],
 										self.hypothesisID,
 										self.colors[pathID],
 										self.topCount,

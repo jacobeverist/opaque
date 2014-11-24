@@ -631,7 +631,7 @@ def computeGlobalControlPoses(controlPoses, parentPathIDs):
 	return finalPoses
 
 @logFunction
-def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePoses, localLandmarks, hypothesisID, color, topCount, plotIter = False):
+def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePoses, localLandmarks, tipPoint_L, hypothesisID, color, topCount, plotIter = False):
 	
 	print "computeShootSkeleton(", pathID, globalJunctionPose, hypothesisID, topCount, ")"
 
@@ -1347,12 +1347,35 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 
 	
 	" FIXME:  Verify that leaf path exists for the junction point "
-	
+
+	if globalJunctionPose != None:
+		branchArm = None
+		bestFit = -1
+		minTipDist = 1e100
+		for cand in pathCands:
+			k = cand[1]
+			#print "medialLongPaths[k]:", medialLongPaths[k]
+			p_1, i_1, minDist = gen_icp.findClosestPointInA(medialLongPaths[k], tipPoint_L)
+			print "tipPoint_L:", tipPoint_L, p_1, minDist
+
+			if minDist < minTipDist:
+				minTipDist = minDist
+				bestFit = k
+
+		leaf2LeafPathJunctions["bestFit"] = bestFit
+		leaf2LeafPathJunctions["branchArm"] = branchArm
+		leaf2LeafPathJunctions["longPaths"] = medialLongPaths
+		leaf2LeafPathJunctions["theoryPaths"] = theoryMedialLongPaths
+
+		return leaf2LeafPathJunctions, medialLongPaths[bestFit], vertices
+
 	" select longest path that has the best angle fit "
+	"""
 	branchArm = None
 	if globalJunctionPose != None:
 		bestFit = -1
 		minDiff = 1e100
+		minTipDist = 1e100
 		for cand in pathCands:
 			k = cand[1]
 			juncAngs = juncAngSet[k]
@@ -1367,18 +1390,26 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 				if angs != None:
 					angDiff1 = angs[0]
 					angDiff2 = angs[1]
+
+					p_1, i_1, minDist = gen_icp.findClosestPointInA(medialLongPaths[k], tipPoint_L)
 					
-					print "minDiff:", minDiff, angDiff1, angDiff2 
-					
-					if fabs(angDiff1) < minDiff:
-						minDiff = fabs(angDiff1)
+					print "minDiff:", minDiff, angDiff1, angDiff2, minDist
+
+
+					if minDist < minTipDist:
+						minTipDist = minDist
 						bestFit = k
 						branchArm = medialLongPaths[bestFit][jIndex+1]
 
-					if fabs(angDiff2) < minDiff:
-						minDiff = fabs(angDiff2)
-						bestFit = k
-						branchArm = medialLongPaths[bestFit][jIndex-1]
+					#if fabs(angDiff1) < minDiff:
+					#	minDiff = fabs(angDiff1)
+					#	bestFit = k
+					#	branchArm = medialLongPaths[bestFit][jIndex+1]
+
+					#if fabs(angDiff2) < minDiff:
+					#	minDiff = fabs(angDiff2)
+					#	bestFit = k
+					#	branchArm = medialLongPaths[bestFit][jIndex-1]
 
 			pass
 
@@ -1408,6 +1439,7 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 		
 		else:
 			print "not returning bestFit"
+	"""
 
 	print "returning longest fit"
 
@@ -3600,6 +3632,7 @@ def getSkeletonBranchPoint(tipPoint_G, globalJunctionPose, currShootID, parentSh
 	minDist = 1e100
 	minBranchPose = None
 	minIsNoDiverge = False
+	minTipPoint_G = None
 	for k in range(len(currSegs_G)):
 
 		seg_G = currSegs_G[k]
@@ -3616,6 +3649,7 @@ def getSkeletonBranchPoint(tipPoint_G, globalJunctionPose, currShootID, parentSh
 				minDist = dist
 				minBranchPose = branchPose_G
 				minIsNoDiverge = isNoDiverge
+				minTipPoint_G = newTipPoint_G
 
 				""" clarify that we are diverging from non-descendants """
 				try:
@@ -3631,12 +3665,12 @@ def getSkeletonBranchPoint(tipPoint_G, globalJunctionPose, currShootID, parentSh
 
 
 
-	print "skeletonBranchPoint:", minBranchPose, minIsNoDiverge, "minDist =", minDist
+	print "skeletonBranchPoint:", minBranchPose, minIsNoDiverge, "minDist =", minDist, "tipPoint =", minTipPoint_G
 
 	if minBranchPose == None:
 		raise
 
-	return minBranchPose, minIsNoDiverge
+	return minBranchPose, minIsNoDiverge, minDist, minTipPoint_G
 	
 @logFunction
 def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, plotIter = False, hypothesisID = 0, nodeID = 0, arcDist = 0.0):
@@ -4671,240 +4705,10 @@ def computeBranch(pathID, parentID, localPathSegsByID, localPaths, arcDist, loca
  
 
 @logFunction
-def trimJointBranch(localPathSegsByID, localPaths, parentPathIDs, branchPoses_G, controlPoses_G, plotIter = False, hypothesisID = 0, nodeID = 0, arcDist = 0.0):
-
-	global pathPlotCount 
-
-
-
-	"""
-	1. position all segments into global coordinates
-
-
-	"""
-	""" operate only the non-root skeletons """
-	branchPathIDs = deepcopy(parentPathIDs.keys())
-	branchPathIDs.remove(0)
-	branchPathIDs.sort()
-
-
-	for pathID in branchPathIDs:
-
-
-		""" get branch point landmark """ 
-		#childFrame = Pose(controlPose_G)
-		#globJuncPose = childFrame.convertLocalOffsetToGlobal(origGlobJuncPose)
-
-		newBranchPose_G, isNoDiverge = getSkeletonBranchPoint(branchPoses_G[pathID], pathID, parentPathIDs, localPathSegsByID, localPaths, controlPoses_G)
-
-		newGlobJuncPose = newBranchPose_G
-	
-		globJuncPose = newGlobJuncPose
-
-
-
-		""" get trimmed path """
-
-		partPathSegs = []
-
-		#path1 = parentPath
-		#path2 = childPath
-
-		path1 = localPaths[parentPathID]
-		path2 = localPaths[pathID]
-
-		particlePath2 = []
-		for p in path2:
-			p1 = offsetOrigin1.convertLocalToGlobal(p)
-			particlePath2.append(p1)
-
-		""" get departing sections of overlapped curves """
-		""" branch point as input """
-		secP1, secP2 = getOverlapDeparture(globJuncPose, parentPathID, pathID, path1, particlePath2, plotIter = False)				 
-
-		minI_1 = 0		  
-		minI_2 = 0
-		minDist_1 = 1e100
-		minDist_2 = 1e100		 
-		for i in range(len(particlePath2)):
-			pnt = particlePath2[i]
-			dist1 = sqrt((pnt[0]-secP1[0])**2 + (pnt[1]-secP1[1])**2)
-			dist2 = sqrt((pnt[0]-secP2[0])**2 + (pnt[1]-secP2[1])**2)
-		
-			if dist1 < minDist_1:
-				minDist_1 = dist1
-				minI_1 = i
-
-			if dist2 < minDist_2:
-				minDist_2 = dist2
-				minI_2 = i
-
-		term0 = particlePath2[0]
-		termN = particlePath2[-1]
-
-		""" smallest distance is the terminal point """
-		dist0_1 = sqrt((term0[0]-secP1[0])**2 + (term0[1]-secP1[1])**2)
-		distN_1 = sqrt((termN[0]-secP1[0])**2 + (termN[1]-secP1[1])**2)
-		dist0_2 = sqrt((term0[0]-secP2[0])**2 + (term0[1]-secP2[1])**2)
-		distN_2 = sqrt((termN[0]-secP2[0])**2 + (termN[1]-secP2[1])**2)
-		print "terminal distances:", dist0_1, distN_1, dist0_2, distN_2
-		
-		distList = [dist0_1, distN_1, dist0_2, distN_2]
-		
-		minI = -1
-		minDist = 1e100
-		for i in range(len(distList)):
-			if distList[i] < minDist:
-				minDist = distList[i]
-				minI = i
-		
-		if minDist_1 < minDist_2:
-			junctionPoint_K = secP1
-			juncI_K = minI_1
-		else:
-			junctionPoint_K = secP2
-			juncI_K = minI_2
-		
-		minDist2 = 1e100
-		juncI = 0		 
-		for i in range(len(particlePath2)):
-			pnt = particlePath2[i]
-			dist = sqrt((pnt[0]-globJuncPose[0])**2 + (pnt[1]-globJuncPose[1])**2)
-		
-			if dist < minDist2:
-				minDist2 = dist
-				juncI = i
-		 
-		 
-		
-		print "len(path1):", len(path1)
-		print "len(particlePath2):", len(particlePath2)
-		print "juncI:", juncI
-		print "minDist:", minDist_1, minDist_2
-		
-		""" now we have closest point to departure point. """
-		""" Which side is the departing side? """	 
-
-				
-		if minI == 0:
-			"""secP1 is terminal 0"""
-			#index = juncI-10
-			index = juncI
-			if index < 1:
-				index = 1
-
-			
-			newPath2 = particlePath2[:index+1]
-			newPath2.reverse()
-		
-		elif minI == 1:
-			"""secP1 is terminal N"""
-			#index = juncI+10
-			index = juncI
-			if index >= len(particlePath2)-1:
-				
-				""" ensure at least 2 elements in path """
-				index = len(particlePath2)-2
-
-			newPath2 = particlePath2[index:]
-
-			
-		elif minI == 2:
-			"""secP2 is terminal 0"""
-			#index = juncI-10
-			index = juncI
-			if index < 1:
-				index = 1
-
-			newPath2 = particlePath2[:index+1]
-			newPath2.reverse()
-			
-		elif minI == 3:
-			"""secP2 is terminal N"""
-			#index = juncI+10
-			index = juncI
-			if index >= len(particlePath2)-1:
-				""" ensure at least 2 elements in path """
-				index = len(particlePath2)-2
-			
-			newPath2 = particlePath2[index:]
-		
-		else:
-			print """no terminal found"""
-			raise
-						
-		""" convert path so that the points are uniformly distributed """
-		newPath3 = ensureEnoughPoints(newPath2, max_spacing = 0.08, minPoints = 5)
-
-		if plotIter:
-			numNodes = 0
-			pathPlotCount = 0
-
-			
-			pylab.clf()
-			xP = []
-			yP = []
-			for p in newPath3:
-				xP.append(p[0])
-				yP.append(p[1])
-			pylab.plot(xP,yP, color=(0.5,0.5,1.0))
-
-			xP = []
-			yP = []
-			for p in path1:
-				xP.append(p[0])
-				yP.append(p[1])
-			pylab.plot(xP,yP, color=(1.0,0.5,0.5))
-
-			#xP = []
-			#yP = []
-			#for p in particlePath2:
-			#	xP.append(p[0])
-			#	yP.append(p[1])
-			#	pylab.plot(xP,yP, color='m', alpha=0.5)
-
-			
-			pylab.scatter([newGlobJuncPose[0],], [newGlobJuncPose[1],], color='r')
-			pylab.scatter([modControlPose[0],], [modControlPose[1],], color='b')
-			#pylab.scatter([origControlPose[0],], [origControlPose[1],], color='g')
-			#pylab.scatter([globJuncPose[0],], [globJuncPose[1],], color='m')
-
-			pylab.axis("equal")
-			pylab.title("hyp %d nodeID %d %1.2f %1.2f" % ( hypothesisID, nodeID, origGlobJuncPose[2], newGlobJuncPose[2]))
-			pylab.savefig("trimDeparture_%04u_%04u_%1.1f.png" % (hypothesisID, nodeID, arcDist))
-
-			print "saving trimDeparture_%04u_%04u_%1.1f.png" % (hypothesisID, nodeID, arcDist)
-			
-			pathPlotCount += 1
-
-		""" convert back to local coordinate system for each shoot """
-
-		localNewPath3 = []
-		for p in newPath3:
-			p1 = offsetOrigin1.convertGlobalToLocal(p)
-			localNewPath3.append(p1)
-
-		localParticlePath2 = []
-		for p in particlePath2:
-			p1 = offsetOrigin1.convertGlobalToLocal(p)
-			localParticlePath2.append(p1)
-
-		localJuncPose = offsetOrigin1.convertGlobalPoseToLocal(newGlobJuncPose)
-
-
-
-
-	newBranchPoses_L = {}
-
-	return localNewPath3, localParticlePath2, newBranchPoses_L
-
-
-
-
-@logFunction
 def trimBranch(pathID, parentPathID, controlPose_P, oldTipPoint_L, oldBranchPose_L, localPathSegsByID, localPaths, parentPathIDs, controlPoses_G, plotIter = False, hypothesisID = 0, nodeID = 0, arcDist = 0.0):
 
 	global pathPlotCount 
+
 
 	localFrame = Pose(controlPose_P)
 	#localFrame = Pose(controlPoses_G[pathID])
@@ -4916,11 +4720,9 @@ def trimBranch(pathID, parentPathID, controlPose_P, oldTipPoint_L, oldBranchPose
 
 
 	try:
-		branchPose_G, isNoDiverge = getSkeletonBranchPoint(oldTipPoint_G, oldBranchPose_G, pathID, parentPathIDs, localPathSegsByID, localPaths, controlPoses_G, plotIter= plotIter, hypothesisID = hypothesisID, nodeID=nodeID, arcDist = arcDist)
-		#getSkeletonBranchPoint(globalJunctionPose, currShootID, parentShootIDs, localPathSegsByID, localPaths, globalControlPoses, angThresh = 0.8, plotIter = False, hypothesisID = 0, nodeID = 0, arcDist = 0.0):
+		branchPose_G, isNoDiverge, tipDist, branchTipPoint_G = getSkeletonBranchPoint(oldTipPoint_G, oldBranchPose_G, pathID, parentPathIDs, localPathSegsByID, localPaths, controlPoses_G, plotIter= plotIter, hypothesisID = hypothesisID, nodeID=nodeID, arcDist = arcDist)
 	except:
-		#branchPose_G, isNoDiverge = getSkeletonBranchPoint(oldBranchPose_G, pathID, parentPathIDs, localPathSegsByID, localPaths, controlPoses_G, angThresh = pi)
-		branchPose_G, isNoDiverge = getSkeletonBranchPoint(oldTipPoint_G, oldBranchPose_G, pathID, parentPathIDs, localPathSegsByID, localPaths, controlPoses_G, angThresh=pi, plotIter= plotIter, hypothesisID = hypothesisID, nodeID=nodeID, arcDist = arcDist)
+		branchPose_G, isNoDiverge, tipDist, branchTipPoint_G = getSkeletonBranchPoint(oldTipPoint_G, oldBranchPose_G, pathID, parentPathIDs, localPathSegsByID, localPaths, controlPoses_G, angThresh=pi, plotIter= plotIter, hypothesisID = hypothesisID, nodeID=nodeID, arcDist = arcDist)
 
 	branchPose_L = currFrame.convertGlobalPoseToLocal(branchPose_G)
 	branchPose_P = localFrame.convertLocalOffsetToGlobal(branchPose_L)
@@ -4942,7 +4744,7 @@ def trimBranch(pathID, parentPathID, controlPose_P, oldTipPoint_L, oldBranchPose
 
 	""" get departing sections of overlapped curves """
 	""" branch point as input """
-	secP1, secP2 = getOverlapDeparture(branchPose_P, parentPathID, pathID, path1, particlePath2, plotIter = False)				 
+	secP1, secP2 = getOverlapDeparture(branchPose_P, parentPathID, pathID, path1, particlePath2, plotIter = True)				 
 
 	minI_1 = 0		  
 	minI_2 = 0
@@ -5060,7 +4862,7 @@ def trimBranch(pathID, parentPathID, controlPose_P, oldTipPoint_L, oldBranchPose
 
 	if plotIter:
 		numNodes = 0
-		pathPlotCount = 0
+		#pathPlotCount = 0
 
 		
 		pylab.clf()
@@ -5069,7 +4871,7 @@ def trimBranch(pathID, parentPathID, controlPose_P, oldTipPoint_L, oldBranchPose
 		for p in newPath3:
 			xP.append(p[0])
 			yP.append(p[1])
-		pylab.plot(xP,yP, color=(0.5,0.5,1.0))
+		pylab.plot(xP,yP, color=(0.0,0.0,1.0), zorder=9)
 
 		xP = []
 		yP = []
@@ -5083,7 +4885,7 @@ def trimBranch(pathID, parentPathID, controlPose_P, oldTipPoint_L, oldBranchPose
 		for p in particlePath2:
 			xP.append(p[0])
 			yP.append(p[1])
-			pylab.plot(xP,yP, color='m', alpha=0.5)
+			pylab.plot(xP,yP, color='m', alpha=0.5, zorder=8)
 
 		
 		pylab.scatter([branchPose_P[0],], [branchPose_P[1],], color='r')
@@ -5093,17 +4895,20 @@ def trimBranch(pathID, parentPathID, controlPose_P, oldTipPoint_L, oldBranchPose
 
 		pylab.axis("equal")
 		pylab.title("hyp %d nodeID %d %1.2f" % ( hypothesisID, nodeID, branchPose_G[2]))
-		pylab.savefig("trimDeparture_%04u_%04u_%1.1f.png" % (hypothesisID, nodeID, arcDist))
+		pylab.savefig("trimDeparture_%04u_%04u_%1.1f_%d.png" % (hypothesisID, nodeID, arcDist, pathPlotCount))
 
-		print "saving trimDeparture_%04u_%04u_%1.1f.png" % (hypothesisID, nodeID, arcDist)
+		print "saving trimDeparture_%04u_%04u_%1.1f_%d.png" % (hypothesisID, nodeID, arcDist, pathPlotCount)
 		
 		pathPlotCount += 1
 
 	""" convert back to local coordinate system for each shoot """
 
+	newTipPoint_G = newPath2[-1]
+	newTipPoint_L = localFrame.convertGlobalToLocal(newTipPoint_G)
+	#newTipPoint_G = currFrame.convertLocalToGlobal(branchPose_L)
 
-	newTipPoint_P = newPath2[-1]
-	newTipPoint_L = localFrame.convertGlobalToLocal(newTipPoint_P)
+	print "trimBranch:", hypothesisID, nodeID, pathID, arcDist, tipDist, oldTipPoint_G, branchTipPoint_G, newTipPoint_G
+	#print "oldTipPoint, newTipPoint:", oldTipPoint_G, newTipPoint_G, hypothesisID, nodeID, arcDist
 
 	localNewPath3 = []
 	for p in newPath3:
