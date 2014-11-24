@@ -2293,7 +2293,8 @@ def computeLocalDivergence(hypSet, nodeID1, nodeID2):
 		" COMPUTE DEPARTURE EVENTS FOR EACH OVERLAPPING PATH SECTION "
 		for pathID in orderedPathIDs1:
 
-			trimSpline = SplineFit(mapHyp.trimmedPaths[pathID])
+			#trimSpline = SplineFit(mapHyp.trimmedPaths[pathID])
+			trimSpline = SplineFit(mapHyp.paths[pathID])
 			path_vec = trimSpline.getUniformSamples()
 
 			orientedTrimPath = orientPathLean(path_vec, globalMedial1)
@@ -2313,7 +2314,8 @@ def computeLocalDivergence(hypSet, nodeID1, nodeID2):
 
 		for pathID in orderedPathIDs2:
 
-			trimSpline = SplineFit(mapHyp.trimmedPaths[pathID])
+			#trimSpline = SplineFit(mapHyp.trimmedPaths[pathID])
+			trimSpline = SplineFit(mapHyp.paths[pathID])
 			path_vec = trimSpline.getUniformSamples()
 
 			orientedTrimPath = orientPathLean(path_vec, globalMedial2)

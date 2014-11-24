@@ -25,7 +25,8 @@ hardMaps = ['cross_junction.py', 'T_side_junction.py', 'T_bottom_junction.py', '
 
 comboMaps = ['Y_Y_junction.py', 'Y_right_Y_junction.py', 'Y_right_cross_junction.py', 'Y_left_Y_junction.py', 'T_side_T_junction.py', 'T_bottom_T_junction.py', 'L_right_left_junction.py', 'L_left_right_junction.py', '60_right_left_junction.py', '60_left_right_junction.py', 'cross_cross_junction.py', 'gen_function.py', 'gen_function2.py', 'gen_junction.py', 'gen_junction2.py']
 
-maps = [hardMaps[0],] + easyMaps + hardMaps[1:]
+#maps = [hardMaps[0],] + easyMaps + hardMaps[1:]
+maps = easyMaps
 
 
 """

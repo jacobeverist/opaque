@@ -1359,8 +1359,16 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 			print "tipPoint_L:", tipPoint_L, p_1, minDist
 
 			if minDist < minTipDist:
+
 				minTipDist = minDist
 				bestFit = k
+
+				#""" make sure the difference is not marginal """
+				#marginDiff = fabs(minDist - minTipDist)
+
+				#if marginDiff > 0.05:
+				#	minTipDist = minDist
+				#	bestFit = k
 
 		leaf2LeafPathJunctions["bestFit"] = bestFit
 		leaf2LeafPathJunctions["branchArm"] = branchArm
