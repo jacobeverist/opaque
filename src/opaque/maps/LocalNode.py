@@ -2100,15 +2100,17 @@ class LocalNode:
 							centerMassIndex = contigPointIndex[k]
 
 							angDeriv = longPathWidth[centerMassIndex]["angDeriv2"]
-							inflectionPoint = copy(longPathWidth[centerMassIndex]["linePoint"])
-							#print self.nodeID, "inflection boundaries:", inflectionPoint, contigInflection, angDeriv, maxDeriv, len(longPathWidth)
-							print self.nodeID, "inflection boundaries:", inflectionPoint, centerMassIndex, angDeriv, maxDeriv, len(longPathWidth)
+							if angDeriv >= maxDeriv - 0.2:
+								inflectionPoint = copy(longPathWidth[centerMassIndex]["linePoint"])
+								#print self.nodeID, "inflection boundaries:", inflectionPoint, contigInflection, angDeriv, maxDeriv, len(longPathWidth)
+								print self.nodeID, "inflection boundaries:", inflectionPoint, centerMassIndex, angDeriv, maxDeriv, len(longPathWidth)
 
 					if inflectionPoint == None:
 						if longPathWidth[contigInflection-1]["angDeriv2"] < maxDeriv and longPathWidth[contigInflection+1]["angDeriv2"] < maxDeriv:
 							angDeriv = longPathWidth[contigInflection]["angDeriv2"]
-							inflectionPoint = copy(longPathWidth[contigInflection]["linePoint"])
-							print self.nodeID, "inflection boundaries:", inflectionPoint, contigInflection, angDeriv, maxDeriv, len(longPathWidth)
+							if angDeriv >= maxDeriv - 0.2:
+								inflectionPoint = copy(longPathWidth[contigInflection]["linePoint"])
+								print self.nodeID, "inflection boundaries:", inflectionPoint, contigInflection, angDeriv, maxDeriv, len(longPathWidth)
 
 
 				else:
@@ -2686,7 +2688,7 @@ class LocalNode:
 			pylab.plot(xP,yP, color='r')
 						
 			pylab.title("Medial %d" % self.nodeID)
-			pylab.savefig("medialOut_%04u.png" % self.nodeID)
+			#pylab.savefig("medialOut_%04u.png" % self.nodeID)
 
 
 		greatCount, divSums = bowtieValues[0]
