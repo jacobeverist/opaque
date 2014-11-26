@@ -408,7 +408,9 @@ def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine
 								dist1 = sqrt((p2[0]-p1[0])**2 + (p2[1]-p1[1])**2)
 								if dist1 < LANDMARK_THRESH:
 
-									poseSum += sqrt(dist1*dist1/(maxThresh*maxThresh))
+									#poseSum += sqrt(dist1*dist1/(maxThresh*maxThresh))
+									poseSum += sqrt(dist1*dist1/(thresh1*thresh1 + thresh2*thresh2))
+									
 
 									#if dist1 > maxThresh:
 									#	poseSum += 10.0*dist1*dist1
@@ -1067,7 +1069,8 @@ def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, me
 			dist0 = sqrt((p1[0]-landmark0_G[0][0])**2 + (p1[1]-landmark0_G[0][1])**2)
 			if dist0 < LANDMARK_THRESH:
 
-				poseSum += sqrt(dist0*dist0/(maxThresh*maxThresh))
+				#poseSum += sqrt(dist0*dist0/(maxThresh*maxThresh))
+				poseSum += sqrt(dist0*dist0/(threshG*threshG + thresh0*thresh0))
 
 				#if dist0 > maxThresh:
 				#	poseSum += 10.0*dist0*dist0
@@ -1082,8 +1085,10 @@ def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, me
 
 			dist1 = sqrt((p1[0]-landmark1_G[0][0])**2 + (p1[1]-landmark1_G[0][1])**2)
 			if dist1 < LANDMARK_THRESH:
-				poseSum += sqrt(dist1*dist1/(maxThresh*maxThresh))
+				#poseSum += sqrt(dist1*dist1/(maxThresh*maxThresh))
 				
+				poseSum += sqrt(dist1*dist1/(threshG*threshG + thresh1*thresh1))
+
 				#if dist1 > maxThresh:
 				#	poseSum += 10.0*dist1*dist1
 				#else:

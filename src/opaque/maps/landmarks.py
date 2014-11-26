@@ -92,7 +92,9 @@ def computeConsistency(landmarks_G):
 
 			if dist0 < LANDMARK_THRESH:
 				""" square of the distance """
-				poseSum += sqrt(dist0*dist0/(maxThresh*maxThresh))
+				#poseSum += sqrt(dist0*dist0/(maxThresh*maxThresh))
+
+				poseSum += sqrt(dist0*dist0/(thresh1*thresh1 + thresh2*thresh2))
 				
 				#if dist0 > maxThresh:
 				#	poseSum += 10.0*dist0*dist0

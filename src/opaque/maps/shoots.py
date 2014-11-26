@@ -3034,8 +3034,10 @@ def getSimpleSoupDeparture(tipPoint_G, globalJunctionPose, pointSoup, path2, ang
 	juncDist2 = sqrt((globalJunctionPose[0]-backPoint[0])**2 + (globalJunctionPose[1]-backPoint[1])**2)
 
 	if tipPoint_G != None:
-		p_1, i_1, tipDist1 = gen_icp.findClosestPointInA(pathPoints2[0:frontIndex+1], tipPoint_G)
-		p_2, i_2, tipDist2 = gen_icp.findClosestPointInA(pathPoints2[backIndex:], tipPoint_G)
+		#p_1, i_1, tipDist1 = gen_icp.findClosestPointInA(pathPoints2[0:frontIndex+1], tipPoint_G)
+		tipDist1 = sqrt((pathPoints2[0][0]-tipPoint_G[0])**2+(pathPoints2[0][1]-tipPoint_G[1])**2)
+		#p_2, i_2, tipDist2 = gen_icp.findClosestPointInA(pathPoints2[backIndex:], tipPoint_G)
+		tipDist2 = sqrt((pathPoints2[-1][0]-tipPoint_G[0])**2+(pathPoints2[-1][1]-tipPoint_G[1])**2)
 	else:
 		tipDist1 = 0.0
 		tipDist2 = 0.0
@@ -3103,7 +3105,8 @@ def getSimpleSoupDeparture(tipPoint_G, globalJunctionPose, pointSoup, path2, ang
 	angDiff1 = fabs(diffAngle(globalJunctionPose[2], frontPose[2]))
 	angDiff2 = fabs(diffAngle(globalJunctionPose[2], backPose[2]))
 
-	print "getSimpleSoupDeparture:", juncDist1, angDiff1, juncDist2, angDiff2, frontPose, backPose, len(pathPoints2), frontIndex, backIndex, frontNoDiverge, backNoDiverge, globalJunctionPose
+	print "getSimpleSoupDeparture:", juncDist1, angDiff1, tipDist1, juncDist2, angDiff2, tipDist2, frontPose, backPose, len(pathPoints2), frontIndex, backIndex, frontNoDiverge, backNoDiverge, globalJunctionPose, pathPoints2[0], pathPoints2[-1]
+	print "distances:", distances
 
 	if plotIter:
 
@@ -4314,7 +4317,10 @@ def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPos
 				maxThresh = thresh2
 
 			if dist < LANDMARK_THRESH:
-				distSum += sqrt(dist*dist/(maxThresh*maxThresh))
+				#distSum += sqrt(dist*dist/(maxThresh*maxThresh))
+
+				distSum += sqrt(dist*dist/(thresh1*thresh1 + thresh2*thresh2))
+
 				#if dist > maxThresh:
 				#	distSum += 10.0*dist*dist
 				#else:
@@ -4735,6 +4741,9 @@ def trimBranch(pathID, parentPathID, controlPose_P, oldTipPoint_L, oldBranchPose
 	branchPose_L = currFrame.convertGlobalPoseToLocal(branchPose_G)
 	branchPose_P = localFrame.convertLocalOffsetToGlobal(branchPose_L)
 
+	branchTipPoint_L = currFrame.convertGlobalToLocal(branchTipPoint_G)
+	branchTipPoint_P = localFrame.convertLocalToGlobal(branchTipPoint_L)
+
 	""" get trimmed path """
 
 	partPathSegs = []
@@ -4749,122 +4758,19 @@ def trimBranch(pathID, parentPathID, controlPose_P, oldTipPoint_L, oldBranchPose
 	for p in path2:
 		p1 = localFrame.convertLocalToGlobal(p)
 		particlePath2.append(p1)
-
-	""" get departing sections of overlapped curves """
-	""" branch point as input """
-	secP1, secP2 = getOverlapDeparture(branchPose_P, parentPathID, pathID, path1, particlePath2, plotIter = True)				 
-
-	minI_1 = 0		  
-	minI_2 = 0
-	minDist_1 = 1e100
-	minDist_2 = 1e100		 
-	for i in range(len(particlePath2)):
-		pnt = particlePath2[i]
-		dist1 = sqrt((pnt[0]-secP1[0])**2 + (pnt[1]-secP1[1])**2)
-		dist2 = sqrt((pnt[0]-secP2[0])**2 + (pnt[1]-secP2[1])**2)
-	
-		if dist1 < minDist_1:
-			minDist_1 = dist1
-			minI_1 = i
-
-		if dist2 < minDist_2:
-			minDist_2 = dist2
-			minI_2 = i
-
-	term0 = particlePath2[0]
-	termN = particlePath2[-1]
-
-	""" smallest distance is the terminal point """
-	dist0_1 = sqrt((term0[0]-secP1[0])**2 + (term0[1]-secP1[1])**2)
-	distN_1 = sqrt((termN[0]-secP1[0])**2 + (termN[1]-secP1[1])**2)
-	dist0_2 = sqrt((term0[0]-secP2[0])**2 + (term0[1]-secP2[1])**2)
-	distN_2 = sqrt((termN[0]-secP2[0])**2 + (termN[1]-secP2[1])**2)
-	print "terminal distances:", dist0_1, distN_1, dist0_2, distN_2
-	
-	distList = [dist0_1, distN_1, dist0_2, distN_2]
-	
-	minI = -1
-	minDist = 1e100
-	for i in range(len(distList)):
-		if distList[i] < minDist:
-			minDist = distList[i]
-			minI = i
-	
-	if minDist_1 < minDist_2:
-		junctionPoint_K = secP1
-		juncI_K = minI_1
-	else:
-		junctionPoint_K = secP2
-		juncI_K = minI_2
-	
-	minDist2 = 1e100
-	juncI = 0		 
-	for i in range(len(particlePath2)):
-		pnt = particlePath2[i]
-		dist = sqrt((pnt[0]-branchPose_P[0])**2 + (pnt[1]-branchPose_P[1])**2)
-	
-		if dist < minDist2:
-			minDist2 = dist
-			juncI = i
-	 
-	 
-	
-	print "len(path1):", len(path1)
-	print "len(particlePath2):", len(particlePath2)
-	print "juncI:", juncI
-	print "minDist:", minDist_1, minDist_2
-	
-	""" now we have closest point to departure point. """
-	""" Which side is the departing side? """	 
-
-			
-	if minI == 0:
-		"""secP1 is terminal 0"""
-		#index = juncI-10
-		index = juncI
-		if index < 1:
-			index = 1
-
 		
-		newPath2 = particlePath2[:index+1]
+
+	p_1, branchIndex, minDist = gen_icp.findClosestPointInA(particlePath2, branchPose_P)
+	p_2, tipIndex, minDist = gen_icp.findClosestPointInA(particlePath2, branchTipPoint_P)
+
+
+	if tipIndex < branchIndex:
+		newPath2 = particlePath2[:branchIndex+1]
 		newPath2.reverse()
-
-	
-	elif minI == 1:
-		"""secP1 is terminal N"""
-		#index = juncI+10
-		index = juncI
-		if index >= len(particlePath2)-1:
-			
-			""" ensure at least 2 elements in path """
-			index = len(particlePath2)-2
-
-		newPath2 = particlePath2[index:]
-
-	elif minI == 2:
-		"""secP2 is terminal 0"""
-		#index = juncI-10
-		index = juncI
-		if index < 1:
-			index = 1
-
-		newPath2 = particlePath2[:index+1]
-		newPath2.reverse()
-		
-	elif minI == 3:
-		"""secP2 is terminal N"""
-		#index = juncI+10
-		index = juncI
-		if index >= len(particlePath2)-1:
-			""" ensure at least 2 elements in path """
-			index = len(particlePath2)-2
-		
-		newPath2 = particlePath2[index:]
-	
 	else:
-		print """no terminal found"""
-		raise
-					
+		newPath2 = particlePath2[branchIndex:]
+
+
 	""" convert path so that the points are uniformly distributed """
 	newPath3 = ensureEnoughPoints(newPath2, max_spacing = 0.08, minPoints = 5)
 
