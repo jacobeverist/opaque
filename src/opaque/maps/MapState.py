@@ -2096,12 +2096,17 @@ class MapState:
 
 		print "check for outliers:", landmarks_G
 
+		print "computeEval:", self.hypothesisID
+
 		isOutlier = False
+		poseSum = 0.0
 
 		for j in range(len(landmarks_G)):
 
 			p1 = landmarks_G[j][0]
+			thresh1 = landmarks_G[j][1]
 			p2 = deepcopy(p1)
+			thresh2 = deepcopy(landmarks_G[j][1])
 
 			minDist = 1e100
 			minK = 0
@@ -2111,11 +2116,17 @@ class MapState:
 				if j != k:
 
 					p2 = landmarks_G[k][0]
+					thresh2 = landmarks_G[k][1]
 					dist = sqrt((p2[0]-p1[0])**2 + (p2[1]-p1[1])**2)
 
 					if dist < minDist:
 						minDist = dist
 						minK = k
+
+					if dist < LANDMARK_THRESH:
+						poseSum += sqrt(dist*dist/(thresh1*thresh1 + thresh2*thresh2))
+
+
 
 			if minDist <= LANDMARK_THRESH and minDist > OUTLIER_THRESH:
 				print "outlier:", minDist, p1, landmarks_G[minK][0]
@@ -2992,6 +3003,10 @@ class MapState:
 				normLandmark = (self.maxLandmarkCost-landmarkCost)/ self.maxLandmarkCost
 			else:
 				normLandmark = 1.0
+
+			""" if branch is not diverging, then zero the landmark utility since we use this for evaluation """
+			if self.maxMatchCount <= 0:
+				normLandmark = 0.0
 
 			branchResult["normMatchCount"] = normMatchCount
 			branchResult["normCost"] = normCost
@@ -4123,7 +4138,7 @@ class MapState:
 		currFrame = Pose(controlPose_G)
 		nodePose_C = currFrame.convertGlobalPoseToLocal(nodePose_G)
 		junctionPose_C = currFrame.convertGlobalPoseToLocal(newGlobJuncPose_G)
-		tipPoint_C = currFrame.convertGlobalPoseToLocal(tipPoint_G)
+		tipPoint_C = currFrame.convertGlobalToLocal(tipPoint_G)
 
 		""" basic shoot data structure """
 		self.pathClasses[newPathID] = {"parentID" : controlParentID,
@@ -4307,13 +4322,15 @@ class MapState:
 						parentPathID = childParents[pathID]
 						childPathID = pathID
 
-						tipPoint_L = self.pathClasses[childPathID]["tipPoint_L"]
+						oldTipPoint_L = self.pathClasses[childPathID]["tipPoint_L"]
 						localJunctionPose = self.pathClasses[childPathID]["localJunctionPose"]
 						localControlPose = self.pathClasses[childPathID]["controlPose"]
 						globalJunctionPose = self.getGlobalJunctionPose(childPathID)
-						globalControlPose = globalControlPoses[pathID]
+						globalControlPose = globalControlPoses[childPathID]
 
-						localNewPath3, tipPoint_L, branchPose_L, localParticlePath, isNoDiverge = trimBranch(childPathID, parentPathID, localControlPose, tipPoint_L, localJunctionPose, localPathSegsByID, self.localPaths, parentPathIDs, globalControlPoses, plotIter=True, hypothesisID=self.hypothesisID, nodeID=(self.poseData.numNodes), arcDist = childPathID)
+						print "trimPaths:", localJunctionPose, globalJunctionPose, oldTipPoint_L
+
+						localNewPath3, tipPoint_L, branchPose_L, localParticlePath, isNoDiverge = trimBranch(childPathID, parentPathID, localControlPose, oldTipPoint_L, localJunctionPose, localPathSegsByID, self.localPaths, parentPathIDs, globalControlPoses, plotIter=True, hypothesisID=self.hypothesisID, nodeID=(self.poseData.numNodes), arcDist = childPathID)
 
 
 						currFrame = Pose(globalControlPose)

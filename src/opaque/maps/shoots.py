@@ -1876,8 +1876,8 @@ def __remote_multiJointBranch(rank, qin, qout):
 
 		#sys.stdout = open("jointbranch_" + str(os.getpid()) + ".out", "w")
 		#sys.stderr = open("jointbranch_" + str(os.getpid()) + ".err", "w")
-		sys.stdout = open("jointbranch_" + str(rank) + ".out", "w")
-		sys.stderr = open("jointbranch_" + str(rank) + ".err", "w")
+		sys.stdout = open("jointbranch_" + str(rank) + ".out", "a")
+		sys.stderr = open("jointbranch_" + str(rank) + ".err", "a")
 		print 'module name:', __name__
 		print 'parent process:', os.getppid()
 		print 'process id:', os.getpid()
@@ -3105,7 +3105,7 @@ def getSimpleSoupDeparture(tipPoint_G, globalJunctionPose, pointSoup, path2, ang
 	angDiff1 = fabs(diffAngle(globalJunctionPose[2], frontPose[2]))
 	angDiff2 = fabs(diffAngle(globalJunctionPose[2], backPose[2]))
 
-	print "getSimpleSoupDeparture:", juncDist1, angDiff1, tipDist1, juncDist2, angDiff2, tipDist2, frontPose, backPose, len(pathPoints2), frontIndex, backIndex, frontNoDiverge, backNoDiverge, globalJunctionPose, pathPoints2[0], pathPoints2[-1]
+	print "getSimpleSoupDeparture:", juncDist1, angDiff1, tipDist1, juncDist2, angDiff2, tipDist2, frontPose, backPose, len(pathPoints2), frontIndex, backIndex, frontNoDiverge, backNoDiverge, globalJunctionPose, tipPoint_G, pathPoints2[0], pathPoints2[-1]
 	print "distances:", distances
 
 	if plotIter:
@@ -3520,7 +3520,7 @@ def getInitSkeletonBranchPoint(globalJunctionPose, currShootID, globalMedial_G, 
 	""" placeholder values, not true branch point """
 	#branchParentID = controlParentID
 
-	print "skeletonBranchPoint:", maxSkeletonID, maxSkeletonSegID, maxSkeletonContigFrac, controlPose_G, branchPose_G
+	print "initSkeletonBranchPoint:", maxSkeletonID, maxSkeletonSegID, maxSkeletonContigFrac, controlPose_G, branchPose_G, tipPoint_G
 
 	return controlPose_G, controlParentID, tipPoint_G, branchPose_G
 	
@@ -4296,6 +4296,20 @@ def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPos
 		for point_L, pointThresh, pointName in landmarks[pathID]:
 			point_G = currFrame.convertLocalToGlobal(point_L)
 			landmarks_G.append((point_G, pointThresh, pointName))
+	
+	oldTipPoints_G = []
+	for pathID in branchPathIDs:
+		currFrame = Pose(controlPoses_G[pathID])
+		tipPoint_L = tipPoints[pathID]
+		tipPoint_G = currFrame.convertLocalToGlobal(tipPoint_L)
+		oldTipPoints_G.append(tipPoint_G)
+
+	tipPoints_G = []
+	for pathID in branchPathIDs:
+		currFrame = Pose(controlPoses_G[pathID])
+		tipPoint_L = branchResult["tipPoints_L"][pathID]
+		tipPoint_G = currFrame.convertLocalToGlobal(tipPoint_L)
+		tipPoints_G.append(tipPoint_G)
 
 	#LANDMARK_THRESH = 1e100
 	#LANDMARK_THRESH = 3.0
@@ -4369,7 +4383,7 @@ def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPos
 				for p in splicePath:
 					xP.append(p[0])
 					yP.append(p[1])
-				pylab.plot(xP,yP, color='r', zorder=10, alpha=0.5)
+				pylab.plot(xP,yP, color='r', zorder=10, alpha=0.3)
 
 
 			xP = []
@@ -4378,7 +4392,7 @@ def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPos
 				p1 = childFrame.convertLocalToGlobal(p)
 				xP.append(p1[0])
 				yP.append(p1[1])
-				pylab.plot(xP,yP, color='k', alpha=0.8)
+				pylab.plot(xP,yP, color='k', alpha=0.8, zorder=8)
 
 			#xP = []
 			#yP = []
@@ -4398,16 +4412,30 @@ def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPos
 
 				pylab.plot(xP,yP, color='k', alpha=0.2)
 
-			for termPath in termPaths_G:
-				startPose = termPath[0]
-				endPose = termPath[-1]
+			for tipPoint_G in tipPoints_G:
 
-				xP = [startPose[0], endPose[0]]
-				yP = [startPose[1], endPose[1]]
+				xP = [tipPoint_G[0],]
+				yP = [tipPoint_G[1],]
 
-				pylab.scatter(xP,yP, color='r')
+				pylab.scatter(xP,yP, color='b', zorder=9)
 
-			pylab.scatter([newBranchPoses_G[pathID][0],], [newBranchPoses_G[pathID][1],], color='m')
+			for tipPoint_G in oldTipPoints_G:
+
+				xP = [tipPoint_G[0],]
+				yP = [tipPoint_G[1],]
+
+				pylab.scatter(xP,yP, color='y', zorder=9)
+
+			#for termPath in termPaths_G:
+			#	startPose = termPath[0]
+			#	endPose = termPath[-1]
+
+			#	xP = [startPose[0], endPose[0]]
+			#	yP = [startPose[1], endPose[1]]
+
+			#	pylab.scatter(xP,yP, color='r')
+
+			pylab.scatter([newBranchPoses_G[pathID][0],], [newBranchPoses_G[pathID][1],], color='m', zorder = 9)
 			#pylab.scatter([controlPoses_G[pathID][0],], [controlPoses_G[pathID][1],], color='b')
 
 
@@ -4420,7 +4448,7 @@ def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPos
 				xP.append(point_G[0])
 				yP.append(point_G[1])
 
-		pylab.scatter(xP, yP, color='k')
+		pylab.scatter(xP, yP, color='k', zorder=9)
 
 
 		pylab.axis("equal")
@@ -4732,6 +4760,9 @@ def trimBranch(pathID, parentPathID, controlPose_P, oldTipPoint_L, oldBranchPose
 	oldBranchPose_G = currFrame.convertLocalOffsetToGlobal(oldBranchPose_L)
 	oldTipPoint_G = currFrame.convertLocalToGlobal(oldTipPoint_L)
 
+	print "oldBranchPose_L, oldTipPoint_L =", oldBranchPose_L, oldTipPoint_L
+	print "oldBranchPose_G, oldTipPoint_G =", oldBranchPose_G, oldTipPoint_G
+
 
 	try:
 		branchPose_G, isNoDiverge, tipDist, branchTipPoint_G = getSkeletonBranchPoint(oldTipPoint_G, oldBranchPose_G, pathID, parentPathIDs, localPathSegsByID, localPaths, controlPoses_G, plotIter= plotIter, hypothesisID = hypothesisID, nodeID=nodeID, arcDist = arcDist)
@@ -4770,6 +4801,11 @@ def trimBranch(pathID, parentPathID, controlPose_P, oldTipPoint_L, oldBranchPose
 	else:
 		newPath2 = particlePath2[branchIndex:]
 
+	newTipPoint_P = newPath2[-1]
+	newTipPoint_L = localFrame.convertGlobalToLocal(newTipPoint_P)
+	newTipPoint_G = currFrame.convertLocalToGlobal(newTipPoint_L)
+
+	print "trimBranch:", hypothesisID, nodeID, pathID, arcDist, tipDist, oldTipPoint_G, branchTipPoint_G, newTipPoint_G, branchTipPoint_P, newTipPoint_P, branchPose_G, branchIndex, tipIndex, len(particlePath2), p_1, p_2
 
 	""" convert path so that the points are uniformly distributed """
 	newPath3 = ensureEnoughPoints(newPath2, max_spacing = 0.08, minPoints = 5)
@@ -4817,11 +4853,13 @@ def trimBranch(pathID, parentPathID, controlPose_P, oldTipPoint_L, oldBranchPose
 
 	""" convert back to local coordinate system for each shoot """
 
-	newTipPoint_G = newPath2[-1]
-	newTipPoint_L = localFrame.convertGlobalToLocal(newTipPoint_G)
-	#newTipPoint_G = currFrame.convertLocalToGlobal(branchPose_L)
 
-	print "trimBranch:", hypothesisID, nodeID, pathID, arcDist, tipDist, oldTipPoint_G, branchTipPoint_G, newTipPoint_G
+	#branchTipPoint_L = currFrame.convertGlobalToLocal(branchTipPoint_G)
+	#branchTipPoint_P = localFrame.convertLocalToGlobal(branchTipPoint_L)
+	oldBranchPose_G = currFrame.convertLocalOffsetToGlobal(oldBranchPose_L)
+
+	#print "trimBranch:", hypothesisID, nodeID, pathID, arcDist, tipDist, oldTipPoint_G, branchTipPoint_G, newTipPoint_G, branchTipPoint_P, newTipPoint_P, branchIndex, tipIndex, len(particlePath2), p_1, p_2
+
 	#print "oldTipPoint, newTipPoint:", oldTipPoint_G, newTipPoint_G, hypothesisID, nodeID, arcDist
 
 	localNewPath3 = []
