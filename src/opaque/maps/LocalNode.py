@@ -2100,7 +2100,8 @@ class LocalNode:
 							centerMassIndex = contigPointIndex[k]
 
 							angDeriv = longPathWidth[centerMassIndex]["angDeriv2"]
-							if angDeriv >= maxDeriv - 0.2:
+							#if angDeriv >= maxDeriv - 0.2:
+							if angDeriv >= 0.6:
 								inflectionPoint = copy(longPathWidth[centerMassIndex]["linePoint"])
 								#print self.nodeID, "inflection boundaries:", inflectionPoint, contigInflection, angDeriv, maxDeriv, len(longPathWidth)
 								print self.nodeID, "inflection boundaries:", inflectionPoint, centerMassIndex, angDeriv, maxDeriv, len(longPathWidth)
