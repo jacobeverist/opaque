@@ -4794,6 +4794,13 @@ def trimBranch(pathID, parentPathID, controlPose_P, oldTipPoint_L, oldBranchPose
 	p_1, branchIndex, minDist = gen_icp.findClosestPointInA(particlePath2, branchPose_P)
 	p_2, tipIndex, minDist = gen_icp.findClosestPointInA(particlePath2, branchTipPoint_P)
 
+	if branchIndex == len(particlePath2)-1:
+		branchIndex = len(particlePath2)-2
+		tipIndex = len(particlePath2)-1
+
+	elif branchIndex == 0:
+		branchIndex = 1
+		tipIndex = 0
 
 	if tipIndex < branchIndex:
 		newPath2 = particlePath2[:branchIndex+1]
