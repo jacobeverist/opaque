@@ -2098,6 +2098,7 @@ class MapState:
 
 		print "computeEval:", self.hypothesisID
 
+		"""
 		isOutlier = False
 		poseSum = 0.0
 
@@ -2134,12 +2135,67 @@ class MapState:
 			else:
 				print "inlier:", minDist, p1, landmarks_G[minK][0]
 
-
-
 		if isOutlier:
 			totalSum = 5e100
+		"""
 
 
+
+
+		allNearestNeighbors = []
+		bloomNearestNeighbors = []
+
+		for j in range(len(landmarks_G)):
+
+			p1 = landmarks_G[j][0]
+			thresh1 = landmarks_G[j][1]
+			landmarkType1 = landmarks_G[j][2]
+
+			thisLandmarksBloomNeighbors = []
+			thisLandmarksNeighbors = []
+
+			for k in range(0, len(landmarks_G)):
+				if j != k:
+					p2 = landmarks_G[k][0]
+					thresh2 = landmarks_G[k][1]
+					landmarkType2 = landmarks_G[k][2]
+
+					dist = sqrt((p2[0]-p1[0])**2 + (p2[1]-p1[1])**2)
+					diffVal = sqrt(dist*dist/(thresh1*thresh1 + thresh2*thresh2))
+
+
+					if (landmarkType1 == "archPoint" or landmarkType1 == "bloomPoint") and (landmarkType2 == "archPoint" or landmarkType2 == "bloomPoint"):
+						print landmarkType1, landmarkType2
+						""" bloom only nearest neighbors """
+						thisLandmarksBloomNeighbors.append((j, k, dist, diffVal, landmarks_G[j][1], landmarks_G[k][1], landmarks_G[j][0], landmarks_G[k][0]))
+
+					""" all nearest neighbors """
+					thisLandmarksNeighbors.append((j, k, dist, diffVal, landmarks_G[j][1], landmarks_G[k][1], landmarks_G[j][0], landmarks_G[k][0]))
+
+			thisLandmarksBloomNeighbors = sorted(thisLandmarksBloomNeighbors, key=itemgetter(2), reverse=False)
+			thisLandmarksNeighbors = sorted(thisLandmarksNeighbors, key=itemgetter(2), reverse=False)
+		
+			allNearestNeighbors.append(thisLandmarksNeighbors)
+
+			if len(thisLandmarksBloomNeighbors) > 0:
+				bloomNearestNeighbors.append(thisLandmarksBloomNeighbors)
+
+
+		isReject = False
+		print "bloom neighbors:"
+		for result in bloomNearestNeighbors:
+
+			if len(result) > 1:
+				print result[0][2], result[1][2]
+				if result[0][2] > 0.4 or result[1][2] > 0.4:
+					isReject = True
+			else:
+				print result[0][2]
+				if result[0][2] > 0.4:
+					isReject = True
+
+		if isReject:
+			totalSum = 5e100
 
 
 		"""
