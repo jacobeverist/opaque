@@ -41,6 +41,18 @@ qin_branch = None
 qout_branch =  None
 pool_branch = []
 
+def printStack():
+
+	flist = traceback.format_stack()
+	flist = flist[:-1]
+	
+	printStr = ""
+	for line in flist:
+		printStr += line
+		
+	print printStr
+
+
 def __num_processors():
 
 	return processing.cpu_count()
@@ -123,6 +135,11 @@ def batchDisplaceParticles(displaceJobs):
 			break
 	
 	if isFail:
+
+		print "isFail =", isFail
+		print "knn =", knn
+
+
 		qin_dispPosePart.close()
 		qin_dispPosePart.join_thread()
 
@@ -180,6 +197,9 @@ def __remote_displaceParticle(rank, qin, qout):
 			# read input queue (block until data arrives)
 			results = []
 			nc, args = qin.get()
+			
+			print "__remote_displaceParticle(", nc, len(args), args
+			sys.stdout.flush()
 
 			#foo = None
 			#badVal = foo[0] 
@@ -203,14 +223,26 @@ def __remote_displaceParticle(rank, qin, qout):
 
 				result = displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine, nodeID3, initPose2, initPose3, prevPose0, prevPose1, particleIndex, landmarks_G, landmarks_N)
 				results.append((particleIndex,) + result)
+
+				print "result:", (particleIndex,) + result
+				sys.stdout.flush()
+
+
+			print "qout.put(", nc, results
+			sys.stdout.flush()
 							   
 			# write to output queue
 			qout.put((nc,results))
 
 	except:
 		print "Worker process failed. Exiting"
+		printStack()
+		sys.stdout.flush()
+		sys.stderr.flush()
 		qout.put((None,None))
 		raise
+	
+	print "process exited incorrectly"
 
 
 def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine, nodeID3, initPose2, initPose3, prevPose0, prevPose1, particleIndex, landmarks_G, landmarks_N):
@@ -244,6 +276,8 @@ def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine
 
 	currPose2 = estPose2
 	currPose3 = estPose3
+	currProb2 = 0.0
+	currProb3 = 0.0
 
 
 	#splicePaths = list(set(pathSplices2 + pathSplices3))
