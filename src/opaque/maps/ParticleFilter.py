@@ -236,7 +236,10 @@ def __remote_displaceParticle(rank, qin, qout):
 
 	except:
 		print "Worker process failed. Exiting"
-		printStack()
+		#printStack()
+		traceback.print_exc()
+		print "Exception:", sys.exc_info()[0]
+		
 		sys.stdout.flush()
 		sys.stderr.flush()
 		qout.put((None,None))
