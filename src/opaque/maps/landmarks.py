@@ -8,7 +8,7 @@ from math import sqrt
 
 def nodeToGlobalLandmarks(controlPoses, pathIDs, parentHash, nodeLandmarks, pathClasses, exemptNodes = []):
 
-	print "nodeLandmarks:", nodeLandmarks
+	#print "nodeLandmarks:", nodeLandmarks
 
 	controlPoses_G = computeGlobalControlPoses(controlPoses, parentHash)
 
@@ -29,14 +29,14 @@ def nodeToGlobalLandmarks(controlPoses, pathIDs, parentHash, nodeLandmarks, path
 				nodePose_L = pathClasses[pathID]["localNodePoses"][nodeID]
 				poseFrame_L = Pose(nodePose_L)
 
-				print "landmark_N:", nodeID, landmarkPoint_N, nodePose_L
+				#print "landmark_N:", nodeID, landmarkPoint_N, nodePose_L
 
 				if not nodeID in exemptNodes:
 					#nodeID != nodeID0 and nodeID != nodeID1:
 					landmarkPoint_L = poseFrame_L.convertLocalToGlobal(landmarkPoint_N)
-					print "landmark_L:", nodeID, landmarkPoint_L, controlPoses_G[pathID]
+					#print "landmark_L:", nodeID, landmarkPoint_L, controlPoses_G[pathID]
 					landmarkPoint_G = (currFrame_G.convertLocalToGlobal(landmarkPoint_L), threshN, landName)
-					print "landmark_G:", nodeID, landmarkPoint_G[0]
+					#print "landmark_G:", nodeID, landmarkPoint_G[0]
 					landmarks_G.append(landmarkPoint_G)
 
 

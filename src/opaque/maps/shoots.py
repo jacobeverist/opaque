@@ -923,7 +923,7 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 		
 		leaf2LeafPath = leafToLeafPaths[leafIndex]
 		print "leaf2LeafPath:", len(leaf2LeafPath)
-		print leaf2LeafPath
+		#print leaf2LeafPath
 		
 		leafPath = extendToHull(leaf2LeafPath, vertices)
 		medialLongPaths.append(leafPath)
@@ -1918,6 +1918,12 @@ def __remote_multiJointBranch(rank, qin, qout):
 
 	except:
 		print "Worker process failed. Exiting"
+
+		traceback.print_exc()
+		print "Exception:", sys.exc_info()[0]
+		
+		sys.stdout.flush()
+		sys.stderr.flush()
 		qout.put((None,None))
 		raise
 
@@ -3106,7 +3112,7 @@ def getSimpleSoupDeparture(tipPoint_G, globalJunctionPose, pointSoup, path2, ang
 	angDiff2 = fabs(diffAngle(globalJunctionPose[2], backPose[2]))
 
 	print "getSimpleSoupDeparture:", juncDist1, angDiff1, tipDist1, juncDist2, angDiff2, tipDist2, frontPose, backPose, len(pathPoints2), frontIndex, backIndex, frontNoDiverge, backNoDiverge, globalJunctionPose, tipPoint_G, pathPoints2[0], pathPoints2[-1]
-	print "distances:", distances
+	#print "distances:", distances
 
 	if plotIter:
 
@@ -3564,6 +3570,7 @@ def getSkeletonBranchPoint(tipPoint_G, globalJunctionPose, currShootID, parentSh
 			break
 
 		currDescen = list(set(currDescen + newDescen))
+
 
 
 	""" we are potentially branching or controlling from any of the non-descendant skeletons """

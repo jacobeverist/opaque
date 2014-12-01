@@ -138,7 +138,7 @@ class SplineFit:
 		samples = scipy.arange(0.0, 1.0, iterVal)
 		samples = append(samples, [1.0])
 		#samples.append(1.0)
-		print "iterVal:", iterVal, approxSamples, len(samples), samples[-1]
+		#print "iterVal:", iterVal, approxSamples, len(samples), samples[-1]
 		#samples = scipy.arange(0.0,1.01,0.01)
 		sample_points = self.getUVecSet(samples)
 		sample_points = self.makePosesUniform(sample_points, max_spacing = spacing, interpAngle = interpAngle)

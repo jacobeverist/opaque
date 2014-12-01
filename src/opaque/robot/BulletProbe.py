@@ -364,7 +364,7 @@ class BulletProbe:
 			pose[0] = pose[0] + (self.segLength/2)*cos(pose[2])
 			pose[1] = pose[1] + (self.segLength/2)*sin(pose[2])
 
-			print i, "currPos,quat_vars,currVec,currAngle,pose,segPose:", currPos, quat_vars, currVec, currAngle, pose, self.getActualSegPose(i)
+			#print i, "currPos,quat_vars,currVec,currAngle,pose,segPose:", currPos, quat_vars, currVec, currAngle, pose, self.getActualSegPose(i)
 			
 			return pose
 
@@ -415,7 +415,7 @@ class BulletProbe:
 		pose[0] = pose[0] - (self.segLength/2)*cos(pose[2])
 		pose[1] = pose[1] - (self.segLength/2)*sin(pose[2])
 
-		print i, "currPos,quat_vars,currVec,currAngle,pose,segPose:", currPos, quat_vars, currVec, currAngle, pose, self.getActualSegPose(i+1)
+		#print i, "currPos,quat_vars,currVec,currAngle,pose,segPose:", currPos, quat_vars, currVec, currAngle, pose, self.getActualSegPose(i+1)
 		return pose
 
 	def getJointPose(self, originPose, originJoint, targetJoint):

@@ -915,6 +915,12 @@ def __remote_multiParticle(rank, qin, qout):
 			qout.put((nc,results))
 	except:
 		print "Worker process failed. Exiting"
+		traceback.print_exc()
+		print "Exception:", sys.exc_info()[0]
+		
+		sys.stdout.flush()
+		sys.stderr.flush()
+
 		qout.put((None,None))
 		raise
 

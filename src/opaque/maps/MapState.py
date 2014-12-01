@@ -1709,7 +1709,7 @@ class MapState:
 		#pylab.axis("equal")
 
 		for k,path in  self.trimmedPaths.iteritems():
-			print "path has", len(path), "points"
+			#print "path has", len(path), "points"
 			xP = []
 			yP = []
 			for p in path:
@@ -1763,7 +1763,7 @@ class MapState:
 			for pathID in allPathIDs:
 				controlPoses_L[pathID] = deepcopy(part.junctionData[pathID]["controlPose"])
 
-			print "checkA:", controlPoses_L, self.getParentHash()
+			#print "checkA:", controlPoses_L, self.getParentHash()
 			controlPoses_G = computeGlobalControlPoses(controlPoses_L, self.getParentHash())
 
 			junctionPoses = {}
@@ -1825,9 +1825,9 @@ class MapState:
 						modPose0 = deepcopy(controlPoseDist[maxIndex])
 						modPose0 = deepcopy(part.junctionData[pathID]["controlPose"])
 
-						print "probDist:", probDist
-						print "branchPoseDist:", branchPoseDist
-						print "controlPoseDist:", controlPoseDist
+						#print "probDist:", probDist
+						#print "branchPoseDist:", branchPoseDist
+						#print "controlPoseDist:", controlPoseDist
 
 					else:
 						#modPose0 = deepcopy(part.junctionData[pathID]["globalJunctionPose"])
@@ -2051,6 +2051,10 @@ class MapState:
 
 		totalSum = 0.0
 
+		if False in self.branchDiverges.values():
+				totalSum = 1e100
+
+		"""
 		for j in keys:
 			parentID = parentHash[j]
 			if parentID != None:
@@ -2078,6 +2082,7 @@ class MapState:
 				#if branchDiffAngle1 < 0.1 or branchDiffAngle2 < 0.1 or False in self.branchDiverges.values():
 				if False in self.branchDiverges.values():
 						totalSum = 1e100
+		"""
 
 		""" look for outlier landmarks to invalidate a map state """
 		LANDMARK_THRESH = 7.0
@@ -2383,7 +2388,7 @@ class MapState:
 	#@logFunction
 	def computeAllSplices(self, plotIter = False):
 
-		print "paths:", self.paths
+		#print "paths:", self.paths
 		print "junctions:", self.junctions
 		print "terminals:", self.terminals
 
@@ -2658,7 +2663,7 @@ class MapState:
 					currNode = shortestSpliceTree[startNode]					 
 					splicedSkel = [startNode]
 					while currNode != endNode:
-						print "currNode:", currNode
+						#print "currNode:", currNode
 						splicedSkel.append(currNode)
 						nextNode = shortestSpliceTree[currNode]
 						currNode = nextNode
@@ -3865,6 +3870,7 @@ class MapState:
 			
 		
 		orderedPathIDs = self.getPathOrdering(nodeID, overlappedPathIDs)
+		#orderedPathIDs = overlappedPathIDs
 
 		print "returned ordered", orderedPathIDs, "from unordered", overlappedPathIDs
 		
@@ -3876,14 +3882,14 @@ class MapState:
 		
 		allSplices, terminals, junctions = self.getAllSplices(plotIter = False)
 
-		print "junctions:", junctions
-		print "initPose2:", initPose2
+		#print "junctions:", junctions
+		#print "initPose2:", initPose2
 		
 		junctions2 = []
 		for pathID, params in junctions.iteritems():
 			junctionPose = params[1]
 			
-			print "checking", pathID, params
+			#print "checking", pathID, params
 			
 			dist2 = sqrt((junctionPose[0]-initPose2[0])**2 + (junctionPose[1]-initPose2[1])**2)
 			
@@ -3894,26 +3900,26 @@ class MapState:
 		
 		closePathID2 = self.getClosestPath(initPose2)
 
-		print "closePathID2:", closePathID2
+		#print "closePathID2:", closePathID2
 		
 		pathSet2 = [closePathID2]
 
 		junctionSet = junctions2
 		junctionSet = list(set(junctionSet))
 
-		print "junctions2:", junctions2
+		#print "junctions2:", junctions2
 
 		for junc in junctionSet:
 			pathSet2.append(junc[0])
 			pathSet2.append(junc[1])
 
-		print "pathSet2:", pathSet2
+		#print "pathSet2:", pathSet2
 
 		pathSet2 = list(set(pathSet2))
 		
 		pathSet2.sort()
 
-		print "pathSet2:", pathSet2
+		#print "pathSet2:", pathSet2
 		
 		termSet2 = []
 		for pathID in pathSet2:
@@ -3937,16 +3943,16 @@ class MapState:
 		spliceTerms = []
 		splicePathIDs = []
 
-		print "termSet2:", termSet2
-		print "allSplices:"
+		#print "termSet2:", termSet2
+		#print "allSplices:"
 
 		for k, result in allSplices.iteritems():
-			print "id:", k
+			#print "id:", k
 			if k[0] in pathSet2 and k[1] in pathSet2:
 				
 				for sPath in result:
 					termPath = sPath['termPath']
-					print "termPath:", termPath
+					#print "termPath:", termPath
 												
 					if termPath[0] in termSet2 and termPath[-1] in termSet2:
 						splicePaths.append(sPath['path'])
@@ -4316,7 +4322,7 @@ class MapState:
 		trimmedPaths = {}
 		branchPoses_G = {}
 		tipPoints_G = {}
-		localTrimmedPaths = {}
+		#localTrimmedPaths = {}
 		branchDiverges = {}
 		
 		print "path lengths:"
@@ -4327,10 +4333,10 @@ class MapState:
 		if len(paths) <= 1:
 			for k, v in paths.iteritems():
 				trimmedPaths[k] = v
-				localTrimmedPaths[k] = v
+				#localTrimmedPaths[k] = v
 				
 			self.trimmedPaths = trimmedPaths
-			self.localTrimmedPaths = localTrimmedPaths
+			#self.localTrimmedPaths = localTrimmedPaths
 			return trimmedPaths
 
 		" path0 is root, and path1 is a child of path0 "
@@ -4371,7 +4377,7 @@ class MapState:
 				
 					if childParents[pathID] == None:
 						trimmedPaths[pathID] = deepcopy(paths[pathID])
-						localTrimmedPaths[pathID] = deepcopy(paths[pathID])
+						#localTrimmedPaths[pathID] = deepcopy(paths[pathID])
 						branchDiverges[0] = True
 
 					else:
@@ -4399,7 +4405,7 @@ class MapState:
 							globalPath3.append(offsetOrigin1.convertLocalToGlobal(p))
 
 						trimmedPaths[pathID] = deepcopy(globalPath3)
-						localTrimmedPaths[pathID] = deepcopy(localNewPath3)
+						#localTrimmedPaths[pathID] = deepcopy(localNewPath3)
 						branchPoses_G[pathID] = branchPose_G
 
 						tipPoints_G[pathID] = tipPoint_G
@@ -4413,7 +4419,7 @@ class MapState:
 		self.tipPoints_G = tipPoints_G
 		self.branchPoses_G = branchPoses_G
 		self.trimmedPaths = trimmedPaths
-		self.localTrimmedPaths = localTrimmedPaths
+		#self.localTrimmedPaths = localTrimmedPaths
 		self.branchDiverges = branchDiverges
 			
 		return trimmedPaths
