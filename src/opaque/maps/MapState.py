@@ -367,7 +367,6 @@ class MapState:
 		self.rootPoint = [-3.2, 0.0]
 		
 		""" data structures for computing splices on the shoot map """
-		self.pathGraph = graph.graph()
 		self.joins = []
 		self.junctions = {}
 		self.terminals = {}
@@ -2021,7 +2020,6 @@ class MapState:
 		
 		newObj.rootPoint = deepcopy(self.rootPoint)
 		
-		newObj.pathGraph = deepcopy(self.pathGraph)
 		newObj.joins = deepcopy(self.joins)
 		newObj.junctions = deepcopy(self.junctions)
 		newObj.terminals = deepcopy(self.terminals)
@@ -2635,8 +2633,10 @@ class MapState:
 					print "startKey, endKey:", startKey, endKey
 
 					""" use splice skeleton to find shortest path """
-					startPose = self.pathGraph.get_node_attributes(startKey)
-					endPose = self.pathGraph.get_node_attributes(endKey)
+					print "self.termIDtoPoint:", self.termIDtoPoint
+
+					startPose = self.termIDtoPoint[startKey]
+					endPose = self.termIDtoPoint[endKey]
 
 					print "startPose, endPose:", startPose, endPose
 
@@ -2693,47 +2693,9 @@ class MapState:
 					splicePoints1 = spliceSpline1.getUniformSamples()
 
 
-					""" find splice using the old method """
-					shortestPathSpanTree, shortestDist = self.pathGraph.shortest_path(endKey)
-					currNode = shortestPathSpanTree[startKey]					 
-					splicedPath = []
-					while currNode != endKey:
-						splicedPath.append(self.pathGraph.get_node_attributes(currNode))
-						nextNode = shortestPathSpanTree[currNode]
-						
-						for join in self.joins:
-							if join[0] == currNode and join[1] == nextNode:
-								joinPairs.append((len(splicedPath)-1,len(splicedPath)))
-							elif join[1] == currNode and join[0] == nextNode:
-								joinPairs.append((len(splicedPath)-1,len(splicedPath)))
-							
-						currNode = nextNode
-
-					splicedPath.append(self.pathGraph.get_node_attributes(currNode))
-
-
-					" if there are any joins, we must interpolate a smooth transition "
-					lastIndex = 0
-					newPath = []
-					for pair in joinPairs:
-						index1 = pair[0]
-						index2 = pair[1]
-						cPoints = [splicedPath[index1-1], splicedPath[index1], splicedPath[index2], splicedPath[index2+1]]				 
-						spline = SplineFit(cPoints, smooth=0.0, kp=3)
-						points = spline.getUniformSamples(spacing = 0.1)
-						
-						newPath += splicedPath[lastIndex:index1]
-						newPath += points
-						
-						lastIndex = index2+2
-
-					newPath += splicedPath[lastIndex:]
-
-
 					sPath = {}
 					sPath['orderedPathIDs'] = orderedPathIDs
 					sPath['path'] = splicePoints1
-					sPath['oldPath'] = newPath
 					sPath['termPath'] = termPath
 					sPath['skelPath'] = splicePoints1
 					
@@ -3724,46 +3686,13 @@ class MapState:
 			self.junctions[pathID] = [branchNodeID, junctionPose, (parentPathID,minI2), path2[minI2], minI1]
 
 
-		" create a tree with the node IDs and then stitch them together with joins "
-		self.pathGraph = graph.graph()
-		for pathID in pathIDs:
-			path = self.trimmedPaths[pathID]
-			for k in range(len(path)):
-				self.pathGraph.add_node((pathID, k), path[k])
-
-			for k in range(len(path)-1):
-				p1 = path[k]
-				p2 = path[k+1]
-				weight = sqrt((p1[0]-p2[0])**2+(p1[1]-p2[1])**2)
-
-				self.pathGraph.add_edge((pathID, k), (pathID, k+1), wt=weight)
-			
-			" parent does not concern us "
-			cPath = self.getPath(pathID)			
-			parentPathID = cPath["parentID"]
-			
-		" join with the junction in between the join points "
-		for k in range(len(self.joins)):
-			join = self.joins[k]
-
-			pID1, k1 = join[0]
-			pID2, k2 = join[1]
-
-			p1 = self.trimmedPaths[pID1][k1]
-			p2 = self.trimmedPaths[pID2][k2]
-			weight = sqrt((p1[0]-p2[0])**2+(p1[1]-p2[1])**2)
-
-			self.pathGraph.add_edge(join[0], join[1], wt=weight)
-
-
-
-		self.topDict = {}
 
 		#self.localTerms = {0 : None}
 		
 		
 		" get terminals "
-
+		self.topDict = {}
+		self.termIDtoPoint = {}
 		self.terminals = {}
 		for pathID in pathIDs:
 			path = self.trimmedPaths[pathID]
@@ -3777,15 +3706,25 @@ class MapState:
 					if dist1 < dist2:
 						self.terminals[0] = [(pathID,0), path[0]]
 						self.terminals[1] = [(pathID,len(path)-1), path[len(path)-1]]
+
 						self.topDict["t%u" % 0] = (pathID,0)
 						self.topDict["t%u" % 1] = (pathID,len(path)-1)
+
+						self.termIDtoPoint[(pathID,0)] = path[0]
+						self.termIDtoPoint[(pathID,len(path)-1)] = path[len(path)-1]
+
 						self.rootPoint = self.trimmedPaths[pathID][0]
 
 					else:
 						self.terminals[1] = [(pathID,0), path[0]]
 						self.terminals[0] = [(pathID,len(path)-1), path[len(path)-1]]
+
 						self.topDict["t%u" % 1] = (pathID,0)
 						self.topDict["t%u" % 0] = (pathID,len(path)-1)
+
+						self.termIDtoPoint[(pathID,0)] = path[0]
+						self.termIDtoPoint[(pathID,len(path)-1)] = path[len(path)-1]
+
 						self.rootPoint = self.trimmedPaths[pathID][len(path)-1]
 					
 				else:
@@ -3793,14 +3732,24 @@ class MapState:
 					
 					self.topDict["j%u" % pathID] = self.junctions[pathID][2]
 					minI1 = self.junctions[pathID][4]
+
+					print "self.junctions:", self.junctions
+
+					tupleVal = self.junctions[pathID][2]
+					print tupleVal
+					self.termIDtoPoint[tupleVal] = self.trimmedPaths[tupleVal[0]][tupleVal[1]]
+
+					#self.termIDtoPoint[self.junctions[pathID][2]] = path[self.junctions[pathID][2][1]]
 					
 					" determine which side is junction and which side is terminal"
 					if minI1 > len(path)-1 - minI1:    
 						self.terminals[pathID+1] = [(pathID,0), path[0]]
 						self.topDict["t%u" % (pathID+1)] = (pathID,0)
+						self.termIDtoPoint[(pathID,0)] = path[0]
 					else:
 						self.terminals[pathID+1] = [(pathID,len(path)-1), path[len(path)-1]]
 						self.topDict["t%u" % (pathID+1)] = (pathID,len(path)-1)
+						self.termIDtoPoint[(pathID,len(path)-1)] = path[len(path)-1]
 
 
 					#shootFrame = Pose(finalPoses[pathID])
@@ -5932,137 +5881,6 @@ class MapState:
 		return isBranch, pathBranchIDs, isNew, self.shootIDs
 		
 		
-	@logFunction
-	def splicePathIDs(self, pathIDs):
-		
-		if len(pathIDs) == 0:
-			return []
-		
-		if len(pathIDs) == 1:
-			return [self.trimmedPaths[pathIDs[0]]]
-
-		" Assumption:  the pathIDs are connected paths with parent-child relations "
-
-
-		" find the root "
-		" pick any node, and go up the tree until we hit the root "
-		currPathID = pathIDs[0]
-		
-		while True:
-			parent = self.getPath(currPathID)
-			thisParentID = parent["parentID"]
-			
-			if thisParentID == None:
-				break
-			
-			if pathIDs.count(thisParentID) == 0:
-				break
-			
-			currPathID = thisParentID
-
-		" currPathID is the root path "
-		rootPathID = currPathID
-		
-			
-		" if both terminal paths are child paths, 1 resultant spliced path "
-		" if one terminal path is the root, then 2 resultant spliced paths "
-		rightPathID = pathIDs[0]
-		leftPathID = pathIDs[-1]
-
-		newPaths = []		 
-		if rightPathID == rootPathID or leftPathID == rootPathID:
-			
-			print "one of paths is root make 2 resultant spliced paths"
-			
-			if rightPathID != rootPathID:
-				childPathID = rightPathID
-			else:
-				childPathID = leftPathID
-			
-			" find path 1 from rootPathID to childPathID "
-			" find path 2 from rootPathID to childPathID "
-			rootPath = self.trimmedPaths[rootPathID]
-			childPath = self.trimmedPaths[childPathID]
-
-
-			for join in self.joins:
-				if join[0][0] == childPathID:
-					childJunctionPoint = join[2]
-					childI = join[0][1]
-
-			if childI < abs(childI-len(childPath)-1):
-				childTermI = len(childPath)-1
-			else:
-				childTermI = 0
-
-			"find path between: (childPathID, childTermI) to (rootPathID, 0) and (rootPathID, len(rootPath)-1)"
-			shortestPathSpanTree, shortestDist = self.pathGraph.shortest_path((childPathID, childTermI))
-			startNode1 = shortestPathSpanTree[(rootPathID, 0)]
-			startNode2 = shortestPathSpanTree[(rootPathID, len(rootPath)-1)]
-			
-			currNode = startNode1
-			splicedPath1 = []
-			while currNode != (childPathID, childTermI):
-				splicedPath1.append(self.pathGraph.get_node_attributes(currNode))
-				currNode = shortestPathSpanTree[currNode]
-			splicedPath1.append(self.pathGraph.get_node_attributes(currNode))
-
-			currNode = startNode2
-			splicedPath2 = []
-			while currNode != (childPathID, childTermI):
-				splicedPath2.append(self.pathGraph.get_node_attributes(currNode))
-				currNode = shortestPathSpanTree[currNode]
-			splicedPath2.append(self.pathGraph.get_node_attributes(currNode))
-
-			newPaths.append(splicedPath1)
-			newPaths.append(splicedPath2)
-			
-		else:
-			"find entire path from rightPathID to leftPathID "
-			" start from point farthest from child's junction point "
-			
-			rightPath = self.trimmedPaths[rightPathID]
-			leftPath = self.trimmedPaths[leftPathID]
-			
-			" find the junction of this child's to its parent "    
-			for join in self.joins:
-				if join[0][0] == rightPathID:
-					rightJunctionPoint = join[2]
-					rightI = join[0][1]
-
-				if join[0][0] == leftPathID:
-					leftJunctionPoint = join[2]
-					leftI = join[0][1]
-					
-			
-			if leftI < abs(leftI-len(leftPath)-1):
-				leftTermI = len(leftPath)-1
-			else:
-				leftTermI = 0
-
-			if rightI < abs(rightI-len(rightPath)-1):
-				rightTermI = len(rightPath)-1
-			else:
-				rightTermI = 0
-			
-			"find path between: (rightPathID, rightTermI) to (leftPathID, rightTermI) "
-			shortestPathSpanTree, shortestDist = self.pathGraph.shortest_path((rightPathID, rightTermI))
-			currNode = shortestPathSpanTree[(leftPathID, leftTermI)]
-
-			splicedPath = []
-			while currNode != (rightPathID, rightTermI):
-				splicedPath.append(self.pathGraph.get_node_attributes(currNode))
-				currNode = shortestPathSpanTree[currNode]
-			splicedPath.append(self.pathGraph.get_node_attributes(currNode))
-
-			newPaths.append(splicedPath)
-
-
-
-
-
-		return newPaths
-
 	@logFunction
 	def getNearestPathPoint(self, originPoint):
 
