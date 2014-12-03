@@ -2402,6 +2402,186 @@ class MapState:
 			self.generatePaths()
 			return self.allSplices, self.terminals, self.junctions
 
+	def computeAllSplices2(self, plotIter = False):
+
+		"""
+		1) get all terminals of each skeleton
+		2) eliminate terminals that are "subsumed" by other shoots
+		3) find splices between the remaining terminals
+
+
+		FIXME: how to eliminate so many possibilities when junctions are not aligned?
+		FIXME: what if two terminals are very close to one another, how to select only one? not both or zero
+
+		"""
+		DIST_THRESH = 0.2
+
+		
+		""" of all the terms, find the ones that are not subsumed by other shoots """
+
+		allTerms = []
+		currKeys = self.globalSegments.keys()
+
+		for currK1 in range(len(currKeys)): 
+
+			pathID1 = currKeys[currK1]
+			segs1 = self.globalSegments[pathID1]
+			terms1 = self.globalTerms[pathID1]
+
+
+			for term1 in terms1:
+
+				minDist2 = 1e100
+				minP2 = None
+
+				for currK2 in range(len(currKeys)): 
+
+					if currK2 != currK1:
+
+						pathID2 = currKeys[currK2]
+						segs2 = self.globalSegments[pathID2]
+						#terms2 = self.globalTerms[pathID2]
+
+						for seg2 in segs2:
+							for p in seg2:
+
+								dist2 = sqrt((p[0]-term1[0])**2 + (p[1]-term1[1])**2)
+
+								if dist2 < minDist2:
+									minDist2 = dist2
+									minP2 = p
+				
+				print pathID1, minDist2, "terms:", term1
+				if minDist2 > DIST_THRESH:
+					allTerms.append(term1)
+					#print pathID1, "terms:", term1
+
+
+		termCombos = []
+		for j in range(len(allTerms)):
+			for k in range(j+1, len(allTerms)):
+				termCombos.append((allTerms[j], allTerms[k]))
+
+
+		finalResults = []
+
+
+		print "termCombos:", termCombos
+		
+		for termPath in termCombos:
+
+			joinPairs = []
+
+			startPose = termPath[0]
+			endPose = termPath[1]
+
+			print "startPose, endPose:", startPose, endPose
+
+			minStartDist = 1e100
+			minStartNode = None
+			minEndDist = 1e100
+			minEndNode = None
+			
+			for edge in self.spliceSkeleton.edges():
+			
+				globalNodePoint1 = edge[0]
+				globalNodePoint2 = edge[1]
+
+				dist1 = sqrt((globalNodePoint1[0]-startPose[0])**2 + (globalNodePoint1[1]-startPose[1])**2)
+				dist2 = sqrt((globalNodePoint2[0]-startPose[0])**2 + (globalNodePoint2[1]-startPose[1])**2)
+
+				if dist1 < minStartDist:
+					minStartDist = dist1
+					minStartNode = globalNodePoint1
+
+				if dist2 < minStartDist:
+					minStartDist = dist2
+					minStartNode = globalNodePoint2
+
+				dist1 = sqrt((globalNodePoint1[0]-endPose[0])**2 + (globalNodePoint1[1]-endPose[1])**2)
+				dist2 = sqrt((globalNodePoint2[0]-endPose[0])**2 + (globalNodePoint2[1]-endPose[1])**2)
+
+				if dist1 < minEndDist:
+					minEndDist = dist1
+					minEndNode = globalNodePoint1
+
+				if dist2 < minEndDist:
+					minEndDist = dist2
+					minEndNode = globalNodePoint2
+
+	
+			startNode = minStartNode
+			endNode = minEndNode
+
+
+			print "nodes path from", startNode, "to", endNode
+			shortestSpliceTree, shortestSpliceDist = self.spliceSkeleton.shortest_path(endNode)
+			currNode = shortestSpliceTree[startNode]					 
+			splicedSkel = [startNode]
+			while currNode != endNode:
+				#print "currNode:", currNode
+				splicedSkel.append(currNode)
+				nextNode = shortestSpliceTree[currNode]
+				currNode = nextNode
+			splicedSkel.append(currNode)
+
+			splicedSkel = ensureEnoughPoints(splicedSkel, max_spacing = 0.08, minPoints = 5)
+			spliceSpline1 = SplineFit(splicedSkel, smooth=0.1)
+			splicePoints1 = spliceSpline1.getUniformSamples()
+
+
+			sPath = {}
+			sPath['path'] = splicePoints1
+			sPath['termPath'] = termPath
+			sPath['skelPath'] = splicePoints1
+			
+			finalResults.append(sPath)
+			
+		
+		if True:
+			print "plotting splicedPath"
+			pylab.clf()
+
+			
+			#for k,path in  self.trimmedPaths.iteritems():
+			#	print "path has", len(path), "points"
+			#	xP = []
+			#	yP = []
+			#	for p in path:
+			#		xP.append(p[0])
+			#		yP.append(p[1])
+			#	
+			#	pylab.plot(xP,yP, color = self.colors[k])
+
+			xP = []
+			yP = []
+			for term in allTerms:
+				xP.append(term[0])
+				yP.append(term[1])
+
+			pylab.scatter(xP, yP, color='g', linewidth=1, zorder=11, alpha=0.9)
+
+	
+	
+			for sPath in finalResults:
+				path = sPath['skelPath']
+
+				xP = []
+				yP = []
+				for p in path:
+					xP.append(p[0])
+					yP.append(p[1])
+				pylab.plot(xP,yP, color='b', zorder=2)
+
+
+			#self.drawWalls()
+	
+			print "saving splicedPath_%04u_%04u_%04u.png" % (self.hypothesisID, self.poseData.numNodes, self.spliceCount)
+			pylab.title("Spliced Paths, pathIDs = %s" %  self.getPathIDs())
+			pylab.savefig("newSplicedPath_%04u_%04u_%04u.png" % (self.hypothesisID, self.poseData.numNodes, self.spliceCount))
+			self.spliceCount += 1
+
+
 	#@logFunction
 	def computeAllSplices(self, plotIter = False):
 
@@ -3761,6 +3941,8 @@ class MapState:
 		#if len(self.trimmedPaths[pathID]) > 0:
 		""" don't care about return values, are stored as object member variable """
 		self.computeAllSplices(plotIter = True)
+
+		self.computeAllSplices2()
 		self.isChanged = False
 
 	@logFunction
