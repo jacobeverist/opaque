@@ -1708,15 +1708,13 @@ class MapState:
 		pylab.clf()
 		#pylab.axis("equal")
 
-		for k,path in  self.trimmedPaths.iteritems():
-			#print "path has", len(path), "points"
-			xP = []
-			yP = []
-			for p in path:
-				xP.append(p[0])
-				yP.append(p[1])
-
-			pylab.plot(xP,yP, color = self.colors[k], linewidth=4)
+		#for k,path in  self.trimmedPaths.iteritems():
+		#	xP = []
+		#	yP = []
+		#	for p in path:
+		#		xP.append(p[0])
+		#		yP.append(p[1])
+		#	pylab.plot(xP,yP, color = self.colors[k], linewidth=4)
 
 
 		nodeID0 = self.poseData.numNodes-2
@@ -1751,7 +1749,7 @@ class MapState:
 				xP.append(p1[0])
 				yP.append(p1[1])
 
-			pylab.plot(xP,yP, color = 'r', alpha = 0.2, zorder=7)
+			pylab.plot(xP,yP, color = 'r', alpha = 0.05, zorder=7)
 
 
 			allPathIDs = self.getPathIDs()
@@ -1855,7 +1853,7 @@ class MapState:
 				xP.append(p1[0])
 				yP.append(p1[1])
 
-			pylab.plot(xP,yP, color = 'b', alpha = 0.2, zorder=7)
+			pylab.plot(xP,yP, color = 'b', alpha = 0.05, zorder=7)
 
 		#pylab.scatter(hypPointsX_0, hypPointsY_0, color='r', linewidth=1, zorder=10, alpha=0.2)
 		#pylab.scatter(hypPointsX_1, hypPointsY_1, color='b', linewidth=1, zorder=10, alpha=0.2)
@@ -1872,6 +1870,15 @@ class MapState:
 		#if len(xP) > 0:
 		#	pylab.scatter(xP, yP, color='k', linewidth=1, zorder=9, alpha=0.9)
 
+		for k, segs in self.globalSegments.iteritems():
+			for seg in segs:
+				xP = []
+				yP = []
+				for p in seg:
+					xP.append(p[0])
+					yP.append(p[1])
+				pylab.plot(xP,yP, color = self.colors[k], linewidth=4)
+
 		xP = []
 		yP = []
 		for pathID in allPathIDs:
@@ -1884,6 +1891,18 @@ class MapState:
 
 		if len(xP) > 0:
 			pylab.scatter(xP, yP, color='k', linewidth=1, zorder=9, alpha=0.9)
+
+
+		xP = []
+		yP = []
+		for pathID in allPathIDs:
+			terms = self.globalTerms[pathID]
+			for term in terms:
+				xP.append(term[0])
+				yP.append(term[1])
+
+		if len(xP) > 0:
+			pylab.scatter(xP, yP, color='g', linewidth=1, zorder=11, alpha=0.9)
 
 		junctionPoses = {}
 		for pathID in allPathIDs:
@@ -3542,6 +3561,11 @@ class MapState:
 		self.localLeaf2LeafPathJunctions = {}
 		self.localPaths = {}
 		self.localHulls = {}
+
+		self.localSegments = {}
+		self.globalSegments = {}
+		self.localTerms = {}
+		self.globalTerms = {}
 		
 		pathIDs = self.getPathIDs()
 		for pathID in pathIDs:
@@ -3574,6 +3598,13 @@ class MapState:
 			localSkeletons[pathID] = self.localLeaf2LeafPathJunctions[pathID]["skeletonGraph"]
 			controlPoses[pathID] = self.pathClasses[pathID]["controlPose"]
 			junctionPoses[pathID] = self.pathClasses[pathID]["globalJunctionPose"]
+			self.localTerms[pathID] = self.localLeaf2LeafPathJunctions[pathID]["leafTerms"]
+			self.localSegments[pathID] = self.localLeaf2LeafPathJunctions[pathID]["localSegments"]
+
+
+		#leaf2LeafPathJunctions["leafTerms"] = smoothLeafTerms
+		#leaf2LeafPathJunctions["localSegments"] = localPathSegs
+
 
 		parentPathIDs = self.getParentHash()
 		
@@ -3605,6 +3636,26 @@ class MapState:
 				globalHull.append(globalP)
 
 			self.hulls[pathID] = globalHull
+
+		for pathID, segs in self.localSegments.iteritems():
+			self.globalSegments[pathID] = []
+			shootFrame = Pose(finalPoses[pathID])
+			for seg in segs:
+				globalSeg = []
+				for p in seg:
+					globalP = shootFrame.convertLocalToGlobal(p)
+					globalSeg.append(globalP)
+
+				self.globalSegments[pathID].append(globalSeg)
+
+		for pathID, terms in self.localTerms.iteritems():
+			self.globalTerms[pathID] = []
+			shootFrame = Pose(finalPoses[pathID])
+			for term in terms:
+				globalP = shootFrame.convertLocalToGlobal(term)
+				self.globalTerms[pathID].append(globalP)
+
+
 
 		""" get terminals from previous data """
 		#self.localTerms = {0 : None}

@@ -414,6 +414,7 @@ def computePathSegments(juncIDs, leafIDs, tree, gridHash, vertices):
 			if len(resultPath) > 2:
 				retPaths.append(resultPath)
 	
+
 	for path in retPaths:
 
 		""" save leaf segments leaf node at end of the list """
@@ -481,6 +482,9 @@ def computePathSegments(juncIDs, leafIDs, tree, gridHash, vertices):
 	""" EXTEND LEAF SEGMENTS TO BOUNDARY OF HULL """
 	longLeafSegments = []
 
+	" terminal point of leaf, unextended "
+	longLeafTerms = []
+
 	if len(realLeafSegments) > 1:
 
 		for seg in realLeafSegments:
@@ -489,14 +493,19 @@ def computePathSegments(juncIDs, leafIDs, tree, gridHash, vertices):
 
 			""" the extended version of the leaf segment """
 			longLeafSegments.append(realSeg)
+			longLeafTerms.append(realSeg[-1])
 
 	else:
 
 		seg = realLeafSegments[0]
 
 		realSeg = extendBackToHull(seg, vertices)
+		longLeafTerms.append(realSeg[-1])
+
 		realSeg.reverse()
 		realSeg2 = extendBackToHull(realSeg, vertices)
+		longLeafTerms.append(realSeg[-1])
+
 		realSeg2.reverse()
 
 		""" the extended version of the leaf segment """
@@ -507,11 +516,22 @@ def computePathSegments(juncIDs, leafIDs, tree, gridHash, vertices):
 	""" create smoothed versions of the segments with spline curves """
 	smoothLeafSegments = []
 	smoothInternalSegments = []
+	smoothLeafTerms = []
 
 	for seg in longLeafSegments:
 		leafSpline = SplineFit(seg, smooth=0.1)
 		leafPoints = leafSpline.getUniformSamples()
 		smoothLeafSegments.append(leafPoints)
+
+	if len(smoothLeafSegments) > 1:
+		for seg in smoothLeafSegments:
+			smoothLeafTerms.append(seg[-1])
+	
+	else:
+		seg = smoothLeafSegments[0]
+		smoothLeafTerms.append(seg[0])
+		smoothLeafTerms.append(seg[-1])
+
 
 	for seg in realInternalSegments:
 		internalSpline = SplineFit(seg, smooth=0.1)
@@ -562,7 +582,7 @@ def computePathSegments(juncIDs, leafIDs, tree, gridHash, vertices):
 		localSkeletonGraph.add_edge(localNodePoint1, localNodePoint2, wt=dist)
 	"""
 
-	return smoothLeafSegments, smoothInternalSegments, skeletonGraph
+	return smoothLeafSegments, smoothInternalSegments, skeletonGraph, smoothLeafTerms
 	#return smoothLeafSegments, smoothInternalSegments, localSkeletonGraph
 
 def getSegPaths(node, juncIDs, leafIDs, currPath, tree, isVisited):
@@ -794,9 +814,9 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 
 	""" get the shoot skeleton as sets of order points representing curve segments
 		with junctions and leaves as terminals """
-	smoothLeafSegments, smoothInternalSegments, localSkeletonGraph = computePathSegments(junctions, leaves, uni_mst, gridHash, vertices)
+	smoothLeafSegments, smoothInternalSegments, localSkeletonGraph, smoothLeafTerms = computePathSegments(junctions, leaves, uni_mst, gridHash, vertices)
 
-	print "computePathSegments:", len(smoothLeafSegments), len(smoothInternalSegments), "paths from", len(junctions), "junctions and", len(leaves), "leaves", [len(pMem) for pMem in smoothLeafSegments], [len(pMem) for pMem in smoothInternalSegments]
+	print "computePathSegments:", len(smoothLeafSegments), len(smoothInternalSegments), "paths from", len(junctions), "junctions and", len(leaves), "leaves", [len(pMem) for pMem in smoothLeafSegments], [len(pMem) for pMem in smoothInternalSegments], "terms =", smoothLeafTerms
 
 
 	"""
@@ -1039,8 +1059,11 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 	leaf2LeafPathJunctions["internalSegments"] = smoothInternalSegments
 	leaf2LeafPathJunctions["skeletonGraph"] = localSkeletonGraph
 	leaf2LeafPathJunctions["realJunctions"] = allRealJunctions
+	leaf2LeafPathJunctions["leafTerms"] = smoothLeafTerms
 
 	localPathSegs = smoothLeafSegments + smoothInternalSegments
+
+	leaf2LeafPathJunctions["localSegments"] = localPathSegs
 
 	"""
 	if globalJunctionPose != None:
@@ -1060,7 +1083,6 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 		localPathSegs = smoothLeafSegments + smoothInternalSegments
 	"""
 
-	leaf2LeafPathJunctions["localSegments"] = localPathSegs
 
 
 	""" get the neighbor points along the path at the junction so we can describe the occupancy state """
