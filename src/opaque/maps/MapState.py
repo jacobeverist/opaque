@@ -371,6 +371,7 @@ class MapState:
 		self.junctions = {}
 		self.terminals = {}
 		self.allSplices = {}
+		self.allSplices2 = {}
 		self.isChanged = True
 
 		self.shootIDs = 1
@@ -2025,6 +2026,7 @@ class MapState:
 		newObj.terminals = deepcopy(self.terminals)
 		newObj.topDict = deepcopy(self.topDict)
 		newObj.allSplices = deepcopy(self.allSplices)
+		newObj.allSplices2 = deepcopy(self.allSplices2)
 
 		newObj.orderedPathIDs1 = deepcopy(self.orderedPathIDs1)
 		newObj.orderedPathIDs2 = deepcopy(self.orderedPathIDs2)
@@ -2045,13 +2047,25 @@ class MapState:
 		newObj.depAngles2 = deepcopy(self.depAngles2)  
 		newObj.contig2 = deepcopy(self.contig2)  
 
+		""" branching primitive data """
 		newObj.departureResultSet1 = deepcopy(self.departureResultSet1)  
 		newObj.departureResultSet2 = deepcopy(self.departureResultSet2)
+		newObj.overlapSplice1 = deepcopy(self.overlapSplice1)
+		newObj.overlapSplice2 = deepcopy(self.overlapSplice2)
+		newObj.memberShootIDs1 = deepcopy(self.memberShootIDs1)
+		newObj.memberShootIDs2 = deepcopy(self.memberShootIDs2)
 
 		newObj.localPaths = deepcopy(self.localPaths)
 		newObj.localHulls = deepcopy(self.localHulls)
 		newObj.localLandmarks = deepcopy(self.localLandmarks)
 		newObj.localLeaf2LeafPathJunctions = deepcopy(self.localLeaf2LeafPathJunctions) 
+
+		newObj.localLongPaths = deepcopy(self.localLongPaths)
+		newObj.globalLongPaths = deepcopy(self.globalLongPaths)
+		newObj.localSegments = deepcopy(self.localSegments)
+		newObj.globalSegments = deepcopy(self.globalSegments)
+		newObj.localTerms = deepcopy(self.localTerms)
+		newObj.globalTerms = deepcopy(self.globalTerms)
 
 		newObj.branchDiverges = deepcopy(self.branchDiverges)
 
@@ -2402,6 +2416,15 @@ class MapState:
 			self.generatePaths()
 			return self.allSplices, self.terminals, self.junctions
 
+	def getAllSplices2(self, plotIter = False):
+		if not self.isChanged:
+			print "returning without computing, not isChanged"
+			return self.allSplices2
+		else:
+			print "recomputing allSplices"
+			self.generatePaths()
+			return self.allSplices2
+
 	def computeAllSplices2(self, plotIter = False):
 
 		"""
@@ -2470,6 +2493,7 @@ class MapState:
 		
 		for termPath in termCombos:
 
+			memberShootIDs = {}
 			joinPairs = []
 
 			startPose = termPath[0]
@@ -2517,10 +2541,28 @@ class MapState:
 			print "nodes path from", startNode, "to", endNode
 			shortestSpliceTree, shortestSpliceDist = self.spliceSkeleton.shortest_path(endNode)
 			currNode = shortestSpliceTree[startNode]					 
+
+			nodeAttrs = self.spliceSkeleton.get_node_attributes(startNode)
+			memberPathID = None
+			for attr in nodeAttrs:
+				if attr[0] == "pathID":
+					memberPathID = attr[1]
+
+			memberShootIDs[memberPathID] = None
+
 			splicedSkel = [startNode]
 			while currNode != endNode:
 				#print "currNode:", currNode
 				splicedSkel.append(currNode)
+
+				nodeAttrs = self.spliceSkeleton.get_node_attributes(currNode)
+				memberPathID = None
+				for attr in nodeAttrs:
+					if attr[0] == "pathID":
+						memberPathID = attr[1]
+
+				memberShootIDs[memberPathID] = None
+
 				nextNode = shortestSpliceTree[currNode]
 				currNode = nextNode
 			splicedSkel.append(currNode)
@@ -2531,15 +2573,15 @@ class MapState:
 
 
 			sPath = {}
-			sPath['path'] = splicePoints1
 			sPath['termPath'] = termPath
 			sPath['skelPath'] = splicePoints1
+			sPath['memberShootIDs'] = memberShootIDs.keys()
 			
 			finalResults.append(sPath)
 			
 		
-		if True:
-			print "plotting splicedPath"
+		if plotIter:
+			print "plotting splicedPath2"
 			pylab.clf()
 
 			
@@ -2581,6 +2623,7 @@ class MapState:
 			pylab.savefig("newSplicedPath_%04u_%04u_%04u.png" % (self.hypothesisID, self.poseData.numNodes, self.spliceCount))
 			self.spliceCount += 1
 
+		self.allSplices2 = finalResults
 
 	#@logFunction
 	def computeAllSplices(self, plotIter = False):
@@ -3704,6 +3747,8 @@ class MapState:
 		self.localPaths = {}
 		self.localHulls = {}
 
+		self.localLongPaths = {}
+		self.globalLongPaths = {}
 		self.localSegments = {}
 		self.globalSegments = {}
 		self.localTerms = {}
@@ -3742,6 +3787,7 @@ class MapState:
 			junctionPoses[pathID] = self.pathClasses[pathID]["globalJunctionPose"]
 			self.localTerms[pathID] = self.localLeaf2LeafPathJunctions[pathID]["leafTerms"]
 			self.localSegments[pathID] = self.localLeaf2LeafPathJunctions[pathID]["localSegments"]
+			self.localLongPaths[pathID] = self.localLeaf2LeafPathJunctions[pathID]["longPaths"]
 
 
 		#leaf2LeafPathJunctions["leafTerms"] = smoothLeafTerms
@@ -3785,10 +3831,23 @@ class MapState:
 			for seg in segs:
 				globalSeg = []
 				for p in seg:
-					globalP = shootFrame.convertLocalToGlobal(p)
+					globalP = shootFrame.convertLocalOffsetToGlobal(p)
 					globalSeg.append(globalP)
 
 				self.globalSegments[pathID].append(globalSeg)
+
+		for pathID, longPaths in self.localLongPaths.iteritems():
+			self.globalLongPaths[pathID] = []
+			shootFrame = Pose(finalPoses[pathID])
+			for path in longPaths:
+
+				globalPath = []
+				for p in path:
+					globalP = shootFrame.convertLocalOffsetToGlobal(p)
+					globalPath.append(globalP)
+
+				self.globalLongPaths[pathID].append(globalPath)
+
 
 		for pathID, terms in self.localTerms.iteritems():
 			self.globalTerms[pathID] = []
@@ -3942,7 +4001,8 @@ class MapState:
 		""" don't care about return values, are stored as object member variable """
 		self.computeAllSplices(plotIter = True)
 
-		self.computeAllSplices2()
+		self.computeAllSplices2(plotIter=True)
+
 		self.isChanged = False
 
 	@logFunction
@@ -4063,6 +4123,7 @@ class MapState:
 	def getSplicesByNearJunction(self, initPose2):
 		
 		allSplices, terminals, junctions = self.getAllSplices(plotIter = False)
+		allSplices2 = self.getAllSplices2(plotIter = False)
 
 		#print "junctions:", junctions
 		#print "initPose2:", initPose2
@@ -5712,6 +5773,138 @@ class MapState:
 		return True, -1
 
 
+	@logFunction
+	def checkUniqueBranch2(self, parentPathID, nodeID1, depAngle, depPoint):
+
+
+		print "checkUniqueBranch(", parentPathID, ",", nodeID1, ",", depAngle, ",", depPoint, ")"
+
+		#foreTerm1 = frontInterior1 and frontExist1
+		#foreTerm2 = frontInterior2 and frontExist2
+
+		if depPoint == 0:
+			print "REJECT, no departure point!", nodeID1, depPoint
+			return False, -1
+
+		" check cartesian distance to similar junction points from parent path "
+
+		" BEING MORE PERMISSIVE IN CREATING NEW BRANCHES BECAUSE WE CAN MERGE LATER "
+
+		" cartesian distance "
+		DISC_THRESH = 0.5
+
+		JOINT_DIST = 3.0
+
+		" 60 degree threshold "
+		#ANG_THRESH = 0.523 # pi/6
+		ANG_THRESH = pi/8
+		
+		" maximum distance to the parent terminal point before creating a junction point "
+		#TERM_THRESH = 0.8
+		TERM_THRESH = 0.5
+		
+		pathIDs = self.getPathIDs()
+
+
+		""" enforce too many neighbors constraint """
+		neighborCount = 0
+
+		for pathID in pathIDs:
+			if pathID != 0:
+				junctionPoint = self.getGlobalJunctionPose(pathID)
+				neighDist = sqrt((depPoint[0]-junctionPoint[0])**2 + (depPoint[1]-junctionPoint[1])**2)
+
+				if neighDist < JOINT_DIST:
+					neighborCount += 1
+
+		if neighborCount >= 2:
+			print "REJECT, too many neighbors", nodeID1, pathID, neighborCount, depPoint
+			return False, parentPathID
+
+
+		""" check over all spatial landmarks to determine if we are close to a junction """
+
+		controlPoses_L = {}
+		for pathID in pathIDs:
+			controlPoses_L[pathID] = self.pathClasses[pathID]["controlPose"]
+
+		parentPathIDs = self.getParentHash()
+		controlPoses_G = computeGlobalControlPoses(controlPoses_L, parentPathIDs)
+
+		minLandmark = None
+		minLandDist = 1e100
+
+		for pathID in pathIDs:
+			currFrame = Pose(controlPoses_G[pathID])
+			for point_L, pointThresh, pointName in self.localLandmarks[pathID]:
+				point_G = currFrame.convertLocalToGlobal(point_L)
+				landmarkDist = sqrt((depPoint[0]-point_G[0])**2 + (depPoint[1]-point_G[1])**2)
+
+				if landmarkDist < minLandDist:
+					minLandDist = landmarkDist
+					minLandmark = point_G
+
+		#if minLandDist >= 0.5:
+		if minLandDist >= 1.0:
+			print "REJECT, proposed branch point is not close enough to a spatial landmark", nodeID1, pathID, minLandDist, minLandmark, neighborCount, depPoint
+			return False, parentPathID
+
+		#sF0 = self.poseData.spatialFeatures[nodeID1][0]
+		#if sF0["bloomPoint"] == None and sF0["archPoint"] == None and sF0["inflectionPoint"] == None:
+		#	print "REJECT, diverging pose has no spatial landmark feature", nodeID1, pathID, neighborCount, depPoint
+		#	return False, parentPathID
+
+		
+		for pathID in pathIDs:
+
+			if pathID == parentPathID:
+				termPoint = self.terminals[pathID+1]
+				
+				print "termPoint =", termPoint
+				termDist = sqrt((depPoint[0]-termPoint[1][0])**2 + (depPoint[1]-termPoint[1][1])**2)
+				
+				print "termDist =", termDist
+				
+				if termDist < TERM_THRESH:
+					print "REJECT, proposed junction point is too close to parent pathID terminal", pathID, termDist, termPoint, depPoint
+					return False, pathID
+
+			
+			path = self.getPath(pathID)
+			
+			if path["parentID"] == parentPathID:
+
+				
+				junctionNodeID = path["branchNodeID"]
+				
+				junctionPoint = self.getGlobalJunctionPose(pathID)
+				print "existing branch pose:", junctionPoint
+					
+				dist = sqrt((depPoint[0]-junctionPoint[0])**2 + (depPoint[1]-junctionPoint[1])**2 )
+
+				" check difference of tangential angle "
+				angDiff = diffAngle(depAngle, junctionPoint[2])
+
+				print "result = ", junctionNodeID, dist, angDiff
+		
+				#isNodeFeatureless = self.nodeHash[nodeID1].getIsFeatureless()
+				isNodeFeatureless = self.poseData.isNodeFeatureless[nodeID1]
+				print "node", nodeID1, "is featureless =", isNodeFeatureless
+		
+				if dist < DISC_THRESH:
+					if fabs(angDiff) < ANG_THRESH:
+						
+						print "DUPLICATE junction of", junctionPoint, "rejecting with differences of", dist, angDiff
+						return False, pathID
+				
+				" Explicit limitation that we wont be able to detect a T-Junction coming from left or right"
+				#if isNodeFeatureless:
+				#	print "REJECT new branch because the branching node is featureless"
+				#	return False, -1
+		
+		return True, -1
+
+
 
 	@logFunction
 	def determineBranchSingle(self, nodeID1, frontExist1, frontInterior1, depAngle1, depPoint1, parentPathID1, dirFlag):
@@ -5767,7 +5960,7 @@ class MapState:
 		
 
 	@logFunction
-	def determineBranchPair(self, nodeID1, nodeID2, frontExist1, frontExist2, frontInterior1, frontInterior2, depAngle1, depAngle2, depPoint1, depPoint2, parentPathID1, parentPathID2, dirFlag, isUnique1, isUnique2, duplicatePathID1, duplicatePathID2, shootIDs):
+	def determineBranchPair2(self, nodeID1, nodeID2, frontExist1, frontExist2, frontInterior1, frontInterior2, depAngle1, depAngle2, depPoint1, depPoint2, dirFlag, isUnique1, isUnique2, shootIDs):
 		
 		"""
 		1)	both nodes departing
@@ -5787,9 +5980,230 @@ class MapState:
 		dirFlag specifies which node we want to check branches on.	We do not want to branch with the anchored end of a probe sweep   
 		"""
 
-		print self.hypothesisID, "determineBranchPair(", nodeID1, ",", nodeID2, ",", frontExist1, ",", frontExist2, ",", frontInterior1, ",", frontInterior2, ",", depAngle1, ",", depAngle2, ",", depPoint1, ",", depPoint2, ",", parentPathID1, ",", parentPathID2, ",", dirFlag, ",", isUnique1, ",", isUnique2, ",", duplicatePathID1, ",", duplicatePathID2, ",", shootIDs, ")"
+		print self.hypothesisID, "determineBranchPair(", nodeID1, ",", nodeID2, ",", frontExist1, ",", frontExist2, ",", frontInterior1, ",", frontInterior2, ",", depAngle1, ",", depAngle2, ",", depPoint1, ",", depPoint2, ",", dirFlag, ",", isUnique1, ",", isUnique2, ",", ",", shootIDs, ")"
 		
 		self.shootIDs = shootIDs
+
+		# depAngle1, depAngle2, frontInterior1, frontExist1, frontInterior2, frontExist2, depPoint1, depPoint2 , isUnique1, isUnique2
+
+
+		foreTerm1 = frontInterior1 and frontExist1
+		foreTerm2 = frontInterior2 and frontExist2
+
+		frontAngDiff = diffAngle(depAngle1, depAngle2)
+		
+		" 60 degree threshold "
+		ANG_THRESH = 1.047
+
+		pathBranchIDs = [None, None]
+
+
+		if foreTerm1 and foreTerm2:
+
+			" both departing case: check if same or different "
+			if fabs(frontAngDiff) < ANG_THRESH:
+
+				" are on top of each other and are branching to the same path "
+				if isUnique1 and isUnique2:
+					
+					branchNodeID = nodeID1
+					globalJunctionPoint = depPoint1
+					depAng = depAngle1
+					junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
+
+					poseOrigin = Pose(self.nodeRawPoses[branchNodeID])
+					
+					newPathID = self.addPath(branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
+
+					pathBranchIDs[0] = newPathID
+					pathBranchIDs[1] = newPathID
+
+					print "foreA"
+
+				if isUnique1 and not isUnique2:
+
+					if dirFlag == 0:
+						" foreTerm1 has unique departure "	  
+						branchNodeID = nodeID1
+						globalJunctionPoint = depPoint1
+						depAng = depAngle1
+						junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
+
+
+						poseOrigin = Pose(self.nodeRawPoses[branchNodeID])
+						newPathID = self.addPath(branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
+
+						pathBranchIDs[0] = newPathID
+
+				if not isUnique1 and isUnique2:
+					if dirFlag == 1:
+						" foreTerm2 has unique departure "	  
+						branchNodeID = nodeID2
+						globalJunctionPoint = depPoint2
+						depAng = depAngle2
+						junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
+
+						poseOrigin = Pose(self.nodeRawPoses[branchNodeID])
+						newPathID = self.addPath(branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
+					
+						pathBranchIDs[1] = newPathID
+				
+			else:
+				" these are branching to separate new paths "
+
+				if isUnique1 and isUnique2:
+
+					if dirFlag == 0:
+						branchNodeID = nodeID1
+						globalJunctionPoint = depPoint1
+						depAng = depAngle1
+						junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
+
+						poseOrigin = Pose(self.nodeRawPoses[branchNodeID])
+						newPathID1 = self.addPath(branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
+
+						pathBranchIDs[0] = newPathID1
+
+					if dirFlag == 1:
+						branchNodeID = nodeID2
+						globalJunctionPoint = depPoint2
+						depAng = depAngle2
+						junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
+
+						poseOrigin = Pose(self.nodeRawPoses[branchNodeID])
+						newPathID2 = self.addPath(branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
+
+						pathBranchIDs[1] = newPathID2
+
+					print "foreB"
+
+				if isUnique1 and not isUnique2:
+					if dirFlag == 0:
+						" foreTerm1 has unique departure "	  
+						branchNodeID = nodeID1
+						globalJunctionPoint = depPoint1
+						depAng = depAngle1
+						junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
+
+						poseOrigin = Pose(self.nodeRawPoses[branchNodeID])
+						newPathID = self.addPath(branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
+
+						pathBranchIDs[0] = newPathID
+
+				if not isUnique1 and isUnique2:
+					if dirFlag == 1:
+						" foreTerm2 has unique departure "	  
+						branchNodeID = nodeID2
+						globalJunctionPoint = depPoint2
+						depAng = depAngle2
+						junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
+
+						poseOrigin = Pose(self.nodeRawPoses[branchNodeID])
+						newPathID = self.addPath(branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
+
+						pathBranchIDs[1] = newPathID
+		
+		elif foreTerm1 and not foreTerm2:
+
+			if isUnique1:
+				   
+				if frontExist2 and fabs(frontAngDiff) < ANG_THRESH:
+					" both have same departure "
+					branchNodeID = nodeID1
+					globalJunctionPoint = depPoint1
+					depAng = depAngle1
+					junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
+
+
+					poseOrigin = Pose(self.nodeRawPoses[branchNodeID])
+					newPathID = self.addPath(branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
+
+					pathBranchIDs[0] = newPathID
+					pathBranchIDs[1] = newPathID
+
+					print "foreC"
+					
+				else:
+					if dirFlag == 0:
+						" foreTerm1 has unique departure "	  
+						branchNodeID = nodeID1
+						globalJunctionPoint = depPoint1
+						depAng = depAngle1
+						junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
+
+						poseOrigin = Pose(self.nodeRawPoses[branchNodeID])
+						newPathID = self.addPath(branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
+
+						pathBranchIDs[0] = newPathID
+
+					print "foreD"
+					
+		elif foreTerm2 and not foreTerm1:
+
+			if isUnique2:
+				if frontExist1 and fabs(frontAngDiff) < ANG_THRESH:
+
+					" both have same departure "
+					branchNodeID = nodeID2
+					globalJunctionPoint = depPoint2
+					depAng = depAngle2
+					junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
+
+					poseOrigin = Pose(self.nodeRawPoses[branchNodeID])
+					newPathID = self.addPath(branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
+					print "foreE"
+
+					pathBranchIDs[0] = newPathID
+					pathBranchIDs[1] = newPathID
+
+				else:
+					
+					if dirFlag == 1:
+						" foreTerm2 has unique departure "	  
+						branchNodeID = nodeID2
+						globalJunctionPoint = depPoint2
+						depAng = depAngle2
+						junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
+
+						poseOrigin = Pose(self.nodeRawPoses[branchNodeID])
+						newPathID = self.addPath(branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
+
+						pathBranchIDs[1] = newPathID
+
+					print "foreF"
+
+		
+		#return isBranch, pathBranchIDs, isNew, self.shootIDs
+
+		return self.shootIDs, pathBranchIDs
+		
+
+	@logFunction
+	def determineBranchPair(self, nodeID1, nodeID2, frontExist1, frontExist2, frontInterior1, frontInterior2, depAngle1, depAngle2, depPoint1, depPoint2, dirFlag, isUnique1, isUnique2, duplicatePathID1, duplicatePathID2, shootIDs):
+		
+		"""
+		1)	both nodes departing
+			- are same departure  ( equal departing angle and are on top of each other)  1 new path
+			- are different departures ( different departing angle and are not necessarily on top of each other) 2 new paths
+			
+		2) neither node is departing
+			- are on same path
+			
+		3) one node is departing only
+			- is only one departure ( other node has no departure, or has external departure but not same angle )
+			- is a false departure	( falseness happens if bad map data, ignore )
+			- are both departing ( should have at least external departure on both, compare departure angle )
+		
+		Now, we have the departing angles, but we need to compare them with each other. 
+		
+		dirFlag specifies which node we want to check branches on.	We do not want to branch with the anchored end of a probe sweep   
+		"""
+
+		print self.hypothesisID, "determineBranchPair(", nodeID1, ",", nodeID2, ",", frontExist1, ",", frontExist2, ",", frontInterior1, ",", frontInterior2, ",", depAngle1, ",", depAngle2, ",", depPoint1, ",", depPoint2, ",", dirFlag, ",", isUnique1, ",", isUnique2, ",", duplicatePathID1, ",", duplicatePathID2, ",", shootIDs, ")"
+		
+		self.shootIDs = shootIDs
+
+		# depAngle1, depAngle2, frontInterior1, frontExist1, frontInterior2, frontExist2, depPoint1, depPoint2 , isUnique1, isUnique2
 
 
 		foreTerm1 = frontInterior1 and frontExist1
@@ -5806,16 +6220,13 @@ class MapState:
 
 
 		if foreTerm1 and foreTerm2:
+
 			" both departing case: check if same or different "
 			if fabs(frontAngDiff) < ANG_THRESH:
+
 				" are on top of each other and are branching to the same path "
-
-				#isUnique1, duplicatePathID1 = self.checkUniqueBranch(parentPathID1, nodeID1, depAngle1, depPoint1)
-				#isUnique2, duplicatePathID2 = self.checkUniqueBranch(parentPathID2, nodeID2, depAngle2, depPoint2)
-
 				if isUnique1 and isUnique2:
 					
-					pathID = parentPathID1
 					branchNodeID = nodeID1
 					globalJunctionPoint = depPoint1
 					depAng = depAngle1
@@ -5836,13 +6247,14 @@ class MapState:
 					print "foreA"
 
 				if isUnique1 and not isUnique2:
+
 					if dirFlag == 0:
 						" foreTerm1 has unique departure "	  
-						pathID = parentPathID1
 						branchNodeID = nodeID1
 						globalJunctionPoint = depPoint1
 						depAng = depAngle1
 						junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
+
 
 						poseOrigin = Pose(self.nodeRawPoses[branchNodeID])
 						newPathID = self.addPath(branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
@@ -5853,7 +6265,6 @@ class MapState:
 				if not isUnique1 and isUnique2:
 					if dirFlag == 1:
 						" foreTerm2 has unique departure "	  
-						pathID = parentPathID2
 						branchNodeID = nodeID2
 						globalJunctionPoint = depPoint2
 						depAng = depAngle2
@@ -5879,13 +6290,9 @@ class MapState:
 			else:
 				" these are branching to separate new paths "
 
-				#isUnique1, duplicatePathID1 = self.checkUniqueBranch(parentPathID1, nodeID1, depAngle1, depPoint1)
-				#isUnique2, duplicatePathID2 = self.checkUniqueBranch(parentPathID2, nodeID2, depAngle2, depPoint2)
-
 				if isUnique1 and isUnique2:
 
 					if dirFlag == 0:
-						pathID = parentPathID1
 						branchNodeID = nodeID1
 						globalJunctionPoint = depPoint1
 						depAng = depAngle1
@@ -5899,7 +6306,6 @@ class MapState:
 
 
 					if dirFlag == 1:
-						pathID = parentPathID2
 						branchNodeID = nodeID2
 						globalJunctionPoint = depPoint2
 						depAng = depAngle2
@@ -5916,7 +6322,6 @@ class MapState:
 				if isUnique1 and not isUnique2:
 					if dirFlag == 0:
 						" foreTerm1 has unique departure "	  
-						pathID = parentPathID1
 						branchNodeID = nodeID1
 						globalJunctionPoint = depPoint1
 						depAng = depAngle1
@@ -5931,7 +6336,6 @@ class MapState:
 				if not isUnique1 and isUnique2:
 					if dirFlag == 1:
 						" foreTerm2 has unique departure "	  
-						pathID = parentPathID2
 						branchNodeID = nodeID2
 						globalJunctionPoint = depPoint2
 						depAng = depAngle2
@@ -5954,13 +6358,10 @@ class MapState:
 		
 		elif foreTerm1 and not foreTerm2:
 
-			#isUnique1, duplicatePathID1 = self.checkUniqueBranch(parentPathID1, nodeID1, depAngle1, depPoint1)
-				
 			if isUnique1:
 				   
 				if frontExist2 and fabs(frontAngDiff) < ANG_THRESH:
 					" both have same departure "
-					pathID = parentPathID1
 					branchNodeID = nodeID1
 					globalJunctionPoint = depPoint1
 					depAng = depAngle1
@@ -5981,7 +6382,6 @@ class MapState:
 				else:
 					if dirFlag == 0:
 						" foreTerm1 has unique departure "	  
-						pathID = parentPathID1
 						branchNodeID = nodeID1
 						globalJunctionPoint = depPoint1
 						depAng = depAngle1
@@ -6001,13 +6401,10 @@ class MapState:
 
 		elif foreTerm2 and not foreTerm1:
 
-			#isUnique2, duplicatePathID2 = self.checkUniqueBranch(parentPathID2, nodeID2, depAngle2, depPoint2)
-
 			if isUnique2:
 				if frontExist1 and fabs(frontAngDiff) < ANG_THRESH:
 
 					" both have same departure "
-					pathID = parentPathID2
 					branchNodeID = nodeID2
 					globalJunctionPoint = depPoint2
 					depAng = depAngle2
@@ -6028,7 +6425,6 @@ class MapState:
 					
 					if dirFlag == 1:
 						" foreTerm2 has unique departure "	  
-						pathID = parentPathID2
 						branchNodeID = nodeID2
 						globalJunctionPoint = depPoint2
 						depAng = depAngle2
@@ -6130,7 +6526,8 @@ class MapState:
 		#splicedPaths = self.splicePathIDs(orderPathIDs)
 		
 		
-		allSplices, terminals, junctions = self.getAllSplices()
+		#allSplices, terminals, junctions = self.getAllSplices()
+		allSplices = self.getAllSplices2()
 
 		splicedPaths = []
 		for k, result in allSplices.iteritems():

@@ -519,7 +519,8 @@ def computePathSegments(juncIDs, leafIDs, tree, gridHash, vertices):
 	smoothLeafTerms = []
 
 	for seg in longLeafSegments:
-		leafSpline = SplineFit(seg, smooth=0.1)
+		newPath3 = ensureEnoughPoints(seg, max_spacing = 0.08, minPoints = 5)
+		leafSpline = SplineFit(newPath3, smooth=0.1)
 		leafPoints = leafSpline.getUniformSamples()
 		smoothLeafSegments.append(leafPoints)
 
@@ -534,7 +535,8 @@ def computePathSegments(juncIDs, leafIDs, tree, gridHash, vertices):
 
 
 	for seg in realInternalSegments:
-		internalSpline = SplineFit(seg, smooth=0.1)
+		newPath3 = ensureEnoughPoints(seg, max_spacing = 0.08, minPoints = 5)
+		internalSpline = SplineFit(newPath3, smooth=0.1)
 		internalPoints = internalSpline.getUniformSamples()
 		smoothInternalSegments.append(internalPoints)
 	
@@ -786,10 +788,10 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 					3: branch direction (None) """
 				allJunctions.append((junc, gJunc, juncDist, None))
 
-		else:
-			
-			print "adding theoretical junction:", theoryJunc
-			allJunctions.append(theoryJunc)						  
+		#else:
+		#	
+		#	print "adding theoretical junction:", theoryJunc
+		#	allJunctions.append(theoryJunc)						  
 	
 	print "allJunctions:", allJunctions
 	
@@ -1394,7 +1396,18 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 
 		leaf2LeafPathJunctions["bestFit"] = bestFit
 		leaf2LeafPathJunctions["branchArm"] = branchArm
-		leaf2LeafPathJunctions["longPaths"] = medialLongPaths
+
+		#leaf2LeafPathJunctions["longPaths"] = medialLongPaths
+
+		enoughLongPaths = []
+		for path in medialLongPaths:
+			newPath3 = ensureEnoughPoints(path, max_spacing = 0.08, minPoints = 5)
+			longSpline = SplineFit(newPath3, smooth=0.1)
+			smoothedPath = longSpline.getUniformSamples()
+			enoughLongPaths.append(smoothedPath)
+
+		leaf2LeafPathJunctions["longPaths"] = enoughLongPaths
+
 		leaf2LeafPathJunctions["theoryPaths"] = theoryMedialLongPaths
 
 		return leaf2LeafPathJunctions, medialLongPaths[bestFit], vertices
@@ -1487,7 +1500,18 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 	#jIndex = juncLongIndices[maxIndex][0]
 	leaf2LeafPathJunctions["branchArm"] = medialLongPaths[maxIndex][1]
 
-	leaf2LeafPathJunctions["longPaths"] = medialLongPaths
+	#leaf2LeafPathJunctions["longPaths"] = medialLongPaths
+
+	enoughLongPaths = []
+	for path in medialLongPaths:
+		newPath3 = ensureEnoughPoints(path, max_spacing = 0.08, minPoints = 5)
+		longSpline = SplineFit(newPath3, smooth=0.1)
+		smoothedPath = longSpline.getUniformSamples()
+		enoughLongPaths.append(smoothedPath)
+
+
+	leaf2LeafPathJunctions["longPaths"] = enoughLongPaths
+
 	leaf2LeafPathJunctions["theoryPaths"] = theoryMedialLongPaths
 
 	return leaf2LeafPathJunctions, medialLongPaths[maxIndex], vertices
@@ -1550,8 +1574,8 @@ def spliceSkeletons(localSkeletons, controlPoses, junctionPoses, parentPathIDs):
 					minChildNode = globalNodePoint2
 
 
-			globalSkeletonGraph.add_node(globalNodePoint1)
-			globalSkeletonGraph.add_node(globalNodePoint2)
+			globalSkeletonGraph.add_node(globalNodePoint1, attrs=[("pathID",pathID),])
+			globalSkeletonGraph.add_node(globalNodePoint2, attrs=[("pathID",pathID),])
 			globalSkeletonGraph.add_edge(globalNodePoint1, globalNodePoint2, wt=dist)
 
 		if parentPathID != None:
@@ -1562,7 +1586,7 @@ def spliceSkeletons(localSkeletons, controlPoses, junctionPoses, parentPathIDs):
 			junctionNodes[pathID] = juncNode
 
 			print "add child junc edge", juncNode, minChildNode, minChildDist
-			globalSkeletonGraph.add_node(juncNode)
+			globalSkeletonGraph.add_node(juncNode, attrs=[("pathID",pathID),])
 			globalSkeletonGraph.add_edge(juncNode, minChildNode, wt=minChildDist)
 
 
@@ -1585,9 +1609,12 @@ def spliceSkeletons(localSkeletons, controlPoses, junctionPoses, parentPathIDs):
 
 			weight = skel.get_edge_weight(globalNodePoint1, globalNodePoint2)
 
+			edgeAttr1 = skel.get_node_attributes(globalNodePoint1)
+			edgeAttr2 = skel.get_node_attributes(globalNodePoint2)
+
 			#dist = sqrt((globalNodePoint1[0]-globalNodePoint2[0])**2 + (globalNodePoint1[1]-globalNodePoint2[1])**2)
-			spliceSkeleton.add_node(globalNodePoint1)
-			spliceSkeleton.add_node(globalNodePoint2)
+			spliceSkeleton.add_node(globalNodePoint1, attrs=edgeAttr1)
+			spliceSkeleton.add_node(globalNodePoint2, attrs=edgeAttr2)
 			spliceSkeleton.add_edge(globalNodePoint1, globalNodePoint2, wt=weight)
 
 

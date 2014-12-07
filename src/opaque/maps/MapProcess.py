@@ -2301,7 +2301,7 @@ def computeLocalDivergence(hypSet, nodeID1, nodeID2):
 			resultArgs1 = getMultiDeparturePoint(orientedTrimPath, medial1_vec, estPose1, estPose1, orderedPathIDs1, nodeID1, pathPlotCount=pathID, hypID=mapHyp.hypothesisID, plotIter=False)
 
 
-			mapHyp.departureResultSet1 = resultArgs1
+			#mapHyp.departureResultSet1 = resultArgs1
 
 			departurePoint1, depAngle1, isInterior1, isExist1, discDist1, maxFront, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, maxBack, contigFrac, overlapSum, angDiff2 = resultArgs1
 
@@ -2321,7 +2321,7 @@ def computeLocalDivergence(hypSet, nodeID1, nodeID2):
 			orientedTrimPath = orientPathLean(path_vec, globalMedial2)
 			resultArgs2 = getMultiDeparturePoint(orientedTrimPath, medial2_vec, estPose2, estPose2, orderedPathIDs2, nodeID2, pathPlotCount=pathID, hypID=mapHyp.hypothesisID, plotIter=False)
 
-			mapHyp.departureResultSet2 = resultArgs2
+			#mapHyp.departureResultSet2 = resultArgs2
 			departurePoint1, depAngle1, isInterior1, isExist1, discDist1, maxFront, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, maxBack, contigFrac, overlapSum, angDiff2 = resultArgs2
 			#return departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2
 
@@ -2530,7 +2530,7 @@ def checkForeBranch(hypSet, nodeID1, nodeID2, shootIDs, particleIDs):
 
 			branchHyp = newMapHyp 
 
-		isBranch, pathBranchIDs, isNew, shootIDs = branchHyp.determineBranchPair(nodeID1, nodeID2, frontExist1, frontExist2, frontInterior1, frontInterior2, depAngle1, depAngle2, depPoint1, depPoint2, parentPathID1, parentPathID2, dirFlag, isUnique1, isUnique2, duplicatePathID1, duplicatePathID2, shootIDs)
+		isBranch, pathBranchIDs, isNew, shootIDs = branchHyp.determineBranchPair(nodeID1, nodeID2, frontExist1, frontExist2, frontInterior1, frontInterior2, depAngle1, depAngle2, depPoint1, depPoint2, dirFlag, isUnique1, isUnique2, duplicatePathID1, duplicatePathID2, shootIDs)
 
 		print "determineBranchPair:"
 		print isBranch
@@ -2716,7 +2716,7 @@ def checkBackBranch(hypSet, nodeID1, nodeID2, shootIDs, particleIDs):
 			branchHyp = newMapHyp
 
 
-		isBranch, pathBranchIDs, isNew, shootIDs = branchHyp.determineBranchPair(nodeID1, nodeID2, backExist1, backExist2, backInterior1, backInterior2, depAngle1, depAngle2, depPoint1, depPoint2, parentPathID1, parentPathID2, dirFlag, isUnique1, isUnique2, duplicatePathID1, duplicatePathID2, shootIDs)
+		isBranch, pathBranchIDs, isNew, shootIDs = branchHyp.determineBranchPair(nodeID1, nodeID2, backExist1, backExist2, backInterior1, backInterior2, depAngle1, depAngle2, depPoint1, depPoint2, dirFlag, isUnique1, isUnique2, duplicatePathID1, duplicatePathID2, shootIDs)
 		print "determineBranchPair:"
 		print isBranch
 		print pathBranchIDs
@@ -2738,6 +2738,755 @@ def checkBackBranch(hypSet, nodeID1, nodeID2, shootIDs, particleIDs):
 	hypSet.update(newHyps)
 	
 	return hypSet, shootIDs, particleIDs
+
+@logFunction
+def addToPaths2(shootIDs, particleIDs, hypSet, nodeID1, nodeID2):
+
+	poseData = hypSet.values()[0].poseData
+
+	newHyps = {}
+
+	" IF THIS IS THE FIRST NODES IN THE FIRST PATH, JUST ADD THEM AS DEFAULT, DO NOTHING "
+	isFirst = False
+	for pID, mapHyp in hypSet.iteritems():
+		if len(mapHyp.paths[0]) == 0:
+			print "this is first nodes, just add them already!"
+			isFirst = True
+
+	if isFirst:
+		for pID, mapHyp in hypSet.iteritems():
+			mapHyp.addNode(nodeID1,0)
+			mapHyp.addNode(nodeID2,0)
+	
+			mapHyp.generatePaths()
+			mapHyp.trimPaths()
+
+			mapHyp.initializePoseParticles()
+
+		return shootIDs, particleIDs, hypSet
+
+
+	for pID, mapHyp in hypSet.iteritems():
+		generateMap(mapHyp)
+
+	""" check branching of local spline from member path """
+	computeLocalDivergence2(hypSet, nodeID1, nodeID2)
+
+	for pID, mapHyp in hypSet.iteritems():
+		mapHyp.isNotBranched = True
+		mapHyp.isSplit = False
+
+
+	""" check for branching conditions from path, spawn new hypotheses """
+	hypSet, shootIDs, particleIDs = checkForeBranch2(hypSet, nodeID1, nodeID2, shootIDs, particleIDs)
+
+	hypSet, shootIDs, particleIDs = checkBackBranch2(hypSet, nodeID1, nodeID2, shootIDs, particleIDs)
+
+	addNodesToShoot(hypSet, nodeID1, nodeID2)
+
+
+	genSet = {}
+	nonSet = {}
+	for pID, currHyp in hypSet.iteritems():
+		if not currHyp.isNotBranched:
+			genSet[pID] = currHyp
+		else:
+			nonSet[pID] = currHyp
+
+
+	for pID, mapHyp in genSet.iteritems():
+		generateMap(mapHyp)
+
+	nonSet.update(genSet)
+	hypSet = nonSet
+
+	return shootIDs, particleIDs, hypSet
+
+@logFunction
+def addNodesToShoot(hypSet, nodeID1, nodeID2):
+
+	poseData = hypSet.values()[0].poseData
+
+	for pID, mapHyp in hypSet.iteritems():
+
+
+		medialAxis1 = mapHyp.poseData.medialAxes[nodeID1]
+		medialSpline1 = SplineFit(medialAxis1, smooth=0.1)
+		medial1_vec = medialSpline1.getUniformSamples()
+		estPose1 = mapHyp.getNodePose(nodeID1)
+		poseFrame1 = Pose(estPose1)
+		globalMedial1 = []
+		for p in medial1_vec:
+			globalMedial1.append(poseFrame1.convertLocalOffsetToGlobal(p))
+
+		medialAxis2 = mapHyp.poseData.medialAxes[nodeID2]
+		medialSpline2 = SplineFit(medialAxis2, smooth=0.1)
+		medial2_vec = medialSpline2.getUniformSamples()
+		estPose2 = mapHyp.getNodePose(nodeID2)
+		poseFrame2 = Pose(estPose2)
+		globalMedial2 = []
+
+		for p in medial2_vec:
+			globalMedial2.append(poseFrame2.convertLocalOffsetToGlobal(p))
+		
+		
+		" GET THE ORDERED LIST OF OVERLAPPING PATHS FOR EACH NODE "
+
+		memberShootIDs1 = mapHyp.memberShootIDs1
+		print "memberShootIDs1:", memberShootIDs1
+
+		isNewID = False
+		for shootID in memberShootIDs1:
+			if shootID not in mapHyp.globalLongPaths.keys():
+				isNewID = True
+				mapHyp.addNode(nodeID1,shootID)
+
+		if not isNewID:
+
+
+			resultSet1 = []
+
+			for shootID in memberShootIDs1:
+				shootLongSplices = mapHyp.globalLongPaths[shootID]
+
+				for longSplice in shootLongSplices:
+
+					orientedSplice = orientPathLean(longSplice, globalMedial1)
+
+					resultArgs1 = getMultiDeparturePoint(orientedSplice, medial1_vec, estPose1, estPose1, [shootID], nodeID1, pathPlotCount=0, hypID=mapHyp.hypothesisID, plotIter=False)
+
+					resultSet1.append(resultArgs1+(shootID,))
+
+			""" overlapSum secondary, contigFrac primary """
+			resultSet1 = sorted(resultSet1, key=itemgetter(13), reverse=False)
+			resultSet1 = sorted(resultSet1, key=itemgetter(12), reverse=True)
+
+
+			isAdded1 = False
+			for result in resultSet1:
+				contigFrac0 = result[12]
+				shootID = result[15]
+				isInterior1 = result[2]
+				isInterior2 = result[8]
+
+				if not isInterior1 and not isInterior2:
+					""" add nodeID1 to this shoot """
+					mapHyp.addNode(nodeID1,shootID)
+					isAdded1 = True
+					break
+
+			if not isAdded1:
+				shootID = resultSet1[0][15]
+				mapHyp.addNode(nodeID1,shootID)
+
+
+
+		memberShootIDs2 = mapHyp.memberShootIDs2
+		print "memberShootIDs2:", memberShootIDs2
+
+		isNewID = False
+		for shootID in memberShootIDs2:
+			if shootID not in mapHyp.globalLongPaths.keys():
+				isNewID = True
+				mapHyp.addNode(nodeID2,shootID)
+
+		if not isNewID:
+
+			resultSet2 = []
+
+			for shootID in memberShootIDs2:
+				shootLongSplices = mapHyp.globalLongPaths[shootID]
+
+				for longSplice in shootLongSplices:
+
+					orientedSplice = orientPathLean(longSplice, globalMedial2)
+
+					resultArgs2 = getMultiDeparturePoint(orientedSplice, medial2_vec, estPose2, estPose2, [shootID], nodeID2, pathPlotCount=0, hypID=mapHyp.hypothesisID, plotIter=False)
+
+					#departurePoint1, depAngle1, isInterior1, isExist1, discDist1, maxFront, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, maxBack, contigFrac, overlapSum, angDiff2 = resultArgs2
+
+
+					resultSet2.append(resultArgs2+(shootID,))
+
+
+			""" overlapSum secondary, contigFrac primary """
+			resultSet2 = sorted(resultSet2, key=itemgetter(13), reverse=False)
+			resultSet2 = sorted(resultSet2, key=itemgetter(12), reverse=True)
+			
+			isAdded2 = False
+			for result in resultSet2:
+				contigFrac0 = result[12]
+				shootID = result[15]
+				isInterior1 = result[2]
+				isInterior2 = result[8]
+
+				if not isInterior1 and not isInterior2:
+					""" add nodeID2 to this shoot """
+					mapHyp.addNode(nodeID2,shootID)
+					isAdded2 = True
+					break
+
+			if not isAdded2:
+				shootID = resultSet2[0][15]
+			mapHyp.addNode(nodeID2,shootID)
+		
+		#if isAdded1 or isAdded2:
+		#	print isAdded1, isAdded2, "node not found non-diverging shoot splice"
+		#	#raise
+
+
+@logFunction
+def computeLocalDivergence2(hypSet, nodeID1, nodeID2):
+
+	poseData = hypSet.values()[0].poseData
+
+	for pID, mapHyp in hypSet.iteritems():
+
+
+		medialAxis1 = mapHyp.poseData.medialAxes[nodeID1]
+		medialSpline1 = SplineFit(medialAxis1, smooth=0.1)
+		medial1_vec = medialSpline1.getUniformSamples()
+		estPose1 = mapHyp.getNodePose(nodeID1)
+		poseFrame1 = Pose(estPose1)
+		globalMedial1 = []
+		for p in medial1_vec:
+			globalMedial1.append(poseFrame1.convertLocalOffsetToGlobal(p))
+
+		medialAxis2 = mapHyp.poseData.medialAxes[nodeID2]
+		medialSpline2 = SplineFit(medialAxis2, smooth=0.1)
+		medial2_vec = medialSpline2.getUniformSamples()
+		estPose2 = mapHyp.getNodePose(nodeID2)
+		poseFrame2 = Pose(estPose2)
+		globalMedial2 = []
+
+		for p in medial2_vec:
+			globalMedial2.append(poseFrame2.convertLocalOffsetToGlobal(p))
+		
+		
+		" GET THE ORDERED LIST OF OVERLAPPING PATHS FOR EACH NODE "
+
+		allSplices = mapHyp.getAllSplices2()
+		resultSet1 = []
+		resultSet2 = []
+
+		#for sPath in allSplices:
+
+		for k in range(len(allSplices)):
+
+			sPath = allSplices[k]
+			path = sPath['skelPath']
+			termPoints = sPath['termPath']
+			memberShootIDs = sPath['memberShootIDs']
+
+			orientedSplice = orientPathLean(path, globalMedial1)
+
+			resultArgs1 = getMultiDeparturePoint(orientedSplice, medial1_vec, estPose1, estPose1, memberShootIDs, nodeID1, pathPlotCount=0, hypID=mapHyp.hypothesisID, plotIter=False)
+
+
+
+
+			resultArgs2 = getMultiDeparturePoint(orientedSplice, medial2_vec, estPose2, estPose2, memberShootIDs, nodeID2, pathPlotCount=0, hypID=mapHyp.hypothesisID, plotIter=False)
+
+			#mapHyp.departureResultSet2 = resultArgs2
+
+			departurePoint1, depAngle1, isInterior1, isExist1, discDist1, maxFront, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, maxBack, contigFrac, overlapSum, angDiff2 = resultArgs2
+
+
+			resultSet1.append(resultArgs1+(k,))
+			resultSet2.append(resultArgs2+(k,))
+
+			"departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2"
+
+
+		""" overlapSum secondary, contigFrac primary """
+		resultSet1 = sorted(resultSet1, key=itemgetter(13), reverse=False)
+		resultSet1 = sorted(resultSet1, key=itemgetter(12), reverse=True)
+		resultSet2 = sorted(resultSet2, key=itemgetter(13), reverse=False)
+		resultSet2 = sorted(resultSet2, key=itemgetter(12), reverse=True)
+		
+		#print "getOrderedOverlappingPaths() sorted node", nodeID1, ":"
+		#for result in resultSet1:
+		#	print result[15], result[12], result[13]
+
+		# FIXME:  temporary forced result 
+		if len(resultSet1) > 1:
+			contigFrac0 = resultSet1[0][12]
+			contigFrac1 = resultSet1[1][12]
+			index0 = resultSet1[0][15]
+			index1 = resultSet1[1][15]
+
+			sPath0 = allSplices[index0]
+			sPath1 = allSplices[index1]
+			memberShootIDs0 = sPath0['memberShootIDs']
+			memberShootIDs1 = sPath1['memberShootIDs']
+
+			diff = fabs(contigFrac0-contigFrac1)
+
+			if diff < 0.05:
+
+				if len(memberShootIDs0) < len(memberShootIDs1): 
+					result = resultSet1[0]	 
+				else:
+					result = resultSet1[1]	 
+			else:
+				result = resultSet1[0]	 
+
+		else:
+			result = resultSet1[0]	 
+
+
+		result1 = result
+		spliceIndex1 = result1[15]
+		sPath1 = allSplices[spliceIndex1]
+
+		mapHyp.departureResultSet1 = result1
+		mapHyp.overlapSplice1 = sPath1
+		mapHyp.memberShootIDs1 = sPath1['memberShootIDs']
+
+		if len(resultSet2) > 1:
+			contigFrac0 = resultSet2[0][12]
+			contigFrac1 = resultSet2[1][12]
+			index0 = resultSet2[0][15]
+			index1 = resultSet2[1][15]
+
+			sPath0 = allSplices[index0]
+			sPath1 = allSplices[index1]
+			memberShootIDs0 = sPath0['memberShootIDs']
+			memberShootIDs1 = sPath1['memberShootIDs']
+
+			diff = fabs(contigFrac0-contigFrac1)
+
+			if diff < 0.05:
+
+				if len(memberShootIDs0) < len(memberShootIDs1): 
+					result = resultSet2[0]	 
+				else:
+					result = resultSet2[1]	 
+			else:
+				result = resultSet2[0]	 
+
+		else:
+			result = resultSet2[0]	 
+
+
+		result2 = result
+		spliceIndex2 = result2[15]
+		sPath2 = allSplices[spliceIndex2]
+
+		mapHyp.departureResultSet2 = result2
+		mapHyp.overlapSplice2 = sPath2
+		mapHyp.memberShootIDs2 = sPath2['memberShootIDs']
+
+
+@logFunction
+def checkForeBranch2(hypSet, nodeID1, nodeID2, shootIDs, particleIDs):
+	
+	" 60 degree threshold "
+	ANG_THRESH = 1.047
+
+	newHyps = {}
+	poseData = hypSet.values()[0].poseData
+
+
+	for pID, mapHyp in hypSet.iteritems():
+		
+		departurePoint1, depAngle1, isInterior1, isExist1, discDist1, maxFront, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, maxBack, contigFrac, overlapSum, angDiff2, spliceIndex = mapHyp.departureResultSet1
+
+		departures1 = [isExist1,isExist2]
+		interiors1 = [isInterior1, isInterior2]
+		depPoints1 = [departurePoint1, departurePoint2]
+		distances1 = [discDist1, discDist2]
+		depAngles1 = [depAngle1, depAngle2]
+		contig1 = (contigFrac, overlapSum)
+
+		departurePoint1, depAngle1, isInterior1, isExist1, discDist1, maxFront, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, maxBack, contigFrac, overlapSum, angDiff2, spliceIndex = mapHyp.departureResultSet2
+
+		departures2 = [isExist1,isExist2]
+		interiors2 = [isInterior1, isInterior2]
+		depPoints2 = [departurePoint1, departurePoint2]
+		distances2 = [discDist1, discDist2]
+		depAngles2 = [depAngle1, depAngle2]
+		contig2 = (contigFrac, overlapSum)
+
+		print "F node departures", nodeID1, ":", departures1
+		print "F node departures", nodeID2, ":", departures2
+		print "F node  interiors", nodeID1, ":", interiors1
+		print "F node  interiors", nodeID2, ":", interiors2
+		print "F node contiguity", nodeID1, ":", contig1
+		print "F node contiguity", nodeID2, ":", contig2
+		print "F node depPoints", nodeID1, ":", depPoints1
+		print "F node depPoints", nodeID2, ":", depPoints2
+		print "F node distances", nodeID1, ":", distances1
+		print "F node distances", nodeID2, ":", distances2
+		print "F node depAngles", nodeID1, ":", depAngles1
+		print "F node depAngles", nodeID2, ":", depAngles2
+		print "F node contig", nodeID1, ":", contig1
+		print "F node contig", nodeID2, ":", contig2
+
+		" new junction finding logic "
+		" if terminal departures for each medial axis are None or exterior, than we stay on existing paths "
+		" if a terminal departure exists that is internal, than we have a new junction "
+
+		" NODE1: CHECK FRONT AND BACK FOR BRANCHING EVENTS "
+		frontExist1 = departures1[0]
+		frontInterior1 = interiors1[0]
+		foreTerm1 = frontExist1 and frontInterior1
+
+		" DISCREPANCY BETWEEN TIP-CLOSEST and DEPARTURE-CLOSEST POINT ON PATH "				
+		
+		" NODE2: CHECK FRONT AND BACK FOR BRANCHING EVENTS "
+		frontExist2 = departures2[0]
+		frontInterior2 = interiors2[0]
+		foreTerm2 = frontExist2 and frontInterior2
+
+		depPoint1 = depPoints1[0]
+		depPoint2 = depPoints2[0]
+
+		depAngle1 = depAngles1[0]
+		depAngle2 = depAngles2[0]
+
+		frontAngDiff = diffAngle(depAngle1, depAngle2)
+		
+		
+
+		isFront1 = poseData.faceDirs[nodeID1]
+		isFront2 = poseData.faceDirs[nodeID2]
+		if isFront1 and not isFront2:
+			dirFlag = 0
+		elif not isFront1 and isFront2:
+			dirFlag = 1
+		else:
+			print isFront1, isFront2
+			raise	
+
+
+		sF1 = poseData.spatialFeatures[nodeID1][0]
+		sF2 = poseData.spatialFeatures[nodeID2][0]
+
+		hasLandmark1 = True
+		hasLandmark2 = True
+
+		if sF1["bloomPoint"] == None and sF1["archPoint"] == None and sF1["inflectionPoint"] == None:
+			hasLandmark1 = False
+
+		if sF2["bloomPoint"] == None and sF2["archPoint"] == None and sF2["inflectionPoint"] == None:
+			hasLandmark2 = False
+
+
+		if hasLandmark1 or hasLandmark2:
+			hasSpatialFeature = True
+			print "current pair", nodeID1, nodeID2, "has spatial landmark feature(s)", depPoint1, depPoint2
+		else:
+			hasSpatialFeature = False
+			print "current pair", nodeID1, nodeID2, "has no spatial landmark feature and cannot branch", depPoint1, depPoint2
+
+			#print "REJECT, diverging pose has no spatial landmark feature", nodeID1, pathID, neighborCount, depPoint
+			#return False, parentPathID
+
+		""" call with depAngle instead of depPoint[2] angle
+			since depPoint[2] angle refers to orientation of medial axis curve """
+		""" depAngle refers to tip angle, which is not necessarily what we want """
+		""" depPoint[2] is now inverted for forward angle """
+		parentPathID1 = 0
+		parentPathID2 = 0
+		if depPoint1 != 0:
+			#isUnique1, duplicatePathID1 = mapHyp.checkUniqueBranch(parentPathID1, nodeID1, depAngle1, depPoint1)
+			isUnique1, duplicatePathID1 = mapHyp.checkUniqueBranch2(parentPathID1, nodeID1, depPoint1[2], depPoint1)
+		else:
+			isUnique1 = False
+			duplicatePathID1 = -1
+			
+		if depPoint2 != 0:
+			#isUnique2, duplicatePathID2 = mapHyp.checkUniqueBranch(parentPathID2, nodeID2, depAngle2, depPoint2)
+			isUnique2, duplicatePathID2 = mapHyp.checkUniqueBranch2(parentPathID2, nodeID2, depPoint2[2], depPoint2)
+		else:
+			isUnique2 = False
+			duplicatePathID2 = -1
+
+
+		""" temporarily disable this branch requirement """
+		hasSpatialFeature = True
+
+		if isUnique1 and duplicatePathID1 != -1:
+			if not hasSpatialFeature:
+				isUnique1 = False
+				duplicatePathID1 = parentPathID1
+
+		if isUnique2 and duplicatePathID2 != -1:
+			if not hasSpatialFeature:
+				isUnique2 = False
+				duplicatePathID2 = parentPathID2
+
+
+		isBranched = False
+		if foreTerm1 and foreTerm2:
+			if fabs(frontAngDiff) < ANG_THRESH:
+				if isUnique1 and isUnique2:
+					isBranched = True
+				if isUnique1 and not isUnique2:
+					if dirFlag == 0:
+						isBranched = True
+				if not isUnique1 and isUnique2:
+					if dirFlag == 1:
+						isBranched = True
+			else:
+				if isUnique1 and isUnique2:
+					if dirFlag == 0:
+						isBranched = True
+					if dirFlag == 1:
+						isBranched = True
+				if isUnique1 and not isUnique2:
+					if dirFlag == 0:
+						isBranched = True
+				if not isUnique1 and isUnique2:
+					if dirFlag == 1:
+						isBranched = True
+		elif foreTerm1 and not foreTerm2:
+			if isUnique1:
+				if frontExist2 and fabs(frontAngDiff) < ANG_THRESH:
+					isBranched = True
+				else:
+					if dirFlag == 0:
+						isBranched = True
+		elif foreTerm2 and not foreTerm1:
+			if isUnique2:
+				if frontExist1 and fabs(frontAngDiff) < ANG_THRESH:
+					isBranched = True
+				else:
+					if dirFlag == 1:		
+						isBranched = True
+
+
+		#if isUnique1 or isUnique2:
+		branchHyp = mapHyp
+		if isBranched:
+
+			" create a new map state where a branch decision is not made "
+			mapHyp.isNodeBranching[nodeID1] = True
+			mapHyp.isNodeBranching[nodeID2] = True
+
+			newMapHyp = mapHyp.copy(particleIDs)
+			newHyps[particleIDs] = newMapHyp
+			newHyps[particleIDs].isNotBranched = False 
+
+			" in case current hypothesis has already branched, this ensures that topology is regenerated when branching "
+			#hypSet[pID].isNotBranched = True
+
+			print "creating hyp", particleIDs, "from hyp", mapHyp.hypothesisID, ", len(paths) =", len(mapHyp.pathClasses)
+			particleIDs += 1
+
+			branchHyp = newMapHyp 
+
+		shootIDs, pathBranchIDs = branchHyp.determineBranchPair2(nodeID1, nodeID2, frontExist1, frontExist2, frontInterior1, frontInterior2, depAngle1, depAngle2, depPoint1, depPoint2, dirFlag, isUnique1, isUnique2, shootIDs)
+
+		if pathBranchIDs[0] != None:
+			branchHyp.memberShootIDs1.append(pathBranchIDs[0])
+
+		if pathBranchIDs[1] != None:
+			branchHyp.memberShootIDs2.append(pathBranchIDs[1])
+
+
+	hypSet.update(newHyps)
+
+	return hypSet, shootIDs, particleIDs
+
+@logFunction
+def checkBackBranch2(hypSet, nodeID1, nodeID2, shootIDs, particleIDs):
+
+	" 60 degree threshold "
+	ANG_THRESH = 1.047
+
+	newHyps = {}
+	poseData = hypSet.values()[0].poseData
+
+	for pID, mapHyp in hypSet.iteritems():
+
+		departurePoint1, depAngle1, isInterior1, isExist1, discDist1, maxFront, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, maxBack, contigFrac, overlapSum, angDiff2, spliceIndex = mapHyp.departureResultSet1
+
+		departures1 = [isExist1,isExist2]
+		interiors1 = [isInterior1, isInterior2]
+		depPoints1 = [departurePoint1, departurePoint2]
+		distances1 = [discDist1, discDist2]
+		depAngles1 = [depAngle1, depAngle2]
+		contig1 = (contigFrac, overlapSum)
+
+		departurePoint1, depAngle1, isInterior1, isExist1, discDist1, maxFront, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, maxBack, contigFrac, overlapSum, angDiff2, spliceIndex = mapHyp.departureResultSet2
+
+		departures2 = [isExist1,isExist2]
+		interiors2 = [isInterior1, isInterior2]
+		depPoints2 = [departurePoint1, departurePoint2]
+		distances2 = [discDist1, discDist2]
+		depAngles2 = [depAngle1, depAngle2]
+		contig2 = (contigFrac, overlapSum)
+
+
+		print "B node departures", nodeID1, ":", departures1
+		print "B node departures", nodeID2, ":", departures2
+		print "B node  interiors", nodeID1, ":", interiors1
+		print "B node  interiors", nodeID2, ":", interiors2
+		print "B node contiguity", nodeID1, ":", contig1
+		print "B node contiguity", nodeID2, ":", contig2
+		print "B node depPoints", nodeID1, ":", depPoints1
+		print "B node depPoints", nodeID2, ":", depPoints2
+		print "B node distances", nodeID1, ":", distances1
+		print "B node distances", nodeID2, ":", distances2
+		print "B node depAngles", nodeID1, ":", depAngles1
+		print "B node depAngles", nodeID2, ":", depAngles2
+		print "B node contig", nodeID1, ":", contig1
+		print "B node contig", nodeID2, ":", contig2
+
+
+		backExist1 = departures1[1]
+		backInterior1 = interiors1[1]
+		backTerm1 = backExist1 and backInterior1
+
+		backExist2 = departures2[1]
+		backInterior2 = interiors2[1]
+		backTerm2 = backExist2 and backInterior2
+
+		depPoint1 = depPoints1[1]
+		depPoint2 = depPoints2[1]
+		
+		depAngle1 = depAngles1[1]
+		depAngle2 = depAngles2[1]
+		
+		backAngDiff = diffAngle(depAngle1, depAngle2)
+
+
+
+		isFront1 = poseData.faceDirs[nodeID1]
+		isFront2 = poseData.faceDirs[nodeID2]
+		if isFront1 and not isFront2:
+			dirFlag = 1
+		elif not isFront1 and isFront2:
+			dirFlag = 0
+		else:
+			print isFront1, isFront2
+			raise	
+
+		sF1 = poseData.spatialFeatures[nodeID1][0]
+		sF2 = poseData.spatialFeatures[nodeID2][0]
+
+		hasLandmark1 = True
+		hasLandmark2 = True
+
+		if sF1["bloomPoint"] == None and sF1["archPoint"] == None and sF1["inflectionPoint"] == None:
+			hasLandmark1 = False
+
+		if sF2["bloomPoint"] == None and sF2["archPoint"] == None and sF2["inflectionPoint"] == None:
+			hasLandmark2 = False
+
+		if hasLandmark1 or hasLandmark2:
+			hasSpatialFeature = True
+			print "current pair", nodeID1, nodeID2, "has spatial landmark feature(s)", depPoint1, depPoint2
+		else:
+			hasSpatialFeature = False
+			print "current pair", nodeID1, nodeID2, "has no spatial landmark feature and cannot branch", depPoint1, depPoint2
+
+
+		parentPathID1 = 0
+		parentPathID2 = 0
+		if depPoint1 != 0:
+			#isUnique1, duplicatePathID1 = mapHyp.checkUniqueBranch(parentPathID1, nodeID1, depAngle1, depPoint1)
+			isUnique1, duplicatePathID1 = mapHyp.checkUniqueBranch2(parentPathID1, nodeID1, depPoint1[2], depPoint1)
+		else:
+			isUnique1 = False
+			duplicatePathID1 = -1
+			
+		if depPoint2 != 0:
+			#isUnique2, duplicatePathID2 = mapHyp.checkUniqueBranch(parentPathID2, nodeID2, depAngle2, depPoint2)
+			isUnique2, duplicatePathID2 = mapHyp.checkUniqueBranch2(parentPathID2, nodeID2, depPoint2[2], depPoint2)
+		else:
+			isUnique2 = False
+			duplicatePathID2 = -1
+
+		""" temporarily disable this branch requirement """
+		hasSpatialFeature = True
+
+		if isUnique1 and duplicatePathID1 != -1:
+			if not hasSpatialFeature:
+				isUnique1 = False
+				duplicatePathID1 = parentPathID1
+
+		if isUnique2 and duplicatePathID2 != -1:
+			if not hasSpatialFeature:
+				isUnique2 = False
+				duplicatePathID2 = parentPathID2
+
+
+		isBranched = False
+		if backTerm1 and backTerm2:
+			if fabs(backAngDiff) < ANG_THRESH:
+				if isUnique1 and isUnique2:
+					isBranched = True
+				if isUnique1 and not isUnique2:
+					if dirFlag == 0:
+						isBranched = True
+				if not isUnique1 and isUnique2:
+					if dirFlag == 1:
+						isBranched = True
+			else:
+				if isUnique1 and isUnique2:
+					if dirFlag == 0:
+						isBranched = True
+					if dirFlag == 1:
+						isBranched = True
+				if isUnique1 and not isUnique2:
+					if dirFlag == 0:
+						isBranched = True
+				if not isUnique1 and isUnique2:
+					if dirFlag == 1:
+						isBranched = True
+		elif backTerm1 and not backTerm2:
+			if isUnique1:
+				if backExist2 and fabs(backAngDiff) < ANG_THRESH:
+					isBranched = True
+				else:
+					if dirFlag == 0:
+						isBranched = True
+		elif backTerm2 and not backTerm1:
+			if isUnique2:
+				if backExist1 and fabs(backAngDiff) < ANG_THRESH:
+					isBranched = True
+				else:
+					if dirFlag == 1:		
+						isBranched = True
+
+		#if isUnique1 or isUnique2:
+		branchHyp = mapHyp
+		if isBranched:
+
+			" create a new map state where a branch decision is not made "
+			mapHyp.isNodeBranching[nodeID1] = True
+			mapHyp.isNodeBranching[nodeID2] = True
+
+			newMapHyp = mapHyp.copy(particleIDs)
+			newHyps[particleIDs] = newMapHyp
+			newHyps[particleIDs].isNotBranched = False 
+
+			" in case current hypothesis has already branched, this ensures that topology is regenerated when branching "
+			#hypSet[pID].isNotBranched = True
+			print "creating hyp", particleIDs, "from hyp", mapHyp.hypothesisID, ", len(paths) =", len(mapHyp.pathClasses)
+			
+			particleIDs += 1
+
+			branchHyp = newMapHyp
+
+
+		shootIDs, pathBranchIDs = branchHyp.determineBranchPair2(nodeID1, nodeID2, backExist1, backExist2, backInterior1, backInterior2, depAngle1, depAngle2, depPoint1, depPoint2, dirFlag, isUnique1, isUnique2, shootIDs)
+
+		if pathBranchIDs[0] != None:
+			branchHyp.memberShootIDs1.append(pathBranchIDs[0])
+
+		if pathBranchIDs[1] != None:
+			branchHyp.memberShootIDs2.append(pathBranchIDs[1])
+
+
+	hypSet.update(newHyps)
+	
+	return hypSet, shootIDs, particleIDs
+
+
 
 @logFunction
 def addToPaths(shootIDs, particleIDs, hypSet, nodeID1, nodeID2):

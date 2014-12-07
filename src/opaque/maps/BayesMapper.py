@@ -4,7 +4,7 @@ from StableCurve import StableCurve
 from SplineFit import SplineFit
 from Pose import Pose
 from PoseData import PoseData
-from MapProcess import movePath, addToPaths, localizePair, consistentFit, movePath, batchMovePath, batchLocalizePair, batchEval
+from MapProcess import movePath, addToPaths, addToPaths2, localizePair, consistentFit, movePath, batchMovePath, batchLocalizePair, batchEval
 from shoots import computeGlobalControlPoses
 import gen_icp
 from functions import *
@@ -356,7 +356,8 @@ class BayesMapper:
 
 			#hypSet = self.addToPaths(hypSet, nodeID1, nodeID2)
 			time1 = time.time()
-			self.shootIDs, self.particleIDs, hypSet = addToPaths(self.shootIDs, self.particleIDs, hypSet, nodeID1, nodeID2)
+			#self.shootIDs, self.particleIDs, hypSet = addToPaths(self.shootIDs, self.particleIDs, hypSet, nodeID1, nodeID2)
+			self.shootIDs, self.particleIDs, hypSet = addToPaths2(self.shootIDs, self.particleIDs, hypSet, nodeID1, nodeID2)
 			for pID, currHyp in hypSet.iteritems():
 				currHyp.drawPoseParticles()
 			time2 = time.time()
