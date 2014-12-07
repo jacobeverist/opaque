@@ -781,7 +781,7 @@ class MapState:
 		self.currMaxIndex = maxPart
 
 		""" change to the maximum likelihood branch position as well """
-		self.updateMaxParticle(self.currMaxIndex)
+		#self.updateMaxParticle(self.currMaxIndex)
 		self.setNodePose(nodeID0, deepcopy(particleDist2[self.currMaxIndex].pose0))
 		self.setNodePose(nodeID1, deepcopy(particleDist2[self.currMaxIndex].pose1))
 
@@ -2028,24 +2028,24 @@ class MapState:
 		newObj.allSplices = deepcopy(self.allSplices)
 		newObj.allSplices2 = deepcopy(self.allSplices2)
 
-		newObj.orderedPathIDs1 = deepcopy(self.orderedPathIDs1)
-		newObj.orderedPathIDs2 = deepcopy(self.orderedPathIDs2)
+		#newObj.orderedPathIDs1 = deepcopy(self.orderedPathIDs1)
+		#newObj.orderedPathIDs2 = deepcopy(self.orderedPathIDs2)
 
 		" departure events for node 1 "
-		newObj.departures1 = deepcopy(self.departures1) 
-		newObj.interiors1 = deepcopy(self.interiors1)  
-		newObj.depPoints1 = deepcopy(self.depPoints1) 
-		newObj.distances1 = deepcopy(self.distances1)  
-		newObj.depAngles1 = deepcopy(self.depAngles1)
-		newObj.contig1 = deepcopy(self.contig1)
+		#newObj.departures1 = deepcopy(self.departures1) 
+		#newObj.interiors1 = deepcopy(self.interiors1)  
+		#newObj.depPoints1 = deepcopy(self.depPoints1) 
+		#newObj.distances1 = deepcopy(self.distances1)  
+		#newObj.depAngles1 = deepcopy(self.depAngles1)
+		#newObj.contig1 = deepcopy(self.contig1)
 
 		" departure events for node 2 "
-		newObj.departures2 = deepcopy(self.departures2) 
-		newObj.interiors2 = deepcopy(self.interiors2) 
-		newObj.depPoints2 = deepcopy(self.depPoints2)  
-		newObj.distances2 = deepcopy(self.distances2) 
-		newObj.depAngles2 = deepcopy(self.depAngles2)  
-		newObj.contig2 = deepcopy(self.contig2)  
+		#newObj.departures2 = deepcopy(self.departures2) 
+		#newObj.interiors2 = deepcopy(self.interiors2) 
+		#newObj.depPoints2 = deepcopy(self.depPoints2)  
+		#newObj.distances2 = deepcopy(self.distances2) 
+		#newObj.depAngles2 = deepcopy(self.depAngles2)  
+		#newObj.contig2 = deepcopy(self.contig2)  
 
 		""" branching primitive data """
 		newObj.departureResultSet1 = deepcopy(self.departureResultSet1)  
@@ -4001,7 +4001,7 @@ class MapState:
 		""" don't care about return values, are stored as object member variable """
 		self.computeAllSplices(plotIter = True)
 
-		self.computeAllSplices2(plotIter=True)
+		self.computeAllSplices2(plotIter = True)
 
 		self.isChanged = False
 
@@ -5722,6 +5722,7 @@ class MapState:
 		#	print "REJECT, diverging pose has no spatial landmark feature", nodeID1, pathID, neighborCount, depPoint
 		#	return False, parentPathID
 
+		return True, -1
 		
 		for pathID in pathIDs:
 
@@ -5740,7 +5741,9 @@ class MapState:
 			
 			path = self.getPath(pathID)
 			
-			if path["parentID"] == parentPathID:
+			""" NOTE: branch points are now variable and unreliable, not good for rejection criteria """
+			#if path["parentID"] == parentPathID:
+			if False:
 
 				
 				junctionNodeID = path["branchNodeID"]
@@ -5854,6 +5857,7 @@ class MapState:
 		#	print "REJECT, diverging pose has no spatial landmark feature", nodeID1, pathID, neighborCount, depPoint
 		#	return False, parentPathID
 
+		return True, -1
 		
 		for pathID in pathIDs:
 
@@ -5872,7 +5876,9 @@ class MapState:
 			
 			path = self.getPath(pathID)
 			
-			if path["parentID"] == parentPathID:
+			""" NOTE: branch points are now variable and unreliable, not good for rejection criteria """
+			#if path["parentID"] == parentPathID:
+			if False:
 
 				
 				junctionNodeID = path["branchNodeID"]

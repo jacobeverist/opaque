@@ -2785,6 +2785,9 @@ def addToPaths2(shootIDs, particleIDs, hypSet, nodeID1, nodeID2):
 	addNodesToShoot(hypSet, nodeID1, nodeID2)
 
 
+	""" if map is not branching, don't regenerate the maps with the new poses yet
+		Keep them exactly how they were with two less poses """
+
 	genSet = {}
 	nonSet = {}
 	for pID, currHyp in hypSet.iteritems():
@@ -2928,7 +2931,7 @@ def addNodesToShoot(hypSet, nodeID1, nodeID2):
 
 			if not isAdded2:
 				shootID = resultSet2[0][15]
-			mapHyp.addNode(nodeID2,shootID)
+				mapHyp.addNode(nodeID2,shootID)
 		
 		#if isAdded1 or isAdded2:
 		#	print isAdded1, isAdded2, "node not found non-diverging shoot splice"
