@@ -388,6 +388,26 @@ class BayesMapper:
 
 			for pID, currHyp in hypSet.iteritems():
 
+
+
+				while False in currHyp.branchDiverges.values():
+
+					print pID, "branchDiverges:", currHyp.branchDiverges
+
+					pathIDs = currHyp.branchDiverges.keys()
+					
+
+					
+					for pathID, isDiverge in currHyp.branchDiverges.iteritems():
+						if not isDiverge:
+							currHyp.mergePath(pathID)
+							currHyp.generatePaths()
+							currHyp.drawPoseParticles()
+							
+							break
+
+				#if False in currHyp.branchDiverges.values():
+
 				currHyp.computeEval()
 
 				""" LOCALIZE NODE PAIR """

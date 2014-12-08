@@ -2378,6 +2378,24 @@ class MapState:
 
 		return parentPathIDs
 
+	def getChildHash(self):
+
+		" determine which paths are descendants "
+		pathIDs = self.getPathIDs()
+		childPathIDs = {}
+		for k in pathIDs:
+			childPathIDs[k] = []
+
+		parentPathIDs = self.getParentHash()
+
+		for childID in pathIDs:
+			parentID = parentPathIDs[childID]
+
+			if parentID != None:
+				childPathIDs[parentID].append(childID)
+
+		return childPathIDs
+
 	@logFunction
 	def getControlPoses(self):
 		controlPoses = {}
@@ -4216,7 +4234,8 @@ class MapState:
 		self.isChanged = True		
 
 	@logFunction
-	def moveNode(self, nodeID, splicePathIDs):
+	#def moveNode(self, nodeID, splicePathIDs):
+	def moveNode(self, nodeID, targetPathID):
 		" change the shoot membership based on fitted splice "
 
 		particleDist = self.poseParticles["snapshots2"][0]
@@ -4235,40 +4254,28 @@ class MapState:
 					p.delNode(nodeID, pathID)
 
 
-		isAParent = {}
-		for k in pathIDs:
-			isAParent[k] = False
-		for k in splicePathIDs:
-			currPath = self.getPath(k)
-			currParent = currPath["parentID"]
-			if currParent != None:
-				isAParent[currParent] = True
+		print "adding node", nodeID, "to path", targetPathID
+		self.pathClasses[targetPathID]["nodeSet"].append(nodeID)
+		#self.addNode(nodeID,pathID)
 
-		"add nodes to paths that are the leaves "
-		for pathID in splicePathIDs:
-			if not isAParent[pathID]:
-				print "adding node", nodeID, "to path", pathID
-				self.pathClasses[pathID]["nodeSet"].append(nodeID)
-				#self.addNode(nodeID,pathID)
+		""" convert the controlPose to coordinates local to the parent frame """
+		parentPathIDs = self.getParentHash()
 
-				""" convert the controlPose to coordinates local to the parent frame """
-				parentPathIDs = self.getParentHash()
+		""" control state of maximum likelihood particle determine's location of shoot frame """
+		controlPoses = self.getControlPoses()
+		globalControlPoses_G = computeGlobalControlPoses(controlPoses, parentPathIDs)
+		shootControlPose_G = globalControlPoses_G[targetPathID]
+		currFrame = Pose(shootControlPose_G)
 
-				""" control state of maximum likelihood particle determine's location of shoot frame """
-				controlPoses = self.getControlPoses()
-				globalControlPoses_G = computeGlobalControlPoses(controlPoses, parentPathIDs)
-				shootControlPose_G = globalControlPoses_G[pathID]
-				currFrame = Pose(shootControlPose_G)
+		""" convert from global to local """
+		nodePose_G = self.getNodePose(nodeID)
+		nodePose_C = currFrame.convertGlobalPoseToLocal(nodePose_G)
+		self.pathClasses[targetPathID]["localNodePoses"][nodeID] = nodePose_C
 
-				""" convert from global to local """
-				nodePose_G = self.getNodePose(nodeID)
-				nodePose_C = currFrame.convertGlobalPoseToLocal(nodePose_G)
-				self.pathClasses[pathID]["localNodePoses"][nodeID] = nodePose_C
+		for p in particleDist:
+			p.addNode(nodeID, targetPathID, nodePose_C)
 
-				for p in particleDist:
-					p.addNode(nodeID, pathID, nodePose_C)
-
-		print "shoot", pathID, "has nodes", self.pathClasses[pathID]["nodeSet"]
+		print "shoot", targetPathID, "has nodes", self.pathClasses[targetPathID]["nodeSet"]
 
 		self.isChanged = True		
 
@@ -4309,8 +4316,42 @@ class MapState:
 
 		self.isChanged = True
 
+
+	@logFunction
+	def mergePath(self, pathID):
+
+
+		
+		parentPathIDs = self.getParentHash()
+
+		""" target shoot we want to merge to """
+		mergeTargetPathID = parentPathIDs[pathID]
+
+		print "merging", pathID, "to", mergeTargetPathID
+
+		""" if the root shoot, return after doing nothing """
+		if mergeTargetPathID == None:
+			return
+
+		""" reparent the direct children of the merged shoot """
+		childPathIDs = self.getChildHash()
+		tobeReparented = childPathIDs[pathID]
+
+		nodeSet = deepcopy(self.pathClasses[pathID]["nodeSet"])
+
+		for nodeID in nodeSet:
+			self.moveNode(nodeID, mergeTargetPathID)
+
+		self.delPath(pathID, mergeTargetPathID)
+
+
+		#controlPoses = self.getControlPoses()
+		#globalControlPoses_G = computeGlobalControlPoses(controlPoses, parentPathIDs)
+	
+
 	@logFunction
 	def delPath(self, pathID, mergeTargetID):
+
 		
 		print "deleting path", pathID, "merging to path", mergeTargetID
 		try: 
@@ -4326,6 +4367,8 @@ class MapState:
 		except:
 			pass
 	
+		#part.addPath(newPathID, controlParentID, branchNodeID, nodePose_C, localDivergencePose_R, modJunctionPose_G, localJunctionPose_C, localParticleControlPose_P, self.NUM_BRANCHES, arcDists, controlPoses_P)
+
 		self.isChanged = True		
 
 	@logFunction
@@ -6535,13 +6578,15 @@ class MapState:
 		#allSplices, terminals, junctions = self.getAllSplices()
 		allSplices = self.getAllSplices2()
 
-		splicedPaths = []
-		for k, result in allSplices.iteritems():
-			print "allSplices key:", k
-			for sPath in result:
-				#path = sPath['path']
-				path = sPath['skelPath']
-				splicedPaths.append(path)
+		splicedPaths = allSplices
+
+		#splicedPaths = []
+		#for k, result in allSplices.iteritems():
+		#	print "allSplices key:", k
+		#	for sPath in result:
+		#		#path = sPath['path']
+		#		path = sPath['skelPath']
+		#		splicedPaths.append(path)
 	
 		print len(splicedPaths), "spliced paths for path finding "
 		
