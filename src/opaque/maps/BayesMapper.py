@@ -389,22 +389,29 @@ class BayesMapper:
 			for pID, currHyp in hypSet.iteritems():
 
 
+				if False:
+					if 1 in currHyp.pathClasses.keys():
+						currHyp.mergePath(1)
+						currHyp.generatePaths()
+						currHyp.drawPoseParticles()
 
-				while False in currHyp.branchDiverges.values():
+				else:
 
-					print pID, "branchDiverges:", currHyp.branchDiverges
+					while False in currHyp.branchDiverges.values():
 
-					pathIDs = currHyp.branchDiverges.keys()
-					
+						print pID, "branchDiverges:", currHyp.branchDiverges
 
-					
-					for pathID, isDiverge in currHyp.branchDiverges.iteritems():
-						if not isDiverge:
-							currHyp.mergePath(pathID)
-							currHyp.generatePaths()
-							currHyp.drawPoseParticles()
-							
-							break
+						pathIDs = currHyp.branchDiverges.keys()
+						
+
+						
+						for pathID, isDiverge in currHyp.branchDiverges.iteritems():
+							if not isDiverge:
+								currHyp.mergePath(pathID)
+								currHyp.generatePaths()
+								currHyp.drawPoseParticles()
+								
+								break
 
 				#if False in currHyp.branchDiverges.values():
 

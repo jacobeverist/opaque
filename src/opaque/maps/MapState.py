@@ -4352,19 +4352,135 @@ class MapState:
 	@logFunction
 	def delPath(self, pathID, mergeTargetID):
 
-		
+		parentPathIDs = self.getParentHash()
+		controlPoses = self.getControlPoses()
+		globalControlPoses_G = computeGlobalControlPoses(controlPoses, parentPathIDs)
+
+		particleDist2 = self.poseParticles["snapshots2"][0]
+
+
+		""" book-keeping for branch tuple indexing """
+		branchPathIDs = deepcopy(self.getPathIDs())
+		branchPathIDs.remove(0)
+		branchPathIDs.sort()
+
+
 		print "deleting path", pathID, "merging to path", mergeTargetID
 		try: 
 			del self.pathClasses[pathID]
 			del self.pathTermsVisited[pathID]
+			del self.localLeaf2LeafPathJunctions[pathID]
 			
+			for part in particleDist2:
+				del part.junctionData[pathID]
+
+				branchTupleIndex = part.maxLikelihoodBranch	
+
+				newTupleIndex = []
+				for k in range(len(branchPathIDs)):
+					indexID = branchPathIDs[k]
+					if indexID != pathID:
+						newTupleIndex.append(branchTupleIndex[k])
+
+				newTupleIndex = tuple(newTupleIndex)
+				part.maxLikelihoodBranch = newTupleIndex
 			
-			for k, pathClass in self.pathClasses.iteritems():
+			for childPathID, pathClass in self.pathClasses.iteritems():
 				
 				if pathClass["parentID"] == pathID:
+
+
+					#self.pathClasses[newPathID] = {"parentID" : controlParentID,
+					#				"branchNodeID" : branchNodeID,
+					#				"localDivergencePose" : localDivergencePose_R, 
+					#				"localJunctionPose" : junctionPose_C, 
+					#				"tipPoint_L" : tipPoint_C, 
+					#				"sameProb" : {},
+					#				"nodeSet" : [branchNodeID,],
+					#				"localNodePoses" : {branchNodeID : nodePose_C},
+					#				"globalJunctionPose" : newGlobJuncPose_G,
+					#				"controlPose" : controlPose_P }		
+
+					#parentPathIDs = self.getParentHash()
+					#controlPoses = self.getControlPoses()
+					#globalControlPoses_G = computeGlobalControlPoses(controlPoses, parentPathIDs)
+
+					#localPathSegsByID = {}
+					#for pathID in allPathIDs:
+					#	localPathSegs = self.localLeaf2LeafPathJunctions[pathID]["localSegments"]
+					#	localPathSegsByID[pathID] = localPathSegs
+
+					#branchNodeID = pathClass["branchNodeID"]
+					#globalJunctionPose_G = pathClass["globalJunctionPose"]
+					#globalLongPath_G = self.paths[pathID]
+
+					#controlPose_G, controlParentID, tipPoint_G, branchPose_G = getInitSkeletonBranchPoint(globalJunctionPose_G, pathID, globalLongPath_G, parentPathIDs, localPathSegsByID, self.localPaths, globalControlPoses_G, plotIter = False, hypothesisID = self.hypothesisID, nodeID = branchNodeID)
+
+
+					#newGlobJuncPose_G = branchPose_G
+					#pathClass["globalJunctionPose"] = branchPose_G
+
 					pathClass["parentID"] = mergeTargetID
-					
+
+					oldControlPose_G = globalControlPoses_G[childPathID]
+
+					""" compute the control pose relative to the parent """
+					parentControlPose_G = globalControlPoses_G[mergeTargetID]
+					parentFrame = Pose(parentControlPose_G)
+
+					controlPose_P = parentFrame.convertGlobalPoseToLocal(oldControlPose_G)
+					pathClass["controlPose"] = controlPose_P
+
+					currFrame = Pose(oldControlPose_G)
+
+					#junctionPose_C = currFrame.convertGlobalPoseToLocal(globalJunctionPose_G)
+					#pathClass["localJunctionPose"] = junctionPose_C 
+
+					#tipPoint_C = currFrame.convertGlobalToLocal(tipPoint_G)
+					#pathClass["tipPoint_L"] = tipPoint_C
+
+					for nodeID in pathClass["nodeSet"]:
+
+						nodePose_G = self.getNodePose(nodeID)
+						#nodePose_C = currFrame.convertGlobalPoseToLocal(nodePose_G)
+						#pathClass["localNodePoses"][nodeID] = nodePose_C
+
+						self.setNodePose(nodeID, nodePose_G)
+
+					print "reparented pathClass:", pathClasses[pathID]
+
+
+					for part in particleDist2:
+
+						#partJunctionPose_G = part.junctionData[childPathID]["globalJunctionPose"]
+
+						partControlPoses = part.getControlPoses()
+						partControlPoses_G = computeGlobalControlPoses(partControlPoses, parentPathIDs)
+
+						partParentControlPose_G = partControlPoses_G[mergeTargetID]
+						parentFrame = Pose(partParentControlPose_G)
+
+						controlPose_P = parentFrame.convertGlobalPoseToLocal(oldControlPose_G)
+						part.junctionData[childPathID]["controlPose"] = controlPose_P
+
+						
+		
+						branchPathIDs
+
+						#partCurrFrame = Pose(partControlPoses_G[pathID])
+
+						#junctionPose_C = partCurrFrame.convertGlobalPoseToLocal(globalJunctionPose_G)
+						#pathClass["localJunctionPose"] = junctionPose_C 
+
+						#tipPoint_C = currFrame.convertGlobalToLocal(tipPoint_G)
+						#pathClass["tipPoint_L"] = tipPoint_C
+
+						part.junctionData[childPathID]["parentID"] = mergeTargetID
+
 		except:
+
+			print "FAIL to delete path!"
+			raise
 			pass
 	
 		#part.addPath(newPathID, controlParentID, branchNodeID, nodePose_C, localDivergencePose_R, modJunctionPose_G, localJunctionPose_C, localParticleControlPose_P, self.NUM_BRANCHES, arcDists, controlPoses_P)
