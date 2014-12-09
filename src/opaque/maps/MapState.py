@@ -6742,12 +6742,10 @@ class MapState:
 		#splicedPaths = allSplices
 
 		splicedPaths = []
-		for k, result in allSplices.iteritems():
-		#	print "allSplices key:", k
-			for sPath in result:
-				#path = sPath['path']
-				path = sPath['skelPath']
-				splicedPaths.append(path)
+		#for k, result in allSplices.iteritems():
+		for sPath in allSplices:
+			path = sPath['skelPath']
+			splicedPaths.append(path)
 	
 		print len(splicedPaths), "spliced paths for path finding "
 		
