@@ -2218,7 +2218,7 @@ class MapState:
 
 
 		isReject = False
-		print "bloom neighbors:"
+		print self.hypothesisID, "bloom neighbors:"
 		for result in bloomNearestNeighbors:
 
 			if len(result) > 1:
@@ -2233,6 +2233,20 @@ class MapState:
 		if isReject:
 			totalSum = 5e100
 
+		print self.hypothesisID, "bloom/bend neighbors:"
+		for result in allNearestNeighbors:
+
+			if len(result) > 1:
+				print result[0][2], result[1][2]
+				if result[0][2] > 1.0 or result[1][2] > 1.0:
+					isReject = True
+			else:
+				print result[0][2]
+				if result[0][2] > 1.0:
+					isReject = True
+
+		if isReject:
+			totalSum = 6e100
 
 		"""
 		for j in keys:
@@ -4364,6 +4378,7 @@ class MapState:
 		branchPathIDs.remove(0)
 		branchPathIDs.sort()
 
+		partSetControlPoses_G = []
 
 		print "deleting path", pathID, "merging to path", mergeTargetID
 		try: 
@@ -4372,6 +4387,12 @@ class MapState:
 			del self.localLeaf2LeafPathJunctions[pathID]
 			
 			for part in particleDist2:
+
+				partControlPoses = part.getControlPoses()
+				partControlPoses_G = computeGlobalControlPoses(partControlPoses, parentPathIDs)
+
+				partSetControlPoses_G.append(partControlPoses_G)
+
 				del part.junctionData[pathID]
 
 				branchTupleIndex = part.maxLikelihoodBranch	
@@ -4383,7 +4404,13 @@ class MapState:
 						newTupleIndex.append(branchTupleIndex[k])
 
 				newTupleIndex = tuple(newTupleIndex)
-				part.maxLikelihoodBranch = newTupleIndex
+
+				if len(newTupleIndex) > 0:
+					part.maxLikelihoodBranch = newTupleIndex
+				else:
+					part.maxLikelihoodBranch = None
+
+				print "oldTuple, newTuple:", branchTupleIndex, newTupleIndex
 			
 			for childPathID, pathClass in self.pathClasses.iteritems():
 				
@@ -4447,15 +4474,20 @@ class MapState:
 
 						self.setNodePose(nodeID, nodePose_G)
 
-					print "reparented pathClass:", pathClasses[pathID]
+					print "reparented pathClass:", childPathID, pathClass
 
 
-					for part in particleDist2:
+					for k in range(len(particleDist2)):
+
+						part = particleDist2[k]
 
 						#partJunctionPose_G = part.junctionData[childPathID]["globalJunctionPose"]
 
-						partControlPoses = part.getControlPoses()
-						partControlPoses_G = computeGlobalControlPoses(partControlPoses, parentPathIDs)
+						#partControlPoses = part.getControlPoses()
+						#print parentPathIDs, partControlPoses
+						#partControlPoses_G = computeGlobalControlPoses(partControlPoses, parentPathIDs)
+
+						partControlPoses_G = partSetControlPoses_G[k]
 
 						partParentControlPose_G = partControlPoses_G[mergeTargetID]
 						parentFrame = Pose(partParentControlPose_G)
@@ -4463,19 +4495,10 @@ class MapState:
 						controlPose_P = parentFrame.convertGlobalPoseToLocal(oldControlPose_G)
 						part.junctionData[childPathID]["controlPose"] = controlPose_P
 
-						
-		
-						branchPathIDs
-
-						#partCurrFrame = Pose(partControlPoses_G[pathID])
-
-						#junctionPose_C = partCurrFrame.convertGlobalPoseToLocal(globalJunctionPose_G)
-						#pathClass["localJunctionPose"] = junctionPose_C 
-
-						#tipPoint_C = currFrame.convertGlobalToLocal(tipPoint_G)
-						#pathClass["tipPoint_L"] = tipPoint_C
-
 						part.junctionData[childPathID]["parentID"] = mergeTargetID
+
+
+
 
 		except:
 
@@ -4736,7 +4759,16 @@ class MapState:
 			for k, v in paths.iteritems():
 				trimmedPaths[k] = v
 				#localTrimmedPaths[k] = v
-				
+
+			""" root shoot """
+			trimmedPaths[0] = deepcopy(paths[0])
+			branchDiverges[0] = True
+
+			self.tipPoints_G = tipPoints_G
+			self.branchPoses_G = branchPoses_G
+			self.trimmedPaths = trimmedPaths
+			self.branchDiverges = branchDiverges
+			
 			self.trimmedPaths = trimmedPaths
 			#self.localTrimmedPaths = localTrimmedPaths
 			return trimmedPaths
@@ -4757,7 +4789,10 @@ class MapState:
 			parentPathID = self.pathClasses[pathID]["parentID"]
 			childParents[pathID] = parentPathID
 
+		""" root shoot """
 		isParentComputed[0] = True
+		#trimmedPaths[0] = deepcopy(paths[0])
+		#branchDiverges[0] = True
 
 		parentPathIDs = self.getParentHash()
 		controlPoses = self.getControlPoses()
@@ -4770,6 +4805,9 @@ class MapState:
 			#junctionPoses[pathID] = self.pathClasses[pathID]["localJunctionPose"]
 			localPathSegsByID[pathID] = self.localLeaf2LeafPathJunctions[pathID]["localSegments"]
 
+		print "childParents:", childParents
+		print "isParentComputed:", isParentComputed
+
 		while False in isParentComputed.values():
 			print "trim parents:", isParentComputed, childParents
 
@@ -4779,7 +4817,6 @@ class MapState:
 				
 					if childParents[pathID] == None:
 						trimmedPaths[pathID] = deepcopy(paths[pathID])
-						#localTrimmedPaths[pathID] = deepcopy(paths[pathID])
 						branchDiverges[0] = True
 
 					else:
@@ -4817,6 +4854,9 @@ class MapState:
 					for childID in pathIDs:
 						if self.pathClasses[childID]["parentID"] == pathID:
 							isParentComputed[childID] = True
+
+		print "pathIDs:", pathIDs
+		print "self.branchDiverges:", self.branchDiverges
 
 		self.tipPoints_G = tipPoints_G
 		self.branchPoses_G = branchPoses_G
@@ -6686,7 +6726,7 @@ class MapState:
 		
 		" get splice of origin and target path "
 		" splice minJ1 and minJ2 "
-		orderPathIDs = self.getPathPath(minI1, minI2)		 
+		#orderPathIDs = self.getPathPath(minI1, minI2)		 
 		
 		#splicedPaths = self.splicePathIDs(orderPathIDs)
 		
@@ -6694,15 +6734,15 @@ class MapState:
 		#allSplices, terminals, junctions = self.getAllSplices()
 		allSplices = self.getAllSplices2()
 
-		splicedPaths = allSplices
+		#splicedPaths = allSplices
 
-		#splicedPaths = []
-		#for k, result in allSplices.iteritems():
+		splicedPaths = []
+		for k, result in allSplices.iteritems():
 		#	print "allSplices key:", k
-		#	for sPath in result:
-		#		#path = sPath['path']
-		#		path = sPath['skelPath']
-		#		splicedPaths.append(path)
+			for sPath in result:
+				#path = sPath['path']
+				path = sPath['skelPath']
+				splicedPaths.append(path)
 	
 		print len(splicedPaths), "spliced paths for path finding "
 		

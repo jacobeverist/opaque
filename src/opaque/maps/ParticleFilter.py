@@ -1223,7 +1223,7 @@ class Particle:
 	def getControlPoses(self):
 
 		controlPoses = {}
-		allPathIDs = self.pathClasses.keys()
+		allPathIDs = self.junctionData.keys()
 		for pathID in allPathIDs:
 			controlPoses[pathID] = self.junctionData[pathID]["controlPose"]
 
