@@ -2211,7 +2211,8 @@ class MapState:
 			thisLandmarksBloomNeighbors = sorted(thisLandmarksBloomNeighbors, key=itemgetter(2), reverse=False)
 			thisLandmarksNeighbors = sorted(thisLandmarksNeighbors, key=itemgetter(2), reverse=False)
 		
-			allNearestNeighbors.append(thisLandmarksNeighbors)
+			if len(thisLandmarksNeighbors) > 0:
+				allNearestNeighbors.append(thisLandmarksNeighbors)
 
 			if len(thisLandmarksBloomNeighbors) > 0:
 				bloomNearestNeighbors.append(thisLandmarksBloomNeighbors)
@@ -2220,6 +2221,8 @@ class MapState:
 		isReject = False
 		print self.hypothesisID, "bloom neighbors:"
 		for result in bloomNearestNeighbors:
+
+			print result
 
 			if len(result) > 1:
 				print result[0][2], result[1][2]
@@ -2235,6 +2238,8 @@ class MapState:
 
 		print self.hypothesisID, "bloom/bend neighbors:"
 		for result in allNearestNeighbors:
+
+			print result
 
 			if len(result) > 1:
 				print result[0][2], result[1][2]
