@@ -1395,10 +1395,13 @@ class MapState:
 				normAngDiff = pi-fabs(diffAngle(initPose0[2],newPose0[2])) 
 
 				if isReject:
-					newUtilVal = -1e100
+					#newUtilVal = -1e100
+					newUtilVal = 0.0
 					listCopy = list(part)
 					listCopy[45] = newUtilVal
 					tupleCopy = tuple(listCopy)
+
+					preBranchProb = 0.0
 
 					results[index] = tupleCopy
 				else:
@@ -1425,6 +1428,8 @@ class MapState:
 					#if normMatchCount != None:
 					#	newProb *= normMatchCount
 
+					preBranchProb = newProb
+
 					newProb *= branchNormLandmarkCost
 
 					listCopy = list(part)
@@ -1432,8 +1437,10 @@ class MapState:
 					tupleCopy = tuple(listCopy)
 
 					results[index] = tupleCopy
+
+				print "%d %d %d %d %d isReject branchProb poseProb_B poseProb %d %1.2f %1.2f %1.2f" %  (nodeID0, self.hypothesisID, particleID, index, spliceIndex, isReject, branchNormLandmarkCost, results[index][45], preBranchProb), normMatchCount, overlapSum, contigFrac_0, contigFrac_1, initPose0[2], newPose0[2], int(isExist1_0), int(isExist2_0), int(isExist1_1), int(isExist2_1), int(isInterior1_0), int(isInterior2_0), int(isInterior1_1), int(isInterior2_1), branchIndex, poseLandmarkSum, len(landmarks_G), normAngDiff
 				
-				print "%d %d %d %d %d normMatchCount, newUtilVal, overlapSum:" % (nodeID0, self.hypothesisID, particleID, index, spliceIndex), normMatchCount, results[index][45], overlapSum, contigFrac_0, contigFrac_1, initPose0[2], newPose0[2], int(isExist1_0), int(isExist2_0), int(isExist1_1), int(isExist2_1), int(isInterior1_0), int(isInterior2_0), int(isInterior1_1), int(isInterior2_1), isReject, branchIndex, poseLandmarkSum, len(landmarks_G), normLandmarkSum, normAngDiff 
+				#print "%d %d %d %d %d normMatchCount, newUtilVal, overlapSum:" % (nodeID0, self.hypothesisID, particleID, index, spliceIndex), normMatchCount, results[index][45], overlapSum, contigFrac_0, contigFrac_1, initPose0[2], newPose0[2], int(isExist1_0), int(isExist2_0), int(isExist1_1), int(isExist2_1), int(isInterior1_0), int(isInterior2_0), int(isInterior1_1), int(isInterior2_1), isReject, branchIndex, poseLandmarkSum, len(landmarks_G), normLandmarkSum, normAngDiff, branchNormLandmarkCost
 
 			""" break condition, do not accept divergence if we have already branched """
 			if not rejectDivergence or self.isNodeBranching[nodeID0] or self.isNodeBranching[nodeID1]:
@@ -2066,6 +2073,7 @@ class MapState:
 		newObj.globalSegments = deepcopy(self.globalSegments)
 		newObj.localTerms = deepcopy(self.localTerms)
 		newObj.globalTerms = deepcopy(self.globalTerms)
+		newObj.subsumedTerms = deepcopy(self.subsumedTerms)
 
 		newObj.branchDiverges = deepcopy(self.branchDiverges)
 
@@ -2479,6 +2487,8 @@ class MapState:
 		
 		""" of all the terms, find the ones that are not subsumed by other shoots """
 
+		prevSubsumedTerms = self.subsumedTerms
+		self.subsumedTerms = []
 		allTerms = []
 		currKeys = self.globalSegments.keys()
 
@@ -2515,6 +2525,8 @@ class MapState:
 				if minDist2 > DIST_THRESH:
 					allTerms.append(term1)
 					#print pathID1, "terms:", term1
+
+		self.subsumedTerms = allTerms
 
 
 		termCombos = []

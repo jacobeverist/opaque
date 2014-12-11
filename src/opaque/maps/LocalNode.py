@@ -2597,11 +2597,254 @@ class LocalNode:
 
 		longPaths, medialLongPaths, medialTailCuts, longMedialWidths, bowtieValues = self.computeFullSkeleton(hull)
 
-		maxPath = deepcopy(longPaths[0])
+		#maxPath = deepcopy(longPaths[0])
+		maxPath = deepcopy(medialLongPaths[0])
 
 		self.medialCComputed = True		
 		self.medialPathC = maxPath
 		self.medialPathCut = maxPath
+
+
+		if True:
+
+			fig, (ax1, ax2, ax3) = plt.subplots(3,  sharex=False, sharey=False)
+
+			ax1.set_xlim(-3, 3)
+			ax1.set_aspect("equal")
+
+			ax2.set_ylim(0.0, 1.0)
+			ax2.set_aspect("equal")
+
+			ax3.set_ylim(-pi, pi)
+			#ax3.set_aspect("equal")
+
+
+			xP = []
+			yP = []
+			#for p in medial2:
+			#for p in realPath:
+			for p in maxPath:
+				xP.append(p[0])
+				yP.append(p[1])
+
+			ax1.plot(xP,yP, color='b')
+	
+			xP = []
+			yP = []
+			for p in hull:
+				xP.append(p[0])
+				yP.append(p[1])
+			ax1.plot(xP,yP, color='r')
+
+			if True:
+
+				longPathWidth = longMedialWidths[0]
+
+				results = self.spatialFeatures[0]
+
+				maxDeriv = results["maxDeriv"]
+				contigCenterMass = results["centerMasses"]
+				contigCounts = results["contigCounts"]
+				contigDensity = results["contigDensities"]
+				contigArea = results["contigAreas"]
+				contigLen = results["contigLens"]
+				contigPointIndex = results["contigPointIndex"]
+				contigBoundaries = results["contigBoundaries"]
+				longPathWidth = results["medialWidths"]
+				contigAsymmSum = results["contigAsymmSum"]
+				contigNegArea = results["contigNegArea"]
+				contigSlopes = results["contigSlopes"]
+
+				numPoints = len(longPathWidth)
+
+				for kIndex in range(len(contigCenterMass)):
+
+					area = contigArea[kIndex]
+					cLen = contigLen[kIndex]
+					frontBoundIndex, backBoundIndex = contigBoundaries[kIndex]
+
+				pointX = []
+				pointY = []
+				widthX = []
+				widthY = []
+				angDerivX = []
+				angDerivY = []
+				angDeriv2X = []
+				angDeriv2Y = []
+				angX = []
+				angY = []
+
+				#for val in longPathWidth:
+				for kIndex in range(len(longPathWidth)):
+
+					val = longPathWidth[kIndex]
+					distR = val["distR"]
+					distL = val["distL"]
+					linePoint = val["linePoint"]
+					rightPoint = val["rightPoint"]
+					leftPoint = val["leftPoint"]
+					widthSum = val["widthSum"]
+					angDeriv = val["angDeriv"]
+					angDeriv2 = val["angDeriv2"]
+					distU = val["distU"]
+
+					pointX.append(linePoint[0])
+					pointY.append(linePoint[1])
+
+
+					widthX.append(distU)
+					widthY.append(widthSum)
+					angDerivX.append(distU)
+					angDerivY.append(angDeriv)
+					angDeriv2X.append(distU)
+					angDeriv2Y.append(angDeriv2)
+					angX.append(distU)
+					angY.append(linePoint[2])
+
+					#if len(widthX) > 0:
+					#	widthX.append(widthX[-1] + 0.04)
+					#else:
+					#	widthX.append(0.0)
+
+					print "distR:", distR
+					print "distL:", distL
+					print "linePoint:", linePoint
+					print "leftPoint:", leftPoint
+					print "rightPoint:", rightPoint
+
+					if len(rightPoint) > 0.0:
+						xP = [linePoint[0], rightPoint[0]]
+						yP = [linePoint[1], rightPoint[1]]
+						if widthSum > THRESH_WIDTH:
+							ax1.plot(xP,yP, color='k')
+						else:
+							ax1.plot(xP,yP, color='b')
+
+					if len(leftPoint) > 0.0:
+						xP = [linePoint[0], leftPoint[0]]
+						yP = [linePoint[1], leftPoint[1]]
+						if widthSum > THRESH_WIDTH:
+							ax1.plot(xP,yP, color='k')
+						else:
+							ax1.plot(xP,yP, color='b')
+
+				ax1.plot(pointX,pointY, color='k')
+				ax3.plot(angDerivX,angDerivY, color='k')
+				ax3.plot(angDeriv2X,angDeriv2Y, color='b')
+				ax3.plot(angX,angY, color='r')
+				ax2.plot(widthX,widthY, color='k')
+				ax2.plot([0.0,widthX[-1]], [THRESH_WIDTH,THRESH_WIDTH], color='r')
+				#contigY = [THRESH_WIDTH for k in range(len(contigCenterMass))]
+				#ax2.scatter(contigCenterMass,contigY, color='k')
+
+				#centerPointsX = [longPathWidth[k]["linePoint"][0] for k in contigPointIndex]
+				#centerPointsY = [longPathWidth[k]["linePoint"][1] for k in contigPointIndex]
+				#angDerivs = [longPathWidth[k]["linePoint"] for k in contigPointIndex]
+
+				#if len(centerPointsX) > 0:
+				#	ax1.scatter(centerPointsX,centerPointsY, color='k')
+
+				#for k in range(len(centerPointsX)):
+				#	ax2.annotate("%1.2f" % contigDensity[k], xy=(contigCenterMass[k], 0.3), xytext=(contigCenterMass[k], 0.8))
+					#ax2.annotate("%1.2f" % contigArea[k], xy=(contigCenterMass[k], 0.3), xytext=(contigCenterMass[k], 0.8))
+					#ax2.annotate("%1.2f" % angDerivs[k], xy=(contigCenterMass[k], 0.3), xytext=(contigCenterMass[k], 0.8))
+
+
+				bloomPoint = results["bloomPoint"]
+				if bloomPoint != None:
+					dens = contigDensity[0]
+					area = contigArea[0]
+					cLen = contigLen[0]
+					asymm = contigAsymmSum[0]
+					negArea = contigNegArea[0]
+					slopes = contigSlopes[0]
+					p1 = slopes[2]
+					p2 = slopes[3]
+					p3 = slopes[4]
+					ax1.scatter([bloomPoint[0],],[bloomPoint[1],], color='k', zorder=4)
+					ax2.scatter([contigCenterMass[0],],[THRESH_WIDTH,], color='k')
+					ax2.annotate("%1.2f %1.2f %1.2f %1.3f %s" % (dens, asymm, area, negArea, repr(slopes[0]+slopes[1])), xy=(contigCenterMass[0], 0.3), xytext=(contigCenterMass[0], 0.8), color='k')
+					ax2.plot([p1[0],p2[0],p3[0]],[p1[1],p2[1],p3[1]], color='y')
+			
+				archPoint = results["archPoint"]
+				if archPoint != None:
+					dens = contigDensity[0]
+					area = contigArea[0]
+					cLen = contigLen[0]
+					asymm = contigAsymmSum[0]
+					negArea = contigNegArea[0]
+					slopes = contigSlopes[0]
+					p1 = slopes[2]
+					p2 = slopes[3]
+					p3 = slopes[4]
+					ax1.scatter([archPoint[0],],[archPoint[1],], color='b', zorder=4)
+					ax2.scatter([contigCenterMass[0],],[THRESH_WIDTH,], color='b')
+					ax2.annotate("%1.2f %1.2f %1.2f %1.3f %s" % (dens, asymm, area, negArea, repr(slopes[0]+slopes[1])), xy=(contigCenterMass[0], 0.3), xytext=(contigCenterMass[0], 0.8), color='b')
+					ax2.plot([p1[0],p2[0],p3[0]],[p1[1],p2[1],p3[1]], color='y')
+
+				"""
+				print "num contigs:", len(contigPointIndex), len(contigCenterMass), len(contigLen), len(contigArea)
+				if len(contigPointIndex) > 1:
+					contigPointIndex = []
+					contigCenterMass = []
+					contigLen = []
+					contigArea = []
+					contigCounts = []
+					contigDensity = []
+
+
+				" conditions for a bloom detection "
+				if len(contigPointIndex) == 1:
+					dens = contigDensity[0]
+					area = contigArea[0]
+					cLen = contigLen[0]
+					frontBoundIndex, backBoundIndex = contigBoundaries[0]
+
+
+					if (frontBoundIndex <= 6 or backBoundIndex >= len(longPathWidth)-7) and cLen < 25 and dens >= 0.03:
+						pointIndex = contigPointIndex[0]
+						linePoint = longPathWidth[pointIndex]["linePoint"]
+
+						bloomPoint = results["bloomPoint"]
+						ax1.scatter([bloomPoint[0],],[bloomPoint[1],], color='k')
+						ax2.scatter([contigCenterMass[0],],[THRESH_WIDTH,], color='k')
+						ax2.annotate("%1.2f %1.2f" % (area, dens), xy=(contigCenterMass[0], 0.3), xytext=(contigCenterMass[0], 0.8), color='k')
+						print self.nodeID, "boundaries:", frontBoundIndex, backBoundIndex, len(longPathWidth), cLen, area, dens
+
+				"""
+
+				#if len(contigPointIndex) > 0 and (contigCounts[0] <= 5 or contigCounts[0] >= 20 or contigArea[0] < 0.20):
+				#if len(contigPointIndex) > 0 and (contigCounts[0] <= 5 or contigCounts[0] >= 30 or contigDensity[0] < 0.05):
+				#	contigPointIndex = []
+				#	contigCenterMass = []
+				#	contigLen = []
+				#	contigArea = []
+				#	contigCounts = []
+				#	contigDensity = []
+
+				#if maxDeriv >= 0.25:
+				#	ax1.scatter([inflectionPoint[0]],[inflectionPoint[1]], color='r')
+				#	ax1.annotate("%1.2f" % maxDeriv, xy=(inflectionPoint[0], 0.3), xytext=(inflectionPoint[0], 0.8))
+
+				maxDeriv = results["maxDeriv"]
+				inflectionU = results["maxDerivU"]
+				inflectionPoint = results["inflectionPoint"]
+				if inflectionPoint != None:
+					ax1.scatter([inflectionPoint[0]],[inflectionPoint[1]], color='r')
+					ax1.annotate("%1.2f" % maxDeriv, xy=(inflectionPoint[0], 0.3), xytext=(inflectionPoint[0], 0.8), color='r', zorder=4)
+
+					ax3.scatter([inflectionU,],[maxDeriv,], color='k')
+
+					#ax1.scatter([bloomPoint[0],],[bloomPoint[1],], color='k')
+					#ax2.scatter([contigCenterMass[0],],[THRESH_WIDTH,], color='k')
+					#ax2.annotate("%1.2f %1.2f %1.2f %1.3f %s" % (dens, asymm, area, negArea, repr(slopes[0]+slopes[1])), xy=(contigCenterMass[0], 0.3), xytext=(contigCenterMass[0], 0.8), color='k')
+					#ax2.plot([p1[0],p2[0],p3[0]],[p1[1],p2[1],p3[1]], color='y')
+
+
+			ax1.set_title("Medial %d, %s, %d" % (self.nodeID, repr(contigBoundaries), numPoints))
+			plt.savefig("medialOut_%04u.png" % self.nodeID)
+			plt.clf()
+			plt.close()
 
 		print "returning caseD"
 		return deepcopy(self.medialPathC)

@@ -3268,17 +3268,17 @@ def checkForeBranch2(hypSet, nodeID1, nodeID2, shootIDs, particleIDs):
 			mapHyp.isNodeBranching[nodeID1] = True
 			mapHyp.isNodeBranching[nodeID2] = True
 
-			newMapHyp = mapHyp.copy(particleIDs)
-			newHyps[particleIDs] = newMapHyp
-			newHyps[particleIDs].isNotBranched = False 
+			#newMapHyp = mapHyp.copy(particleIDs)
+			#newHyps[particleIDs] = newMapHyp
+			#newHyps[particleIDs].isNotBranched = False 
 
 			" in case current hypothesis has already branched, this ensures that topology is regenerated when branching "
-			#hypSet[pID].isNotBranched = True
+			hypSet[pID].isNotBranched = False
 
-			print "creating hyp", particleIDs, "from hyp", mapHyp.hypothesisID, ", len(paths) =", len(mapHyp.pathClasses)
-			particleIDs += 1
+			#print "creating hyp", particleIDs, "from hyp", mapHyp.hypothesisID, ", len(paths) =", len(mapHyp.pathClasses)
+			#particleIDs += 1
 
-			branchHyp = newMapHyp 
+			#branchHyp = newMapHyp 
 
 		shootIDs, pathBranchIDs = branchHyp.determineBranchPair2(nodeID1, nodeID2, frontExist1, frontExist2, frontInterior1, frontInterior2, depAngle1, depAngle2, depPoint1, depPoint2, dirFlag, isUnique1, isUnique2, shootIDs)
 
@@ -3463,17 +3463,17 @@ def checkBackBranch2(hypSet, nodeID1, nodeID2, shootIDs, particleIDs):
 			mapHyp.isNodeBranching[nodeID1] = True
 			mapHyp.isNodeBranching[nodeID2] = True
 
-			newMapHyp = mapHyp.copy(particleIDs)
-			newHyps[particleIDs] = newMapHyp
-			newHyps[particleIDs].isNotBranched = False 
+			#newMapHyp = mapHyp.copy(particleIDs)
+			#newHyps[particleIDs] = newMapHyp
+			#newHyps[particleIDs].isNotBranched = False 
 
 			" in case current hypothesis has already branched, this ensures that topology is regenerated when branching "
-			#hypSet[pID].isNotBranched = True
-			print "creating hyp", particleIDs, "from hyp", mapHyp.hypothesisID, ", len(paths) =", len(mapHyp.pathClasses)
+			hypSet[pID].isNotBranched = False
+			#print "creating hyp", particleIDs, "from hyp", mapHyp.hypothesisID, ", len(paths) =", len(mapHyp.pathClasses)
 			
-			particleIDs += 1
+			#particleIDs += 1
 
-			branchHyp = newMapHyp
+			#branchHyp = newMapHyp
 
 
 		shootIDs, pathBranchIDs = branchHyp.determineBranchPair2(nodeID1, nodeID2, backExist1, backExist2, backInterior1, backInterior2, depAngle1, depAngle2, depPoint1, depPoint2, dirFlag, isUnique1, isUnique2, shootIDs)

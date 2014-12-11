@@ -458,21 +458,15 @@ class BayesMapper:
 		""" remove defective maps """
 		toDelete = []
 		for pID, currHyp in hypSet.iteritems():
-			#currHyp.computeEval()
-			#currHyp.drawPoseParticles()
 			print pID, "mapOverlapSum =", currHyp.mapOverlapSum, "isNoLocalize =", currHyp.isNoLocalize
-			#if currHyp.mapOverlapSum > 0.0 or currHyp.isNoLocalize:
-			#if currHyp.mapOverlapSum > 6 or currHyp.isNoLocalize:
-			if currHyp.mapOverlapSum > 4.0 or currHyp.isNoLocalize:
-				#if pID != self.activeHypID:
-				#	toDelete.append(pID)
-				toDelete.append(pID)
-				if pID == self.activeHypID:
-					self.activeHypID = None
+			#if currHyp.mapOverlapSum > 4.0 or currHyp.isNoLocalize:
+			#	toDelete.append(pID)
+			#	if pID == self.activeHypID:
+			#		self.activeHypID = None
 
 				
-		for pID in toDelete:
-			del hypSet[pID]
+		#for pID in toDelete:
+		#	del hypSet[pID]
 
 		hp = hpy()
 		print hp.heap()
