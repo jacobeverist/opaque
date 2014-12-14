@@ -279,18 +279,16 @@ class MapUser:
 		for hypID, mapHyp in mapHyps.iteritems():
 
 			if len(mapHyp.nodePoses) > 0:
-				allSplices, terminals, junctions = mapHyp.getAllSplices()
-				for k, result in allSplices.iteritems():
-					for sPath in result:
-						#path = sPath['path']
-						path = sPath['skelPath']
-		
-						xP = []
-						yP = []
-						for p in path:
-							xP.append(p[0])
-							yP.append(p[1])
-						pylab.plot(xP,yP, color='g', linewidth=2, zorder=1)
+				allSplices = mapHyp.getAllSplices2()
+				for sPath in allSplices:
+					path = sPath['skelPath']
+	
+					xP = []
+					yP = []
+					for p in path:
+						xP.append(p[0])
+						yP.append(p[1])
+					pylab.plot(xP,yP, color='g', linewidth=2, zorder=1)
 
 
 
@@ -825,9 +823,9 @@ class MapUser:
 		
 		return totalDist + minDist1 + minDist2
 
-	def pathTermVisited(self, pathID):
+	def pathTermVisited(self, termID):
 		for hypID, mapHyp in self.mapAlgorithm.mapHyps.iteritems():
-			mapHyp.pathTermVisited(pathID)
+			mapHyp.pathTermVisited(termID)
 		
 	def selectNextDestination(self):
 
@@ -866,10 +864,24 @@ class MapUser:
 		for hypID, mapHyp in self.mapAlgorithm.mapHyps.iteritems():
 			mapHyp.resetTerms()
 		
+		minDist = 1e100
+		minPnt = None
+		minTermID = None
 		for hypID, mapHyp in self.mapAlgorithm.mapHyps.iteritems():
-			return mapHyp.rootPoint, -1
+			terms = mapHyp.getPathTerms()
+
+			for key,val in terms.iteritems():
+
+				rootPoint = mapHyp.rootPoint
+				dist = sqrt((rootPoint[0]-val[0])**2 + (rootPoint[1]-val[1])**2)
+				if dist < minDist:
+					minDist = dist
+					minPnt = val
+					minTermID = key
+
+		return minPnt, minTermID
 	
-	def getDestination(self, termID):
+	def getDestination(self, termID, termPoint):
 
 		if self.isDirty:
 			self.synch()
@@ -893,13 +905,12 @@ class MapUser:
 				termToHypID[key] = hypID
 
 
-		termPoint = allTerms[termID]
+		newTermPoint = allTerms[termID] 
+		return newTermPoint
 
-		return termPoint
+	def recomputePath(self, termID, termPoint):
 
-	def recomputePath(self, termID):
-
-		frontierPoint = self.getDestination(termID)
+		frontierPoint = self.getDestination(termID, termPoint)
 
 		frontPose = self.contacts.getAverageSegPose(0)
 		backPose = self.contacts.getAverageSegPose(39)

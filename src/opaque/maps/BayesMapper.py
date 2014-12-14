@@ -4,7 +4,7 @@ from StableCurve import StableCurve
 from SplineFit import SplineFit
 from Pose import Pose
 from PoseData import PoseData
-from MapProcess import movePath, addToPaths, addToPaths2, localizePair, consistentFit, movePath, batchMovePath, batchLocalizePair, batchEval
+from MapProcess import addToPaths2 
 from shoots import computeGlobalControlPoses
 import gen_icp
 from functions import *
@@ -266,15 +266,7 @@ class BayesMapper:
 	def integrateNode(self, hypSet, nodeID):
 
 		" DIRECTION OF TRAVEL FROM PREVIOUS POSE PAIR "
-		#direction = newNode.travelDir
 		direction = self.poseData.travelDirs[nodeID]
-
-		" ensure the medial axes are computed before this check "
-		#computeHullAxis(nodeID, newNode, tailCutOff = False)
-
-		#currHyps = {}
-
-
 
 		print "integrating node", nodeID
 
@@ -284,40 +276,15 @@ class BayesMapper:
 			if self.poseData.numNodes >= 4:
 
 				if nodeID % 2 == 1:
-					#hypSet = batchMovePath(hypSet, nodeID, direction)
-
 
 					for pID, currHyp in hypSet.iteritems():
 						time1 = time.time()
-						#movePath(currHyp, nodeID, direction, distEst = 1.0)
 						currHyp.batchDisplaceParticles(nodeID-1, nodeID)
-
-
-						"""
-						particleDist2 = currHyp.poseParticles["snapshots2"][0]
-						maxParticle = particleDist2[currHyp.currMaxIndex]
-
-						currHyp.setNodePose(nodeID-1, maxParticle.pose0)
-						currHyp.setNodePose(nodeID, maxParticle.pose1)
-						"""
-
-						#currHyp.updateMaxParticle(currHyp.currMaxIndex)
-
 
 						currHyp.drawPoseParticles()
 						time2 = time.time()
 						print "TIME displace", currHyp.hypothesisID, "=", time2-time1 
 
-				"""
-				for pID, mapHyp in hypSet.iteritems():
-					" Move node along path "
-					#self.movePath(mapHyp, nodeID, direction)
-					movePath(mapHyp, nodeID, direction)
-					#self.drawConstraints(mapHyp, self.statePlotCount)
-					#self.statePlotCount += 1
-					#self.drawPathAndHull(mapHyp)
-				"""
-		
 		nodeID1 = self.poseData.numNodes-2
 		nodeID2 = self.poseData.numNodes-1
 
@@ -328,59 +295,21 @@ class BayesMapper:
 		if self.poseData.numNodes >= 2 and self.poseData.numNodes % 2 == 0:
 
 			for pID, mapHyp in hypSet.iteritems():
-
-				print "entering node", nodeID, "from hypothesis", mapHyp.hypothesisID
-
-				" DETECT BRANCHING EVENTS FOR THE 2 NODES OF LAST STOP "
-				" AFTER ODD-NUMBER OVERLAP OF CURRENT STOP HAS IRONED OUT ERRORS "
-				
-				pathIDs = mapHyp.getPathIDs()
-
-				print "hypothesis", mapHyp.hypothesisID, "paths =", pathIDs
-
-				print "generating node", nodeID, "from hypothesis", mapHyp.hypothesisID
-
-				" COMPUTE MEDIAL AXIS FROM UNION OF PATH-CLASSIFIED NODES "
-				#mapHyp.generatePaths()
-
-				
-				print "drawing node", nodeID, "from hypothesis", mapHyp.hypothesisID
-				#self.drawConstraints(mapHyp, self.statePlotCount)
-				#self.statePlotCount += 1
-				#self.drawPathAndHull(mapHyp)
-
-
 				mapHyp.isNodeBranching[nodeID1] = False
 				mapHyp.isNodeBranching[nodeID2] = False
 
 
-			#hypSet = self.addToPaths(hypSet, nodeID1, nodeID2)
 			time1 = time.time()
-			#self.shootIDs, self.particleIDs, hypSet = addToPaths(self.shootIDs, self.particleIDs, hypSet, nodeID1, nodeID2)
 			self.shootIDs, self.particleIDs, hypSet = addToPaths2(self.shootIDs, self.particleIDs, hypSet, nodeID1, nodeID2)
 			for pID, currHyp in hypSet.iteritems():
 				currHyp.drawPoseParticles()
 			time2 = time.time()
 			print "TIME addToPaths =", time2-time1 
 
-			#scurrHyps = self.addToPaths(mapHyp, nodeID1, nodeID2)
-
-			#for pID, currHyp in hypSet.iteritems():
-			#	localizePair(currHyp, nodeID1, nodeID2)
-
-			#hypSet = batchLocalizePair(hypSet, nodeID1, nodeID2)
-			#batchEval(hypSet)
-			
 			for pID, mapHyp in hypSet.iteritems():
 				time1 = time.time()
 
-				#self.propagateBranchStates(mapHyp, nodeID1)
-
-				#cProfile.runctx("mapHyp.localizePoseParticles(nodeID1,nodeID2)", globals(), locals(), "localizeParticles_%d.prof" % self.profCount)	
-				#self.profCount += 1
-				
 				mapHyp.localizePoseParticles(nodeID1, nodeID2)
-				#mapHyp.drawPoseParticles()
 
 				time2 = time.time()
 
@@ -389,6 +318,7 @@ class BayesMapper:
 			for pID, currHyp in hypSet.iteritems():
 
 
+				""" merge a shoot if it does not diverge """
 				if False:
 					if 1 in currHyp.pathClasses.keys():
 						currHyp.mergePath(1)
@@ -397,64 +327,38 @@ class BayesMapper:
 
 				else:
 
-					while False in currHyp.branchDiverges.values():
+					isSubsumed = False
+					for val in currHyp.branchDivergeCount.values():
+						if val >= 2:
+							isSubsumed = True
 
-						print pID, "branchDiverges:", currHyp.branchDiverges
+					while isSubsumed:
 
-						pathIDs = currHyp.branchDiverges.keys()
+						print pID, "branchDivergeCount:", currHyp.branchDivergeCount
+
+						pathIDs = currHyp.branchDivergeCount.keys()
 						
 
 						
-						for pathID, isDiverge in currHyp.branchDiverges.iteritems():
-							if not isDiverge:
+						for pathID, divergeCount in currHyp.branchDivergeCount.iteritems():
+							if divergeCount >= 2:
 								currHyp.mergePath(pathID)
 								currHyp.generatePaths()
 								currHyp.drawPoseParticles()
 								
 								break
 
-				#if False in currHyp.branchDiverges.values():
+						isSubsumed = False
+						for val in currHyp.branchDivergeCount.values():
+							if val >= 2:
+								isSubsumed = True
 
+				""" evaluate the map integrity """
 				currHyp.computeEval()
 
-				""" LOCALIZE NODE PAIR """
-				#localizePair(currHyp, nodeID1, nodeID2)
-
-				#self.propagateBranchStates(currHyp, nodeID1)
-
-				#currHyp.generatePaths()
 				self.drawPathAndHull2(currHyp)
 
 
-				"""
-				if nodeID1 >= 2:
-					newPath = deepcopy(currHyp.paths[0])
-					p0 = newPath[0]
-					pN = newPath[-1]
-					
-					rootPose = [-2.0,0.0]
-					
-					dist0 = sqrt((rootPose[0]-p0[0])*(rootPose[0]-p0[0]) + (rootPose[1]-p0[1])*(rootPose[1]-p0[1]))
-					distN = sqrt((rootPose[0]-pN[0])*(rootPose[0]-pN[0]) + (rootPose[1]-pN[1])*(rootPose[1]-pN[1]))
-			
-					if dist0 > distN:
-						newPath.reverse()
-								
-					" new path "
-					newSpline = SplineFit(newPath, smooth = 0.1)
-		
-		
-					posNew = currHyp.nodePoses[nodeID1]
-					posOld = currHyp.nodePoses[nodeID1-2]
-					minDist, minU, closestPoint = newSpline.findClosestPoint(posNew)
-					arcDistNew = newSpline.dist(0.0, minU)
-		
-					minDist, minU, closestPoint = newSpline.findClosestPoint(posOld)
-					arcDistOld = newSpline.dist(0.0, minU)
-		
-					print "arcDistNew, arcDistOld, diff =", arcDistNew, arcDistOld, arcDistNew-arcDistOld
-				"""
-		
 		""" remove defective maps """
 		toDelete = []
 		for pID, currHyp in hypSet.iteritems():
@@ -472,44 +376,6 @@ class BayesMapper:
 		print hp.heap()
 
 		return hypSet
-
-
-	@logFunction
-	def propagateBranchStates(self, mapHyp, nodeID, numGuesses = 11, excludePathIDs = []):
-
-		poseData = mapHyp.poseData
-
-		allSplices, terminals, junctions = mapHyp.getAllSplices(plotIter = False)
-
-		for pathID, pathDesc in mapHyp.pathClasses.iteritems():
-			if pathID != 0:
-				"""
-				this is a branching path,
-				now we need hypotheses about where it's branching from.
-
-				pathDesc = {"parentID" : parentID,
-						"branchNodeID" : branchNodeID,
-						"localJunctionPose" : localJunctionPose,
-						"sameProb" : {},
-						"nodeSet" : [],
-						"globalJunctionPose" : globalJunctionPose }		
-				"""
-
-				mapHyp.updateParticles(pathID)
-
-		
-				" draw env "
-				" draw trimmed path "
-				" draw points "
-
-		" initial distribution of particles representing branching point, angle, and parent path "
-		" do the particles first. "
-
-
-
-		" now do the fitting of the path super-axis to the different splices "
-
-		return
 
 
 	@logFunction
@@ -634,476 +500,6 @@ class BayesMapper:
 
 		return splicedPaths1[kIndex]
 
-	@logFunction
-	def mergeSiblings(self, mapHyp, resultOffset1, resultOffset2, pathID1, pathID2, lastCost, matchCount):
-
-		" verify that this path still exists before we try to merge it "
-		allPathIDs = mapHyp.getPathIDs()
-		if pathID1 in allPathIDs and pathID2 in allPathIDs:
-	
-			parentID1 = mapHyp.pathClasses[pathID1]["parentID"] 
-			parentID2 = mapHyp.pathClasses[pathID2]["parentID"] 
-	
-			if parentID1 != parentID2:
-				print "ERROR mergeSiblings:", pathID1, pathID2, parentID1, parentID2, "not siblings"
-				return
-	
-			
-			" capture transform between pathID1 and pathID2 under correction "
-	
-			mergeNodes1 = copy(mapHyp.getNodes(pathID1))
-			mergeNodes2 = copy(mapHyp.getNodes(pathID2))
-			
-			print "mergeNodes1:", mergeNodes1
-			print "mergeNodes2:", mergeNodes2
-			
-			duplicateNodes = []
-			" look to see if a node is in both paths "
-			for nodeID1 in mergeNodes1:
-				for nodeID2 in mergeNodes2:
-					
-					if nodeID1 == nodeID2:
-						duplicateNodes.append(nodeID1)
-						
-			" if any duplicates, lets choose one path or the other "
-			for nodeID in duplicateNodes:
-				orderedPathIDs = mapHyp.getOrderedOverlappingPaths(nodeID)
-				print "duplicate node", nodeID, "is in paths:", orderedPathIDs
-				if pathID1 in orderedPathIDs:
-					mergeNodes2.remove(nodeID)
-				elif pathID2 in orderedPathIDs:
-					mergeNodes1.remove(nodeID)
-				else:
-					print "duplicate not in either sibling path"
-					raise
-
-			print "mergeNodes1:", mergeNodes1
-			print "mergeNodes2:", mergeNodes2
-				
-			
-			poseOrigin1 = Pose(resultOffset1)
-			poseOrigin2 = Pose(resultOffset2)
-
-			" move a node only once, keep track of whether we've moved a node or not "
-			hasMoved = {}
-			for nodeID in mergeNodes1:
-				hasMoved[nodeID] = False
-			for nodeID in mergeNodes2:
-				hasMoved[nodeID] = False
-
-			
-			" capture transform between pathID2 and member nodes "
-			" add compute new node locations under corrected transform "
-			#self.drawConstraints(mapHyp, self.statePlotCount)
-			self.statePlotCount += 1
-			self.drawPathAndHull(mapHyp)
-			
-			" offset between paths "
-			for nodeID in mergeNodes1:
-	
-				if not hasMoved[nodeID]:
-					print "modifying node", nodeID, "in path", pathID1 
-					" adjust node poses to relative path positions "
-					nodePose = mapHyp.getNodePose(nodeID)
-					guessPose = poseOrigin1.convertLocalOffsetToGlobal(nodePose)
-					#self.nodeHash[nodeID].setGPACPose(guessPose)
-					mapHyp.setNodePose(nodeID, guessPose)
-					#mapHyp.nodePoses[nodeID] = guessPose
-					
-					#self.drawConstraints(mapHyp, self.statePlotCount)
-					self.statePlotCount += 1
-					self.drawPathAndHull(mapHyp)
-					
-					hasMoved[nodeID] = True
-
-			" offset between paths "
-			for nodeID in mergeNodes2:
-	
-				if not hasMoved[nodeID]:
-					print "modifying node", nodeID, "in path", pathID2 
-					" adjust node poses to relative path positions "
-					nodePose = mapHyp.getNodePose(nodeID)
-					guessPose = poseOrigin2.convertLocalOffsetToGlobal(nodePose)
-					#self.nodeHash[nodeID].setGPACPose(guessPose)
-					mapHyp.setNodePose(nodeID, guessPose)
-					#mapHyp.nodePoses[nodeID] = guessPose
-					
-					#self.drawConstraints(mapHyp, self.statePlotCount)
-					self.statePlotCount += 1
-					self.drawPathAndHull(mapHyp)
-
-					hasMoved[nodeID] = True
-
-			mapHyp.generatePaths()
-
-			#self.drawConstraints(mapHyp, self.statePlotCount)
-			self.statePlotCount += 1
-			self.drawPathAndHull(mapHyp)
-			#self.drawTrimmedPaths(mapHyp)
-
-
-			for nodeID in mergeNodes2:
-	
-				#hull, medial = computeHullAxis(nodeID, self.nodeHash[nodeID], tailCutOff = False)
-				hull = self.poseData.aHulls[nodeID]
-				medial = self.poseData.medialAxes[nodeID]
-				estPose = mapHyp.getNodePose(nodeID)
-	
-				orderedPathIDs = [parentID1, pathID1]
-				splicedPaths1 = mapHyp.splicePathIDs(orderedPathIDs)	
-				print "received", len(splicedPaths1), "spliced paths from path IDs", orderedPathIDs
-				" departurePoint1, angle1, isInterior1, isExist1, dist1, departurePoint2, angle2, isInterior2, isExist2, dist2, contigFrac, overlapSum, angDiff2 |"
-		
-
-				" exclusion not required since paths are siblings "
-				try:
-					consistentFit(mapHyp, nodeID, estPose)
-				except IndexError:
-					print "failed to consistentFit node", nodeID
-					pass
-				#self.consistentFit(nodeID, estPose, excludePathIDs = [pathID2])
-		
-
-				#self.drawConstraints(mapHyp, self.statePlotCount)
-				self.statePlotCount += 1
-				self.drawPathAndHull(mapHyp)
-				
-
-			for nodeID in mergeNodes2:
-
-				print "adding node", nodeID, "to path", pathID1
-				mapHyp.addNode(nodeID, pathID1)
-				print "deleting node", nodeID, "from path", pathID2
-				mapHyp.delNode(nodeID, pathID2)
-
-			print "A: mapHyp.pathClasses[" + str(pathID1) + "] = " + repr(mapHyp.pathClasses[pathID1])
-			print "A: mapHyp.pathClasses[" + str(pathID2) + "] = " + repr(mapHyp.pathClasses[pathID2])
-
-
-			" move nodes to pathID1, delete pathID2 "
-			mapHyp.delPath(pathID2, pathID1)
-
-			print "B: mapHyp.pathClasses[" + str(pathID1) + "] = " + repr(mapHyp.pathClasses[pathID1])
-			
-			mapHyp.generatePaths()
-
-			print "C: mapHyp.pathClasses[" + str(pathID1) + "] = " + repr(mapHyp.pathClasses[pathID1])
-
-			#self.drawConstraints(mapHyp, self.statePlotCount)
-			self.statePlotCount += 1
-			self.drawPathAndHull(mapHyp)
-			#self.drawTrimmedPaths(mapHyp)
-
-
-			""" Now we check to see if any branch events have occurred from this merge """
-			" departure events for node 1 "
-			for nodeID1 in mergeNodes2:
-				departures1 = []
-				interiors1 = []
-				depPoints1 = []
-				distances1 = []
-				depAngles1 = []
-				contig1 = []		
-
-				orderedPathIDs1 = mapHyp.getOrderedOverlappingPaths(nodeID1)
-				#orderedPathIDs1.insert(0,0)
-				#orderedPathIDs1.append(0)
-
-				#orderedPathIDs1.append(0)
-				print nodeID1, "orderedPathIDs1:", orderedPathIDs1
-
-				" COMPUTE DEPARTURE EVENTS FOR EACH OVERLAPPING PATH SECTION "
-				for pathID in orderedPathIDs1:
-					departurePoint1, depAngle1, isInterior1, isExist1, discDist1, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, contigFrac, overlapSum = mapHyp.getDeparturePoint(mapHyp.trimmedPaths[pathID], nodeID1, plotIter = False)
-					departures1.append([isExist1,isExist2])
-					interiors1.append([isInterior1, isInterior2])
-					depPoints1.append([departurePoint1, departurePoint2])
-					distances1.append([discDist1, discDist2])
-					depAngles1.append([depAngle1, depAngle2])
-					contig1.append((contigFrac, overlapSum))
-
-				print "node pathIDs   ", nodeID1, ":", orderedPathIDs1
-				print "node departures", nodeID1, ":", departures1
-				print "node interiors ", nodeID1, ":", interiors1
-				print "node depPoints ", nodeID1, ":", depPoints1
-				print "node distances ", nodeID1, ":", distances1
-				print "node depAngles ", nodeID1, ":", depAngles1
-				print "node contiguity", nodeID1, ":", contig1
-					
-				" new junction finding logic "
-				" if terminal departures for each medial axis are None or exterior, than we stay on existing paths "
-				" if a terminal departure exists that is internal, than we have a new junction "
-				DISC_THRESH = 0.2
-
-				" NODE1: CHECK FRONT AND BACK FOR BRANCHING EVENTS "
-				frontExist1 = departures1[0][0]
-				backExist1 =  departures1[-1][1]
-				frontInterior1 = interiors1[0][0]
-				backInterior1 = interiors1[-1][1]
-				
-				depAngle1 = depAngles1[0][0]
-				depPoint1 = depPoints1[0][0]
-				parentPathID1 = orderedPathIDs1[0]
-
-				foreTerm1 = frontInterior1 and frontExist1
-				backTerm1 = backInterior1 and backExist1
-				
-				" DISCREPANCY BETWEEN TIP-CLOSEST and DEPARTURE-CLOSEST POINT ON PATH "				
-				discForeTerm1 = distances1[0][0] > DISC_THRESH
-				discBackTerm1 = distances1[-1][1] > DISC_THRESH
-				
-				foreAngle1 = depAngles1[0][0]
-				backAngle1 = depAngles1[-1][1]
-				
-				isFront1 = self.poseData.faceDirs[nodeID1]
-				if isFront1:
-					dirFlag = 0
-				elif not isFront1:
-					dirFlag = 1
-				else:
-					print isFront1
-					raise
-
-				isBranch, pathBranchID, isNew = mapHyp.determineBranchSingle(nodeID1, frontExist1, frontInterior1, depAngle1, depPoint1, parentPathID1, dirFlag)
-				
-				print "determineBranchSingle:"
-				print isBranch
-				print pathBranchID
-
-				isNew1 = isNew
-
-				if isBranch:
-					orderedPathIDs1.insert(0,pathBranchID)
-					departures1.insert(0, [False, False])
-					interiors1.insert(0, [False, False])
-					depPoints1.insert(0, [None, None])
-
-				backExist1 = departures1[-1][1]
-				backInterior1 = interiors1[-1][1]
-				depAngle1 = depAngles1[-1][1]
-				depPoint1 = depPoints1[-1][1]
-				parentPathID1 = orderedPathIDs1[-1]
-
-				isFront1 = self.poseData.faceDirs[nodeID1]
-				if isFront1:
-					dirFlag = 1
-				elif not isFront1:
-					dirFlag = 0
-				else:
-					print isFront1, isFront2
-					raise
-				
-				isBranch, pathBranchID, isNew = mapHyp.determineBranchSingle(nodeID1, backExist1, backInterior1, depAngle1, depPoint1, parentPathID1, dirFlag)
-				print "determineBranchSingle:"
-				print isBranch
-				print pathBranchID
-
-
-				isNew1 = isNew1 or isNew
-
-				if isBranch:
-					orderedPathIDs1.append(pathBranchID)
-					departures1.append([False, False])
-					interiors1.append([False, False])
-					depPoints1.append([None, None])
-
-				" determine which paths are leaves "
-				pathIDs = mapHyp.getPathIDs()
-				isAParent = {}
-				for k in pathIDs:
-					isAParent[k] = False
-				for k in orderedPathIDs1:
-					print "index:", k
-					currPath = mapHyp.getPath(k)
-					currParent = currPath["parentID"]
-					if currParent != None:
-						isAParent[currParent] = True
-				
-				"add nodes to paths that are the leaves "
-				for pathID in orderedPathIDs1:
-					if not isAParent[pathID]:				
-						mapHyp.addNode(nodeID1,pathID)
-
-				mapHyp.generatePaths()
-				mapHyp.trimPaths(mapHyp.paths)						
-
-				#self.drawConstraints(mapHyp, self.statePlotCount)
-				self.statePlotCount += 1
-				self.drawPathAndHull(mapHyp)
-				#self.drawTrimmedPaths(mapHyp)
-
-			#for k, v in hasMoved.iteritems():
-			#	 pass
-			
-	
-
-	@logFunction
-	def mergePaths(self, mapHyp):
-
-
-		def dispOffset(p, offset):
-			xd = offset[0]
-			yd = offset[1]
-			theta = offset[2]
-		
-			px = p[0]
-			py = p[1]
-			pa = p[2]
-			
-			newAngle = normalizeAngle(pa + theta)
-			
-			p_off = [px*math.cos(theta) - py*math.sin(theta) + xd, px*math.sin(theta) + py*math.cos(theta) + yd, newAngle]
-			
-			return p_off
-
-		
-
-		toBeMerged = mapHyp.comparePaths()
-		toBeSibMerged = []
-		
-		delIndex = []
-		for k in range(len(toBeMerged)):
-			
-			mergeThis = toBeMerged[k]
-
-			if len(mergeThis) > 4:
-				delIndex.append(k)
-				toBeSibMerged.append(mergeThis)
-		
-		delIndex.reverse()
-		for index in delIndex:
-			toBeMerged.pop(index)
-
-		
-		sorted(toBeSibMerged, key=itemgetter(5))
-		
-		for mergeThis in toBeSibMerged:
-			print "mergeThis:", mergeThis[0], mergeThis[1], mergeThis[2], mergeThis[4], mergeThis[5], mergeThis[6]				
-
-			pathID1 = mergeThis[0]
-			pathID2 = mergeThis[1]
-			offset = mergeThis[2]
-			pathSplices = mergeThis[3]
-			offset2 = mergeThis[4]
-			lastCost = mergeThis[5]
-			matchCount = mergeThis[6]
-			
-			allPathIDs = mapHyp.getPathIDs()
-			if pathID1 in allPathIDs and pathID2 in allPathIDs:
-				
-				self.mergeSiblings(mapHyp, offset, offset2, pathID1, pathID2, mergeThis[5], mergeThis[6])			
-			
-		for mergeThis in toBeMerged:		
-
-			print "mergeThis:", mergeThis[0], mergeThis[1], mergeThis[2]
-
-
-			pathID1 = mergeThis[0]
-			pathID2 = mergeThis[1]
-			offset = mergeThis[2]
-			pathSplices = mergeThis[3]
-			
-			" verify that this path still exists before we try to merge it "
-			allPathIDs = mapHyp.getPathIDs()
-			if pathID1 in allPathIDs and pathID2 in allPathIDs:
-
-				
-				" capture transform between pathID1 and pathID2 under correction "
-
-				cOffset = offset
-				rootID = pathID1
-				lessID = pathID2
-				
-				
-				mergeNodes = copy(mapHyp.getNodes(lessID))
-				
-				
-				" capture transform between pathID2 and member nodes "
-				" add compute new node locations under corrected transform "
-				#self.drawConstraints(mapHyp, self.statePlotCount)
-				self.statePlotCount += 1
-				self.drawPathAndHull(mapHyp)
-				
-				nodeHasMerged = {}
-				
-				" offset between paths "
-				poseOrigin = Pose(cOffset)
-				for nodeID in mergeNodes:
-
-					" adjust node poses to relative path positions "
-					nodePose = mapHyp.getNodePose(nodeID)
-					guessPose = poseOrigin.convertLocalOffsetToGlobal(nodePose)
-					#self.nodeHash[nodeID].setGPACPose(guessPose)
-					mapHyp.setNodePose(nodeID, guessPose)
-					#mapHyp.nodePoses[nodeID] = guessPose
-					
-					#self.drawConstraints(mapHyp, self.statePlotCount)
-					self.statePlotCount += 1
-					self.drawPathAndHull(mapHyp)
-					
-					pathNodes = mapHyp.getNodes(rootID)
-					targetNodeID = nodeID
-					
-					print "add path constraints:"
-					print "pathNodes:", pathNodes
-					print "targetNodeID:", targetNodeID
-					
-					nodeHasMerged[nodeID] = False
-			
-
-				
-
-					" control point nearest the GPAC origin "
-					globalPoint1 = mapHyp.getNodePose(nodeID)[:2]
-					print "adjusting pose", nodeID, "from", mapHyp.getNodePose(nodeID)
-					
-					" if siblings, include mutual parent in splice"
-
-					try:
-						consistentFit(mapHyp, nodeID, mapHyp.getNodePose(nodeID), excludePathIDs = [lessID])
-					except IndexError:
-						print "failed to consistentFit node", nodeID
-						pass
-
-					#self.drawConstraints(mapHyp, self.statePlotCount)
-					self.statePlotCount += 1
-					self.drawPathAndHull(mapHyp)
-
-					
-					
-					mapHyp.addNode(nodeID, rootID)
-					mapHyp.delNode(nodeID, lessID)
-					
-					if len(mapHyp.getNodes(lessID)) == 0:
-						mapHyp.delPath(lessID, rootID)
-
-					
-					
-					mapHyp.generatePaths()
-					
-
-					#self.drawConstraints(mapHyp, self.statePlotCount)
-					self.statePlotCount += 1
-					self.drawPathAndHull(mapHyp)
-
-
-				print "relaxed constraints",  self.statePlotCount
-				#self.drawConstraints(mapHyp, self.statePlotCount)
-				self.statePlotCount += 1
-				self.drawPathAndHull(mapHyp)
-
-				
-				" constrain nodes to merge to pathID1 "
-				
-				" move nodes to pathID1, delete pathID2 "
-				mapHyp.delPath(lessID, rootID)
-	
-				mapHyp.generatePaths()
-				
-				#self.drawConstraints(mapHyp, self.statePlotCount)
-				self.statePlotCount += 1
-				self.drawPathAndHull(mapHyp)
-			
 
 	@logFunction
 	def getNearestPathPoint(self, originPoint):
@@ -1416,24 +812,24 @@ class BayesMapper:
 				ax3.scatter([globJuncPose[0],], [globJuncPose[1],], color='k', zorder=10)
 
 
-		trimmedPaths = mapHyp.trimmedPaths
+		#trimmedPaths = mapHyp.trimmedPaths
 		
-		#for k in range(len(trimmedPaths)):
-		for k,path in trimmedPaths.iteritems():
-			#path = trimmedPaths[k]
-			print "path has", len(path), "points"
-			xP = []
-			yP = []
-			for p in path:
-				xP.append(p[0])
-				yP.append(p[1])
+		#for k,path in trimmedPaths.iteritems():
+		#	print "path has", len(path), "points"
+		#	xP = []
+		#	yP = []
+		#	for p in path:
+		#		xP.append(p[0])
+		#		yP.append(p[1])
 
-			ax4.plot(xP,yP, color = self.colors[k], linewidth=4)
+		#	ax4.plot(xP,yP, color = self.colors[k], linewidth=4)
 
-			globJuncPose = mapHyp.getGlobalJunctionPose(k)
-			if globJuncPose != None:
-				ax4.scatter([globJuncPose[0],], [globJuncPose[1],], color='k')
+		#	globJuncPose = mapHyp.getGlobalJunctionPose(k)
+		#	if globJuncPose != None:
+		#		ax4.scatter([globJuncPose[0],], [globJuncPose[1],], color='k')
 			
+
+
 		#pylab.xlim(-4,4)
 
 		#self.plotEnv()

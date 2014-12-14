@@ -111,6 +111,7 @@ class TestNavigation(SnakeControl):
 		self.globalTimer = 1
 
 		self.termPathID = -1
+		self.termPoint = None
 		
 		self.inversion = 1
 		
@@ -605,8 +606,11 @@ class TestNavigation(SnakeControl):
 				self.mapGraph.drawNavigation([],[])
 				#self.globalState = 10
 
-				#if self.mapGraph.numNodes > 26:
+				#if self.mapGraph.numNodes > 6:
 				#	self.travelDir = False	
+				#if self.mapGraph.numNodes > 6:
+				#	self.globalState = 10
+
 				if self.mapGraph.numNodes > self.maxNumPoses:
 					exit()	
 					
@@ -617,8 +621,8 @@ class TestNavigation(SnakeControl):
 			
 			" select the point to go to "
 			if self.targetPoint == []:
-				frontierPoint, self.termPathID = self.mapGraph.selectNextDestination()
-				self.wayPoints, self.wayPaths = self.mapGraph.recomputePath(self.termPathID)
+				self.termPoint, self.termPathID = self.mapGraph.selectNextDestination()
+				self.wayPoints, self.wayPaths = self.mapGraph.recomputePath(self.termPathID, self.termPoint)
 
 				" determine if we are already at the destination, otherwise recompute "
 				dest = self.wayPoints[0]
@@ -632,12 +636,12 @@ class TestNavigation(SnakeControl):
 
 
 			else:
-				frontierPoint = self.targetPoint
+				self.termPoint = self.targetPoint
 				self.termPathID = -1
 
 
-			frontierPoint, self.termPathID = self.mapGraph.selectNextDestination()
-			self.wayPoints, self.wayPaths = self.mapGraph.recomputePath(self.termPathID)
+			self.termPoint, self.termPathID = self.mapGraph.selectNextDestination()
+			self.wayPoints, self.wayPaths = self.mapGraph.recomputePath(self.termPathID, self.termPoint)
 
 
 							
@@ -1476,7 +1480,14 @@ class TestNavigation(SnakeControl):
 					self.mapGraph.drawNavigation([],[])
 					return True
 
-				self.localWayPoints, self.localWayPaths = self.mapGraph.recomputePath(self.termPathID)
+				try:
+					self.localWayPoints, self.localWayPaths = self.mapGraph.recomputePath(self.termPathID, self.termPoint)
+				except:
+					""" we lost our destination from the map """
+					self.mapGraph.drawNavigation(self.localWayPaths[0], self.localWayPoints[0])
+					self.targetReached = True
+					self.termPathID = -1
+					return True
 
 				self.mapGraph.drawNavigation(self.localWayPaths[0], self.localWayPoints[0])
 

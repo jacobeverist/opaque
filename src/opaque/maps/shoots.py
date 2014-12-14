@@ -526,12 +526,12 @@ def computePathSegments(juncIDs, leafIDs, tree, gridHash, vertices):
 
 	if len(smoothLeafSegments) > 1:
 		for seg in smoothLeafSegments:
-			smoothLeafTerms.append(seg[-1])
+			smoothLeafTerms.append(seg[-1][:2])
 	
 	else:
 		seg = smoothLeafSegments[0]
-		smoothLeafTerms.append(seg[0])
-		smoothLeafTerms.append(seg[-1])
+		smoothLeafTerms.append(seg[0][:2])
+		smoothLeafTerms.append(seg[-1][:2])
 
 
 	for seg in realInternalSegments:
