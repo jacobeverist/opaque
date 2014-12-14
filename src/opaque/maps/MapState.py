@@ -1125,6 +1125,43 @@ class MapState:
 					#if landmark1_N != None:
 					#	landmark1_L = poseFrame_L.convertLocalToGlobal(landmark1_N)
 
+		maxTuple = None
+		maxNormCost = -1e10
+		for arcTuple, branchResult in self.jointBranchEvaluations.iteritems():
+
+			normLandmark = branchResult["normLandmark"]
+
+			if normLandmark > maxNormCost:
+				maxNormCost = normLandmark
+				maxTuple = arcTuple
+
+		maxSplicedPaths = []
+		if maxTuple != None:
+
+			branchResult = self.jointBranchEvaluations[maxTuple]
+
+			#branchResult = self.jointBranchEvaluations[arcTuple]
+			totalMatchCount = branchResult["totalMatchCount"]
+			normMatchCount = branchResult["normMatchCount"]
+			normLandmark = branchResult["normLandmark"]
+
+			if normLandmark > maxNormCost:
+				maxNormCost = normLandmark
+				maxTuple = arcTuple
+
+			landmarks_G = branchResult["landmarks_G"]
+
+			controlPoses = branchResult["controlSet"]
+			controlPoses_G = computeGlobalControlPoses(controlPoses, parentPathIDs)
+
+			""" collect landmarks that we can localize against """
+			candLandmarks_G = nodeToGlobalLandmarks(controlPoses, self.getPathIDs(), self.getParentHash(), self.nodeLandmarks, self.pathClasses, exemptNodes = [nodeID0,nodeID1])
+
+
+			splices_G = branchResult["splices_G"]
+			for splice in splices_G:
+				maxSplicedPaths.append((arcTuple, normLandmark, splice, None, candLandmarks_G))
+
 
 		for particleIndex in range(len(particleDist2)):
 
@@ -1180,6 +1217,26 @@ class MapState:
 			# part.branchArcDists = newBranchArcDists
 			# part.branchControls = newBranchControls
 
+			if maxTuple != None:
+				for kIndex in range(len(branchPathIDs)):
+					pathID = branchPathIDs[kIndex]
+					maxDist = maxTuple[kIndex]
+
+					""" compute the rails of the branch point distribution """
+					arcHigh = maxDist + self.DIV_LEN * floor(self.NUM_BRANCHES/2.0)
+					arcLow = maxDist - self.DIV_LEN * floor(self.NUM_BRANCHES/2.0)
+
+					""" compute the sample points for the branch point distribution """
+					arcDists = []
+					for k in range(self.NUM_BRANCHES):
+						newArcDist = arcLow + k * self.DIV_LEN
+						arcDists.append(newArcDist)
+
+					part.branchArcDists[pathID] = arcDists
+
+					part.junctionData[pathID]["arcDists"] = arcDists
+
+
 			""" build indexing tuples for this particle """
 			argSet = []
 			for pathID in branchPathIDs:
@@ -1191,6 +1248,8 @@ class MapState:
 				for comb in combIterator:
 					arcIndexes.append(tuple(comb))
 
+			if maxTuple != None:
+				arcIndexes = [maxTuple,]
 
 			# TODO: consider single path longestPaths , including root
 			""" minimum 5 tuples """
@@ -2711,7 +2770,6 @@ class MapState:
 		return nodeID in self.pathClasses[pathID]["nodeSet"]
 
 	
-	@logFunction
 	def localizeBranchPoint(self, orientedPathSoup, junctionPose1, parentPathID, pathID1, plotIter = False):
 
 		parentPath = self.paths[parentPathID]
