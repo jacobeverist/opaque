@@ -316,7 +316,8 @@ def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine
 
 			#supportLine = mapHyp.paths[0]
 
-			currPose3 = getInPlaceGuess(poseData, nodeID-1, nodeID, currPose2, estPose3, supportLine, direction)
+			#currPose3 = getInPlaceGuess(poseData, nodeID-1, nodeID, currPose2, estPose3, supportLine, direction)
+			currPose3 = getInPlaceGuess(poseData, nodeID-1, nodeID, currPose2, estPose3, [], direction)
 
 			print "displace old to new poses:", estPose0, estPose2, estPose3, currPose2, currPose3
 

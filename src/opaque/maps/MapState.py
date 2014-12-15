@@ -688,7 +688,7 @@ class MapState:
 
 
 
-			batchJobs.append([self.poseData, part, particleIndex, nodeID1, prevPose0, prevPose1, hypPose0, hypPose1, self.paths[0], staticSplicedPaths0, staticSplicedPaths1, candLandmarks_G, targetNodeLandmarks_N])
+			batchJobs.append([self.poseData, part, particleIndex, nodeID1, prevPose0, prevPose1, hypPose0, hypPose1, [], staticSplicedPaths0, staticSplicedPaths1, candLandmarks_G, targetNodeLandmarks_N])
 
 		results = batchDisplaceParticles(batchJobs)
 
@@ -886,9 +886,6 @@ class MapState:
 
 		""" smoothed and vectored root path """
 
-
-		rootSpline = SplineFit(self.paths[0], smooth=0.1)
-		rootSplice = rootSpline.getUniformSamples()
 
 		staticSplicedPaths = []
 		sPaths0 = self.getAllSplices2()
