@@ -885,8 +885,15 @@ class MapState:
 		poseData = self.poseData
 
 		""" smoothed and vectored root path """
+
+
 		rootSpline = SplineFit(self.paths[0], smooth=0.1)
 		rootSplice = rootSpline.getUniformSamples()
+
+		staticSplicedPaths = []
+		sPaths0 = self.getAllSplices2()
+		for sPath in sPaths0:
+			staticSplicedPaths.append(sPath['skelPath'])
 
 		self.isNoLocalize = False
 		self.resetBranches()
@@ -1145,9 +1152,12 @@ class MapState:
 			normMatchCount = branchResult["normMatchCount"]
 			normLandmark = branchResult["normLandmark"]
 
-			if normLandmark > maxNormCost:
-				maxNormCost = normLandmark
-				maxTuple = arcTuple
+
+			print "maxTuple:", maxTuple, normLandmark, maxNormCost, totalMatchCount, branchResult["landmarkCost"]
+
+			#if normLandmark > maxNormCost:
+			#	maxNormCost = normLandmark
+			#	maxTuple = arcTuple
 
 			landmarks_G = branchResult["landmarks_G"]
 
@@ -1236,6 +1246,7 @@ class MapState:
 
 					part.junctionData[pathID]["arcDists"] = arcDists
 
+				part.maxLikelihoodBranch = maxTuple
 
 			""" build indexing tuples for this particle """
 			argSet = []
@@ -1280,6 +1291,7 @@ class MapState:
 				#			distSum += dist
 
 
+				print len(splices_G), "splices"
 				splices_G = branchResult["splices_G"]
 				for splice in splices_G:
 					#thisSplicedPaths.append((arcTuple, normMatchCount*normLandmark, splice, None, []))
@@ -1324,9 +1336,10 @@ class MapState:
 
 				candLandmarks_G = nodeToGlobalLandmarks(controlPoses, self.getPathIDs(), self.getParentHash(), self.nodeLandmarks, self.pathClasses, exemptNodes = [nodeID0,nodeID1])
 
-				thisSplicedPaths.append((None, 1.0, rootSplice, None, candLandmarks_G))
+				for splice in staticSplicedPaths:
+					thisSplicedPaths.append((None, 1.0, splice, None, candLandmarks_G))
 
-			print "particle:", particleIndex, ",",  len(thisSplicedPaths), "localize jobs"
+			#print "particle:", particleIndex, ",",  len(thisSplicedPaths), "localize jobs"
 			poseFrame = Pose(hypPose0)
 			globalMedial0 = []
 			medialSpline0 = SplineFit(medial0, smooth=0.1)
@@ -2470,7 +2483,6 @@ class MapState:
 			pathID1 = currKeys[currK1]
 			self.branchDivergeCount[pathID1] = 0
 			segs1 = self.globalSegments[pathID1]
-			terms1 = self.globalTerms[pathID1]
 
 			terms_L = self.localTerms[pathID1]
 
@@ -2513,6 +2525,24 @@ class MapState:
 					self.branchDivergeCount[pathID1] += 1
 
 
+					""" check if this terminal is close to another terminal in different shoot """
+					isCoincident = False
+					for currK2 in range(currK1+1, len(currKeys)): 
+						pathID2 = currKeys[currK2]
+						otherTerms_G = self.globalTerms[pathID2]
+						for p in otherTerms_G:
+
+							dist = sqrt((p[0]-term1_G[0])**2 + (p[1]-term1_G[1])**2)
+
+							if dist < DIST_THRESH:
+								isCoincident = True
+					if isCoincident:
+						allTerms_L[pathID1].append(term1)
+						allTerms_G[pathID1].append(term1_G)
+
+
+
+
 		self.subsumedTerms_L = allTerms_L
 
 
@@ -2522,6 +2552,7 @@ class MapState:
 		#self.pathTermsVisited = {}
 		self.pathTermsData = {}
 
+		allPathIDs = self.getPathIDs()
 
 		""" previous terminals from last computation """
 		prevTermList = []
@@ -2545,16 +2576,18 @@ class MapState:
 					termShootID = termData["frameID"]
 					prevTermPoint = termData["term_L"]
 					visitStatus = termData["isVisited"]
-					termFrame = Pose(controlPoses_G[termShootID])
 
-					prevTermPoint_G = termFrame.convertLocalToGlobal(prevTermPoint)
+					if termShootID in allPathIDs:
+						termFrame = Pose(controlPoses_G[termShootID])
 
-					prevDist = sqrt((term1_G[0]-prevTermPoint_G[0])**2 + (term1_G[1]-prevTermPoint_G[1])**2)
+						prevTermPoint_G = termFrame.convertLocalToGlobal(prevTermPoint)
 
-					if prevDist < minDist:
-						minDist = prevDist
-						minMatchData = termData
-						minUUID = termUUID
+						prevDist = sqrt((term1_G[0]-prevTermPoint_G[0])**2 + (term1_G[1]-prevTermPoint_G[1])**2)
+
+						if prevDist < minDist:
+							minDist = prevDist
+							minMatchData = termData
+							minUUID = termUUID
 
 				if minDist < 1.0:
 
@@ -2938,6 +2971,7 @@ class MapState:
 		junctionPoses = {}
 		tipPoints = {}
 		localPathSegsByID = {}
+		localTermsByID = {}
 		pathIDs = self.getPathIDs()
 		for pathID in pathIDs:
 			localSkeletons[pathID] = self.localLeaf2LeafPathJunctions[pathID]["skeletonGraph"]
@@ -2945,6 +2979,9 @@ class MapState:
 			junctionPoses[pathID] = self.pathClasses[pathID]["localJunctionPose"]
 			tipPoints[pathID] = self.pathClasses[pathID]["tipPoint_L"]
 			localPathSegsByID[pathID] = self.localLeaf2LeafPathJunctions[pathID]["localSegments"]
+			localTermsByID[pathID] = self.localLeaf2LeafPathJunctions[pathID]["leafTerms"]
+			#self.localTerms[pathID] = self.localLeaf2LeafPathJunctions[pathID]["leafTerms"]
+			#self.localSegments[pathID] = self.localLeaf2LeafPathJunctions[pathID]["localSegments"]
 
 		parentPathIDs = self.getParentHash()
 
@@ -2965,9 +3002,10 @@ class MapState:
 				thisArcDists[pathID] = arcDist
 
 			#self.localLandmarks
-			jointBranchJobs.append((localPathSegsByID, self.localPaths, localSkeletons, thisControlPoses, tipPoints, junctionPoses, self.localLandmarks, parentPathIDs, thisArcDists, len(self.nodePoses)-1, self.hypothesisID ))
+			jointBranchJobs.append((localPathSegsByID, localTermsByID, self.localPaths, localSkeletons, thisControlPoses, tipPoints, junctionPoses, self.localLandmarks, parentPathIDs, thisArcDists, len(self.nodePoses)-1, self.hypothesisID ))
 
 
+		print len(jointBranchJobs), "total branch jobs"
 		jointResults = batchJointBranch(jointBranchJobs)
 
 		"""
@@ -3037,6 +3075,8 @@ class MapState:
 				normLandmark = (self.maxLandmarkCost-landmarkCost)/ self.maxLandmarkCost
 			else:
 				normLandmark = 1.0
+
+			normLandmark *= normMatchCount
 
 			""" if branch is not diverging, then zero the landmark utility since we use this for evaluation """
 			if self.maxMatchCount <= 0:
@@ -3738,6 +3778,10 @@ class MapState:
 
 		self.delPath(pathID, mergeTargetPathID)
 
+		#self.pathTermsData
+
+		#for termUUID, termData in self.pathTermsData.iteritems():
+		#	termShootID = termData["frameID"]
 
 		#controlPoses = self.getControlPoses()
 		#globalControlPoses_G = computeGlobalControlPoses(controlPoses, parentPathIDs)

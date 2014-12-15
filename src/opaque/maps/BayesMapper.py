@@ -328,6 +328,7 @@ class BayesMapper:
 				else:
 
 					isSubsumed = False
+					print pID, "branchDivergeCount:", currHyp.branchDivergeCount
 					for val in currHyp.branchDivergeCount.values():
 						if val >= 2:
 							isSubsumed = True

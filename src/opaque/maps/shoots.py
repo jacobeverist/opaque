@@ -1945,18 +1945,19 @@ def __remote_multiJointBranch(rank, qin, qout):
 			for job in args:
 
 				localPathSegs = job[0]
-				localPaths = job[1]
-				localSkeletons = job[2]
-				controlPoses = job[3]
-				tipPoints = job[4]
-				junctionPoses = job[5]
-				landmarks = job[6]
-				parentPathIDs = job[7]
-				arcDists = job[8]
-				numNodes = job[9]
-				hypID = job[10]
+				localTerms = job[1]
+				localPaths = job[2]
+				localSkeletons = job[3]
+				controlPoses = job[4]
+				tipPoints = job[5]
+				junctionPoses = job[6]
+				landmarks = job[7]
+				parentPathIDs = job[8]
+				arcDists = job[9]
+				numNodes = job[10]
+				hypID = job[11]
 
-				result = computeJointBranch(localPathSegs, localPaths, localSkeletons, controlPoses, tipPoints, junctionPoses, landmarks, parentPathIDs, arcDists, numNodes, hypID)
+				result = computeJointBranch(localPathSegs, localTerms, localPaths, localSkeletons, controlPoses, tipPoints, junctionPoses, landmarks, parentPathIDs, arcDists, numNodes, hypID)
 				#result = None
 
 				results.append(result)
@@ -4128,7 +4129,7 @@ def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, 
 
 
 @logFunction
-def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPoses, tipPoints, junctionPoses, landmarks, parentPathIDs, arcDists, numNodes=0, hypothesisID=0):
+def computeJointBranch(localPathSegsByID, localTerms, localPaths, localSkeletons, controlPoses, tipPoints, junctionPoses, landmarks, parentPathIDs, arcDists, numNodes=0, hypothesisID=0):
 
 	print "computeJointBranch()", numNodes
 	sys.stdout.flush()
@@ -4213,10 +4214,11 @@ def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPos
 		longestPaths[pathID] = longPath_L
 
 		""" store the computed branch point and evaluation results """
-		if isNoDiverge:
-			branchResult["matchCounts"][pathID] = 0
-		else:
-			branchResult["matchCounts"][pathID] = matchCount1
+		#if isNoDiverge:
+		#	branchResult["matchCounts"][pathID] = 0
+		#else:
+		#	branchResult["matchCounts"][pathID] = matchCount1
+		branchResult["matchCounts"][pathID] = matchCount1
 		branchResult["costSum"][pathID] = lastCost1
 		branchResult["branchPoses_L"][pathID] = branchPose_L
 		branchResult["tipPoints_L"][pathID] = tipPoint_L
@@ -4225,109 +4227,8 @@ def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPos
 	""" find the splice through skeleton """
 	spliceSkeleton_G = spliceSkeletons(localSkeletons, controlPoses_G, newBranchPoses_L, parentPathIDs)
 
-	
-	# get all terminals of this shoot map's branch state 
-	allGlobalTerms = []
-	rootPath_G = localPaths[0]
 
-	# the terminals of the parent shoot
-	parentTerm1_G = rootPath_G[0]
-	parentTerm2_G = rootPath_G[-1]
-	allGlobalTerms.append(parentTerm1_G)
-	allGlobalTerms.append(parentTerm2_G)
-
-	for pathID in branchPathIDs:
-
-		childFrame = Pose(controlPoses_G[pathID])
-
-		trimPath_L = trimmedPaths[pathID]
-		branchPose_L = newBranchPoses_L[pathID]
-
-		# the terminals of the child shoot 
-		dist1 = sqrt((branchPose_L[0]-trimPath_L[0][0])**2 + (branchPose_L[1]-trimPath_L[0][1])**2)
-		dist2 = sqrt((branchPose_L[0]-trimPath_L[-1][0])**2 + (branchPose_L[1]-trimPath_L[-1][1])**2)
-
-		if dist1 < dist2:
-			childTerm_L = trimPath_L[-1]
-		else:
-			childTerm_L = trimPath_L[0]
-
-		childTerm_G = childFrame.convertLocalToGlobal(childTerm_L)
-
-		allGlobalTerms.append(childTerm_G)
-
-	# (N choose 2) splices where N is the number of terminals 
-
-	termPaths_G = []
-	for i in range(len(allGlobalTerms)):
-		term1_G = allGlobalTerms[i]
-		for j in range(i+1, len(allGlobalTerms)):
-			term2_G = allGlobalTerms[j]
-
-			splicePair = (term1_G, term2_G)
-			termPaths_G.append(splicePair)
-
-
-	splicedPaths_G = []
-	for termPath in termPaths_G:
-
-		# use splice skeleton to find shortest path 
-		startPose = termPath[0]
-		endPose = termPath[-1]
-
-		minStartDist = 1e100
-		minStartNode = None
-		minEndDist = 1e100
-		minEndNode = None
-		
-		for edge in spliceSkeleton_G.edges():
-		
-			globalNodePoint1 = edge[0]
-			globalNodePoint2 = edge[1]
-
-			dist1 = sqrt((globalNodePoint1[0]-startPose[0])**2 + (globalNodePoint1[1]-startPose[1])**2)
-			dist2 = sqrt((globalNodePoint2[0]-startPose[0])**2 + (globalNodePoint2[1]-startPose[1])**2)
-
-			if dist1 < minStartDist:
-				minStartDist = dist1
-				minStartNode = globalNodePoint1
-
-			if dist2 < minStartDist:
-				minStartDist = dist2
-				minStartNode = globalNodePoint2
-
-			dist1 = sqrt((globalNodePoint1[0]-endPose[0])**2 + (globalNodePoint1[1]-endPose[1])**2)
-			dist2 = sqrt((globalNodePoint2[0]-endPose[0])**2 + (globalNodePoint2[1]-endPose[1])**2)
-
-			if dist1 < minEndDist:
-				minEndDist = dist1
-				minEndNode = globalNodePoint1
-
-			if dist2 < minEndDist:
-				minEndDist = dist2
-				minEndNode = globalNodePoint2
-
-
-		startNode = minStartNode
-		endNode = minEndNode
-
-
-		shortestSpliceTree, shortestSpliceDist = spliceSkeleton_G.shortest_path(endNode)
-		currNode = shortestSpliceTree[startNode]					 
-		splicedSkel = [startNode]
-		while currNode != endNode:
-			splicedSkel.append(currNode)
-			nextNode = shortestSpliceTree[currNode]
-			currNode = nextNode
-		splicedSkel.append(currNode)
-
-		splicedSkel = ensureEnoughPoints(splicedSkel, max_spacing = 0.08, minPoints = 5)
-		spliceSpline1 = SplineFit(splicedSkel, smooth=0.1)
-		splicePoints1 = spliceSpline1.getUniformSamples()
-
-		splicedPaths_G.append(splicePoints1)
-
-	branchTermPaths = termPaths_G
+	splicedPaths_G = computeAllSplices2(controlPoses_G, localTerms, localPathSegsByID, spliceSkeleton_G)
 	
 	""" store the splices """
 	branchResult["splices_G"] = deepcopy(splicedPaths_G)
@@ -4414,6 +4315,7 @@ def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPos
 
 
 
+	#branchResult["landmarkCost"] = distSum / totalMatchCount
 	branchResult["landmarkCost"] = distSum
 	branchResult["landmarks_G"] = landmarks_G
 
@@ -4427,8 +4329,6 @@ def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPos
 			childFrame = Pose(controlPoses_G[pathID])
 			#branchPose_G = childFrame.convertLocalOffsetToGlobal(branchPose_L)
 
-			#termPaths_G = branchTermPaths[pathID]
-			termPaths_G = branchTermPaths
 			trimPath_L = trimmedPaths[pathID]
 
 
@@ -4482,15 +4382,6 @@ def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPos
 
 				pylab.scatter(xP,yP, color='y', zorder=9)
 
-			#for termPath in termPaths_G:
-			#	startPose = termPath[0]
-			#	endPose = termPath[-1]
-
-			#	xP = [startPose[0], endPose[0]]
-			#	yP = [startPose[1], endPose[1]]
-
-			#	pylab.scatter(xP,yP, color='r')
-
 			pylab.scatter([newBranchPoses_G[pathID][0],], [newBranchPoses_G[pathID][1],], color='m', zorder = 9)
 			#pylab.scatter([controlPoses_G[pathID][0],], [controlPoses_G[pathID][1],], color='b')
 
@@ -4508,7 +4399,7 @@ def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPos
 
 
 		pylab.axis("equal")
-		pylab.title("hyp %d nodeID %d %1.2f %d %1.2f" % ( hypothesisID, numNodes, newBranchPoses_L[pathID][2], totalMatchCount, distSum ))
+		pylab.title("hyp %d nodeID %d %d %1.2f" % ( hypothesisID, numNodes, totalMatchCount, distSum ))
 
 		nameStr = "computeJointBranch_%04u_%04u_%04u"
 		arcDistList = []
@@ -4527,6 +4418,201 @@ def computeJointBranch(localPathSegsByID, localPaths, localSkeletons, controlPos
 
 	return branchResult
 
+
+def computeAllSplices2(controlPoses_G, localTerms, localSegments, spliceSkeleton):
+
+	"""
+	1) get all terminals of each skeleton
+	2) eliminate terminals that are "subsumed" by other shoots
+	3) find splices between the remaining terminals
+
+
+	FIXME: how to eliminate so many possibilities when junctions are not aligned?
+	FIXME: what if two terminals are very close to one another, how to select only one? not both or zero
+
+	"""
+	DIST_THRESH = 0.2
+
+	globalTerms = {}
+
+	for pathID, terms in localTerms.iteritems():
+		globalTerms[pathID] = []
+		shootFrame = Pose(controlPoses_G[pathID])
+		for term in terms:
+			globalP = shootFrame.convertLocalToGlobal(term)
+			globalTerms[pathID].append(globalP)
+	
+	
+	globalSegments = {}
+
+	for pathID, segs in localSegments.iteritems():
+		globalSegments[pathID] = []
+		shootFrame = Pose(controlPoses_G[pathID])
+		for seg in segs:
+			globalSeg = []
+			for p in seg:
+				globalP = shootFrame.convertLocalOffsetToGlobal(p)
+				globalSeg.append(globalP)
+
+			globalSegments[pathID].append(globalSeg)
+
+
+	""" of all the terms, find the ones that are not subsumed by other shoots """
+
+	branchDivergeCount = {}
+
+	subsumedTerms_L = {}
+	allTerms_L = {}
+	allTerms_G = {}
+	currKeys = globalSegments.keys()
+
+	for currK1 in range(len(currKeys)): 
+
+		pathID1 = currKeys[currK1]
+		branchDivergeCount[pathID1] = 0
+		segs1 = globalSegments[pathID1]
+
+		terms_L = localTerms[pathID1]
+
+
+		shootFrame = Pose(controlPoses_G[pathID1])
+
+		allTerms_L[pathID1] = []
+		allTerms_G[pathID1] = []
+
+
+		for term1 in terms_L:
+
+			term1_G = shootFrame.convertLocalToGlobal(term1)
+
+			minDist2 = 1e100
+			minP2 = None
+
+			for currK2 in range(len(currKeys)): 
+
+				if currK2 != currK1:
+
+					pathID2 = currKeys[currK2]
+					segs2 = globalSegments[pathID2]
+
+					for seg2 in segs2:
+						for p in seg2:
+
+							dist2 = sqrt((p[0]-term1_G[0])**2 + (p[1]-term1_G[1])**2)
+
+							if dist2 < minDist2:
+								minDist2 = dist2
+								minP2 = p
+			
+			print pathID1, minDist2, "terms:", term1_G
+			if minDist2 > DIST_THRESH:
+				allTerms_L[pathID1].append(term1)
+				allTerms_G[pathID1].append(term1_G)
+			else:
+				branchDivergeCount[pathID1] += 1
+
+
+	termList = []
+	pathIDs = allTerms_G.keys()
+
+	for pathID in pathIDs:
+		for term_G in allTerms_G[pathID]:
+			termList.append(term_G)
+	
+	termCombos = []
+	for j in range(len(termList)):
+		for k in range(j+1, len(termList)):
+			termCombos.append((termList[j], termList[k]))
+
+
+	finalResults = []
+
+
+	print "termCombos:", termCombos
+	
+	for termPath in termCombos:
+
+		memberShootIDs = {}
+		joinPairs = []
+
+		startPose = termPath[0]
+		endPose = termPath[1]
+
+		print "startPose, endPose:", startPose, endPose
+
+		minStartDist = 1e100
+		minStartNode = None
+		minEndDist = 1e100
+		minEndNode = None
+		
+		for edge in spliceSkeleton.edges():
+		
+			globalNodePoint1 = edge[0]
+			globalNodePoint2 = edge[1]
+
+			dist1 = sqrt((globalNodePoint1[0]-startPose[0])**2 + (globalNodePoint1[1]-startPose[1])**2)
+			dist2 = sqrt((globalNodePoint2[0]-startPose[0])**2 + (globalNodePoint2[1]-startPose[1])**2)
+
+			if dist1 < minStartDist:
+				minStartDist = dist1
+				minStartNode = globalNodePoint1
+
+			if dist2 < minStartDist:
+				minStartDist = dist2
+				minStartNode = globalNodePoint2
+
+			dist1 = sqrt((globalNodePoint1[0]-endPose[0])**2 + (globalNodePoint1[1]-endPose[1])**2)
+			dist2 = sqrt((globalNodePoint2[0]-endPose[0])**2 + (globalNodePoint2[1]-endPose[1])**2)
+
+			if dist1 < minEndDist:
+				minEndDist = dist1
+				minEndNode = globalNodePoint1
+
+			if dist2 < minEndDist:
+				minEndDist = dist2
+				minEndNode = globalNodePoint2
+
+
+		startNode = minStartNode
+		endNode = minEndNode
+
+
+		print "nodes path from", startNode, "to", endNode
+		shortestSpliceTree, shortestSpliceDist = spliceSkeleton.shortest_path(endNode)
+		currNode = shortestSpliceTree[startNode]					 
+
+		nodeAttrs = spliceSkeleton.get_node_attributes(startNode)
+		memberPathID = None
+		for attr in nodeAttrs:
+			if attr[0] == "pathID":
+				memberPathID = attr[1]
+
+		memberShootIDs[memberPathID] = None
+
+		splicedSkel = [startNode]
+		while currNode != endNode:
+			#print "currNode:", currNode
+			splicedSkel.append(currNode)
+
+			nodeAttrs = spliceSkeleton.get_node_attributes(currNode)
+			memberPathID = None
+			for attr in nodeAttrs:
+				if attr[0] == "pathID":
+					memberPathID = attr[1]
+
+			memberShootIDs[memberPathID] = None
+
+			nextNode = shortestSpliceTree[currNode]
+			currNode = nextNode
+		splicedSkel.append(currNode)
+
+		splicedSkel = ensureEnoughPoints(splicedSkel, max_spacing = 0.08, minPoints = 5)
+		spliceSpline1 = SplineFit(splicedSkel, smooth=0.1)
+		splicePoints1 = spliceSpline1.getUniformSamples()
+
+		finalResults.append(splicePoints1)
+
+	return finalResults
 
 @logFunction
 def computeBranch(pathID, parentID, localPathSegsByID, localPaths, arcDist, localSkeletons, controlPoses, junctionPoses, parentPathIDs, numNodes=0, hypothesisID=0):

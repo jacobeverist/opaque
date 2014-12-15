@@ -1178,12 +1178,12 @@ def computeLocalDivergence2(hypSet, nodeID1, nodeID2):
 
 			orientedSplice = orientPathLean(path, globalMedial1)
 
-			resultArgs1 = getMultiDeparturePoint(orientedSplice, medial1_vec, estPose1, estPose1, memberShootIDs, nodeID1, pathPlotCount=0, hypID=mapHyp.hypothesisID, plotIter=False)
+			resultArgs1 = getMultiDeparturePoint(orientedSplice, medial1_vec, estPose1, estPose1, memberShootIDs, nodeID1, pathPlotCount=k, hypID=mapHyp.hypothesisID, plotIter=True)
 
 
 
 
-			resultArgs2 = getMultiDeparturePoint(orientedSplice, medial2_vec, estPose2, estPose2, memberShootIDs, nodeID2, pathPlotCount=0, hypID=mapHyp.hypothesisID, plotIter=False)
+			resultArgs2 = getMultiDeparturePoint(orientedSplice, medial2_vec, estPose2, estPose2, memberShootIDs, nodeID2, pathPlotCount=k, hypID=mapHyp.hypothesisID, plotIter=True)
 
 			#mapHyp.departureResultSet2 = resultArgs2
 
@@ -1194,6 +1194,7 @@ def computeLocalDivergence2(hypSet, nodeID1, nodeID2):
 			resultSet2.append(resultArgs2+(k,))
 
 			"departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2"
+
 
 
 		""" overlapSum secondary, contigFrac primary """
