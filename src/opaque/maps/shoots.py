@@ -3615,7 +3615,8 @@ def getInitSkeletonBranchPoint(globalJunctionPose, currShootID, globalMedial_G, 
 	#print "initSkeletonBranchPoint:", maxSkeletonID, maxSpliceSegID, maxSkeletonContigFrac
 
 	#controlSplice = shootSplicesByID_G[maxSkeletonID][maxSpliceID]
-	controlTerm1_G, controlTerm2_G, controlSplice = shootSplices_G[maxSpliceID]
+	#controlTerm1_G, controlTerm2_G, controlSplice = shootSplices_G[maxSpliceID]
+	controlTerm1_G, controlTerm2_G, controlSplice = globalSplices[maxSkeletonID][maxSpliceID]
 
 	parentControlPose = globalControlPoses[maxSkeletonID]
 	parentFrame = Pose(parentControlPose)

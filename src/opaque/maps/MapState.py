@@ -775,8 +775,8 @@ class MapState:
 			""" check to avoid divide by zero """
 			if maxLandmarkSum > 0.0:
 				if maxLandmarkSum > poseLandmarkSum:
-					#newProb0 = currProb0 * ((maxLandmarkSum-poseLandmarkSum)/maxLandmarkSum)
-					newProb0 = (maxLandmarkSum-poseLandmarkSum)/maxLandmarkSum
+					newProb0 = currProb0 * ((maxLandmarkSum-poseLandmarkSum)/maxLandmarkSum)
+					#newProb0 = (maxLandmarkSum-poseLandmarkSum)/maxLandmarkSum
 				else:
 					""" maximum landmark cost, means utility is zeroed """
 					newProb0 = 0.0
@@ -3136,6 +3136,7 @@ class MapState:
 			else:
 				normLandmark = 1.0
 
+			""" multiply the overlap with the landmark utility """
 			normLandmark *= normMatchCount
 
 			""" if branch is not diverging, then zero the landmark utility since we use this for evaluation """
