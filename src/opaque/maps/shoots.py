@@ -3438,7 +3438,7 @@ def ensureEnoughPoints(newPath2, max_spacing = 0.08, minPoints = 5):
 	return newPath3
 	
 @logFunction
-def getInitSkeletonBranchPoint(globalJunctionPose, currShootID, globalMedial_G, parentShootIDs, localPathSegsByID, localPaths, globalControlPoses, plotIter = False, hypothesisID = 0, nodeID = 0, arcDist = 0.0):
+def getInitSkeletonBranchPoint(globalJunctionPose, currShootID, globalMedial_G, parentShootIDs, localPathSegsByID, localPaths, localTerms, localSkeletons, globalControlPoses, plotIter = False, hypothesisID = 0, nodeID = 0, arcDist = 0.0):
 
 
 
@@ -3468,9 +3468,11 @@ def getInitSkeletonBranchPoint(globalJunctionPose, currShootID, globalMedial_G, 
 	#print currShootID, "ancestorIDs:", ancestorIDs
 
 	pathSegsByID_G = {}
+	terms_G = {}
 	#for shootID in ancestorIDs:
 	for shootID in allPathIDs:
 
+		shootTerms_L = localTerms[shootID]
 		localSegs_L = localPathSegsByID[shootID]
 		localPath_L = SplineFit(localPaths[shootID]).getUniformSamples()
 		controlPose_G = globalControlPoses[shootID]
@@ -3481,20 +3483,152 @@ def getInitSkeletonBranchPoint(globalJunctionPose, currShootID, globalMedial_G, 
 			newSeg = []
 			for p in seg:
 				newPose = descenFrame.convertLocalOffsetToGlobal(p)
-				#allPointSoup_G.append(newPose[0:2])
+				allPointSoup_G.append(newPose[0:2])
 				newSeg.append(newPose)
 			localSegs_G.append(newSeg)
 
 		pathSegsByID_G[shootID] = localSegs_G
 
-		localPath_G = []
-		for p in localPath_L:
-			newPose = descenFrame.convertLocalOffsetToGlobal(p)
-			allPointSoup_G.append(newPose[0:2])
-			localPath_G.append(newPose)
+		#localPath_G = []
+		#for p in localPath_L:
+			#newPose = descenFrame.convertLocalOffsetToGlobal(p)
+			#allPointSoup_G.append(newPose[0:2])
+			#localPath_G.append(newPose)
+
+		shootTerms_G = []
+		for p in shootTerms_L:
+			term_G = descenFrame.convertLocalToGlobal(p)
+			shootTerms_G.append(term_G)
+		terms_G[shootID] = shootTerms_G
 
 
 
+
+
+
+	globalSkeletons = {}
+	pathIDs = localSkeletons.keys()
+	
+	for pathID in pathIDs: 
+
+		skel = localSkeletons[pathID]
+		controlPose = globalControlPoses[pathID]
+		parentPathID = parentShootIDs[pathID]
+
+		origControlOrigin = Pose(controlPose)
+
+		globalSkeletonGraph = graph.graph()
+
+		minChildNode = None
+		minChildDist = 1e100
+	
+		for edge in skel.edges():
+		
+			nodePoint1 = edge[0]
+			nodePoint2 = edge[1]
+
+			globalNodePoint1 = tuple(origControlOrigin.convertLocalToGlobal(nodePoint1))
+			globalNodePoint2 = tuple(origControlOrigin.convertLocalToGlobal(nodePoint2))
+
+			dist = sqrt((globalNodePoint1[0]-globalNodePoint2[0])**2 + (globalNodePoint1[1]-globalNodePoint2[1])**2)
+
+			globalSkeletonGraph.add_node(globalNodePoint1, attrs=[("pathID",pathID),])
+			globalSkeletonGraph.add_node(globalNodePoint2, attrs=[("pathID",pathID),])
+			globalSkeletonGraph.add_edge(globalNodePoint1, globalNodePoint2, wt=dist)
+
+		globalSkeletons[pathID] = globalSkeletonGraph
+
+
+	globalSplices = {}
+	for shootID in allPathIDs:
+		globalSplices[shootID] = []
+
+		globalSkeleton = globalSkeletons[shootID]
+
+		shootTerms_G = terms_G[shootID]
+
+		for j in range(len(shootTerms_G)):
+			term1 = shootTerms_G[j]
+			for k in range(j+1, len(shootTerms_G)):
+				term2 = shootTerms_G[k]
+
+				splicePoints1 = getSkeletonPath(globalSkeleton, term1, term2)
+
+				globalSplices[shootID].append((term1, term2, splicePoints1))
+
+
+
+	maxSkeletonID = 0
+	maxSkeletonContigFrac = 0.0
+	maxSpliceID = 0
+
+	for shootID in allPathIDs:
+		shootSplices_G = globalSplices[shootID]
+
+		maxContigFrac = 0.0
+		maxContigIndex = 0
+
+		for spliceIndex in range(len(shootSplices_G)):
+
+			term1, term2, splicePoints = shootSplices_G[spliceIndex]
+
+			""" make sure the overlap of both shoots are oriented the same way """
+			orientedMedial_G = orientPath(globalMedial_G, splicePoints)
+	
+			kdInput = []
+			for j in range(0,len(splicePoints)):
+				p_1 = splicePoints[j]
+				kdInput.append(p_1[0:2])
+
+			kdTree = cKDTree(array(kdInput))
+			
+			contigCount = 0
+			maxContig = 0
+			for i in range(0,len(orientedMedial_G)):
+
+				p_2 = orientedMedial_G[i]
+
+				queryPoint = p_2[0:2]
+				minDist, i_1 = kdTree.query(array(queryPoint))
+				p_1 = splicePoints[i_1]
+
+				if minDist < CONTIG_DIST:
+					contigCount += 1
+					if contigCount > maxContig:
+						maxContig = contigCount
+				else:
+					contigCount = 0
+
+			contigFrac = float(maxContig)/float(len(orientedMedial_G))
+
+			print "contigFrac:", maxContig, shootID, spliceIndex, len(orientedMedial_G), contigFrac
+
+			if contigFrac > maxContigFrac:
+				maxContigFrac = contigFrac
+				maxContigIndex = spliceIndex
+			
+		if maxContigFrac > maxSkeletonContigFrac:
+			maxSkeletonID = shootID
+			maxSpliceID = maxContigIndex
+			maxSkeletonContigFrac = maxContigFrac
+
+	#print "initSkeletonBranchPoint:", maxSkeletonID, maxSpliceSegID, maxSkeletonContigFrac
+
+	#controlSplice = shootSplicesByID_G[maxSkeletonID][maxSpliceID]
+	controlTerm1_G, controlTerm2_G, controlSplice = shootSplices_G[maxSpliceID]
+
+	parentControlPose = globalControlPoses[maxSkeletonID]
+	parentFrame = Pose(parentControlPose)
+
+	controlTerm1_P = parentFrame.convertGlobalToLocal(controlTerm1_G)
+	controlTerm2_P = parentFrame.convertGlobalToLocal(controlTerm2_G)
+
+
+	orientedMedial_G = orientPath(globalMedial_G, controlSplice)
+
+
+
+	"""
 	maxSkeletonID = 0
 	maxSkeletonContigFrac = 0.0
 	maxSkeletonSegID = 0
@@ -3509,7 +3643,6 @@ def getInitSkeletonBranchPoint(globalJunctionPose, currShootID, globalMedial_G, 
 
 			seg = shootSegs_G[segIndex]
 
-			""" make sure the overlap of both shoots are oriented the same way """
 			orientedMedial_G = orientPath(globalMedial_G, seg)
 	
 			kdInput = []
@@ -3549,12 +3682,15 @@ def getInitSkeletonBranchPoint(globalJunctionPose, currShootID, globalMedial_G, 
 			maxSkeletonSegID = maxContigIndex
 			maxSkeletonContigFrac = maxContigFrac
 
-
 	controlSeg = pathSegsByID_G[maxSkeletonID][maxSkeletonSegID]
 	orientedMedial_G = orientPath(globalMedial_G, controlSeg)
+
+	"""
+
 	
 	""" compute the control point """
-	commonU1, commonU2, commonP1, commonP2 = selectCommonOrigin(controlSeg, orientedMedial_G)
+	#commonU1, commonU2, commonP1, commonP2 = selectCommonOrigin(controlSeg, orientedMedial_G)
+	commonU1, commonU2, commonP1, commonP2 = selectCommonOrigin(controlSplice, orientedMedial_G)
 
 
 
@@ -3576,10 +3712,70 @@ def getInitSkeletonBranchPoint(globalJunctionPose, currShootID, globalMedial_G, 
 	""" placeholder values, not true branch point """
 	#branchParentID = controlParentID
 
-	print "initSkeletonBranchPoint:", maxSkeletonID, maxSkeletonSegID, maxSkeletonContigFrac, controlPose_G, branchPose_G, tipPoint_G
+	print "initSkeletonBranchPoint:", maxSkeletonID, maxSpliceID, maxSkeletonContigFrac, controlPose_G, branchPose_G, tipPoint_G, controlTerm1_G, controlTerm2_G
 
-	return controlPose_G, controlParentID, tipPoint_G, branchPose_G
+	#return controlPose_G, controlParentID, tipPoint_G, branchPose_G
 	
+	return controlPose_G, controlParentID, tipPoint_G, branchPose_G, controlTerm1_P, controlTerm2_P
+
+
+@logFunction
+def getSkeletonPath(skeleton, term1, term2):
+
+	minStartDist = 1e100
+	minStartNode = None
+	minEndDist = 1e100
+	minEndNode = None
+	
+	for edge in skeleton.edges():
+	
+		globalNodePoint1 = edge[0]
+		globalNodePoint2 = edge[1]
+
+		dist1 = sqrt((globalNodePoint1[0]-term1[0])**2 + (globalNodePoint1[1]-term1[1])**2)
+		dist2 = sqrt((globalNodePoint2[0]-term1[0])**2 + (globalNodePoint2[1]-term1[1])**2)
+
+		if dist1 < minStartDist:
+			minStartDist = dist1
+			minStartNode = globalNodePoint1
+
+		if dist2 < minStartDist:
+			minStartDist = dist2
+			minStartNode = globalNodePoint2
+
+		dist1 = sqrt((globalNodePoint1[0]-term2[0])**2 + (globalNodePoint1[1]-term2[1])**2)
+		dist2 = sqrt((globalNodePoint2[0]-term2[0])**2 + (globalNodePoint2[1]-term2[1])**2)
+
+		if dist1 < minEndDist:
+			minEndDist = dist1
+			minEndNode = globalNodePoint1
+
+		if dist2 < minEndDist:
+			minEndDist = dist2
+			minEndNode = globalNodePoint2
+
+
+	startNode = minStartNode
+	endNode = minEndNode
+
+
+	print "nodes path from", startNode, "to", endNode
+	shortestSpliceTree, shortestSpliceDist = skeleton.shortest_path(endNode)
+	currNode = shortestSpliceTree[startNode]					 
+
+	splicedSkel = [startNode]
+	while currNode != endNode:
+		splicedSkel.append(currNode)
+		nextNode = shortestSpliceTree[currNode]
+		currNode = nextNode
+
+	splicedSkel.append(currNode)
+
+	splicedSkel = ensureEnoughPoints(splicedSkel, max_spacing = 0.08, minPoints = 5)
+	spliceSpline1 = SplineFit(splicedSkel, smooth=0.1)
+	splicePoints1 = spliceSpline1.getUniformSamples()
+
+	return splicePoints1
 
 
 @logFunction

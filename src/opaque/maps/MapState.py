@@ -28,7 +28,7 @@ from uuid import uuid4
 import alphamod
 from itertools import product
 
-from shoots import computeShootSkeleton, spliceSkeletons, computeGlobalControlPoses, batchJointBranch, batchBranch, trimBranch, getBranchPoint, ensureEnoughPoints, getInitSkeletonBranchPoint, getSkeletonBranchPoint
+from shoots import computeShootSkeleton, spliceSkeletons, computeGlobalControlPoses, batchJointBranch, batchBranch, trimBranch, getBranchPoint, ensureEnoughPoints, getInitSkeletonBranchPoint, getSkeletonBranchPoint, getSkeletonPath
 from landmarks import *
 #from shoots import *
 
@@ -675,6 +675,9 @@ class MapState:
 			prevPose0 = part.prevPose0
 			prevPose1 = part.prevPose1
 
+			""" this is a candidate replacement support curve """
+			#currSplice0 = part.spliceCurve
+
 			staticSplicedPaths0 = []
 			staticSplicedPaths1 = []
 			sPaths0 = self.getAllSplices2()
@@ -977,7 +980,8 @@ class MapState:
 			parentPathIDs = self.getParentHash()
 
 			for pathID in allPathIDs:
-				pathSpline = SplineFit(self.localPaths[pathID])
+				#pathSpline = SplineFit(self.localPaths[pathID])
+				pathSpline = SplineFit(self.controlCurves[pathID])
 				pathSplines[pathID] = pathSpline
 
 			branchPathIDs = deepcopy(allPathIDs)
@@ -998,6 +1002,8 @@ class MapState:
 
 					parentID = parentPathIDs[pathID]
 					pathSpline = pathSplines[parentID]
+
+					""" this is the point where the control pose gets erroneously moved back onto the longest path """
 					controlPose = part.junctionData[pathID]["controlPose"]
 					minDist, controlUVal, newControlPose = pathSpline.findClosestPoint(controlPose)
 					arcDist = pathSpline.dist_u(controlUVal)
@@ -1846,6 +1852,26 @@ class MapState:
 				if pathID != 0:
 					junctionPoses[pathID] = self.pathClasses[pathID]["globalJunctionPose"]
 
+			for pathID in allPathIDs:
+
+				xP = []
+				yP = []
+
+				if pathID != 0:
+					parentPathID = self.pathClasses[pathID]["parentID"]
+					currFrame = Pose(controlPoses_G[parentPathID])
+
+					controlCurve = self.controlCurves[pathID]
+
+					for p in controlCurve:
+						p1 = currFrame.convertLocalToGlobal(p)
+						xP.append(p1[0])
+						yP.append(p1[1])
+
+					pylab.plot(xP,yP, color = 'y', alpha = 0.9, zorder=13)
+					# = getSkeletonPath(parentSkeleton, parentTerm1, parentTerm2)
+
+
 			#xP = []
 			#yP = []
 			#for pathID in allPathIDs:
@@ -1969,6 +1995,16 @@ class MapState:
 		if len(xP) > 0:
 			pylab.scatter(xP, yP, color='k', linewidth=1, zorder=9, alpha=0.9)
 
+		xP = []
+		yP = []
+		for pathID in allPathIDs:
+			pose_G = controlPoses_G[pathID]
+			xP.append(pose_G[0])
+			yP.append(pose_G[1])
+
+		if len(xP) > 0:
+			pylab.scatter(xP, yP, color='r', linewidth=1, zorder=10, alpha=0.9)
+
 
 		xP = []
 		yP = []
@@ -1986,14 +2022,14 @@ class MapState:
 			if pathID != 0:
 				junctionPoses[pathID] = self.pathClasses[pathID]["globalJunctionPose"]
 
-		xP = []
-		yP = []
-		for pathID, branchPoint in junctionPoses.iteritems():
-			xP.append(branchPoint[0])
-			yP.append(branchPoint[1])
+		#xP = []
+		#yP = []
+		#for pathID, branchPoint in junctionPoses.iteritems():
+		#	xP.append(branchPoint[0])
+		#	yP.append(branchPoint[1])
 
-		if len(xP) > 0:
-			pylab.scatter(xP, yP, color='r', linewidth=1, zorder=10, alpha=0.9)
+		#if len(xP) > 0:
+		#	pylab.scatter(xP, yP, color='r', linewidth=1, zorder=10, alpha=0.9)
 
 
 		pose0 = self.getNodePose(nodeID0)
@@ -2519,7 +2555,8 @@ class MapState:
 					allTerms_G[pathID1].append(term1_G)
 					#print pathID1, "terms:", term1
 				else:
-					self.branchDivergeCount[pathID1] += 1
+					if pathID1 != 0:
+						self.branchDivergeCount[pathID1] += 1
 
 
 					""" check if this terminal is close to another terminal in different shoot """
@@ -2832,18 +2869,38 @@ class MapState:
 	def resetBranches(self):
 
 
-		self.branchEvaluations = {}
+		self.branchArcBins = {}
 		self.jointBranchEvaluations = {}
 
 		parentPathIDs = self.getParentHash()
 
+
+
 		#self.DIV_LEN = 0.2
 
 		allPathIDs = self.getPathIDs()
+
+
+		self.controlCurves = {}
 		for pathID in allPathIDs:
 			if self.pathClasses[pathID]["parentID"] != None:
 				parentPathID = parentPathIDs[pathID]
-				pathSpline = SplineFit(self.paths[parentPathID])
+				parentSkeleton = self.localSkeletons[parentPathID]
+				parentTerm1 = self.pathClasses[pathID]["controlTerm1_P"]
+				parentTerm2 = self.pathClasses[pathID]["controlTerm2_P"]
+
+				self.controlCurves[pathID] = getSkeletonPath(parentSkeleton, parentTerm1, parentTerm2)
+			else:
+				self.controlCurves[pathID] = self.localPaths[pathID]
+
+
+
+
+		for pathID in allPathIDs:
+			if self.pathClasses[pathID]["parentID"] != None:
+				parentPathID = parentPathIDs[pathID]
+				#pathSpline = SplineFit(self.localPaths[parentPathID])
+				pathSpline = SplineFit(self.controlCurves[parentPathID])
 
 				totalDist = pathSpline.dist_u(1.0)
 
@@ -2855,7 +2912,7 @@ class MapState:
 					currDist += self.DIV_LEN
 					branchSpace[currDist] = None
 
-				self.branchEvaluations[pathID] = branchSpace
+				self.branchArcBins[pathID] = branchSpace
 
 
 		self.branchControlPoses = {}
@@ -2867,7 +2924,8 @@ class MapState:
 				self.branchArcDists[pathID] = []
 
 				parentPathID = parentPathIDs[pathID]
-				pathSpline = SplineFit(self.localPaths[parentPathID])
+				#pathSpline = SplineFit(self.localPaths[parentPathID])
+				pathSpline = SplineFit(self.controlCurves[parentPathID])
 
 				totalDist = pathSpline.dist_u(1.0)
 
@@ -2916,7 +2974,7 @@ class MapState:
 		"""
 
 		if self.pathClasses[pathID]["parentID"] != None: 
-			currBranchSpace = self.branchEvaluations[pathID]
+			currBranchSpace = self.branchArcBins[pathID]
 
 			currKeys = currBranchSpace.keys()
 			currKeys.sort()
@@ -2956,6 +3014,7 @@ class MapState:
 
 		jointComboControlSets = sorted(jointComboControlSets, reverse=True)
 
+		""" sorted list of pathIDs for indexing arc distances in order to make indexable tuples """
 		allPathIDs = self.getPathIDs()
 		branchPathIDs = deepcopy(allPathIDs)
 		branchPathIDs.remove(0)
@@ -2986,6 +3045,7 @@ class MapState:
 		jointBranchJobs = []
 		for controlSet in jointComboControlSets:
 
+			""" values are overwritten by controlSet """
 			thisControlPoses = deepcopy(controlPoses)
 			thisArcDists = {}
 
@@ -3000,6 +3060,7 @@ class MapState:
 
 			#self.localLandmarks
 			jointBranchJobs.append((localPathSegsByID, localTermsByID, self.localPaths, localSkeletons, thisControlPoses, tipPoints, junctionPoses, self.localLandmarks, parentPathIDs, thisArcDists, len(self.nodePoses)-1, self.hypothesisID ))
+			#jointBranchJobs.append((localPathSegsByID, localTermsByID, self.controlCurves, localSkeletons, thisControlPoses, tipPoints, junctionPoses, self.localLandmarks, parentPathIDs, thisArcDists, len(self.nodePoses)-1, self.hypothesisID ))
 
 
 		print len(jointBranchJobs), "total branch jobs"
@@ -3207,237 +3268,6 @@ class MapState:
 			self.tempCount += 1
 
 
-	@logFunction
-	def evaluateBranches(self, pathID, modControlPose, nodeID0, particleIndex):
-
-		# pathID
-		# parentID
-		# curr path
-		# parent path
-		# origJuncPose
-		# smoothPathSegs = junctionDetails["leafSegments"] + junctionDetails["internalSegments"]
-		# hypID
-
-
-		if self.pathClasses[pathID]["parentID"] != None: 
-
-			""" path information """
-			pathDesc = self.pathClasses[pathID]
-			parentID = pathDesc["parentID"]
-
-			pathSpline = SplineFit(self.paths[parentID])
-
-			minDist, uVal, splinePoint = pathSpline.findClosestPoint(modControlPose)
-			arcDist = pathSpline.dist_u(uVal)
-
-			arcHigh = arcDist + self.DIV_LEN * floor(self.NUM_BRANCHES/2.0)
-			arcLow = arcDist - self.DIV_LEN * floor(self.NUM_BRANCHES/2.0)
-
-			totalDist = pathSpline.dist_u(1.0)
-		
-			"""
-			1) point that has the junction
-			2) direction of junction
-			3) set of long paths that include junction path  (only 2)
-			"""
-
-			""" initialize if this is the first time """
-			branchSamples = []
-			for k in range(self.NUM_BRANCHES):
-				newArcDist = arcLow + k * self.DIV_LEN
-				branchSample = self.getPrecomputedBranch(pathID, newArcDist)
-				branchSamples.append(branchSample)
-
-			""" get the maximum value for each of our features """
-			maxCost = -1e100
-			maxMatchCount = -1000
-			maxAngDiff = -1e100
-			maxDist = 10.0
-
-
-			""" find maximum values for each metric """
-			for k in range(len(branchSamples)):
-				part = branchSamples[k]
-				matchCount = part["matchCount"]
-				lastCost = part["lastCost"]
-				dist = part["distDisc"]
-				angDiff = part["angDisc"]
-
-				if matchCount > maxMatchCount:
-					maxMatchCount = matchCount
-
-				if lastCost > maxCost:
-					maxCost = lastCost
-
-				if dist > maxDist:
-					maxDist = dist
-
-				if angDiff > maxAngDiff:
-					maxAngDiff = angDiff
-
-
-			""" invert the distance, angDiff and cost features """
-			totalProbSum = 0.0
-			for k in range(len(branchSamples)):
-
-				part = branchSamples[k]
-
-				lastCost = part["lastCost"]
-				dist = part["distDisc"]
-				angDiff = part["angDisc"]
-				matchCount = part["matchCount"]
-
-				""" makes the maximum cost non-zero and inverted """
-				matchCost = 0.1 + maxCost-lastCost
-
-				nomDist = 0.0
-				if maxDist > 0.0:
-					nomDist = (maxDist-dist)/maxDist
-				else:
-					nomDist = 0.0
-
-
-				""" angDiff feature times matchCount times dist """
-				probVal = matchCount
-				totalProbSum += probVal
-
-				part2 = deepcopy(part)
-				part2["lastCost"] = matchCost
-				part2["distDisc"] = nomDist
-				part2["initProb"] = probVal
-
-				#part2 = (part[0], part[1], part[2], part[3], part[4], matchCost, nomDist, part[7], probVal, part[9], part[10], part[11])
-				branchSamples[k] = part2
-
-			""" normalize the probability values """
-			maxProb = 0.0
-			for k in range(len(branchSamples)):
-				part = branchSamples[k]
-
-				probVal = 0.0
-
-				if totalProbSum > 0.0:
-
-					probVal = part["initProb"] / totalProbSum
-
-					if probVal > maxProb:
-						maxProb = probVal
-				else:
-					probVal = 0.0
-
-				part2 = deepcopy(part)
-				part2["initProb"] = probVal
-
-				branchSamples[k] = part2
-
-				#part2 = (parentID, modJuncPose, newArcDist, pathID, matchCount1, lastCost1, distDisc, angDisc, initProb, newSplices, juncDiscAngle, juncDist)
-				print "branchSample %04u %02u %02u %1.4f %03u %1.2f %1.2f %1.2f %1.2f %d %1.2f %1.2f" % (nodeID0, particleIndex, k, part2["modJuncPose"][2], part2["matchCount"], part2["lastCost"], part2["distDisc"], part2["angDisc"], part2["initProb"], len(part2["newSplices"]), part2["juncDiscAngle"], part2["juncDiscDist"])
-			print "branchSample"
-
-			""" cartesian distance """
-			DISC_THRESH = 0.5
-
-			""" 60 degree threshold """
-			#ANG_THRESH = 0.523 # pi/6
-			ANG_THRESH = 1.5708 # pi/2
-
-			
-			""" get splices for new branch position """
-			""" reject branch locations whose branch angle discrepancy is too high """ 
-			for k in range(len(branchSamples)):
-				part = branchSamples[k]
-
-				newProbVal = branchSamples[k]["initProb"] 
-
-				juncDiscAngle = part["juncDiscAngle"]
-
-				if fabs(juncDiscAngle) > ANG_THRESH:
-					newProbVal = 0.0
-
-				part2 = deepcopy(part)
-				part2["initProb"] = newProbVal
-
-				#part2 = (part[0], part[1], part[2], part[3], part[4], part[5], part[6], part[7], newProbVal, part[9], part[10], part[11])
-				branchSamples[k] = part2
-
-
-			junctionDetails = self.localLeaf2LeafPathJunctions[pathID]
-			localPathSegs = junctionDetails["localSegments"]
-
-
-			if True:
-				pylab.clf() 
-				#for k,path in self.trimmedPaths.iteritems():
-				#	print "path has", len(path), "points"
-				#	xP = []
-				#	yP = []
-				#	for p in path:
-				#		xP.append(p[0])
-				#		yP.append(p[1])
-
-				#	pylab.plot(xP,yP, color = self.colors[k], linewidth=4)
-
-			if True:
-				xP = []
-				yP = []
-
-				xP2 = []
-				yP2 = []
-				for part in branchSamples:
-
-					modControlPose = part["modControlPose"]
-					modJuncPose = part["modJuncPose"]
-
-					controlOrigin1 = Pose(modControlPose)
-					globalJuncPose = controlOrigin1.convertLocalOffsetToGlobal(modJuncPose)
-
-					xP.append(globalJuncPose[0])
-					yP.append(globalJuncPose[1])
-					xP2.append(modControlPose[0])
-					yP2.append(modControlPose[1])
-
-					newSplices = part["newSplices"]
-
-					for path in newSplices:
-						xP1 = []
-						yP1 = []
-						for p in path:
-							xP1.append(p[0])
-							yP1.append(p[1])
-						if maxProb > 0:
-							pylab.plot(xP1,yP1,color='k', zorder=9, alpha=part["initProb"]/maxProb)
-						else:
-							pylab.plot(xP1,yP1,color='k', zorder=9, alpha=0.10)
-
-
-					"""
-					offsetOrigin1 = Pose(modControlPose)
-
-					for k in range(len(localPathSegs)):
-						localSeg = localPathSegs[k]
-						xP1 = []
-						yP1 = []
-						for p in localSeg:
-							p1 = offsetOrigin1.convertLocalOffsetToGlobal(p)
-							xP1.append(p1[0])
-							yP1.append(p1[1])
-
-						if maxProb > 0:
-							pylab.plot(xP1,yP1,color='k', zorder=9, alpha=part["initProb"]/maxProb)
-						else:
-							#pylab.plot(xP1,yP1,color='k', zorder=9, alpha=part[8])
-							pylab.plot(xP1,yP1,color='k', zorder=9, alpha=0.10)
-					"""
-
-
-				pylab.scatter(xP, yP, color='y', zorder=8)
-				pylab.scatter(xP2, yP2, color='k', zorder=8)
-				pylab.title("nodeID: %d hyp: %d, branchSampleID: %d pathID: %d, localPathSegs %d" % (nodeID0, self.hypothesisID, particleIndex, pathID, len(localPathSegs)))
-				
-				pylab.savefig("bayes_plot_%04u_%02u_%03u_%04u.png" % (nodeID0, self.hypothesisID, particleIndex, self.tempCount) )
-				self.tempCount += 1
-
-		return branchSamples
 
 	""" update landmark data structures """
 	def updateLandmarks(self):
@@ -3554,11 +3384,11 @@ class MapState:
 
 			self.topCount += 1
 			
-		localSkeletons = {}
+		self.localSkeletons = {}
 		controlPoses = {}
 		junctionPoses = {}
 		for pathID in pathIDs:
-			localSkeletons[pathID] = self.localLeaf2LeafPathJunctions[pathID]["skeletonGraph"]
+			self.localSkeletons[pathID] = self.localLeaf2LeafPathJunctions[pathID]["skeletonGraph"]
 			controlPoses[pathID] = self.pathClasses[pathID]["controlPose"]
 			junctionPoses[pathID] = self.pathClasses[pathID]["globalJunctionPose"]
 			self.localTerms[pathID] = self.localLeaf2LeafPathJunctions[pathID]["leafTerms"]
@@ -3635,7 +3465,7 @@ class MapState:
 		#self.trimmedPaths = self.trimPaths(self.paths)
 
 
-		self.spliceSkeleton = spliceSkeletons(localSkeletons, finalPoses, junctionPoses, parentPathIDs)
+		self.spliceSkeleton = spliceSkeletons(self.localSkeletons, finalPoses, junctionPoses, parentPathIDs)
 
 		""" find root terminal """
 		rootPath = self.paths[0]
@@ -3650,6 +3480,25 @@ class MapState:
 		
 		""" don't care about return values, are stored as object member variable """
 		self.computeAllSplices2(plotIter = True)
+
+		self.controlCurves = {}
+		for pathID in pathIDs:
+			if self.pathClasses[pathID]["parentID"] != None:
+				parentPathID = parentPathIDs[pathID]
+				parentSkeleton = self.localSkeletons[parentPathID]
+				parentTerm1 = self.pathClasses[pathID]["controlTerm1_P"]
+				parentTerm2 = self.pathClasses[pathID]["controlTerm2_P"]
+
+				parentFrame = Pose(finalPoses[parentPathID])
+				parentTerm1_G = parentFrame.convertLocalToGlobal(parentTerm1)
+				parentTerm2_G = parentFrame.convertLocalToGlobal(parentTerm2)
+
+				print "controlCurve:", pathID, parentPathID, parentTerm1_G, parentTerm2_G
+
+				self.controlCurves[pathID] = getSkeletonPath(parentSkeleton, parentTerm1, parentTerm2)
+			else:
+				self.controlCurves[pathID] = self.localPaths[pathID]
+
 
 		self.isChanged = False
 
@@ -3995,7 +3844,8 @@ class MapState:
 		#localPathSegsByID[newPathID] 
 
 
-		controlPose_G, controlParentID, tipPoint_G, branchPose_G = getInitSkeletonBranchPoint(globalJunctionPose_G, newPathID, globalMedial0_G, parentPathIDs, localPathSegsByID, self.localPaths, globalControlPoses_G, plotIter = False, hypothesisID = self.hypothesisID, nodeID = branchNodeID)
+		#self.localSkeletons = {}
+		controlPose_G, controlParentID, tipPoint_G, branchPose_G, controlTerm1_P, controlTerm2_P = getInitSkeletonBranchPoint(globalJunctionPose_G, newPathID, globalMedial0_G, parentPathIDs, localPathSegsByID, self.localPaths, self.localTerms, self.localSkeletons, globalControlPoses_G, plotIter = False, hypothesisID = self.hypothesisID, nodeID = branchNodeID)
 
 		#try:
 		#	branchPose_G, isNoDiverge = getSkeletonBranchPoint(oldBranchPose_G, pathID, parentPathIDs, localPathSegsByID, localPaths, controlPoses_G)
@@ -4056,7 +3906,9 @@ class MapState:
 						"nodeSet" : [branchNodeID,],
 						"localNodePoses" : {branchNodeID : nodePose_C},
 						"globalJunctionPose" : newGlobJuncPose_G,
-						"controlPose" : controlPose_P }		
+						"controlPose" : controlPose_P,
+						"controlTerm1_P" : controlTerm1_P, 		
+						"controlTerm2_P" : controlTerm2_P }		
 
 		print "new pathClass:", self.pathClasses[newPathID]
 
@@ -4072,7 +3924,8 @@ class MapState:
 
 		""" FIXME:  Full path spline instead of just relevant section.  Does this always work? """
 		#parentShoot_G = self.paths[parentID]
-		parentShoot_L = self.localPaths[controlParentID]
+		#parentShoot_L = self.localPaths[controlParentID]
+		parentShoot_L = self.controlCurves[controlParentID]
 		parentShoot_G = []
 		for p in parentShoot_L:
 			parentShoot_G.append(parentFrame.convertLocalToGlobal(p))
