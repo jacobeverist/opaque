@@ -639,31 +639,12 @@ class MapState:
 		controlPoses = deepcopy(self.getControlPoses())
 		controlPoses_G = computeGlobalControlPoses(controlPoses, parentPathIDs)
 
+		""" collect landmarks that we can localize against """
 		candLandmarks_G = nodeToGlobalLandmarks(self.getControlPoses(), self.getPathIDs(), self.getParentHash(), self.nodeLandmarks, self.pathClasses, exemptNodes = [nodeID0,nodeID1])
 
 		targetNodeLandmarks_N = {nodeID0 : None, nodeID1 : None}
 		targetNodeLandmarks_N[nodeID0] = getNodeLandmark(nodeID0, self.poseData)
 		targetNodeLandmarks_N[nodeID1] = getNodeLandmark(nodeID1, self.poseData)
-
-		""" collect landmarks that we can localize against """
-		#candLandmarks_G = []
-		#for pathID in pathIDs:
-
-		#	nodeSet = self.getNodes(pathID)
-		#	currFrame_L = Pose(controlPoses[pathID])
-
-		#	for nodeID in nodeSet:
-
-		#		landmarkPoint_N, pointThresh, pointName = self.nodeLandmarks[pathID][nodeID]
-
-		#		currFrame_G = Pose(controlPoses_G[pathID])
-		#		nodePose_L = self.pathClasses[pathID]["localNodePoses"][nodeID]
-		#		poseFrame_L = Pose(nodePose_L)
-
-		#		if landmarkPoint_N != None and nodeID != nodeID0 and nodeID != nodeID1:
-		#			landmarkPoint_L = poseFrame_L.convertLocalToGlobal(landmarkPoint_N)
-		#			landmarkPoint_G = currFrame_G.convertLocalToGlobal(landmarkPoint_L)
-		#			candLandmarks_G.append(landmarkPoint_G)
 
 		particleDist2 = self.poseParticles["snapshots2"][0]
 		for particleIndex in range(len(particleDist2)):

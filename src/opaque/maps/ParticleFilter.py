@@ -665,6 +665,7 @@ def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine
 			
 			
 			
+			""" sort by angDiff follwed by contigFrac """
 			resultMoves2 = sorted(resultMoves2, key=itemgetter(18))
 			resultMoves2 = sorted(resultMoves2, key=itemgetter(16), reverse=True)
 
@@ -720,95 +721,6 @@ def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine
 			print "fitted poses:", currPose2, currPose3
 			print "currProbs:", currProb2, currProb3
 
-			"""
-			"FIXME:  choose a splice that is common to the paired old and new poses "
-			orientedPathSpline2 = SplineFit(currSplice2, smooth=0.1)
-			orientedPathSpline3 = SplineFit(currSplice3, smooth=0.1)
-
-			#estPose0 = prevPose0
-			#estPose1 = prevPose1
-			#estPose2 = initPose2
-			#estPose3 = initPose3
-
-			oldPose0 = estPose0
-			minDist0, oldU0, oldP0 = orientedPathSpline2.findClosestPoint(oldPose0)
-
-			oldPose1 = estPose1
-			minDist1, oldU1, oldP1 = orientedPathSpline3.findClosestPoint(oldPose1)
-
-			newPose2 = currPose2
-			minDist2, newU2, newP2 = orientedPathSpline2.findClosestPoint(newPose2)
-
-			newPose3 = currPose3
-			minDist3, newU3, newP3 = orientedPathSpline3.findClosestPoint(newPose3)
-
-			travelDist2 = orientedPathSpline2.dist(oldU0, newU2)
-			if oldU0 > newU2:
-				travelDist2 = -travelDist2
-			travelDist3 = orientedPathSpline3.dist(oldU1, newU3)
-			if oldU1 > newU3:
-				travelDist3 = -travelDist3
-			
-			orientedPoints2 = orientedPathSpline2.getUniformSamples()
-			orientedPoints3 = orientedPathSpline3.getUniformSamples()
-
-			#mapHyp.displacePoseParticles(nodeID-1, nodeID, travelDist2, travelDist3)
-
-			medialSpline = SplineFit(medial2, smooth=0.1)
-			#medial3
-
-			currSplice2
-
-			poseOrigin2 = Pose(currPose2)
-			globalMedial2 = []
-			for p in medial2:
-				globalMedial2.append(poseOrigin2.convertLocalToGlobal(p))
-
-			orientedSplicePath = orientPath(currSplice2, globalMedial2)				
-			pathSpline = SplineFit(orientedSplicePath, smooth=0.1)
-
-
-			" original pose, before displacement "
-			minDist2, oldU2, oldP2 = pathSpline.findClosestPoint(estPose0)
-			minDist3, oldU3, oldP3 = pathSpline.findClosestPoint(estPose1)
-
-			thisDist2 = travelDist2
-			thisDist3 = travelDist3
-
-			#moveChance = random.random()
-			" 80% chance we move forward, 20% we move backward "    
-			#if moveChance >= 0.1:
-			#	thisDist2 = travelDist2
-			#	thisDist3 = travelDist3
-			#else:
-			#	thisDist2 = -travelDist2
-			#	thisDist3 = -travelDist3
-
-			thisDist2 = travelDist2
-			thisDist3 = travelDist3
-			#thisDist2 = random.gauss(thisDist2,0.6)
-			#thisDist3 = random.gauss(thisDist3,0.6)
-
-
-			newU2 = pathSpline.getUOfDist(oldU2, thisDist2)
-			newU3 = pathSpline.getUOfDist(oldU3, thisDist3)
-
-			newDist2 = pathSpline.dist_u(newU2)
-			newP2 = pathSpline.point_u(newU2)
-			currPose2 = deepcopy(newP2)
-
-			" choose angle of fit to selected splice "
-			currPose2[2] = newPose2[2]
-
-			newDist3 = pathSpline.dist_u(newU3)
-			newP3 = pathSpline.point_u(newU3)
-			currPose3 = deepcopy(newP3)
-
-			" choose angle of fit to selected splice "
-			currPose3[2] = newPose3[2]
-
-			print "displaced poses:", currPose2, currPose3
-			"""
 
 		return currPose2, currPose3, currProb2, currProb3
 
