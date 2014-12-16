@@ -691,8 +691,10 @@ class MapState:
 
 
 
-			batchJobs.append([self.poseData, part, particleIndex, nodeID1, prevPose0, prevPose1, hypPose0, hypPose1, [], staticSplicedPaths0, staticSplicedPaths1, candLandmarks_G, targetNodeLandmarks_N])
+			#batchJobs.append([self.poseData, part, particleIndex, nodeID1, prevPose0, prevPose1, hypPose0, hypPose1, [], staticSplicedPaths0, staticSplicedPaths1, candLandmarks_G, targetNodeLandmarks_N])
+			batchJobs.append([self.poseData, part, particleIndex, nodeID1, prevPose0, prevPose1, hypPose0, hypPose1, [], staticSplicedPaths0, [], candLandmarks_G, targetNodeLandmarks_N])
 
+		print len(batchJobs), "total displacement jobs"
 		results = batchDisplaceParticles(batchJobs)
 
 		for result in results:
