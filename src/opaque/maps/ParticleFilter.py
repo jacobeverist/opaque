@@ -37,6 +37,10 @@ qin_dispPosePart = None
 qout_dispPosePart =  None
 pool_dispPosePart = []
 
+qin_dispPosePart2 = None
+qout_dispPosePart2 =  None
+pool_dispPosePart2 = []
+
 qin_branch = None
 qout_branch =  None
 pool_branch = []
@@ -66,6 +70,475 @@ def __num_processors():
 		get_nprocs.restype = ctypes.c_int
 		get_nprocs.argtypes = []
 		return get_nprocs()
+
+def batchDisplaceParticles2(displaceJobs):
+
+	global renderGlobalPlotCount
+	global pool_dispPosePart2
+	global qin_dispPosePart2
+	global qout_dispPosePart2
+
+	ndata = len(displaceJobs)
+	
+	args = []
+	
+	for k in range(ndata):
+		arg = displaceJobs[k]
+		args.append(arg)
+	
+	nproc = __num_processors()
+	
+	#nproc *= 2
+	print "nproc =", nproc
+	
+	# compute chunk size
+	chunk_size = ndata / nproc
+	chunk_size = 2 if chunk_size < 2 else chunk_size
+	
+	print "chunk_size =", chunk_size
+	print "max_size =", ndata/chunk_size
+	
+	# set up a pool of processes
+	if len(pool_dispPosePart2) == 0:
+
+		qin_dispPosePart2 = processing.Queue(maxsize=ndata/chunk_size)
+		qout_dispPosePart2 = processing.Queue(maxsize=ndata/chunk_size)
+		pool_dispPosePart2 = [processing.Process(target=__remote_displaceParticle2,
+		#pool_dispPosePart = [processing.Process(target=__remote_prof_displaceParticle2,
+				#args=(rank, qin_dispPosePart2, qout_dispPosePart2, splices, medial, initPose, pathIDs, nodeID))
+				args=(rank, qin_dispPosePart2, qout_dispPosePart2))
+				#args=(rank, qin_dispPosePart2, qout_dispPosePart2))
+					for rank in range(nproc)]
+		for p in pool_dispPosePart2: p.start()
+	
+	# put data chunks in input queue
+	cur, nc = 0, 0
+	#print "args =", args
+	while 1:
+		_data = args[cur:cur+chunk_size]
+		print "nc = ", nc
+		print "cur =", cur
+		if len(_data) == 0: break
+		qin_dispPosePart2.put((nc,_data))
+		print "DONE"
+		cur += chunk_size
+		nc += 1
+	
+	print "BATCH FINISHED"
+	
+	
+	# read output queue
+	knn = []
+	isFail = False
+	while len(knn) < nc:
+		thisKnn = qout_dispPosePart2.get()
+		if thisKnn[0] != None:
+			knn += [thisKnn]
+		else:
+			isFail = True
+			break
+	
+	if isFail:
+
+		print "isFail =", isFail
+		print "knn =", knn
+
+
+		qin_dispPosePart2.close()
+		qin_dispPosePart2.join_thread()
+
+		qout_dispPosePart2.close()
+		qout_dispPosePart2.cancel_join_thread()
+
+		for p in pool_dispPosePart2:
+			p.terminate()
+
+		raise
+
+
+	# avoid race condition
+	_knn = [n for i,n in sorted(knn)]
+	knn = []
+	for tmp in _knn:
+		knn += tmp
+
+	for p in pool_dispPosePart2:
+		p.terminate()
+	pool_dispPosePart2 = []
+
+	print "returning"
+	return knn
+
+def __remote_prof_displaceParticle2(rank, qin, qout):
+
+	try:
+		pid = os.getpid()
+		" while loop "		
+		#cProfile.run('__remote_displaceParticle(rank, qin, qout)', "particle_%d.prof" % pid )
+		cProfile.runctx("__remote_displaceParticle2(rank, qin, qout)", globals(), locals(), "displaceParticle2_%d.prof" % pid)	
+	
+	except:
+		traceback.print_exc()
+		print "Exception:", sys.exc_info()[0]
+
+
+def __remote_displaceParticle2(rank, qin, qout):
+
+
+	try:
+
+		#sys.stdout = open("displaceParticle_" + str(os.getpid()) + ".out", "w")
+		#sys.stderr = open("displaceParticle_" + str(os.getpid()) + ".err", "w")
+		sys.stdout = open("displaceParticle2_" + str(rank) + ".out", "a")
+		sys.stderr = open("displaceParticle2_" + str(rank) + ".err", "a")
+		print 'module name:', __name__
+		print 'parent process:', os.getppid()
+		print 'process id:', os.getpid()
+
+		print "started __remote_displaceParticle2"
+
+		while 1:
+			# read input queue (block until data arrives)
+			results = []
+			nc, args = qin.get()
+			
+			print "__remote_displaceParticle(", nc, len(args), args
+			sys.stdout.flush()
+
+			#foo = None
+			#badVal = foo[0] 
+
+			for job in args:
+				
+				#[particleIndex, nodeID3, prevPose0, prevPose1, initPose2, initPose3, supportLine, pathSplices2, pathSplices3]
+				poseData = job[0]
+				particleIndex = job[1]
+				nodeID3 = job[2]
+				prevPose0 = job[3]
+				prevPose1 = job[4]
+				initPose2 = job[5]
+				initPose3 = job[6]
+				supportLine = job[7]
+				pathSplices2 = job[8]
+				pathSplices3 = job[9]
+				landmarks_G = job[10]
+				landmarks_N = job[11]
+
+				result = displaceParticle2( poseData, pathSplices2, pathSplices3, supportLine, nodeID3, initPose2, initPose3, prevPose0, prevPose1, particleIndex, landmarks_G, landmarks_N)
+				results.append((particleIndex,) + result)
+
+				print "result:", (particleIndex,) + result
+				sys.stdout.flush()
+
+
+			print "qout.put(", nc, results
+			sys.stdout.flush()
+							   
+			# write to output queue
+			qout.put((nc,results))
+
+	except:
+		print "Worker process failed. Exiting"
+		#printStack()
+		traceback.print_exc()
+		print "Exception:", sys.exc_info()[0]
+		
+		sys.stdout.flush()
+		sys.stderr.flush()
+		qout.put((None,None))
+		raise
+	
+	print "process exited incorrectly"
+
+
+def displaceParticle2( poseData, pathSplices2, pathSplices3, supportLine, nodeID3, initPose2, initPose3, prevPose0, prevPose1, particleIndex, landmarks_G, landmarks_N):
+
+	#print "movePath(", nodeID, ",", direction, ",", distEst, ")"
+	print "displaceParticle2()"
+	sys.stdout.flush()
+
+	estPose0 = prevPose0
+	estPose1 = prevPose1
+	estPose2 = initPose2
+	estPose3 = initPose3
+
+	nodeID2 = nodeID3-1
+	nodeID1 = nodeID2-1
+	nodeID0 = nodeID1-1
+
+	nodeID = nodeID3
+
+	medial0 = poseData.medialAxes[nodeID0]
+	medial1 = poseData.medialAxes[nodeID1]
+	medial2 = poseData.medialAxes[nodeID2]
+	medial3 = poseData.medialAxes[nodeID3]
+
+	medialSpline2 = SplineFit(medial2, smooth=0.1)
+	medial2_vec = medialSpline2.getUniformSamples()
+	medialSpline3 = SplineFit(medial3, smooth=0.1)
+	medial3_vec = medialSpline3.getUniformSamples()
+
+	direction = poseData.travelDirs[nodeID]
+
+	currPose2 = estPose2
+	currPose3 = estPose3
+	currProb2 = 0.0
+	currProb3 = 0.0
+
+
+	#splicePaths = list(set(pathSplices2 + pathSplices3))
+	splicePaths = pathSplices2 + pathSplices3
+
+	if nodeID > 0:
+		
+		if nodeID % 2 == 1:
+
+			rState = random.getstate()
+			random.seed()	
+			moveChance = random.random()
+			moveDist = random.random()
+			
+			if moveChance >= 0.1:
+				#distEst = 0.5 + (0.5-moveDist)/2.0
+				distEst = random.gauss(0.7,0.6)
+				#distEst = random.gauss(1.0,0.6)
+			else:
+				#distEst = -0.5 - (0.5-moveDist)/2.0
+				distEst = random.gauss(-0.5,0.6)
+
+			random.setstate(rState)
+
+			#distEst = moveChance * 2.0
+			#distEst = 2.0*moveChance - 0.4
+
+			print "displacing", moveChance, distEst
+
+			" the guess process gives a meaningful guess for these node's poses "
+			" before this, it is meaningless "
+			currPose2 = getStepGuess(poseData, nodeID-3, nodeID-1, estPose0, estPose2, direction, distEst = distEst)
+
+			#supportLine = mapHyp.paths[0]
+
+			#currPose3 = getInPlaceGuess(poseData, nodeID-1, nodeID, currPose2, estPose3, supportLine, direction)
+			currPose3 = getInPlaceGuess(poseData, nodeID-1, nodeID, currPose2, estPose3, [], direction)
+
+			print "displace old to new poses:", estPose0, estPose2, estPose3, currPose2, currPose3
+
+		else:
+			print "movePath:  DO NOTHING"
+
+		#return currPose2, currPose3
+
+
+		""" if the node has a spatial feature, localize it to the closest landmark """
+
+		""" if the node has a landmark feature, then we try to localize on the junction point """
+		""" FIXME: only use the first long path, we don't try and figure out the longest yet """
+		currPoses = {nodeID2: currPose2, nodeID3: currPose3}
+		poseOffsets = {nodeID2: [0.0,0.0,0.0], nodeID3: [0.0,0.0,0.0]}
+	
+		""" if the node has been localized to a landmark, we need the updated version """
+		currPose2 = currPoses[nodeID2]
+		currPose3 = currPoses[nodeID3]
+
+		print "final poses:", currPose2, currPose3
+		currProb2 = 0.0
+		currProb3 = 0.0
+
+
+		
+		" now we fit the guessed pose to a splice of the paths "
+		" this constrains it to the previously explored environment "
+		" all possible splices are used, and they are filtered to determine the best result "
+
+		if poseData.numNodes >= 4 and nodeID % 2 == 1:
+			
+			" 1) get spliced path that the previous node is on "
+			#medial2 = medialAxis0
+			#medial3 = medialAxis1
+			
+			#initPose2 = initPose0
+			#initPose3 = initPose1
+			
+			#print "junctions:", junctions
+			print "initPose2:", initPose2
+			print "initPose3:", initPose3
+									
+			#splicePaths = []
+
+			resultMoves2 = []
+			resultMoves3 = []
+
+			#for path in splicePaths:		
+			for spliceIndex in range(len(splicePaths)):		
+
+				path = splicePaths[spliceIndex]
+
+				" 2) get pose of previous node, get point on path curve "
+				#pose0 = mapHyp.nodePoses[nodeID-3]
+				#pose1 = mapHyp.nodePoses[nodeID-2]
+				pose0 = prevPose0
+				pose1 = prevPose1
+
+				" FIXME:  make sure path is oriented correctly wrt node medial axis "
+				#medial0 = prevMedialAxis0
+				
+				poseOrigin0 = Pose(pose0)
+				globalMedial0 = []
+				for p in medial0:
+					globalMedial0.append(poseOrigin0.convertLocalToGlobal(p))
+	
+				orientedSplicePath = orientPath(path, globalMedial0)				
+				currPathSpline = SplineFit(orientedSplicePath, smooth=0.1)
+
+				print "pose0,pose1:", pose0, pose1
+				
+				minDist0, u0, p0 = currPathSpline.findClosestPoint(pose0[0:2])
+				minDist1, u1, p1 = currPathSpline.findClosestPoint(pose1[0:2])
+				
+				print "u0,u1:", u0, u1
+				print "len(distPoints):", len(currPathSpline.distPoints)
+				
+				arcDist0 = currPathSpline.distPoints[int(u0*1000)]
+				arcDist1 = currPathSpline.distPoints[int(u1*1000)]
+
+				
+				" 3) step distance along the path in direction of travel "
+				
+				#pose2 = initPose2
+				#pose3 = initPose3
+				pose2 = currPose2
+				pose3 = currPose3
+				
+				print "pose2,pose3:", pose2, pose3
+				
+				" 4) set as pose of new node "
+				#mapHyp.nodePoses[nodeID-1] = pose2
+				#mapHyp.nodePoses[nodeID] = pose3
+
+				uPath2, uMedialOrigin2 = selectLocalCommonOrigin(orientedSplicePath, medial2, pose2)
+
+				uPath3, uMedialOrigin3 = selectLocalCommonOrigin(orientedSplicePath, medial3, pose3)
+				
+				u2 = uPath2
+				u3 = uPath3
+
+				print "input: uMedialOrigin2, u2, pose2:", uMedialOrigin2, u2, pose2
+				print "input: uMedialOrigin3, u3, pose3:", uMedialOrigin3, u3, pose3
+
+				
+				resultPose2, lastCost2, matchCount2, currAng2, currU2 = gen_icp.globalPathToNodeOverlapICP2([u2, uMedialOrigin2, 0.0], orientedSplicePath, medial2, plotIter = False, n1 = nodeID-1, n2 = -1, arcLimit = 0.01)
+				resultPose3, lastCost3, matchCount3, currAng3, currU3 = gen_icp.globalPathToNodeOverlapICP2([u3, uMedialOrigin3, 0.0], orientedSplicePath, medial3, plotIter = False, n1 = nodeID, n2 = -1, arcLimit = 0.01)
+				
+				print "resultPoses:", resultPose2, resultPose3
+
+				multiDepCount = 0
+
+				#self.mapStateID = mapStateID
+				result2 = getMultiDeparturePoint(orientedSplicePath, medial2_vec, pose2, resultPose2, [], nodeID-1, hypID = 0, pathPlotCount = 0, particleIndex=particleIndex, spliceIndex=spliceIndex, plotIter = False)
+				multiDepCount += 1
+				result3 = getMultiDeparturePoint(orientedSplicePath, medial3_vec, pose3, resultPose3, [], nodeID, hypID = 0, pathPlotCount = 0, particleIndex=particleIndex, spliceIndex=spliceIndex, plotIter = False)
+				multiDepCount += 1
+				
+				#results1.append(result+(k,))
+				" (departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2 )"
+				
+				" (resultPose2,lastCost2,matchCount2,fabs(currAng2)) "
+
+				contigFrac_2 = result2[12]
+				contigFrac_3 = result3[12]
+				overlapSum2 = result2[13]
+				overlapSum3 = result3[13]
+				
+				angDiff2 = abs(diffAngle(pose2[2],resultPose2[2]))
+				angDiff3 = abs(diffAngle(pose3[2],resultPose3[2]))
+
+				if overlapSum2 > 1e10:
+					newProb2 = 0.0	
+				else:
+					newProb2 = (pi-angDiff2) * contigFrac_2
+
+				if overlapSum3 > 1e10:
+					newProb3 = 0.0	
+				else:
+					newProb3 = (pi-angDiff3) * contigFrac_3
+				
+				print "angDiff:", angDiff2, angDiff3
+				print "overlapSum:", overlapSum2, overlapSum3
+				print "newProb:", newProb2, newProb3
+				
+
+
+				" NOTE:  added minimum threshold to angle difference "
+				" NOTE:  guess pose is now the inter-nodal estimate instead of path-based estimate "
+				if angDiff2 < 0.5:
+					#resultMoves2.append((resultPose2,lastCost2,matchCount2,fabs(currAng2)) + result2)
+					resultMoves2.append((resultPose2,lastCost2,matchCount2,fabs(0.0)) + result2 + (orientedSplicePath, newProb2))
+				if angDiff3 < 0.5:
+					#resultMoves3.append((resultPose3,lastCost3,matchCount3,fabs(currAng3)) + result3)				
+					resultMoves3.append((resultPose3,lastCost3,matchCount3,fabs(0.0)) + result3 + (orientedSplicePath, newProb3))				
+			
+			
+			
+			""" sort by angDiff follwed by contigFrac """
+			resultMoves2 = sorted(resultMoves2, key=itemgetter(18))
+			resultMoves2 = sorted(resultMoves2, key=itemgetter(16), reverse=True)
+
+			resultMoves3 = sorted(resultMoves3, key=itemgetter(18))
+			resultMoves3 = sorted(resultMoves3, key=itemgetter(16), reverse=True)
+			
+			print "resultMoves2:"
+			for res in resultMoves2:
+				print res
+			print "resultMoves3:"
+			for res in resultMoves3:
+				print res
+
+			currSplice2 = []
+			currSplice3 = []
+
+			" select the best pose for each node "
+			" record the splice used for the fit "
+			if len(resultMoves2) > 0:
+				currPose2 = resultMoves2[0][0]
+				currSplice2 = resultMoves2[0][19]
+				currProb2 = resultMoves2[0][20]
+
+			else:
+				print "node", nodeID-1, "not movePathed because no valid pose"
+				currProb2 = 0.0
+
+			if len(resultMoves3) > 0:
+				currPose3 = resultMoves3[0][0]
+				currSplice3 = resultMoves3[0][19]
+				currProb3 = resultMoves3[0][20]
+
+			else:
+				print "node", nodeID, "not movePathed because no valid pose"
+				currProb3 = 0.0
+
+			if len(currSplice2) == 0 and len(currSplice3) > 0:
+				currSplice2 = currSplice3
+
+			if len(currSplice3) == 0 and len(currSplice2) > 0:
+				currSplice3 = currSplice2
+
+			" default to the 1st splice, no particular meaning "
+			" FIXME: default to previous pose's splice configuration "
+			if len(currSplice2) == 0:
+				currSplice2 = splicePaths[0]
+			if len(currSplice3) == 0:
+				currSplice3 = splicePaths[0]
+
+			" move the pose particles along their paths "	
+
+
+			print "fitted poses:", currPose2, currPose3
+			print "currProbs:", currProb2, currProb3
+
+
+		return currPose2, currPose3, currProb2, currProb3
+
 
 def batchDisplaceParticles(displaceJobs):
 

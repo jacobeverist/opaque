@@ -340,6 +340,7 @@ class BayesMapper:
 						pathIDs = currHyp.branchDivergeCount.keys()
 						
 
+						# FIXME: need way to merge the root to a child if root is subsumed
 						
 						for pathID, divergeCount in currHyp.branchDivergeCount.iteritems():
 							if divergeCount >= 2:
