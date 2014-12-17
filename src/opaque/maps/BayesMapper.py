@@ -195,17 +195,17 @@ class BayesMapper:
 
 			mapHyp.nodeRawPoses[nodeID] = newNode.getEstPose()
 
-			pathIDs = mapHyp.getPathIDs()
-			for k in range(mapHyp.numPoseParticles):
-				for pathID in pathIDs:
+			#pathIDs = mapHyp.getPathIDs()
+			#for k in range(mapHyp.numPoseParticles):
+			#	for pathID in pathIDs:
 
-					if pathID != 0:
-						particle = mapHyp.poseParticles["snapshots2"][0][k]
+			#		if pathID != 0:
+			#			particle = mapHyp.poseParticles["snapshots2"][0][k]
 
-						controlPoseDist = particle.junctionData[pathID]["controlPoseDist"]
-						branchPoseDist = particle.junctionData[pathID]["branchPoseDist"]
+						#controlPoseDist = particle.junctionData[pathID]["controlPoseDist"]
+						#branchPoseDist = particle.junctionData[pathID]["branchPoseDist"]
 
-						print "hypID,pathID,particleIndex:", mapHyp.hypothesisID, pathID, k, controlPoseDist
+						#print "hypID,pathID,particleIndex:", mapHyp.hypothesisID, pathID, k, controlPoseDist
 					
 
 		self.mapHyps = self.integrateNode(currHyps, nodeID)
@@ -309,7 +309,8 @@ class BayesMapper:
 			for pID, mapHyp in hypSet.iteritems():
 				time1 = time.time()
 
-				mapHyp.localizePoseParticles(nodeID1, nodeID2)
+				#mapHyp.localizePoseParticles(nodeID1, nodeID2)
+				mapHyp.localizePoseParticles2(nodeID1, nodeID2)
 
 				time2 = time.time()
 
