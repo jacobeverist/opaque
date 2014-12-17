@@ -635,6 +635,42 @@ class MapState:
 		pathIDs = self.getPathIDs()
 		parentPathIDs = self.getParentHash()
 
+		medial0 = self.poseData.medialAxes[nodeID0]
+		medial1 = self.poseData.medialAxes[nodeID1]
+
+		medialSpline0 = SplineFit(medial0, smooth=0.1)
+		medial0_vec = medialSpline0.getUniformSamples()
+		medialSpline1 = SplineFit(medial1, smooth=0.1)
+		medial1_vec = medialSpline1.getUniformSamples()
+
+		prevPose0 = self.getNodePose(nodeID0-2)
+		prevPose1 = self.getNodePose(nodeID1-2)
+
+		allSplices = []
+		sPaths0 = self.getAllSplices2()
+		for sPath in sPaths0:
+			allSplices.append(sPath['skelPath'])
+
+
+		""" find the splices that our poses match to so we can perform displacements """
+		matchedSplices = []
+
+		for splice in allSplices:
+
+			results0 = getMultiDeparturePoint(splice, medial0_vec, prevPose0, prevPose0, pathIDs, nodeID0)
+			results1 = getMultiDeparturePoint(splice, medial1_vec, prevPose1, prevPose1, pathIDs, nodeID1)
+
+			contigFrac0 = results0[12]
+			contigFrac1 = results1[12]
+
+			print "contigFrac0,contigFrac1:", contigFrac0, contigFrac1
+
+			if contigFrac0 > 0.7 and contigFrac1 > 0.7:
+				matchedSplices.append(splice)
+
+
+
+
 
 		controlPoses = deepcopy(self.getControlPoses())
 		controlPoses_G = computeGlobalControlPoses(controlPoses, parentPathIDs)
@@ -660,15 +696,9 @@ class MapState:
 			#currSplice0 = part.spliceCurve
 
 			staticSplicedPaths0 = []
-			staticSplicedPaths1 = []
 			sPaths0 = self.getAllSplices2()
-			sPaths1 = self.getAllSplices2()
 			for sPath in sPaths0:
 				staticSplicedPaths0.append(sPath['skelPath'])
-			for sPath in sPaths1:
-				staticSplicedPaths1.append(sPath['skelPath'])
-			#staticSplicedPaths0, spliceTerms0, staticSplicePathIDs0 = self.getSplicesByNearJunction2(hypPose0)
-			#staticSplicedPaths1, spliceTerms1, staticSplicePathIDs1 = self.getSplicesByNearJunction2(hypPose1)
 
 
 
@@ -995,7 +1025,8 @@ class MapState:
 					dist1 = sqrt((globJuncPose[0]-hypPose0[0])**2 + (globJuncPose[1]-hypPose0[1])**2)
 
 					origBranchDists[pathID] = dist1
-					origBranchControls[pathID] = controlPose
+					#origBranchControls[pathID] = controlPose
+					origBranchControls[pathID] = newControlPose
 					origBranchArcDists[pathID] = arcDist
 
 
@@ -1003,6 +1034,7 @@ class MapState:
 				newBranchControls = {}
 				newBranchComboControls = {}
 
+				print "origBranch:", origBranchDists, origBranchArcDists
 
 				if len(branchPathIDs) > 0:
 
@@ -1231,8 +1263,11 @@ class MapState:
 					part.branchArcDists[pathID] = arcDists
 
 					part.junctionData[pathID]["arcDists"] = arcDists
+					print "arcDists:", pathID, arcDists
 
 				part.maxLikelihoodBranch = maxTuple
+
+				print "maxTuple:", maxTuple
 
 			""" build indexing tuples for this particle """
 			argSet = []
@@ -2883,7 +2918,7 @@ class MapState:
 			if self.pathClasses[pathID]["parentID"] != None:
 				parentPathID = parentPathIDs[pathID]
 				#pathSpline = SplineFit(self.localPaths[parentPathID])
-				pathSpline = SplineFit(self.controlCurves[parentPathID])
+				pathSpline = SplineFit(self.controlCurves[pathID])
 
 				totalDist = pathSpline.dist_u(1.0)
 
@@ -2908,7 +2943,7 @@ class MapState:
 
 				parentPathID = parentPathIDs[pathID]
 				#pathSpline = SplineFit(self.localPaths[parentPathID])
-				pathSpline = SplineFit(self.controlCurves[parentPathID])
+				pathSpline = SplineFit(self.controlCurves[pathID])
 
 				totalDist = pathSpline.dist_u(1.0)
 
@@ -3031,6 +3066,8 @@ class MapState:
 			""" values are overwritten by controlSet """
 			thisControlPoses = deepcopy(controlPoses)
 			thisArcDists = {}
+
+			print "controlSet:", controlSet
 
 			for k in range(len(controlSet)):
 
@@ -3902,6 +3939,13 @@ class MapState:
 		self.pathIDs += 1
 		self.shootIDs += 1
 
+		#self.controlCurves = {}
+		parentSkeleton = self.localSkeletons[controlParentID]
+		parentTerm1 = self.pathClasses[newPathID]["controlTerm1_P"]
+		parentTerm2 = self.pathClasses[newPathID]["controlTerm2_P"]
+		self.controlCurves[newPathID] = getSkeletonPath(parentSkeleton, parentTerm1, parentTerm2)
+
+
 
 		updateCount = self.poseParticles["updateCount"] 
 		particleDist2 = self.poseParticles["snapshots2"][0]
@@ -3909,7 +3953,7 @@ class MapState:
 		""" FIXME:  Full path spline instead of just relevant section.  Does this always work? """
 		#parentShoot_G = self.paths[parentID]
 		#parentShoot_L = self.localPaths[controlParentID]
-		parentShoot_L = self.controlCurves[controlParentID]
+		parentShoot_L = self.controlCurves[newPathID]
 		parentShoot_G = []
 		for p in parentShoot_L:
 			parentShoot_G.append(parentFrame.convertLocalToGlobal(p))
@@ -3917,8 +3961,12 @@ class MapState:
 		pathSpline_G = SplineFit(parentShoot_G)
 
 
+		print "max control poses:", controlPose_G
 		""" add new path to particles """
-		for part in particleDist2:
+		#for part in particleDist2:
+		for k in range(len(particleDist2)):
+
+			part = particleDist2[k]
 
 			nodePose_G = self.getNodePose(branchNodeID)
 			rawPose_G = self.getNodeRawPose(branchNodeID)
@@ -3942,7 +3990,8 @@ class MapState:
 			controlPose_L = nodeFrame.convertGlobalPoseToLocal(controlPose_G)
 			particleControlPose_G = particlePoseFrame.convertLocalOffsetToGlobal(controlPose_L)
 
-			#print "control poses:", nodePose_G, particlePose_G, controlPose_G, particleControlPose_G
+			#print "control poses:", k, nodePose_G, particlePose_G, controlPose_G, particleControlPose_G
+			print "control poses:", k, particleControlPose_G
 		
 			""" location on the parent shoot closest to the locally computed branch point """
 			minDist, uVal, newJunctionPose_G = pathSpline_G.findClosestPoint(particleJunctionPose_G)
