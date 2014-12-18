@@ -1116,7 +1116,7 @@ class MapState:
 				for pathID in branchPathIDs:
 
 					parentID = parentPathIDs[pathID]
-					pathSpline = pathSplines[parentID]
+					pathSpline = pathSplines[pathID]
 
 					""" this is the point where the control pose gets erroneously moved back onto the longest path """
 					#controlPose = part.junctionData[pathID]["controlPose"]
