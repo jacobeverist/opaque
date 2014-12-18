@@ -3762,7 +3762,12 @@ def getSkeletonPath(skeleton, term1, term2):
 
 	print "nodes path from", startNode, "to", endNode
 	shortestSpliceTree, shortestSpliceDist = skeleton.shortest_path(endNode)
-	currNode = shortestSpliceTree[startNode]					 
+	try:
+		currNode = shortestSpliceTree[startNode]					 
+	except:
+		print repr(skeleton)
+		print repr(shortestSpliceTree)
+		raise
 
 	splicedSkel = [startNode]
 	while currNode != endNode:
@@ -4921,8 +4926,20 @@ def computeAllSplices3(controlPoses_G, localTerms, localSegments, spliceSkeleton
 						dist = sqrt((p[0]-term1_G[0])**2 + (p[1]-term1_G[1])**2)
 
 						if dist < DIST_THRESH:
+							print term1_G, "is coincident to", p
 							isCoincident = True
-				if isCoincident:
+				
+				isUnique = True
+				for pathID, otherTerms_G in allTerms_G.iteritems():
+					for p in otherTerms_G:
+						dist = sqrt((p[0]-term1_G[0])**2 + (p[1]-term1_G[1])**2)
+
+						if dist < DIST_THRESH:
+							print term1_G, "is similar to", p
+							isUnique = False
+
+				if isCoincident and isUnique:
+					print "adding", term1_G
 					allTerms_L[pathID1].append(term1)
 					allTerms_G[pathID1].append(term1_G)
 
@@ -4998,24 +5015,12 @@ def computeAllSplices3(controlPoses_G, localTerms, localSegments, spliceSkeleton
 		endNode = minEndNode
 
 
-		print "nodes path from", startNode, "to", endNode
-		shortestSpliceTree, shortestSpliceDist = spliceSkeleton.shortest_path(endNode)
-		currNode = shortestSpliceTree[startNode]					 
+		try: 
+			print "nodes path from", startNode, "to", endNode
+			shortestSpliceTree, shortestSpliceDist = spliceSkeleton.shortest_path(endNode)
+			currNode = shortestSpliceTree[startNode]					 
 
-		nodeAttrs = spliceSkeleton.get_node_attributes(startNode)
-		memberPathID = None
-		for attr in nodeAttrs:
-			if attr[0] == "pathID":
-				memberPathID = attr[1]
-
-		memberShootIDs[memberPathID] = None
-
-		splicedSkel = [startNode]
-		while currNode != endNode:
-			#print "currNode:", currNode
-			splicedSkel.append(currNode)
-
-			nodeAttrs = spliceSkeleton.get_node_attributes(currNode)
+			nodeAttrs = spliceSkeleton.get_node_attributes(startNode)
 			memberPathID = None
 			for attr in nodeAttrs:
 				if attr[0] == "pathID":
@@ -5023,8 +5028,26 @@ def computeAllSplices3(controlPoses_G, localTerms, localSegments, spliceSkeleton
 
 			memberShootIDs[memberPathID] = None
 
-			nextNode = shortestSpliceTree[currNode]
-			currNode = nextNode
+			splicedSkel = [startNode]
+			while currNode != endNode:
+				#print "currNode:", currNode
+				splicedSkel.append(currNode)
+
+				nodeAttrs = spliceSkeleton.get_node_attributes(currNode)
+				memberPathID = None
+				for attr in nodeAttrs:
+					if attr[0] == "pathID":
+						memberPathID = attr[1]
+
+				memberShootIDs[memberPathID] = None
+
+				nextNode = shortestSpliceTree[currNode]
+				currNode = nextNode
+		except:
+			print repr(spliceSkeleton)
+			print repr(shortestSpliceTree)
+			raise
+
 		splicedSkel.append(currNode)
 
 		splicedSkel = ensureEnoughPoints(splicedSkel, max_spacing = 0.08, minPoints = 5)

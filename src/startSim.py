@@ -73,6 +73,8 @@ sys.setrecursionlimit(10000)
 " sub process cleanup code "
 import opaque.maps.gen_icp as gen_icp
 import opaque.maps.MapProcess as MapProcess
+import opaque.maps.shoots as shoots
+import opaque.maps.ParticleFilter as ParticleFilter
 import atexit
 
 def cleanup():

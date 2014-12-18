@@ -634,29 +634,127 @@ class MapState:
 		#self.poseParticles["snapshots2"][0] = initDist2
 
 		self.stepResults = []
-		for result in results:
-			particleIndex = result[0]
-			displaceProb0 = result[3]
-			displaceProb1 = result[4]
+		pathIDs = self.getPathIDs()
+		parentPathIDs = self.getParentHash()
 
-			newPose0 = result[1]
-			newPose1 = result[2]
+		nodeID0 = 0
+		nodeID1 = 1
+
+		medial0 = self.poseData.medialAxes[nodeID0]
+		medial1 = self.poseData.medialAxes[nodeID1]
+
+		medialSpline0 = SplineFit(medial0, smooth=0.1)
+		medial0_vec = medialSpline0.getUniformSamples()
+		medialSpline1 = SplineFit(medial1, smooth=0.1)
+		medial1_vec = medialSpline1.getUniformSamples()
+
+		allSplices = []
+		sPaths0 = self.getAllSplices2()
+		for sPath in sPaths0:
+			allSplices.append(sPath['skelPath'])
+
+
+		""" take all splices to initialize """
+		matchedSplices = []
+		for k in range(len(allSplices)):
+			splice = allSplices[k]
+			matchedSplices.append(splice)
+
+		""" build sample locations along each splice, starting from the pose's origin """
+		poseOrigin0 = Pose(pose0)
+		globalMedial0 = []
+		for p in medial0:
+			globalMedial0.append(poseOrigin0.convertLocalToGlobal(p))
+
+		self.stepDists = []
+		for j in range(len(matchedSplices)):
+
+			matchSplice = matchedSplices[j]
+
+
+			orientedSplicePath = orientPath(matchSplice, globalMedial0)				
+			pathSpline = SplineFit(orientedSplicePath, smooth=0.1)
+
+			minDist0, oldU0, oldP0 = pathSpline.findClosestPoint(pose0)
+			minDist1, oldU1, oldP1 = pathSpline.findClosestPoint(pose1)
+			oldDist0 = pathSpline.dist_u(oldU0)
+			oldDist1 = pathSpline.dist_u(oldU1)
+
+			STEP_DIST = 0.2
+			NUM_SAMPLES = 10
+
+
+			""" sample points in the neighborhood """
+			stepHigh = STEP_DIST * floor(NUM_SAMPLES/2.0)
+			stepLow = -STEP_DIST * floor(NUM_SAMPLES/2.0)
+
+			""" compute the sample points for the pose point distribution """
+			for k in range(NUM_SAMPLES):
+				newStepDist = stepLow + k * STEP_DIST
+
+				newU0 = pathSpline.getUOfDist(oldU0, newStepDist)
+				newU1 = pathSpline.getUOfDist(oldU1, newStepDist)
+
+				newDist0 = pathSpline.dist_u(newU0)
+				newPose0 = pathSpline.point_u(newU0)
+				newAng0 = newPose0[2]
+
+				newDist1 = pathSpline.dist_u(newU1)
+				newPose1 = pathSpline.point_u(newU1)
+				newAng1 = newPose1[2]
+
+				self.stepDists.append((j, newDist0, newDist1, newPose0, newPose1))
+
+
+		self.stepResults = []
+		for result in self.stepDists:
+			particleIndex = result[0]
+			newPose0 = result[3]
+			newPose1 = result[4]
 
 
 			resultDict = {}
 			resultDict["newPose0"] = newPose0
 			resultDict["newPose1"] = newPose1
-			resultDict["controlPoses_P"] = controlPoses
-			resultDict["displaceProb0"] = displaceProb0
-			resultDict["displaceProb1"] = displaceProb1
-			resultDict["branchPoses_G"] = branchPoses_G
-			resultDict["branchPoses_L"] = branchPoses_L
+			resultDict["controlPoses_P"] = {}
+			resultDict["displaceProb0"] = 0.0
+			resultDict["displaceProb1"] = 0.0
+			resultDict["branchPoses_G"] = {}
+			resultDict["branchPoses_L"] = {}
 			resultDict["landmarkSum"] = 0.0
 			resultDict["maxLikelihoodBranch"] = None
-			resultDict["branchArcDists"] = ()
-			resultDict["branchControls"] = ()
+			resultDict["branchArcDists"] = {}
+			resultDict["branchControls"] = {}
 
 			self.stepResults.append(resultDict)
+
+
+
+
+
+		#for result in results:
+		#	particleIndex = result[0]
+		#	displaceProb0 = result[3]
+		#	displaceProb1 = result[4]
+
+		#	newPose0 = result[1]
+		#	newPose1 = result[2]
+
+
+		#	resultDict = {}
+		#	resultDict["newPose0"] = newPose0
+		#	resultDict["newPose1"] = newPose1
+		#	resultDict["controlPoses_P"] = controlPoses
+		#	resultDict["displaceProb0"] = displaceProb0
+		#	resultDict["displaceProb1"] = displaceProb1
+		#	resultDict["branchPoses_G"] = branchPoses_G
+		#	resultDict["branchPoses_L"] = branchPoses_L
+		#	resultDict["landmarkSum"] = 0.0
+		#	resultDict["maxLikelihoodBranch"] = None
+		#	resultDict["branchArcDists"] = ()
+		#	resultDict["branchControls"] = ()
+
+		#	self.stepResults.append(resultDict)
 
 
 	@logFunction
@@ -1215,8 +1313,12 @@ class MapState:
 			hypPose0 = part["newPose0"]
 			hypPose1 = part["newPose1"]
 
-			prevHypPose0 = self.getNodePose(nodeID0-2)
-			prevHypPose1 = self.getNodePose(nodeID1-2)
+			if nodeID0 > 0:
+				prevHypPose0 = self.getNodePose(nodeID0-2)
+				prevHypPose1 = self.getNodePose(nodeID1-2)
+			else:
+				prevHypPose0 = self.getNodePose(nodeID0)
+				prevHypPose1 = self.getNodePose(nodeID1)
 
 			resultsBySplice = []
 
@@ -2408,9 +2510,25 @@ class MapState:
 
 							if dist < DIST_THRESH:
 								isCoincident = True
-					if isCoincident:
+					#if isCoincident:
+					#	allTerms_L[pathID1].append(term1)
+					#	allTerms_G[pathID1].append(term1_G)
+
+				
+					isUnique = True
+					for pathID, otherTerms_G in allTerms_G.iteritems():
+						for p in otherTerms_G:
+							dist = sqrt((p[0]-term1_G[0])**2 + (p[1]-term1_G[1])**2)
+
+							if dist < DIST_THRESH:
+								print term1_G, "is similar to", p
+								isUnique = False
+
+					if isCoincident and isUnique:
+						print "adding", term1_G
 						allTerms_L[pathID1].append(term1)
 						allTerms_G[pathID1].append(term1_G)
+
 
 
 
