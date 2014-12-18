@@ -4387,7 +4387,7 @@ def computeJointBranch(localPathSegsByID, localTerms, localPaths, localSkeletons
 		parentPathSegs = localPathSegsByID[parentID]
 
 		""" evaluate overlap of parent and child skeleton """
-		lastCost1, matchCount1 = skeletonOverlapCost(childPathSegs_P, parentPathSegs, plotIter = False, n1 = 0, n2 = 0, arcDist = 0.0)
+		lastCost1, matchCount1 = skeletonOverlapCost(childPathSegs_P, parentPathSegs, plotIter = False, numNodes = numNodes, pathID = pathID, arcDist = arcDists[pathID])
 
 
 
@@ -4425,7 +4425,7 @@ def computeJointBranch(localPathSegsByID, localTerms, localPaths, localSkeletons
 	spliceSkeleton_G = spliceSkeletons(localSkeletons, controlPoses_G, newBranchPoses_L, parentPathIDs)
 
 
-	splicedPaths_G = computeAllSplices2(controlPoses_G, localTerms, localPathSegsByID, spliceSkeleton_G)
+	splicedPaths_G = computeAllSplices3(controlPoses_G, localTerms, localPathSegsByID, spliceSkeleton_G)
 	
 	""" store the splices """
 	branchResult["splices_G"] = deepcopy(splicedPaths_G)
@@ -4810,6 +4810,238 @@ def computeAllSplices2(controlPoses_G, localTerms, localSegments, spliceSkeleton
 		finalResults.append(splicePoints1)
 
 	return finalResults
+
+
+def computeAllSplices3(controlPoses_G, localTerms, localSegments, spliceSkeleton):
+
+	"""
+	1) get all terminals of each skeleton
+	2) eliminate terminals that are "subsumed" by other shoots
+	3) find splices between the remaining terminals
+
+
+	FIXME: how to eliminate so many possibilities when junctions are not aligned?
+	FIXME: what if two terminals are very close to one another, how to select only one? not both or zero
+
+	"""
+	DIST_THRESH = 0.2
+
+	
+	globalTerms = {}
+
+	for pathID, terms in localTerms.iteritems():
+		globalTerms[pathID] = []
+		shootFrame = Pose(controlPoses_G[pathID])
+		for term in terms:
+			globalP = shootFrame.convertLocalToGlobal(term)
+			globalTerms[pathID].append(globalP)
+	
+	
+	globalSegments = {}
+
+	for pathID, segs in localSegments.iteritems():
+		globalSegments[pathID] = []
+		shootFrame = Pose(controlPoses_G[pathID])
+		for seg in segs:
+			globalSeg = []
+			for p in seg:
+				globalP = shootFrame.convertLocalOffsetToGlobal(p)
+				globalSeg.append(globalP)
+
+			globalSegments[pathID].append(globalSeg)
+
+
+	""" of all the terms, find the ones that are not subsumed by other shoots """
+
+	branchDivergeCount = {}
+
+	subsumedTerms_L = {}
+	allTerms_L = {}
+	allTerms_G = {}
+
+	allTerms_L = {}
+	allTerms_G = {}
+	currKeys = globalSegments.keys()
+
+	for currK1 in range(len(currKeys)): 
+
+		pathID1 = currKeys[currK1]
+		branchDivergeCount[pathID1] = 0
+		segs1 = globalSegments[pathID1]
+
+		terms_L = localTerms[pathID1]
+
+
+		shootFrame = Pose(controlPoses_G[pathID1])
+
+		allTerms_L[pathID1] = []
+		allTerms_G[pathID1] = []
+
+
+		for term1 in terms_L:
+
+			term1_G = shootFrame.convertLocalToGlobal(term1)
+
+			minDist2 = 1e100
+			minP2 = None
+
+			for currK2 in range(len(currKeys)): 
+
+				if currK2 != currK1:
+
+					pathID2 = currKeys[currK2]
+					segs2 = globalSegments[pathID2]
+
+					for seg2 in segs2:
+						for p in seg2:
+
+							dist2 = sqrt((p[0]-term1_G[0])**2 + (p[1]-term1_G[1])**2)
+
+							if dist2 < minDist2:
+								minDist2 = dist2
+								minP2 = p
+			
+			print pathID1, minDist2, "terms:", term1_G
+			if minDist2 > DIST_THRESH:
+				allTerms_L[pathID1].append(term1)
+				allTerms_G[pathID1].append(term1_G)
+				#print pathID1, "terms:", term1
+			else:
+				if pathID1 != 0:
+					branchDivergeCount[pathID1] += 1
+
+
+				""" check if this terminal is close to another terminal in different shoot """
+				isCoincident = False
+				for currK2 in range(currK1+1, len(currKeys)): 
+					pathID2 = currKeys[currK2]
+					otherTerms_G = globalTerms[pathID2]
+					for p in otherTerms_G:
+
+						dist = sqrt((p[0]-term1_G[0])**2 + (p[1]-term1_G[1])**2)
+
+						if dist < DIST_THRESH:
+							isCoincident = True
+				if isCoincident:
+					allTerms_L[pathID1].append(term1)
+					allTerms_G[pathID1].append(term1_G)
+
+
+
+
+	subsumedTerms_L = allTerms_L
+
+	termList = []
+	pathIDs = allTerms_G.keys()
+
+	for pathID in pathIDs:
+		for term_G in allTerms_G[pathID]:
+			termList.append(term_G)
+	
+
+
+	termCombos = []
+	for j in range(len(termList)):
+		for k in range(j+1, len(termList)):
+			termCombos.append((termList[j], termList[k]))
+
+
+	finalResults = []
+
+
+	print "termCombos:", termCombos
+	
+	for termPath in termCombos:
+
+		memberShootIDs = {}
+		joinPairs = []
+
+		startPose = termPath[0]
+		endPose = termPath[1]
+
+		print "startPose, endPose:", startPose, endPose
+
+		minStartDist = 1e100
+		minStartNode = None
+		minEndDist = 1e100
+		minEndNode = None
+		
+		for edge in spliceSkeleton.edges():
+		
+			globalNodePoint1 = edge[0]
+			globalNodePoint2 = edge[1]
+
+			dist1 = sqrt((globalNodePoint1[0]-startPose[0])**2 + (globalNodePoint1[1]-startPose[1])**2)
+			dist2 = sqrt((globalNodePoint2[0]-startPose[0])**2 + (globalNodePoint2[1]-startPose[1])**2)
+
+			if dist1 < minStartDist:
+				minStartDist = dist1
+				minStartNode = globalNodePoint1
+
+			if dist2 < minStartDist:
+				minStartDist = dist2
+				minStartNode = globalNodePoint2
+
+			dist1 = sqrt((globalNodePoint1[0]-endPose[0])**2 + (globalNodePoint1[1]-endPose[1])**2)
+			dist2 = sqrt((globalNodePoint2[0]-endPose[0])**2 + (globalNodePoint2[1]-endPose[1])**2)
+
+			if dist1 < minEndDist:
+				minEndDist = dist1
+				minEndNode = globalNodePoint1
+
+			if dist2 < minEndDist:
+				minEndDist = dist2
+				minEndNode = globalNodePoint2
+
+
+		startNode = minStartNode
+		endNode = minEndNode
+
+
+		print "nodes path from", startNode, "to", endNode
+		shortestSpliceTree, shortestSpliceDist = spliceSkeleton.shortest_path(endNode)
+		currNode = shortestSpliceTree[startNode]					 
+
+		nodeAttrs = spliceSkeleton.get_node_attributes(startNode)
+		memberPathID = None
+		for attr in nodeAttrs:
+			if attr[0] == "pathID":
+				memberPathID = attr[1]
+
+		memberShootIDs[memberPathID] = None
+
+		splicedSkel = [startNode]
+		while currNode != endNode:
+			#print "currNode:", currNode
+			splicedSkel.append(currNode)
+
+			nodeAttrs = spliceSkeleton.get_node_attributes(currNode)
+			memberPathID = None
+			for attr in nodeAttrs:
+				if attr[0] == "pathID":
+					memberPathID = attr[1]
+
+			memberShootIDs[memberPathID] = None
+
+			nextNode = shortestSpliceTree[currNode]
+			currNode = nextNode
+		splicedSkel.append(currNode)
+
+		splicedSkel = ensureEnoughPoints(splicedSkel, max_spacing = 0.08, minPoints = 5)
+		spliceSpline1 = SplineFit(splicedSkel, smooth=0.1)
+		splicePoints1 = spliceSpline1.getUniformSamples()
+
+
+		#sPath = {}
+		#sPath['termPath'] = termPath
+		#sPath['skelPath'] = splicePoints1
+		#sPath['memberShootIDs'] = memberShootIDs.keys()
+		
+		finalResults.append(splicePoints1)
+		
+	
+	return finalResults
+
 
 @logFunction
 def computeBranch(pathID, parentID, localPathSegsByID, localPaths, arcDist, localSkeletons, controlPoses, junctionPoses, parentPathIDs, numNodes=0, hypothesisID=0):
@@ -5228,7 +5460,7 @@ def trimBranch(pathID, parentPathID, controlPose_P, oldTipPoint_L, oldBranchPose
 
 
 @logFunction
-def skeletonOverlapCost(childPathSegs, parentPathSegs, plotIter = False, n1 = 0, n2 = 0, arcDist = 0.0):
+def skeletonOverlapCost(childPathSegs, parentPathSegs, plotIter = False, numNodes = 0, pathID = 0, arcDist = 0.0):
 
 	global globalPlotCount
 		
@@ -5402,15 +5634,15 @@ def skeletonOverlapCost(childPathSegs, parentPathSegs, plotIter = False, n1 = 0,
 		pylab.plot(xP,yP,linewidth=1, color=(1.0,0.0,0.0))
 
 		gen_icp.plotEnv()		 
-		pylab.title("%u -- %s , %.1f, %d" % (n1, repr(n2), newCost, len(match_pairs)))
+		pylab.title("%u -- %s , %.1f, %d" % (numNodes, pathID, newCost, len(match_pairs)))
 
 		pylab.xlim(-6, 10)					  
 		pylab.ylim(-8, 8)
-		pylab.savefig("cost_plot_%1.2f_%04u.png" % (arcDist, globalPlotCount))
+		pylab.savefig("cost_plot_%04u_%1.2f_%04u.png" % (numNodes, arcDist, pathID))
 		pylab.clf()
 		
-		" save inputs "
-		globalPlotCount += 1
+		#" save inputs "
+		#globalPlotCount += 1
 
 	return newCost, len(match_pairs)
 

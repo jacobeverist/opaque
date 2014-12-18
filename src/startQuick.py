@@ -87,15 +87,15 @@ def cleanup():
 		for p in ParticleFilter.pool_posePart:
 			p.terminate()
 
-	if len(ParticleFilter.pool_dispPosePart) > 0:
+	if len(ParticleFilter.pool_dispPosePart2) > 0:
 
-		ParticleFilter.qin_dispPosePart.close()
-		ParticleFilter.qin_dispPosePart.join_thread()
+		ParticleFilter.qin_dispPosePart2.close()
+		ParticleFilter.qin_dispPosePart2.join_thread()
 
-		ParticleFilter.qout_dispPosePart.close()
-		ParticleFilter.qout_dispPosePart.cancel_join_thread()
+		ParticleFilter.qout_dispPosePart2.close()
+		ParticleFilter.qout_dispPosePart2.cancel_join_thread()
 
-		for p in ParticleFilter.pool_dispPosePart:
+		for p in ParticleFilter.pool_dispPosePart2:
 			p.terminate()
 
 			

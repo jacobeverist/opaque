@@ -1178,12 +1178,12 @@ def computeLocalDivergence2(hypSet, nodeID1, nodeID2):
 
 			orientedSplice = orientPathLean(path, globalMedial1)
 
-			resultArgs1 = getMultiDeparturePoint(orientedSplice, medial1_vec, estPose1, estPose1, memberShootIDs, nodeID1, pathPlotCount=k, hypID=mapHyp.hypothesisID, plotIter=True)
+			resultArgs1 = getMultiDeparturePoint(orientedSplice, medial1_vec, estPose1, estPose1, memberShootIDs, nodeID1, pathPlotCount=k, hypID=mapHyp.hypothesisID, plotIter=False)
 
 
 
 
-			resultArgs2 = getMultiDeparturePoint(orientedSplice, medial2_vec, estPose2, estPose2, memberShootIDs, nodeID2, pathPlotCount=k, hypID=mapHyp.hypothesisID, plotIter=True)
+			resultArgs2 = getMultiDeparturePoint(orientedSplice, medial2_vec, estPose2, estPose2, memberShootIDs, nodeID2, pathPlotCount=k, hypID=mapHyp.hypothesisID, plotIter=False)
 
 			#mapHyp.departureResultSet2 = resultArgs2
 

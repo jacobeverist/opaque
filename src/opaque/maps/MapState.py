@@ -905,6 +905,8 @@ class MapState:
 		self.updateMaxParticle2(self.currMaxIndex)
 
 
+		self.snapToParent()
+
 	#@logFunction
 	def localizePoseParticles2(self, nodeID0, nodeID1):
 
@@ -1038,7 +1040,7 @@ class MapState:
 				newBranchControls = {}
 				newBranchComboControls = {}
 
-				print "origBranch:", origBranchDists, origBranchArcDists
+				print "origBranch:", origBranchArcDists, origBranchControls
 
 				if len(branchPathIDs) > 0:
 
@@ -1066,19 +1068,20 @@ class MapState:
 
 						""" determine the range of values for this particular branch """
 						newArcDist = self.branchArcDists[pathID][minIndex]
+						print "newArcDist:", newArcDist
 						if origBranchDists[pathID] < JOINT_DIST:
 
-							if minIndex < 2:
-								minIndex = 2
+							if minIndex < 8:
+								minIndex = 8
 
-							if minIndex > len(self.branchArcDists[pathID]) - 3:
-								minIndex = len(self.branchArcDists[pathID]) - 3
+							if minIndex > len(self.branchArcDists[pathID]) - 9:
+								minIndex = len(self.branchArcDists[pathID]) - 9
 
 
 							arcList = []
 							controlList = []
 							comboList = []
-							for k in range(minIndex-2,minIndex+3):
+							for k in range(minIndex-8,minIndex+9):
 								newArcDist = self.branchArcDists[pathID][k]
 								arcList.append(newArcDist)
 								controlList.append(self.branchControlPoses[pathID][newArcDist])
@@ -1092,6 +1095,9 @@ class MapState:
 							newBranchArcDists[pathID] = [newArcDist,]
 							newBranchControls[pathID] = [self.branchControlPoses[pathID][newArcDist],]
 							newBranchComboControls[pathID] = [(newArcDist, tuple(self.branchControlPoses[pathID][newArcDist])),]
+
+						#print "newBranchArcDists:", newBranchArcDists
+						#print "newBranchControls:", newBranchControls
 
 					argSet2 = []
 					for pathID in branchPathIDs:
@@ -1159,6 +1165,10 @@ class MapState:
 		for arcTuple, branchResult in self.jointBranchEvaluations.iteritems():
 
 			normLandmark = branchResult["normLandmark"]
+			normMatchCount = branchResult["normMatchCount"]
+			normCost = branchResult["normCost"] 
+
+			print "branch eval:", arcTuple, normLandmark, normMatchCount, normCost
 
 			if normLandmark > maxNormCost:
 				maxNormCost = normLandmark
@@ -1194,6 +1204,8 @@ class MapState:
 			for splice in splices_G:
 				maxSplicedPaths.append((arcTuple, normLandmark, splice, None, candLandmarks_G))
 
+		if maxTuple != None:
+			print "maxTuple:", maxTuple
 
 		for particleIndex in range(len(self.stepResults)):
 
@@ -1224,10 +1236,11 @@ class MapState:
 					arcLow = maxDist - self.DIV_LEN * floor(self.NUM_BRANCHES/2.0)
 
 					""" compute the sample points for the branch point distribution """
-					arcDists = []
-					for k in range(self.NUM_BRANCHES):
-						newArcDist = arcLow + k * self.DIV_LEN
-						arcDists.append(newArcDist)
+					#arcDists = []
+					#for k in range(self.NUM_BRANCHES):
+					#	newArcDist = arcLow + k * self.DIV_LEN
+					#	arcDists.append(newArcDist)
+					arcDists = [maxDist,]
 
 					part["branchArcDists"][pathID] = arcDists
 					#part["branchControls"] = newBranchControls
@@ -1239,7 +1252,7 @@ class MapState:
 				part["maxLikelihoodBranch"] = maxTuple
 				#part.maxLikelihoodBranch = maxTuple
 
-				print "maxTuple:", maxTuple
+				#print "maxTuple:", maxTuple
 
 			""" build indexing tuples for this particle """
 			argSet = []
@@ -1732,7 +1745,7 @@ class MapState:
 				xP.append(p1[0])
 				yP.append(p1[1])
 
-			pylab.plot(xP,yP, color = 'r', alpha = 0.5, zorder=7)
+			pylab.plot(xP,yP, color = 'r', alpha = 0.2, zorder=7)
 
 			poseOrigin1 = Pose(hypPose1)
 
@@ -1743,7 +1756,7 @@ class MapState:
 				xP.append(p1[0])
 				yP.append(p1[1])
 
-			pylab.plot(xP,yP, color = 'b', alpha = 0.5, zorder=7)
+			pylab.plot(xP,yP, color = 'b', alpha = 0.2, zorder=7)
 
 		for pathID in allPathIDs:
 
@@ -2690,6 +2703,67 @@ class MapState:
 		return resultPose1, lastCost1, matchCount1
 	 
 
+	def snapToParent(self):
+
+		allPathIDs = self.getPathIDs()
+		parentPathIDs = self.getParentHash()
+
+		controlPoses_G = self.getGlobalControlPoses()
+
+		originPoint = (0.0,0.0)
+
+		for pathID in allPathIDs:
+			if self.pathClasses[pathID]["parentID"] != None:
+				#childSkeleton = self.localSkeletons[pathID]
+
+				segs1 = self.localSegments[pathID]
+
+				minDist = 1e100
+				minP = None
+
+				for seg in segs1:
+					for p in seg:
+						dist = sqrt((originPoint[0]-p[0])**2+(originPoint[1]-p[1])**2)
+
+						if dist < minDist:
+							minDist = dist
+							minP = p
+
+				""" new origin of the current frame """
+				newOriginPose = (minP[0], minP[1], 0.0)
+				newOrigin = Pose(newOriginPose)
+
+				""" existing frame """
+				currFrame = Pose(controlPoses_G[pathID])
+
+				for nodeID in self.pathClasses[pathID]["nodeSet"]:
+
+					""" we just move the existing poses within the frame, and keep the frame as is """
+					oldNodePose_L = self.pathClasses[pathID]["localNodePoses"][nodeID]
+					newNodePose_L = newOrigin.convertGlobalPoseToLocal(oldNodePose_L)
+					self.pathClasses[pathID]["localNodePoses"][nodeID] = newNodePose_L
+
+
+					newPose_G = currFrame.convertLocalOffsetToGlobal(newNodePose_L)
+
+
+					""" for recomputing raw pose """
+					oldGPACPose = self.nodePoses[nodeID]
+					gpacProfile = Pose(oldGPACPose)
+					localOffset = gpacProfile.convertGlobalPoseToLocal(self.nodeRawPoses[nodeID])
+
+					
+
+					""" new global pose """
+					self.nodePoses[nodeID] = newPose_G
+					
+					
+					" go back and convert this from GPAC pose to estPose "
+					newProfile = Pose(newPose_G)
+					newEstPose = newProfile.convertLocalOffsetToGlobal(localOffset)
+					
+					self.nodeRawPoses[nodeID] = newEstPose
+
 	@logFunction
 	def resetBranches(self):
 
@@ -3172,7 +3246,6 @@ class MapState:
 
 
 		self.updateLandmarks()
-
 	
 		" COMPUTE MEDIAL AXIS FROM UNION OF PATH-CLASSIFIED NODES "
 		self.paths = {}
@@ -3487,35 +3560,36 @@ class MapState:
 			#for part in particleDist2:
 			for part in self.stepResults:
 
-				partControlPoses = part["controlPoses_P"]
-				partControlPoses_G = computeGlobalControlPoses(partControlPoses, parentPathIDs)
+				""" temporarily disable this.  we don't really use the sample data """
+				if False:
+					partControlPoses = part["controlPoses_P"]
+					partControlPoses_G = computeGlobalControlPoses(partControlPoses, parentPathIDs)
 
-				partSetControlPoses_G.append(partControlPoses_G)
+					partSetControlPoses_G.append(partControlPoses_G)
 
-				#del part.junctionData[pathID]
-				del part["controlPoses_P"][pathID]
-				del part["branchPoses_L"][pathID]
-				del part["branchPoses_G"][pathID]
-				del part["branchArcDists"][pathID]
-				del part["branchControls"][pathID] 
+					del part["controlPoses_P"][pathID]
+					del part["branchPoses_L"][pathID]
+					del part["branchPoses_G"][pathID]
+					del part["branchArcDists"][pathID]
+					del part["branchControls"][pathID] 
 
-				branchTupleIndex = part["maxLikelihoodBranch"]
+					branchTupleIndex = part["maxLikelihoodBranch"]
 
-				newTupleIndex = []
-				for k in range(len(branchPathIDs)):
-					indexID = branchPathIDs[k]
-					if indexID != pathID:
-						newTupleIndex.append(branchTupleIndex[k])
+					newTupleIndex = []
+					for k in range(len(branchPathIDs)):
+						indexID = branchPathIDs[k]
+						if indexID != pathID:
+							newTupleIndex.append(branchTupleIndex[k])
 
-				newTupleIndex = tuple(newTupleIndex)
+					newTupleIndex = tuple(newTupleIndex)
 
-				if len(newTupleIndex) > 0:
-					part["maxLikelihoodBranch"] = newTupleIndex
-				else:
-					part["maxLikelihoodBranch"] = ()
+					if len(newTupleIndex) > 0:
+						part["maxLikelihoodBranch"] = newTupleIndex
+					else:
+						part["maxLikelihoodBranch"] = ()
 
-				print "oldTuple, newTuple:", branchTupleIndex, newTupleIndex
-			
+					print "oldTuple, newTuple:", branchTupleIndex, newTupleIndex
+				
 			for childPathID, pathClass in self.pathClasses.iteritems():
 				
 				if pathClass["parentID"] == pathID:
@@ -3581,28 +3655,17 @@ class MapState:
 					print "reparented pathClass:", childPathID, pathClass
 
 
-					#for k in range(len(particleDist2)):
-					for k in range(len(self.stepResults)):
+					#for k in range(len(self.stepResults)):
 
-						part = self.stepResults[k]
+					#	part = self.stepResults[k]
 
-						#partJunctionPose_G = part.junctionData[childPathID]["globalJunctionPose"]
+					#	partControlPoses_G = partSetControlPoses_G[k]
 
-						#partControlPoses = part.getControlPoses()
-						#print parentPathIDs, partControlPoses
-						#partControlPoses_G = computeGlobalControlPoses(partControlPoses, parentPathIDs)
+					#	partParentControlPose_G = partControlPoses_G[mergeTargetID]
+					#	parentFrame = Pose(partParentControlPose_G)
 
-						partControlPoses_G = partSetControlPoses_G[k]
-
-						partParentControlPose_G = partControlPoses_G[mergeTargetID]
-						parentFrame = Pose(partParentControlPose_G)
-
-						controlPose_P = parentFrame.convertGlobalPoseToLocal(oldControlPose_G)
-						part["controlPoses_P"][childPathID] = controlPose_P
-
-						#part.junctionData[childPathID]["controlPose"] = controlPose_P
-
-						#part.junctionData[childPathID]["parentID"] = mergeTargetID
+					#	controlPose_P = parentFrame.convertGlobalPoseToLocal(oldControlPose_G)
+					#	part["controlPoses_P"][childPathID] = controlPose_P
 
 
 

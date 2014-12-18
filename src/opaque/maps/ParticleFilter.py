@@ -291,41 +291,41 @@ def displaceParticle2( poseData, pathSplices2, pathSplices3, supportLine, nodeID
 
 	if nodeID > 0:
 		
-		if nodeID % 2 == 1:
+		if False:
+			if nodeID % 2 == 1:
 
-			rState = random.getstate()
-			random.seed()	
-			moveChance = random.random()
-			moveDist = random.random()
-			
-			if moveChance >= 0.1:
-				#distEst = 0.5 + (0.5-moveDist)/2.0
-				distEst = random.gauss(0.7,0.6)
-				#distEst = random.gauss(1.0,0.6)
+				rState = random.getstate()
+				random.seed()	
+				#moveChance = random.random()
+				#moveDist = random.random()
+
+				distEst = 0.5
+				
+				#if moveChance >= 0.1:
+				#	distEst = random.gauss(0.7,0.6)
+				#else:
+				#	distEst = random.gauss(-0.5,0.6)
+
+				random.setstate(rState)
+
+				#distEst = moveChance * 2.0
+				#distEst = 2.0*moveChance - 0.4
+
+				#print "displacing", moveChance, distEst
+
+				" the guess process gives a meaningful guess for these node's poses "
+				" before this, it is meaningless "
+				currPose2 = getStepGuess(poseData, nodeID-3, nodeID-1, estPose0, estPose2, direction, distEst = distEst)
+
+				#supportLine = mapHyp.paths[0]
+
+				#currPose3 = getInPlaceGuess(poseData, nodeID-1, nodeID, currPose2, estPose3, supportLine, direction)
+				currPose3 = getInPlaceGuess(poseData, nodeID-1, nodeID, currPose2, estPose3, [], direction)
+
+				print "displace old to new poses:", estPose0, estPose2, estPose3, currPose2, currPose3
+
 			else:
-				#distEst = -0.5 - (0.5-moveDist)/2.0
-				distEst = random.gauss(-0.5,0.6)
-
-			random.setstate(rState)
-
-			#distEst = moveChance * 2.0
-			#distEst = 2.0*moveChance - 0.4
-
-			print "displacing", moveChance, distEst
-
-			" the guess process gives a meaningful guess for these node's poses "
-			" before this, it is meaningless "
-			currPose2 = getStepGuess(poseData, nodeID-3, nodeID-1, estPose0, estPose2, direction, distEst = distEst)
-
-			#supportLine = mapHyp.paths[0]
-
-			#currPose3 = getInPlaceGuess(poseData, nodeID-1, nodeID, currPose2, estPose3, supportLine, direction)
-			currPose3 = getInPlaceGuess(poseData, nodeID-1, nodeID, currPose2, estPose3, [], direction)
-
-			print "displace old to new poses:", estPose0, estPose2, estPose3, currPose2, currPose3
-
-		else:
-			print "movePath:  DO NOTHING"
+				print "movePath:  DO NOTHING"
 
 		#return currPose2, currPose3
 
@@ -487,12 +487,12 @@ def displaceParticle2( poseData, pathSplices2, pathSplices3, supportLine, nodeID
 			resultMoves3 = sorted(resultMoves3, key=itemgetter(18))
 			resultMoves3 = sorted(resultMoves3, key=itemgetter(16), reverse=True)
 			
-			print "resultMoves2:"
-			for res in resultMoves2:
-				print res
-			print "resultMoves3:"
-			for res in resultMoves3:
-				print res
+			#print "resultMoves2:"
+			#for res in resultMoves2:
+			#	print res
+			#print "resultMoves3:"
+			#for res in resultMoves3:
+			#	print res
 
 			currSplice2 = []
 			currSplice3 = []

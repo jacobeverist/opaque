@@ -2412,11 +2412,11 @@ class LocalNode:
 					#else:
 					#	widthX.append(0.0)
 
-					print "distR:", distR
-					print "distL:", distL
-					print "linePoint:", linePoint
-					print "leftPoint:", leftPoint
-					print "rightPoint:", rightPoint
+					#print "distR:", distR
+					#print "distL:", distL
+					#print "linePoint:", linePoint
+					#print "leftPoint:", leftPoint
+					#print "rightPoint:", rightPoint
 
 					if len(rightPoint) > 0.0:
 						xP = [linePoint[0], rightPoint[0]]
@@ -2706,11 +2706,11 @@ class LocalNode:
 					#else:
 					#	widthX.append(0.0)
 
-					print "distR:", distR
-					print "distL:", distL
-					print "linePoint:", linePoint
-					print "leftPoint:", leftPoint
-					print "rightPoint:", rightPoint
+					#print "distR:", distR
+					#print "distL:", distL
+					#print "linePoint:", linePoint
+					#print "leftPoint:", leftPoint
+					#print "rightPoint:", rightPoint
 
 					if len(rightPoint) > 0.0:
 						xP = [linePoint[0], rightPoint[0]]
