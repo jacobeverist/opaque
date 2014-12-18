@@ -74,23 +74,42 @@ sys.setrecursionlimit(10000)
 import opaque.maps.gen_icp as gen_icp
 import opaque.maps.MapProcess as MapProcess
 import atexit
+
 def cleanup():
-	if gen_icp.overlapPool != None:
-		for p in gen_icp.overlapPool:
+
+	if len(shoots.pool_branch) > 0:
+
+		shoots.qin_branch.close()
+		shoots.qin_branch.join_thread()
+
+		shoots.qout_branch.close()
+		qout_branch.cancel_join_thread()
+
+		for p in shoots.pool_branch:
 			p.terminate()
 
-	if len(MapProcess.pool_move) > 0:
-		for p in MapProcess.pool_move:
+	if len(ParticleFilter.pool_posePart) > 0:
+
+		ParticleFilter.qin_posePart.close()
+		ParticleFilter.qin_posePart.join_thread()
+
+		ParticleFilter.qout_posePart.close()
+		ParticleFilter.qout_posePart.cancel_join_thread()
+
+		for p in ParticleFilter.pool_posePart:
 			p.terminate()
-	if len(MapProcess.pool_localize) > 0:
-		for p in MapProcess.pool_localize:
+
+	if len(ParticleFilter.pool_dispPosePart2) > 0:
+
+		ParticleFilter.qin_dispPosePart2.close()
+		ParticleFilter.qin_dispPosePart2.join_thread()
+
+		ParticleFilter.qout_dispPosePart2.close()
+		ParticleFilter.qout_dispPosePart2.cancel_join_thread()
+
+		for p in ParticleFilter.pool_dispPosePart2:
 			p.terminate()
-	if len(MapProcess.pool_generate) > 0:
-		for p in MapProcess.pool_generate:
-			p.terminate()
-	if len(MapProcess.pool_eval) > 0:
-		for p in MapProcess.pool_eval:
-			p.terminate()
+
 
 			
 atexit.register(cleanup)
