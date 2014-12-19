@@ -1484,6 +1484,8 @@ class MapState:
 
 				overlapSum = part[50]
 				poseLandmarkSum = part[51]
+				tipAngDiff0 = part[52]
+				tipAngDiff1 = part[53]
 
 
 				newPose0 = part[2]
@@ -1528,10 +1530,12 @@ class MapState:
 				#ANG_THRESH = 2.0*pi/3.0
 				ANG_THRESH = 1.0*pi/3.0
 
-				#if fabs(diffAngle(initPose0[2],newPose0[2])) > 2.0*pi/3.0 or fabs(diffAngle(initPose1[2],newPose1[2])) > 2.0*pi/3.0:
 
-				if fabs(diffAngle(initPose0[2],newPose0[2])) > ANG_THRESH or fabs(diffAngle(initPose1[2],newPose1[2])) > ANG_THRESH:
-					print "reject because change in pose angle is too different"
+				#if fabs(diffAngle(initPose0[2],newPose0[2])) > 2.0*pi/3.0 or fabs(diffAngle(initPose1[2],newPose1[2])) > 2.0*pi/3.0:
+				#if fabs(diffAngle(initPose0[2],newPose0[2])) > ANG_THRESH or fabs(diffAngle(initPose1[2],newPose1[2])) > ANG_THRESH:
+
+				if tipAngDiff0 > ANG_THRESH or tipAngDiff1 > ANG_THRESH:
+					print "reject because change in tip angle is too different"
 					isReject = True
 				else:
 					pass

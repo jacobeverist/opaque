@@ -182,6 +182,42 @@ def batchGlobalMultiFit(initGuesses, splices, medial, initPose, pathIDs, nodeID)
 	return knn
 
 
+
+def getTipAngles(medial2, estPose2):
+
+	poseOrigin = Pose(estPose2)
+
+	points2_offset = []
+	for p in medial2:
+		result = poseOrigin.convertLocalOffsetToGlobal(p)
+		points2_offset.append(result)
+
+
+	" tip angles "
+	angSum1 = 0.0
+	angSum2 = 0.0
+	angs1 = []
+	angs2 = []
+	phi1 = normalizeAngle(points2_offset[0][2])
+	phi2 = normalizeAngle(points2_offset[-1][2])
+	for i in range(10):
+		ang1 = normalizeAngle(points2_offset[i][2]-phi1)
+		ang2 = normalizeAngle(points2_offset[-i-1][2]-phi2)
+		angSum1 += ang1
+		angSum2 += ang2
+		
+		angs1.append(ang1+phi1)
+		angs2.append(ang2+phi2)
+
+	angle1 = angSum1 / 10.0 + phi1
+	angle2 = angSum2 / 10.0 + phi2
+
+	" invert one angle so opposite tips have opposite angles "
+	angle1 = normalizeAngle(angle1 + pi)
+
+
+
+	return angle1, angle2
 		
 
 
@@ -832,34 +868,6 @@ def orientPathLean(globalPath, globalRefPath, dist_thresh = 0.5):
 		orientedGlobalPath = pathPoints
 	
 	return orientedGlobalPath
-
-
-def getTipAngles(pathPoints):
-	
-	" tip angles "
-	angSum1 = 0.0
-	angSum2 = 0.0
-	angs1 = []
-	angs2 = []
-	phi1 = normalizeAngle(pathPoints[0][2])
-	phi2 = normalizeAngle(pathPoints[-1][2])
-	for i in range(10):
-		ang1 = normalizeAngle(pathPoints[i][2]-phi1)
-		ang2 = normalizeAngle(pathPoints[-i-1][2]-phi2)
-		angSum1 += ang1
-		angSum2 += ang2
-		
-		angs1.append(ang1+phi1)
-		angs2.append(ang2+phi2)
-	
-	angle1 = angSum1 / 10.0 + phi1
-	angle2 = angSum2 / 10.0 + phi2
-	
-	" invert one angle so opposite tips have opposite angles "
-	angle1 = normalizeAngle(angle1 + pi)
-
-
-	return angle1, angle2
 
 
 
