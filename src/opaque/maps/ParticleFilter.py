@@ -273,6 +273,11 @@ def displaceParticle2( poseData, pathSplices2, pathSplices3, supportLine, nodeID
 	medial2 = poseData.medialAxes[nodeID2]
 	medial3 = poseData.medialAxes[nodeID3]
 
+	medialSpline0 = SplineFit(medial0, smooth=0.1)
+	medial0_vec = medialSpline0.getUniformSamples()
+	medialSpline1 = SplineFit(medial1, smooth=0.1)
+	medial1_vec = medialSpline1.getUniformSamples()
+
 	medialSpline2 = SplineFit(medial2, smooth=0.1)
 	medial2_vec = medialSpline2.getUniformSamples()
 	medialSpline3 = SplineFit(medial3, smooth=0.1)
@@ -285,8 +290,8 @@ def displaceParticle2( poseData, pathSplices2, pathSplices3, supportLine, nodeID
 	currProb2 = 0.0
 	currProb3 = 0.0
 
-	foreAngle0, backAngle0 = getTipAngles(medial0, estPose0)
-	foreAngle1, backAngle1 = getTipAngles(medial1, estPose1)
+	foreAngle0, backAngle0 = getTipAngles(medial0_vec, estPose0)
+	foreAngle1, backAngle1 = getTipAngles(medial1_vec, estPose1)
 
 
 
@@ -454,8 +459,8 @@ def displaceParticle2( poseData, pathSplices2, pathSplices3, supportLine, nodeID
 				overlapSum2 = result2[13]
 				overlapSum3 = result3[13]
 
-				foreAngle2, backAngle2 = getTipAngles(medial2, resultPose2)
-				foreAngle3, backAngle3 = getTipAngles(medial3, resultPose3)
+				foreAngle2, backAngle2 = getTipAngles(medial2_vec, resultPose2)
+				foreAngle3, backAngle3 = getTipAngles(medial3_vec, resultPose3)
 
 				angDiff2 = min(abs(diffAngle(foreAngle2,foreAngle0)), abs(diffAngle(backAngle2,backAngle0)))
 				angDiff3 = min(abs(diffAngle(foreAngle3,foreAngle1)), abs(diffAngle(backAngle3,backAngle1)))
