@@ -20,7 +20,7 @@ from operator import itemgetter
 import hashlib
 from Splices import batchGlobalMultiFit, getMultiDeparturePoint, orientPath, getTipAngles, orientPathLean
 #from MapProcess import selectLocalCommonOrigin, selectCommonOrigin
-from ParticleFilter import multiParticleFitSplice, batchLocalizeParticle, batchDisplaceParticles, batchDisplaceParticles2, Particle
+from ParticleFilter import multiParticleFitSplice, batchLocalizeParticle, batchDisplaceParticles2, Particle
 import time
 import traceback
 from uuid import uuid4
@@ -364,6 +364,8 @@ class MapState:
 		self.NUM_BRANCHES = 5
 		#self.DIV_LEN = 0.1
 		#self.NUM_BRANCHES = 1
+
+		self.unfeaturedStepCount = 0
 
 
 		""" the entrance point of the environment """
@@ -764,8 +766,8 @@ class MapState:
 		pathIDs = self.getPathIDs()
 		parentPathIDs = self.getParentHash()
 
-		medial0 = self.poseData.medialAxes[nodeID0]
-		medial1 = self.poseData.medialAxes[nodeID1]
+		medial0 = self.poseData.medialAxes[nodeID0-2]
+		medial1 = self.poseData.medialAxes[nodeID1-2]
 
 
 		""" state of map:
@@ -804,8 +806,8 @@ class MapState:
 
 			splice = allSplices[k]
 
-			results0 = getMultiDeparturePoint(splice, medial0_vec, prevPose0, prevPose0, pathIDs, nodeID0)
-			results1 = getMultiDeparturePoint(splice, medial1_vec, prevPose1, prevPose1, pathIDs, nodeID1)
+			results0 = getMultiDeparturePoint(splice, medial0_vec, prevPose0, prevPose0, pathIDs, nodeID0, spliceIndex=k, plotIter=False)
+			results1 = getMultiDeparturePoint(splice, medial1_vec, prevPose1, prevPose1, pathIDs, nodeID1, spliceIndex=k, plotIter=False)
 
 			contigFrac0 = results0[12]
 			contigFrac1 = results1[12]
@@ -822,6 +824,30 @@ class MapState:
 		for p in medial0:
 			globalMedial0.append(poseOrigin0.convertLocalToGlobal(p))
 
+		""" compute the distribution spread based on how long we've gone unfeatured or unlandmarked """
+		STEP_DIST = 0.2
+		NUM_SAMPLES = 10 + self.unfeaturedStepCount * 2
+
+
+		print nodeID0, "NUM_SAMPLES =", NUM_SAMPLES
+
+		isFeatureless0 = self.poseData.isNodeFeatureless[nodeID0]
+		isFeatureless1 = self.poseData.isNodeFeatureless[nodeID1]
+
+		spatialFeature0 = self.poseData.spatialFeatures[nodeID0][0]
+		isSpatialFeature0 = spatialFeature0["bloomPoint"] != None or spatialFeature0["archPoint"] != None or spatialFeature0["inflectionPoint"] != None
+		spatialFeature1 = self.poseData.spatialFeatures[nodeID1][0]
+		isSpatialFeature1 = spatialFeature1["bloomPoint"] != None or spatialFeature1["archPoint"] != None or spatialFeature1["inflectionPoint"] != None
+
+		print nodeID0, "feature state:", isFeatureless0, isFeatureless1, isSpatialFeature0, isSpatialFeature1
+
+		if isFeatureless0 and isFeatureless1 and not isSpatialFeature0 and not isSpatialFeature1:
+			self.unfeaturedStepCount += 1
+		else:
+			self.unfeaturedStepCount = 0
+
+
+
 		#travelDist0 = 0., travelDist1):
 		#for matchSplice in matchedSplices:
 		self.stepDists = []
@@ -829,17 +855,25 @@ class MapState:
 
 			matchSplice = matchedSplices[j]
 
+			""" forward direction , direction=True """
+			direction = self.poseData.travelDirs[nodeID0]
+			
+			if direction:
+				distEst = -0.8
+			else:
+				distEst = 0.8
+			#u2 = medialSpline2.getUOfDist(originU2, distEst, distIter = 0.001)
 
 			orientedSplicePath = orientPath(matchSplice, globalMedial0)				
 			pathSpline = SplineFit(orientedSplicePath, smooth=0.1)
 
 			minDist0, oldU0, oldP0 = pathSpline.findClosestPoint(prevPose0)
 			minDist1, oldU1, oldP1 = pathSpline.findClosestPoint(prevPose1)
-			oldDist0 = pathSpline.dist_u(oldU0)
-			oldDist1 = pathSpline.dist_u(oldU1)
+			dispU0 = pathSpline.getUOfDist(oldU0, distEst)
+			dispU1 = pathSpline.getUOfDist(oldU1, distEst)
 
-			STEP_DIST = 0.2
-			NUM_SAMPLES = 10
+			#STEP_DIST = 0.2
+			#NUM_SAMPLES = 10
 
 
 			""" sample points in the neighborhood """
@@ -850,18 +884,16 @@ class MapState:
 			for k in range(NUM_SAMPLES):
 				newStepDist = stepLow + k * STEP_DIST
 
-				newU0 = pathSpline.getUOfDist(oldU0, newStepDist)
-				newU1 = pathSpline.getUOfDist(oldU1, newStepDist)
+				#newU0 = pathSpline.getUOfDist(oldU0, newStepDist)
+				#newU1 = pathSpline.getUOfDist(oldU1, newStepDist)
+				newU0 = pathSpline.getUOfDist(dispU0, newStepDist)
+				newU1 = pathSpline.getUOfDist(dispU1, newStepDist)
 
 				newDist0 = pathSpline.dist_u(newU0)
 				newPose0 = pathSpline.point_u(newU0)
-				newAng0 = newPose0[2]
-				oldAng0 = prevPose0[2]
 
 				newDist1 = pathSpline.dist_u(newU1)
 				newPose1 = pathSpline.point_u(newU1)
-				newAng1 = newPose1[2]
-				oldAng1 = prevPose1[2]
 
 				self.stepDists.append((j, newDist0, newDist1, newPose0, newPose1))
 
@@ -1528,7 +1560,8 @@ class MapState:
 					isReject = True
 
 				#ANG_THRESH = 2.0*pi/3.0
-				ANG_THRESH = 1.0*pi/3.0
+				#ANG_THRESH = 1.0*pi/3.0
+				ANG_THRESH = 0.5*pi/3.0
 
 
 				#if fabs(diffAngle(initPose0[2],newPose0[2])) > 2.0*pi/3.0 or fabs(diffAngle(initPose1[2],newPose1[2])) > 2.0*pi/3.0:
@@ -1588,7 +1621,7 @@ class MapState:
 
 					results[index] = tupleCopy
 
-				print "%d %d %d %d %d isReject branchProb poseProb_B poseProb %d %1.2f %1.2f %1.2f" %  (nodeID0, self.hypothesisID, particleID, index, spliceIndex, isReject, branchNormLandmarkCost, results[index][45], preBranchProb), normMatchCount, overlapSum, contigFrac_0, contigFrac_1, initPose0[2], newPose0[2], int(isExist1_0), int(isExist2_0), int(isExist1_1), int(isExist2_1), int(isInterior1_0), int(isInterior2_0), int(isInterior1_1), int(isInterior2_1), branchIndex, poseLandmarkSum, len(landmarks_G), normAngDiff
+				print "%d %d %d %d %d isReject branchProb poseProb_B poseProb %d %1.2f %1.2f %1.2f" %  (nodeID0, self.hypothesisID, particleID, index, spliceIndex, isReject, branchNormLandmarkCost, results[index][45], preBranchProb), normMatchCount, overlapSum, contigFrac_0, contigFrac_1, initPose0[2], newPose0[2], int(isExist1_0), int(isExist2_0), int(isExist1_1), int(isExist2_1), int(isInterior1_0), int(isInterior2_0), int(isInterior1_1), int(isInterior2_1), branchIndex, poseLandmarkSum, len(landmarks_G), tipAngDiff0, tipAngDiff1
 				
 				#print "%d %d %d %d %d normMatchCount, newUtilVal, overlapSum:" % (nodeID0, self.hypothesisID, particleID, index, spliceIndex), normMatchCount, results[index][45], overlapSum, contigFrac_0, contigFrac_1, initPose0[2], newPose0[2], int(isExist1_0), int(isExist2_0), int(isExist1_1), int(isExist2_1), int(isInterior1_0), int(isInterior2_0), int(isInterior1_1), int(isInterior2_1), isReject, branchIndex, poseLandmarkSum, len(landmarks_G), normLandmarkSum, normAngDiff, branchNormLandmarkCost
 
@@ -1924,9 +1957,10 @@ class MapState:
 		xP = []
 		yP = []
 		for pathID in allPathIDs:
-			pose_G = controlPoses_G[pathID]
-			xP.append(pose_G[0])
-			yP.append(pose_G[1])
+			if pathID != 0:
+				pose_G = controlPoses_G[pathID]
+				xP.append(pose_G[0])
+				yP.append(pose_G[1])
 
 		if len(xP) > 0:
 			pylab.scatter(xP, yP, color='r', linewidth=1, zorder=10, alpha=0.9)

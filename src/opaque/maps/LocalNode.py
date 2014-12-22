@@ -273,11 +273,11 @@ class LocalNode:
 			p_1, i_1, minDist = functions.findClosestPoint(linePoints2, p)
 			distances.append(minDist)
 			
-		sum = 0.0
+		sumVal = 0.0
 		for dist in distances:
-			sum += dist
+			sumVal += dist
 		
-		distAvg = sum / len(distances)
+		distAvg = sumVal / len(distances)
 		
 		print "node", self.nodeID, "has featurelessness of", distAvg
 		if distAvg > 0.04:
@@ -2084,6 +2084,9 @@ class LocalNode:
 
 				print "spatial", self.nodeID, contigInflection, maxDeriv, len(longPathWidth), contigPointIndex, contigBoundaries
 				print "mass deriv:", [(k, contigLen[k], contigArea[k], contigDensity[k], longPathWidth[contigPointIndex[k]]["angDeriv2"]) for k in range(len(contigPointIndex))]
+				print "contigArea:", self.nodeID, contigArea
+				print "contigLen:", self.nodeID, contigLen
+				print "contigDensity:", self.nodeID, contigDensity
 
 				#if maxDeriv >= 0.35:
 				#if maxDeriv >= 0.6 and longPathWidth[contigInflection-1]["angDeriv2"] < maxDeriv and longPathWidth[contigInflection+1]["angDeriv2"] < maxDeriv:
@@ -2172,6 +2175,16 @@ class LocalNode:
 						print "arch ACCEPT"
 					else:
 						print "arch REJECT"
+
+
+				for k in range(len(contigLen)):
+
+					if contigLen[k] > 40 and contigDensity[k] > 0.1:
+						print self.nodeID, "BOWTIE from spatial features"
+						self.isBowtie = True
+
+					#print "contigLen:", self.nodeID, contigLen
+					#print "contigDensity:", self.nodeID, contigDensity
 
 
 
@@ -2555,8 +2568,12 @@ class LocalNode:
 
 		greatCount, divSums = bowtieValues[0]
 		print "divSums:", greatCount, divSums
+
+		if self.isBowtie:
+			pass
+			print "BOWTIE"
 		
-		if divSums[2] < divSums[0] and divSums[2] < divSums[4]:
+		elif divSums[2] < divSums[0] and divSums[2] < divSums[4]:
 			self.isBowtie = True
 			print "BOWTIE"
 		elif greatCount >= 4:
