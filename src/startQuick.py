@@ -63,6 +63,7 @@ import opaque.maps.MapProcess as MapProcess
 import opaque.maps.shoots as shoots
 import opaque.maps.ParticleFilter as ParticleFilter
 import atexit
+
 def cleanup():
 
 	if len(shoots.pool_branch) > 0:
@@ -96,6 +97,17 @@ def cleanup():
 		ParticleFilter.qout_dispPosePart2.cancel_join_thread()
 
 		for p in ParticleFilter.pool_dispPosePart2:
+			p.terminate()
+
+	if len(ParticleFilter.pool_localLandmark) > 0:
+
+		ParticleFilter.qin_localLandmark.close()
+		ParticleFilter.qin_localLandmark.join_thread()
+
+		ParticleFilter.qout_localLandmark.close()
+		ParticleFilter.qout_localLandmark.cancel_join_thread()
+
+		for p in ParticleFilter.pool_localLandmark:
 			p.terminate()
 
 			

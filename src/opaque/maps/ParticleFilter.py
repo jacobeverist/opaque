@@ -41,6 +41,10 @@ qin_dispPosePart2 = None
 qout_dispPosePart2 =  None
 pool_dispPosePart2 = []
 
+qin_localLandmark = None
+qout_localLandmark = None
+pool_localLandmark = []
+
 qin_branch = None
 qout_branch =  None
 pool_branch = []
@@ -249,6 +253,337 @@ def __remote_displaceParticle2(rank, qin, qout):
 		raise
 	
 	print "process exited incorrectly"
+
+
+
+def batchLocalizeLandmark(localizeJobs):
+
+	global renderGlobalPlotCount
+	global pool_localLandmark
+	global qin_localLandmark
+	global qout_localLandmark
+
+	ndata = len(localizeJobs)
+	
+	args = []
+	
+	for k in range(ndata):
+		arg = localizeJobs[k]
+		args.append(arg)
+	
+	nproc = __num_processors()
+	
+	#nproc *= 2
+	print "nproc =", nproc
+	
+	# compute chunk size
+	chunk_size = ndata / nproc
+	chunk_size = 2 if chunk_size < 2 else chunk_size
+	
+	print "chunk_size =", chunk_size
+	print "max_size =", ndata/chunk_size
+	
+	# set up a pool of processes
+	if len(pool_localLandmark) == 0:
+
+		qin_localLandmark = processing.Queue(maxsize=ndata/chunk_size)
+		qout_localLandmark = processing.Queue(maxsize=ndata/chunk_size)
+		pool_localLandmark = [processing.Process(target=__remote_localizeLandmark,
+		#pool_dispPosePart = [processing.Process(target=__remote_prof_localizeLandmark,
+				#args=(rank, qin_dispPosePart2, qout_dispPosePart2, splices, medial, initPose, pathIDs, nodeID))
+				args=(rank, qin_localLandmark, qout_localLandmark))
+				#args=(rank, qin_dispPosePart2, qout_dispPosePart2))
+					for rank in range(nproc)]
+		for p in pool_localLandmark: p.start()
+	
+	# put data chunks in input queue
+	cur, nc = 0, 0
+	#print "args =", args
+	while 1:
+		_data = args[cur:cur+chunk_size]
+		print "nc = ", nc
+		print "cur =", cur
+		if len(_data) == 0: break
+		qin_localLandmark.put((nc,_data))
+		print "DONE"
+		cur += chunk_size
+		nc += 1
+	
+	print "BATCH FINISHED"
+	
+	
+	# read output queue
+	knn = []
+	isFail = False
+	while len(knn) < nc:
+		thisKnn = qout_localLandmark.get()
+		if thisKnn[0] != None:
+			knn += [thisKnn]
+		else:
+			isFail = True
+			break
+	
+	if isFail:
+
+		print "isFail =", isFail
+		print "knn =", knn
+
+
+		qin_localLandmark.close()
+		qin_localLandmark.join_thread()
+
+		qout_localLandmark.close()
+		qout_localLandmark.cancel_join_thread()
+
+		for p in pool_localLandmark:
+			p.terminate()
+
+		raise
+
+
+	# avoid race condition
+	_knn = [n for i,n in sorted(knn)]
+	knn = []
+	for tmp in _knn:
+		knn += tmp
+
+	for p in pool_localLandmark:
+		p.terminate()
+	pool_localLandmark = []
+
+	print "returning"
+	return knn
+
+def __remote_prof_localizeLandmark(rank, qin, qout):
+
+	try:
+		pid = os.getpid()
+		" while loop "		
+		#cProfile.run('__remote_localizeLandmark(rank, qin, qout)', "particle_%d.prof" % pid )
+		cProfile.runctx("__remote_localizeLandmark(rank, qin, qout)", globals(), locals(), "localizeLandmark_%d.prof" % pid)	
+	
+	except:
+		traceback.print_exc()
+		print "Exception:", sys.exc_info()[0]
+
+
+def __remote_localizeLandmark(rank, qin, qout):
+
+
+	try:
+
+		sys.stdout = open("localizeLandmark_" + str(rank) + ".out", "a")
+		sys.stderr = open("localizeLandmark_" + str(rank) + ".err", "a")
+		print 'module name:', __name__
+		print 'parent process:', os.getppid()
+		print 'process id:', os.getpid()
+
+		print "started __remote_localizeLandmark"
+
+		while 1:
+			# read input queue (block until data arrives)
+			results = []
+			nc, args = qin.get()
+			
+			print "__remote_localizeLandmark(", nc, len(args), args
+			sys.stdout.flush()
+
+			#foo = None
+			#badVal = foo[0] 
+
+			for job in args:
+				
+				poseData = job[0]
+				particleIndex = job[1]
+				nodeID3 = job[2]
+				estPose0 = job[3]
+				pathSplices2 = job[4]
+				landmarks_G = job[5]
+				landmarks_N = job[6]
+
+				result = localizeLandmarkPose(poseData, pathSplices2, nodeID3, estPose0, landmarks_G, landmarks_N)
+				results.append((particleIndex,) + result)
+
+				print "result:", (particleIndex,) + result
+				sys.stdout.flush()
+
+
+			print "qout.put(", nc, results
+			sys.stdout.flush()
+							   
+			# write to output queue
+			qout.put((nc,results))
+
+	except:
+		print "Worker process failed. Exiting"
+		#printStack()
+		traceback.print_exc()
+		print "Exception:", sys.exc_info()[0]
+		
+		sys.stdout.flush()
+		sys.stderr.flush()
+		qout.put((None,None))
+		raise
+	
+	print "process exited incorrectly"
+
+
+def localizeLandmarkPose( poseData, pathSplices2, nodeID, estPose, landmarks_G, landmarks_N):
+
+	sys.stdout.flush()
+
+	medial0 = poseData.medialAxes[nodeID]
+
+	medialSpline0 = SplineFit(medial0, smooth=0.1)
+	medial0_vec = medialSpline0.getUniformSamples()
+
+	direction = poseData.travelDirs[nodeID]
+
+	currPose2 = estPose
+	currProb2 = 0.0
+
+	foreAngle0, backAngle0 = getTipAngles(medial0_vec, estPose)
+
+	splicePaths = pathSplices2
+
+	""" if the node has a spatial feature, localize it to the closest landmark """
+
+	""" if the node has a landmark feature, then we try to localize on the junction point """
+	""" FIXME: only use the first long path, we don't try and figure out the longest yet """
+	currPoses = {nodeID: currPose2}
+
+	""" if the node has been localized to a landmark, we need the updated version """
+	currPose2 = currPoses[nodeID]
+
+	currProb2 = 0.0
+
+	" now we fit the guessed pose to a splice of the paths "
+	" this constrains it to the previously explored environment "
+	" all possible splices are used, and they are filtered to determine the best result "
+
+	resultMoves2 = []
+
+	for spliceIndex in range(len(splicePaths)):		
+
+		path = splicePaths[spliceIndex]
+
+		" 2) get pose of previous node, get point on path curve "
+		pose0 = estPose
+
+		poseOrigin0 = Pose(pose0)
+		globalMedial0 = []
+		for p in medial0:
+			globalMedial0.append(poseOrigin0.convertLocalToGlobal(p))
+
+		orientedSplicePath = orientPath(path, globalMedial0)				
+		currPathSpline = SplineFit(orientedSplicePath, smooth=0.1)
+
+		minDist0, u0, p0 = currPathSpline.findClosestPoint(pose0[0:2])
+		
+		arcDist0 = currPathSpline.distPoints[int(u0*1000)]
+		
+		" 3) step distance along the path in direction of travel "
+		
+		pose2 = currPose2
+		
+		uPath2, uMedialOrigin2 = selectLocalCommonOrigin(orientedSplicePath, medial0, pose2)
+		
+		u2 = uPath2
+
+		print "input: uMedialOrigin2, u2, pose2:", uMedialOrigin2, u2, pose2
+		
+		resultPose2, lastCost2, matchCount2, currAng2, currU2 = gen_icp.globalPathToNodeOverlapICP2([u2, uMedialOrigin2, 0.0], orientedSplicePath, medial0, plotIter = False, n1 = nodeID-1, n2 = -1, arcLimit = 0.01)
+		
+		print "resultPoses:", resultPose2,
+
+		multiDepCount = 0
+
+		result2 = getMultiDeparturePoint(orientedSplicePath, medial0_vec, pose2, resultPose2, [], nodeID-1, hypID = 0, pathPlotCount = 0, particleIndex=spliceIndex, spliceIndex=spliceIndex, plotIter = False)
+		multiDepCount += 1
+		
+		" (departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2 )"
+		
+		" (resultPose2,lastCost2,matchCount2,fabs(currAng2)) "
+
+		contigFrac_2 = result2[12]
+		overlapSum2 = result2[13]
+
+		foreAngle2, backAngle2 = getTipAngles(medial0_vec, resultPose2)
+
+		angDiff2 = min(abs(diffAngle(foreAngle2,foreAngle0)), abs(diffAngle(backAngle2,backAngle0)))
+
+
+
+		frame0 = Pose(resultPose2)
+		landmark0_N = landmarks_N[nodeID]
+		landmark0_G = None
+		thresh0 = None
+		poseSum = 0.0
+
+		if landmark0_N != None:
+			landmark0_G = (frame0.convertLocalToGlobal(landmark0_N[0]), landmark0_N[1], landmark0_N[2])
+			thresh0 = landmark0_G[1]
+
+		print nodeID, spliceIndex, "landmarks:", landmark0_G, landmarks_G
+
+		LANDMARK_THRESH = 7.0
+		for i in range(len(landmarks_G)):
+			p1 = landmarks_G[i][0]
+			threshG = landmarks_G[i][1]
+
+			if landmark0_G != None:
+
+				maxThresh = thresh0
+				if threshG > thresh0:
+					maxThresh = threshG
+
+				dist0 = sqrt((p1[0]-landmark0_G[0][0])**2 + (p1[1]-landmark0_G[0][1])**2)
+				if dist0 < LANDMARK_THRESH:
+					poseSum += sqrt(dist0*dist0/(threshG*threshG + thresh0*thresh0))
+
+
+		" NOTE:  added minimum threshold to angle difference "
+		" NOTE:  guess pose is now the inter-nodal estimate instead of path-based estimate "
+
+		if overlapSum2 > 1e10:
+			newProb2 = 0.0	
+		else:
+			#newProb2 = (pi-angDiff2) * contigFrac_2
+			newProb2 = 1.0/poseSum
+
+		print "angDiff/contigFrac:", angDiff2, contigFrac_2
+		print "overlapSum:", overlapSum2
+		print "newProb:", newProb2
+
+		if angDiff2 < 0.5 and contigFrac_2 > 0.7:
+			resultMoves2.append((resultPose2,lastCost2,matchCount2,fabs(0.0)) + result2 + (orientedSplicePath, newProb2))
+	
+	
+	""" sort by angDiff follwed by contigFrac """
+	#resultMoves2 = sorted(resultMoves2, key=itemgetter(18))
+	#resultMoves2 = sorted(resultMoves2, key=itemgetter(16), reverse=True)
+
+	resultMoves2 = sorted(resultMoves2, key=itemgetter(20))
+
+	currSplice2 = []
+
+	" select the best pose for each node "
+	" record the splice used for the fit "
+	if len(resultMoves2) > 0:
+		currPose2 = resultMoves2[0][0]
+		currSplice2 = resultMoves2[0][19]
+		currProb2 = resultMoves2[0][20]
+
+	else:
+		print "node", nodeID-1, "not movePathed because no valid pose"
+		currProb2 = 0.0
+
+	" move the pose particles along their paths "	
+	print "fitted poses:", currPose2
+	print "currProbs:", currProb2
+
+
+	return currPose2, currProb2
 
 
 def displaceParticle2( poseData, pathSplices2, pathSplices3, supportLine, nodeID3, initPose2, initPose3, prevPose0, prevPose1, particleIndex, landmarks_G, landmarks_N):
@@ -800,6 +1135,7 @@ def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, me
 	icpDist1 = sqrt((resultPose1[0]-initPose1[0])**2 + (resultPose1[1]-initPose1[1])**2)
 
 	utilVal0 = (1.0-contigFrac0) + (isExist1_0 or isExist2_0) + (1.0-contigFrac1) + (isExist1_1 or isExist2_1)
+	#utilVal0 = (1.0-contigFrac0) + (1.0-contigFrac1)
 
 	frame0 = Pose(resultPose0)
 	frame1 = Pose(resultPose1)

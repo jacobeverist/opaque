@@ -1957,7 +1957,8 @@ def __remote_multiJointBranch(rank, qin, qout):
 				numNodes = job[10]
 				hypID = job[11]
 
-				result = computeJointBranch(localPathSegs, localTerms, localPaths, localSkeletons, controlPoses, tipPoints, junctionPoses, landmarks, parentPathIDs, arcDists, numNodes, hypID)
+				result = evaluateJointBranch(localPathSegs, localTerms, localPaths, localSkeletons, controlPoses, tipPoints, junctionPoses, landmarks, parentPathIDs, arcDists, numNodes, hypID)
+				#result = computeJointBranch(localPathSegs, localTerms, localPaths, localSkeletons, controlPoses, tipPoints, junctionPoses, landmarks, parentPathIDs, arcDists, numNodes, hypID)
 				#result = None
 
 				results.append(result)
@@ -4328,6 +4329,118 @@ def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, 
 		pathPlotCount += 1
 
 	return globJuncPose, controlPoint, angDeriv
+
+@logFunction
+def evaluateJointBranch(localPathSegsByID, localTerms, localPaths, localSkeletons, controlPoses, tipPoints, junctionPoses, landmarks, parentPathIDs, arcDists, numNodes=0, hypothesisID=0):
+
+	print "evaluateJointBranch()", numNodes
+	sys.stdout.flush()
+
+	
+	""" 
+	Evaluate and return only:
+	1. landmark cost
+	2. match count
+	3. overlap cost
+	"""
+
+
+
+	newBranchPoses_L = {0:None}
+	newBranchPoses_G = {0:None}
+	newTipPoints_L = {0:None}
+	newTipPoints_G = {0:None}
+	trimmedPaths = {}
+	branchTermPaths = {}
+	longestPaths = {0 : localPaths[0]}
+	arcDist = 0.0
+	newArcDist = 0.0
+
+	""" operate only the non-root skeletons """
+	allPathIDs = deepcopy(parentPathIDs.keys())
+	branchPathIDs = deepcopy(parentPathIDs.keys())
+	branchPathIDs.remove(0)
+	branchPathIDs.sort()
+
+	""" result object """
+	branchResult = {}
+	branchResult["branchPathIDs"] = branchPathIDs
+	branchResult["arcDists"] = arcDists
+	branchResult["controlSet"] = controlPoses
+	branchResult["matchCounts"] = {}
+	branchResult["costSum"] = {}
+
+	controlPoses_G = computeGlobalControlPoses(controlPoses, parentPathIDs)
+
+	for pathID in branchPathIDs:
+
+		parentID = parentPathIDs[pathID]
+
+		controlPose_P = controlPoses[pathID]
+
+		""" place the segments back into parent frame with control point from arc distance """
+		localPathSegs = localPathSegsByID[pathID]
+		childFrame = Pose(controlPose_P)
+		childPathSegs_P = []
+		for k in range(len(localPathSegs)):
+			localSeg = localPathSegs[k]
+			placedSeg = []
+			for p in localSeg:
+				p1 = childFrame.convertLocalOffsetToGlobal(p)
+				placedSeg.append(p1)
+			childPathSegs_P.append(placedSeg)
+
+		# FIXME:  add in parent skeleton, all other non-descendant skeletons
+		parentPathSegs = localPathSegsByID[parentID]
+
+		""" evaluate overlap of parent and child skeleton """
+		lastCost1, matchCount1 = skeletonOverlapCost(childPathSegs_P, parentPathSegs, plotIter = False, numNodes = numNodes, pathID = pathID, arcDist = arcDists[pathID])
+
+		""" store the computed branch point and evaluation results """
+		branchResult["matchCounts"][pathID] = matchCount1
+		branchResult["costSum"][pathID] = lastCost1
+
+	""" sum the match counts and cost across branches """
+	totalMatchCount = 0
+	totalCost = 0.0
+	for pathID in branchPathIDs:
+		totalMatchCount += branchResult["matchCounts"][pathID]
+		totalCost += branchResult["costSum"][pathID] 
+	
+	branchResult["totalMatchCount"] = totalMatchCount
+	branchResult["totalCost"] = totalCost
+
+	landmarks_G = []
+	for pathID in allPathIDs:
+		currFrame = Pose(controlPoses_G[pathID])
+		for point_L, pointThresh, pointName in landmarks[pathID]:
+			point_G = currFrame.convertLocalToGlobal(point_L)
+			landmarks_G.append((point_G, pointThresh, pointName))
+	
+	LANDMARK_THRESH = 7.0
+	CLOSE_THRESH = 0.3
+
+	distSum = 0.0
+	for i in range(len(landmarks_G)):
+		p1 = landmarks_G[i][0]
+		thresh1 = landmarks_G[i][1]
+		for j in range(i+1, len(landmarks_G)):
+			p2 = landmarks_G[j][0]
+			thresh2 = landmarks_G[j][1]
+			dist = sqrt((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2)
+
+			maxThresh = thresh1
+			if thresh2 > thresh1:
+				maxThresh = thresh2
+
+			if dist < LANDMARK_THRESH:
+				distSum += sqrt(dist*dist/(thresh1*thresh1 + thresh2*thresh2))
+
+	branchResult["landmarkCost"] = distSum
+
+	return branchResult
+
+
 
 
 @logFunction

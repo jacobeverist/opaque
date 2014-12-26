@@ -1634,9 +1634,9 @@ class LocalNode:
 
 
 			
-			if isIntersect1:
+			if self.faceDir and isIntersect1:
 				medial2.insert(0, point1)
-			if isIntersect2:
+			if not self.faceDir and isIntersect2:
 				medial2.append(point2)
 			
 
@@ -2615,7 +2615,8 @@ class LocalNode:
 		longPaths, medialLongPaths, medialTailCuts, longMedialWidths, bowtieValues = self.computeFullSkeleton(hull)
 
 		#maxPath = deepcopy(longPaths[0])
-		maxPath = deepcopy(medialLongPaths[0])
+		#maxPath = deepcopy(medialLongPaths[0])
+		maxPath = deepcopy(medialTailCuts[0])
 
 		self.medialCComputed = True		
 		self.medialPathC = maxPath

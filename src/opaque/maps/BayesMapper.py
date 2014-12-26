@@ -278,6 +278,18 @@ class BayesMapper:
 				if nodeID % 2 == 1:
 
 					for pID, currHyp in hypSet.iteritems():
+
+						#currHyp.generatePaths()
+						#while True:
+
+						if True:
+							time1 = time.time()
+							currHyp.snapPoseToSkeleton()
+							time2 = time.time()
+							print "TIME localize landmark", currHyp.hypothesisID, "=", time2-time1 
+							currHyp.generatePaths()
+							#currHyp.drawPoseParticles()
+						
 						time1 = time.time()
 						currHyp.batchDisplaceParticles(nodeID-1, nodeID)
 
@@ -314,7 +326,7 @@ class BayesMapper:
 
 				time2 = time.time()
 
-				print "TIME localize", pID, "=", time2-time1
+				#print "TIME localize", pID, "=", time2-time1
 
 			for pID, currHyp in hypSet.iteritems():
 

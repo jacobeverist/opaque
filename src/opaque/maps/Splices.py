@@ -200,7 +200,7 @@ def getTipAngles(medial2, estPose2):
 	angs2 = []
 	phi1 = normalizeAngle(points2_offset[0][2])
 	phi2 = normalizeAngle(points2_offset[-1][2])
-	for i in range(10):
+	for i in range(0,20):
 		ang1 = normalizeAngle(points2_offset[i][2]-phi1)
 		ang2 = normalizeAngle(points2_offset[-i-1][2]-phi2)
 		angSum1 += ang1

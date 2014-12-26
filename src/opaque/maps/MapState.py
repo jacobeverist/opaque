@@ -20,7 +20,7 @@ from operator import itemgetter
 import hashlib
 from Splices import batchGlobalMultiFit, getMultiDeparturePoint, orientPath, getTipAngles, orientPathLean
 #from MapProcess import selectLocalCommonOrigin, selectCommonOrigin
-from ParticleFilter import multiParticleFitSplice, batchLocalizeParticle, batchDisplaceParticles2, Particle
+from ParticleFilter import multiParticleFitSplice, batchLocalizeParticle, batchDisplaceParticles2, Particle, batchLocalizeLandmark
 import time
 import traceback
 from uuid import uuid4
@@ -28,7 +28,7 @@ from uuid import uuid4
 import alphamod
 from itertools import product
 
-from shoots import computeShootSkeleton, spliceSkeletons, computeGlobalControlPoses, batchJointBranch, batchBranch, trimBranch, getBranchPoint, ensureEnoughPoints, getInitSkeletonBranchPoint, getSkeletonBranchPoint, getSkeletonPath
+from shoots import computeShootSkeleton, spliceSkeletons, computeGlobalControlPoses, batchJointBranch, batchBranch, trimBranch, getBranchPoint, ensureEnoughPoints, getInitSkeletonBranchPoint, getSkeletonBranchPoint, getSkeletonPath, evaluateJointBranch, computeJointBranch
 from landmarks import *
 #from shoots import *
 
@@ -757,6 +757,132 @@ class MapState:
 		#	resultDict["branchControls"] = ()
 
 		#	self.stepResults.append(resultDict)
+
+
+	@logFunction
+	def localizeLandmarkPose(self, pathID, nodeID0):
+
+		batchJobs = []
+
+		medial0 = self.poseData.medialAxes[nodeID0]
+
+		longPaths_L = self.localLongPaths[pathID]
+
+		medialSpline0 = SplineFit(medial0, smooth=0.1)
+		medial0_vec = medialSpline0.getUniformSamples()
+
+		oldNodePose_L = self.pathClasses[pathID]["localNodePoses"][nodeID0]
+		prevPose0 = oldNodePose_L
+
+		allSplices = longPaths_L
+
+		""" find the splices that our poses match to so we can perform displacements """
+		matchedSplices = []
+
+		for k in range(len(allSplices)):
+
+			splice = allSplices[k]
+
+			results0 = getMultiDeparturePoint(splice, medial0_vec, prevPose0, prevPose0, [pathID,], nodeID0, spliceIndex=k, plotIter=False)
+
+			contigFrac0 = results0[12]
+
+			print nodeID0, "contigFrac0:", k, contigFrac0
+
+			if contigFrac0 > 0.1:
+				matchedSplices.append(splice)
+
+
+		""" build sample locations along each splice, starting from the pose's origin """
+		poseOrigin0 = Pose(prevPose0)
+		globalMedial0 = []
+		for p in medial0:
+			globalMedial0.append(poseOrigin0.convertLocalToGlobal(p))
+
+		""" compute the distribution spread based on how long we've gone unfeatured or unlandmarked """
+		STEP_DIST = 0.1
+		NUM_SAMPLES = 10 
+
+
+		#print nodeID0, "NUM_SAMPLES =", NUM_SAMPLES
+
+		isFeatureless0 = self.poseData.isNodeFeatureless[nodeID0]
+
+		spatialFeature0 = self.poseData.spatialFeatures[nodeID0][0]
+		isSpatialFeature0 = spatialFeature0["bloomPoint"] != None or spatialFeature0["archPoint"] != None or spatialFeature0["inflectionPoint"] != None
+
+		print nodeID0, "feature state:", isFeatureless0, isSpatialFeature0
+
+		sampleDists = []
+		for j in range(len(matchedSplices)):
+
+			matchSplice = matchedSplices[j]
+
+			distEst = 0.0
+
+			orientedSplicePath = orientPath(matchSplice, globalMedial0)				
+			pathSpline = SplineFit(orientedSplicePath, smooth=0.1)
+
+			minDist0, oldU0, oldP0 = pathSpline.findClosestPoint(prevPose0)
+			dispU0 = pathSpline.getUOfDist(oldU0, distEst)
+
+			""" sample points in the neighborhood """
+			stepHigh = STEP_DIST * floor(NUM_SAMPLES/2.0)
+			stepLow = -STEP_DIST * floor(NUM_SAMPLES/2.0)
+
+			""" compute the sample points for the pose point distribution """
+			for k in range(NUM_SAMPLES):
+				newStepDist = stepLow + k * STEP_DIST
+
+				newU0 = pathSpline.getUOfDist(dispU0, newStepDist)
+
+				newDist0 = pathSpline.dist_u(newU0)
+				newPose0 = pathSpline.point_u(newU0)
+
+				sampleDists.append((j, newDist0, newPose0))
+
+
+		""" collect landmarks that we can localize against """
+		targetNodeLandmarks_N = {nodeID0 : None}
+		targetNodeLandmarks_N[nodeID0] = getNodeLandmark(nodeID0, self.poseData)
+
+		candLandmarks_L = self.localLandmarks[pathID]
+
+		batchJobs = []
+		for stepJob in sampleDists:
+
+			spliceIndex = stepJob[0]
+			hypPose0 = stepJob[2]
+
+			batchJobs.append([self.poseData, spliceIndex, nodeID0, hypPose0, [matchedSplices[spliceIndex],], candLandmarks_L, targetNodeLandmarks_N])
+
+		print len(batchJobs), "total displacement2 jobs"
+
+		results = batchLocalizeLandmark(batchJobs)
+
+		sampleResults = []
+		maxProb = -1e100
+		maxSample = None
+		for result in results:
+			particleIndex = result[0]
+			newPose0 = result[1]
+			displaceProb0 = result[2]
+
+
+			resultDict = {}
+			resultDict["newPose0"] = newPose0
+			resultDict["displaceProb0"] = displaceProb0
+
+			if displaceProb0 > maxProb:
+				maxProb = displaceProb0
+				maxSample = resultDict
+
+			sampleResults.append(resultDict)
+
+		if maxProb > 0.0:
+			return maxSample["newPose0"]
+		else:
+			return None
 
 
 	@logFunction
@@ -2890,6 +3016,7 @@ class MapState:
 				newOrigin = Pose(newOriginPose)
 
 				""" existing frame """
+
 				currFrame = Pose(controlPoses_G[pathID])
 
 				for nodeID in self.pathClasses[pathID]["nodeSet"]:
@@ -2919,6 +3046,68 @@ class MapState:
 					newEstPose = newProfile.convertLocalOffsetToGlobal(localOffset)
 					
 					self.nodeRawPoses[nodeID] = newEstPose
+
+ 
+
+	def snapPoseToSkeleton(self):
+
+		allPathIDs = self.getPathIDs()
+		controlPoses_G = self.getGlobalControlPoses()
+
+		originPoint = (0.0,0.0)
+
+		newNodePoses = {}
+
+		for pathID in allPathIDs:
+
+			""" existing frame """
+			currFrame = Pose(controlPoses_G[pathID])
+
+			segs1 = self.localSegments[pathID]
+			longPaths_L = self.localLongPaths[pathID]
+
+			newNodePoses[pathID] = {}
+
+
+			for nodeID in self.pathClasses[pathID]["nodeSet"]:
+
+				if self.nodeLandmarks[pathID][nodeID] != None:
+
+					newNodePose_L = self.localizeLandmarkPose(pathID, nodeID)
+
+					if newNodePose_L != None:
+						newNodePoses[pathID][nodeID] = newNodePose_L
+
+		for pathID, nodePoses in newNodePoses.iteritems():
+				
+			for nodeID, nodePose_L in nodePoses.iteritems():
+
+				# = (landmarkPoint_N, BLOOM_THRESH, "bloomPoint")
+				oldNodePose_L = self.pathClasses[pathID]["localNodePoses"][nodeID]
+
+				""" we just move the existing poses within the frame, and keep the frame as is """
+				#newNodePose_L[2] = oldNodePose_L[2]
+
+				self.pathClasses[pathID]["localNodePoses"][nodeID] = nodePose_L
+
+				newPose_G = currFrame.convertLocalOffsetToGlobal(newNodePose_L)
+
+				""" for recomputing raw pose """
+				oldGPACPose = self.nodePoses[nodeID]
+				gpacProfile = Pose(oldGPACPose)
+				localOffset = gpacProfile.convertGlobalPoseToLocal(self.nodeRawPoses[nodeID])
+
+				""" new global pose """
+				self.nodePoses[nodeID] = newPose_G
+				
+				
+				" go back and convert this from GPAC pose to estPose "
+				newProfile = Pose(newPose_G)
+				newEstPose = newProfile.convertLocalOffsetToGlobal(localOffset)
+				
+				self.nodeRawPoses[nodeID] = newEstPose
+
+
 
 	@logFunction
 	def resetBranches(self):
@@ -3119,9 +3308,26 @@ class MapState:
 			jointBranchJobs.append((localPathSegsByID, localTermsByID, self.localPaths, localSkeletons, thisControlPoses, tipPoints, junctionPoses, self.localLandmarks, parentPathIDs, thisArcDists, len(self.nodePoses)-1, self.hypothesisID ))
 			#jointBranchJobs.append((localPathSegsByID, localTermsByID, self.controlCurves, localSkeletons, thisControlPoses, tipPoints, junctionPoses, self.localLandmarks, parentPathIDs, thisArcDists, len(self.nodePoses)-1, self.hypothesisID ))
 
+		
+		#evaluateResults = []
+		#for job in jointBranchJobs:
+			#evaluateJointBranch(localPathSegsByID, localTerms, localPaths, localSkeletons, controlPoses, tipPoints, junctionPoses, landmarks, parentPathIDs, arcDists, numNodes=0, hypothesisID=0)
+			#time1 = time.time()
+			#evaluateResults.append(evaluateJointBranch(job[0], job[1], job[2], job[3], job[4], job[5], job[6], job[7], job[8], job[9], numNodes=job[10], hypothesisID=job[11]))
+			#time2 = time.time()
+
+			#print "TIME evaluateJointBranch:", time2-time1
+
+		time1 = time.time()
+		evaluateResults = batchJointBranch(jointBranchJobs)
+		time2 = time.time()
+		print "TIME batch evaluateJointBranch:", time2-time1
 
 		print len(jointBranchJobs), "total branch jobs"
-		jointResults = batchJointBranch(jointBranchJobs)
+		#time1 = time.time()
+		#jointResults = batchJointBranch(jointBranchJobs)
+		#time2 = time.time()
+		#print "TIME batch batchJointBranch:", time2-time1
 
 		"""
 		results indexed by shoot ID
@@ -3142,15 +3348,15 @@ class MapState:
 		#self.jointBranchEvaluations
 		#self.branchArcDists[pathID].append(currDist)
 		#self.branchControlPoses[pathID][currDist] = controlPose_P
-			
 		"""
+
 
 		""" get the maximum value for each of our features """
 		self.maxCost = -1e100
 		self.maxMatchCount = -1000
 		self.maxLandmarkCost = -1e100
-		for k in range(len(jointResults)):
-			branchResult = jointResults[k]
+		for k in range(len(evaluateResults)):
+			branchResult = evaluateResults[k]
 
 			totalMatchCount = branchResult["totalMatchCount"]
 			totalCost = branchResult["totalCost"]
@@ -3168,8 +3374,8 @@ class MapState:
 		""" add slight value so that maximum normalized landmark cost is greater than zero """
 		self.maxLandmarkCost += 0.1
 
-		for k in range(len(jointResults)):
-			branchResult = jointResults[k]
+		for k in range(len(evaluateResults)):
+			branchResult = evaluateResults[k]
 
 			totalMatchCount = branchResult["totalMatchCount"]
 			totalCost = branchResult["totalCost"]
@@ -3212,8 +3418,41 @@ class MapState:
 
 			self.jointBranchEvaluations[arcTuple] = branchResult
 
+		maxTuple = None
+		maxNormCost = -1e10
+		maxMatchCount = -1e10
+		maxLandmark = -1e10
+		for arcTuple, branchResult in self.jointBranchEvaluations.iteritems():
+
+			normLandmark = branchResult["normLandmark"]
+			normMatchCount = branchResult["normMatchCount"]
+			normCost = branchResult["normCost"] 
+
+			print "branch eval:", arcTuple, normLandmark, normMatchCount, normCost
+
+			#if normLandmark > maxNormCost:
+			if normLandmark > maxLandmark:
+				maxLandmark = normLandmark
+				maxMatchCount = normMatchCount
+				maxNormCost = normCost
+				maxTuple = arcTuple
+
+
+		if maxTuple != None:
+			""" only splice the maximum """
+			maxBranchResult = self.jointBranchEvaluations[maxTuple]
+			thisArcDists = maxBranchResult["arcDists"]
+			thisControlPoses = maxBranchResult["controlSet"]
+			maxResult = computeJointBranch(localPathSegsByID, localTermsByID, self.localPaths, localSkeletons, thisControlPoses, tipPoints, junctionPoses, self.localLandmarks, parentPathIDs, thisArcDists, len(self.nodePoses)-1, self.hypothesisID )
+
+			maxResult["normMatchCount"] = maxMatchCount
+			maxResult["normCost"] = maxNormCost
+			maxResult["normLandmark"] = maxLandmark
+
+			self.jointBranchEvaluations[maxTuple] = maxResult
+
 		
-		if True:
+		if False:
 
 			parentPathIDs = self.getParentHash()
 

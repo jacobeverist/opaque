@@ -112,6 +112,17 @@ def cleanup():
 		for p in ParticleFilter.pool_dispPosePart2:
 			p.terminate()
 
+	if len(ParticleFilter.pool_localLandmark) > 0:
+
+		ParticleFilter.qin_localLandmark.close()
+		ParticleFilter.qin_localLandmark.join_thread()
+
+		ParticleFilter.qout_localLandmark.close()
+		ParticleFilter.qout_localLandmark.cancel_join_thread()
+
+		for p in ParticleFilter.pool_localLandmark:
+			p.terminate()
+
 
 			
 atexit.register(cleanup)
