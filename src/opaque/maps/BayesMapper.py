@@ -282,7 +282,10 @@ class BayesMapper:
 						#currHyp.generatePaths()
 						#while True:
 
-						if True:
+						#if True:
+
+						" perform internal localization only infrequently since it's so costly for time "
+						if nodeID % 20 == 1:
 							time1 = time.time()
 							currHyp.snapPoseToSkeleton()
 							time2 = time.time()

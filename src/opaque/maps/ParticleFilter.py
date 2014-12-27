@@ -395,16 +395,17 @@ def __remote_localizeLandmark(rank, qin, qout):
 				
 				poseData = job[0]
 				particleIndex = job[1]
-				nodeID3 = job[2]
-				estPose0 = job[3]
-				pathSplices2 = job[4]
-				landmarks_G = job[5]
-				landmarks_N = job[6]
+				pathID = job[2]
+				nodeID3 = job[3]
+				estPose0 = job[4]
+				pathSplices2 = job[5]
+				landmarks_G = job[6]
+				landmarks_N = job[7]
 
 				result = localizeLandmarkPose(poseData, pathSplices2, nodeID3, estPose0, landmarks_G, landmarks_N)
-				results.append((particleIndex,) + result)
+				results.append((particleIndex,nodeID3, pathID) + result)
 
-				print "result:", (particleIndex,) + result
+				print "result:", (particleIndex,nodeID3,pathID) + result
 				sys.stdout.flush()
 
 

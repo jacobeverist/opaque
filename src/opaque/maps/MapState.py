@@ -760,129 +760,149 @@ class MapState:
 
 
 	@logFunction
-	def localizeLandmarkPose(self, pathID, nodeID0):
+	#def localizeLandmarkPose(self, pathID, nodeID0):
+	def localizeLandmarkPose(self, landmarkNodeSets):
+		#newNodePoses = self.localizeLandmarkPose(landmarkNodeSets)
 
 		batchJobs = []
 
-		medial0 = self.poseData.medialAxes[nodeID0]
+		maxProbs = {}
+		maxSamples = {}
 
-		longPaths_L = self.localLongPaths[pathID]
+		for pathID, nodeSet in landmarkNodeSets.iteritems():
+			maxProbs[pathID] = {}
+			maxSamples[pathID] = {}
 
-		medialSpline0 = SplineFit(medial0, smooth=0.1)
-		medial0_vec = medialSpline0.getUniformSamples()
+			longPaths_L = self.localLongPaths[pathID]
+			allSplices = longPaths_L
 
-		oldNodePose_L = self.pathClasses[pathID]["localNodePoses"][nodeID0]
-		prevPose0 = oldNodePose_L
-
-		allSplices = longPaths_L
-
-		""" find the splices that our poses match to so we can perform displacements """
-		matchedSplices = []
-
-		for k in range(len(allSplices)):
-
-			splice = allSplices[k]
-
-			results0 = getMultiDeparturePoint(splice, medial0_vec, prevPose0, prevPose0, [pathID,], nodeID0, spliceIndex=k, plotIter=False)
-
-			contigFrac0 = results0[12]
-
-			print nodeID0, "contigFrac0:", k, contigFrac0
-
-			if contigFrac0 > 0.1:
-				matchedSplices.append(splice)
+			for nodeID in nodeSet:
+				maxProbs[pathID][nodeID] = -1e100
+				maxSamples[pathID][nodeID] = None
 
 
-		""" build sample locations along each splice, starting from the pose's origin """
-		poseOrigin0 = Pose(prevPose0)
-		globalMedial0 = []
-		for p in medial0:
-			globalMedial0.append(poseOrigin0.convertLocalToGlobal(p))
 
-		""" compute the distribution spread based on how long we've gone unfeatured or unlandmarked """
-		STEP_DIST = 0.1
-		NUM_SAMPLES = 10 
+				medial0 = self.poseData.medialAxes[nodeID]
 
+				medialSpline0 = SplineFit(medial0, smooth=0.1)
+				medial0_vec = medialSpline0.getUniformSamples()
 
-		#print nodeID0, "NUM_SAMPLES =", NUM_SAMPLES
-
-		isFeatureless0 = self.poseData.isNodeFeatureless[nodeID0]
-
-		spatialFeature0 = self.poseData.spatialFeatures[nodeID0][0]
-		isSpatialFeature0 = spatialFeature0["bloomPoint"] != None or spatialFeature0["archPoint"] != None or spatialFeature0["inflectionPoint"] != None
-
-		print nodeID0, "feature state:", isFeatureless0, isSpatialFeature0
-
-		sampleDists = []
-		for j in range(len(matchedSplices)):
-
-			matchSplice = matchedSplices[j]
-
-			distEst = 0.0
-
-			orientedSplicePath = orientPath(matchSplice, globalMedial0)				
-			pathSpline = SplineFit(orientedSplicePath, smooth=0.1)
-
-			minDist0, oldU0, oldP0 = pathSpline.findClosestPoint(prevPose0)
-			dispU0 = pathSpline.getUOfDist(oldU0, distEst)
-
-			""" sample points in the neighborhood """
-			stepHigh = STEP_DIST * floor(NUM_SAMPLES/2.0)
-			stepLow = -STEP_DIST * floor(NUM_SAMPLES/2.0)
-
-			""" compute the sample points for the pose point distribution """
-			for k in range(NUM_SAMPLES):
-				newStepDist = stepLow + k * STEP_DIST
-
-				newU0 = pathSpline.getUOfDist(dispU0, newStepDist)
-
-				newDist0 = pathSpline.dist_u(newU0)
-				newPose0 = pathSpline.point_u(newU0)
-
-				sampleDists.append((j, newDist0, newPose0))
+				oldNodePose_L = self.pathClasses[pathID]["localNodePoses"][nodeID]
+				prevPose0 = oldNodePose_L
 
 
-		""" collect landmarks that we can localize against """
-		targetNodeLandmarks_N = {nodeID0 : None}
-		targetNodeLandmarks_N[nodeID0] = getNodeLandmark(nodeID0, self.poseData)
+				""" find the splices that our poses match to so we can perform displacements """
+				matchedSplices = []
 
-		candLandmarks_L = self.localLandmarks[pathID]
+				for k in range(len(allSplices)):
 
-		batchJobs = []
-		for stepJob in sampleDists:
+					splice = allSplices[k]
 
-			spliceIndex = stepJob[0]
-			hypPose0 = stepJob[2]
+					results0 = getMultiDeparturePoint(splice, medial0_vec, prevPose0, prevPose0, [pathID,], nodeID, spliceIndex=k, plotIter=False)
 
-			batchJobs.append([self.poseData, spliceIndex, nodeID0, hypPose0, [matchedSplices[spliceIndex],], candLandmarks_L, targetNodeLandmarks_N])
+					contigFrac0 = results0[12]
 
-		print len(batchJobs), "total displacement2 jobs"
+					print nodeID, "contigFrac0:", k, contigFrac0
 
+					if contigFrac0 > 0.1:
+						matchedSplices.append(splice)
+
+
+				""" build sample locations along each splice, starting from the pose's origin """
+				poseOrigin0 = Pose(prevPose0)
+				globalMedial0 = []
+				for p in medial0:
+					globalMedial0.append(poseOrigin0.convertLocalToGlobal(p))
+
+				""" compute the distribution spread based on how long we've gone unfeatured or unlandmarked """
+				STEP_DIST = 0.1
+				NUM_SAMPLES = 10 
+
+
+				#print nodeID, "NUM_SAMPLES =", NUM_SAMPLES
+
+				isFeatureless0 = self.poseData.isNodeFeatureless[nodeID]
+
+				spatialFeature0 = self.poseData.spatialFeatures[nodeID][0]
+				isSpatialFeature0 = spatialFeature0["bloomPoint"] != None or spatialFeature0["archPoint"] != None or spatialFeature0["inflectionPoint"] != None
+
+				print nodeID, "feature state:", isFeatureless0, isSpatialFeature0
+
+				sampleDists = []
+				for j in range(len(matchedSplices)):
+
+					matchSplice = matchedSplices[j]
+
+					distEst = 0.0
+
+					orientedSplicePath = orientPath(matchSplice, globalMedial0)				
+					pathSpline = SplineFit(orientedSplicePath, smooth=0.1)
+
+					minDist0, oldU0, oldP0 = pathSpline.findClosestPoint(prevPose0)
+					dispU0 = pathSpline.getUOfDist(oldU0, distEst)
+
+					""" sample points in the neighborhood """
+					stepHigh = STEP_DIST * floor(NUM_SAMPLES/2.0)
+					stepLow = -STEP_DIST * floor(NUM_SAMPLES/2.0)
+
+					""" compute the sample points for the pose point distribution """
+					for k in range(NUM_SAMPLES):
+						newStepDist = stepLow + k * STEP_DIST
+
+						newU0 = pathSpline.getUOfDist(dispU0, newStepDist)
+
+						newDist0 = pathSpline.dist_u(newU0)
+						newPose0 = pathSpline.point_u(newU0)
+
+						sampleDists.append((j, newDist0, newPose0))
+
+
+				""" collect landmarks that we can localize against """
+				targetNodeLandmarks_N = {nodeID : None}
+				targetNodeLandmarks_N[nodeID] = getNodeLandmark(nodeID, self.poseData)
+
+				candLandmarks_L = self.localLandmarks[pathID]
+
+				for stepJob in sampleDists:
+
+					spliceIndex = stepJob[0]
+					hypPose0 = stepJob[2]
+
+					batchJobs.append([self.poseData, spliceIndex, pathID, nodeID, hypPose0, [matchedSplices[spliceIndex],], candLandmarks_L, targetNodeLandmarks_N])
+
+
+
+		print len(batchJobs), "total landmark jobs"
+
+		time1 = time.time()
 		results = batchLocalizeLandmark(batchJobs)
+		time2 = time.time()
+		print "TIME landmark batch", time2-time1
 
 		sampleResults = []
 		maxProb = -1e100
 		maxSample = None
 		for result in results:
 			particleIndex = result[0]
-			newPose0 = result[1]
-			displaceProb0 = result[2]
+			nodeID = result[1]
+			pathID = result[2]
+			newPose0 = result[3]
+			displaceProb0 = result[4]
 
 
 			resultDict = {}
 			resultDict["newPose0"] = newPose0
 			resultDict["displaceProb0"] = displaceProb0
+			resultDict["pathID"] = pathID
+			resultDict["nodeID"] = nodeID
 
-			if displaceProb0 > maxProb:
-				maxProb = displaceProb0
-				maxSample = resultDict
+			if displaceProb0 > maxProbs[pathID][nodeID]:
+				maxProbs[pathID][nodeID] = displaceProb0
+				maxSamples[pathID][nodeID] = newPose0
 
 			sampleResults.append(resultDict)
 
-		if maxProb > 0.0:
-			return maxSample["newPose0"]
-		else:
-			return None
+		return maxSamples
 
 
 	@logFunction
@@ -3058,6 +3078,8 @@ class MapState:
 
 		newNodePoses = {}
 
+		landmarkNodeSets = {}
+
 		for pathID in allPathIDs:
 
 			""" existing frame """
@@ -3066,46 +3088,57 @@ class MapState:
 			segs1 = self.localSegments[pathID]
 			longPaths_L = self.localLongPaths[pathID]
 
-			newNodePoses[pathID] = {}
+			#newNodePoses[pathID] = {}
+
+			landmarkNodeSets[pathID] = []
 
 
 			for nodeID in self.pathClasses[pathID]["nodeSet"]:
 
 				if self.nodeLandmarks[pathID][nodeID] != None:
 
-					newNodePose_L = self.localizeLandmarkPose(pathID, nodeID)
+					landmarkNodeSets[pathID].append(nodeID)
 
-					if newNodePose_L != None:
-						newNodePoses[pathID][nodeID] = newNodePose_L
+
+		#time1 = time.time()
+		newNodePoses = self.localizeLandmarkPose(landmarkNodeSets)
+
+		#newNodePose_L = self.localizeLandmarkPose(pathID, nodeID)
+		#for pathID, nodePoses in newNodePoses.iteritems():
+		#	for nodeID, nodePose_L in nodePoses.iteritems():
+		#		if newNodePose_L != None:
+		#			newNodePoses[pathID][nodeID] = newNodePose_L
 
 		for pathID, nodePoses in newNodePoses.iteritems():
 				
-			for nodeID, nodePose_L in nodePoses.iteritems():
+			for nodeID, newNodePose_L in nodePoses.iteritems():
 
-				# = (landmarkPoint_N, BLOOM_THRESH, "bloomPoint")
-				oldNodePose_L = self.pathClasses[pathID]["localNodePoses"][nodeID]
+				if newNodePose_L != None:
 
-				""" we just move the existing poses within the frame, and keep the frame as is """
-				#newNodePose_L[2] = oldNodePose_L[2]
+					# = (landmarkPoint_N, BLOOM_THRESH, "bloomPoint")
+					oldNodePose_L = self.pathClasses[pathID]["localNodePoses"][nodeID]
 
-				self.pathClasses[pathID]["localNodePoses"][nodeID] = nodePose_L
+					""" we just move the existing poses within the frame, and keep the frame as is """
+					#newNodePose_L[2] = oldNodePose_L[2]
 
-				newPose_G = currFrame.convertLocalOffsetToGlobal(newNodePose_L)
+					self.pathClasses[pathID]["localNodePoses"][nodeID] = newNodePose_L
 
-				""" for recomputing raw pose """
-				oldGPACPose = self.nodePoses[nodeID]
-				gpacProfile = Pose(oldGPACPose)
-				localOffset = gpacProfile.convertGlobalPoseToLocal(self.nodeRawPoses[nodeID])
+					newPose_G = currFrame.convertLocalOffsetToGlobal(newNodePose_L)
 
-				""" new global pose """
-				self.nodePoses[nodeID] = newPose_G
-				
-				
-				" go back and convert this from GPAC pose to estPose "
-				newProfile = Pose(newPose_G)
-				newEstPose = newProfile.convertLocalOffsetToGlobal(localOffset)
-				
-				self.nodeRawPoses[nodeID] = newEstPose
+					""" for recomputing raw pose """
+					oldGPACPose = self.nodePoses[nodeID]
+					gpacProfile = Pose(oldGPACPose)
+					localOffset = gpacProfile.convertGlobalPoseToLocal(self.nodeRawPoses[nodeID])
+
+					""" new global pose """
+					self.nodePoses[nodeID] = newPose_G
+					
+					
+					" go back and convert this from GPAC pose to estPose "
+					newProfile = Pose(newPose_G)
+					newEstPose = newProfile.convertLocalOffsetToGlobal(localOffset)
+					
+					self.nodeRawPoses[nodeID] = newEstPose
 
 
 
@@ -4024,11 +4057,14 @@ class MapState:
 
 					oldControlPose_G = globalControlPoses_G[childPathID]
 
+					oldParentControlPose_G = globalControlPoses_G[pathID]
+					oldParentFrame = Pose(oldParentControlPose_G)
+
 					""" compute the control pose relative to the parent """
 					parentControlPose_G = globalControlPoses_G[mergeTargetID]
-					parentFrame = Pose(parentControlPose_G)
+					newParentFrame = Pose(parentControlPose_G)
 
-					controlPose_P = parentFrame.convertGlobalPoseToLocal(oldControlPose_G)
+					controlPose_P = newParentFrame.convertGlobalPoseToLocal(oldControlPose_G)
 					pathClass["controlPose"] = controlPose_P
 
 					currFrame = Pose(oldControlPose_G)
