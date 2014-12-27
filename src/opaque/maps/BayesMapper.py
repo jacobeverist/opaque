@@ -20,6 +20,10 @@ import pylab
 import matplotlib.pyplot as plt
 import graph
 
+import glob
+import os
+import shutil
+
 from MapState import MapState
 
 import random
@@ -279,7 +283,8 @@ class BayesMapper:
 
 					for pID, currHyp in hypSet.iteritems():
 
-						#currHyp.generatePaths()
+						currHyp.generatePaths()
+						#thisCount = 0
 						#while True:
 
 						#if True:
@@ -292,6 +297,13 @@ class BayesMapper:
 							print "TIME localize landmark", currHyp.hypothesisID, "=", time2-time1 
 							currHyp.generatePaths()
 							#currHyp.drawPoseParticles()
+							#if thisCount > 1000:
+							#	exit()
+
+							#outFiles = glob.glob(os.path.join("landmarkLocalize*.png"))
+							#for out_file in outFiles:
+							#	os.remove(out_file)
+							#thisCount += 1
 						
 						time1 = time.time()
 						currHyp.batchDisplaceParticles(nodeID-1, nodeID)

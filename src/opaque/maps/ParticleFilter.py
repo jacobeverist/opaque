@@ -394,18 +394,19 @@ def __remote_localizeLandmark(rank, qin, qout):
 			for job in args:
 				
 				poseData = job[0]
-				particleIndex = job[1]
+				spliceIndex = job[1]
 				pathID = job[2]
 				nodeID3 = job[3]
-				estPose0 = job[4]
-				pathSplices2 = job[5]
-				landmarks_G = job[6]
-				landmarks_N = job[7]
+				sampDist = job[4]
+				estPose0 = job[5]
+				pathSplices2 = job[6]
+				landmarks_G = job[7]
+				landmarks_N = job[8]
 
-				result = localizeLandmarkPose(poseData, pathSplices2, nodeID3, estPose0, landmarks_G, landmarks_N)
-				results.append((particleIndex,nodeID3, pathID) + result)
+				result = localizeLandmarkPose(poseData, pathSplices2, pathID, nodeID3, spliceIndex, sampDist, estPose0, landmarks_G, landmarks_N)
+				results.append((spliceIndex,nodeID3, pathID) + result)
 
-				print "result:", (particleIndex,nodeID3,pathID) + result
+				print "result:", (spliceIndex,nodeID3,pathID) + result
 				sys.stdout.flush()
 
 
@@ -429,7 +430,7 @@ def __remote_localizeLandmark(rank, qin, qout):
 	print "process exited incorrectly"
 
 
-def localizeLandmarkPose( poseData, pathSplices2, nodeID, estPose, landmarks_G, landmarks_N):
+def localizeLandmarkPose( poseData, pathSplices2, pathID, nodeID, sIndex, sampDist, estPose, landmarks_G, landmarks_N):
 
 	sys.stdout.flush()
 
@@ -525,7 +526,7 @@ def localizeLandmarkPose( poseData, pathSplices2, nodeID, estPose, landmarks_G, 
 			landmark0_G = (frame0.convertLocalToGlobal(landmark0_N[0]), landmark0_N[1], landmark0_N[2])
 			thresh0 = landmark0_G[1]
 
-		print nodeID, spliceIndex, "landmarks:", landmark0_G, landmarks_G
+		print nodeID, sIndex, "landmarks:", landmark0_G, landmarks_G
 
 		LANDMARK_THRESH = 7.0
 		for i in range(len(landmarks_G)):
@@ -550,7 +551,10 @@ def localizeLandmarkPose( poseData, pathSplices2, nodeID, estPose, landmarks_G, 
 			newProb2 = 0.0	
 		else:
 			#newProb2 = (pi-angDiff2) * contigFrac_2
-			newProb2 = 1.0/poseSum
+			if poseSum > 0.0:
+				newProb2 = 1.0/poseSum
+			else:
+				newProb2 = 0.0
 
 		print "angDiff/contigFrac:", angDiff2, contigFrac_2
 		print "overlapSum:", overlapSum2
@@ -582,6 +586,61 @@ def localizeLandmarkPose( poseData, pathSplices2, nodeID, estPose, landmarks_G, 
 	" move the pose particles along their paths "	
 	print "fitted poses:", currPose2
 	print "currProbs:", currProb2
+
+	#if True:
+	if False:
+
+		pylab.clf()
+
+
+		for splicePath in pathSplices2:
+
+			xP = []
+			yP = []
+			for p in splicePath:
+				xP.append(p[0])
+				yP.append(p[1])
+			pylab.plot(xP,yP, color='r', zorder=10, alpha=0.3)
+
+		for result in resultMoves2:
+			resultPose = result[0]
+
+			poseOrigin = Pose(resultPose)
+			
+			points_offset = []
+			for p in medial0_vec:
+				p1 = poseOrigin.convertLocalOffsetToGlobal(p)
+				points_offset.append(p1)
+
+			xP = []
+			yP = []
+			for p in points_offset:
+				xP.append(p[0])
+				yP.append(p[1])
+
+			pylab.plot(xP,yP, color='k', zorder=10, alpha=1.0)
+
+
+
+
+		xP = []
+		yP = []
+		for point_G, pointThresh, pointName in landmarks_G:
+			xP.append(point_G[0])
+			yP.append(point_G[1])
+
+		pylab.scatter(xP, yP, color='k', zorder=9, alpha=0.3)
+
+		pylab.scatter([landmark0_G[0][0],], [landmark0_G[0][1],], color='k', zorder=9, alpha=1.0)
+
+
+		pylab.axis("equal")
+		pylab.title("pathID %d nodeID %d currProb %1.2f" % ( pathID, nodeID, currProb2 ))
+
+		nameStr = "landmarkLocalize_%04u_%04u_%04u_%1.1f.png" % (nodeID, pathID, sIndex, sampDist)
+
+		pylab.savefig(nameStr)
+		print "saving", nameStr
 
 
 	return currPose2, currProb2

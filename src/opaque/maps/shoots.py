@@ -1306,13 +1306,21 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 				xP.append(p[0])
 				yP.append(p[1])
 			
+			spatialFeature0 = poseData.spatialFeatures[nodeID][0]
+			isSpatialFeature0 = spatialFeature0["bloomPoint"] != None or spatialFeature0["archPoint"] != None or spatialFeature0["inflectionPoint"] != None
+
 			#if nodeID == highestNodeID:
 			#	pylab.plot(xP,yP, color=(0,0,0))
 			#elif nodeID == highestNodeID-1:
 			#	pylab.plot(xP,yP, color=(0.5,0.5,0.5))
 			#else:
 			#	pylab.plot(xP,yP, color=color)
+
 			pylab.plot(xP,yP, color=color)
+			#if isSpatialFeature0:
+			#	pylab.plot(xP,yP, color='k')
+			#else:
+			#	pylab.plot(xP,yP, color=color)
 				
 		
 		xP = []

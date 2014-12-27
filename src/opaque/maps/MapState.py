@@ -861,14 +861,18 @@ class MapState:
 				targetNodeLandmarks_N = {nodeID : None}
 				targetNodeLandmarks_N[nodeID] = getNodeLandmark(nodeID, self.poseData)
 
-				candLandmarks_L = self.localLandmarks[pathID]
+				candLandmarks_L = nodeToLocalLandmarks(pathID, self.nodeLandmarks, self.pathClasses, exemptNodes = [nodeID,])
+
+				#candLandmarks_L = deepcopy(self.localLandmarks[pathID])
+				#del candLandmarks_L[nodeID]
 
 				for stepJob in sampleDists:
 
 					spliceIndex = stepJob[0]
+					sampDist = stepJob[1]
 					hypPose0 = stepJob[2]
 
-					batchJobs.append([self.poseData, spliceIndex, pathID, nodeID, hypPose0, [matchedSplices[spliceIndex],], candLandmarks_L, targetNodeLandmarks_N])
+					batchJobs.append([self.poseData, spliceIndex, pathID, nodeID, sampDist, hypPose0, [matchedSplices[spliceIndex],], candLandmarks_L, targetNodeLandmarks_N])
 
 
 
@@ -896,7 +900,7 @@ class MapState:
 			resultDict["pathID"] = pathID
 			resultDict["nodeID"] = nodeID
 
-			if displaceProb0 > maxProbs[pathID][nodeID]:
+			if displaceProb0 > maxProbs[pathID][nodeID] and displaceProb0 > 0.0:
 				maxProbs[pathID][nodeID] = displaceProb0
 				maxSamples[pathID][nodeID] = newPose0
 
@@ -4060,10 +4064,24 @@ class MapState:
 					oldParentControlPose_G = globalControlPoses_G[pathID]
 					oldParentFrame = Pose(oldParentControlPose_G)
 
-					""" compute the control pose relative to the parent """
 					parentControlPose_G = globalControlPoses_G[mergeTargetID]
 					newParentFrame = Pose(parentControlPose_G)
 
+					""" compute terminals to control curve in new parent frame """
+					oldParentTerm1 = self.pathClasses[childPathID]["controlTerm1_P"]
+					oldParentTerm2 = self.pathClasses[childPathID]["controlTerm2_P"]
+
+					oldParentTerm1_G = oldParentFrame.convertLocalToGlobal(oldParentTerm1)
+					oldParentTerm2_G = oldParentFrame.convertLocalToGlobal(oldParentTerm2)
+
+					newParentTerm1_P = newParentFrame.convertGlobalToLocal(oldParentTerm1_G)
+					newParentTerm2_P = newParentFrame.convertGlobalToLocal(oldParentTerm2_G)
+
+					self.pathClasses[childPathID]["controlTerm1_P"] = newParentTerm1_P
+					self.pathClasses[childPathID]["controlTerm2_P"] = newParentTerm2_P
+
+
+					""" compute the control pose relative to the parent """
 					controlPose_P = newParentFrame.convertGlobalPoseToLocal(oldControlPose_G)
 					pathClass["controlPose"] = controlPose_P
 

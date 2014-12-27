@@ -6,6 +6,31 @@ from math import sqrt
 
 
 
+def nodeToLocalLandmarks(pathID, nodeLandmarks, pathClasses, exemptNodes = []):
+
+	""" collect landmarks that we can localize against """
+	landmarks_L = []
+
+	nodeSet = pathClasses[pathID]["nodeSet"]
+
+	for nodeID in nodeSet:
+
+		if nodeLandmarks[pathID][nodeID] != None:
+			landmarkPoint_N, threshN, landName = nodeLandmarks[pathID][nodeID]
+
+			nodePose_L = pathClasses[pathID]["localNodePoses"][nodeID]
+			poseFrame_L = Pose(nodePose_L)
+
+			if not nodeID in exemptNodes:
+				landmarkPoint_L = poseFrame_L.convertLocalToGlobal(landmarkPoint_N)
+				landmarkPoint_tuple = (landmarkPoint_L, threshN, landName)
+				landmarks_L.append(landmarkPoint_tuple)
+
+
+
+	return landmarks_L
+
+
 def nodeToGlobalLandmarks(controlPoses, pathIDs, parentHash, nodeLandmarks, pathClasses, exemptNodes = []):
 
 	#print "nodeLandmarks:", nodeLandmarks
