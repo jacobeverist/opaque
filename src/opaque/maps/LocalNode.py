@@ -2203,8 +2203,12 @@ class LocalNode:
 				results["contigNegArea"] = contigNegArea
 				results["contigSlopes"] = contigSlopes
 				results["medialWidths"] = longPathWidth
-				results["bloomPoint"] = bloomPoint
-				results["archPoint"] = archPoint
+				if self.isBowtie:
+					results["bloomPoint"] = None
+					results["archPoint"] = None
+				else:
+					results["bloomPoint"] = bloomPoint
+					results["archPoint"] = archPoint
 
 
 				self.spatialFeatures.append(results)

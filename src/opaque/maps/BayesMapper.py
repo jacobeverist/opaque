@@ -283,6 +283,7 @@ class BayesMapper:
 
 					for pID, currHyp in hypSet.iteritems():
 
+						currHyp.snapToParent()
 						currHyp.generatePaths()
 						#thisCount = 0
 						#while True:
@@ -290,13 +291,14 @@ class BayesMapper:
 						#if True:
 
 						" perform internal localization only infrequently since it's so costly for time "
-						if nodeID % 20 == 1:
+						if False:
+						#if nodeID % 20 == 1:
 							time1 = time.time()
 							currHyp.snapPoseToSkeleton()
 							time2 = time.time()
 							print "TIME localize landmark", currHyp.hypothesisID, "=", time2-time1 
 							currHyp.generatePaths()
-							#currHyp.drawPoseParticles()
+							currHyp.drawPoseParticles()
 							#if thisCount > 1000:
 							#	exit()
 

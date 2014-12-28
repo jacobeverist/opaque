@@ -967,6 +967,10 @@ class MapState:
 			if contigFrac0 > 0.1 and contigFrac1 > 0.1:
 				matchedSplices.append(splice)
 
+		if len(matchedSplices) == 0:
+			""" unable to match with any splice.  We have a problem! """
+			raise
+
 
 		""" build sample locations along each splice, starting from the pose's origin """
 		poseOrigin0 = Pose(prevPose0)
@@ -1162,6 +1166,7 @@ class MapState:
 
 			poseLandmarkSum = part["landmarkSum"]
 
+
 			""" check to avoid divide by zero """
 			if maxLandmarkSum > 0.0:
 				if maxLandmarkSum > poseLandmarkSum:
@@ -1172,6 +1177,8 @@ class MapState:
 					newProb0 = 0.0
 			else:
 				newProb0 = currProb0
+
+			print nodeID0, nodeID1, "displace sample:", partIndex, poseLandmarkSum, currProb0, currProb1, newProb0
 
 			if newProb0 > maxProb:
 				maxProb = newProb0
@@ -1185,7 +1192,7 @@ class MapState:
 		self.updateMaxParticle2(self.currMaxIndex)
 
 
-		self.snapToParent()
+		#self.snapToParent()
 
 	#@logFunction
 	def localizePoseParticles2(self, nodeID0, nodeID1):
