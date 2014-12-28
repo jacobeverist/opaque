@@ -216,22 +216,23 @@ def __remote_displaceParticle2(rank, qin, qout):
 				
 				#[particleIndex, nodeID3, prevPose0, prevPose1, initPose2, initPose3, supportLine, pathSplices2, pathSplices3]
 				poseData = job[0]
-				particleIndex = job[1]
-				nodeID3 = job[2]
-				prevPose0 = job[3]
-				prevPose1 = job[4]
-				initPose2 = job[5]
-				initPose3 = job[6]
-				supportLine = job[7]
-				pathSplices2 = job[8]
-				pathSplices3 = job[9]
-				landmarks_G = job[10]
-				landmarks_N = job[11]
+				jobIndex = job[1]
+				particleIndex = job[2]
+				nodeID3 = job[3]
+				prevPose0 = job[4]
+				prevPose1 = job[5]
+				initPose2 = job[6]
+				initPose3 = job[7]
+				supportLine = job[8]
+				pathSplices2 = job[9]
+				pathSplices3 = job[10]
+				landmarks_G = job[11]
+				landmarks_N = job[12]
 
 				result = displaceParticle2( poseData, pathSplices2, pathSplices3, supportLine, nodeID3, initPose2, initPose3, prevPose0, prevPose1, particleIndex, landmarks_G, landmarks_N)
-				results.append((particleIndex,) + result)
+				results.append((jobIndex, particleIndex,) + result)
 
-				print "result:", (particleIndex,) + result
+				print "result:", (jobIndex, particleIndex,) + result
 				sys.stdout.flush()
 
 
@@ -684,6 +685,10 @@ def displaceParticle2( poseData, pathSplices2, pathSplices3, supportLine, nodeID
 	currPose3 = estPose3
 	currProb2 = 0.0
 	currProb3 = 0.0
+	currAngDiff2 = 0.0
+	currAngDiff3 = 0.0
+	currContigFrac2 = 0.0
+	currContigFrac3 = 0.0
 
 	foreAngle0, backAngle0 = getTipAngles(medial0_vec, estPose0)
 	foreAngle1, backAngle1 = getTipAngles(medial1_vec, estPose1)
@@ -868,10 +873,10 @@ def displaceParticle2( poseData, pathSplices2, pathSplices3, supportLine, nodeID
 				" NOTE:  guess pose is now the inter-nodal estimate instead of path-based estimate "
 				if angDiff2 < 0.5:
 					#resultMoves2.append((resultPose2,lastCost2,matchCount2,fabs(currAng2)) + result2)
-					resultMoves2.append((resultPose2,lastCost2,matchCount2,fabs(0.0)) + result2 + (orientedSplicePath, newProb2))
+					resultMoves2.append((resultPose2,lastCost2,matchCount2,fabs(0.0)) + result2 + (orientedSplicePath, newProb2, angDiff2))
 				if angDiff3 < 0.5:
 					#resultMoves3.append((resultPose3,lastCost3,matchCount3,fabs(currAng3)) + result3)				
-					resultMoves3.append((resultPose3,lastCost3,matchCount3,fabs(0.0)) + result3 + (orientedSplicePath, newProb3))				
+					resultMoves3.append((resultPose3,lastCost3,matchCount3,fabs(0.0)) + result3 + (orientedSplicePath, newProb3, angDiff3))				
 			
 			
 			
@@ -898,6 +903,8 @@ def displaceParticle2( poseData, pathSplices2, pathSplices3, supportLine, nodeID
 				currPose2 = resultMoves2[0][0]
 				currSplice2 = resultMoves2[0][19]
 				currProb2 = resultMoves2[0][20]
+				currContigFrac2 = resultMoves2[0][16]
+				currAngDiff2 = resultMoves2[0][21]
 
 			else:
 				print "node", nodeID-1, "not movePathed because no valid pose"
@@ -907,6 +914,8 @@ def displaceParticle2( poseData, pathSplices2, pathSplices3, supportLine, nodeID
 				currPose3 = resultMoves3[0][0]
 				currSplice3 = resultMoves3[0][19]
 				currProb3 = resultMoves3[0][20]
+				currContigFrac3 = resultMoves3[0][16]
+				currAngDiff3 = resultMoves3[0][21]
 
 			else:
 				print "node", nodeID, "not movePathed because no valid pose"
@@ -930,9 +939,12 @@ def displaceParticle2( poseData, pathSplices2, pathSplices3, supportLine, nodeID
 
 			print "fitted poses:", currPose2, currPose3
 			print "currProbs:", currProb2, currProb3
+			print "currContig:", currContigFrac2, currContigFrac3
+			print "currAngDiff:", currAngDiff2, currAngDiff3
 
 
-		return currPose2, currPose3, currProb2, currProb3
+
+		return currPose2, currPose3, currProb2, currProb3, currAngDiff2, currAngDiff3, currContigFrac2, currContigFrac3
 
 
 def __remote_prof_multiParticle(rank, qin, qout):

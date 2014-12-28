@@ -983,7 +983,7 @@ class MapState:
 		NUM_SAMPLES = 10 + self.unfeaturedStepCount * 2
 
 
-		print nodeID0, "NUM_SAMPLES =", NUM_SAMPLES
+		#print nodeID0, "NUM_SAMPLES =", NUM_SAMPLES
 
 		isFeatureless0 = self.poseData.isNodeFeatureless[nodeID0]
 		isFeatureless1 = self.poseData.isNodeFeatureless[nodeID1]
@@ -1029,19 +1029,23 @@ class MapState:
 			#STEP_DIST = 0.2
 			#NUM_SAMPLES = 10
 
+			numSamples = int(pathSpline.dist_u(1.0)/STEP_DIST)
+
+			print nodeID0, "numSamples =", numSamples, ", maxArcDist =", pathSpline.dist_u(1.0)
 
 			""" sample points in the neighborhood """
-			stepHigh = STEP_DIST * floor(NUM_SAMPLES/2.0)
-			stepLow = -STEP_DIST * floor(NUM_SAMPLES/2.0)
+			stepHigh = STEP_DIST * floor(numSamples/2.0)
+			stepLow = -STEP_DIST * floor(numSamples/2.0)
 
 			""" compute the sample points for the pose point distribution """
-			for k in range(NUM_SAMPLES):
-				newStepDist = stepLow + k * STEP_DIST
+			for k in range(numSamples):
+				#newStepDist = stepLow + k * STEP_DIST
+				newStepDist = k * STEP_DIST
 
-				#newU0 = pathSpline.getUOfDist(oldU0, newStepDist)
-				#newU1 = pathSpline.getUOfDist(oldU1, newStepDist)
-				newU0 = pathSpline.getUOfDist(dispU0, newStepDist)
-				newU1 = pathSpline.getUOfDist(dispU1, newStepDist)
+				#newU0 = pathSpline.getUOfDist(dispU0, newStepDist)
+				#newU1 = pathSpline.getUOfDist(dispU1, newStepDist)
+				newU0 = pathSpline.getUOfDist(0.0, newStepDist)
+				newU1 = pathSpline.getUOfDist(0.0, newStepDist)
 
 				newDist0 = pathSpline.dist_u(newU0)
 				newPose0 = pathSpline.point_u(newU0)
@@ -1049,7 +1053,8 @@ class MapState:
 				newDist1 = pathSpline.dist_u(newU1)
 				newPose1 = pathSpline.point_u(newU1)
 
-				self.stepDists.append((j, newDist0, newDist1, newPose0, newPose1))
+				print "sample dist:", newStepDist, newDist0, newDist1, newU0, newU1
+				self.stepDists.append((j, newDist0, newDist1, newPose0, newPose1, newU0, newU1))
 
 
 		branchPoses_G = self.getGlobalBranchPoses()
@@ -1067,14 +1072,17 @@ class MapState:
 
 
 		batchJobs = []
-		for stepJob in self.stepDists:
+		#for stepJob in self.stepDists:
+		for jobIndex in range(len(self.stepDists)):
+
+			stepJob = self.stepDists[jobIndex]
 
 			#self.stepDists.append((j, newDist0, newDist1, newPose0, newPose1))
 			spliceIndex = stepJob[0]
 			hypPose0 = stepJob[3]
 			hypPose1 = stepJob[4]
 
-			batchJobs.append([self.poseData, spliceIndex, nodeID1, prevPose0, prevPose1, hypPose0, hypPose1, matchedSplices[spliceIndex], [matchedSplices[spliceIndex],], [], candLandmarks_G, targetNodeLandmarks_N])
+			batchJobs.append([self.poseData, jobIndex, spliceIndex, nodeID1, prevPose0, prevPose1, hypPose0, hypPose1, matchedSplices[spliceIndex], [matchedSplices[spliceIndex],], [], candLandmarks_G, targetNodeLandmarks_N])
 
 		print len(batchJobs), "total displacement2 jobs"
 
@@ -1082,12 +1090,27 @@ class MapState:
 
 		self.stepResults = []
 		for result in results:
-			particleIndex = result[0]
-			displaceProb0 = result[3]
-			displaceProb1 = result[4]
+			jobIndex = result[0]
+			particleIndex = result[1]
+			displaceProb0 = result[4]
+			displaceProb1 = result[5]
 
-			newPose0 = result[1]
-			newPose1 = result[2]
+			#return currPose2, currPose3, currProb2, currProb3, currAngDiff2, currAngDiff3, currContigFrac2, currContigFrac3
+			
+			arcDist0 = self.stepDists[jobIndex][1]
+			arcDist1 = self.stepDists[jobIndex][2]
+			spliceU0 = self.stepDists[jobIndex][5]
+			spliceU1 = self.stepDists[jobIndex][6]
+
+			#print "jobIndex:", jobIndex, arcDist0, arcDist1, spliceU0, spliceU1
+
+			newPose0 = result[2]
+			newPose1 = result[3]
+
+			newAngDiff0 = result[6]
+			newAngDiff1 = result[7]
+			newContigFrac0 = result[8]
+			newContigFrac1 = result[9]
 
 
 			resultDict = {}
@@ -1102,6 +1125,15 @@ class MapState:
 			resultDict["maxLikelihoodBranch"] = None
 			resultDict["branchArcDists"] = {}
 			resultDict["branchControls"] = {}
+
+			resultDict["angDiff0"] = newAngDiff0
+			resultDict["angDiff1"] = newAngDiff1
+			resultDict["contigFrac0"] = newContigFrac0
+			resultDict["contigFrac1"] = newContigFrac1
+			resultDict["arcDist0"] = arcDist0
+			resultDict["arcDist1"] = arcDist1
+			resultDict["spliceU0"] = spliceU0
+			resultDict["spliceU1"] = spliceU1
 
 			self.stepResults.append(resultDict)
 
@@ -1160,9 +1192,17 @@ class MapState:
 
 		#for partIndex in range(len(particleDist2)):
 		for partIndex in range(len(self.stepResults)):
-			part = self.stepResults[partIndex]
-			currProb0 = part["displaceProb0"]
-			currProb1 = part["displaceProb1"]
+			resultDict = self.stepResults[partIndex]
+			currProb0 = resultDict["displaceProb0"]
+			currProb1 = resultDict["displaceProb1"]
+			angDiff0 = resultDict["angDiff0"]
+			angDiff1 = resultDict["angDiff1"]
+			contigFrac0 = resultDict["contigFrac0"]
+			contigFrac1 = resultDict["contigFrac1"]
+			arcDist0 = resultDict["arcDist0"]
+			arcDist1 = resultDict["arcDist1"]
+			spliceU0 = resultDict["spliceU0"]
+			spliceU1 = resultDict["spliceU1"]
 
 			poseLandmarkSum = part["landmarkSum"]
 
@@ -1178,7 +1218,7 @@ class MapState:
 			else:
 				newProb0 = currProb0
 
-			print nodeID0, nodeID1, "displace sample:", partIndex, poseLandmarkSum, currProb0, currProb1, newProb0
+			print nodeID0, nodeID1, "displace sample:", partIndex, arcDist0, arcDist1, spliceU0, spliceU1, poseLandmarkSum, angDiff0, angDiff1, contigFrac0, contigFrac1, currProb0, currProb1, newProb0
 
 			if newProb0 > maxProb:
 				maxProb = newProb0
