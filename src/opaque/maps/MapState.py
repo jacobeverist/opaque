@@ -24,6 +24,7 @@ from ParticleFilter import multiParticleFitSplice, batchLocalizeParticle, batchD
 import time
 import traceback
 from uuid import uuid4
+import matplotlib.pyplot as plt
 
 import alphamod
 from itertools import product
@@ -1204,7 +1205,7 @@ class MapState:
 			spliceU0 = resultDict["spliceU0"]
 			spliceU1 = resultDict["spliceU1"]
 
-			poseLandmarkSum = part["landmarkSum"]
+			poseLandmarkSum = resultDict["landmarkSum"]
 
 
 			""" check to avoid divide by zero """
@@ -1217,6 +1218,8 @@ class MapState:
 					newProb0 = 0.0
 			else:
 				newProb0 = currProb0
+
+			resultDict["evalProb"] = newProb0
 
 			print nodeID0, nodeID1, "displace sample:", partIndex, arcDist0, arcDist1, spliceU0, spliceU1, poseLandmarkSum, angDiff0, angDiff1, contigFrac0, contigFrac1, currProb0, currProb1, newProb0
 
@@ -2025,6 +2028,195 @@ class MapState:
 		self.drawPoseParticles()
 
 		return
+
+
+	@logFunction
+	def drawDist(self):
+
+
+		localPathSets = {}
+
+		allPathIDs = self.getPathIDs()
+		for pathID in allPathIDs:
+
+			if pathID != 0:
+
+				junctionDetails = self.localLeaf2LeafPathJunctions[pathID]
+
+				origJuncPose = copy(self.pathClasses[pathID]["globalJunctionPose"])
+				origJuncPose[2] = 0.0
+				origJuncOrigin = Pose(origJuncPose)
+
+				localPathSegs = junctionDetails["localSegments"]
+
+				localPathSets[pathID] = localPathSegs
+
+
+		pylab.ioff()
+		print pylab.isinteractive()
+		pylab.clf()
+		#pylab.axis("equal")
+
+		fig, (ax1, ax2, ax3) = plt.subplots(3,  sharex=False, sharey=False)
+
+		#ax1.set_xlim(-3, 3)
+		#ax1.set_aspect("equal")
+
+		#ax2.set_ylim(0.0, 1.0)
+		#ax2.set_aspect("equal")
+
+		#ax3.set_ylim(-pi, pi)
+
+		nodeID0 = self.poseData.numNodes-2
+		nodeID1 = self.poseData.numNodes-1
+		medial0 = self.poseData.medialAxes[nodeID0]
+		medial1 = self.poseData.medialAxes[nodeID1]
+
+		controlPoses_G = self.getGlobalControlPoses()
+
+		for samp in self.stepResults:
+			hypPose0 = samp["newPose0"]
+			hypPose1 = samp["newPose1"]
+			currProb0 = samp["displaceProb0"]
+			currProb1 = samp["displaceProb1"]
+			arcDist0 = samp["arcDist0"]
+			arcDist1 = samp["arcDist1"]
+			evalProb = samp["evalProb"]
+
+			poseOrigin0 = Pose(hypPose0)
+			xP = []
+			yP = []
+			for p in medial0:
+				p1 = poseOrigin0.convertLocalToGlobal(p)
+				xP.append(p1[0])
+				yP.append(p1[1])
+
+			ax1.plot(xP,yP, color = 'r', alpha = 0.2, zorder=7)
+
+			poseOrigin1 = Pose(hypPose1)
+
+			xP = []
+			yP = []
+			for p in medial1:
+				p1 = poseOrigin1.convertLocalToGlobal(p)
+				xP.append(p1[0])
+				yP.append(p1[1])
+
+			ax1.plot(xP,yP, color = 'b', alpha = 0.2, zorder=7)
+
+			ax2.scatter([arcDist0, arcDist1], [currProb0, currProb1], color='k')
+			ax2.scatter([arcDist0,], [evalProb,], color='r', zorder=10)
+
+
+			#resultDict = {}
+			#resultDict["newPose0"] = newPose0
+			#resultDict["newPose1"] = newPose1
+			#resultDict["controlPoses_P"] = controlPoses
+			#resultDict["displaceProb0"] = displaceProb0
+			#resultDict["displaceProb1"] = displaceProb1
+			#resultDict["branchPoses_G"] = branchPoses_G
+			#resultDict["branchPoses_L"] = branchPoses_L
+			#resultDict["landmarkSum"] = 0.0
+			#resultDict["maxLikelihoodBranch"] = None
+			#resultDict["branchArcDists"] = {}
+			#resultDict["branchControls"] = {}
+
+			#resultDict["angDiff0"] = newAngDiff0
+			#resultDict["angDiff1"] = newAngDiff1
+			#resultDict["contigFrac0"] = newContigFrac0
+			#resultDict["contigFrac1"] = newContigFrac1
+			#resultDict["arcDist0"] = arcDist0
+			#resultDict["arcDist1"] = arcDist1
+			#resultDict["spliceU0"] = spliceU0
+			#resultDict["spliceU1"] = spliceU1
+
+		controlPoses_G = computeGlobalControlPoses(self.getControlPoses(), self.getParentHash())
+
+		for k, segs in self.globalSegments.iteritems():
+			for seg in segs:
+				xP = []
+				yP = []
+				for p in seg:
+					xP.append(p[0])
+					yP.append(p[1])
+				ax1.plot(xP,yP, color = self.colors[k], linewidth=4)
+
+
+		allSplices = self.getAllSplices2()
+
+		for sPath in allSplices:
+			path = sPath['skelPath']
+
+			xP = []
+			yP = []
+			for p in path:
+				xP.append(p[0])
+				yP.append(p[1])
+			ax1.plot(xP,yP, color='g', zorder=2)
+
+
+		xP = []
+		yP = []
+		for pathID in allPathIDs:
+			currFrame = Pose(controlPoses_G[pathID])
+			for point_L, pointThresh, pointName in self.localLandmarks[pathID]:
+				point_G = currFrame.convertLocalToGlobal(point_L)
+
+				xP.append(point_G[0])
+				yP.append(point_G[1])
+
+		if len(xP) > 0:
+			ax1.scatter(xP, yP, color='k', linewidth=1, zorder=9, alpha=0.9)
+
+
+		xP = []
+		yP = []
+		for pathID in allPathIDs:
+			terms = self.globalTerms[pathID]
+			for term in terms:
+				xP.append(term[0])
+				yP.append(term[1])
+
+		if len(xP) > 0:
+			ax1.scatter(xP, yP, color='g', linewidth=1, zorder=11, alpha=0.9)
+
+
+		pose0 = self.getNodePose(nodeID0)
+		pose1 = self.getNodePose(nodeID1)
+		medial0 = self.poseData.medialAxes[nodeID0]
+		medial1 = self.poseData.medialAxes[nodeID1]
+
+		poseOrigin0 = Pose(pose0)
+		poseOrigin1 = Pose(pose1)
+
+		xP = []
+		yP = []
+		for p in medial0:
+			p1 = poseOrigin0.convertLocalToGlobal(p)
+			xP.append(p1[0])
+			yP.append(p1[1])
+		ax1.plot(xP,yP,color='k', zorder=10, linewidth=1)
+
+		xP = []
+		yP = []
+		for p in medial1:
+			p1 = poseOrigin1.convertLocalToGlobal(p)
+			xP.append(p1[0])
+			yP.append(p1[1])
+		ax1.plot(xP,yP,color='k', zorder=10, linewidth=1)
+
+		
+		#pylab.axis("equal")
+		ax1.set_aspect("equal")
+		ax1.set_title("nodeIDs %d %d hypID %d" % (nodeID0, nodeID1, self.hypothesisID))
+		plt.savefig("distEstimate_%04u_%04u.png" % (self.hypothesisID, self.posePlotCount))
+		print "distEstimate2_%04u_%04u.png" % (self.hypothesisID, self.posePlotCount)
+
+		plt.clf()
+		plt.close()
+
+
+		self.posePlotCount += 1
 
 	@logFunction
 	def drawPoseParticles(self):

@@ -310,6 +310,7 @@ class BayesMapper:
 						time1 = time.time()
 						currHyp.batchDisplaceParticles(nodeID-1, nodeID)
 
+						currHyp.drawDist()
 						currHyp.drawPoseParticles()
 						time2 = time.time()
 						print "TIME displace", currHyp.hypothesisID, "=", time2-time1 
