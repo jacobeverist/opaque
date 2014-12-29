@@ -728,6 +728,7 @@ class MapState:
 			resultDict["maxLikelihoodBranch"] = None
 			resultDict["branchArcDists"] = {}
 			resultDict["branchControls"] = {}
+			resultDict["motionBias"] = 0.0
 
 			self.stepResults.append(resultDict)
 
@@ -1027,6 +1028,9 @@ class MapState:
 			dispU0 = pathSpline.getUOfDist(oldU0, distEst)
 			dispU1 = pathSpline.getUOfDist(oldU1, distEst)
 
+
+			meanDist = pathSpline.dist_u(dispU0)
+
 			#STEP_DIST = 0.2
 			#NUM_SAMPLES = 10
 
@@ -1054,8 +1058,11 @@ class MapState:
 				newDist1 = pathSpline.dist_u(newU1)
 				newPose1 = pathSpline.point_u(newU1)
 
-				print "sample dist:", newStepDist, newDist0, newDist1, newU0, newU1
-				self.stepDists.append((j, newDist0, newDist1, newPose0, newPose1, newU0, newU1))
+
+				motionBias = gaussian(newDist0, meanDist, 0.5)
+
+				print "sample dist:", newStepDist, newDist0, newDist1, newU0, newU1, motionBias
+				self.stepDists.append((j, newDist0, newDist1, newPose0, newPose1, newU0, newU1, motionBias))
 
 
 		branchPoses_G = self.getGlobalBranchPoses()
@@ -1102,6 +1109,7 @@ class MapState:
 			arcDist1 = self.stepDists[jobIndex][2]
 			spliceU0 = self.stepDists[jobIndex][5]
 			spliceU1 = self.stepDists[jobIndex][6]
+			motionBias = self.stepDists[jobIndex][7]
 
 			#print "jobIndex:", jobIndex, arcDist0, arcDist1, spliceU0, spliceU1
 
@@ -1135,6 +1143,7 @@ class MapState:
 			resultDict["arcDist1"] = arcDist1
 			resultDict["spliceU0"] = spliceU0
 			resultDict["spliceU1"] = spliceU1
+			resultDict["motionBias"] = motionBias
 
 			resultDict["spliceIndex"] = spliceIndex
 
@@ -1206,8 +1215,8 @@ class MapState:
 			arcDist1 = resultDict["arcDist1"]
 			spliceU0 = resultDict["spliceU0"]
 			spliceU1 = resultDict["spliceU1"]
-
 			poseLandmarkSum = resultDict["landmarkSum"]
+			motionBias = resultDict["motionBias"]
 
 
 			""" check to avoid divide by zero """
@@ -1223,10 +1232,20 @@ class MapState:
 
 			resultDict["evalProb"] = newProb0
 
-			print nodeID0, nodeID1, "displace sample:", partIndex, arcDist0, arcDist1, spliceU0, spliceU1, poseLandmarkSum, angDiff0, angDiff1, contigFrac0, contigFrac1, currProb0, currProb1, newProb0
 
-			if newProb0 > maxProb:
-				maxProb = newProb0
+			if newProb0 > 0.0:
+				evalWithBias = newProb0 + motionBias
+			else:
+				evalWithBias = 0.0
+
+			resultDict["evalWithBias"] = evalWithBias
+
+			print nodeID0, nodeID1, "displace sample:", partIndex, arcDist0, arcDist1, spliceU0, spliceU1, poseLandmarkSum, angDiff0, angDiff1, contigFrac0, contigFrac1, currProb0, currProb1, newProb0, motionBias, evalWithBias
+
+			#if newProb0 > maxProb:
+			#	maxProb = newProb0
+			if evalWithBias > maxProb:
+				maxProb = evalWithBias
 				maxPart2 = partIndex
 
 		self.currMaxIndex = maxPart2
@@ -1355,6 +1374,7 @@ class MapState:
 					""" this is the point where the control pose gets erroneously moved back onto the longest path """
 					#controlPose = part.junctionData[pathID]["controlPose"]
 					controlPose = part["controlPoses_P"][pathID]
+					print "oldControlPose:", particleIndex, pathID, controlPose
 					minDist, controlUVal, newControlPose = pathSpline.findClosestPoint(controlPose)
 					arcDist = pathSpline.dist_u(controlUVal)
 
@@ -1500,7 +1520,7 @@ class MapState:
 			normMatchCount = branchResult["normMatchCount"]
 			normCost = branchResult["normCost"] 
 
-			print "branch eval:", arcTuple, normLandmark, normMatchCount, normCost
+			#print "branch eval:", arcTuple, normLandmark, normMatchCount, normCost
 
 			if normLandmark > maxNormCost:
 				maxNormCost = normLandmark
@@ -1536,8 +1556,41 @@ class MapState:
 			for splice in splices_G:
 				maxSplicedPaths.append((arcTuple, normLandmark, splice, None, candLandmarks_G))
 
+		thisSplicedPaths = []
 		if maxTuple != None:
 			print "maxTuple:", maxTuple
+
+			arcTuple = maxTuple
+			# consider single path longestPaths , including root
+
+			branchResult = self.jointBranchEvaluations[arcTuple]
+			normLandmark = branchResult["normLandmark"]
+			landmarks_G = branchResult["landmarks_G"]
+
+			controlPoses = branchResult["controlSet"]
+			controlPoses_G = computeGlobalControlPoses(controlPoses, parentPathIDs)
+
+			""" collect landmarks that we can localize against """
+			candLandmarks_G = nodeToGlobalLandmarks(controlPoses, self.getPathIDs(), self.getParentHash(), self.nodeLandmarks, self.pathClasses, exemptNodes = [nodeID0,nodeID1])
+
+			splices_G = branchResult["splices_G"]
+			for splice in splices_G:
+				thisSplicedPaths.append((arcTuple, normLandmark, splice, None, candLandmarks_G))
+
+		else:
+			#if len(thisSplicedPaths) == 0:
+			""" static splices have 1.0 probability """
+
+			controlPoses = deepcopy(self.getControlPoses())
+			controlPoses_G = computeGlobalControlPoses(controlPoses, parentPathIDs)
+
+			""" collect landmarks that we can localize against """
+			candLandmarks_G = nodeToGlobalLandmarks(controlPoses, self.getPathIDs(), self.getParentHash(), self.nodeLandmarks, self.pathClasses, exemptNodes = [nodeID0,nodeID1])
+
+			for splice in staticSplicedPaths:
+				thisSplicedPaths.append((None, 1.0, splice, None, candLandmarks_G))
+
+		allSplicedPaths = thisSplicedPaths
 
 		for particleIndex in range(len(self.stepResults)):
 
@@ -1556,7 +1609,7 @@ class MapState:
 
 			resultsBySplice = []
 
-			thisSplicedPaths = []
+			#thisSplicedPaths = []
 
 			""" get control set of particle's branches indexed by arc distance """
 			# part.branchArcDists = newBranchArcDists
@@ -1567,28 +1620,12 @@ class MapState:
 					pathID = branchPathIDs[kIndex]
 					maxDist = maxTuple[kIndex]
 
-					""" compute the rails of the branch point distribution """
-					arcHigh = maxDist + self.DIV_LEN * floor(self.NUM_BRANCHES/2.0)
-					arcLow = maxDist - self.DIV_LEN * floor(self.NUM_BRANCHES/2.0)
-
 					""" compute the sample points for the branch point distribution """
-					#arcDists = []
-					#for k in range(self.NUM_BRANCHES):
-					#	newArcDist = arcLow + k * self.DIV_LEN
-					#	arcDists.append(newArcDist)
 					arcDists = [maxDist,]
-
 					part["branchArcDists"][pathID] = arcDists
-					#part["branchControls"] = newBranchControls
-					#part.branchArcDists[pathID] = arcDists
-
-					#part.junctionData[pathID]["arcDists"] = arcDists
 					print "arcDists:", pathID, arcDists
 
 				part["maxLikelihoodBranch"] = maxTuple
-				#part.maxLikelihoodBranch = maxTuple
-
-				#print "maxTuple:", maxTuple
 
 			""" build indexing tuples for this particle """
 			argSet = []
@@ -1601,42 +1638,6 @@ class MapState:
 				for comb in combIterator:
 					arcIndexes.append(tuple(comb))
 
-			if maxTuple != None:
-				arcIndexes = [maxTuple,]
-
-			# TODO: consider single path longestPaths , including root
-			""" minimum 5 tuples """
-			for arcTuple in arcIndexes:
-				print "arcIndex:", arcTuple
-				branchResult = self.jointBranchEvaluations[arcTuple]
-				totalMatchCount = branchResult["totalMatchCount"]
-				normMatchCount = branchResult["normMatchCount"]
-				normLandmark = branchResult["normLandmark"]
-				landmarks_G = branchResult["landmarks_G"]
-
-				controlPoses = branchResult["controlSet"]
-				controlPoses_G = computeGlobalControlPoses(controlPoses, parentPathIDs)
-
-
-				""" collect landmarks that we can localize against """
-				candLandmarks_G = nodeToGlobalLandmarks(controlPoses, self.getPathIDs(), self.getParentHash(), self.nodeLandmarks, self.pathClasses, exemptNodes = [nodeID0,nodeID1])
-
-				print len(splices_G), "splices"
-				splices_G = branchResult["splices_G"]
-				for splice in splices_G:
-					thisSplicedPaths.append((arcTuple, normLandmark, splice, None, candLandmarks_G))
-
-			""" static splices have 1.0 probability """
-			if len(thisSplicedPaths) == 0:
-
-				controlPoses = deepcopy(self.getControlPoses())
-				controlPoses_G = computeGlobalControlPoses(controlPoses, parentPathIDs)
-
-				""" collect landmarks that we can localize against """
-				candLandmarks_G = nodeToGlobalLandmarks(controlPoses, self.getPathIDs(), self.getParentHash(), self.nodeLandmarks, self.pathClasses, exemptNodes = [nodeID0,nodeID1])
-
-				for splice in staticSplicedPaths:
-					thisSplicedPaths.append((None, 1.0, splice, None, candLandmarks_G))
 
 			#print "particle:", particleIndex, ",",  len(thisSplicedPaths), "localize jobs"
 			poseFrame = Pose(hypPose0)
@@ -1659,12 +1660,13 @@ class MapState:
 
 				orientedPath0 = orientPathLean(path, globalMedial0)
 				
-				localizeJobs.append([oldMedialP0, oldMedialU0, 0.0, oldMedialP1, oldMedialU1, 0.0, branchSampleIndex, spliceCount, orientedPath0, medial0_vec, medial1_vec, deepcopy(hypPose0), deepcopy(hypPose1), prevMedial0_vec, prevMedial1_vec, prevHypPose0, prevHypPose1, [], nodeID0, nodeID1, particleIndex, 0, self.hypothesisID, probVal, landmarks_G, landmark0_N, landmark1_N])
+				#localizeJobs.append([oldMedialP0, oldMedialU0, 0.0, oldMedialP1, oldMedialU1, 0.0, branchSampleIndex, spliceCount, orientedPath0, medial0_vec, medial1_vec, deepcopy(hypPose0), deepcopy(hypPose1), prevMedial0_vec, prevMedial1_vec, prevHypPose0, prevHypPose1, [], nodeID0, nodeID1, particleIndex, 0, self.hypothesisID, probVal, landmarks_G, landmark0_N, landmark1_N])
+				localizeJobs.append([oldMedialP0, oldMedialU0, 0.0, oldMedialP1, oldMedialU1, 0.0, branchSampleIndex, spliceIndex, orientedPath0, medial0_vec, medial1_vec, deepcopy(hypPose0), deepcopy(hypPose1), prevMedial0_vec, prevMedial1_vec, prevHypPose0, prevHypPose1, [], nodeID0, nodeID1, particleIndex, 0, self.hypothesisID, probVal, landmarks_G, landmark0_N, landmark1_N])
 
 				self.pathPlotCount2 += 1
 				spliceCount += 1
 
-			allSplicedPaths += thisSplicedPaths
+			#allSplicedPaths += thisSplicedPaths
 
 
 		print len(localizeJobs), "total localize jobs"
@@ -1779,6 +1781,7 @@ class MapState:
 				normLandmarkSum = 0.0
 				normAngDiff = pi-fabs(diffAngle(initPose0[2],newPose0[2])) 
 
+
 				if isReject:
 					#newUtilVal = -1e100
 					newUtilVal = 0.0
@@ -1815,7 +1818,22 @@ class MapState:
 
 					preBranchProb = newProb
 
-					newProb *= branchNormLandmarkCost
+					""" only using one branch, so we comment this out for now """
+					#newProb *= branchNormLandmarkCost
+
+
+					""" add motion bias """
+					try:
+						motionBias = self.stepResults[particleID]["motionBias"]
+					except:
+						print self.stepResults[particleID]
+						raise
+					
+
+
+					""" disable motion bias """
+					#if preBranchProb > 0.0:
+					#	newProb = preBranchProb + motionBias/3.0
 
 					listCopy = list(part)
 					listCopy[45] = newProb
@@ -1834,7 +1852,6 @@ class MapState:
 
 			""" turn off divergence filter """
 			rejectDivergence = False
-
 
 
 
@@ -1897,7 +1914,13 @@ class MapState:
 			contigFrac_0 = part[19]
 			overlapSum_0 = part[20]
 
+			contigFrac_1 = part[41]
+
 			newPose1 = part[24]
+
+			poseLandmarkSum = part[51]
+			tipAngDiff0 = part[52]
+			tipAngDiff1 = part[53]
 				
 			""" probability is the contigFrac squared """ 
 			newProb = 0.0
@@ -1918,17 +1941,16 @@ class MapState:
 
 			particleDict["newPose0"] = newPose0
 			particleDict["newPose1"] = newPose1
-			particleDict["weightVal"] = newProb
+			particleDict["evalProb"] = newProb
+			particleDict["spliceIndex"] = spliceIndex
 
-			#particleObj = particleDist2[particleIndex].copy()
+			particleDict["contigFrac0"] = contigFrac_0
+			particleDict["contigFrac1"] = contigFrac_1
 
-			#particleObj.pose0 = newPose0
-			#particleObj.pose1 = newPose1
-			#particleObj.hypDist = newDist0
-			#particleObj.weightVal = newProb
-			#particleObj.spliceCurve = spliceCurve
+			particleDict["angDiff0"] = tipAngDiff0
+			particleDict["angDiff1"] = tipAngDiff1
 
-
+			particleDict["landmarkSum"] = poseLandmarkSum
 
 			""" Change branch if we are within a junction, otherwise, keep the most recent branch index """
 			if branchTupleIndex != None:
@@ -1957,19 +1979,22 @@ class MapState:
 					particleDict["branchPoses_L"][pathID] = branchPose_L
 
 
-		self.drawPoseParticles()
+
+
+
+		#self.drawPoseParticles()
 
 		""" now find the maximum pose """
 		probSum = 0.0
 		for part in self.stepResults:
-			probVal = part["weightVal"]
+			probVal = part["evalProb"]
 			probSum += probVal
 
 		probParticles = []
 		for k in range(len(self.stepResults)):
 			part = self.stepResults[k]
 
-			poseProbVal = part["weightVal"]
+			poseProbVal = part["evalProb"]
 
 			""" if all 0.0 probabilities, make uniform distribution, set no localization flag """
 			if probSum > 0.0:
@@ -1979,6 +2004,7 @@ class MapState:
 				self.isNoLocalize = True
 
 		print "probParticles:", self.isNoLocalize, probParticles 
+		print "stepResults:", self.stepResults
 
 		""" find the maximum likelihood particle.  Take average if tied for max """
 		maxVal = 0.0
@@ -2025,8 +2051,73 @@ class MapState:
 			raise
 
 		""" FIXME:  do we really do nothing here when we tie for maximum? """
+		#hypPose0 = samp["newPose0"]
+		#hypPose1 = samp["newPose1"]
+		#currProb0 = samp["displaceProb0"]
+		#currProb1 = samp["displaceProb1"]
+		#arcDist0 = samp["arcDist0"]
+		#arcDist1 = samp["arcDist1"]
+		#evalProb = samp["evalProb"]
+		#spliceIndex = samp["spliceIndex"]
+
+		#angDiff0 = samp["angDiff0"]
+		#angDiff1 = samp["angDiff1"]
+		#contigFrac0 = samp["contigFrac0"]
+		#contigFrac1 = samp["contigFrac1"]
+		#spliceU0 = samp["spliceU0"]
+		#spliceU1 = samp["spliceU1"]
+		#poseLandmarkSum = samp["landmarkSum"]
+		#motionBias = samp["motionBias"]
+		#evalWithBias = samp["evalWithBias"]
+		
+		""" update the stepResults structure to include arcDists """
+
+		poseOrigin0 = Pose(self.getNodePose(nodeID0))
+		globalMedial0 = []
+		for p in medial0:
+			globalMedial0.append(poseOrigin0.convertLocalToGlobal(p))
+
+		poseOrigin1 = Pose(self.getNodePose(nodeID1))
+		globalMedial1 = []
+		for p in medial1:
+			globalMedial1.append(poseOrigin1.convertLocalToGlobal(p))
+
+		orientedSplices = []
+		orientedPathSplines = []
+
+		for spliceIndex in range(len(allSplicedPaths)):
+			spliceCurve = allSplicedPaths[spliceIndex][2]
+
+			orientedSplicePath = orientPath(spliceCurve, globalMedial0)				
+			pathSpline = SplineFit(orientedSplicePath, smooth=0.1)
+
+			orientedPathSplines.append(pathSpline)
+
+		for k in range(len(self.stepResults)):
+			part = self.stepResults[k]
+			spliceIndex = part["spliceIndex"]
+			poseProbVal = part["evalProb"]
+			newPose0 = part["newPose0"]
+
+			pathSpline = orientedPathSplines[spliceIndex]
+
+			minDist0, newU0, newP0 = pathSpline.findClosestPoint(newPose0)
+			newDist0 = pathSpline.dist_u(newU0)
+
+			minDist1, newU1, newP1 = pathSpline.findClosestPoint(newPose1)
+			newDist1 = pathSpline.dist_u(newU1)
+
+			part["arcDist0"] = newDist0
+			part["arcDist1"] = newDist1
+
+			part["spliceU0"] = newU0
+			part["spliceU1"] = newU1
+
+			part["motionBias"] = 0.0
+			part["evalWithBias"] = poseProbVal
 
 
+		self.drawDist()
 		self.drawPoseParticles()
 
 		return
@@ -2043,13 +2134,13 @@ class MapState:
 		pylab.clf()
 		#pylab.axis("equal")
 
-		allSplices = self.getAllSplices2()
-
-		numSplices = len(allSplices)
+		#allSplices = self.getAllSplices2()
+		#numSplices = len(allSplices)
 
 		#fig, (ax1, ax2, ax3) = plt.subplots(3,  sharex=False, sharey=False)
 		#fig, (ax1, ax2, ax3, ax4, ax5) = plt.subplots(5,  sharex=False, sharey=False)
-		fig, (ax2, ax3, ax4, ax5) = plt.subplots(4,  sharex=True, sharey=False)
+		#fig, (ax2, ax3, ax4, ax5) = plt.subplots(4,  sharex=True, sharey=False)
+		fig, (ax2, ax3, ax4, ax5, ax6, ax7) = plt.subplots(6,  sharex=True, sharey=False)
 		#fig.set_size_inches(16,12)
 		#fig.tight_layout(pad=4.0)
 		#fig.tight_layout()
@@ -2066,6 +2157,16 @@ class MapState:
 
 		#ax3.set_ylim(-pi, pi)
 
+		""" find number of splices from highest splice index """
+		numSplices = 0
+		for samp in self.stepResults:
+			spliceIndex = samp["spliceIndex"]
+
+			if spliceIndex+1 > numSplices:
+				numSplices = spliceIndex+1
+
+
+
 		nodeID0 = self.poseData.numNodes-2
 		nodeID1 = self.poseData.numNodes-1
 		medial0 = self.poseData.medialAxes[nodeID0]
@@ -2077,6 +2178,8 @@ class MapState:
 		landmarkLists = [[] for k in range(numSplices)]
 		angDiffLists = [[] for k in range(numSplices)]
 		contigFracLists = [[] for k in range(numSplices)]
+		biasLists = [[] for k in range(numSplices)]
+		finalSumLists = [[] for k in range(numSplices)]
 
 
 		for samp in self.stepResults:
@@ -2096,6 +2199,8 @@ class MapState:
 			spliceU0 = samp["spliceU0"]
 			spliceU1 = samp["spliceU1"]
 			poseLandmarkSum = samp["landmarkSum"]
+			motionBias = samp["motionBias"]
+			evalWithBias = samp["evalWithBias"]
 
 			"""
 			poseOrigin0 = Pose(hypPose0)
@@ -2126,6 +2231,8 @@ class MapState:
 			landmarkLists[spliceIndex].append((arcDist0, poseLandmarkSum))
 			angDiffLists[spliceIndex].append((arcDist0, angDiff0))
 			contigFracLists[spliceIndex].append((arcDist0, contigFrac0))
+			biasLists[spliceIndex].append((arcDist0, motionBias))
+			finalSumLists[spliceIndex].append((arcDist0, evalWithBias))
 
 			#ax2.scatter([arcDist0, arcDist1], [currProb0, currProb1], color='k')
 			#ax2.scatter([arcDist0,], [evalProb,], color='r', zorder=10)
@@ -2153,6 +2260,30 @@ class MapState:
 			#resultDict["spliceU0"] = spliceU0
 			#resultDict["spliceU1"] = spliceU1
 		
+
+		#probLists = sorted(probLists, reverse=False)
+		for splice in probLists:
+			splice.sort()
+		for splice in landmarkLists:
+			splice.sort()
+		for splice in angDiffLists:
+			splice.sort()
+		for splice in contigFracLists:
+			splice.sort()
+		for splice in biasLists:
+			splice.sort()
+		for splice in finalSumLists:
+			splice.sort()
+
+		#print "probLists:", probLists
+
+		#probLists[spliceIndex].append((arcDist0, evalProb))
+		#landmarkLists[spliceIndex].append((arcDist0, poseLandmarkSum))
+		#angDiffLists[spliceIndex].append((arcDist0, angDiff0))
+		#contigFracLists[spliceIndex].append((arcDist0, contigFrac0))
+		#biasLists[spliceIndex].append((arcDist0, motionBias))
+		#finalSumLists[spliceIndex].append((arcDist0, evalWithBias))
+
 		#self.currMaxIndex = maxPart2
 		xP = [self.stepResults[self.currMaxIndex]["arcDist0"],]
 		yP = [self.stepResults[self.currMaxIndex]["evalProb"],]
@@ -2168,6 +2299,12 @@ class MapState:
 		yP = [self.stepResults[self.currMaxIndex]["contigFrac0"],]
 		ax5.scatter(xP,yP, color=self.colors[maxSpliceIndex], zorder=10)
 
+		yP = [self.stepResults[self.currMaxIndex]["motionBias"],]
+		ax6.scatter(xP,yP, color=self.colors[maxSpliceIndex], zorder=10)
+
+		yP = [self.stepResults[self.currMaxIndex]["evalWithBias"],]
+		ax7.scatter(xP,yP, color=self.colors[maxSpliceIndex], zorder=10)
+
 		for k in range(len(probLists)):
 			splice = probLists[k]
 			xP = []
@@ -2178,6 +2315,7 @@ class MapState:
 				xP.append(valTuple[0])
 				yP.append(valTuple[1])
 
+			print "plot probLists:", xP#, yP
 			ax2.plot(xP,yP, color = self.colors[k])
 
 		for k in range(len(landmarkLists)):
@@ -2215,6 +2353,31 @@ class MapState:
 				yP.append(valTuple[1])
 
 			ax5.plot(xP,yP, color = self.colors[k])
+
+		for k in range(len(biasLists)):
+			splice = biasLists[k]
+			xP = []
+			yP = []
+
+			for valTuple in splice:
+
+				xP.append(valTuple[0])
+				yP.append(valTuple[1])
+
+			ax6.plot(xP,yP, color = self.colors[k])
+
+		for k in range(len(finalSumLists)):
+			splice = finalSumLists[k]
+			xP = []
+			yP = []
+
+			for valTuple in splice:
+
+				xP.append(valTuple[0])
+				yP.append(valTuple[1])
+
+			ax7.plot(xP,yP, color = self.colors[k])
+
 
 		controlPoses_G = computeGlobalControlPoses(self.getControlPoses(), self.getParentHash())
 
@@ -2298,6 +2461,8 @@ class MapState:
 		ax3.set_ylabel('landmarkCost')
 		ax4.set_ylabel('angDiff')
 		ax5.set_ylabel('contigFrac')
+		ax6.set_ylabel('motion')
+		ax7.set_ylabel('final')
 		
 		#pylab.axis("equal")
 		#ax1.set_aspect("equal")
@@ -3655,6 +3820,8 @@ class MapState:
 				thisControlPoses[pathID] = cPose
 				thisArcDists[pathID] = arcDist
 
+			print "thisArcDists:", thisArcDists
+
 			#self.localLandmarks
 			jointBranchJobs.append((localPathSegsByID, localTermsByID, self.localPaths, localSkeletons, thisControlPoses, tipPoints, junctionPoses, self.localLandmarks, parentPathIDs, thisArcDists, len(self.nodePoses)-1, self.hypothesisID ))
 			#jointBranchJobs.append((localPathSegsByID, localTermsByID, self.controlCurves, localSkeletons, thisControlPoses, tipPoints, junctionPoses, self.localLandmarks, parentPathIDs, thisArcDists, len(self.nodePoses)-1, self.hypothesisID ))
@@ -3778,8 +3945,9 @@ class MapState:
 			normLandmark = branchResult["normLandmark"]
 			normMatchCount = branchResult["normMatchCount"]
 			normCost = branchResult["normCost"] 
+			controlSet = branchResult["controlSet"]
 
-			print "branch eval:", arcTuple, normLandmark, normMatchCount, normCost
+			print "branch eval:", arcTuple, normLandmark, normMatchCount, normCost, controlSet
 
 			#if normLandmark > maxNormCost:
 			if normLandmark > maxLandmark:
@@ -4607,10 +4775,10 @@ class MapState:
 		""" add new path to particles """
 		#for part in particleDist2:
 		#for k in range(len(particleDist2)):
-		for k in range(len(self.stepResults)):
+		for partIndex in range(len(self.stepResults)):
 
 			#part = particleDist2[k]
-			part = self.stepResults[k]
+			partDict = deepcopy(self.stepResults[partIndex])
 
 
 
@@ -4622,7 +4790,7 @@ class MapState:
 			transform_N_to_R = nodeFrame.convertGlobalPoseToLocal(rawPose_G)
 			
 			""" go back and convert this from GPAC pose to raw pose """
-			particlePose_G = deepcopy(part["newPose0"])
+			particlePose_G = deepcopy(partDict["newPose0"])
 			particlePose_G[2] = nodePose_G[2]
 			particlePoseFrame = Pose(particlePose_G)
 			particleRawFrame_G = particlePoseFrame.convertLocalOffsetToGlobal(transform_N_to_R)
@@ -4637,7 +4805,7 @@ class MapState:
 			particleControlPose_G = particlePoseFrame.convertLocalOffsetToGlobal(controlPose_L)
 
 			#print "control poses:", k, nodePose_G, particlePose_G, controlPose_G, particleControlPose_G
-			print "control poses:", k, particleControlPose_G
+			print "control poses:", partIndex, particleControlPose_G
 		
 			""" location on the parent shoot closest to the locally computed branch point """
 			minDist, uVal, newJunctionPose_G = pathSpline_G.findClosestPoint(particleJunctionPose_G)
@@ -4693,16 +4861,21 @@ class MapState:
 			#resultDict["branchArcDists"] = ()
 			#resultDict["branchControls"] = ()
 
-			part["controlPoses_P"][newPathID] = localParticleControlPose_P
-			part["branchPoses_L"][newPathID] = localJunctionPose_C
-			part["branchPoses_G"][newPathID] = modJunctionPose_G
-			part["branchArcDists"][newPathID] = arcDists
-			part["branchControls"][newPathID] = controlPoses_P
+			partDict["controlPoses_P"][newPathID] = localParticleControlPose_P
+			print "addParticle control:", partIndex, localParticleControlPose_P
+			partDict["branchPoses_L"][newPathID] = localJunctionPose_C
+			partDict["branchPoses_G"][newPathID] = modJunctionPose_G
+			partDict["branchArcDists"][newPathID] = arcDists
+			partDict["branchControls"][newPathID] = controlPoses_P
+			self.stepResults[partIndex] = partDict
 
 
 			#part.addPath(newPathID, controlParentID, branchNodeID, nodePose_C, localDivergencePose_R, modJunctionPose_G, localJunctionPose_C, localParticleControlPose_P, self.NUM_BRANCHES, arcDists, controlPoses_P)
 
 		print "newPath", newPathID, "=", self.pathClasses[newPathID]
+		for k in range(len(self.stepResults)):
+			part = self.stepResults[k]
+			print "freshControl:", k, part["controlPoses_P"]
 
 		self.updateLandmarks()
 

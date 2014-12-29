@@ -283,9 +283,6 @@ class BayesMapper:
 
 					for pID, currHyp in hypSet.iteritems():
 
-						currHyp.snapToParent()
-						currHyp.generatePaths()
-						currHyp.drawPoseParticles()
 						#thisCount = 0
 						#while True:
 
@@ -392,6 +389,12 @@ class BayesMapper:
 
 				self.drawPathAndHull2(currHyp)
 
+			for pID, currHyp in hypSet.iteritems():
+				currHyp.stepResults = {}
+				currHyp.snapToParent()
+				currHyp.generatePaths()
+				currHyp.drawPoseParticles()
+
 
 		""" remove defective maps """
 		toDelete = []
@@ -401,6 +404,9 @@ class BayesMapper:
 			#	toDelete.append(pID)
 			#	if pID == self.activeHypID:
 			#		self.activeHypID = None
+
+
+
 
 				
 		#for pID in toDelete:
