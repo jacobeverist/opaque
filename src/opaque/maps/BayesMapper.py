@@ -285,6 +285,7 @@ class BayesMapper:
 
 						currHyp.snapToParent()
 						currHyp.generatePaths()
+						currHyp.drawPoseParticles()
 						#thisCount = 0
 						#while True:
 

@@ -3047,7 +3047,8 @@ class LocalNode:
 		
 		if len(points) > 0:
 				
-			self.c_vert = self.computeAlpha2(points, radius = 0.12)
+			#self.c_vert = self.computeAlpha2(points, radius = 0.12)
+			self.c_vert = self.computeAlpha2(points, radius = 0.4)
 			" cut out the repeat vertex "
 			self.c_vert = self.c_vert[:-1]
 			
