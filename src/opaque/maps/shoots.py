@@ -1173,6 +1173,7 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 	
 	maxNodeID = max(nodeSet)
 	if plotIter:
+		"""
 		pylab.clf()
 
 		for path in medialLongPaths:
@@ -1196,7 +1197,6 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 
 				pylab.plot(xP,yP, color='k')
 
-		#globalJunctionPose = self.getGlobalJunctionPose(pathID)
 		if globalJunctionPose != None:
 			pylab.scatter([globalJunctionPose[0],], [globalJunctionPose[1],], color='k')
 
@@ -1228,6 +1228,9 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 		pylab.title("Path %d %d %s %s %s" % (hypothesisID, pathID, sizes,bufStr1,bufStr2))
 		pylab.savefig("medialOut2_%02u_%03u_%04u.png" % (hypothesisID, maxNodeID, topCount))
 		print "saving medialOut2_%02u_%03u_%04u.png" % (hypothesisID, maxNodeID, topCount)
+
+		"""
+
 
 		" 1) plot the pose of local splines and postures "
 		" 2) plot the alpha shape of the union of pose alpha shapes and medial axis tree "

@@ -1980,6 +1980,56 @@ class MapState:
 
 
 
+		""" update the stepResults structure to include arcDists """
+
+		poseOrigin0 = Pose(self.getNodePose(nodeID0))
+		globalMedial0 = []
+		for p in medial0:
+			globalMedial0.append(poseOrigin0.convertLocalToGlobal(p))
+
+		poseOrigin1 = Pose(self.getNodePose(nodeID1))
+		globalMedial1 = []
+		for p in medial1:
+			globalMedial1.append(poseOrigin1.convertLocalToGlobal(p))
+
+		orientedSplices = []
+		orientedPathSplines = []
+
+		for spliceIndex in range(len(allSplicedPaths)):
+			spliceCurve = allSplicedPaths[spliceIndex][2]
+
+			orientedSplicePath = orientPath(spliceCurve, globalMedial0)				
+			pathSpline = SplineFit(orientedSplicePath, smooth=0.1)
+
+			orientedPathSplines.append(pathSpline)
+
+		for k in range(len(self.stepResults)):
+			part = self.stepResults[k]
+			spliceIndex = part["spliceIndex"]
+			poseProbVal = part["evalProb"]
+			newPose0 = part["newPose0"]
+
+			pathSpline = orientedPathSplines[spliceIndex]
+
+			minDist0, newU0, newP0 = pathSpline.findClosestPoint(newPose0)
+			newDist0 = pathSpline.dist_u(newU0)
+
+			minDist1, newU1, newP1 = pathSpline.findClosestPoint(newPose1)
+			newDist1 = pathSpline.dist_u(newU1)
+
+			part["arcDist0"] = newDist0
+			part["arcDist1"] = newDist1
+
+			part["spliceU0"] = newU0
+			part["spliceU1"] = newU1
+
+			meanMinDist0, meanU0, meanP0 = pathSpline.findClosestPoint(self.getNodePose(nodeID0))
+			meanDist0 = pathSpline.dist_u(meanU0)
+			motionBias = gaussian(newDist0, meanDist0, 0.5)
+			part["motionBias"] = motionBias
+			part["evalWithBias"] = poseProbVal + motionBias
+
+
 
 
 		#self.drawPoseParticles()
@@ -1987,14 +2037,16 @@ class MapState:
 		""" now find the maximum pose """
 		probSum = 0.0
 		for part in self.stepResults:
-			probVal = part["evalProb"]
+			#probVal = part["evalProb"]
+			probVal = part["evalWithBias"]
 			probSum += probVal
 
 		probParticles = []
 		for k in range(len(self.stepResults)):
 			part = self.stepResults[k]
 
-			poseProbVal = part["evalProb"]
+			#poseProbVal = part["evalProb"]
+			poseProbVal = part["evalWithBias"]
 
 			""" if all 0.0 probabilities, make uniform distribution, set no localization flag """
 			if probSum > 0.0:
@@ -2070,52 +2122,6 @@ class MapState:
 		#motionBias = samp["motionBias"]
 		#evalWithBias = samp["evalWithBias"]
 		
-		""" update the stepResults structure to include arcDists """
-
-		poseOrigin0 = Pose(self.getNodePose(nodeID0))
-		globalMedial0 = []
-		for p in medial0:
-			globalMedial0.append(poseOrigin0.convertLocalToGlobal(p))
-
-		poseOrigin1 = Pose(self.getNodePose(nodeID1))
-		globalMedial1 = []
-		for p in medial1:
-			globalMedial1.append(poseOrigin1.convertLocalToGlobal(p))
-
-		orientedSplices = []
-		orientedPathSplines = []
-
-		for spliceIndex in range(len(allSplicedPaths)):
-			spliceCurve = allSplicedPaths[spliceIndex][2]
-
-			orientedSplicePath = orientPath(spliceCurve, globalMedial0)				
-			pathSpline = SplineFit(orientedSplicePath, smooth=0.1)
-
-			orientedPathSplines.append(pathSpline)
-
-		for k in range(len(self.stepResults)):
-			part = self.stepResults[k]
-			spliceIndex = part["spliceIndex"]
-			poseProbVal = part["evalProb"]
-			newPose0 = part["newPose0"]
-
-			pathSpline = orientedPathSplines[spliceIndex]
-
-			minDist0, newU0, newP0 = pathSpline.findClosestPoint(newPose0)
-			newDist0 = pathSpline.dist_u(newU0)
-
-			minDist1, newU1, newP1 = pathSpline.findClosestPoint(newPose1)
-			newDist1 = pathSpline.dist_u(newU1)
-
-			part["arcDist0"] = newDist0
-			part["arcDist1"] = newDist1
-
-			part["spliceU0"] = newU0
-			part["spliceU1"] = newU1
-
-			part["motionBias"] = 0.0
-			part["evalWithBias"] = poseProbVal
-
 
 		self.drawDist()
 		self.drawPoseParticles()
@@ -2316,7 +2322,7 @@ class MapState:
 				yP.append(valTuple[1])
 
 			print "plot probLists:", xP#, yP
-			ax2.plot(xP,yP, color = self.colors[k])
+			ax2.plot(xP,yP, color = self.colors[k], marker='x', linestyle='--')
 
 		for k in range(len(landmarkLists)):
 			splice = landmarkLists[k]
@@ -2328,7 +2334,8 @@ class MapState:
 				xP.append(valTuple[0])
 				yP.append(valTuple[1])
 
-			ax3.plot(xP,yP, color = self.colors[k])
+			#ax3.plot(xP,yP, color = self.colors[k])
+			ax3.plot(xP,yP, color = self.colors[k], marker='x', linestyle='--')
 
 		for k in range(len(angDiffLists)):
 			splice = angDiffLists[k]
@@ -2340,7 +2347,8 @@ class MapState:
 				xP.append(valTuple[0])
 				yP.append(valTuple[1])
 
-			ax4.plot(xP,yP, color = self.colors[k])
+			#ax4.plot(xP,yP, color = self.colors[k])
+			ax4.plot(xP,yP, color = self.colors[k], marker='x', linestyle='--')
 
 		for k in range(len(contigFracLists)):
 			splice = contigFracLists[k]
@@ -2352,7 +2360,8 @@ class MapState:
 				xP.append(valTuple[0])
 				yP.append(valTuple[1])
 
-			ax5.plot(xP,yP, color = self.colors[k])
+			#ax5.plot(xP,yP, color = self.colors[k])
+			ax5.plot(xP,yP, color = self.colors[k], marker='x', linestyle='--')
 
 		for k in range(len(biasLists)):
 			splice = biasLists[k]
@@ -2364,7 +2373,8 @@ class MapState:
 				xP.append(valTuple[0])
 				yP.append(valTuple[1])
 
-			ax6.plot(xP,yP, color = self.colors[k])
+			#ax6.plot(xP,yP, color = self.colors[k])
+			ax6.plot(xP,yP, color = self.colors[k], marker='x', linestyle='--')
 
 		for k in range(len(finalSumLists)):
 			splice = finalSumLists[k]
@@ -2376,7 +2386,8 @@ class MapState:
 				xP.append(valTuple[0])
 				yP.append(valTuple[1])
 
-			ax7.plot(xP,yP, color = self.colors[k])
+			#ax7.plot(xP,yP, color = self.colors[k])
+			ax7.plot(xP,yP, color = self.colors[k], marker='x', linestyle='--')
 
 
 		controlPoses_G = computeGlobalControlPoses(self.getControlPoses(), self.getParentHash())

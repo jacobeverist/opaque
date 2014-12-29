@@ -1438,7 +1438,7 @@ class LocalNode:
 			
 			self.longPaths[k] = realPath
 					
-		if True:
+		if False:
 			pylab.clf()
 	
 			for path in self.longPaths:
