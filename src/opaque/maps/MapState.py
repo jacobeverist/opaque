@@ -1059,7 +1059,7 @@ class MapState:
 				newPose1 = pathSpline.point_u(newU1)
 
 
-				motionBias = gaussian(newDist0, meanDist, 0.5)
+				motionBias = 0.1 * gaussian(newDist0, meanDist, 0.5)
 
 				print "sample dist:", newStepDist, newDist0, newDist1, newU0, newU1, motionBias
 				self.stepDists.append((j, newDist0, newDist1, newPose0, newPose1, newU0, newU1, motionBias))
