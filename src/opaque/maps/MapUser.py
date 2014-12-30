@@ -327,7 +327,7 @@ class MapUser:
 		pylab.axis("equal")
 		#pylab.xlim(-4.0,2.0)
 		#pylab.ylim(-2.0,2.0)
-		pylab.title("%d poses", self.mapAlgorithm.poseData.numNodes)
+		pylab.title("%d poses" % self.mapAlgorithm.poseData.numNodes)
 		pylab.savefig("navEstimate_%04u.png" % self.navPlotCount)
 		self.navPlotCount += 1
 
