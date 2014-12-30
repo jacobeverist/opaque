@@ -2025,9 +2025,12 @@ class MapState:
 
 			meanMinDist0, meanU0, meanP0 = pathSpline.findClosestPoint(self.getNodePose(nodeID0))
 			meanDist0 = pathSpline.dist_u(meanU0)
-			motionBias = gaussian(newDist0, meanDist0, 0.5)
+			motionBias = 0.2 * gaussian(newDist0, meanDist0, 0.5)
 			part["motionBias"] = motionBias
-			part["evalWithBias"] = poseProbVal + motionBias
+			if poseProbVal > 0.0:
+				part["evalWithBias"] = poseProbVal + motionBias
+			else:
+				part["evalWithBias"] = 0.0
 
 
 
