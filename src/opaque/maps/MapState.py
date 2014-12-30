@@ -1015,9 +1015,38 @@ class MapState:
 			direction = self.poseData.travelDirs[nodeID0]
 			
 			if direction:
-				distEst = -0.8
+				
+				frontSum = 0.0
+				frontProbeError = self.poseData.frontProbeError[nodeID0]
+				for n in frontProbeError:
+					frontSum += n
+				foreAvg = frontSum / len(frontProbeError)
+
+				print nodeID0, nodeID1, "fore collision avg:", foreAvg
+
+				if foreAvg >= 1.1:
+					distEst = 0.0
+					print nodeID0, nodeID1, "forward collision motion"
+				else:
+					distEst = -0.8
+
+
 			else:
-				distEst = 0.8
+
+				backSum = 0.0
+				backProbeError = self.poseData.backProbeError[nodeID1]
+				for n in backProbeError:
+					backSum += n
+				backAvg = backSum / len(backProbeError)
+
+				print nodeID0, nodeID1, "back collision avg:", backAvg
+
+				if backAvg >= 1.1:
+					distEst = 0.0
+					print nodeID0, nodeID1, "backward collision motion"
+				else:
+					distEst = 0.8
+
 			#u2 = medialSpline2.getUOfDist(originU2, distEst, distIter = 0.001)
 
 			orientedSplicePath = orientPath(matchSplice, globalMedial0)				
@@ -1374,7 +1403,7 @@ class MapState:
 					""" this is the point where the control pose gets erroneously moved back onto the longest path """
 					#controlPose = part.junctionData[pathID]["controlPose"]
 					controlPose = part["controlPoses_P"][pathID]
-					print "oldControlPose:", particleIndex, pathID, controlPose
+					#print "oldControlPose:", particleIndex, pathID, controlPose
 					minDist, controlUVal, newControlPose = pathSpline.findClosestPoint(controlPose)
 					arcDist = pathSpline.dist_u(controlUVal)
 
@@ -1392,7 +1421,7 @@ class MapState:
 				newBranchControls = {}
 				newBranchComboControls = {}
 
-				print "origBranch:", origBranchArcDists, origBranchControls
+				#print "origBranch:", origBranchArcDists, origBranchControls
 
 				if len(branchPathIDs) > 0:
 
@@ -1420,7 +1449,7 @@ class MapState:
 
 						""" determine the range of values for this particular branch """
 						newArcDist = self.branchArcDists[pathID][minIndex]
-						print "newArcDist:", newArcDist
+						#print "newArcDist:", newArcDist
 						if origBranchDists[pathID] < JOINT_DIST:
 
 							if minIndex < 8:
@@ -4819,7 +4848,7 @@ class MapState:
 			particleControlPose_G = particlePoseFrame.convertLocalOffsetToGlobal(controlPose_L)
 
 			#print "control poses:", k, nodePose_G, particlePose_G, controlPose_G, particleControlPose_G
-			print "control poses:", partIndex, particleControlPose_G
+			#print "control poses:", partIndex, particleControlPose_G
 		
 			""" location on the parent shoot closest to the locally computed branch point """
 			minDist, uVal, newJunctionPose_G = pathSpline_G.findClosestPoint(particleJunctionPose_G)
@@ -4876,7 +4905,7 @@ class MapState:
 			#resultDict["branchControls"] = ()
 
 			partDict["controlPoses_P"][newPathID] = localParticleControlPose_P
-			print "addParticle control:", partIndex, localParticleControlPose_P
+			#print "addParticle control:", partIndex, localParticleControlPose_P
 			partDict["branchPoses_L"][newPathID] = localJunctionPose_C
 			partDict["branchPoses_G"][newPathID] = modJunctionPose_G
 			partDict["branchArcDists"][newPathID] = arcDists
@@ -4886,10 +4915,10 @@ class MapState:
 
 			#part.addPath(newPathID, controlParentID, branchNodeID, nodePose_C, localDivergencePose_R, modJunctionPose_G, localJunctionPose_C, localParticleControlPose_P, self.NUM_BRANCHES, arcDists, controlPoses_P)
 
-		print "newPath", newPathID, "=", self.pathClasses[newPathID]
-		for k in range(len(self.stepResults)):
-			part = self.stepResults[k]
-			print "freshControl:", k, part["controlPoses_P"]
+		#print "newPath", newPathID, "=", self.pathClasses[newPathID]
+		#for k in range(len(self.stepResults)):
+		#	part = self.stepResults[k]
+		#	print "freshControl:", k, part["controlPoses_P"]
 
 		self.updateLandmarks()
 

@@ -12,7 +12,7 @@ import ctypes, os, sys
 from operator import itemgetter
 
 from functions import diffAngle
-from Splices import getMultiDeparturePoint, orientPath, getCurveOverlap, orientPathLean, getTipAngles
+from Splices import getMultiDeparturePoint, orientPath, getCurveOverlap, orientPathLean, getTipAngles, getPostureAngDiff
 from MapProcess import getStepGuess, getInPlaceGuess
 from shoots import selectLocalCommonOrigin
 
@@ -512,9 +512,9 @@ def localizeLandmarkPose( poseData, pathSplices2, pathID, nodeID, sIndex, sampDi
 		overlapSum2 = result2[13]
 
 		foreAngle2, backAngle2 = getTipAngles(medial0_vec, resultPose2)
+		#angDiff2 = min(abs(diffAngle(foreAngle2,foreAngle0)), abs(diffAngle(backAngle2,backAngle0)))
 
-		angDiff2 = min(abs(diffAngle(foreAngle2,foreAngle0)), abs(diffAngle(backAngle2,backAngle0)))
-
+		angDiff2 = getPostureAngDiff(foreAngle2, foreAngle0, resultPose2[2], estPose[2], backAngle2, backAngle0)
 
 
 		frame0 = Pose(resultPose2)
@@ -847,8 +847,11 @@ def displaceParticle2( poseData, pathSplices2, pathSplices3, supportLine, nodeID
 				foreAngle2, backAngle2 = getTipAngles(medial2_vec, resultPose2)
 				foreAngle3, backAngle3 = getTipAngles(medial3_vec, resultPose3)
 
-				angDiff2 = min(abs(diffAngle(foreAngle2,foreAngle0)), abs(diffAngle(backAngle2,backAngle0)))
-				angDiff3 = min(abs(diffAngle(foreAngle3,foreAngle1)), abs(diffAngle(backAngle3,backAngle1)))
+				#angDiff2 = min(abs(diffAngle(foreAngle2,foreAngle0)), abs(diffAngle(backAngle2,backAngle0)))
+				#angDiff3 = min(abs(diffAngle(foreAngle3,foreAngle1)), abs(diffAngle(backAngle3,backAngle1)))
+
+				angDiff2 = getPostureAngDiff(foreAngle2, foreAngle0, resultPose2[2], estPose0[2], backAngle2, backAngle0)
+				angDiff3 = getPostureAngDiff(foreAngle3, foreAngle1, resultPose3[2], estPose1[2], backAngle3, backAngle1)
 				
 				#angDiff2 = abs(diffAngle(pose2[2],resultPose2[2]))
 				#angDiff3 = abs(diffAngle(pose3[2],resultPose3[2]))
@@ -1220,8 +1223,12 @@ def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, me
 		foreAngle1, backAngle1 = getTipAngles(prevMedialAxis1, prevPose1)
 		foreAngle3, backAngle3 = getTipAngles(medialAxis1, resultPose1)
 
-		angDiff0 = min(abs(diffAngle(foreAngle2,foreAngle0)), abs(diffAngle(backAngle2,backAngle0)))
-		angDiff1 = min(abs(diffAngle(foreAngle3,foreAngle1)), abs(diffAngle(backAngle3,backAngle1)))
+		#angDiff0 = min(abs(diffAngle(foreAngle2,foreAngle0)), abs(diffAngle(backAngle2,backAngle0)))
+		#angDiff1 = min(abs(diffAngle(foreAngle3,foreAngle1)), abs(diffAngle(backAngle3,backAngle1)))
+
+		angDiff0 = getPostureAngDiff(foreAngle2, foreAngle0, resultPose0[2], prevPose0[2], backAngle2, backAngle0)
+		angDiff1 = getPostureAngDiff(foreAngle3, foreAngle1, resultPose1[2], prevPose1[2], backAngle3, backAngle1)
+
 	else:
 		angDiff0 = 0.0
 		angDiff1 = 0.0

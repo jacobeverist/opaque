@@ -182,6 +182,17 @@ def batchGlobalMultiFit(initGuesses, splices, medial, initPose, pathIDs, nodeID)
 	return knn
 
 
+def getPostureAngDiff(foreAngle0, foreAngle1, midAngle0, midAngle1, backAngle0, backAngle1):
+
+	foreAngDiff0 = abs(diffAngle(foreAngle0, foreAngle1))
+	midAngDiff0 = abs(diffAngle(midAngle0, midAngle1))
+	backAngDiff0 = abs(diffAngle(backAngle0, backAngle1))
+
+	""" sum the smallest two differences """
+	diffList = [foreAngDiff0, midAngDiff0, backAngDiff0]
+	diffList.sort()
+
+	return diffList[0] + diffList[1]
 
 def getTipAngles(medial2, estPose2):
 
