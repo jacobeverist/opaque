@@ -1357,6 +1357,73 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 
 		#self.topCount += 1
 
+		pylab.clf()
+			
+		xP = []
+		yP = []
+		
+		for path in medialLongPaths:
+			xP = []
+			yP = []
+			for p in path:
+				xP.append(p[0])
+				yP.append(p[1])
+
+			pylab.plot(xP,yP, color=color, linewidth=4, alpha=1.0)
+
+		print "drawing pathID", pathID, "for nodes:", nodeSet
+		for nodeID in nodeSet:
+
+			spatialFeature0 = poseData.spatialFeatures[nodeID][0]
+			isSpatialFeature0 = spatialFeature0["bloomPoint"] != None or spatialFeature0["archPoint"] != None or spatialFeature0["inflectionPoint"] != None
+
+			if isSpatialFeature0:
+				xP = []
+				yP = []
+
+				estPose1 = nodePoses[nodeID]
+		
+				if poseData.isBowties[nodeID]:			
+					medial1 = poseData.medialAxes[nodeID]
+				else:
+					medial1 = poseData.medialAxes[nodeID]
+		
+				" set the origin of pose 1 "
+				poseOrigin = Pose(estPose1)
+		
+				points = []
+				for p in medial1:
+					p1 = poseOrigin.convertLocalToGlobal(p)
+					points.append(p1)
+
+				medialSpline = SplineFit(points, smooth=0.1)
+
+				smoothPoints = medialSpline.getUniformSamples()
+				
+				for p in smoothPoints:
+					xP.append(p[0])
+					yP.append(p[1])
+				
+
+				pylab.plot(xP,yP, color='k', alpha = 0.7)
+
+		xP = []
+		yP = []
+		for point_L, pThresh, pName in localLandmarks:
+			xP.append(point_L[0])
+			yP.append(point_L[1])
+
+		pylab.scatter(xP, yP, zorder=9, color='k')
+
+		print "pathAndHull:", topCount
+
+		pylab.axis("equal")
+		pylab.title("Path %d %d %d" % (hypothesisID, pathID, maxNodeID))
+		pylab.savefig("pathAndHull_%02u_%03u_%04u_b.png" % (hypothesisID, maxNodeID, topCount))
+
+		#self.topCount += 1
+
+
 	print "juncAngSet:", juncAngSet
 
 	
