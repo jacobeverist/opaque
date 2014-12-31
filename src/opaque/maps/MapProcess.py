@@ -94,7 +94,7 @@ def getInPlaceGuess(poseData, nodeID1, nodeID2, estPose1, estPose2, supportLine,
 		#estPose1 = mapHyp.nodePoses[nodeID1]		
 		resultSum3 = checkSupport(estPose1, medial2, nodeID1, nodeID2, offset3, supportLine)
 
-	print "INPLACE sums:", resultSum1, resultSum3
+	#print "INPLACE sums:", resultSum1, resultSum3
 
 	#poseOrigin = Pose(mapHyp.nodePoses[nodeID1])
 	poseOrigin = Pose(estPose1)
@@ -545,7 +545,7 @@ def makeMultiJunctionMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose
 						angleSum2 += ang2
 				
 				" select global path orientation based on which has the smallest angle between tangent vectors "
-				print i, "angleSum1 =", angleSum1, "angleSum2 =", angleSum2
+				#print i, "angleSum1 =", angleSum1, "angleSum2 =", angleSum2
 				if angleSum1 > angleSum2:
 					medial2Reverse = deepcopy(medial2)
 					medial2Reverse.reverse()
@@ -585,7 +585,7 @@ def makeMultiJunctionMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose
 					moveDist = -0.3
 					u2 = medialSpline2.getUOfDist(originU2, moveDist, distIter = 0.001)
 				
-				print "computed u2 =", u2, "from originU2 =", originU2
+				#print "computed u2 =", u2, "from originU2 =", originU2
 
 				u1 = originU1
 				angGuess = 0.0
@@ -594,7 +594,7 @@ def makeMultiJunctionMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose
 
 				transform = matrix([[result[0]], [result[1]], [result[2]]])
 				
-				print "making overlap constraint:", result[0], result[1], result[2]
+				#print "making overlap constraint:", result[0], result[1], result[2]
 				
 				angDiff = abs(diffAngle(diffOffset[2], transform[2,0]))			
 				#totalGuesses.append((angDiff, result[2], result[3], result[4]))
@@ -701,7 +701,7 @@ def makeMultiJunctionMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose
 						angleSum2 += ang2
 				
 				" select global path orientation based on which has the smallest angle between tangent vectors "
-				print i, "angleSum1 =", angleSum1, "angleSum2 =", angleSum2
+				#print i, "angleSum1 =", angleSum1, "angleSum2 =", angleSum2
 				if angleSum1 > angleSum2:
 					medial2Reverse = deepcopy(medial2)
 					medial2Reverse.reverse()
@@ -720,7 +720,7 @@ def makeMultiJunctionMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose
 					originU1 = 0.6
 					originU2 = 0.4
 					u2 = originU2
-					print "computed u2 =", u2, "from originU2 =", originU2
+					#print "computed u2 =", u2, "from originU2 =", originU2
 
 				else:
 					poseOrigin = Pose(estPose1)
@@ -747,7 +747,7 @@ def makeMultiJunctionMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose
 
 				transform = matrix([[result[0]], [result[1]], [result[2]]])
 				
-				print "making overlap constraint:", result[0], result[1], result[2]
+				#print "making overlap constraint:", result[0], result[1], result[2]
 				
 				angDiff = abs(diffAngle(diffOffset[2], transform[2,0]))			
 
@@ -801,8 +801,8 @@ def makeMultiJunctionMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose
 	
 	print "Multi-Junction Overlap of", nodeID1, "and", nodeID2
 	selectedIndex = 0
-	for k in range(len(results)):
-		print results[k]
+	#for k in range(len(results)):
+	#	print results[k]
 		
 
 	for k in range(len(results)):
@@ -848,7 +848,7 @@ def makeMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose1, estPose2, 
 		originU2 = 0.5
 		
 		u2 = originU2
-		print "computed u2 =", u2, "from originU2 =", originU2
+		#print "computed u2 =", u2, "from originU2 =", originU2
 
 	elif isMove:
 		
@@ -890,7 +890,7 @@ def makeMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose1, estPose2, 
 			
 			
 			#u2 = 0.4
-		print "computed u2 =", u2, "from originU2 =", originU2
+		#print "computed u2 =", u2, "from originU2 =", originU2
 		 
 	else:
 		poseOrigin = Pose(estPose1)
@@ -919,7 +919,7 @@ def makeMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose1, estPose2, 
 
 	transform = matrix([[result[0]], [result[1]], [result[2]]])
 	
-	print "making overlap constraint:", result[0], result[1], result[2]
+	#print "making overlap constraint:", result[0], result[1], result[2]
 
 	return transform, hist
 

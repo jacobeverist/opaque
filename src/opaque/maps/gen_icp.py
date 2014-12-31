@@ -1412,8 +1412,8 @@ def overlapICP_GPU2(estPose1, initGuess, medialPoints1, medialPoints2, rootPose1
 		currAng = functions.normalizeAngle(newAng)
 		currU = newU
 		
-		if inPlace:
-			print "currU =", currU, "currAng =", currAng, "newCost =", newCost
+		#if inPlace:
+		#	print "currU =", currU, "currAng =", currAng, "newCost =", newCost
 
 		" compute offset from newU and newAng"
 
@@ -1753,7 +1753,7 @@ def globalPathToNodeOverlapICP2(initGuess, globalPath, medialPoints, plotIter = 
 	if uLow <= 0.0:
 		uLow = 0.0
 
-	print "u1,u2,u3,uHigh,uLow,currU,currAng:", u1, u2, u3, uHigh, uLow, currU, currAng
+	#print "u1,u2,u3,uHigh,uLow,currU,currAng:", u1, u2, u3, uHigh, uLow, currU, currAng
 	
 	
 	uSet = [i*0.01 for i in range(100)]
@@ -1900,7 +1900,7 @@ def globalPathToNodeOverlapICP2(initGuess, globalPath, medialPoints, plotIter = 
 		#if plotIter and pose2[0] > 1.8:
 		#	print poses_2
 
-		print "newCost =", newCost
+		#print "newCost =", newCost
 
 		newU = newParam[0]
 		newAng = newParam[1]
@@ -1929,7 +1929,7 @@ def globalPathToNodeOverlapICP2(initGuess, globalPath, medialPoints, plotIter = 
 		isTerminate = False
 		if abs(lastCost - newCost) < costThresh or (numIterations - startIteration) > 10:
 			isTerminate = True
-			print "terminating globalOverlap_GPU2:", lastCost, newCost, costThresh, numIterations-startIteration
+			#print "terminating globalOverlap_GPU2:", lastCost, newCost, costThresh, numIterations-startIteration
 		
 		" update after check for termination condition "
 		lastCost = newCost

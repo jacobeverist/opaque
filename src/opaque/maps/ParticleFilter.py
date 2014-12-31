@@ -206,7 +206,7 @@ def __remote_displaceParticle2(rank, qin, qout):
 			results = []
 			nc, args = qin.get()
 			
-			print "__remote_displaceParticle(", nc, len(args), args
+			#print "__remote_displaceParticle(", nc, len(args), args
 			sys.stdout.flush()
 
 			#foo = None
@@ -232,11 +232,11 @@ def __remote_displaceParticle2(rank, qin, qout):
 				result = displaceParticle2( poseData, pathSplices2, pathSplices3, supportLine, nodeID3, initPose2, initPose3, prevPose0, prevPose1, particleIndex, landmarks_G, landmarks_N)
 				results.append((jobIndex, particleIndex,) + result)
 
-				print "result:", (jobIndex, particleIndex,) + result
+				#print "result:", (jobIndex, particleIndex,) + result
 				sys.stdout.flush()
 
 
-			print "qout.put(", nc, results
+			#print "qout.put(", nc, results
 			sys.stdout.flush()
 							   
 			# write to output queue
@@ -735,7 +735,7 @@ def displaceParticle2( poseData, pathSplices2, pathSplices3, supportLine, nodeID
 		currPose2 = currPoses[nodeID2]
 		currPose3 = currPoses[nodeID3]
 
-		print "final poses:", currPose2, currPose3
+		#print "final poses:", currPose2, currPose3
 		currProb2 = 0.0
 		currProb3 = 0.0
 
@@ -755,8 +755,8 @@ def displaceParticle2( poseData, pathSplices2, pathSplices3, supportLine, nodeID
 			#initPose3 = initPose1
 			
 			#print "junctions:", junctions
-			print "initPose2:", initPose2
-			print "initPose3:", initPose3
+			#print "initPose2:", initPose2
+			#print "initPose3:", initPose3
 									
 			#splicePaths = []
 
@@ -785,13 +785,13 @@ def displaceParticle2( poseData, pathSplices2, pathSplices3, supportLine, nodeID
 				orientedSplicePath = orientPath(path, globalMedial0)				
 				currPathSpline = SplineFit(orientedSplicePath, smooth=0.1)
 
-				print "pose0,pose1:", pose0, pose1
+				#print "pose0,pose1:", pose0, pose1
 				
 				minDist0, u0, p0 = currPathSpline.findClosestPoint(pose0[0:2])
 				minDist1, u1, p1 = currPathSpline.findClosestPoint(pose1[0:2])
 				
-				print "u0,u1:", u0, u1
-				print "len(distPoints):", len(currPathSpline.distPoints)
+				#print "u0,u1:", u0, u1
+				#print "len(distPoints):", len(currPathSpline.distPoints)
 				
 				arcDist0 = currPathSpline.distPoints[int(u0*1000)]
 				arcDist1 = currPathSpline.distPoints[int(u1*1000)]
@@ -804,7 +804,7 @@ def displaceParticle2( poseData, pathSplices2, pathSplices3, supportLine, nodeID
 				pose2 = currPose2
 				pose3 = currPose3
 				
-				print "pose2,pose3:", pose2, pose3
+				#print "pose2,pose3:", pose2, pose3
 				
 				" 4) set as pose of new node "
 				#mapHyp.nodePoses[nodeID-1] = pose2
@@ -817,14 +817,14 @@ def displaceParticle2( poseData, pathSplices2, pathSplices3, supportLine, nodeID
 				u2 = uPath2
 				u3 = uPath3
 
-				print "input: uMedialOrigin2, u2, pose2:", uMedialOrigin2, u2, pose2
-				print "input: uMedialOrigin3, u3, pose3:", uMedialOrigin3, u3, pose3
+				#print "input: uMedialOrigin2, u2, pose2:", uMedialOrigin2, u2, pose2
+				#print "input: uMedialOrigin3, u3, pose3:", uMedialOrigin3, u3, pose3
 
 				
 				resultPose2, lastCost2, matchCount2, currAng2, currU2 = gen_icp.globalPathToNodeOverlapICP2([u2, uMedialOrigin2, 0.0], orientedSplicePath, medial2, plotIter = False, n1 = nodeID-1, n2 = -1, arcLimit = 0.01)
 				resultPose3, lastCost3, matchCount3, currAng3, currU3 = gen_icp.globalPathToNodeOverlapICP2([u3, uMedialOrigin3, 0.0], orientedSplicePath, medial3, plotIter = False, n1 = nodeID, n2 = -1, arcLimit = 0.01)
 				
-				print "resultPoses:", resultPose2, resultPose3
+				#print "resultPoses:", resultPose2, resultPose3
 
 				multiDepCount = 0
 
@@ -866,9 +866,9 @@ def displaceParticle2( poseData, pathSplices2, pathSplices3, supportLine, nodeID
 				else:
 					newProb3 = (pi-angDiff3) * contigFrac_3
 				
-				print "angDiff:", angDiff2, angDiff3
-				print "overlapSum:", overlapSum2, overlapSum3
-				print "newProb:", newProb2, newProb3
+				#print "angDiff:", angDiff2, angDiff3
+				#print "overlapSum:", overlapSum2, overlapSum3
+				#print "newProb:", newProb2, newProb3
 				
 
 
@@ -910,7 +910,7 @@ def displaceParticle2( poseData, pathSplices2, pathSplices3, supportLine, nodeID
 				currAngDiff2 = resultMoves2[0][21]
 
 			else:
-				print "node", nodeID-1, "not movePathed because no valid pose"
+				#print "node", nodeID-1, "not movePathed because no valid pose"
 				currProb2 = 0.0
 
 			if len(resultMoves3) > 0:
@@ -921,7 +921,7 @@ def displaceParticle2( poseData, pathSplices2, pathSplices3, supportLine, nodeID
 				currAngDiff3 = resultMoves3[0][21]
 
 			else:
-				print "node", nodeID, "not movePathed because no valid pose"
+				#print "node", nodeID, "not movePathed because no valid pose"
 				currProb3 = 0.0
 
 			if len(currSplice2) == 0 and len(currSplice3) > 0:
@@ -940,10 +940,10 @@ def displaceParticle2( poseData, pathSplices2, pathSplices3, supportLine, nodeID
 			" move the pose particles along their paths "	
 
 
-			print "fitted poses:", currPose2, currPose3
-			print "currProbs:", currProb2, currProb3
-			print "currContig:", currContigFrac2, currContigFrac3
-			print "currAngDiff:", currAngDiff2, currAngDiff3
+			#print "fitted poses:", currPose2, currPose3
+			#print "currProbs:", currProb2, currProb3
+			#print "currContig:", currContigFrac2, currContigFrac3
+			#print "currAngDiff:", currAngDiff2, currAngDiff3
 
 
 
@@ -1191,7 +1191,7 @@ def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, me
 	currPoseOrigin = Pose(resultPose0)
 	prevPoseOrigin = Pose(prevPose0)
 
-	print "curr/prev pose:", resultPose0, prevPose0
+	#print "curr/prev pose:", resultPose0, prevPose0
 
 	currGlobalMedial0 = []
 	for p in medialAxis0:
@@ -1203,7 +1203,7 @@ def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, me
 			prevGlobalMedial0.append(prevPoseOrigin.convertLocalOffsetToGlobal(p))
 
 		#currSum = getCurveOverlap(currGlobalMedial0, prevGlobalMedial0, plotIter = True, overlapPlotCount = pathPlotCount*20+particleIndex)
-		currSum = getCurveOverlap(currGlobalMedial0, prevGlobalMedial0, plotIter = True, overlapPlotCount=nodeID0)
+		currSum = getCurveOverlap(currGlobalMedial0, prevGlobalMedial0, plotIter = False, overlapPlotCount=nodeID0)
 	else:
 		currSum = None
 
@@ -1253,7 +1253,7 @@ def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, me
 		landmark1_G = (frame1.convertLocalToGlobal(landmark1_N[0]), landmark1_N[1], landmark1_N[2])
 		thresh1 = landmark1_G[1]
 
-	print hypID, nodeID0, particleIndex, spliceIndex, "landmarks:", landmark0_G, landmark1_G, landmarks_G
+	#print hypID, nodeID0, particleIndex, spliceIndex, "landmarks:", landmark0_G, landmark1_G, landmarks_G
 
 	for i in range(len(landmarks_G)):
 		p1 = landmarks_G[i][0]

@@ -5888,7 +5888,7 @@ def selectCommonOrigin(globalPath1, globalPath2):
 	pathRail1 = int(len(globalSamples1) / 20.0)
 	pathRail2 = int(len(globalSamples2) / 20.0)
 
-	print "rails:", len(globalSamples1), len(globalSamples2), pathRail1, pathRail2
+	#print "rails:", len(globalSamples1), len(globalSamples2), pathRail1, pathRail2
 
 	
 	for i in range(pathRail1, len(globalSamples1)-pathRail1):
@@ -5938,7 +5938,7 @@ def selectCommonOrigin(globalPath1, globalPath2):
 	if minDistThresh > maxDistThresh:
 		maxDistThresh = minDistThresh
 	
-	print "minDistThresh,maxDistThresh =", allPairs[0][2], allPairs[-1][2]
+	#print "minDistThresh,maxDistThresh =", allPairs[0][2], allPairs[-1][2]
 
 	if len(allPairs) == 0:
 		raise
@@ -5959,7 +5959,7 @@ def selectCommonOrigin(globalPath1, globalPath2):
 		" sort by lowest angular variance"
 		closestPairs = sorted(closestPairs, key=itemgetter(5,6))
 
-		print len(closestPairs), "closest pairs for dist", minDistThresh
+		#print len(closestPairs), "closest pairs for dist", minDistThresh
 
 		if len(closestPairs) > 0:
 			originU2 = globalSpline2.findU(globalSamples2[closestPairs[0][1]])	
@@ -6019,7 +6019,7 @@ def selectLocalCommonOrigin(globalPath, medial1, estPose1):
 	pathRail = int(len(globalSamples) / 20.0)
 	medialRail = int(len(globalMedialSamples) / 20.0)
 
-	print "rails:", len(globalSamples), len(globalMedialSamples), pathRail, medialRail
+	#print "rails:", len(globalSamples), len(globalMedialSamples), pathRail, medialRail
 
 	
 	for i in range(pathRail, len(globalSamples)-pathRail):
@@ -6084,7 +6084,7 @@ def selectLocalCommonOrigin(globalPath, medial1, estPose1):
 	if minDistThresh > maxDistThresh:
 		maxDistThresh = minDistThresh
 	
-	print "minDistThresh,maxDistThresh =", allPairs[0][2], allPairs[-1][2]
+	#print "minDistThresh,maxDistThresh =", allPairs[0][2], allPairs[-1][2]
 
 
 	if len(allPairs) == 0:
@@ -6103,7 +6103,7 @@ def selectLocalCommonOrigin(globalPath, medial1, estPose1):
 		" sort by lowest angular variance"
 		closestPairs = sorted(closestPairs, key=itemgetter(5,6))
 
-		print len(closestPairs), "closest pairs for dist", minDistThresh
+		#print len(closestPairs), "closest pairs for dist", minDistThresh
 
 		if len(closestPairs) > 0:
 			originU2 = medialSpline1.findU(medialSamples[closestPairs[0][1]])	
