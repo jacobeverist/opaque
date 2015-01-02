@@ -357,14 +357,17 @@ class BayesMapper:
 				else:
 
 					isSubsumed = False
-					print pID, "branchDivergeCount:", currHyp.branchDivergeCount
+					print pID, "branchDivergeCount:", currHyp.branchDivergeCount, currHyp.branchSubsumeIDs
 					for skelID, val in currHyp.branchDivergeCount.iteritems():
 						if skelID != 0 and val >= 2:
 							isSubsumed = True
+					if len(currHyp.branchSubsumeIDs[0]) > 0:
+						isSubsumed = True
+
 
 					while isSubsumed:
 
-						print pID, "branchDivergeCount:", currHyp.branchDivergeCount
+						print pID, "branchDivergeCount:", currHyp.branchDivergeCount, currHyp.branchSubsumeIDs
 
 						pathIDs = currHyp.branchDivergeCount.keys()
 						
@@ -372,17 +375,24 @@ class BayesMapper:
 						# FIXME: need way to merge the root to a child if root is subsumed
 						
 						for pathID, divergeCount in currHyp.branchDivergeCount.iteritems():
-							if pathID != 0 and divergeCount >= 2:
+							if pathID == 0 and len(currHyp.branchSubsumeIDs[0]) > 0:
+								currHyp.mergePath(currHyp.branchSubsumeIDs[0][0], targetPathID=pathID)
+								currHyp.generatePaths()
+								currHyp.drawPoseParticles()
+								break
+
+							elif pathID != 0 and divergeCount >= 2:
 								currHyp.mergePath(pathID)
 								currHyp.generatePaths()
 								currHyp.drawPoseParticles()
-								
 								break
 
 						isSubsumed = False
 						for val in currHyp.branchDivergeCount.values():
 							if val >= 2:
 								isSubsumed = True
+						if len(currHyp.branchSubsumeIDs[0]) > 0:
+							isSubsumed = True
 
 				""" evaluate the map integrity """
 				currHyp.computeEval()

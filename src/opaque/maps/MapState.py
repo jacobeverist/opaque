@@ -333,6 +333,7 @@ class MapState:
 		self.localLandmarks = {0 : {}}
 		self.branchDiverges = {0 : True}
 		self.branchDivergeCount = {0 : 0}
+		self.branchSubsumeIDs = {0: []}
 
 		""" intermediate data structure for computing the shoot skeleton """
 		self.localLeaf2LeafPathJunctions = {}
@@ -3166,6 +3167,7 @@ class MapState:
 		""" of all the terms, find the ones that are not subsumed by other shoots """
 
 		self.branchDivergeCount = {}
+		self.branchSubsumeIDs = {}
 
 		self.subsumedTerms_L = {}
 		allTerms_L = {}
@@ -3185,6 +3187,7 @@ class MapState:
 
 			pathID1 = currKeys[currK1]
 			self.branchDivergeCount[pathID1] = 0
+			self.branchSubsumeIDs[pathID1] = []
 			segs1 = self.globalSegments[pathID1]
 
 			terms_L = self.localTerms[pathID1]
@@ -3202,6 +3205,7 @@ class MapState:
 
 				minDist2 = 1e100
 				minP2 = None
+				subSkelID = None
 
 				for currK2 in range(len(currKeys)): 
 
@@ -3218,6 +3222,7 @@ class MapState:
 								if dist2 < minDist2:
 									minDist2 = dist2
 									minP2 = p
+									subSkelID = pathID2
 				
 				print pathID1, minDist2, "terms:", term1_G
 				if minDist2 > DIST_THRESH:
@@ -3228,6 +3233,7 @@ class MapState:
 					#if pathID1 != 0:
 					#	self.branchDivergeCount[pathID1] += 1
 					self.branchDivergeCount[pathID1] += 1
+					self.branchSubsumeIDs[pathID1].append(subSkelID)
 
 
 					""" check if this terminal is close to another terminal in different shoot """
@@ -4488,14 +4494,17 @@ class MapState:
 
 
 	@logFunction
-	def mergePath(self, pathID):
+	def mergePath(self, pathID, targetPathID = None):
 
 
 		
 		parentPathIDs = self.getParentHash()
 
 		""" target shoot we want to merge to """
-		mergeTargetPathID = parentPathIDs[pathID]
+		if targetPathID == None:
+			mergeTargetPathID = parentPathIDs[pathID]
+		else:
+			mergeTargetPathID = targetPathID
 
 		print "merging", pathID, "to", mergeTargetPathID
 
