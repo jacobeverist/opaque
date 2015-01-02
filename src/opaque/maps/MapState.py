@@ -3225,8 +3225,9 @@ class MapState:
 					allTerms_G[pathID1].append(term1_G)
 					#print pathID1, "terms:", term1
 				else:
-					if pathID1 != 0:
-						self.branchDivergeCount[pathID1] += 1
+					#if pathID1 != 0:
+					#	self.branchDivergeCount[pathID1] += 1
+					self.branchDivergeCount[pathID1] += 1
 
 
 					""" check if this terminal is close to another terminal in different shoot """
@@ -4026,8 +4027,9 @@ class MapState:
 		for val in printList:
 			print "branch eval:", val
 
-		maxBranchResult = self.jointBranchEvaluations[maxTuple]
-		print "branch max:", self.poseData.numNodes, maxLandmark, maxBranchResult["landmarkCost"], maxMatchCount, maxNormCost, maxTuple, maxBranchResult["controlSet"]
+		if maxTuple != None:
+			maxBranchResult = self.jointBranchEvaluations[maxTuple]
+			print "branch max:", self.poseData.numNodes, maxLandmark, maxBranchResult["landmarkCost"], maxMatchCount, maxNormCost, maxTuple, maxBranchResult["controlSet"]
 
 
 		if maxTuple != None:

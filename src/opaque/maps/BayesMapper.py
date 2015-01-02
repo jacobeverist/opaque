@@ -358,8 +358,8 @@ class BayesMapper:
 
 					isSubsumed = False
 					print pID, "branchDivergeCount:", currHyp.branchDivergeCount
-					for val in currHyp.branchDivergeCount.values():
-						if val >= 2:
+					for skelID, val in currHyp.branchDivergeCount.iteritems():
+						if skelID != 0 and val >= 2:
 							isSubsumed = True
 
 					while isSubsumed:
@@ -372,7 +372,7 @@ class BayesMapper:
 						# FIXME: need way to merge the root to a child if root is subsumed
 						
 						for pathID, divergeCount in currHyp.branchDivergeCount.iteritems():
-							if divergeCount >= 2:
+							if pathID != 0 and divergeCount >= 2:
 								currHyp.mergePath(pathID)
 								currHyp.generatePaths()
 								currHyp.drawPoseParticles()
