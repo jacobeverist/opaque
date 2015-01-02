@@ -1440,7 +1440,7 @@ class MapState:
 				newBranchControls = {}
 				newBranchComboControls = {}
 
-				#print "origBranch:", origBranchArcDists, origBranchControls
+				print "origBranch:", origBranchArcDists, origBranchControls
 
 				if len(branchPathIDs) > 0:
 
@@ -4003,14 +4003,17 @@ class MapState:
 		maxNormCost = -1e10
 		maxMatchCount = -1e10
 		maxLandmark = -1e10
+		printList = []
 		for arcTuple, branchResult in self.jointBranchEvaluations.iteritems():
 
 			normLandmark = branchResult["normLandmark"]
 			normMatchCount = branchResult["normMatchCount"]
 			normCost = branchResult["normCost"] 
 			controlSet = branchResult["controlSet"]
+			landmarkCost = branchResult["landmarkCost"]
 
-			print "branch eval:", arcTuple, normLandmark, normMatchCount, normCost, controlSet
+			printList.append((self.poseData.numNodes, arcTuple, normLandmark, landmarkCost, normMatchCount, normCost, controlSet))
+			#print "branch eval:", self.poseData.numNodes, arcTuple, normLandmark, normMatchCount, normCost, controlSet
 
 			#if normLandmark > maxNormCost:
 			if normLandmark > maxLandmark:
@@ -4018,6 +4021,13 @@ class MapState:
 				maxMatchCount = normMatchCount
 				maxNormCost = normCost
 				maxTuple = arcTuple
+
+		#printList.sort()
+		for val in printList:
+			print "branch eval:", val
+
+		maxBranchResult = self.jointBranchEvaluations[maxTuple]
+		print "branch max:", self.poseData.numNodes, maxLandmark, maxBranchResult["landmarkCost"], maxMatchCount, maxNormCost, maxTuple, maxBranchResult["controlSet"]
 
 
 		if maxTuple != None:
@@ -4048,7 +4058,7 @@ class MapState:
 				controlPoses_L = branchResult["controlSet"]
 				controlPoses_G = computeGlobalControlPoses(controlPoses_L, parentPathIDs)
 
-				branchPoses_L = branchResult["branchPoses_L"]
+				#branchPoses_L = branchResult["branchPoses_L"]
 
 
 				allSplices = []
@@ -4089,13 +4099,13 @@ class MapState:
 					xC.append(controlPose_G[0])
 					yC.append(controlPose_G[1])
 
-					branchPose_L = branchPoses_L[pathID]
-					branchPose_G = currFrame.convertLocalOffsetToGlobal(branchPose_L)
+					#branchPose_L = branchPoses_L[pathID]
+					#branchPose_G = currFrame.convertLocalOffsetToGlobal(branchPose_L)
 
-					xB.append(branchPose_G[0])
-					yB.append(branchPose_G[1])
+					#xB.append(branchPose_G[0])
+					#yB.append(branchPose_G[1])
 			
-				pylab.scatter(xB, yB, color='y', zorder=8)
+				#pylab.scatter(xB, yB, color='y', zorder=8)
 				pylab.scatter(xC, yC, color='k', zorder=8)
 
 

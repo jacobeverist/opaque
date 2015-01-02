@@ -4450,29 +4450,52 @@ def evaluateJointBranch(localPathSegsByID, localTerms, localPaths, localSkeleton
 
 	controlPoses_G = computeGlobalControlPoses(controlPoses, parentPathIDs)
 
+
+	pathSegsByID_G  = {}
 	for pathID in branchPathIDs:
-
-		parentID = parentPathIDs[pathID]
-
-		controlPose_P = controlPoses[pathID]
-
-		""" place the segments back into parent frame with control point from arc distance """
+		controlPose_G = controlPoses_G[pathID]
+		currFrame_G = Pose(controlPose_G)
 		localPathSegs = localPathSegsByID[pathID]
-		childFrame = Pose(controlPose_P)
-		childPathSegs_P = []
+		pathSegs_G = []
 		for k in range(len(localPathSegs)):
 			localSeg = localPathSegs[k]
 			placedSeg = []
 			for p in localSeg:
-				p1 = childFrame.convertLocalOffsetToGlobal(p)
+				p1 = currFrame_G.convertLocalOffsetToGlobal(p)
 				placedSeg.append(p1)
-			childPathSegs_P.append(placedSeg)
+			pathSegs_G.append(placedSeg)
+		pathSegsByID_G[pathID] = pathSegs_G
+
+	for pathID in branchPathIDs:
+
+		#parentID = parentPathIDs[pathID]
+
+		#controlPose_P = controlPoses[pathID]
+
+		""" place the segments back into parent frame with control point from arc distance """
+		#localPathSegs = localPathSegsByID[pathID]
+		#childFrame = Pose(controlPose_P)
+		#childPathSegs_P = []
+		#for k in range(len(localPathSegs)):
+		#	localSeg = localPathSegs[k]
+		#	placedSeg = []
+		#	for p in localSeg:
+		#		p1 = childFrame.convertLocalOffsetToGlobal(p)
+		#		placedSeg.append(p1)
+		#	childPathSegs_P.append(placedSeg)
 
 		# FIXME:  add in parent skeleton, all other non-descendant skeletons
-		parentPathSegs = localPathSegsByID[parentID]
+		#parentPathSegs = localPathSegsByID[parentID]
+
+
+		allPathSegs = []
+		for skelID, otherSegs in pathSegsByID_G.iteritems():
+			if skelID != pathID:
+				allPathSegs += otherSegs
 
 		""" evaluate overlap of parent and child skeleton """
-		lastCost1, matchCount1 = skeletonOverlapCost(childPathSegs_P, parentPathSegs, plotIter = False, numNodes = numNodes, pathID = pathID, arcDist = arcDists[pathID])
+		#lastCost1, matchCount1 = skeletonOverlapCost(childPathSegs_P, parentPathSegs, plotIter = False, numNodes = numNodes, pathID = pathID, arcDist = arcDists[pathID])
+		lastCost1, matchCount1 = skeletonOverlapCost(pathSegsByID_G[pathID], allPathSegs, plotIter = False, numNodes = numNodes, pathID = pathID, arcDist = arcDists[pathID])
 
 		""" store the computed branch point and evaluation results """
 		branchResult["matchCounts"][pathID] = matchCount1
@@ -6001,7 +6024,7 @@ def selectCommonOrigin(globalPath1, globalPath2, plotIter=False):
 		evalPairs.append(pair + (evalCost,))
 
 	evalPairs = sorted(evalPairs, key=itemgetter(7), reverse=True)
-	print "evalPairs:", evalPairs[0]
+	print "evalPairs:", evalPairs
 
 	originU2 = globalSpline2.findU(globalSamples2[evalPairs[0][1]])	
 	originU1 = globalSpline1.findU(globalSamples1[evalPairs[0][0]])
