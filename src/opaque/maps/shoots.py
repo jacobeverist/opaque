@@ -3691,7 +3691,7 @@ def getInitSkeletonBranchPoint(globalJunctionPose, currShootID, globalMedial_G, 
 			maxSpliceID = maxContigIndex
 			maxSkeletonContigFrac = maxContigFrac
 
-	#print "initSkeletonBranchPoint:", maxSkeletonID, maxSpliceSegID, maxSkeletonContigFrac
+	print "initSkeletonBranchPoint:", maxSkeletonID, maxSpliceID, maxSkeletonContigFrac
 
 	#controlSplice = shootSplicesByID_G[maxSkeletonID][maxSpliceID]
 	#controlTerm1_G, controlTerm2_G, controlSplice = shootSplices_G[maxSpliceID]
@@ -3770,12 +3770,12 @@ def getInitSkeletonBranchPoint(globalJunctionPose, currShootID, globalMedial_G, 
 	
 	""" compute the control point """
 	#commonU1, commonU2, commonP1, commonP2 = selectCommonOrigin(controlSeg, orientedMedial_G)
-	commonU1, commonU2, commonP1, commonP2 = selectCommonOrigin(controlSplice, orientedMedial_G)
+	commonU1, commonU2, commonP1, commonP2 = selectCommonOrigin(controlSplice, orientedMedial_G, plotIter=plotIter)
 
 
 
 	""" get branch point from all skeletons """
-	branchPose_G, isDiverge, noTipDist, tipPoint_G = getSimpleSoupDeparture(None, globalJunctionPose, allPointSoup_G, globalMedial_G, angThresh = 2*pi)
+	branchPose_G, isDiverge, noTipDist, tipPoint_G = getSimpleSoupDeparture(None, globalJunctionPose, allPointSoup_G, globalMedial_G, angThresh = 2*pi, plotIter=plotIter)
 
 
 	""" convert control pose from global to parent frame """
@@ -5863,7 +5863,7 @@ def skeletonOverlapCost(childPathSegs, parentPathSegs, plotIter = False, numNode
 
 
 @logFunction
-def selectCommonOrigin(globalPath1, globalPath2):
+def selectCommonOrigin(globalPath1, globalPath2, plotIter=False):
 
 	""" FIXME:  change function so that it always returns a common pair, biasing towards it's current location """
 	""" alternately, make a new function that gives the option to enforce locality to common pair """
@@ -5890,6 +5890,12 @@ def selectCommonOrigin(globalPath1, globalPath2):
 
 	#print "rails:", len(globalSamples1), len(globalSamples2), pathRail1, pathRail2
 
+	maxDist = 0.0
+	minAllDist = 1e100
+	maxVar1 = 0.0
+	maxVar2 = 0.0
+	minVar1 = 1e100
+	minVar2 = 1e100
 	
 	for i in range(pathRail1, len(globalSamples1)-pathRail1):
 		pG = globalSamples1[i]
@@ -5906,7 +5912,28 @@ def selectCommonOrigin(globalPath1, globalPath2):
 				minJ = j
 		
 		if True:
-			allPairs.append((i,minJ,minDist,globalVar1[i][0],globalVar2[minJ][0],globalVar1[i][1],globalVar2[minJ][1]))
+
+
+			var1 = globalVar1[i][1]
+			var2 = globalVar2[minJ][1]
+
+			allPairs.append((i,minJ,minDist,globalVar1[i][0],globalVar2[minJ][0],var1,var2))
+			
+			if minDist > maxDist:
+				maxDist = minDist
+
+			if minAllDist > minDist:
+				minAllDist = minDist
+			
+			if maxVar1 < var1:
+				maxVar1 = var1
+			if minVar1 > var1:
+				minVar1 = var1
+
+			if maxVar2 < var2:
+				maxVar2 = var2
+			if minVar2 > var2:
+				minVar2 = var2
 
 	for j in range(pathRail2, len(globalSamples2)-pathRail2):
 		pM = globalSamples2[j]
@@ -5923,16 +5950,40 @@ def selectCommonOrigin(globalPath1, globalPath2):
 				minI = i
 
 		if True:		
+
+			var1 = globalVar1[minI][1]
+			var2 = globalVar2[j][1]
+
 			allPairs.append((minI,j,minDist,globalVar1[minI][0],globalVar2[j][0],globalVar1[minI][1],globalVar2[j][1]))
+			print "vars:", globalVar1[minI][1],globalVar2[j][1], minDist
 		
+			if minDist > maxDist:
+				maxDist = minDist
+
+			if minAllDist > minDist:
+				minAllDist = minDist
+			
+			if maxVar1 < var1:
+				maxVar1 = var1
+			if minVar1 > var1:
+				minVar1 = var1
+
+			if maxVar2 < var2:
+				maxVar2 = var2
+			if minVar2 > var2:
+				minVar2 = var2
+
 	" remove duplicates "
 	allPairs = list(set(allPairs))
 
 	""" sorty by match distance """
 	allPairs = sorted(allPairs, key=itemgetter(2))
+
+	print "min max thresh:", minVar1, minVar2, maxVar1, maxVar2, minAllDist, maxDist
 	
 	maxDistThresh = allPairs[-1][2]
-	minDistThresh = 0.1
+	minDistThresh = 0.01
+	minVarThresh = 0.01
 
 	""" ensure that the while loop is executed at least once """
 	if minDistThresh > maxDistThresh:
@@ -5943,7 +5994,23 @@ def selectCommonOrigin(globalPath1, globalPath2):
 	if len(allPairs) == 0:
 		raise
 
+	evalPairs = []
+
+	for pair in allPairs:			
+		evalCost = (maxDistThresh-pair[2]) * (maxVar1-pair[5]) * (maxVar2-pair[6])
+		evalPairs.append(pair + (evalCost,))
+
+	evalPairs = sorted(evalPairs, key=itemgetter(7), reverse=True)
+	print "evalPairs:", evalPairs[0]
+
+	originU2 = globalSpline2.findU(globalSamples2[evalPairs[0][1]])	
+	originU1 = globalSpline1.findU(globalSamples1[evalPairs[0][0]])
+
+	cPoint2 = globalSamples2[evalPairs[0][1]]
+	cPoint1 = globalSamples1[evalPairs[0][0]]
+
 	
+	"""
 	originU2 = 0.5
 	originU1 = 0.5
 
@@ -5953,7 +6020,7 @@ def selectCommonOrigin(globalPath1, globalPath2):
 	while minDistThresh <= maxDistThresh:
 		closestPairs = []
 		for pair in allPairs:			
-			if pair[2] < minDistThresh:				
+			if pair[2] < minDistThresh and pair[5] < minVarThresh and pair[6] < minVarThresh:				
 				closestPairs.append(pair)
 		
 		" sort by lowest angular variance"
@@ -5967,10 +6034,53 @@ def selectCommonOrigin(globalPath1, globalPath2):
 
 			cPoint2 = globalSamples2[closestPairs[0][1]]
 			cPoint1 = globalSamples1[closestPairs[0][0]]
+
+			print "maxVar:", closestPairs[0][5], closestPairs[0][6], closestPairs[0][2]
 			
 			break
 		
-		minDistThresh += 0.1
+		minDistThresh += 0.01
+		minVarThresh += 0.01
+	"""
+
+
+	
+
+	if plotIter:
+
+		pylab.clf()
+
+		xP = []
+		yP = []
+		for p in globalSamples1:
+			xP.append(globalSamples1[0])
+			yP.append(globalSamples1[1])
+
+		pylab.plot(xP,yP, color='r')
+
+		xP = []
+		yP = []
+		for p in globalSamples2:
+			xP.append(globalSamples2[0])
+			yP.append(globalSamples2[1])
+
+		pylab.plot(xP,yP, color='b')
+
+
+		for pair in allPairs:
+
+			if pair[2] <= minDistThresh:
+				xP = [globalSamples1[pair[0]][0], globalSamples2[pair[1]][0]]
+				yP = [globalSamples1[pair[0]][1], globalSamples2[pair[1]][1]]
+
+				pylab.plot(xP,yP, color='k', alpha=0.1)
+				pylab.scatter(xP,yP, color='k', alpha=0.1)
+
+
+		pylab.title("%1.3f %1.3f" % (minDistThresh, maxDistThresh))
+		pylab.savefig("selectCommonOrigin.png")
+
+		#print "allPairs:", allPairs
 	
 	u2 = originU2
 	u1 = originU1
@@ -6139,18 +6249,18 @@ def computePathAngleVariance(pathSamples):
 		for k in range(lowK, highK+1):
 			localSamp.append(pathSamples[k][2])
 		
-		sum = 0.0
+		sumVal = 0.0
 		for val in localSamp:
-			sum += val
+			sumVal += val
 			
-		meanSamp = sum / float(len(localSamp))
+		meanSamp = sumVal / float(len(localSamp))
 		
 
-		sum = 0
+		sumVal = 0
 		for k in range(len(localSamp)):
-			sum += (localSamp[k] - meanSamp)*(localSamp[k] - meanSamp)
+			sumVal += (localSamp[k] - meanSamp)*(localSamp[k] - meanSamp)
 	
-		varSamp = sum / float(len(localSamp))
+		varSamp = sumVal / float(len(localSamp))
 		
 		pathVar.append((meanSamp, varSamp))		 
 

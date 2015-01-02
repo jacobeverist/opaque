@@ -981,7 +981,8 @@ class MapState:
 			globalMedial0.append(poseOrigin0.convertLocalToGlobal(p))
 
 		""" compute the distribution spread based on how long we've gone unfeatured or unlandmarked """
-		STEP_DIST = 0.2
+		#STEP_DIST = 0.2
+		STEP_DIST = 0.4
 		NUM_SAMPLES = 10 + self.unfeaturedStepCount * 2
 
 
@@ -1063,18 +1064,26 @@ class MapState:
 			#STEP_DIST = 0.2
 			#NUM_SAMPLES = 10
 
+			maxArcDist = pathSpline.dist_u(1.0)
+
 			numSamples = int(pathSpline.dist_u(1.0)/STEP_DIST)
 
-			print nodeID0, "numSamples =", numSamples, ", maxArcDist =", pathSpline.dist_u(1.0)
+			print nodeID0, "numSamples =", numSamples, ", maxArcDist =", maxArcDist
 
 			""" sample points in the neighborhood """
 			stepHigh = STEP_DIST * floor(numSamples/2.0)
 			stepLow = -STEP_DIST * floor(numSamples/2.0)
 
+			SPARSE_DIST = 0.4
+			DENSE_DIST = 0.4
+			DENSE_ANG_THRESH = pi/6.0 # 30 degrees
+
 			""" compute the sample points for the pose point distribution """
-			for k in range(numSamples):
+			#for k in range(numSamples):
+			newStepDist = 0.0
+
+			while newStepDist < maxArcDist:
 				#newStepDist = stepLow + k * STEP_DIST
-				newStepDist = k * STEP_DIST
 
 				#newU0 = pathSpline.getUOfDist(dispU0, newStepDist)
 				#newU1 = pathSpline.getUOfDist(dispU1, newStepDist)
@@ -1094,6 +1103,15 @@ class MapState:
 					print "sample dist:", newStepDist, newDist0, newDist1, newU0, newU1, motionBias
 					self.stepDists.append((j, newDist0, newDist1, newPose0, newPose1, newU0, newU1, motionBias))
 
+				frontCurveU = pathSpline.getUOfDist(0.0, newStepDist + 2.5)
+				backCurveU = pathSpline.getUOfDist(0.0, newStepDist - 2.5)
+				frontPose = pathSpline.point_u(frontCurveU)
+				backPose = pathSpline.point_u(backCurveU)
+
+				if abs(newPose0[2]-frontPose[2]) > DENSE_ANG_THRESH or abs(newPose0[2]-backPose[2]) > DENSE_ANG_THRESH:
+					newStepDist += DENSE_DIST
+				else:
+					newStepDist += SPARSE_DIST
 
 		branchPoses_G = self.getGlobalBranchPoses()
 		branchPoses_L = self.getLocalBranchPoses()
@@ -1795,7 +1813,8 @@ class MapState:
 
 				#ANG_THRESH = 2.0*pi/3.0
 				#ANG_THRESH = 1.0*pi/3.0
-				ANG_THRESH = 0.5*pi/3.0
+				#ANG_THRESH = 0.5*pi/3.0
+				ANG_THRESH = pi/3.0
 
 
 				#if fabs(diffAngle(initPose0[2],newPose0[2])) > 2.0*pi/3.0 or fabs(diffAngle(initPose1[2],newPose1[2])) > 2.0*pi/3.0:
@@ -4720,7 +4739,7 @@ class MapState:
 
 
 		#self.localSkeletons = {}
-		controlPose_G, controlParentID, tipPoint_G, branchPose_G, controlTerm1_P, controlTerm2_P = getInitSkeletonBranchPoint(globalJunctionPose_G, newPathID, globalMedial0_G, parentPathIDs, localPathSegsByID, self.localPaths, self.localTerms, self.localSkeletons, globalControlPoses_G, plotIter = False, hypothesisID = self.hypothesisID, nodeID = branchNodeID)
+		controlPose_G, controlParentID, tipPoint_G, branchPose_G, controlTerm1_P, controlTerm2_P = getInitSkeletonBranchPoint(globalJunctionPose_G, newPathID, globalMedial0_G, parentPathIDs, localPathSegsByID, self.localPaths, self.localTerms, self.localSkeletons, globalControlPoses_G, plotIter = True, hypothesisID = self.hypothesisID, nodeID = branchNodeID)
 
 		#try:
 		#	branchPose_G, isNoDiverge = getSkeletonBranchPoint(oldBranchPose_G, pathID, parentPathIDs, localPathSegsByID, localPaths, controlPoses_G)
