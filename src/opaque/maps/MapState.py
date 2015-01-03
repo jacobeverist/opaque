@@ -1895,8 +1895,12 @@ class MapState:
 				
 				#print "%d %d %d %d %d normMatchCount, newUtilVal, overlapSum:" % (nodeID0, self.hypothesisID, particleID, index, spliceIndex), normMatchCount, results[index][45], overlapSum, contigFrac_0, contigFrac_1, initPose0[2], newPose0[2], int(isExist1_0), int(isExist2_0), int(isExist1_1), int(isExist2_1), int(isInterior1_0), int(isInterior2_0), int(isInterior1_1), int(isInterior2_1), isReject, branchIndex, poseLandmarkSum, len(landmarks_G), normLandmarkSum, normAngDiff, branchNormLandmarkCost
 
-			""" break condition, do not accept divergence if we have already branched """
-			if not rejectDivergence or self.isNodeBranching[nodeID0] or self.isNodeBranching[nodeID1]:
+			""" break condition, do not accept divergence if we have already branched 
+				in reality, we should still select best diverging pose when branching because otherwise it is random	
+			"""
+
+			#if not rejectDivergence or self.isNodeBranching[nodeID0] or self.isNodeBranching[nodeID1]:
+			if not rejectDivergence:
 				#isAllReject = False
 				break
 
@@ -3959,6 +3963,8 @@ class MapState:
 			if totalMatchCount > self.maxMatchCount:
 				self.maxMatchCount = totalMatchCount
 
+		print "max values:", self.maxLandmarkCost, self.maxCost, self.maxMatchCount
+
 		""" add slight value so that maximum normalized landmark cost is greater than zero """
 		self.maxLandmarkCost += 0.1
 
@@ -4019,7 +4025,9 @@ class MapState:
 			controlSet = branchResult["controlSet"]
 			landmarkCost = branchResult["landmarkCost"]
 
-			printList.append((self.poseData.numNodes, arcTuple, normLandmark, landmarkCost, normMatchCount, normCost, controlSet))
+			matchCount = branchResult["totalMatchCount"]
+
+			printList.append((self.poseData.numNodes, arcTuple, normLandmark, landmarkCost, normMatchCount, matchCount, normCost, controlSet))
 			#print "branch eval:", self.poseData.numNodes, arcTuple, normLandmark, normMatchCount, normCost, controlSet
 
 			#if normLandmark > maxNormCost:
@@ -4029,13 +4037,13 @@ class MapState:
 				maxNormCost = normCost
 				maxTuple = arcTuple
 
-		#printList.sort()
+		printList.sort()
 		for val in printList:
 			print "branch eval:", val
 
 		if maxTuple != None:
 			maxBranchResult = self.jointBranchEvaluations[maxTuple]
-			print "branch max:", self.poseData.numNodes, maxLandmark, maxBranchResult["landmarkCost"], maxMatchCount, maxNormCost, maxTuple, maxBranchResult["controlSet"]
+			print "branch max:", self.poseData.numNodes, maxLandmark, maxBranchResult["landmarkCost"], maxMatchCount, maxNormCost, maxTuple, maxBranchResult["controlSet"], self.maxCost, self.maxMatchCount, self.maxLandmarkCost
 
 
 		if maxTuple != None:

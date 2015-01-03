@@ -349,12 +349,6 @@ class BayesMapper:
 
 				""" merge a shoot if it does not diverge """
 				if False:
-					if 1 in currHyp.pathClasses.keys():
-						currHyp.mergePath(1)
-						currHyp.generatePaths()
-						currHyp.drawPoseParticles()
-
-				else:
 
 					isSubsumed = False
 					print pID, "branchDivergeCount:", currHyp.branchDivergeCount, currHyp.branchSubsumeIDs
