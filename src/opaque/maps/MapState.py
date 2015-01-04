@@ -334,6 +334,7 @@ class MapState:
 		self.branchDiverges = {0 : True}
 		self.branchDivergeCount = {0 : 0}
 		self.branchSubsumeIDs = {0: []}
+		self.branchTermDivergenceDist = {0: []}
 
 		""" intermediate data structure for computing the shoot skeleton """
 		self.localLeaf2LeafPathJunctions = {}
@@ -362,7 +363,8 @@ class MapState:
 		self.pathTerms = {}
 
 		""" number of branch hypotheses and spacing between them for a branch point distribution """
-		self.DIV_LEN = 0.2
+		#self.DIV_LEN = 0.2
+		self.DIV_LEN = 0.1
 		self.NUM_BRANCHES = 5
 		#self.DIV_LEN = 0.1
 		#self.NUM_BRANCHES = 1
@@ -1271,13 +1273,13 @@ class MapState:
 			""" check to avoid divide by zero """
 			if maxLandmarkSum > 0.0:
 				if maxLandmarkSum > poseLandmarkSum:
-					newProb0 = currProb0 * ((maxLandmarkSum-poseLandmarkSum)/maxLandmarkSum)
+					newProb0 = currProb0 * currProb1 * ((maxLandmarkSum-poseLandmarkSum)/maxLandmarkSum)
 					#newProb0 = (maxLandmarkSum-poseLandmarkSum)/maxLandmarkSum
 				else:
 					""" maximum landmark cost, means utility is zeroed """
 					newProb0 = 0.0
 			else:
-				newProb0 = currProb0
+				newProb0 = currProb0 * currProb1
 
 			resultDict["evalProb"] = newProb0
 
@@ -1403,11 +1405,8 @@ class MapState:
 			#			"globalJunctionPose" : None,
 			#			"controlPose" : [0.0,0.0,0.0] }		
 			
-			#for particleIndex in range(len(particleDist2)):
-			#for particleIndex in range(len(particleDist2)):
 			for particleIndex in range(len(self.stepResults)):
 				part = self.stepResults[particleIndex]
-				#part.maxLikelihoodBranch = None 
 				hypPose0 = part["newPose0"]
 
 
@@ -1421,18 +1420,15 @@ class MapState:
 					pathSpline = pathSplines[pathID]
 
 					""" this is the point where the control pose gets erroneously moved back onto the longest path """
-					#controlPose = part.junctionData[pathID]["controlPose"]
 					controlPose = part["controlPoses_P"][pathID]
 					#print "oldControlPose:", particleIndex, pathID, controlPose
 					minDist, controlUVal, newControlPose = pathSpline.findClosestPoint(controlPose)
 					arcDist = pathSpline.dist_u(controlUVal)
 
-					#globJuncPose = part.junctionData[pathID]["globalJunctionPose"]
 					globJuncPose = part["branchPoses_G"][pathID]
 					dist1 = sqrt((globJuncPose[0]-hypPose0[0])**2 + (globJuncPose[1]-hypPose0[1])**2)
 
 					origBranchDists[pathID] = dist1
-					#origBranchControls[pathID] = controlPose
 					origBranchControls[pathID] = newControlPose
 					origBranchArcDists[pathID] = arcDist
 
@@ -1470,19 +1466,29 @@ class MapState:
 						""" determine the range of values for this particular branch """
 						newArcDist = self.branchArcDists[pathID][minIndex]
 						#print "newArcDist:", newArcDist
-						if origBranchDists[pathID] < JOINT_DIST:
+						#if origBranchDists[pathID] < JOINT_DIST:
+						#if False:
+						if True:
 
-							if minIndex < 8:
-								minIndex = 8
+							#if minIndex < 8:
+							#	minIndex = 8
 
-							if minIndex > len(self.branchArcDists[pathID]) - 9:
-								minIndex = len(self.branchArcDists[pathID]) - 9
+							#if minIndex > len(self.branchArcDists[pathID]) - 9:
+							#	minIndex = len(self.branchArcDists[pathID]) - 9
 
+							#arcHigh = arcDist + self.DIV_LEN * floor(self.NUM_BRANCHES/2.0)
+							#arcLow = arcDist - self.DIV_LEN * floor(self.NUM_BRANCHES/2.0)
+							if minIndex < 4:
+								minIndex = 4
+
+							if minIndex > len(self.branchArcDists[pathID]) - 5:
+								minIndex = len(self.branchArcDists[pathID]) - 5
 
 							arcList = []
 							controlList = []
 							comboList = []
-							for k in range(minIndex-8,minIndex+9):
+							#for k in range(minIndex-8,minIndex+9):
+							for k in range(minIndex-4,minIndex+5):
 								newArcDist = self.branchArcDists[pathID][k]
 								arcList.append(newArcDist)
 								controlList.append(self.branchControlPoses[pathID][newArcDist])
@@ -1858,7 +1864,8 @@ class MapState:
 							newProb = 0.0
 					else:
 						#newProb = (pi-fabs(diffAngle(initPose0[2],newPose0[2])) ) * contigFrac_0  * 0.0
-						newProb = contigFrac_0
+						#newProb = contigFrac_0
+						newProb = contigFrac_0 * contigFrac_1
 
 					#newProb = (pi-fabs(diffAngle(initPose0[2],newPose0[2])) ) * contigFrac_0 * contigFrac_0 / overlapSum_0
 
@@ -3166,12 +3173,14 @@ class MapState:
 
 		"""
 		DIST_THRESH = 0.2
+		DIVERGE_THRESH = 0.8
 
 		
 		""" of all the terms, find the ones that are not subsumed by other shoots """
 
 		self.branchDivergeCount = {}
 		self.branchSubsumeIDs = {}
+		self.branchTermDivergenceDist = {}
 
 		self.subsumedTerms_L = {}
 		allTerms_L = {}
@@ -3192,6 +3201,7 @@ class MapState:
 			pathID1 = currKeys[currK1]
 			self.branchDivergeCount[pathID1] = 0
 			self.branchSubsumeIDs[pathID1] = []
+			self.branchTermDivergenceDist[pathID1] = []
 			segs1 = self.globalSegments[pathID1]
 
 			terms_L = self.localTerms[pathID1]
@@ -3228,6 +3238,7 @@ class MapState:
 									minP2 = p
 									subSkelID = pathID2
 				
+				self.branchTermDivergenceDist[pathID1].append(minDist2)
 				print pathID1, minDist2, "terms:", term1_G
 				if minDist2 > DIST_THRESH:
 					allTerms_L[pathID1].append(term1)
@@ -3626,7 +3637,7 @@ class MapState:
 
  
 
-	def snapPoseToSkeleton(self):
+	def snapPoseToSkeleton(self, targetNodeIDs = []):
 
 		allPathIDs = self.getPathIDs()
 		controlPoses_G = self.getGlobalControlPoses()
@@ -3654,7 +3665,8 @@ class MapState:
 
 				if self.nodeLandmarks[pathID][nodeID] != None:
 
-					landmarkNodeSets[pathID].append(nodeID)
+					if len(targetNodeIDs) == 0 or nodeID in targetNodeIDs:
+						landmarkNodeSets[pathID].append(nodeID)
 
 
 		#time1 = time.time()
@@ -4503,6 +4515,7 @@ class MapState:
 
 	@logFunction
 	def mergePath(self, pathID, targetPathID = None):
+
 
 
 		

@@ -975,7 +975,13 @@ def addToPaths2(shootIDs, particleIDs, hypSet, nodeID1, nodeID2):
 	""" check for branching conditions from path, spawn new hypotheses """
 	hypSet, shootIDs, particleIDs = checkForeBranch2(hypSet, nodeID1, nodeID2, shootIDs, particleIDs)
 
+	print "mid memberShootIDs:", hypSet[0].memberShootIDs1, hypSet[0].memberShootIDs2
+
 	hypSet, shootIDs, particleIDs = checkBackBranch2(hypSet, nodeID1, nodeID2, shootIDs, particleIDs)
+
+	print "final memberShootIDs:", hypSet[0].memberShootIDs1, hypSet[0].memberShootIDs2
+
+
 
 	addNodesToShoot(hypSet, nodeID1, nodeID2)
 
@@ -1030,7 +1036,7 @@ def addNodesToShoot(hypSet, nodeID1, nodeID2):
 		
 		" GET THE ORDERED LIST OF OVERLAPPING PATHS FOR EACH NODE "
 
-		memberShootIDs1 = mapHyp.memberShootIDs1
+		memberShootIDs1 = deepcopy(mapHyp.memberShootIDs1)
 		print "memberShootIDs1:", memberShootIDs1
 
 		isNewID = False
@@ -1040,6 +1046,11 @@ def addNodesToShoot(hypSet, nodeID1, nodeID2):
 				mapHyp.addNode(nodeID1,shootID)
 
 		if not isNewID:
+			memberShootIDs1.sort(reverse=True)	
+			mostJuniorShootID = memberShootIDs1[0]
+			mapHyp.addNode(nodeID1,mostJuniorShootID)
+
+		if False and not isNewID:
 
 
 			resultSet1 = []
@@ -1079,7 +1090,7 @@ def addNodesToShoot(hypSet, nodeID1, nodeID2):
 
 
 
-		memberShootIDs2 = mapHyp.memberShootIDs2
+		memberShootIDs2 = deepcopy(mapHyp.memberShootIDs2)
 		print "memberShootIDs2:", memberShootIDs2
 
 		isNewID = False
@@ -1089,6 +1100,11 @@ def addNodesToShoot(hypSet, nodeID1, nodeID2):
 				mapHyp.addNode(nodeID2,shootID)
 
 		if not isNewID:
+			memberShootIDs2.sort(reverse=True)	
+			mostJuniorShootID = memberShootIDs2[0]
+			mapHyp.addNode(nodeID2,mostJuniorShootID)
+
+		if False and not isNewID:
 
 			resultSet2 = []
 
@@ -1240,7 +1256,7 @@ def computeLocalDivergence2(hypSet, nodeID1, nodeID2):
 
 		mapHyp.departureResultSet1 = result1
 		mapHyp.overlapSplice1 = sPath1
-		mapHyp.memberShootIDs1 = sPath1['memberShootIDs']
+		mapHyp.memberShootIDs1 = deepcopy(sPath1['memberShootIDs'])
 
 		if len(resultSet2) > 1:
 			contigFrac0 = resultSet2[0][12]
@@ -1274,7 +1290,10 @@ def computeLocalDivergence2(hypSet, nodeID1, nodeID2):
 
 		mapHyp.departureResultSet2 = result2
 		mapHyp.overlapSplice2 = sPath2
-		mapHyp.memberShootIDs2 = sPath2['memberShootIDs']
+		mapHyp.memberShootIDs2 = deepcopy(sPath2['memberShootIDs'])
+
+
+		print "init memberShootIDs:", mapHyp.memberShootIDs1, mapHyp.memberShootIDs2
 
 
 @logFunction
@@ -1478,6 +1497,9 @@ def checkForeBranch2(hypSet, nodeID1, nodeID2, shootIDs, particleIDs):
 
 		shootIDs, pathBranchIDs = branchHyp.determineBranchPair2(nodeID1, nodeID2, frontExist1, frontExist2, frontInterior1, frontInterior2, depAngle1, depAngle2, depPoint1, depPoint2, dirFlag, isUnique1, isUnique2, shootIDs)
 
+
+		print "fore pathBranchIDs:", pathBranchIDs
+
 		if pathBranchIDs[0] != None:
 			branchHyp.memberShootIDs1.append(pathBranchIDs[0])
 
@@ -1673,6 +1695,8 @@ def checkBackBranch2(hypSet, nodeID1, nodeID2, shootIDs, particleIDs):
 
 
 		shootIDs, pathBranchIDs = branchHyp.determineBranchPair2(nodeID1, nodeID2, backExist1, backExist2, backInterior1, backInterior2, depAngle1, depAngle2, depPoint1, depPoint2, dirFlag, isUnique1, isUnique2, shootIDs)
+
+		print "back pathBranchIDs:", pathBranchIDs
 
 		if pathBranchIDs[0] != None:
 			branchHyp.memberShootIDs1.append(pathBranchIDs[0])

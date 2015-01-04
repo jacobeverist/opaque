@@ -348,15 +348,24 @@ class BayesMapper:
 
 
 				""" merge a shoot if it does not diverge """
-				if False:
+				if True:
 
 					isSubsumed = False
-					print pID, "branchDivergeCount:", currHyp.branchDivergeCount, currHyp.branchSubsumeIDs
+					print pID, "branchDivergeCount:", currHyp.branchDivergeCount, currHyp.branchSubsumeIDs, currHyp.branchTermDivergenceDist
 					for skelID, val in currHyp.branchDivergeCount.iteritems():
-						if skelID != 0 and val >= 2:
+
+						distList = currHyp.branchTermDivergenceDist[skelID]
+						distList.sort(reverse=True)
+
+						if skelID != 0 and val >= 2 and (distList[0] >= 0.8 or distList[0] <= 0.2):
 							isSubsumed = True
+
 					if len(currHyp.branchSubsumeIDs[0]) > 0:
-						isSubsumed = True
+						mergePathID = currHyp.branchSubsumeIDs[0][0]
+						distList = currHyp.branchTermDivergenceDist[mergePathID]
+						distList.sort(reverse=True)
+						if distList[0] >= 0.8 or distList[0] <= 0.2:
+							isSubsumed = True
 
 
 					while isSubsumed:
@@ -370,23 +379,62 @@ class BayesMapper:
 						
 						for pathID, divergeCount in currHyp.branchDivergeCount.iteritems():
 							if pathID == 0 and len(currHyp.branchSubsumeIDs[0]) > 0:
-								currHyp.mergePath(currHyp.branchSubsumeIDs[0][0], targetPathID=pathID)
-								currHyp.generatePaths()
-								currHyp.drawPoseParticles()
-								break
+
+								mergePathID = currHyp.branchSubsumeIDs[0][0]
+								mergeNodeIDs = deepcopy(currHyp.pathClasses[mergePathID]["nodeSet"])
+
+
+								distList = currHyp.branchTermDivergenceDist[mergePathID]
+								distList.sort(reverse=True)
+								
+								if distList[0] >= 0.8 or distList[0] <= 0.2:
+
+									currHyp.mergePath(mergePathID, targetPathID=pathID)
+									currHyp.generatePaths()
+									currHyp.drawPoseParticles()
+
+									currHyp.snapPoseToSkeleton(targetNodeIDs=mergeNodeIDs)
+									currHyp.generatePaths()
+									currHyp.drawPoseParticles()
+
+									break
 
 							elif pathID != 0 and divergeCount >= 2:
-								currHyp.mergePath(pathID)
-								currHyp.generatePaths()
-								currHyp.drawPoseParticles()
-								break
+								mergePathID = pathID
+								mergeNodeIDs = deepcopy(currHyp.pathClasses[mergePathID]["nodeSet"])
+
+								distList = currHyp.branchTermDivergenceDist[mergePathID]
+								distList.sort(reverse=True)
+								
+								if distList[0] >= 0.8 or distList[0] <= 0.2:
+
+									currHyp.mergePath(pathID)
+									currHyp.generatePaths()
+									currHyp.drawPoseParticles()
+
+									currHyp.snapPoseToSkeleton(targetNodeIDs=mergeNodeIDs)
+									currHyp.generatePaths()
+									currHyp.drawPoseParticles()
+
+									break
 
 						isSubsumed = False
-						for val in currHyp.branchDivergeCount.values():
-							if val >= 2:
+						#for val in currHyp.branchDivergeCount.values():
+						#	if val >= 2:
+						#		isSubsumed = True
+						for skelID, val in currHyp.branchDivergeCount.iteritems():
+
+							distList = currHyp.branchTermDivergenceDist[skelID]
+							distList.sort(reverse=True)
+
+							if skelID != 0 and val >= 2 and (distList[0] >= 0.8 or distList[0] <= 0.2):
 								isSubsumed = True
 						if len(currHyp.branchSubsumeIDs[0]) > 0:
-							isSubsumed = True
+							mergePathID = currHyp.branchSubsumeIDs[0][0]
+							distList = currHyp.branchTermDivergenceDist[mergePathID]
+							distList.sort(reverse=True)
+							if distList[0] >= 0.8 or distList[0] <= 0.2:
+								isSubsumed = True
 
 				""" evaluate the map integrity """
 				currHyp.computeEval()

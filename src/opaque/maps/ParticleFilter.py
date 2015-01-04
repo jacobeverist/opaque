@@ -698,7 +698,7 @@ def displaceParticle2( poseData, pathSplices2, pathSplices3, supportLine, nodeID
 	#splicePaths = list(set(pathSplices2 + pathSplices3))
 	splicePaths = pathSplices2 + pathSplices3
 
-	print len(splicePaths), "splice paths"
+	#print len(splicePaths), "splice paths"
 
 	if nodeID > 0:
 		
@@ -826,7 +826,7 @@ def displaceParticle2( poseData, pathSplices2, pathSplices3, supportLine, nodeID
 				resultPose2, lastCost2, matchCount2, currAng2, currU2 = gen_icp.globalPathToNodeOverlapICP2([u2, uMedialOrigin2, 0.0], orientedSplicePath, medial2, plotIter = False, n1 = nodeID-1, n2 = -1, arcLimit = 0.01)
 				resultPose3, lastCost3, matchCount3, currAng3, currU3 = gen_icp.globalPathToNodeOverlapICP2([u3, uMedialOrigin3, 0.0], orientedSplicePath, medial3, plotIter = False, n1 = nodeID, n2 = -1, arcLimit = 0.01)
 				
-				print "resultPoses:", resultPose2, resultPose3
+				#print "resultPoses:", resultPose2, resultPose3
 
 				multiDepCount = 0
 
@@ -868,9 +868,9 @@ def displaceParticle2( poseData, pathSplices2, pathSplices3, supportLine, nodeID
 				else:
 					newProb3 = (pi-angDiff3) * contigFrac_3
 				
-				print "angDiff:", angDiff2, angDiff3
-				print "overlapSum:", overlapSum2, overlapSum3
-				print "newProb:", newProb2, newProb3
+				#print "angDiff:", angDiff2, angDiff3
+				#print "overlapSum:", overlapSum2, overlapSum3
+				#print "newProb:", newProb2, newProb3
 				
 
 
@@ -894,12 +894,12 @@ def displaceParticle2( poseData, pathSplices2, pathSplices3, supportLine, nodeID
 			resultMoves3 = sorted(resultMoves3, key=itemgetter(18))
 			resultMoves3 = sorted(resultMoves3, key=itemgetter(16), reverse=True)
 			
-			print "resultMoves2:"
-			for res in resultMoves2:
-				print res
-			print "resultMoves3:"
-			for res in resultMoves3:
-				print res
+			#print "resultMoves2:"
+			#for res in resultMoves2:
+			#	print res
+			#print "resultMoves3:"
+			#for res in resultMoves3:
+			#	print res
 
 			currSplice2 = []
 			currSplice3 = []
@@ -944,10 +944,10 @@ def displaceParticle2( poseData, pathSplices2, pathSplices3, supportLine, nodeID
 			" move the pose particles along their paths "	
 
 
-			print "fitted poses:", currPose2, currPose3
-			print "currProbs:", currProb2, currProb3
-			print "currContig:", currContigFrac2, currContigFrac3
-			print "currAngDiff:", currAngDiff2, currAngDiff3
+			#print "fitted poses:", currPose2, currPose3
+			#print "currProbs:", currProb2, currProb3
+			#print "currContig:", currContigFrac2, currContigFrac3
+			#print "currAngDiff:", currAngDiff2, currAngDiff3
 
 
 
