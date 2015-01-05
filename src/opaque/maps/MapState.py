@@ -1007,6 +1007,42 @@ class MapState:
 			self.unfeaturedStepCount = 0
 
 
+		""" forward direction , direction=True """
+		direction = self.poseData.travelDirs[nodeID0]
+
+		collisionLandmarks = {}
+		collisionLandmarks[nodeID0] = [None, None]
+		collisionLandmarks[nodeID1] = [None, None]
+		
+		if direction:
+			
+			frontSum = 0.0
+			frontProbeError = self.poseData.frontProbeError[nodeID0]
+			for n in frontProbeError:
+				frontSum += n
+			foreAvg = frontSum / len(frontProbeError)
+
+			print nodeID0, nodeID1, "fore collision avg:", foreAvg
+
+			if foreAvg >= 1.1:
+				collisionLandmarks[nodeID0][0] = True
+				print nodeID0, nodeID1, "forward collision motion"
+
+		else:
+
+			backSum = 0.0
+			backProbeError = self.poseData.backProbeError[nodeID1]
+			for n in backProbeError:
+				backSum += n
+			backAvg = backSum / len(backProbeError)
+
+			print nodeID0, nodeID1, "back collision avg:", backAvg
+
+			if backAvg >= 1.1:
+				collisionLandmarks[nodeID1][1] = True
+				print nodeID0, nodeID1, "backward collision motion"
+
+
 
 		#travelDist0 = 0., travelDist1):
 		#for matchSplice in matchedSplices:
@@ -1015,39 +1051,22 @@ class MapState:
 
 			matchSplice = matchedSplices[j]
 
+
+
+
 			""" forward direction , direction=True """
 			direction = self.poseData.travelDirs[nodeID0]
 			
 			if direction:
-				
-				frontSum = 0.0
-				frontProbeError = self.poseData.frontProbeError[nodeID0]
-				for n in frontProbeError:
-					frontSum += n
-				foreAvg = frontSum / len(frontProbeError)
 
-				print nodeID0, nodeID1, "fore collision avg:", foreAvg
-
-				if foreAvg >= 1.1:
+				if collisionLandmarks[nodeID0][0]:
 					distEst = 0.0
-					print nodeID0, nodeID1, "forward collision motion"
 				else:
 					distEst = -0.8
-
-
 			else:
 
-				backSum = 0.0
-				backProbeError = self.poseData.backProbeError[nodeID1]
-				for n in backProbeError:
-					backSum += n
-				backAvg = backSum / len(backProbeError)
-
-				print nodeID0, nodeID1, "back collision avg:", backAvg
-
-				if backAvg >= 1.1:
+				if collisionLandmarks[nodeID1][1]:
 					distEst = 0.0
-					print nodeID0, nodeID1, "backward collision motion"
 				else:
 					distEst = 0.8
 
