@@ -1468,7 +1468,9 @@ class MapState:
 						#print "newArcDist:", newArcDist
 						#if origBranchDists[pathID] < JOINT_DIST:
 						#if False:
-						if True:
+						#if True:
+						""" localize the shoots every 20 poses """
+						if self.poseData.numNodes % 20 == 0:
 
 							#if minIndex < 8:
 							#	minIndex = 8

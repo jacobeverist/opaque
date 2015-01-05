@@ -1045,12 +1045,12 @@ def addNodesToShoot(hypSet, nodeID1, nodeID2):
 				isNewID = True
 				mapHyp.addNode(nodeID1,shootID)
 
-		if not isNewID:
-			memberShootIDs1.sort(reverse=True)	
-			mostJuniorShootID = memberShootIDs1[0]
-			mapHyp.addNode(nodeID1,mostJuniorShootID)
+		#if not isNewID:
+		#	memberShootIDs1.sort(reverse=True)	
+		#	mostJuniorShootID = memberShootIDs1[0]
+		#	mapHyp.addNode(nodeID1,mostJuniorShootID)
 
-		if False and not isNewID:
+		if not isNewID:
 
 
 			resultSet1 = []
@@ -1099,12 +1099,12 @@ def addNodesToShoot(hypSet, nodeID1, nodeID2):
 				isNewID = True
 				mapHyp.addNode(nodeID2,shootID)
 
-		if not isNewID:
-			memberShootIDs2.sort(reverse=True)	
-			mostJuniorShootID = memberShootIDs2[0]
-			mapHyp.addNode(nodeID2,mostJuniorShootID)
+		#if not isNewID:
+		#	memberShootIDs2.sort(reverse=True)	
+		#	mostJuniorShootID = memberShootIDs2[0]
+		#	mapHyp.addNode(nodeID2,mostJuniorShootID)
 
-		if False and not isNewID:
+		if not isNewID:
 
 			resultSet2 = []
 

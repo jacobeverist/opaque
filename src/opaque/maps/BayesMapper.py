@@ -360,12 +360,12 @@ class BayesMapper:
 						if skelID != 0 and val >= 2 and (distList[0] >= 0.8 or distList[0] <= 0.2):
 							isSubsumed = True
 
-					if len(currHyp.branchSubsumeIDs[0]) > 0:
-						mergePathID = currHyp.branchSubsumeIDs[0][0]
-						distList = currHyp.branchTermDivergenceDist[mergePathID]
-						distList.sort(reverse=True)
-						if distList[0] >= 0.8 or distList[0] <= 0.2:
-							isSubsumed = True
+					#if len(currHyp.branchSubsumeIDs[0]) > 0:
+					#	mergePathID = currHyp.branchSubsumeIDs[0][0]
+					#	distList = currHyp.branchTermDivergenceDist[mergePathID]
+					#	distList.sort(reverse=True)
+					#	if distList[0] >= 0.8 or distList[0] <= 0.2:
+					#		isSubsumed = True
 
 
 					while isSubsumed:
@@ -378,7 +378,7 @@ class BayesMapper:
 						# FIXME: need way to merge the root to a child if root is subsumed
 						
 						for pathID, divergeCount in currHyp.branchDivergeCount.iteritems():
-							if pathID == 0 and len(currHyp.branchSubsumeIDs[0]) > 0:
+							if False and pathID == 0 and len(currHyp.branchSubsumeIDs[0]) > 0:
 
 								mergePathID = currHyp.branchSubsumeIDs[0][0]
 								mergeNodeIDs = deepcopy(currHyp.pathClasses[mergePathID]["nodeSet"])
@@ -393,9 +393,9 @@ class BayesMapper:
 									currHyp.generatePaths()
 									currHyp.drawPoseParticles()
 
-									currHyp.snapPoseToSkeleton(targetNodeIDs=mergeNodeIDs)
-									currHyp.generatePaths()
-									currHyp.drawPoseParticles()
+									#currHyp.snapPoseToSkeleton(targetNodeIDs=mergeNodeIDs)
+									#currHyp.generatePaths()
+									#currHyp.drawPoseParticles()
 
 									break
 
@@ -412,9 +412,9 @@ class BayesMapper:
 									currHyp.generatePaths()
 									currHyp.drawPoseParticles()
 
-									currHyp.snapPoseToSkeleton(targetNodeIDs=mergeNodeIDs)
-									currHyp.generatePaths()
-									currHyp.drawPoseParticles()
+									#currHyp.snapPoseToSkeleton(targetNodeIDs=mergeNodeIDs)
+									#currHyp.generatePaths()
+									#currHyp.drawPoseParticles()
 
 									break
 
@@ -429,12 +429,13 @@ class BayesMapper:
 
 							if skelID != 0 and val >= 2 and (distList[0] >= 0.8 or distList[0] <= 0.2):
 								isSubsumed = True
-						if len(currHyp.branchSubsumeIDs[0]) > 0:
-							mergePathID = currHyp.branchSubsumeIDs[0][0]
-							distList = currHyp.branchTermDivergenceDist[mergePathID]
-							distList.sort(reverse=True)
-							if distList[0] >= 0.8 or distList[0] <= 0.2:
-								isSubsumed = True
+
+						#if len(currHyp.branchSubsumeIDs[0]) > 0:
+						#	mergePathID = currHyp.branchSubsumeIDs[0][0]
+						#	distList = currHyp.branchTermDivergenceDist[mergePathID]
+						#	distList.sort(reverse=True)
+						#	if distList[0] >= 0.8 or distList[0] <= 0.2:
+						#		isSubsumed = True
 
 				""" evaluate the map integrity """
 				currHyp.computeEval()
