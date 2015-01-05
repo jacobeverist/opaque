@@ -78,17 +78,16 @@ def getNodeLandmark(nodeID, poseData):
 	targetNodeLandmark_N = None
 	spatialFeature = poseData.spatialFeatures[nodeID][0]
 
-	if spatialFeature["bloomPoint"] != None:
+	if spatialFeature["inflectionPoint"] != None:
+		landmarkPoint_N = spatialFeature["inflectionPoint"]
+		targetNodeLandmark_N = (landmarkPoint_N, BEND_THRESH, "bendPoint")
+	elif spatialFeature["bloomPoint"] != None:
 		landmarkPoint_N = spatialFeature["bloomPoint"]
 		targetNodeLandmark_N = (landmarkPoint_N, BLOOM_THRESH, "bloomPoint")
-
 	elif spatialFeature["archPoint"] != None:
 		landmarkPoint_N = spatialFeature["archPoint"]
 		targetNodeLandmark_N = (landmarkPoint_N, ARCH_THRESH, "archPoint")
 
-	elif spatialFeature["inflectionPoint"] != None:
-		landmarkPoint_N = spatialFeature["inflectionPoint"]
-		targetNodeLandmark_N = (landmarkPoint_N, BEND_THRESH, "bendPoint")
 
 
 	return targetNodeLandmark_N

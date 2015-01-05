@@ -4223,7 +4223,14 @@ class MapState:
 
 				self.nodeLandmarks[pathID][nodeID] = None
 
-				if spatialFeature["bloomPoint"] != None:
+				if spatialFeature["inflectionPoint"] != None:
+					print self.hypothesisID, "adding inflectionPoint for node", nodeID, "in path", pathID
+					landmarkPoint_N = spatialFeature["inflectionPoint"]
+					landmarkPoint_L = poseFrame_L.convertLocalToGlobal(landmarkPoint_N)
+					self.localLandmarks[pathID].append((landmarkPoint_L, BEND_THRESH, "bendPoint"))
+					self.nodeLandmarks[pathID][nodeID] = (landmarkPoint_N, BEND_THRESH, "bendPoint")
+
+				elif spatialFeature["bloomPoint"] != None:
 					print self.hypothesisID, "adding bloomPoint for node", nodeID, "in path", pathID
 					landmarkPoint_N = spatialFeature["bloomPoint"]
 					landmarkPoint_L = poseFrame_L.convertLocalToGlobal(landmarkPoint_N)
@@ -4237,12 +4244,6 @@ class MapState:
 					self.localLandmarks[pathID].append((landmarkPoint_L, ARCH_THRESH, "archPoint"))
 					self.nodeLandmarks[pathID][nodeID] = (landmarkPoint_N, ARCH_THRESH, "archPoint")
 
-				elif spatialFeature["inflectionPoint"] != None:
-					print self.hypothesisID, "adding inflectionPoint for node", nodeID, "in path", pathID
-					landmarkPoint_N = spatialFeature["inflectionPoint"]
-					landmarkPoint_L = poseFrame_L.convertLocalToGlobal(landmarkPoint_N)
-					self.localLandmarks[pathID].append((landmarkPoint_L, BEND_THRESH, "bendPoint"))
-					self.nodeLandmarks[pathID][nodeID] = (landmarkPoint_N, BEND_THRESH, "bendPoint")
 
 				#if landmarkPoint_L != None:
 				#	#self.localLandmarks[pathID].append(landmarkPoint_L)

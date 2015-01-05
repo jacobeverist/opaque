@@ -1201,8 +1201,6 @@ class LocalNode:
 			print "returning caseE"
 			return self.longPaths, self.medialLongPaths, self.medialTailCuts, self.longMedialWidths, self.bowtieValues
 
-			self.spatialFeatures.append(results)
-
 
 		
 		" FIND BOUNDING BOX "		
@@ -2212,6 +2210,11 @@ class LocalNode:
 				else:
 					results["bloomPoint"] = bloomPoint
 					results["archPoint"] = archPoint
+
+				""" bend feature overrides other features """
+				if inflectionPoint != None:
+					results["bloomPoint"] = None
+					results["archPoint"] = None
 
 
 				self.spatialFeatures.append(results)
