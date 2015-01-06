@@ -3193,7 +3193,8 @@ class MapState:
 		FIXME: what if two terminals are very close to one another, how to select only one? not both or zero
 
 		"""
-		DIST_THRESH = 0.2
+		#DIST_THRESH = 0.2
+		DIST_THRESH = 0.4
 		DIVERGE_THRESH = 0.8
 
 		
