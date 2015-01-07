@@ -335,6 +335,7 @@ class MapState:
 		self.branchDivergeCount = {0 : 0}
 		self.branchSubsumeIDs = {0: []}
 		self.branchTermDivergenceDist = {0: []}
+		self.collisionLandmarks = {}
 
 		""" intermediate data structure for computing the shoot skeleton """
 		self.localLeaf2LeafPathJunctions = {}
@@ -1010,9 +1011,14 @@ class MapState:
 		""" forward direction , direction=True """
 		direction = self.poseData.travelDirs[nodeID0]
 
-		collisionLandmarks = {}
-		collisionLandmarks[nodeID0] = [None, None]
-		collisionLandmarks[nodeID1] = [None, None]
+		collisionState = {}
+		collisionState[nodeID0] = [None, None]
+		collisionState[nodeID1] = [None, None]
+
+		try:
+			self.collisionLandmarks
+		except:
+			self.collisionLandmarks = {}
 		
 		if direction:
 			
@@ -1025,8 +1031,10 @@ class MapState:
 			print nodeID0, nodeID1, "fore collision avg:", foreAvg
 
 			if foreAvg >= 1.1:
-				collisionLandmarks[nodeID0][0] = True
+				collisionState[nodeID0][0] = True
 				print nodeID0, nodeID1, "forward collision motion"
+
+				self.collisionLandmarks[nodeID0] = medial0[0]
 
 		else:
 
@@ -1039,9 +1047,10 @@ class MapState:
 			print nodeID0, nodeID1, "back collision avg:", backAvg
 
 			if backAvg >= 1.1:
-				collisionLandmarks[nodeID1][1] = True
+				collisionState[nodeID1][1] = True
 				print nodeID0, nodeID1, "backward collision motion"
 
+				self.collisionLandmarks[nodeID1] = medial1[-1]
 
 
 		#travelDist0 = 0., travelDist1):
@@ -1059,13 +1068,13 @@ class MapState:
 			
 			if direction:
 
-				if collisionLandmarks[nodeID0][0]:
+				if collisionState[nodeID0][0]:
 					distEst = 0.0
 				else:
 					distEst = -0.8
 			else:
 
-				if collisionLandmarks[nodeID1][1]:
+				if collisionState[nodeID1][1]:
 					distEst = 0.0
 				else:
 					distEst = 0.8
@@ -1121,7 +1130,8 @@ class MapState:
 				newPose1 = pathSpline.point_u(newU1)
 
 
-				motionBias = 0.1 * gaussian(newDist0, meanDist, 0.5)
+				#motionBias = 0.1 * gaussian(newDist0, meanDist, 0.5)
+				motionBias = 0.4 * gaussian(newDist0, meanDist, 0.5)
 
 				if abs(meanDist-newDist0) < 3.0:
 					print "sample dist:", newStepDist, newDist0, newDist1, newU0, newU1, motionBias
@@ -1302,7 +1312,7 @@ class MapState:
 			if maxLandmarkSum > 0.0:
 				if maxLandmarkSum > poseLandmarkSum:
 
-					newProb0 = -overlap0 - overlap1 - angDiff0 - angDiff1 + (maxLandmarkSum-poseLandmarkSum)/maxLandmarkSum
+					newProb0 = -overlap0 - overlap1 - angDiff0/pi - angDiff1/pi + 2.0*(maxLandmarkSum-poseLandmarkSum)/maxLandmarkSum
 
 
 					#newProb0 = currProb0 * currProb1 * ((maxLandmarkSum-poseLandmarkSum)/maxLandmarkSum)
@@ -1313,7 +1323,7 @@ class MapState:
 					newProb0 = 0.0
 			else:
 				#newProb0 = currProb0 * currProb1
-				newProb0 = -overlap0 - overlap1 - angDiff0 - angDiff1
+				newProb0 = -overlap0 - overlap1 - angDiff0/pi - angDiff1/pi
 
 			""" if the sample has been rejected, zero out evaluation """
 			if contigFrac0 <= 0.0 or contigFrac1 <= 0.0:
@@ -2836,6 +2846,34 @@ class MapState:
 		#pylab.plot(xP,yP,color='k', zorder=9, alpha=0.2)
 		pylab.plot(xP,yP,color='k', zorder=10, linewidth=1)
 		#pylab.plot(xP,yP,color='k', zorder=8, linewidth=1)
+
+		direction = self.poseData.travelDirs[nodeID0]
+
+		if direction:
+			"forward"
+
+			p0 = poseOrigin0.convertLocalToGlobal(medial0[0])
+			p1 = poseOrigin1.convertLocalToGlobal(medial1[0])
+
+			pylab.scatter([p0[0],p1[0]],[p0[1],p1[1]], zorder=15, color='m')
+
+		else:
+			"backward"
+			p0 = poseOrigin0.convertLocalToGlobal(medial0[-1])
+			p1 = poseOrigin1.convertLocalToGlobal(medial1[-1])
+
+			pylab.scatter([p0[0],p1[0]],[p0[1],p1[1]], zorder=15, color='m')
+
+		xP = []
+		yP = []
+		for thisNodeID, colPoint in self.collisionLandmarks.iteritems():
+			thisPose = self.getNodePose(thisNodeID)
+			thisPoseFrame = Pose(thisPose)
+			globalColPoint = thisPoseFrame.convertLocalToGlobal(colPoint)
+			xP.append(globalColPoint[0])
+			yP.append(globalColPoint[1])
+
+		pylab.scatter(xP,yP, zorder=14, color='b')
 
 		
 		#pylab.xlim(-6,16.48)

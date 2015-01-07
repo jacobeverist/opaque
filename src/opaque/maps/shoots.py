@@ -145,7 +145,8 @@ def computeSkeletonFromImage(medialPointSoup):
 	global medialCount
 
 	""" radius constant for alpha shape algorithm """
-	ALPHA_RADIUS = 0.2
+	#ALPHA_RADIUS = 0.2
+	ALPHA_RADIUS = 0.1
 
 
 	""" attempt to compute the alpha hull multiple times until it is successful """
@@ -1353,7 +1354,7 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 		pylab.axis("equal")
 		pylab.title("Path %d %d %d" % (hypothesisID, pathID, maxNodeID))
 		#pylab.title("paths: %s numNodes: %d %d, hyp %d %3.2f" % (repr(mapHyp.getPathIDs()), poseData.numNodes, highestNodeID, mapHyp.hypothesisID, mapHyp.utility))
-		pylab.savefig("pathAndHull_%02u_%03u_%04u.png" % (hypothesisID, maxNodeID, topCount))
+		pylab.savefig("pathAndHull_%02u_%03u_%02u_%04u.png" % (hypothesisID, maxNodeID, pathID, topCount))
 
 		#self.topCount += 1
 
@@ -1419,7 +1420,7 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 
 		pylab.axis("equal")
 		pylab.title("Path %d %d %d" % (hypothesisID, pathID, maxNodeID))
-		pylab.savefig("pathAndHull_%02u_%03u_%04u_b.png" % (hypothesisID, maxNodeID, topCount))
+		pylab.savefig("pathAndHull_%02u_%03u_%02u_%04u_b.png" % (hypothesisID, maxNodeID, pathID, topCount))
 
 		#self.topCount += 1
 
