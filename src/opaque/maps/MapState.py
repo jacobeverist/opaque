@@ -1070,6 +1070,8 @@ class MapState:
 				else:
 					distEst = 0.8
 
+			print "distEst:", distEst
+
 			#u2 = medialSpline2.getUOfDist(originU2, distEst, distIter = 0.001)
 
 			orientedSplicePath = orientPath(matchSplice, globalMedial0)				
@@ -1190,6 +1192,8 @@ class MapState:
 			newAngDiff1 = result[7]
 			newContigFrac0 = result[8]
 			newContigFrac1 = result[9]
+			newOverlap0 = result[10]
+			newOverlap1 = result[11]
 
 
 			resultDict = {}
@@ -1209,6 +1213,8 @@ class MapState:
 			resultDict["angDiff1"] = newAngDiff1
 			resultDict["contigFrac0"] = newContigFrac0
 			resultDict["contigFrac1"] = newContigFrac1
+			resultDict["overlap0"] = newOverlap0
+			resultDict["overlap1"] = newOverlap1
 			resultDict["arcDist0"] = arcDist0
 			resultDict["arcDist1"] = arcDist1
 			resultDict["spliceU0"] = spliceU0
@@ -1269,7 +1275,7 @@ class MapState:
 					maxLandmarkSum = currSum
 					maxPartIndex = partIndex
 
-		maxProb = 0.0
+		maxProb = -1e100
 		maxPart2 = 0
 
 		#for partIndex in range(len(particleDist2)):
@@ -1281,6 +1287,8 @@ class MapState:
 			angDiff1 = resultDict["angDiff1"]
 			contigFrac0 = resultDict["contigFrac0"]
 			contigFrac1 = resultDict["contigFrac1"]
+			overlap0 = resultDict["overlap0"]
+			overlap1 = resultDict["overlap1"]
 			arcDist0 = resultDict["arcDist0"]
 			arcDist1 = resultDict["arcDist1"]
 			spliceU0 = resultDict["spliceU0"]
@@ -1290,33 +1298,47 @@ class MapState:
 
 
 			""" check to avoid divide by zero """
+			newProb0 = 0.0
 			if maxLandmarkSum > 0.0:
 				if maxLandmarkSum > poseLandmarkSum:
-					newProb0 = currProb0 * currProb1 * ((maxLandmarkSum-poseLandmarkSum)/maxLandmarkSum)
+
+					newProb0 = -overlap0 - overlap1 - angDiff0 - angDiff1 + (maxLandmarkSum-poseLandmarkSum)/maxLandmarkSum
+
+
+					#newProb0 = currProb0 * currProb1 * ((maxLandmarkSum-poseLandmarkSum)/maxLandmarkSum)
+					#newProb0 = currProb0 * currProb1 * ((maxLandmarkSum-poseLandmarkSum)/maxLandmarkSum)
 					#newProb0 = (maxLandmarkSum-poseLandmarkSum)/maxLandmarkSum
 				else:
 					""" maximum landmark cost, means utility is zeroed """
 					newProb0 = 0.0
 			else:
-				newProb0 = currProb0 * currProb1
+				#newProb0 = currProb0 * currProb1
+				newProb0 = -overlap0 - overlap1 - angDiff0 - angDiff1
+
+			""" if the sample has been rejected, zero out evaluation """
+			if contigFrac0 <= 0.0 or contigFrac1 <= 0.0:
+				newProb0 = 0.0
 
 			resultDict["evalProb"] = newProb0
 
-
-			if newProb0 > 0.0:
+	
+			""" if the sample hasn't been rejected, compute evaluation """
+			if contigFrac0 > 0.0 and contigFrac1 > 0.0:
 				evalWithBias = newProb0 + motionBias
+
+				""" find the maximum evaluation """
+				if evalWithBias > maxProb:
+					maxProb = evalWithBias
+					maxPart2 = partIndex
 			else:
 				evalWithBias = 0.0
 
 			resultDict["evalWithBias"] = evalWithBias
 
-			print nodeID0, nodeID1, "displace sample:", partIndex, arcDist0, arcDist1, spliceU0, spliceU1, poseLandmarkSum, angDiff0, angDiff1, contigFrac0, contigFrac1, currProb0, currProb1, newProb0, motionBias, evalWithBias
+			print nodeID0, nodeID1, "displace sample:", partIndex, arcDist0, arcDist1, spliceU0, spliceU1, poseLandmarkSum, angDiff0, angDiff1, contigFrac0, contigFrac1, overlap0, overlap1, currProb0, currProb1, newProb0, motionBias, evalWithBias
 
 			#if newProb0 > maxProb:
 			#	maxProb = newProb0
-			if evalWithBias > maxProb:
-				maxProb = evalWithBias
-				maxPart2 = partIndex
 
 		self.currMaxIndex = maxPart2
 
@@ -1997,6 +2019,7 @@ class MapState:
 			overlapSum_0 = part[20]
 
 			contigFrac_1 = part[41]
+			overlapSum_1 = part[42]
 
 			newPose1 = part[24]
 
@@ -2025,6 +2048,9 @@ class MapState:
 			particleDict["newPose1"] = newPose1
 			particleDict["evalProb"] = newProb
 			particleDict["spliceIndex"] = spliceIndex
+
+			particleDict["overlap0"] = overlapSum_0
+			particleDict["overlap1"] = overlapSum_1
 
 			particleDict["contigFrac0"] = contigFrac_0
 			particleDict["contigFrac1"] = contigFrac_1
@@ -2231,7 +2257,8 @@ class MapState:
 		#fig, (ax1, ax2, ax3) = plt.subplots(3,  sharex=False, sharey=False)
 		#fig, (ax1, ax2, ax3, ax4, ax5) = plt.subplots(5,  sharex=False, sharey=False)
 		#fig, (ax2, ax3, ax4, ax5) = plt.subplots(4,  sharex=True, sharey=False)
-		fig, (ax2, ax3, ax4, ax5, ax6, ax7) = plt.subplots(6,  sharex=True, sharey=False)
+		#fig, (ax2, ax3, ax4, ax5, ax6, ax7) = plt.subplots(6,  sharex=True, sharey=False)
+		fig, (ax2, ax3, ax4, ax5, ax6, ax7, ax8) = plt.subplots(7,  sharex=True, sharey=False)
 		#fig.set_size_inches(16,12)
 		#fig.tight_layout(pad=4.0)
 		#fig.tight_layout()
@@ -2267,8 +2294,12 @@ class MapState:
 
 		probLists = [[] for k in range(numSplices)]
 		landmarkLists = [[] for k in range(numSplices)]
-		angDiffLists = [[] for k in range(numSplices)]
-		contigFracLists = [[] for k in range(numSplices)]
+		angDiffLists0 = [[] for k in range(numSplices)]
+		overlapLists0 = [[] for k in range(numSplices)]
+		contigFracLists0 = [[] for k in range(numSplices)]
+		angDiffLists1 = [[] for k in range(numSplices)]
+		overlapLists1 = [[] for k in range(numSplices)]
+		contigFracLists1 = [[] for k in range(numSplices)]
 		biasLists = [[] for k in range(numSplices)]
 		finalSumLists = [[] for k in range(numSplices)]
 
@@ -2285,6 +2316,8 @@ class MapState:
 
 			angDiff0 = samp["angDiff0"]
 			angDiff1 = samp["angDiff1"]
+			overlap0 = samp["overlap0"]
+			overlap1 = samp["overlap1"]
 			contigFrac0 = samp["contigFrac0"]
 			contigFrac1 = samp["contigFrac1"]
 			spliceU0 = samp["spliceU0"]
@@ -2320,8 +2353,12 @@ class MapState:
 
 			probLists[spliceIndex].append((arcDist0, evalProb))
 			landmarkLists[spliceIndex].append((arcDist0, poseLandmarkSum))
-			angDiffLists[spliceIndex].append((arcDist0, angDiff0))
-			contigFracLists[spliceIndex].append((arcDist0, contigFrac0))
+			angDiffLists0[spliceIndex].append((arcDist0, angDiff0))
+			overlapLists0[spliceIndex].append((arcDist0, overlap0))
+			contigFracLists0[spliceIndex].append((arcDist0, contigFrac0))
+			angDiffLists1[spliceIndex].append((arcDist0, angDiff1))
+			overlapLists1[spliceIndex].append((arcDist0, overlap1))
+			contigFracLists1[spliceIndex].append((arcDist0, contigFrac1))
 			biasLists[spliceIndex].append((arcDist0, motionBias))
 			finalSumLists[spliceIndex].append((arcDist0, evalWithBias))
 
@@ -2357,9 +2394,17 @@ class MapState:
 			splice.sort()
 		for splice in landmarkLists:
 			splice.sort()
-		for splice in angDiffLists:
+		for splice in angDiffLists0:
 			splice.sort()
-		for splice in contigFracLists:
+		for splice in overlapLists0:
+			splice.sort()
+		for splice in contigFracLists0:
+			splice.sort()
+		for splice in angDiffLists1:
+			splice.sort()
+		for splice in overlapLists1:
+			splice.sort()
+		for splice in contigFracLists1:
 			splice.sort()
 		for splice in biasLists:
 			splice.sort()
@@ -2387,14 +2432,17 @@ class MapState:
 		yP = [self.stepResults[self.currMaxIndex]["angDiff0"],]
 		ax4.scatter(xP,yP, color=self.colors[maxSpliceIndex], zorder=10)
 
-		yP = [self.stepResults[self.currMaxIndex]["contigFrac0"],]
+		yP = [self.stepResults[self.currMaxIndex]["overlap0"],]
 		ax5.scatter(xP,yP, color=self.colors[maxSpliceIndex], zorder=10)
 
-		yP = [self.stepResults[self.currMaxIndex]["motionBias"],]
+		yP = [self.stepResults[self.currMaxIndex]["contigFrac0"],]
 		ax6.scatter(xP,yP, color=self.colors[maxSpliceIndex], zorder=10)
 
-		yP = [self.stepResults[self.currMaxIndex]["evalWithBias"],]
+		yP = [self.stepResults[self.currMaxIndex]["motionBias"],]
 		ax7.scatter(xP,yP, color=self.colors[maxSpliceIndex], zorder=10)
+
+		yP = [self.stepResults[self.currMaxIndex]["evalWithBias"],]
+		ax8.scatter(xP,yP, color=self.colors[maxSpliceIndex], zorder=10)
 
 		for k in range(len(probLists)):
 			splice = probLists[k]
@@ -2422,8 +2470,8 @@ class MapState:
 			#ax3.plot(xP,yP, color = self.colors[k])
 			ax3.plot(xP,yP, color = self.colors[k], marker='x', linestyle='--')
 
-		for k in range(len(angDiffLists)):
-			splice = angDiffLists[k]
+		for k in range(len(angDiffLists0)):
+			splice = angDiffLists0[k]
 			xP = []
 			yP = []
 
@@ -2432,11 +2480,9 @@ class MapState:
 				xP.append(valTuple[0])
 				yP.append(valTuple[1])
 
-			#ax4.plot(xP,yP, color = self.colors[k])
 			ax4.plot(xP,yP, color = self.colors[k], marker='x', linestyle='--')
 
-		for k in range(len(contigFracLists)):
-			splice = contigFracLists[k]
+			splice = angDiffLists1[k]
 			xP = []
 			yP = []
 
@@ -2445,8 +2491,53 @@ class MapState:
 				xP.append(valTuple[0])
 				yP.append(valTuple[1])
 
-			#ax5.plot(xP,yP, color = self.colors[k])
+			ax4.plot(xP,yP, color = self.colors[k], marker='x', linestyle='--')
+
+		for k in range(len(overlapLists0)):
+			splice = overlapLists0[k]
+			xP = []
+			yP = []
+
+			for valTuple in splice:
+
+				xP.append(valTuple[0])
+				yP.append(valTuple[1])
+
 			ax5.plot(xP,yP, color = self.colors[k], marker='x', linestyle='--')
+
+			splice = overlapLists1[k]
+			xP = []
+			yP = []
+
+			for valTuple in splice:
+
+				xP.append(valTuple[0])
+				yP.append(valTuple[1])
+
+			ax5.plot(xP,yP, color = self.colors[k], marker='x', linestyle='--')
+
+		for k in range(len(contigFracLists0)):
+			splice = contigFracLists0[k]
+			xP = []
+			yP = []
+
+			for valTuple in splice:
+
+				xP.append(valTuple[0])
+				yP.append(valTuple[1])
+
+			ax6.plot(xP,yP, color = self.colors[k], marker='x', linestyle='--')
+
+			splice = contigFracLists1[k]
+			xP = []
+			yP = []
+
+			for valTuple in splice:
+
+				xP.append(valTuple[0])
+				yP.append(valTuple[1])
+
+			ax6.plot(xP,yP, color = self.colors[k], marker='x', linestyle='--')
 
 		for k in range(len(biasLists)):
 			splice = biasLists[k]
@@ -2459,7 +2550,7 @@ class MapState:
 				yP.append(valTuple[1])
 
 			#ax6.plot(xP,yP, color = self.colors[k])
-			ax6.plot(xP,yP, color = self.colors[k], marker='x', linestyle='--')
+			ax7.plot(xP,yP, color = self.colors[k], marker='x', linestyle='--')
 
 		for k in range(len(finalSumLists)):
 			splice = finalSumLists[k]
@@ -2472,7 +2563,7 @@ class MapState:
 				yP.append(valTuple[1])
 
 			#ax7.plot(xP,yP, color = self.colors[k])
-			ax7.plot(xP,yP, color = self.colors[k], marker='x', linestyle='--')
+			ax8.plot(xP,yP, color = self.colors[k], marker='x', linestyle='--')
 
 
 		controlPoses_G = computeGlobalControlPoses(self.getControlPoses(), self.getParentHash())
@@ -2556,9 +2647,10 @@ class MapState:
 		ax2.set_ylabel('eval')
 		ax3.set_ylabel('landmarkCost')
 		ax4.set_ylabel('angDiff')
-		ax5.set_ylabel('contigFrac')
-		ax6.set_ylabel('motion')
-		ax7.set_ylabel('final')
+		ax5.set_ylabel('overlap')
+		ax6.set_ylabel('contigFrac')
+		ax7.set_ylabel('motion')
+		ax8.set_ylabel('final')
 		
 		#pylab.axis("equal")
 		#ax1.set_aspect("equal")
@@ -3209,6 +3301,21 @@ class MapState:
 		allTerms_G = {}
 		currKeys = self.globalSegments.keys()
 
+		self.subsumptionMatrix = {}
+		self.terminalSimilarity = {}
+		for pathID1 in currKeys:
+			self.subsumptionMatrix[pathID1] = {}
+			self.terminalSimilarity[pathID1] = {}
+
+			for pathID2 in currKeys:
+				if pathID1 != pathID2:
+					self.subsumptionMatrix[pathID1][pathID2] = 0
+					self.terminalSimilarity[pathID1][pathID2] = 0
+
+
+
+
+
 		controlPoses_G = self.getGlobalControlPoses()
 
 		#for pathID, terms in self.localTerms.iteritems():
@@ -3250,15 +3357,32 @@ class MapState:
 						pathID2 = currKeys[currK2]
 						segs2 = self.globalSegments[pathID2]
 
+						thisMinDist = 1e100
+
 						for seg2 in segs2:
 							for p in seg2:
 
 								dist2 = sqrt((p[0]-term1_G[0])**2 + (p[1]-term1_G[1])**2)
 
+								if dist2 < thisMinDist:
+									thisMinDist = dist2
+
 								if dist2 < minDist2:
 									minDist2 = dist2
 									minP2 = p
 									subSkelID = pathID2
+						
+						if thisMinDist <= DIST_THRESH:
+							self.subsumptionMatrix[pathID1][pathID2] += 1
+
+						otherTerms_G = self.globalTerms[pathID2]
+						for p in otherTerms_G:
+
+							dist = sqrt((p[0]-term1_G[0])**2 + (p[1]-term1_G[1])**2)
+
+							if dist < DIST_THRESH:
+								self.terminalSimilarity[pathID1][pathID2] += 1
+
 				
 				self.branchTermDivergenceDist[pathID1].append(minDist2)
 				print pathID1, minDist2, "terms:", term1_G
@@ -4471,6 +4595,7 @@ class MapState:
 				#	p.delNode(nodeID, pathID)
 
 
+
 		print "adding node", nodeID, "to path", targetPathID
 		self.pathClasses[targetPathID]["nodeSet"].append(nodeID)
 		#self.addNode(nodeID,pathID)
@@ -4567,6 +4692,11 @@ class MapState:
 
 		self.delPath(pathID, mergeTargetPathID)
 
+		allPathIDs = self.getPathIDs()
+		for pathID in allPathIDs:
+			if len(self.pathClasses[pathID]["nodeSet"]) == 0:
+				self.delPath(pathID)
+
 		#self.pathTermsData
 
 		#for termUUID, termData in self.pathTermsData.iteritems():
@@ -4577,13 +4707,17 @@ class MapState:
 	
 
 	@logFunction
-	def delPath(self, pathID, mergeTargetID):
+	def delPath(self, pathID, mergeTargetID = None):
 
 		parentPathIDs = self.getParentHash()
 		controlPoses = self.getControlPoses()
 		globalControlPoses_G = computeGlobalControlPoses(controlPoses, parentPathIDs)
 
 		#particleDist2 = self.poseParticles["snapshots2"][0]
+
+		""" default to parent merge """
+		if mergeTargetID == None:
+			mergeTargetID = parentPathIDs[pathID]
 
 
 		""" book-keeping for branch tuple indexing """

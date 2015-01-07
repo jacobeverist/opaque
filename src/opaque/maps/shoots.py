@@ -5958,7 +5958,7 @@ def selectCommonOrigin(globalPath1, globalPath2, plotIter=False):
 		if minDist < MATCH_THRESH:
 
 			mean1 = globalVar1[i][0]
-			mean2 = globalVar1[minJ][0]
+			mean2 = globalVar2[minJ][0]
 
 			var1 = globalVar1[i][1]
 			var2 = globalVar2[minJ][1]

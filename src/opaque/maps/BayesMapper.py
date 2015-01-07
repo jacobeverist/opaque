@@ -346,12 +346,69 @@ class BayesMapper:
 
 			for pID, currHyp in hypSet.iteritems():
 
-
-				""" merge a shoot if it does not diverge """
 				if True:
 
+					while True:
+						print pID, "subsumption:", currHyp.subsumptionMatrix, [len(currHyp.localTerms[k]) for k in currHyp.localTerms.keys()], currHyp.terminalSimilarity
+
+						allPathIDs = currHyp.localTerms.keys()
+						parentHash = currHyp.getParentHash()
+
+						termCount = {}
+						terminalSimilarity = currHyp.terminalSimilarity
+						subsumptionMatrix = currHyp.subsumptionMatrix
+						for pathID in allPathIDs:
+							termCount[pathID] = len(currHyp.localTerms[pathID])
+							
+						print "termCount:", termCount
+
+						mergeJobs = []
+
+						for jIndex in range(len(allPathIDs)):
+							pathID1 = allPathIDs[jIndex]
+							termCount1 = termCount[pathID1]
+							
+							for kIndex in range(jIndex+1, len(allPathIDs)):
+								pathID2 = allPathIDs[kIndex]
+								termCount2 = termCount[pathID2]
+
+								subCount1 = subsumptionMatrix[pathID1][pathID2]
+								subCount2 = subsumptionMatrix[pathID2][pathID1]
+								termMatchCount = terminalSimilarity[pathID1][pathID2]
+
+								subSum = subCount1 + subCount2 - termMatchCount
+
+								if subSum >= termCount1 and subSum >= termCount2:
+									if parentHash[pathID1] == pathID2:
+										mergeJobs.append((pathID1,pathID2))
+									elif parentHash[pathID2] == pathID1:
+										mergeJobs.append((pathID2,pathID1))
+									else:	
+										mergeJobs.append((pathID1,pathID2))
+
+						""" only merge the first job, regenerate and recompute after it """
+						
+						print "mergeJobs:", mergeJobs
+
+						if len(mergeJobs) > 0:
+							job1 = mergeJobs[0]
+							if job1[0] > job1[1]:
+								currHyp.mergePath(job1[0], targetPathID=job1[1])
+							else:
+								currHyp.mergePath(job1[1], targetPathID=job1[0])
+
+							currHyp.generatePaths()
+							currHyp.drawPoseParticles()
+
+						if len(mergeJobs) == 0:
+							break
+
+
+				""" merge a shoot if it does not diverge """
+				if False:
+
 					isSubsumed = False
-					print pID, "branchDivergeCount:", currHyp.branchDivergeCount, currHyp.branchSubsumeIDs, currHyp.branchTermDivergenceDist
+					print pID, "branchDivergeCount:", currHyp.branchDivergeCount, currHyp.branchSubsumeIDs, currHyp.branchTermDivergenceDist, currHyp.subsumptionMatrix, [len(currHyp.localTerms[k]) for k in currHyp.localTerms.keys()]
 					for skelID, val in currHyp.branchDivergeCount.iteritems():
 
 						distList = currHyp.branchTermDivergenceDist[skelID]

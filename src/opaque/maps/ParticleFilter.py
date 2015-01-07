@@ -689,6 +689,8 @@ def displaceParticle2( poseData, pathSplices2, pathSplices3, supportLine, nodeID
 	currAngDiff3 = 0.0
 	currContigFrac2 = 0.0
 	currContigFrac3 = 0.0
+	currOverlap2 = 0.0
+	currOverlap3 = 0.0
 
 	foreAngle0, backAngle0 = getTipAngles(medial0_vec, estPose0)
 	foreAngle1, backAngle1 = getTipAngles(medial1_vec, estPose1)
@@ -861,12 +863,14 @@ def displaceParticle2( poseData, pathSplices2, pathSplices3, supportLine, nodeID
 				if overlapSum2 > 1e10:
 					newProb2 = 0.0	
 				else:
-					newProb2 = (pi-angDiff2) * contigFrac_2
+					#newProb2 = (pi-angDiff2) * contigFrac_2
+					newProb2 = (pi-angDiff2) / overlapSum2
 
 				if overlapSum3 > 1e10:
 					newProb3 = 0.0	
 				else:
-					newProb3 = (pi-angDiff3) * contigFrac_3
+					#newProb3 = (pi-angDiff3) * contigFrac_3
+					newProb3 = (pi-angDiff3) / overlapSum3
 				
 				#print "angDiff:", angDiff2, angDiff3
 				#print "overlapSum:", overlapSum2, overlapSum3
@@ -912,6 +916,7 @@ def displaceParticle2( poseData, pathSplices2, pathSplices3, supportLine, nodeID
 				currProb2 = resultMoves2[0][20]
 				currContigFrac2 = resultMoves2[0][16]
 				currAngDiff2 = resultMoves2[0][21]
+				currOverlap2 = resultMoves2[0][17]
 
 			else:
 				#print "node", nodeID-1, "not movePathed because no valid pose"
@@ -923,6 +928,7 @@ def displaceParticle2( poseData, pathSplices2, pathSplices3, supportLine, nodeID
 				currProb3 = resultMoves3[0][20]
 				currContigFrac3 = resultMoves3[0][16]
 				currAngDiff3 = resultMoves3[0][21]
+				currOverlap3 = resultMoves3[0][17]
 
 			else:
 				#print "node", nodeID, "not movePathed because no valid pose"
@@ -951,7 +957,7 @@ def displaceParticle2( poseData, pathSplices2, pathSplices3, supportLine, nodeID
 
 
 
-		return currPose2, currPose3, currProb2, currProb3, currAngDiff2, currAngDiff3, currContigFrac2, currContigFrac3
+		return currPose2, currPose3, currProb2, currProb3, currAngDiff2, currAngDiff3, currContigFrac2, currContigFrac3, currOverlap2, currOverlap3
 
 
 def __remote_prof_multiParticle(rank, qin, qout):
@@ -1187,10 +1193,12 @@ def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, me
 	isExist1_0 = resultArgs0[3]
 	isExist2_0 = resultArgs0[9]
 	contigFrac0 = resultArgs0[12]
+	overlap0 = resultArgs0[13]
 
 	isExist1_1 = resultArgs1[3]
 	isExist2_1 = resultArgs1[9]
 	contigFrac1 = resultArgs1[12]
+	overlap1 = resultArgs1[13]
 
 	currPoseOrigin = Pose(resultPose0)
 	prevPoseOrigin = Pose(prevPose0)

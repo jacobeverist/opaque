@@ -379,6 +379,7 @@ def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, node
 	distSum = 0.0
 	contigCount = 0
 	maxContig = 0
+	maxSum = 0.0
 	distances = []
 	indices = []
 	kdInput = []
@@ -399,16 +400,23 @@ def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, node
 
 		distances.append(minDist)
 		indices.append(i_1)
-		distSum += minDist
 		
 		if minDist < CONTIG_DIST:
 			contigCount += 1
+			distSum += minDist
+
 			if contigCount > maxContig:
 				maxContig = contigCount
+				maxSum = distSum
 		else:
 			contigCount = 0
+			distSum = 0.0
 	
-	overlapSum = distSum / float(len(points2_offset))
+	#overlapSum = distSum / float(len(points2_offset))
+	if maxContig > 0.0:
+		overlapSum = maxSum / float(maxContig)
+	else:
+		overlapSum = 1e100
 	
 	#print "maxContig,overlapSum:", maxContig, overlapSum
 
