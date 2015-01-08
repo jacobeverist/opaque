@@ -220,6 +220,13 @@ def computeSkeletonFromImage(medialPointSoup):
 		except:
 			print "hull has holes!	retrying..."
 	
+			sys.stdout.flush()
+			sys.stderr.flush()
+
+			""" slightly increase the alpha radius """
+			ALPHA_RADIUS += 0.01
+
+
 	""" cut out the repeat vertex """
 	vertices = vertices[:-1]
 	
