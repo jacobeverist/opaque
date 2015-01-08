@@ -447,6 +447,10 @@ class MapState:
 
 		parentPathIDs = self.getParentHash()
 		controlPoses = self.getControlPoses()
+
+		print "parentPathIDs, controlPoses:", parentPathIDs, controlPoses
+
+
 		globalControlPoses = computeGlobalControlPoses(controlPoses, parentPathIDs)
 
 		#particleDist2 = self.poseParticles["snapshots2"][0]
@@ -1131,7 +1135,7 @@ class MapState:
 
 
 				#motionBias = 0.1 * gaussian(newDist0, meanDist, 0.5)
-				motionBias = 0.4 * gaussian(newDist0, meanDist, 0.5)
+				motionBias = 0.25 * gaussian(newDist0, meanDist, 0.5)
 
 				if abs(meanDist-newDist0) < 3.0:
 					print "sample dist:", newStepDist, newDist0, newDist1, newU0, newU1, motionBias
@@ -1312,7 +1316,7 @@ class MapState:
 			if maxLandmarkSum > 0.0:
 				if maxLandmarkSum > poseLandmarkSum:
 
-					newProb0 = -overlap0 - overlap1 - angDiff0/pi - angDiff1/pi + 2.0*(maxLandmarkSum-poseLandmarkSum)/maxLandmarkSum
+					newProb0 = -2*overlap0 - 2*overlap1 - angDiff0/pi - angDiff1/pi + 2.0*(maxLandmarkSum-poseLandmarkSum)/maxLandmarkSum
 
 
 					#newProb0 = currProb0 * currProb1 * ((maxLandmarkSum-poseLandmarkSum)/maxLandmarkSum)
@@ -4804,40 +4808,11 @@ class MapState:
 
 					print "oldTuple, newTuple:", branchTupleIndex, newTupleIndex
 				
+
+			reparentedPaths = []
 			for childPathID, pathClass in self.pathClasses.iteritems():
 				
 				if pathClass["parentID"] == pathID:
-
-
-					#self.pathClasses[newPathID] = {"parentID" : controlParentID,
-					#				"branchNodeID" : branchNodeID,
-					#				"localDivergencePose" : localDivergencePose_R, 
-					#				"localJunctionPose" : junctionPose_C, 
-					#				"tipPoint_L" : tipPoint_C, 
-					#				"sameProb" : {},
-					#				"nodeSet" : [branchNodeID,],
-					#				"localNodePoses" : {branchNodeID : nodePose_C},
-					#				"globalJunctionPose" : newGlobJuncPose_G,
-					#				"controlPose" : controlPose_P }		
-
-					#parentPathIDs = self.getParentHash()
-					#controlPoses = self.getControlPoses()
-					#globalControlPoses_G = computeGlobalControlPoses(controlPoses, parentPathIDs)
-
-					#localPathSegsByID = {}
-					#for pathID in allPathIDs:
-					#	localPathSegs = self.localLeaf2LeafPathJunctions[pathID]["localSegments"]
-					#	localPathSegsByID[pathID] = localPathSegs
-
-					#branchNodeID = pathClass["branchNodeID"]
-					#globalJunctionPose_G = pathClass["globalJunctionPose"]
-					#globalLongPath_G = self.paths[pathID]
-
-					#controlPose_G, controlParentID, tipPoint_G, branchPose_G = getInitSkeletonBranchPoint(globalJunctionPose_G, pathID, globalLongPath_G, parentPathIDs, localPathSegsByID, self.localPaths, globalControlPoses_G, plotIter = False, hypothesisID = self.hypothesisID, nodeID = branchNodeID)
-
-
-					#newGlobJuncPose_G = branchPose_G
-					#pathClass["globalJunctionPose"] = branchPose_G
 
 					pathClass["parentID"] = mergeTargetID
 
@@ -4875,29 +4850,29 @@ class MapState:
 					#tipPoint_C = currFrame.convertGlobalToLocal(tipPoint_G)
 					#pathClass["tipPoint_L"] = tipPoint_C
 
+					print "childPathID parent:", childPathID, pathID, mergeTargetID, pathClass["parentID"], self.pathClasses[childPathID]["parentID"]
+
 					for nodeID in pathClass["nodeSet"]:
 
 						nodePose_G = self.getNodePose(nodeID)
-						#nodePose_C = currFrame.convertGlobalPoseToLocal(nodePose_G)
-						#pathClass["localNodePoses"][nodeID] = nodePose_C
 
-						self.setNodePose(nodeID, nodePose_G)
+						#self.setNodePose(nodeID, nodePose_G)
+
 
 					print "reparented pathClass:", childPathID, pathClass
 
+					reparentedPaths.append(childPathID)
 
-					#for k in range(len(self.stepResults)):
+		
+			for childPathID in reparentedPaths:
 
-					#	part = self.stepResults[k]
+				pathClass = self.pathClasses[childPathID]
 
-					#	partControlPoses_G = partSetControlPoses_G[k]
+				for nodeID in pathClass["nodeSet"]:
 
-					#	partParentControlPose_G = partControlPoses_G[mergeTargetID]
-					#	parentFrame = Pose(partParentControlPose_G)
+					nodePose_G = self.getNodePose(nodeID)
 
-					#	controlPose_P = parentFrame.convertGlobalPoseToLocal(oldControlPose_G)
-					#	part["controlPoses_P"][childPathID] = controlPose_P
-
+					self.setNodePose(nodeID, nodePose_G)
 
 
 
