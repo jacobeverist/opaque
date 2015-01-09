@@ -1072,13 +1072,13 @@ class MapState:
 			
 			if direction:
 
-				if collisionState[nodeID0][0]:
+				if collisionState[nodeID0][0] or (not isFeatureless0 and not isFeatureless1):
 					distEst = 0.0
 				else:
 					distEst = -0.8
 			else:
 
-				if collisionState[nodeID1][1]:
+				if collisionState[nodeID1][1] or (not isFeatureless0 and not isFeatureless1):
 					distEst = 0.0
 				else:
 					distEst = 0.8
@@ -1663,6 +1663,11 @@ class MapState:
 			""" collect landmarks that we can localize against """
 			candLandmarks_G = nodeToGlobalLandmarks(controlPoses, self.getPathIDs(), self.getParentHash(), self.nodeLandmarks, self.pathClasses, exemptNodes = [nodeID0,nodeID1])
 
+			#allSplices = self.getAllSplices2()
+			#splices_G = []
+			#for sPath in allSplices:
+			#	path = sPath['skelPath']
+			#splices_G.append(path)
 
 			splices_G = branchResult["splices_G"]
 			for splice in splices_G:
@@ -1751,7 +1756,7 @@ class MapState:
 					arcIndexes.append(tuple(comb))
 
 
-			#print "particle:", particleIndex, ",",  len(thisSplicedPaths), "localize jobs"
+			print "particle:", particleIndex, ",",  len(thisSplicedPaths), "localize jobs"
 			poseFrame = Pose(hypPose0)
 			globalMedial0 = []
 			medialSpline0 = SplineFit(medial0, smooth=0.1)
@@ -1915,7 +1920,7 @@ class MapState:
 							normLandmarkSum = (maxLandmarkSum-poseLandmarkSum)/maxLandmarkSum
 							#newProb = (pi-fabs(diffAngle(initPose0[2],newPose0[2])) ) * contigFrac_0  * normLandmarkSum 
 							#newProb = contigFrac_0 * normLandmarkSum 
-							newProb = normLandmarkSum 
+							newProb = normLandmarkSum * contigFrac_0 * contigFrac_1
 						else:
 							""" maximum landmark cost, means utility is zeroed """
 							newProb = 0.0
@@ -2147,7 +2152,7 @@ class MapState:
 
 			meanMinDist0, meanU0, meanP0 = pathSpline.findClosestPoint(self.getNodePose(nodeID0))
 			meanDist0 = pathSpline.dist_u(meanU0)
-			motionBias = 0.2 * gaussian(newDist0, meanDist0, 0.5)
+			motionBias = 0.05 * gaussian(newDist0, meanDist0, 0.5)
 			part["motionBias"] = motionBias
 			if poseProbVal > 0.0:
 				part["evalWithBias"] = poseProbVal + motionBias
@@ -3716,6 +3721,17 @@ class MapState:
 					xP.append(p[0])
 					yP.append(p[1])
 				pylab.plot(xP,yP, color='b', zorder=2)
+
+
+			#allNodes = self.spliceSkeleton.nodes()
+			#xP = []
+			#yP = []
+			#for k in range(len(allNodes)):
+			#	thisNode = allNodes[k]
+			#	xP.append(thisNode[0])
+			#	yP.append(thisNode[1])
+
+			#pylab.scatter(xP,yP, color='k', linewidth=1)
 
 
 			#self.drawWalls()

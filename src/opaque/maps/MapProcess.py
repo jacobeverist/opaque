@@ -79,7 +79,7 @@ def getInPlaceGuess(poseData, nodeID1, nodeID2, estPose1, estPose2, supportLine,
 	
 
 	if poseData.numLeafs[nodeID1] > 2 or poseData.numLeafs[nodeID2] > 2:
-		transform, overHist = makeMultiJunctionMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose1, estPose2, isMove = False, inPlace = False, isForward = direction )
+		transform, overHist = makeMultiJunctionMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose1, estPose2, isMove = False, inPlace = True, isForward = direction )
 	else:
 		transform, overHist = makeMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose1, estPose2, isMove = False, inPlace = True, isForward = direction)
 	

@@ -1260,7 +1260,10 @@ def overlapICP_GPU2(estPose1, initGuess, medialPoints1, medialPoints2, rootPose1
 	uHigh = medialSpline2.getUOfDist(u2, uRange, distIter = 0.001)
 	uLow = medialSpline2.getUOfDist(u2, -uRange, distIter = 0.001)
 	
-	if inPlace:
+	#if inPlace:
+	if False:
+		#uHigh = u2 + 0.08
+		#uLow = u2 - 0.08
 		uHigh = u2 + 0.08
 		uLow = u2 - 0.08
 
@@ -1286,7 +1289,8 @@ def overlapICP_GPU2(estPose1, initGuess, medialPoints1, medialPoints2, rootPose1
 	offset = computeOffset(point1, point2, ang1, ang2 + currAng)
 
 	costThresh = 0.004
-	minMatchDist = 2.0
+	#minMatchDist = 2.0
+	minMatchDist = 0.4
 	lastCost = 1e100
 	
 	startIteration = numIterations
@@ -1344,7 +1348,7 @@ def overlapICP_GPU2(estPose1, initGuess, medialPoints1, medialPoints2, rootPose1
 		for i in range(len(points2_offset)):
 			p_2 = poly2[i]
 
-			if isInCircle(p_2, radius1, center1):
+			if inPlace or isInCircle(p_2, radius1, center1):
 
 				" for every transformed point of A, find it's closest neighbor in B "
 				#p_1, minDist = findClosestPointInB(points1, p_2, [0.0,0.0,0.0])
@@ -1363,7 +1367,7 @@ def overlapICP_GPU2(estPose1, initGuess, medialPoints1, medialPoints2, rootPose1
 		for i in range(len(points1)):
 			p_1 = poly1[i]
 	
-			if isInCircle(p_1, radius2, center2):
+			if inPlace or isInCircle(p_1, radius2, center2):
 		
 				" for every point of B, find it's closest neighbor in transformed A "
 				p_2, i_2, minDist = findClosestPointInA(points2_offset, p_1)

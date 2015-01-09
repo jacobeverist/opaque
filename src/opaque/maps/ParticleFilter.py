@@ -704,7 +704,8 @@ def displaceParticle2( poseData, pathSplices2, pathSplices3, supportLine, nodeID
 
 	if nodeID > 0:
 		
-		currPose3 = getInPlaceGuess(poseData, nodeID-1, nodeID, currPose2, estPose3, [], direction)
+		#currPose3 = getInPlaceGuess(poseData, nodeID-1, nodeID, currPose2, estPose3, [], direction)
+		currPose3 = getInPlaceGuess(poseData, nodeID-1, nodeID, currPose2, estPose3, pathSplices2[0], direction)
 
 		if False:
 			if nodeID % 2 == 1:
