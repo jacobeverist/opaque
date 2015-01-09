@@ -1705,6 +1705,7 @@ def spliceSkeletons(localSkeletons, controlPoses, junctionPoses, parentPathIDs):
 
 
 	""" connect the children to their parents via the junction node """
+	"""
 	for pathID in pathIDs:
 		juncNode = junctionNodes[pathID]
 		parentPathID = parentPathIDs[pathID]
@@ -1733,6 +1734,7 @@ def spliceSkeletons(localSkeletons, controlPoses, junctionPoses, parentPathIDs):
 
 			print "add parent junc edge", juncNode, minParentNode, minParentDist
 			spliceSkeleton.add_edge(juncNode, minParentNode, wt=minParentDist)
+	"""
 	
 	skelIDs = globalSkeletons.keys()
 
