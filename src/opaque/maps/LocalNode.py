@@ -126,8 +126,8 @@ class LocalNode:
 		self.rootNode = rootNode
 		
 		
-		self.frontProbeError = []
-		self.backProbeError = []
+		self.frontProbeError = [0.0]
+		self.backProbeError = [0.0]
 
 		self._refnodes = []
 		self._refent = []
@@ -198,7 +198,8 @@ class LocalNode:
 		
 		self.hasDeparture = False
 		
-		self.isFeatureless = None
+		#self.isFeatureless = None
+		self.isFeatureless = True
 				
 		#pylab.clf()
 
@@ -216,9 +217,13 @@ class LocalNode:
 		self.partnerNodeID = nodeID	
 		
 	def getIsFeatureless(self):
+
+		print "isBowtie:", self.isBowtie
 		
 		if self.isFeatureless != None:
 			return self.isFeatureless
+
+		""" not using the below calculation anymore """
 		
 		print "isBowtie:", self.isBowtie
 		
@@ -2090,6 +2095,11 @@ class LocalNode:
 				#if maxDeriv >= 0.6 and longPathWidth[contigInflection-1]["angDeriv2"] < maxDeriv and longPathWidth[contigInflection+1]["angDeriv2"] < maxDeriv:
 				#if maxDeriv >= 0.6:
 				#if False:
+
+				""" use this calculation to determine the featureless property """
+				if maxDeriv >= 0.6:
+					self.isFeatureless = False
+
 				if self.useBend and maxDeriv >= 0.6:
 
 					inflectionPoint = None
@@ -2117,6 +2127,7 @@ class LocalNode:
 
 				else:
 					inflectionPoint = None
+
 
 				" conditions for a bloom detection "
 				bloomPoint = None
@@ -3213,6 +3224,8 @@ class LocalNode:
 		random.seed(0)		
 		
 		isDone = False
+		#ALPHA_RADIUS = 0.1
+		ALPHA_RADIUS = 0.2
 		
 		while not isDone:
 	
@@ -3229,7 +3242,8 @@ class LocalNode:
 			try:			
 
 				saveFile = ""	
-				saveFile += "radius = " + repr(radius) + "\n"
+				#saveFile += "radius = " + repr(radius) + "\n"
+				saveFile += "radius = " + repr(ALPHA_RADIUS) + "\n"
 				saveFile += "perturbPoints = " + repr(perturbPoints) + "\n"
 				
 				isWritten = False
@@ -3243,7 +3257,7 @@ class LocalNode:
 					else:
 						isWritten = True
 	
-				vertices = alphamod.doAlpha(radius,perturbPoints)
+				vertices = alphamod.doAlpha(ALPHA_RADIUS,perturbPoints)
 				numVert = len(vertices)
 	
 				os.remove("doLocalAlphaInput_%08u.txt" % (alphaPlotCount))
@@ -3273,6 +3287,13 @@ class LocalNode:
 			except:
 				print "hull has holes!  retrying..."
 				#print sArr	
+	
+				sys.stdout.flush()
+				sys.stderr.flush()
+
+				""" slightly increase the alpha radius """
+				ALPHA_RADIUS += 0.01
+
 
 		return vertices
 

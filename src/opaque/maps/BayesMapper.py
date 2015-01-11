@@ -152,6 +152,51 @@ class BayesMapper:
 		return self.mapHyps[topID]
 
 	@logFunction
+	def insertNewNode(self, newNode):
+
+		nodeID = self.poseData.numNodes
+
+		print "incrementing numNodes"
+		print "inserting", nodeID, newNode.getGlobalGPACPose()
+
+		print self.poseData.numNodes
+		self.poseData.numNodes += 1
+		print self.poseData.numNodes
+		
+		hull1, medial1 = computeHullAxis(nodeID, newNode, tailCutOff = False)
+		self.poseData.aHulls[nodeID] = hull1
+		self.poseData.medialAxes[nodeID] = medial1
+		self.poseData.numLeafs[nodeID] = newNode.getNumLeafs()
+		self.poseData.faceDirs[nodeID] = newNode.faceDir
+		self.poseData.isBowties[nodeID] = newNode.isBowtie			
+		self.poseData.medialLongPaths[nodeID] = newNode.medialLongPaths
+		self.poseData.correctedPostures[nodeID] = newNode.getStableGPACPosture()
+		self.poseData.isNodeFeatureless[nodeID] = newNode.getIsFeatureless()
+		self.poseData.frontProbeError[nodeID] = newNode.frontProbeError
+		self.poseData.backProbeError[nodeID] = newNode.backProbeError
+		self.poseData.travelDirs[nodeID] = newNode.travelDir
+		self.poseData.spatialFeatures[nodeID] = newNode.spatialFeatures
+
+
+		for mid, mapHyp in self.mapHyps.iteritems():
+			mapHyp.updatePoseData(self.poseData)
+
+		""" for each current map hypothesis, integrate the new node """
+		currHyps = self.mapHyps
+		for mid, mapHyp in currHyps.iteritems():
+
+			print "loading", nodeID, "hyp", mapHyp.hypothesisID
+
+			mapHyp.gndPoses[nodeID] = newNode.getGndGlobalGPACPose()
+			mapHyp.gndRawPoses[nodeID] = newNode.getGndPose()
+			mapHyp.nodePoses[nodeID] = newNode.getGlobalGPACPose()
+			mapHyp.nodeRawPoses[nodeID] = newNode.getEstPose()
+
+
+		self.mapHyps = self.integrateNode(currHyps, nodeID, isInsert = True)
+
+
+	@logFunction
 	def loadNewNode(self, newNode):
 
 		#self.currNode = newNode
@@ -190,27 +235,8 @@ class BayesMapper:
 
 			mapHyp.gndPoses[nodeID] = newNode.getGndGlobalGPACPose()
 			mapHyp.gndRawPoses[nodeID] = newNode.getGndPose()
-			#mapHyp.setNodePose(nodeID, newNode.getGlobalGPACPose())
 			mapHyp.nodePoses[nodeID] = newNode.getGlobalGPACPose()
-
-			" FIXME:  raw pose does not get updated yet with GPAC pose "
-
-			#print "rawPoses:", mapHyp.nodeRawPoses[nodeID], newNode.getEstPose()
-
 			mapHyp.nodeRawPoses[nodeID] = newNode.getEstPose()
-
-			#pathIDs = mapHyp.getPathIDs()
-			#for k in range(mapHyp.numPoseParticles):
-			#	for pathID in pathIDs:
-
-			#		if pathID != 0:
-			#			particle = mapHyp.poseParticles["snapshots2"][0][k]
-
-						#controlPoseDist = particle.junctionData[pathID]["controlPoseDist"]
-						#branchPoseDist = particle.junctionData[pathID]["branchPoseDist"]
-
-						#print "hypID,pathID,particleIndex:", mapHyp.hypothesisID, pathID, k, controlPoseDist
-					
 
 		self.mapHyps = self.integrateNode(currHyps, nodeID)
 
@@ -267,7 +293,7 @@ class BayesMapper:
 		self.mapHyps = self.integrateNode(currHyps, nodeID)
 
 	@logFunction
-	def integrateNode(self, hypSet, nodeID):
+	def integrateNode(self, hypSet, nodeID, isInsert = False):
 
 		" DIRECTION OF TRAVEL FROM PREVIOUS POSE PAIR "
 		direction = self.poseData.travelDirs[nodeID]
@@ -277,34 +303,12 @@ class BayesMapper:
 		if nodeID > 0:
 			
 			" ESTIMATE TRAVEL WITH MEDIAL OVERLAP CONSTRAINT OF EVEN NUMBER POSE "
-			if self.poseData.numNodes >= 4:
+			if self.poseData.numNodes >= 4 and not isInsert:
 
 				if nodeID % 2 == 1:
 
 					for pID, currHyp in hypSet.iteritems():
 
-						#thisCount = 0
-						#while True:
-
-						#if True:
-
-						" perform internal localization only infrequently since it's so costly for time "
-						if False:
-						#if nodeID % 20 == 1:
-							time1 = time.time()
-							currHyp.snapPoseToSkeleton()
-							time2 = time.time()
-							print "TIME localize landmark", currHyp.hypothesisID, "=", time2-time1 
-							currHyp.generatePaths()
-							currHyp.drawPoseParticles()
-							#if thisCount > 1000:
-							#	exit()
-
-							#outFiles = glob.glob(os.path.join("landmarkLocalize*.png"))
-							#for out_file in outFiles:
-							#	os.remove(out_file)
-							#thisCount += 1
-						
 						time1 = time.time()
 						currHyp.batchDisplaceParticles(nodeID-1, nodeID)
 
@@ -329,10 +333,18 @@ class BayesMapper:
 
 			time1 = time.time()
 			self.shootIDs, self.particleIDs, hypSet = addToPaths2(self.shootIDs, self.particleIDs, hypSet, nodeID1, nodeID2)
+
 			for pID, currHyp in hypSet.iteritems():
 				currHyp.drawPoseParticles()
+				if isInsert:
+					currHyp.initializePoseParticles()
+
 			time2 = time.time()
 			print "TIME addToPaths =", time2-time1 
+
+
+		if self.poseData.numNodes >= 2 and self.poseData.numNodes % 2 == 0 and not isInsert:
+
 
 			for pID, mapHyp in hypSet.iteritems():
 				time1 = time.time()
@@ -595,63 +607,6 @@ class BayesMapper:
 
 
 	@logFunction
-	def selectSplice(self, mapHyp, nodeID1, nodeID2, medial1, medial2, estPose1, estPose2, orderedPathIDs1, orderedPathIDs2):
-		
-		splicedPaths1 = mapHyp.splicePathIDs(orderedPathIDs1)
-		splicedPaths2 = mapHyp.splicePathIDs(orderedPathIDs2)
-
-		
-		medialSpline1 = SplineFit(medial1, smooth=0.1)
-		medial1_vec = medialSpline1.getUniformSamples()
-		medialSpline2 = SplineFit(medial2, smooth=0.1)
-		medial2_vec = medialSpline2.getUniformSamples()
-
-
-		print "received", len(splicedPaths1), "spliced paths from path IDs", orderedPathIDs1
-		print "received", len(splicedPaths2), "spliced paths from path IDs", orderedPathIDs2
-
-		" departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2 |"
-		" departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2 "
-
-		poseOrigin1 = Pose(estPose1)
-		globalMedial1 = []
-		for p in medial1:
-			globalMedial1.append(poseOrigin1.convertLocalToGlobal(p))
-
-		results1 = []		
-		for k in range(len(splicedPaths1)):
-			path = splicedPaths1[k]			
-			path = orientPath(path, globalMedial1)
-			result = getMultiDeparturePoint(path, medial1_vec, estPose1, estPose1, orderedPathIDs1, nodeID1)
-			results1.append(result+(k,))
-
-
-		results1 = sorted(results1, key=itemgetter(14))
-		results1 = sorted(results1, key=itemgetter(12), reverse=True)				
-
-		poseOrigin2 = Pose(estPose2)
-		globalMedial2 = []
-		for p in medial2:
-			globalMedial2.append(poseOrigin2.convertLocalToGlobal(p))
-
-		results2 = []		
-		for k in range(len(splicedPaths2)):
-			path = splicedPaths2[k]			
-			path = orientPath(path, globalMedial2)
-			result = getMultiDeparturePoint(path, medial2_vec, estPose2, estPose2, orderedPathIDs2, nodeID2)
-			results2.append(result+(k,))
-
-		results2 = sorted(results2, key=itemgetter(14))
-		results2 = sorted(results2, key=itemgetter(12), reverse=True)				
-
-
-		""" NOTE:  We only discriminated based on node k but not node k+1 """
-		kIndex = results1[0][15]
-
-		return splicedPaths1[kIndex]
-
-
-	@logFunction
 	def getNearestPathPoint(self, originPoint):
 
 		candPoints = {}
@@ -823,54 +778,6 @@ class BayesMapper:
 			
 
 
-		"""
-		for path in mapHyp.theoryMedialLongPaths:
-			xP = []
-			yP = []
-			for p in path:
-				xP.append(p[0])
-				yP.append(p[1])
-
-			pylab.plot(xP,yP, color='k')
-
-			globJuncPose = self.getGlobalJunctionPose(pathID)
-			if globJuncPose != None:
-				pylab.scatter([globJuncPose[0],], [globJuncPose[1],], color='k')
-
-		"""
-
-		"""
-		
-		xP = []
-		yP = []
-		for p in vertices:
-			xP.append(p[0])
-			yP.append(p[1])
-		pylab.plot(xP,yP, color='r')
-		
-		sizes = []
-		for path in longPaths:
-			sizes.append(len(path))
-		
-		bufStr1 = ""
-		for dist in juncDists:
-			if dist != None:
-				bufStr1 += "%1.2f " % dist
-
-
-		bufStr2 = ""
-		for juncAngs in juncAngSet:
-			for angs in juncAngs:
-				if angs != None:
-					bufStr2 += "%1.2f %1.2f " % (angs[0],angs[1])
-		
-		pylab.axis("equal")
-		pylab.title("Path %d %s %s %s" % (pathID, sizes,bufStr1,bufStr2))
-		pylab.savefig("medialOut2_%04u.png" % self.topCount)
-		print "saving medialOut2_%04u.png" % self.topCount
-		self.topCount += 1
-		"""
-
 		""" convert the controlPose to coordinates local to the parent frame """
 		parentPathIDs = mapHyp.getParentHash()
 
@@ -880,15 +787,6 @@ class BayesMapper:
 
 
 		for k in pathIDs:
-			"""
-			xP = []
-			yP = []
-			
-			for p in mapHyp.paths[k]:
-				xP.append(p[0])
-				yP.append(p[1])
-			ax3.plot(xP,yP, color=self.colors[k], linewidth=4)
-			"""
 
 			shootControlPose_G = globalControlPoses_G[k]
 			currFrame = Pose(shootControlPose_G)
@@ -908,41 +806,6 @@ class BayesMapper:
 			nodeSet = mapHyp.getNodes(k)
 
 			print "drawing pathID", k, "for nodes:", nodeSet
-			"""
-			for nodeID in nodeSet:
-				xP = []
-				yP = []
-
-				estPose1 = mapHyp.nodePoses[nodeID]
-		
-				if self.poseData.isBowties[nodeID]:			
-					hull1 = self.poseData.aHulls[nodeID]
-					#medial1 = self.poseData.medialAxes[nodeID]
-					#hull1 = computeBareHull(self.nodeHash[nodeID], sweep = False, static = True)
-				else:
-					#hull1 = computeBareHull(self.nodeHash[nodeID], sweep = False)
-					hull1 = self.poseData.aHulls[nodeID]
-		
-				" set the origin of pose 1 "
-				poseOrigin = Pose(estPose1)
-		
-				points = []
-				for p in hull1:
-					p1 = poseOrigin.convertLocalToGlobal(p)
-					points.append(p1)
-				
-				for p in points:
-					xP.append(p[0])
-					yP.append(p[1])
-				
-				if nodeID == highestNodeID:
-					ax3.plot(xP,yP, color=(0,0,0))
-				elif nodeID == highestNodeID-1:
-					ax3.plot(xP,yP, color=(0.5,0.5,0.5))
-				else:
-					ax3.plot(xP,yP, color=self.colors[k])
-			"""
-					
 			
 			xP = []
 			yP = []
@@ -950,10 +813,7 @@ class BayesMapper:
 				xP.append(p[0])
 				yP.append(p[1])
 				
-			#ax3.plot(xP,yP, '--', color=self.colors[k], linewidth=4)
-			#ax4.plot(xP,yP, '--', color=self.colors[k], linewidth=4)
 			ax3.plot(xP,yP, color=self.colors[k], linewidth=1)
-			#ax4.plot(xP,yP, color=self.colors[k], linewidth=4)
 
 		for k in pathIDs:
 
@@ -961,26 +821,6 @@ class BayesMapper:
 			if globJuncPose != None:
 				ax3.scatter([globJuncPose[0],], [globJuncPose[1],], color='k', zorder=10)
 
-
-		#trimmedPaths = mapHyp.trimmedPaths
-		
-		#for k,path in trimmedPaths.iteritems():
-		#	print "path has", len(path), "points"
-		#	xP = []
-		#	yP = []
-		#	for p in path:
-		#		xP.append(p[0])
-		#		yP.append(p[1])
-
-		#	ax4.plot(xP,yP, color = self.colors[k], linewidth=4)
-
-		#	globJuncPose = mapHyp.getGlobalJunctionPose(k)
-		#	if globJuncPose != None:
-		#		ax4.scatter([globJuncPose[0],], [globJuncPose[1],], color='k')
-			
-
-
-		#pylab.xlim(-4,4)
 
 		#self.plotEnv()
 		self.plotEnv(ax1)
@@ -991,17 +831,11 @@ class BayesMapper:
 		print "quadPath:", self.pathDrawCount
 		printStack()
 
-		#pylab.xlim(-10, 12)
-		#pylab.ylim(-10, 10)
-		#ax3.set_title("paths: %s numNodes: %d %d, hyp %d %3.2f" % (repr(mapHyp.getPathIDs()), self.poseData.numNodes, highestNodeID, mapHyp.hypothesisID, mapHyp.utility))
-		#ax4.set_title("paths: %s numNodes: %d %d, hyp %d %3.2f" % (repr(mapHyp.getPathIDs()), self.poseData.numNodes, highestNodeID, mapHyp.hypothesisID, mapHyp.utility))
-
 		ax1.set_title("Pose Robot Static Postures")
 		ax2.set_title("Pose Alpha Shapes")
 		ax3.set_title("Pose Union Medial Axes")
 		ax4.set_title("Trimmed Paths")
 
-		#foo = "paths: %s, nodeID: %d, hyp %d %3.2f" % (repr(mapHyp.getPathIDs()), highestNodeID, mapHyp.hypothesisID, mapHyp.utility)
 		fig.suptitle("paths: %s, nodeID: %d, hyp %d %3.2f" % (repr(mapHyp.getPathIDs()), highestNodeID, mapHyp.hypothesisID, mapHyp.mapOverlapSum), fontsize=18, y=0.99)
 		plt.savefig("quadPath_%04u_%04u.png" % (highestNodeID, mapHyp.hypothesisID))
 

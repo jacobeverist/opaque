@@ -1,6 +1,7 @@
 import BayesMapper
 from LocalNode import LocalNode, getLongestPath, computeHullAxis
 from MapProcess import getInPlaceGuess, getStepGuess
+from Splices import getMultiDeparturePoint
 from Pose import Pose
 import pylab
 import numpy
@@ -259,7 +260,7 @@ class MapUser:
 			#pylab.plot(xP,yP, color='k', alpha=0.5)
 		"""
 
-		if len(path) > 0:
+		if path != None and len(path) > 0:
 
 			xP = []
 			yP = []
@@ -270,7 +271,7 @@ class MapUser:
 			#pylab.plot(xP,yP, color='r', alpha=0.5, zorder=2)
 			pylab.plot(xP,yP, color='r', linewidth=2, zorder=2)
 
-		if len(goalPoint) > 0:
+		if goalPoint != None and len(goalPoint) > 0:
 			pylab.scatter([goalPoint[0],], [goalPoint[1],], color='k', zorder=3)
 
 		activeHypID = self.mapAlgorithm.activeHypID
@@ -526,19 +527,34 @@ class MapUser:
 
 	def insertPose(self, estPose, direction):
 
+		print "estPose:", estPose
 
-		self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, self.pixelSize, stabilizePose = self.isStable, faceDir = True, travelDir = direction)		
-		self.foreNode = self.currNode
-		self.forceUpdate(True)		
-		self.currNode = LocalNode(self.probe, self.contacts, self.numNodes+1, 19, self.pixelSize, stabilizePose = self.isStable, faceDir = False, travelDir = direction)		
-		self.backNode = self.currNode
-		self.forceUpdate(False)		
+		self.foreNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, self.pixelSize, stabilizePose = self.isStable, faceDir = True, travelDir = direction)		
+		self.foreNode.setEstPose(estPose)
+		self.foreNode.setGndPose(estPose)
 
-		self.mapAlgorithm.insertPose(self.foreNode, self.backNode, initLocation = estPose)
-		#self.mapAlgorithm.addInitNode(self.foreNode, estPose)
-		#self.mapAlgorithm.loadNewNode(self.foreNode)
-		#self.mapAlgorithm.loadNewNode(self.backNode)
+		print "stable:", self.contacts.getAverageSegPose(19)
 
+		print "insert:", self.foreNode.getGlobalGPACPose()
+		self.currNode = self.foreNode
+		#self.forceUpdate(True)		
+
+		self.stablePose.setDirection(True)
+		self.currNode.update()
+
+		self.backNode = LocalNode(self.probe, self.contacts, self.numNodes+1, 19, self.pixelSize, stabilizePose = self.isStable, faceDir = False, travelDir = direction)		
+		self.backNode.setEstPose(estPose)
+		self.backNode.setGndPose(estPose)
+		print "insert:", self.backNode.getGlobalGPACPose()
+		self.currNode = self.backNode
+		#self.forceUpdate(False)		
+		self.stablePose.setDirection(False)
+		self.currNode.update()
+
+		print "insert:", self.foreNode.getGlobalGPACPose()
+		print "insert:", self.backNode.getGlobalGPACPose()
+		self.mapAlgorithm.insertNewNode(self.foreNode)
+		self.mapAlgorithm.insertNewNode(self.backNode)
 		
 		self.stablePose.reset()
 		self.stablePose.setNode(self.currNode)	
@@ -556,20 +572,19 @@ class MapUser:
 		self.currNode.updateCorrectPosture()
 
 	def forceUpdate(self, isForward=True):
+
+
 		self.stablePose.setDirection(isForward)
 		self.currNode.update()
-
 
 		nodeID = self.currNode.nodeID
 		direction = self.currNode.travelDir
 		distEst = 1.0
 
-
 		mapHyp = self.getMaxHyp()
 
 		poseData = deepcopy(mapHyp.poseData)
 
-	
 		if nodeID > 0:
 
 			foreNodeID = self.foreNode.nodeID
@@ -643,6 +658,8 @@ class MapUser:
 		self.isDirty = True
 
 		self.stablePose.setDirection(isForward)
+
+		#self.currNode.update()
 
 		" if the configuration is a stable pose, the maximum displacement is not exceeded "
 		if self.stablePose.isStable():
@@ -750,6 +767,8 @@ class MapUser:
 		else:
 			goalDist = backMag
 
+		# FIXME:  this collision checks should go in the localization section
+		# which would automatically localize us to the terminal point
 		if frontMag < 0.8 and foreAvg >= 1.1:
 			destReached = True
 
@@ -905,9 +924,76 @@ class MapUser:
 				allTermsVisited[key] = termsVisited[key]
 				termToHypID[key] = hypID
 
-
 		newTermPoint = allTerms[termID] 
 		return newTermPoint
+
+	def computePathSplice(self, termID, termPoint):
+
+		frontierPoint = self.getDestination(termID, termPoint)
+
+
+		allSplices = []
+		""" find all splices that terminate at the terminal destination """
+		allSplices = self.mapAlgorithm.mapHyps[0].getAllSplices2()
+		#for hypID, mapHyp in self.mapAlgorithm.mapHyps.iteritems():
+		#	allSplices = mapHyp.getAllSplices2()
+		#	break
+
+		termSplices = []
+		for spliceIndex in range(len(allSplices)):
+			sPath = allSplices[spliceIndex]
+			path = sPath['skelPath']
+			termPoints = sPath['termPath']
+
+			term1 = termPoints[0]
+			term2 = termPoints[1]
+
+			dist1 = sqrt((term1[0]-frontierPoint[0])**2 + (term1[1]-frontierPoint[1])**2)
+			dist2 = sqrt((term2[0]-frontierPoint[0])**2 + (term2[1]-frontierPoint[1])**2)
+
+			if dist1 < 0.1 or dist2 < 0.1:
+				termSplices.append(path)
+
+		
+		""" find the splice that is coaligned with current pose's spatial curve """
+
+		nodeID = self.mapAlgorithm.poseData.numNodes-1
+
+		medial0 = self.mapAlgorithm.poseData.medialAxes[nodeID]
+
+		medialSpline0 = SplineFit(medial0, smooth=0.1)
+		medial0_vec = medialSpline0.getUniformSamples()
+
+		currPose = self.mapAlgorithm.mapHyps[0].getNodePose(nodeID)
+
+		maxContigFrac = 0.0
+		maxSpliceIndex = 0
+		for k in range(len(termSplices)):
+
+			splice = termSplices[k]
+
+			results0 = getMultiDeparturePoint(splice, medial0_vec, currPose, currPose, [0,], nodeID, spliceIndex=k, plotIter=False)
+
+			contigFrac0 = results0[12]
+
+			if contigFrac0 >= maxContigFrac:
+				maxContigFrac = contigFrac0
+				maxSpliceIndex = k
+
+		pathSplice = deepcopy(termSplices[maxSpliceIndex])
+
+
+		""" destination should be at the 0'th index """
+		dist1 = sqrt((pathSplice[0][0]-frontierPoint[0])**2 + (pathSplice[0][1]-frontierPoint[1])**2)
+		dist2 = sqrt((pathSplice[-1][0]-frontierPoint[0])**2 + (pathSplice[-1][1]-frontierPoint[1])**2)
+
+		if dist1 > dist2:
+			pathSplice.reverse()
+
+		frontierPathPoint = self.getNearestPathPoint(frontierPoint)
+
+		return frontierPathPoint, pathSplice
+
 
 	def recomputePath(self, termID, termPoint):
 

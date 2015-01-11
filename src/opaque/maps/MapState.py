@@ -587,69 +587,16 @@ class MapState:
 	@logFunction
 	def initializePoseParticles(self):
 
+		nodeID0 = self.poseData.numNodes-2
+		nodeID1 = self.poseData.numNodes-1
 	
-		pose0 = self.getNodePose(0)
-		pose1 = self.getNodePose(1)
-
-		path0 = deepcopy(self.paths[0])
-
-		termPoint = self.rootPoint
-
-		termDist0 = sqrt((path0[0][0]-termPoint[0])**2 + (path0[0][1]-termPoint[1])**2)
-		termDistN = sqrt((path0[-1][0]-termPoint[0])**2 + (path0[-1][1]-termPoint[1])**2)
-
-		if termDist0 > termDistN: 
-			path0.reverse()
-
-		pathSpline = SplineFit(path0, smooth=0.1)
-
-		minDist0, newU0, newP0 = pathSpline.findClosestPoint(pose0)
-		minDist1, newU1, newP1 = pathSpline.findClosestPoint(pose1)
-
-		dist0 = pathSpline.dist_u(newU0)
-		dist1 = pathSpline.dist_u(newU1)
-
-		#newAng0 = pathSpline.angle_u(newU0)
-		#newAng1 = pathSpline.angle_u(newU1)
-		newAng0 = pose0[2]
-		newAng1 = pose1[2]
-
-		totalLen = pathSpline.length()
-
-		pathID = 0
-		avgDist = (dist0 + dist1)/2.0
-		spliceID = ('t0', 't1')
-
-		part = (pathID, avgDist, ('t0','t1'))
-
-		#numParticles = self.poseParticles["numParticles"]
-		#initDist2 = []
-
-		" create the initial particle distibution "
-		#while len(initDist2) < numParticles:
-		#	hypDist = random.gauss(avgDist, 0.5)
-
-		#	if hypDist > 0.0 and hypDist <= totalLen:
-		#		hypPoint = pathSpline.getPointOfDist(hypDist)
-		#		hypPose0 = copy(hypPoint)
-		#		hypPose0[2] = newAng0
-		#		hypPose1 = copy(hypPoint)
-		#		hypPose1[2] = newAng1
-
-		#		particleObj = Particle(hypPose0, hypPose1, pathID, hypDist, 0.0, self.hypothesisID)
-		#		particleObj.spliceCurve = deepcopy(self.paths[0])
-		#		particleObj.addNode(0,0, hypPose0)
-		#		particleObj.addNode(1,0, hypPose1)
-		#		initDist2.append(particleObj)
-
-		#self.poseParticles["snapshots2"][0] = initDist2
+		pose0 = self.getNodePose(nodeID0)
+		pose1 = self.getNodePose(nodeID1)
 
 		self.stepResults = []
 		pathIDs = self.getPathIDs()
 		parentPathIDs = self.getParentHash()
 
-		nodeID0 = 0
-		nodeID1 = 1
 
 		medial0 = self.poseData.medialAxes[nodeID0]
 		medial1 = self.poseData.medialAxes[nodeID1]
@@ -1475,15 +1422,16 @@ class MapState:
 					pathSpline = pathSplines[pathID]
 
 					""" this is the point where the control pose gets erroneously moved back onto the longest path """
-					controlPose = part["controlPoses_P"][pathID]
+					#controlPose = part["controlPoses_P"][pathID]
+					controlPose = self.getControlPoses()[pathID]
 					#print "oldControlPose:", particleIndex, pathID, controlPose
 					minDist, controlUVal, newControlPose = pathSpline.findClosestPoint(controlPose)
 					arcDist = pathSpline.dist_u(controlUVal)
 
-					globJuncPose = part["branchPoses_G"][pathID]
-					dist1 = sqrt((globJuncPose[0]-hypPose0[0])**2 + (globJuncPose[1]-hypPose0[1])**2)
+					#globJuncPose = part["branchPoses_G"][pathID]
+					#dist1 = sqrt((globJuncPose[0]-hypPose0[0])**2 + (globJuncPose[1]-hypPose0[1])**2)
 
-					origBranchDists[pathID] = dist1
+					origBranchDists[pathID] = 0.0
 					origBranchControls[pathID] = newControlPose
 					origBranchArcDists[pathID] = arcDist
 
@@ -1876,9 +1824,9 @@ class MapState:
 					isReject = True
 
 				""" contiguity between current and previous pose """
-				if overlapSum > 1e10:
-					print "reject because no overlap"
-					isReject = True
+				#if overlapSum > 1e10:
+				#	print "reject because no overlap"
+				#	isReject = True
 
 				#ANG_THRESH = 2.0*pi/3.0
 				#ANG_THRESH = 1.0*pi/3.0
@@ -1911,6 +1859,8 @@ class MapState:
 
 					results[index] = tupleCopy
 				else:
+
+					print particleID, "ACCEPT" 
 
 					isAllReject = False
 
@@ -1970,6 +1920,7 @@ class MapState:
 
 			#if not rejectDivergence or self.isNodeBranching[nodeID0] or self.isNodeBranching[nodeID1]:
 			if not rejectDivergence:
+				print "ALL REJECTED, TURNING OFF DIVERGENCE FILTER"
 				#isAllReject = False
 				break
 
@@ -5624,7 +5575,6 @@ class MapState:
 			minJ1 = 0
 			minJ2 = 0
 
-			
 			path = splicedPaths[i]
 
 			for j in range(len(path)):
