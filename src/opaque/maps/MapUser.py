@@ -1,7 +1,7 @@
 import BayesMapper
 from LocalNode import LocalNode, getLongestPath, computeHullAxis
 from MapProcess import getInPlaceGuess, getStepGuess
-from Splices import getMultiDeparturePoint
+from Splices import getMultiDeparturePoint, orientPath
 from Pose import Pose
 import pylab
 import numpy
@@ -711,8 +711,86 @@ class MapUser:
 
 		print "return currNode.getEstPose():", nodeID
 		return self.currNode.getEstPose()
-
 	
+	def getDirection(self, wayPath):
+
+		nodeID = self.numNodes-1
+
+		hull1 = self.mapAlgorithm.poseData.aHulls[nodeID]
+		medial1 = self.mapAlgorithm.poseData.medialAxes[nodeID]
+
+		estPose1 = self.mapAlgorithm.mapHyps[self.mapAlgorithm.activeHypID].getNodePose(nodeID)
+
+		poseOrigin = Pose(estPose1)
+
+		medialSpline1 = SplineFit(medial1, smooth=0.1)
+		points1 = medialSpline1.getUniformSamples(interpAngle=True)
+	
+		points1_offset = []
+		for p in points1:
+			result = poseOrigin.convertLocalOffsetToGlobal(p)
+			points1_offset.append(result)
+	
+		globalMedialSpline = SplineFit(points1_offset, smooth=0.1)
+		globalMedialPoints = globalMedialSpline.getUniformSamples()			
+
+		orientedWayPath = orientPath(wayPath, points1_offset)
+
+		dist1 = sqrt((orientedWayPath[0][0]-wayPath[0][0])**2 + (orientedWayPath[0][1]-wayPath[0][1])**2)
+		dist2 = sqrt((orientedWayPath[-1][0]-wayPath[0][0])**2 + (orientedWayPath[-1][1]-wayPath[0][1])**2)
+
+		if dist1 < dist2:
+			return False
+		else:
+			return True
+
+		#" - get position of both tips "
+		#frontTip = globalMedialPoints[0]
+		#backTip = globalMedialPoints[-1]
+
+		#results0 = getMultiDeparturePoint(splice, medial0_vec, currPose, currPose, [0,], nodeID, spliceIndex=k, plotIter=False)
+
+	def isFollowing(self, wayPath, foreAvg = 0.0, backAvg = 0.0):
+
+		" - get splice of wayPath "
+		
+		" - get GPAC of pose "
+		nodeID = self.numNodes-1
+
+		hull1 = self.mapAlgorithm.poseData.aHulls[nodeID]
+		medial1 = self.mapAlgorithm.poseData.medialAxes[nodeID]
+
+		estPose1 = self.mapAlgorithm.mapHyps[self.mapAlgorithm.activeHypID].getNodePose(nodeID)
+
+		poseOrigin = Pose(estPose1)
+
+		medialSpline1 = SplineFit(medial1, smooth=0.1)
+		points1 = medialSpline1.getUniformSamples(interpAngle=True)
+	
+		points1_offset = []
+		for p in points1:
+			result = poseOrigin.convertLocalOffsetToGlobal(p)
+			points1_offset.append(result)
+	
+		globalMedialSpline = SplineFit(points1_offset, smooth=0.1)
+		globalMedialPoints = globalMedialSpline.getUniformSamples()			
+		
+		" - get position of both tips "
+		frontTip = globalMedialPoints[0]
+		backTip = globalMedialPoints[-1]
+		#frontTipPathPoint = self.getNearestPathPoint(frontTip)
+		#backTipPathPoint = self.getNearestPathPoint(backTip)
+		
+		pathSpline = SplineFit(wayPath)
+		#minDist, uVal, uPoint = pathSpline.findClosestPoint(dest)
+		
+		frontMinDist, frontUVal, frontUPoint = pathSpline.findClosestPoint(frontTip)
+		backMinDist, backUVal, backUPoint = pathSpline.findClosestPoint(backTip)
+		#frontMinDist, frontUVal, frontUPoint = pathSpline.findClosestPoint(frontTipPathPoint)
+		#backMinDist, backUVal, backUPoint = pathSpline.findClosestPoint(backTipPathPoint)
+
+		return frontMinDist, backMinDist
+		
 	def isDestReached(self, dest, wayPath, foreAvg = 0.0, backAvg = 0.0):
 		#dest = self.localWayPoints[0]			
 
@@ -856,6 +934,8 @@ class MapUser:
 		allTermsVisited = {}
 		termToHypID = {}
 
+		targetPoint = [2.6496513887401183, -3.6864527536076519]
+
 		" get the termination point and orientation of each path "
 		for hypID, mapHyp in self.mapAlgorithm.mapHyps.iteritems():
 			terms = mapHyp.getPathTerms()
@@ -874,6 +954,16 @@ class MapUser:
 		print "allTermsVisited:", allTermsVisited
 		
 		for k, term in allTerms.iteritems():
+
+			#dist = sqrt((term[0]-targetPoint[0])**2+(term[1]-targetPoint[1])**2)
+
+			#if dist < 0.5:
+			#	print "selecting term", k, "for hyp ID", termToHypID[k]
+
+			#	self.mapAlgorithm.activeHypID = termToHypID[k]
+			#	return term,k
+		
+
 			if not allTermsVisited[k]:
 				print "selecting term", k, "for hyp ID", termToHypID[k]
 
@@ -983,11 +1073,11 @@ class MapUser:
 		pathSplice = deepcopy(termSplices[maxSpliceIndex])
 
 
-		""" destination should be at the 0'th index """
+		""" destination should be at the n'th index """
 		dist1 = sqrt((pathSplice[0][0]-frontierPoint[0])**2 + (pathSplice[0][1]-frontierPoint[1])**2)
 		dist2 = sqrt((pathSplice[-1][0]-frontierPoint[0])**2 + (pathSplice[-1][1]-frontierPoint[1])**2)
 
-		if dist1 > dist2:
+		if dist1 < dist2:
 			pathSplice.reverse()
 
 		frontierPathPoint = self.getNearestPathPoint(frontierPoint)
