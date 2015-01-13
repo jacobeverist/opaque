@@ -292,6 +292,29 @@ class MapUser:
 					pylab.plot(xP,yP, color='g', linewidth=2, zorder=1)
 
 
+		if self.numNodes > 0:
+			nodeID = self.numNodes-1
+
+			hull1 = self.mapAlgorithm.poseData.aHulls[nodeID]
+			medial1 = self.mapAlgorithm.poseData.medialAxes[nodeID]
+
+			estPose1 = self.mapAlgorithm.mapHyps[0].getNodePose(nodeID)
+
+			poseOrigin = Pose(estPose1)
+
+			medialSpline1 = SplineFit(medial1, smooth=0.1)
+			points1 = medialSpline1.getUniformSamples(interpAngle=True)
+		
+			points1_offset = []
+			xP = []
+			yP = []
+			for p in points1:
+				result = poseOrigin.convertLocalOffsetToGlobal(p)
+				points1_offset.append(result)
+				xP.append(result[0])
+				yP.append(result[1])
+
+			pylab.plot(xP, yP, color='k')
 
 		if activeHypID != None:
 			pass
@@ -786,10 +809,14 @@ class MapUser:
 		
 		frontMinDist, frontUVal, frontUPoint = pathSpline.findClosestPoint(frontTip)
 		backMinDist, backUVal, backUPoint = pathSpline.findClosestPoint(backTip)
+
+		results0 = getMultiDeparturePoint(wayPath, points1, estPose1, estPose1, [0,], nodeID, spliceIndex=0, plotIter=False)
+		contigFrac = results0[12]
+
 		#frontMinDist, frontUVal, frontUPoint = pathSpline.findClosestPoint(frontTipPathPoint)
 		#backMinDist, backUVal, backUPoint = pathSpline.findClosestPoint(backTipPathPoint)
 
-		return frontMinDist, backMinDist
+		return frontMinDist, backMinDist, contigFrac
 		
 	def isDestReached(self, dest, wayPath, foreAvg = 0.0, backAvg = 0.0):
 		#dest = self.localWayPoints[0]			
@@ -1082,7 +1109,65 @@ class MapUser:
 
 		frontierPathPoint = self.getNearestPathPoint(frontierPoint)
 
-		return frontierPathPoint, pathSplice
+
+		""" over smooth sharp corners """
+		newCurve = []
+		rangeWidth = 50
+
+		pose1 = pathSplice[0]
+		pose2 = pathSplice[rangeWidth]
+
+		newX = pose1[0] + (pose2[0]-pose1[0]) / 2.0
+		newY = pose1[1] + (pose2[1]-pose1[1]) / 2.0
+
+		joinP = [newX,newY]
+
+		dist = sqrt((pose1[0]-joinP[0])**2+(pose1[1]-joinP[1])**2)
+		vec = [joinP[0]-pose1[0], joinP[1]-pose1[1]]
+		vec[0] /= dist
+		vec[1] /= dist
+		max_spacing = 0.02
+		numPoints = int(dist/max_spacing)
+
+		for j in range(numPoints-1):
+			newP = [j*max_spacing*vec[0] + pose1[0], j*max_spacing*vec[1] + pose1[1]]
+			newCurve.append(newP)
+
+
+		for k in range(0,len(pathSplice)-rangeWidth):
+			pose1 = pathSplice[k]
+			pose2 = pathSplice[k+rangeWidth]
+
+			newX = pose1[0] + (pose2[0]-pose1[0]) / 2.0
+			newY = pose1[1] + (pose2[1]-pose1[1]) / 2.0
+
+
+			newCurve.append([newX,newY])
+
+
+		pose1 = pathSplice[len(pathSplice)-rangeWidth-1]
+		pose2 = pathSplice[len(pathSplice)-1]
+
+		newX = pose1[0] + (pose2[0]-pose1[0]) / 2.0
+		newY = pose1[1] + (pose2[1]-pose1[1]) / 2.0
+
+		joinP = [newX,newY]
+
+		dist = sqrt((pose2[0]-joinP[0])**2+(pose2[1]-joinP[1])**2)
+		vec = [-joinP[0]+pose2[0], -joinP[1]+pose2[1]]
+		vec[0] /= dist
+		vec[1] /= dist
+		max_spacing = 0.02
+		numPoints = int(dist/max_spacing)
+
+		for j in range(1,numPoints):
+			newP = [j*max_spacing*vec[0] + pose2[0], j*max_spacing*vec[1] + pose2[1]]
+			newCurve.append(newP)
+
+		overSmoothedPath = SplineFit(newCurve, smooth=0.1).getUniformSamples()
+
+		#return frontierPathPoint, pathSplice
+		return frontierPathPoint, overSmoothedPath
 
 
 	def recomputePath(self, termID, termPoint):

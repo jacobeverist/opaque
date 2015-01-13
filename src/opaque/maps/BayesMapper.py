@@ -334,9 +334,14 @@ class BayesMapper:
 			time1 = time.time()
 			self.shootIDs, self.particleIDs, hypSet = addToPaths2(self.shootIDs, self.particleIDs, hypSet, nodeID1, nodeID2)
 
+
 			for pID, currHyp in hypSet.iteritems():
 				currHyp.drawPoseParticles()
 				if isInsert:
+					newNodeSet = [nodeID1, nodeID2]
+					currHyp.snapPoseToSkeleton(newNodeSet)
+					currHyp.generatePaths()
+					currHyp.drawPoseParticles()
 					currHyp.initializePoseParticles()
 
 			time2 = time.time()
@@ -462,7 +467,7 @@ class BayesMapper:
 									currHyp.generatePaths()
 									currHyp.drawPoseParticles()
 
-									#currHyp.snapPoseToSkeleton(targetNodeIDs=mergeNodeIDs)
+									#currHyp.snapLandmarkToSkeleton(targetNodeIDs=mergeNodeIDs)
 									#currHyp.generatePaths()
 									#currHyp.drawPoseParticles()
 
@@ -481,7 +486,7 @@ class BayesMapper:
 									currHyp.generatePaths()
 									currHyp.drawPoseParticles()
 
-									#currHyp.snapPoseToSkeleton(targetNodeIDs=mergeNodeIDs)
+									#currHyp.snapLandmarkToSkeleton(targetNodeIDs=mergeNodeIDs)
 									#currHyp.generatePaths()
 									#currHyp.drawPoseParticles()
 

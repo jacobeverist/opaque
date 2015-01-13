@@ -227,7 +227,6 @@ class TestNavigation2(SnakeControl):
 			self.mapGraph = MapUser(self.probe, self.contacts, isStable = True, args = self.args)
 
 			#self.mapGraph.restorePickle("eval_success_cross_2015_01_10", 199)
-			#self.mapGraph.restoreSeries("result_2013_07_05a",60)
 			print "actual joint pose:", self.probe.getActualJointPose(19)
 
 			#self.mapGraph.insertPose(self.probe.getActualJointPose(19), self.travelDir)
@@ -899,8 +898,6 @@ class TestNavigation2(SnakeControl):
 			""" get destination reached status """
 			destReached, goalDist = self.mapGraph.isDestReached(dest, wayPath)
 
-
-			
 			" - get splice of GPAC, is it the same as wayPaths? "
 			" - if so, get closest points on wayPath "
 			" - have either of the tips passed the waypoint? "
@@ -916,17 +913,17 @@ class TestNavigation2(SnakeControl):
 
 			#self.frontDivDist = self.mapGraph.getDistanceToPath(self.currPose1, wayPath)
 			#self.backDivDist = self.mapGraph.getDistanceToPath(self.currPose2, wayPath)
-			self.frontDivDist, self.backDivDist = self.mapGraph.isFollowing(wayPath)
+			self.frontDivDist, self.backDivDist, self.contigFrac = self.mapGraph.isFollowing(wayPath)
 
 			self.backtrackCount = 0
 			self.isBacktrack = False
 
 			if targetDirection:
-				if self.frontDivDist > 0.2:
+				if self.frontDivDist > 0.2 and self.contigFrac < 0.5:
 					self.localDirection = False
 					self.isBacktrack = True
 			else:
-				if self.backDivDist > 0.2:
+				if self.backDivDist > 0.2 and self.contigFrac < 0.5:
 					self.localDirection = False
 					self.isBacktrack = True
 
@@ -944,7 +941,7 @@ class TestNavigation2(SnakeControl):
 			#		self.localDirection = False
 			#		self.isBacktrack = True
 
-			print "path divergence distance:", self.frontDivDist, self.backDivDist, self.lastFrontDivDist, self.lastBackDivDist, dist1, dist2, self.isBacktrack, self.localDirection, targetDirection
+			print "path divergence distance:", self.frontDivDist, self.backDivDist, self.lastFrontDivDist, self.lastBackDivDist, dist1, dist2, self.isBacktrack, self.localDirection, targetDirection, self.contigFrac
 
 			self.lastDist1 = goalDist
 			
@@ -1146,10 +1143,10 @@ class TestNavigation2(SnakeControl):
 
 						print "case foo C"
 
-						self.frontDivDist, self.backDivDist = self.mapGraph.isFollowing(path)
+						self.frontDivDist, self.backDivDist, self.contigFrac = self.mapGraph.isFollowing(path)
 						print "case foo D"
 
-						print "path divergence distance:", self.frontDivDist, self.backDivDist, self.lastFrontDivDist, self.lastBackDivDist, self.isBacktrack, self.localDirection
+						print "path divergence distance:", self.frontDivDist, self.backDivDist, self.lastFrontDivDist, self.lastBackDivDist, self.isBacktrack, self.localDirection, self.contigFrac
 
 
 						frontPathPoint = self.mapGraph.getNearestPathPoint(self.currPose1)
@@ -1172,13 +1169,13 @@ class TestNavigation2(SnakeControl):
 						if self.isBacktrack:
 							self.backtrackCount += 1
 							#if self.backtrackCount > 1:
-							if self.frontDivDist <= 0.2 and self.backDivDist <= 0.2:
+							if self.frontDivDist <= 0.2 and self.backDivDist <= 0.2 or self.contigFrac > 0.5:
 								print "stopping backtracking:", self.frontDivDist, self.backDivDist
 								self.isBacktrack = False
 								self.localDirection = not self.localDirection
 								self.backtrackCount
 
-						elif self.frontDivDist > 0.2 or self.backDivDist > 0.2:
+						elif (self.frontDivDist > 0.2 or self.backDivDist > 0.2) and self.contigFrac < 0.5:
 							print "backtracking:", self.frontDivDist, self.backDivDist
 							self.isBacktrack = True
 							self.localDirection = not self.localDirection

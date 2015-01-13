@@ -3790,9 +3790,64 @@ class MapState:
 					
 					self.nodeRawPoses[nodeID] = newEstPose
 
- 
+	def snapPoseToSkeleton(self, targetNodeIDs):
 
-	def snapPoseToSkeleton(self, targetNodeIDs = []):
+		allPathIDs = self.getPathIDs()
+		controlPoses_G = self.getGlobalControlPoses()
+
+		originPoint = (0.0,0.0)
+
+		newNodePoses = {}
+		#targetNodeSets = {}
+
+		for pathID in allPathIDs:
+
+			""" existing frame """
+			currFrame = Pose(controlPoses_G[pathID])
+
+			segs1 = self.localSegments[pathID]
+
+			for nodeID in self.pathClasses[pathID]["nodeSet"]:
+
+				if nodeID in targetNodeIDs:
+
+					#targetNodeSets[pathID].append(nodeID)
+					oldNodePose_L = self.pathClasses[pathID]["localNodePoses"][nodeID]
+
+					minDist = 1e100
+					minP = None
+
+					for seg in segs1:
+						for p in seg:
+							dist = sqrt((originPoint[0]-p[0])**2+(originPoint[1]-p[1])**2)
+
+							if dist < minDist:
+								minDist = dist
+								minP = p
+
+					newNodePose_L = (minP[0], minP[1], oldNodePose_L[2])
+
+					self.pathClasses[pathID]["localNodePoses"][nodeID] = newNodePose_L
+
+					newPose_G = currFrame.convertLocalOffsetToGlobal(newNodePose_L)
+
+					""" for recomputing raw pose """
+					oldGPACPose = self.nodePoses[nodeID]
+					gpacProfile = Pose(oldGPACPose)
+					localOffset = gpacProfile.convertGlobalPoseToLocal(self.nodeRawPoses[nodeID])
+
+					""" new global pose """
+					self.nodePoses[nodeID] = newPose_G
+					
+					" go back and convert this from GPAC pose to estPose "
+					newProfile = Pose(newPose_G)
+					newEstPose = newProfile.convertLocalOffsetToGlobal(localOffset)
+					
+					self.nodeRawPoses[nodeID] = newEstPose
+
+	
+
+	def snapLandmarkToSkeleton(self, targetNodeIDs = []):
 
 		allPathIDs = self.getPathIDs()
 		controlPoses_G = self.getGlobalControlPoses()
