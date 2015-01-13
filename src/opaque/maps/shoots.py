@@ -5079,6 +5079,7 @@ def computeAllSplices4(controlPoses_G, localTerms, localSegments, spliceSkeleton
 				globalP = shootFrame.convertLocalOffsetToGlobal(p)
 				globalSeg.append(globalP)
 
+			globalSegments[pathID].append(globalSeg)
 	
 	""" of all the terms, find the ones that are not subsumed by other shoots """
 
