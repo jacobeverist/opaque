@@ -389,6 +389,7 @@ def computePathSegments(juncIDs, leafIDs, tree, gridHash, vertices):
 	leafSegments = []
 	internalSegments = []
 
+	juncNeighPaths = []
 	retPaths = []
 
 	if len(juncIDs) > 0:
@@ -407,6 +408,18 @@ def computePathSegments(juncIDs, leafIDs, tree, gridHash, vertices):
 				resultPath = getSegPaths(childNode, otherJuncIDs, leafIDs, [jID], tree, isVisited)
 				if len(resultPath) > 2:
 					retPaths.append(resultPath)
+				elif len(resultPath) == 2:
+
+					if resultPath[0] in juncIDs and resultPath[1] in juncIDs:
+
+						" in the rare case that two junction nodes are neighbors "
+						print "short path:", resultPath
+
+						juncNeighPaths.append(resultPath)
+
+					
+
+
 	else:
 		isVisited = {}
 		for k, v in tree.items():
@@ -469,6 +482,7 @@ def computePathSegments(juncIDs, leafIDs, tree, gridHash, vertices):
 	""" convert grid segments to real segments """
 	realLeafSegments = []
 	realInternalSegments = []
+	realJuncNeighPaths = []
 	for seg in leafSegments:
 		newSeg = []
 		for p in seg:
@@ -481,6 +495,12 @@ def computePathSegments(juncIDs, leafIDs, tree, gridHash, vertices):
 		for p in seg:
 			newSeg.append(gridHash[p])
 		realInternalSegments.append(newSeg)
+
+	for seg in juncNeighPaths:
+		newSeg = []
+		for p in seg:
+			newSeg.append(gridHash[p])
+		realJuncNeighPaths.append(newSeg)
 
 	#realJuncIDs = []
 	#for jID in juncIDs:
@@ -548,7 +568,8 @@ def computePathSegments(juncIDs, leafIDs, tree, gridHash, vertices):
 		internalPoints = internalSpline.getUniformSamples()
 		smoothInternalSegments.append(internalPoints)
 	
-	allRealSegments = longLeafSegments + realInternalSegments
+	#allRealSegments = longLeafSegments + realInternalSegments
+	allRealSegments = longLeafSegments + realInternalSegments + realJuncNeighPaths
 
 	smoothPathSegs = smoothLeafSegments + smoothInternalSegments
 
@@ -571,7 +592,26 @@ def computePathSegments(juncIDs, leafIDs, tree, gridHash, vertices):
 			dist = sqrt((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2)
 
 			skeletonGraph.add_edge(p1,p2,wt=dist)
+
+
+	#""" join junctions that are neighbors so we don't have disconnected graph (RARE) """
+	#for seg in realJuncNeighPaths:
+	#	realJuncNeighPaths.apend(newSeg)
 	
+	#for segIndex in range(len(allRealSegments)):
+
+	#	for segIndex2 in range(segIndex+1, len(allRealSegments)):
+	
+	#	for seg in allRealSegments:
+	#		for k in range(0,len(seg)-1):
+	#			p1 = tuple(seg[k])
+	#			p2 = tuple(seg[k+1])
+
+	#			dist = sqrt((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2)
+
+	#			skeletonGraph.add_edge(p1,p2,wt=dist)
+
+
 	"""
 	origControlOrigin = Pose(controlPose)
 
@@ -826,7 +866,7 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 		with junctions and leaves as terminals """
 	smoothLeafSegments, smoothInternalSegments, localSkeletonGraph, smoothLeafTerms = computePathSegments(junctions, leaves, uni_mst, gridHash, vertices)
 
-	print "computePathSegments:", len(smoothLeafSegments), len(smoothInternalSegments), "paths from", len(junctions), "junctions and", len(leaves), "leaves", [len(pMem) for pMem in smoothLeafSegments], [len(pMem) for pMem in smoothInternalSegments], "terms =", smoothLeafTerms
+	print pathID, "computePathSegments:", len(smoothLeafSegments), len(smoothInternalSegments), "paths from", len(junctions), "junctions and", len(leaves), "leaves", [len(pMem) for pMem in smoothLeafSegments], [len(pMem) for pMem in smoothInternalSegments], "terms =", smoothLeafTerms, "leaves =", leaves, "junctions =", junctions
 
 
 	"""
@@ -1290,6 +1330,7 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 
 		#nodeSet = self.getNodes(pathID)
 
+		"""
 		print "drawing pathID", pathID, "for nodes:", nodeSet
 		for nodeID in nodeSet:
 			xP = []
@@ -1297,13 +1338,7 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 
 			estPose1 = nodePoses[nodeID]
 	
-			if poseData.isBowties[nodeID]:			
-				hull1 = poseData.aHulls[nodeID]
-				#medial1 = poseData.medialAxes[nodeID]
-				#hull1 = computeBareHull(self.nodeHash[nodeID], sweep = False, static = True)
-			else:
-				#hull1 = computeBareHull(self.nodeHash[nodeID], sweep = False)
-				hull1 = poseData.aHulls[nodeID]
+			hull1 = poseData.aHulls[nodeID]
 	
 			" set the origin of pose 1 "
 			poseOrigin = Pose(estPose1)
@@ -1320,19 +1355,8 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 			spatialFeature0 = poseData.spatialFeatures[nodeID][0]
 			isSpatialFeature0 = spatialFeature0["bloomPoint"] != None or spatialFeature0["archPoint"] != None or spatialFeature0["inflectionPoint"] != None
 
-			#if nodeID == highestNodeID:
-			#	pylab.plot(xP,yP, color=(0,0,0))
-			#elif nodeID == highestNodeID-1:
-			#	pylab.plot(xP,yP, color=(0.5,0.5,0.5))
-			#else:
-			#	pylab.plot(xP,yP, color=color)
-
 			pylab.plot(xP,yP, color=color)
-			#if isSpatialFeature0:
-			#	pylab.plot(xP,yP, color='k')
-			#else:
-			#	pylab.plot(xP,yP, color=color)
-				
+		"""
 		
 		xP = []
 		yP = []
@@ -1342,6 +1366,7 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 			
 		pylab.plot(xP,yP, '--', color=color, linewidth=4)
 
+		"""
 		xP = []
 		yP = []
 		for point_L, pThresh, pName in localLandmarks:
@@ -1350,9 +1375,9 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 
 		pylab.scatter(xP, yP, zorder=9, color='k')
 
-		#globalJunctionPose = self.getGlobalJunctionPose(pathID)
 		if globalJunctionPose != None:
 			pylab.scatter([globalJunctionPose[0],], [globalJunctionPose[1],], color='m', zorder=10)
+		"""
 
 		#self.plotEnv()
 		
@@ -1430,6 +1455,49 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 		pylab.savefig("pathAndHull_%02u_%03u_%02u_%04u_b.png" % (hypothesisID, maxNodeID, pathID, topCount))
 
 		#self.topCount += 1
+
+		pylab.clf()
+	 		
+		colors = []
+		colors.append([127, 127, 255])
+		colors.append([127, 255, 127])
+		colors.append([255, 127, 127])
+		colors.append([255, 127, 255])
+		colors.append([255, 255, 127])
+		colors.append([127, 255, 255])
+
+
+		for color in colors:
+			color[0] = float(color[0])/256.0
+			color[1] = float(color[1])/256.0
+			color[2] = float(color[2])/256.0
+
+
+		xP = []
+		yP = []
+		
+		localSkeletonGraph = leaf2LeafPathJunctions["skeletonGraph"]
+
+		components = localSkeletonGraph.connected_components()
+
+		for edge in localSkeletonGraph.edges():
+		
+			globalNodePoint1 = edge[0]
+			globalNodePoint2 = edge[1]
+
+			xP = [globalNodePoint1[0], globalNodePoint2[0]]
+			yP = [globalNodePoint1[1], globalNodePoint2[1]]
+
+			compNum = components[globalNodePoint1]
+
+			#print "compNum:", compNum, colors[compNum]
+			pylab.plot(xP,yP, color=colors[compNum])
+
+
+		pylab.axis("equal")
+		pylab.title("Path %d %d %d" % (hypothesisID, pathID, maxNodeID))
+		pylab.savefig("pathAndHull_%02u_%03u_%02u_%04u_c.png" % (hypothesisID, maxNodeID, pathID, topCount))
+
 
 
 	print "juncAngSet:", juncAngSet
@@ -3858,13 +3926,16 @@ def getSkeletonPath(skeleton, term1, term2):
 	endNode = minEndNode
 
 
-	print "nodes path from", startNode, "to", endNode
+	print "nodes path from", startNode, "to", endNode, minStartDist, minEndDist
 	shortestSpliceTree, shortestSpliceDist = skeleton.shortest_path(endNode)
 	try:
 		currNode = shortestSpliceTree[startNode]					 
 	except:
 		print repr(skeleton)
 		print repr(shortestSpliceTree)
+		#shortestSpliceTree, shortestSpliceDist = skeleton.shortest_path(startNode)
+		#print repr(shortestSpliceTree)
+		print skeleton.connected_components()
 		raise
 
 	splicedSkel = [startNode]
