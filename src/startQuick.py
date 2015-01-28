@@ -115,7 +115,7 @@ atexit.register(cleanup)
 
 
 def createTest():
-	probe = QuickProbe(40,0.15,0.05,30.0*2.5)
+	probe = QuickProbe(40,0.15,0.15,30.0*2.5)
 	
 	drawThings = CmdDrawThings(probe.robotParam)
 	currControl = TestProcess(probe, drawThings, args)

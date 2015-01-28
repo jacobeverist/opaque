@@ -71,6 +71,7 @@ class TestNavigation2(SnakeControl):
 		
 		self.localPathDirection = True
 		self.localPathState = 0
+		self.localDirection = False
 		self.localState = 0
 		self.globalState = 0
 		self.prevTime = 0
@@ -100,7 +101,35 @@ class TestNavigation2(SnakeControl):
 		
 		self.inversion = 1
 		
+	def setGlobalState(self, stateID):
+
+		print "changing global control state from", self.globalState, "to", stateID
+		self.globalState = stateID
+
+	def getGlobalState(self):
+		return self.globalState
+
+	def setTravelDir(self, travelDir):
+		print "changing travelDir state from", self.travelDir, "to", travelDir
+		self.travelDir = travelDir
+	
+	def getTravelDir(self):
+		return self.travelDir
 		
+	def setLocalPathDirection(self, localPathDirection):
+		print "changing localPathDirection from", self.localPathDirection, "to", localPathDirection
+		self.localPathDirection = localPathDirection
+
+	def getLocalPathDirection(self):
+		return self.localPathDirection 
+
+	def setLocalDirection(self, localDirection):
+		print "changing localDirection from", self.localDirection, "to", localDirection
+		self.localDirection = localDirection
+		
+	def getLocalDirection(self):
+		return self.localDirection
+
 	def updateMaps(self):
 		pass
 	
@@ -198,15 +227,14 @@ class TestNavigation2(SnakeControl):
 
 			isDone = self.doInitAnchor()
 			if isDone:
-				pass
-				self.globalState = 1
+				self.setGlobalState(1)
 				
 		elif self.globalState == 1:
 			
 			" create the motion model object "
 			self.contacts = AverageContacts(self.probe)
 			
-			self.globalState = 2
+			self.setGlobalState(2)
 			
 		elif self.globalState == 2:
 
@@ -217,7 +245,7 @@ class TestNavigation2(SnakeControl):
 			
 			if self.contacts.isStable():
 				self.contacts.resetPose(self.probe.getActualJointPose(19))
-				self.globalState = 3
+				self.setGlobalState(3)
 				self.lastPose1 = self.contacts.getAveragePose(0)
 				self.lastPose2 = self.contacts.getAveragePose(39)
 
@@ -226,7 +254,9 @@ class TestNavigation2(SnakeControl):
 			""" create the mapping object """
 			self.mapGraph = MapUser(self.probe, self.contacts, isStable = True, args = self.args)
 
+			#self.mapGraph.restorePickle("../../doc/results/eval_2015_01_13/results_0.0/testDir/results_cross_junction.py", 23)
 			#self.mapGraph.restorePickle("eval_success_cross_2015_01_10", 199)
+			#self.mapGraph.restorePickle("results_badnav_2015_01_13", 81)
 			print "actual joint pose:", self.probe.getActualJointPose(19)
 
 			#self.mapGraph.insertPose(self.probe.getActualJointPose(19), self.travelDir)
@@ -235,8 +265,10 @@ class TestNavigation2(SnakeControl):
 			self.restState = deepcopy(probeState)
 			
 			#self.globalState = 6
-			self.globalState = 4
+			#self.globalState = 4
 			#self.globalState = 10
+			self.setGlobalState(4)
+			#self.setGlobalState(10)
 
 			self.restState = deepcopy(probeState)
 
@@ -266,7 +298,8 @@ class TestNavigation2(SnakeControl):
 			isDone = self.doFrontExtend()
 			
 			if isDone:
-				self.globalState = 5
+				#self.globalState = 5
+				self.setGlobalState(5)
 
 		elif self.globalState == 5:
 
@@ -295,7 +328,8 @@ class TestNavigation2(SnakeControl):
 				self.lastPose1 = self.contacts.getAverageSegPose(0)
 				self.lastPose2 = self.contacts.getAverageSegPose(39)
 				
-				self.globalState = 6
+				#self.globalState = 6
+				self.setGlobalState(6)
 				#self.globalState = 9
 				#self.globalState = 7
 
@@ -311,7 +345,8 @@ class TestNavigation2(SnakeControl):
 			isDone = self.doPokeWalls(True)
 			
 			if isDone:
-				self.globalState = 7
+				#self.globalState = 7
+				self.setGlobalState(7)
 			
 		elif self.globalState == 7:
 
@@ -320,7 +355,8 @@ class TestNavigation2(SnakeControl):
 			
 			if isDone:
 				#self.globalState = 9
-				self.globalState = 8
+				#self.globalState = 8
+				self.setGlobalState(8)
 
 				self.mapGraph.correctPosture()
 				#self.mapGraph.localizeCurrentNode()
@@ -349,7 +385,8 @@ class TestNavigation2(SnakeControl):
 			isDone = self.doPokeWalls(False)
 			
 			if isDone:
-				self.globalState = 9
+				#self.globalState = 9
+				self.setGlobalState(9)
 		
 		elif self.globalState == 9:
 			
@@ -396,16 +433,17 @@ class TestNavigation2(SnakeControl):
 					if foreAvg >= 1.1:
 						#if self.collisionCount >= 2:
 						if self.collisionCount >= 1:
-							self.globalState = 10
+							self.setTravelDir(not self.travelDir)
+							self.setGlobalState(10)
 							self.isCollided = True
 							self.collisionCount = 0		
 						else:
 							if self.collisionCount == 0:
 								self.inversion *= -1
-							self.globalState = 4
+							self.setGlobalState(4)
 							self.collisionCount += 1		
 					else:
-						self.globalState = 4
+						self.setGlobalState(4)
 						self.collisionCount = 0		
 
 				else:
@@ -414,17 +452,18 @@ class TestNavigation2(SnakeControl):
 					if backAvg >= 1.1:
 						#if self.collisionCount >= 2:
 						if self.collisionCount >= 1:
-							self.globalState = 10
+							self.setTravelDir(not self.travelDir)
+							self.setGlobalState(10)
 							self.isCollided = True
 							self.collisionCount = 0		
 						else:
 							if self.collisionCount == 0:
 								self.inversion *= -1
-							self.globalState = 4
+							self.setGlobalState(4)
 							self.collisionCount += 1		
 							
 					else:
-						self.globalState = 4
+						self.setGlobalState(4)
 						self.collisionCount = 0		
 					
 				print "collisionCount =", self.collisionCount, self.isCollided, self.globalState, foreAvg, backAvg, self.inversion, self.travelDir
@@ -437,6 +476,7 @@ class TestNavigation2(SnakeControl):
 				self.mapGraph.drawConstraints()				
 				
 				self.mapGraph.drawNavigation([],[])
+				#self.setGlobalState(4)
 				#self.globalState = 10
 
 				#if self.mapGraph.numNodes > 6:
@@ -487,7 +527,7 @@ class TestNavigation2(SnakeControl):
 
 			self.mapGraph.drawNavigation(self.wayPath,self.wayPoint)
 
-			self.globalState = 11
+			self.setGlobalState(11)
 
 		elif self.globalState == 11:
 
@@ -511,7 +551,7 @@ class TestNavigation2(SnakeControl):
 				self.restState = deepcopy(probeState)
 
 				if self.isCollided:
-					self.travelDir = not self.travelDir
+					self.setTravelDir(not self.travelDir)
 					self.isCollided = False
 
 
@@ -525,10 +565,9 @@ class TestNavigation2(SnakeControl):
 				#self.contacts.resetPose(self.mapGraph.getMaxPose())
 				self.lastPose1 = self.contacts.getAverageSegPose(0)
 				self.lastPose2 = self.contacts.getAverageSegPose(39)
-				self.globalState = 6
+				self.setGlobalState(6)
 				self.isCapture = True
 				
-				self.globalState = 6
 				self.contacts.setCautious(False)			
 
 				self.mapGraph.drawNavigation([],[])
@@ -822,7 +861,8 @@ class TestNavigation2(SnakeControl):
 			" anchoring turned off "
 			self.isAnchored = False
 
-			self.localPathDirection = self.behavior.getDirection()
+			#self.localPathDirection = self.behavior.getDirection()
+			self.setLocalPathDirection(self.behavior.getDirection())
 			
 			
 			self.localState = 1
@@ -872,7 +912,8 @@ class TestNavigation2(SnakeControl):
 			print "START:  doPathFollow()"
 			self.targetReached = False
 			
-			self.localDirection = True
+			#self.localDirection = True
+			self.setLocalDirection(True)
 
 			targetDirection = self.mapGraph.getDirection(wayPath)
 
@@ -919,12 +960,14 @@ class TestNavigation2(SnakeControl):
 			self.isBacktrack = False
 
 			if targetDirection:
-				if self.frontDivDist > 0.2 and self.contigFrac < 0.5:
-					self.localDirection = False
+				if self.frontDivDist > 0.2 and self.contigFrac < 0.6:
+					#self.localDirection = False
+					self.setLocalDirection(False)
 					self.isBacktrack = True
 			else:
-				if self.backDivDist > 0.2 and self.contigFrac < 0.5:
-					self.localDirection = False
+				if self.backDivDist > 0.2 and self.contigFrac < 0.6:
+					#self.localDirection = False
+					self.setLocalDirection(False)
 					self.isBacktrack = True
 
 			#if dist1 < dist2:
@@ -1169,16 +1212,18 @@ class TestNavigation2(SnakeControl):
 						if self.isBacktrack:
 							self.backtrackCount += 1
 							#if self.backtrackCount > 1:
-							if self.frontDivDist <= 0.2 and self.backDivDist <= 0.2 or self.contigFrac > 0.5:
-								print "stopping backtracking:", self.frontDivDist, self.backDivDist
+							if self.frontDivDist <= 0.2 and self.backDivDist <= 0.2 or self.contigFrac > 0.9:
+								print "stopping backtracking:", self.frontDivDist, self.backDivDist, self.contigFrac
 								self.isBacktrack = False
-								self.localDirection = not self.localDirection
+								#self.localDirection = not self.localDirection
+								self.setLocalDirection(not self.localDirection)
 								self.backtrackCount
 
-						elif (self.frontDivDist > 0.2 or self.backDivDist > 0.2) and self.contigFrac < 0.5:
-							print "backtracking:", self.frontDivDist, self.backDivDist
+						elif (self.frontDivDist > 0.2 or self.backDivDist > 0.2) and self.contigFrac < 0.6:
+							print "backtracking:", self.frontDivDist, self.backDivDist, self.contigFrac
 							self.isBacktrack = True
-							self.localDirection = not self.localDirection
+							#self.localDirection = not self.localDirection
+							self.setLocalDirection(not self.localDirection)
 							
 							" if we've reached our target after this step, go to next waypoint "
 
@@ -1195,10 +1240,11 @@ class TestNavigation2(SnakeControl):
 							self.drawThings.drawPath([])
 							self.drawThings.drawPoints([])
 
-							if self.localDirection:
-								self.travelDir = self.localPathDirection
-							else:
-								self.travelDir = not self.localPathDirection
+							self.setTravelDir(self.localPathDirection)
+							#if self.localDirection:
+							#	self.setTravelDir(self.localPathDirection)
+							#else:
+							#	self.setTravelDir(not self.localPathDirection)
 							return True
 								
 

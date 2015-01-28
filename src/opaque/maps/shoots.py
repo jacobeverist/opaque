@@ -1317,20 +1317,19 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 
 			pylab.plot(xP,yP, color=color, linewidth=4)
 
-		if globalJunctionPose != None:
+		#if globalJunctionPose != None:
 
-			for path in theoryMedialLongPaths:
-				xP = []
-				yP = []
-				for p in path:
-					xP.append(p[0])
-					yP.append(p[1])
+		#	for path in theoryMedialLongPaths:
+		#		xP = []
+		#		yP = []
+		#		for p in path:
+		#			xP.append(p[0])
+		#			yP.append(p[1])
 
-				pylab.plot(xP,yP, color='k')
+		#		pylab.plot(xP,yP, color='k')
 
 		#nodeSet = self.getNodes(pathID)
 
-		"""
 		print "drawing pathID", pathID, "for nodes:", nodeSet
 		for nodeID in nodeSet:
 			xP = []
@@ -1355,8 +1354,7 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 			spatialFeature0 = poseData.spatialFeatures[nodeID][0]
 			isSpatialFeature0 = spatialFeature0["bloomPoint"] != None or spatialFeature0["archPoint"] != None or spatialFeature0["inflectionPoint"] != None
 
-			pylab.plot(xP,yP, color=color)
-		"""
+			pylab.plot(xP,yP, color=color, alpha=0.2)
 		
 		xP = []
 		yP = []
@@ -1677,6 +1675,8 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 @logFunction
 def spliceSkeletons(localSkeletons, controlPoses, junctionPoses, parentPathIDs):
 
+	global pathPlotCount
+
 	#SPLICE_DIST = 0.05
 	SPLICE_DIST = 0.2
 
@@ -1809,8 +1809,10 @@ def spliceSkeletons(localSkeletons, controlPoses, junctionPoses, parentPathIDs):
 	#for j in range(len(globalSkeletons)):
 	#	for k in range(j, len(globalSkeletons)):
 
+	candPairs = []
+
 	for j in range(len(skelIDs)):
-		for k in range(j, len(skelIDs)):
+		for k in range(j+1, len(skelIDs)):
 			jID = skelIDs[j]
 			kID = skelIDs[k]
 
@@ -1826,9 +1828,11 @@ def spliceSkeletons(localSkeletons, controlPoses, junctionPoses, parentPathIDs):
 				node1 = nodes1[m]
 				node2 = nodes2[indices1[m]]
 
-				if dist1 <= SPLICE_DIST:
+				candPairs.append((dist1, node1, node2))
+
+				#if dist1 <= SPLICE_DIST:
 					#print "add_edge(", node1, node2, dist1
-					spliceSkeleton.add_edge(node1, node2, wt=dist1)
+				#	spliceSkeleton.add_edge(node1, node2, wt=dist1)
 	
 			for m in range(len(distances2)):
 				dist2 = distances2[m]
@@ -1836,10 +1840,81 @@ def spliceSkeletons(localSkeletons, controlPoses, junctionPoses, parentPathIDs):
 				node2 = nodes2[m]
 				node1 = nodes1[indices2[m]]
 
-				if dist2 <= SPLICE_DIST:
+				candPairs.append((dist2, node2, node1))
+
+				#if dist2 <= SPLICE_DIST:
 					#print "add_edge(", node1, node2, dist2
-					spliceSkeleton.add_edge(node2, node1, wt=dist2)
+				#	spliceSkeleton.add_edge(node2, node1, wt=dist2)
+	
+	candPairs.sort()
+
+	kIndex = 0
+	isConnected = False
+
+	while not isConnected and len(candPairs) > 0: 
+
+		while candPairs[kIndex][0] <= SPLICE_DIST:
+			cand = candPairs[kIndex]
+			spliceSkeleton.add_edge(cand[1], cand[2], wt=cand[0])
+
+			kIndex += 1
+
+
+		components = spliceSkeleton.connected_components()
+		compIDs = components.values()
+		compIDs = list(set(compIDs))
 		
+		print "compIDs:", compIDs
+
+		if len(compIDs) <= 1:
+			isConnected = True
+		
+		SPLICE_DIST += 0.01
+
+
+	pylab.clf()
+		
+	colors = []
+	colors.append([127, 127, 255])
+	colors.append([127, 255, 127])
+	colors.append([255, 127, 127])
+	colors.append([255, 127, 255])
+	colors.append([255, 255, 127])
+	colors.append([127, 255, 255])
+
+
+	for color in colors:
+		color[0] = float(color[0])/256.0
+		color[1] = float(color[1])/256.0
+		color[2] = float(color[2])/256.0
+
+
+	xP = []
+	yP = []
+	
+	components = spliceSkeleton.connected_components()
+
+	for edge in spliceSkeleton.edges():
+	
+		globalNodePoint1 = edge[0]
+		globalNodePoint2 = edge[1]
+
+		xP = [globalNodePoint1[0], globalNodePoint2[0]]
+		yP = [globalNodePoint1[1], globalNodePoint2[1]]
+
+		compNum = components[globalNodePoint1]
+
+		#print "compNum:", compNum, colors[compNum]
+		pylab.plot(xP,yP, color=colors[compNum])
+
+
+	pylab.axis("equal")
+	#pylab.title("Path %d %d %d" % (hypothesisID, pathID, maxNodeID))
+	pylab.savefig("spliceSkeleton_%04u.png" % pathPlotCount)
+
+	pathPlotCount += 1
+
+	
 	return spliceSkeleton
 
 @logFunction
@@ -4842,23 +4917,23 @@ def computeJointBranch(localPathSegsByID, localTerms, localPaths, localSkeletons
 			trimPath_L = trimmedPaths[pathID]
 
 
-			for splicePath in splicedPaths_G:
+			#for splicePath in splicedPaths_G:
 
-				xP = []
-				yP = []
-				for p in splicePath:
-					xP.append(p[0])
-					yP.append(p[1])
-				pylab.plot(xP,yP, color='r', zorder=10, alpha=0.3)
+			#	xP = []
+			#	yP = []
+			#	for p in splicePath:
+			#		xP.append(p[0])
+			#		yP.append(p[1])
+			#	pylab.plot(xP,yP, color='r', zorder=10, alpha=0.3)
 
 
-			xP = []
-			yP = []
-			for p in trimPath_L:
-				p1 = childFrame.convertLocalToGlobal(p)
-				xP.append(p1[0])
-				yP.append(p1[1])
-				pylab.plot(xP,yP, color='k', alpha=0.8, zorder=8)
+			#xP = []
+			#yP = []
+			#for p in trimPath_L:
+			#	p1 = childFrame.convertLocalToGlobal(p)
+			#	xP.append(p1[0])
+			#	yP.append(p1[1])
+			#	pylab.plot(xP,yP, color='k', alpha=0.8, zorder=8)
 
 			#xP = []
 			#yP = []
@@ -4878,24 +4953,25 @@ def computeJointBranch(localPathSegsByID, localTerms, localPaths, localSkeletons
 
 				pylab.plot(xP,yP, color='k', alpha=0.2)
 
-			for tipPoint_G in tipPoints_G:
+			#for tipPoint_G in tipPoints_G:
 
-				xP = [tipPoint_G[0],]
-				yP = [tipPoint_G[1],]
+			#	xP = [tipPoint_G[0],]
+			#	yP = [tipPoint_G[1],]
 
-				pylab.scatter(xP,yP, color='b', zorder=9)
+			#	pylab.scatter(xP,yP, color='b', zorder=9)
 
-			for tipPoint_G in oldTipPoints_G:
+			#for tipPoint_G in oldTipPoints_G:
 
-				xP = [tipPoint_G[0],]
-				yP = [tipPoint_G[1],]
+			#	xP = [tipPoint_G[0],]
+			#	yP = [tipPoint_G[1],]
 
-				pylab.scatter(xP,yP, color='y', zorder=9)
+			#	pylab.scatter(xP,yP, color='y', zorder=9)
 
-			pylab.scatter([newBranchPoses_G[pathID][0],], [newBranchPoses_G[pathID][1],], color='m', zorder = 9)
+			#pylab.scatter([newBranchPoses_G[pathID][0],], [newBranchPoses_G[pathID][1],], color='m', zorder = 9)
 			#pylab.scatter([controlPoses_G[pathID][0],], [controlPoses_G[pathID][1],], color='b')
 
 
+		"""
 		xP = []
 		yP = []
 		for pathID in allPathIDs:
@@ -4906,6 +4982,7 @@ def computeJointBranch(localPathSegsByID, localTerms, localPaths, localSkeletons
 				yP.append(point_G[1])
 
 		pylab.scatter(xP, yP, color='k', zorder=9)
+		"""
 
 
 		pylab.axis("equal")

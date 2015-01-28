@@ -25,6 +25,11 @@ import time
 import traceback
 from uuid import uuid4
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+from matplotlib.transforms import Affine2D
+import mpl_toolkits.axisartist.floating_axes as floating_axes
+
+from GPACurve import GPACurve
 
 import alphamod
 from itertools import product
@@ -277,10 +282,12 @@ def getOverlapCondition(medial2, estPose2, supportLine, nodeID, plotIter = False
 
 class MapState:
 	
-	def __init__(self, poseData, hypothesisID, args = None):
+	def __init__(self, robotParam, poseData, hypothesisID, args = None):
 		
 		""" raw sensor data products """
 		self.poseData = deepcopy(poseData)
+
+		self.robotParam = deepcopy(robotParam)
 		
 		""" pose particles for different combinations of poses and branch points """
 		#self.numPoseParticles = 100
@@ -2635,6 +2642,289 @@ class MapState:
 
 		self.posePlotCount += 1
 
+	def drawWhatever2(self, walls):
+		plt.clf()
+
+		fig = plt.figure()
+		fig.set_size_inches(16,12)
+		#fig.tight_layout(pad=4.0)
+		
+		ax1 = fig.add_subplot(1,1,1)
+
+		segWidth = self.robotParam["segWidth"]
+		segLength = self.robotParam["segLength"]
+		numSegs = self.robotParam["numSegs"]
+
+		print "segWidth, segLength =", segWidth, segLength
+
+		for wall in walls:
+			xP = []
+			yP = []
+			for p in wall:
+				xP.append(p[0])
+				yP.append(p[1])
+
+			ax1.plot(xP,yP, color='k', alpha=0.5)
+
+
+		for k, segs in self.globalSegments.iteritems():
+			for seg in segs:
+				xP = []
+				yP = []
+				for p in seg:
+					xP.append(p[0])
+					yP.append(p[1])
+				#pylab.plot(xP,yP, color = self.colors[k], linewidth=4)
+				#pylab.plot(xP,yP, color = 'k', linewidth=4)
+				ax1.plot(xP,yP, color = 'b', linewidth=1)
+
+		nodeID1 = self.poseData.numNodes-1
+		posture = self.poseData.localPostures[nodeID1]
+
+		#nodePose1 = self.getNodePose(nodeID1)
+		nodePose1 = self.nodeRawPoses[nodeID1]
+		poseOrigin = Pose(nodePose1)
+
+		gndPose1 = self.gndRawPoses[nodeID1]
+		gndOrigin = Pose(gndPose1)
+
+		for i in range(0,numSegs-1):
+			localPose = posture[i]
+
+			pose = poseOrigin.convertLocalOffsetToGlobal(localPose)
+			
+
+			xTotal = pose[0]
+			zTotal = pose[1]
+			totalAngle = pose[2]
+
+			print "pose", i, pose
+
+
+			p1 = [xTotal + segLength*cos(totalAngle) - 0.5*segWidth*sin(totalAngle), zTotal + segLength*sin(totalAngle) + 0.5*segWidth*cos(totalAngle)]
+			p2 = [xTotal + segLength*cos(totalAngle) + 0.5*segWidth*sin(totalAngle), zTotal + segLength*sin(totalAngle) - 0.5*segWidth*cos(totalAngle)]
+			p3 = [xTotal + 0.5*segWidth*sin(totalAngle), zTotal - 0.5*segWidth*cos(totalAngle)]
+			p4 = [xTotal - 0.5*segWidth*sin(totalAngle), zTotal + 0.5*segWidth*cos(totalAngle)]
+
+			xP = []
+			yP = []
+			xP.append(p4[0])
+			xP.append(p3[0])
+			xP.append(p2[0])
+			xP.append(p1[0])
+			xP.append(p4[0])
+			yP.append(p4[1])
+			yP.append(p3[1])
+			yP.append(p2[1])
+			yP.append(p1[1])
+			yP.append(p4[1])
+
+			xy = numpy.array([p4,p3,p2,p1])
+
+			# add a rectangle
+			polygon = mpatches.Polygon(xy, closed=True, color='b', alpha=0.2)
+			#pylab.gca().add_patch(polygon)
+			ax1.add_patch(polygon)
+			#pylab.plot(xP,yP, color='k', alpha=0.5)
+
+
+		for i in range(0,numSegs-1):
+			localPose = posture[i]
+
+			pose = gndOrigin.convertLocalOffsetToGlobal(localPose)
+			
+
+			xTotal = pose[0]
+			zTotal = pose[1]
+			totalAngle = pose[2]
+
+			print "pose", i, pose
+
+
+			p1 = [xTotal + segLength*cos(totalAngle) - 0.5*segWidth*sin(totalAngle), zTotal + segLength*sin(totalAngle) + 0.5*segWidth*cos(totalAngle)]
+			p2 = [xTotal + segLength*cos(totalAngle) + 0.5*segWidth*sin(totalAngle), zTotal + segLength*sin(totalAngle) - 0.5*segWidth*cos(totalAngle)]
+			p3 = [xTotal + 0.5*segWidth*sin(totalAngle), zTotal - 0.5*segWidth*cos(totalAngle)]
+			p4 = [xTotal - 0.5*segWidth*sin(totalAngle), zTotal + 0.5*segWidth*cos(totalAngle)]
+
+			xP = []
+			yP = []
+			xP.append(p4[0])
+			xP.append(p3[0])
+			xP.append(p2[0])
+			xP.append(p1[0])
+			xP.append(p4[0])
+			yP.append(p4[1])
+			yP.append(p3[1])
+			yP.append(p2[1])
+			yP.append(p1[1])
+			yP.append(p4[1])
+
+			xy = numpy.array([p4,p3,p2,p1])
+
+			# add a rectangle
+			polygon = mpatches.Polygon(xy, closed=True, color='k', alpha=0.2)
+			#pylab.gca().add_patch(polygon)
+			ax1.add_patch(polygon)
+			#pylab.plot(xP,yP, color='k', alpha=0.5)		
+
+		ax1.set_aspect("equal")
+		plt.savefig("whateverMap2_%04u.png" % self.posePlotCount)
+		self.posePlotCount += 1
+
+		plt.clf()
+		plt.close()
+
+	def drawWhatever(self):
+
+		plt.clf()
+
+		fig = plt.figure()
+		ax1 = fig.add_subplot(1,1,1)
+
+		#plot_extents = -0.5, 0.5, -0.5, 0.5
+		#plot_extents = -2.0, 1.6, -2.0, 0.8
+		#transform = Affine2D().translate(1.5,0.0).rotate_deg(-45)
+		#helper = floating_axes.GridHelperCurveLinear(transform, plot_extents)
+		#ax2 = floating_axes.FloatingSubplot(fig, 111, grid_helper=helper)
+		#ax2.plot(xP,yP, color='g')
+
+		#fig.add_subplot(ax2)
+
+		segWidth = self.robotParam["segWidth"]
+		segLength = self.robotParam["segLength"]
+		numSegs = self.robotParam["numSegs"]
+
+		print "segWidth, segLength:", segWidth, segLength
+
+		nodeID0 = self.poseData.numNodes-2
+		nodeID1 = self.poseData.numNodes-1
+		posture = self.poseData.localPostures[nodeID1]
+
+		#nodePose1 = self.getNodePose(nodeID1)
+		nodePose1 = self.nodeRawPoses[nodeID1]
+		poseOrigin = Pose(nodePose1)
+
+		for i in range(0,numSegs-1):
+			localPose = posture[i]
+
+			pose = poseOrigin.convertLocalOffsetToGlobal(localPose)
+			
+
+			xTotal = pose[0]
+			zTotal = pose[1]
+			totalAngle = pose[2]
+
+			print "pose", i, pose
+
+
+			p1 = [xTotal + segLength*cos(totalAngle) - 0.5*segWidth*sin(totalAngle), zTotal + segLength*sin(totalAngle) + 0.5*segWidth*cos(totalAngle)]
+			p2 = [xTotal + segLength*cos(totalAngle) + 0.5*segWidth*sin(totalAngle), zTotal + segLength*sin(totalAngle) - 0.5*segWidth*cos(totalAngle)]
+			p3 = [xTotal + 0.5*segWidth*sin(totalAngle), zTotal - 0.5*segWidth*cos(totalAngle)]
+			p4 = [xTotal - 0.5*segWidth*sin(totalAngle), zTotal + 0.5*segWidth*cos(totalAngle)]
+
+			xP = []
+			yP = []
+			xP.append(p4[0])
+			xP.append(p3[0])
+			xP.append(p2[0])
+			xP.append(p1[0])
+			xP.append(p4[0])
+			yP.append(p4[1])
+			yP.append(p3[1])
+			yP.append(p2[1])
+			yP.append(p1[1])
+			yP.append(p4[1])
+
+			xy = numpy.array([p4,p3,p2,p1])
+
+			# add a rectangle
+			polygon = mpatches.Polygon(xy, closed=True, color='k', alpha=0.2)
+			#pylab.gca().add_patch(polygon)
+			ax1.add_patch(polygon)
+			#pylab.plot(xP,yP, color='k', alpha=0.5)
+
+		xP = []
+		yP = []
+		for i in range(0,numSegs-1):
+			localPose = posture[i]
+			pose = poseOrigin.convertLocalOffsetToGlobal(localPose)
+			xP.append(pose[0])
+			yP.append(pose[1])
+		ax1.scatter(xP,yP, color='k', alpha=0.5)
+
+		gpaCurve = GPACurve(posture, rotated=True)
+		uniformSamples = gpaCurve.getUSet(numpy.arange(0,1.0,0.01))
+		localPose = gpaCurve.getPose()
+
+		newPose = poseOrigin.convertLocalOffsetToGlobal(localPose)
+
+
+		#upoints = arange(0,1.0,0.01)
+		#self.splPoints = self.centerCurve.getUSet(upoints)
+
+		#GPA_curve = SplineFit(posture, smooth = 0.5, kp = 2)
+		#uniformSamples = GPA_curve.getUniformSamples()
+
+		xP = []
+		yP = []
+		for p in uniformSamples:
+			p1 = poseOrigin.convertLocalToGlobal(p)
+			xP.append(p1[0])
+			yP.append(p1[1])
+
+		ax1.plot(xP,yP, color='g')
+
+		ax1.scatter([newPose[0],], [newPose[1],], color='r')
+
+		#xP = [newPose[0]+0.5*cos(newPose[2]), newPose[0], newPose[0]+0.5*cos(newPose[2]+pi/2.0)]
+		#yP = [newPose[1]+0.5*sin(newPose[2]), newPose[1], newPose[1]+0.5*sin(newPose[2]+pi/2.0)]
+		#pylab.plot(xP,yP, color='r')
+		ax1.arrow( newPose[0], newPose[1], 0.5*cos(newPose[2]), 0.5*sin(newPose[2]), fc="r", ec="r", head_width=0.05, head_length=0.1 )
+		ax1.arrow( newPose[0], newPose[1], 0.5*cos(newPose[2]+pi/2.0), 0.5*sin(newPose[2]+pi/2.0), fc="r", ec="r", head_width=0.05, head_length=0.1 )
+
+
+
+		localBodyPose = posture[19]
+		bodyPose = poseOrigin.convertLocalOffsetToGlobal(localBodyPose)
+		ax1.scatter([bodyPose[0],], [bodyPose[1],], color='b')
+		#xP = [bodyPose[0]+0.5*cos(bodyPose[2]), bodyPose[0], bodyPose[0]+0.5*cos(bodyPose[2]+pi/2.0)]
+		#yP = [bodyPose[1]+0.5*sin(bodyPose[2]), bodyPose[1], bodyPose[1]+0.5*sin(bodyPose[2]+pi/2.0)]
+		#pylab.plot(xP,yP, color='b')
+
+		ax1.arrow( bodyPose[0], bodyPose[1], 0.5*cos(bodyPose[2]), 0.5*sin(bodyPose[2]), fc="b", ec="b", head_width=0.05, head_length=0.1 )
+		ax1.arrow( bodyPose[0], bodyPose[1], 0.5*cos(bodyPose[2]+pi/2.0), 0.5*sin(bodyPose[2]+pi/2.0), fc="b", ec="b", head_width=0.05, head_length=0.1 )
+
+		#a = pylab.axes([.65, .6, .2, .2])
+		#pylab.plot(xP,yP)
+		#pylab.title('Probability')
+		#pylab.setp(a)
+
+		ax1.scatter([0.0,], [0.0,], color='k')
+		#xP = [0.5*cos(0.0), 0.0, 0.5*cos(0.0+pi/2.0)]
+		#yP = [0.5*sin(0.0), 0.0, 0.5*sin(0.0+pi/2.0)]
+		#ax1.plot(xP,yP, color='k')
+		ax1.arrow( 0.0, 0.0, 0.5*cos(0.0), 0.5*sin(0.0), fc="k", ec="k", head_width=0.05, head_length=0.1 )
+		ax1.arrow( 0.0, 0.0, 0.5*cos(0.0+pi/2.0), 0.5*sin(0.0+pi/2.0), fc="k", ec="k", head_width=0.05, head_length=0.1 )
+
+		estPose1 = self.getNodePose(nodeID1)
+		ax1.arrow( 0.0, 0.0, newPose[0], newPose[1], fc="k", ec="k", head_width=0.05, head_length=0.1, alpha=0.5)
+
+
+		#pylab.gca().invert_yaxis()
+		#ax1.set_xlim(-4.0,8.0)
+		#ax1.set_ylim(-2.0,6.0)
+		ax1.set_aspect("equal")
+		#ax2.set_aspect("equal")
+		#pylab.axis("equal")
+		#pylab.xlim(-4.0,2.0)
+		#pylab.ylim(-2.0,2.0)
+		#ax1.set_title("%d poses" % self.poseData.numNodes)
+		plt.savefig("whateverMap_%04u.png" % self.posePlotCount)
+		self.posePlotCount += 1
+
+		plt.clf()
+		plt.close()
+
 	@logFunction
 	def drawPoseParticles(self):
 
@@ -2671,7 +2961,7 @@ class MapState:
 				xP.append(p1[0])
 				yP.append(p1[1])
 
-			pylab.plot(xP,yP, color = 'r', alpha = 0.2, zorder=7)
+			pylab.plot(xP,yP, color = 'r', alpha = 0.4, zorder=7)
 
 			poseOrigin1 = Pose(hypPose1)
 
@@ -2682,26 +2972,26 @@ class MapState:
 				xP.append(p1[0])
 				yP.append(p1[1])
 
-			pylab.plot(xP,yP, color = 'b', alpha = 0.2, zorder=7)
+			pylab.plot(xP,yP, color = 'b', alpha = 0.4, zorder=7)
 
-		for pathID in allPathIDs:
+		
+		#for pathID in allPathIDs:
 
-			xP = []
-			yP = []
+		#	xP = []
+		#	yP = []
 
-			if pathID != 0:
-				parentPathID = self.pathClasses[pathID]["parentID"]
-				currFrame = Pose(controlPoses_G[parentPathID])
+		#	if pathID != 0:
+		#		parentPathID = self.pathClasses[pathID]["parentID"]
+		#		currFrame = Pose(controlPoses_G[parentPathID])
 
-				controlCurve = self.controlCurves[pathID]
+		#		controlCurve = self.controlCurves[pathID]
 
-				for p in controlCurve:
-					p1 = currFrame.convertLocalToGlobal(p)
-					xP.append(p1[0])
-					yP.append(p1[1])
+		#		for p in controlCurve:
+		#			p1 = currFrame.convertLocalToGlobal(p)
+		#			xP.append(p1[0])
+		#			yP.append(p1[1])
 
-				pylab.plot(xP,yP, color = 'y', alpha = 0.9, zorder=13)
-				# = getSkeletonPath(parentSkeleton, parentTerm1, parentTerm2)
+		#		pylab.plot(xP,yP, color = 'y', alpha = 0.9, zorder=13)
 
 
 		#pylab.scatter(hypPointsX_0, hypPointsY_0, color='r', linewidth=1, zorder=10, alpha=0.2)
@@ -2728,6 +3018,7 @@ class MapState:
 					yP.append(p[1])
 				pylab.plot(xP,yP, color = self.colors[k], linewidth=4)
 
+		"""
 		xP = []
 		yP = []
 		for pathID in allPathIDs:
@@ -2740,6 +3031,7 @@ class MapState:
 
 		if len(xP) > 0:
 			pylab.scatter(xP, yP, color='k', linewidth=1, zorder=9, alpha=0.9)
+		"""
 
 		xP = []
 		yP = []
@@ -2749,8 +3041,8 @@ class MapState:
 				xP.append(pose_G[0])
 				yP.append(pose_G[1])
 
-		if len(xP) > 0:
-			pylab.scatter(xP, yP, color='r', linewidth=1, zorder=10, alpha=0.9)
+		#if len(xP) > 0:
+		#	pylab.scatter(xP, yP, color='r', linewidth=1, zorder=10, alpha=0.9)
 
 
 		xP = []
@@ -2761,13 +3053,13 @@ class MapState:
 				xP.append(term[0])
 				yP.append(term[1])
 
-		if len(xP) > 0:
-			pylab.scatter(xP, yP, color='g', linewidth=1, zorder=11, alpha=0.9)
+		#if len(xP) > 0:
+		#	pylab.scatter(xP, yP, color='g', linewidth=1, zorder=11, alpha=0.9)
 
-		junctionPoses = {}
-		for pathID in allPathIDs:
-			if pathID != 0:
-				junctionPoses[pathID] = self.pathClasses[pathID]["globalJunctionPose"]
+		#junctionPoses = {}
+		#for pathID in allPathIDs:
+		#	if pathID != 0:
+		#		junctionPoses[pathID] = self.pathClasses[pathID]["globalJunctionPose"]
 
 		#xP = []
 		#yP = []
@@ -2793,9 +3085,7 @@ class MapState:
 			p1 = poseOrigin0.convertLocalToGlobal(p)
 			xP.append(p1[0])
 			yP.append(p1[1])
-		#pylab.plot(xP,yP,color='k', zorder=9, alpha=0.2)
 		pylab.plot(xP,yP,color='k', zorder=10, linewidth=1)
-		#pylab.plot(xP,yP,color='k', zorder=8, linewidth=1)
 
 		xP = []
 		yP = []
@@ -2803,9 +3093,7 @@ class MapState:
 			p1 = poseOrigin1.convertLocalToGlobal(p)
 			xP.append(p1[0])
 			yP.append(p1[1])
-		#pylab.plot(xP,yP,color='k', zorder=9, alpha=0.2)
 		pylab.plot(xP,yP,color='k', zorder=10, linewidth=1)
-		#pylab.plot(xP,yP,color='k', zorder=8, linewidth=1)
 
 		direction = self.poseData.travelDirs[nodeID0]
 
@@ -2815,14 +3103,14 @@ class MapState:
 			p0 = poseOrigin0.convertLocalToGlobal(medial0[0])
 			p1 = poseOrigin1.convertLocalToGlobal(medial1[0])
 
-			pylab.scatter([p0[0],p1[0]],[p0[1],p1[1]], zorder=15, color='m')
+			#pylab.scatter([p0[0],p1[0]],[p0[1],p1[1]], zorder=15, color='m')
 
 		else:
 			"backward"
 			p0 = poseOrigin0.convertLocalToGlobal(medial0[-1])
 			p1 = poseOrigin1.convertLocalToGlobal(medial1[-1])
 
-			pylab.scatter([p0[0],p1[0]],[p0[1],p1[1]], zorder=15, color='m')
+			#pylab.scatter([p0[0],p1[0]],[p0[1],p1[1]], zorder=15, color='m')
 
 		xP = []
 		yP = []
@@ -2833,19 +3121,13 @@ class MapState:
 			xP.append(globalColPoint[0])
 			yP.append(globalColPoint[1])
 
-		pylab.scatter(xP,yP, zorder=14, color='b')
+		#pylab.scatter(xP,yP, zorder=14, color='b')
 
 		
-		#pylab.xlim(-6,16.48)
-		
-		#pylab.ylim(-16,16)
 		pylab.axis("equal")
-		#pylab.xlim(-16,16)
-		#pylab.title("%d particles" % len(particleDist))
 		pylab.title("nodeIDs %d %d hypID %d" % (nodeID0, nodeID1, self.hypothesisID))
 
 
-		#pylab.savefig("moveEstimate2_%04u_%04u.png" % (self.posePlotCount, self.hypothesisID))
 		pylab.savefig("moveEstimate2_%04u_%04u.png" % (self.hypothesisID, self.posePlotCount))
 		print "moveEstimate2_%04u_%04u.png" % (self.hypothesisID, self.posePlotCount)
 
@@ -3686,6 +3968,9 @@ class MapState:
 
 
 			#self.drawWalls()
+
+			pylab.xlim(-10,10)
+			pylab.ylim(-7,9)
 	
 			print "saving splicedPath_%04u_%04u_%04u.png" % (self.hypothesisID, self.poseData.numNodes, self.spliceCount)
 			pylab.title("Spliced Paths, pathIDs = %s" %  self.getPathIDs())
@@ -3737,6 +4022,10 @@ class MapState:
 
 		originPoint = (0.0,0.0)
 
+		print "snapToParent("
+
+
+		""" snap the segments to the local origin """
 		for pathID in allPathIDs:
 			if self.pathClasses[pathID]["parentID"] != None:
 				#childSkeleton = self.localSkeletons[pathID]
@@ -3790,12 +4079,60 @@ class MapState:
 					
 					self.nodeRawPoses[nodeID] = newEstPose
 
+		""" snap control pose back onto control curve if it has strayed """
+		controlPoses_P = self.getControlPoses()
+		for pathID in allPathIDs:
+			if self.pathClasses[pathID]["parentID"] != None:
+				controlPose_P = controlPoses_P[pathID]
+				controlCurve_P = self.controlCurves[pathID]
+
+				minDist = 1e100
+				minP = None
+
+				for p in controlCurve_P:
+					dist = sqrt((controlPose_P[0]-p[0])**2+(controlPose_P[1]-p[1])**2)
+
+					if dist < minDist:
+						minDist = dist
+						minP = p
+
+				self.pathClasses[pathID]["controlPose"] = [minP[0], minP[1], controlPose_P[2]]
+
+		controlPoses_G = self.getGlobalControlPoses()
+		for pathID in allPathIDs:
+
+			""" update the visible nodes, self.nodePoses """ 
+			allNodes = self.pathClasses[pathID]["nodeSet"]
+
+			for nodeID in allNodes:
+
+				shootControlPose_G = controlPoses_G[pathID]
+				currFrame_G = Pose(shootControlPose_G)
+
+				newPose_C = self.pathClasses[pathID]["localNodePoses"][nodeID]
+
+				nodePose_G = currFrame_G.convertLocalOffsetToGlobal(newPose_C)
+
+				""" get the relationship between current gpac and raw poses """
+				oldGPACPose = self.getNodePose(nodeID)
+				gpacProfile = Pose(oldGPACPose)
+				localOffset = gpacProfile.convertGlobalPoseToLocal(self.nodeRawPoses[nodeID])
+				
+				" go back and convert this from GPAC pose to estPose "
+				newProfile = Pose(nodePose_G)
+				newEstPose = newProfile.convertLocalOffsetToGlobal(localOffset)
+				self.nodeRawPoses[nodeID] = newEstPose
+
+				self.nodePoses[nodeID] = nodePose_G
+
+
+
+
+
 	def snapPoseToSkeleton(self, targetNodeIDs):
 
 		allPathIDs = self.getPathIDs()
 		controlPoses_G = self.getGlobalControlPoses()
-
-		originPoint = (0.0,0.0)
 
 		newNodePoses = {}
 		#targetNodeSets = {}
@@ -3819,7 +4156,7 @@ class MapState:
 
 					for seg in segs1:
 						for p in seg:
-							dist = sqrt((originPoint[0]-p[0])**2+(originPoint[1]-p[1])**2)
+							dist = sqrt((oldNodePose_L[0]-p[0])**2+(oldNodePose_L[1]-p[1])**2)
 
 							if dist < minDist:
 								minDist = dist
@@ -3830,6 +4167,8 @@ class MapState:
 					self.pathClasses[pathID]["localNodePoses"][nodeID] = newNodePose_L
 
 					newPose_G = currFrame.convertLocalOffsetToGlobal(newNodePose_L)
+
+					print "relocating", nodeID, "from", oldNodePose_L, "to", newNodePose_L
 
 					""" for recomputing raw pose """
 					oldGPACPose = self.nodePoses[nodeID]
@@ -4620,7 +4959,7 @@ class MapState:
 				parentTerm1_G = parentFrame.convertLocalToGlobal(parentTerm1)
 				parentTerm2_G = parentFrame.convertLocalToGlobal(parentTerm2)
 
-				print "controlCurve:", pathID, parentPathID, parentTerm1_G, parentTerm2_G
+				print "controlCurve:", pathID, parentPathID, parentTerm1_G, parentTerm2_G, parentTerm1, parentTerm2
 
 				self.controlCurves[pathID] = getSkeletonPath(parentSkeleton, parentTerm1, parentTerm2)
 			else:

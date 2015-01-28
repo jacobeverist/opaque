@@ -33,7 +33,7 @@ class MapUser:
 		self.args = args
 		
 		#self.mapAlgorithm = PoseGraph(self.probe, self.contacts)
-		self.mapAlgorithm = BayesMapper.BayesMapper(self.probe.getWalls(), args = self.args)	
+		self.mapAlgorithm = BayesMapper.BayesMapper(self.probe.robotParam, self.probe.getWalls(), args = self.args)	
 
 		self.initPose = self.probe.getActualJointPose(19)
 		
@@ -625,6 +625,8 @@ class MapUser:
 			poseData.backProbeError[foreNodeID] = self.foreNode.backProbeError
 			poseData.travelDirs[foreNodeID] = self.foreNode.travelDir
 			poseData.spatialFeatures[foreNodeID] = self.foreNode.spatialFeatures
+			poseData.rootPoses[foreNodeID] = self.foreNode.rootPose
+			poseData.localPostures[foreNodeID] = self.foreNode.correctedPosture
 
 			if nodeID % 2 == 0:
 
@@ -655,6 +657,8 @@ class MapUser:
 				poseData.backProbeError[backNodeID] = self.backNode.backProbeError
 				poseData.travelDirs[backNodeID] = self.backNode.travelDir
 				poseData.spatialFeatures[backNodeID] = self.backNode.spatialFeatures
+				poseData.rootPoses[backNodeID] = self.backNode.rootPose
+				poseData.localPostures[backNodeID] = self.backNode.correctedPosture
 
 				" the guess process gives a meaningful guess for these node's poses "
 				" before this, it is meaningless "
@@ -961,7 +965,9 @@ class MapUser:
 		allTermsVisited = {}
 		termToHypID = {}
 
-		targetPoint = [2.6496513887401183, -3.6864527536076519]
+		#targetPoint = [2.6496513887401183, -3.6864527536076519]
+		#targetPoint = [2.255,5.93]
+		targetPoint = [3.296, 0.48]
 
 		" get the termination point and orientation of each path "
 		for hypID, mapHyp in self.mapAlgorithm.mapHyps.iteritems():
@@ -980,16 +986,18 @@ class MapUser:
 		print "allTerms:", allTerms
 		print "allTermsVisited:", allTermsVisited
 		
-		for k, term in allTerms.iteritems():
+		#for k, term in allTerms.iteritems():
 
-			#dist = sqrt((term[0]-targetPoint[0])**2+(term[1]-targetPoint[1])**2)
+		#	dist = sqrt((term[0]-targetPoint[0])**2+(term[1]-targetPoint[1])**2)
+		#	print "targetDist=", dist, term, targetPoint
 
-			#if dist < 0.5:
-			#	print "selecting term", k, "for hyp ID", termToHypID[k]
+		#	if dist < 0.5:
+		#		print "selecting term", k, "for hyp ID", termToHypID[k]
 
-			#	self.mapAlgorithm.activeHypID = termToHypID[k]
-			#	return term,k
+		#		self.mapAlgorithm.activeHypID = termToHypID[k]
+		#		return term,k
 		
+		for k, term in allTerms.iteritems():
 
 			if not allTermsVisited[k]:
 				print "selecting term", k, "for hyp ID", termToHypID[k]
@@ -1109,6 +1117,7 @@ class MapUser:
 
 		frontierPathPoint = self.getNearestPathPoint(frontierPoint)
 
+		return frontierPathPoint, pathSplice
 
 		""" over smooth sharp corners """
 		newCurve = []
@@ -1166,7 +1175,6 @@ class MapUser:
 
 		overSmoothedPath = SplineFit(newCurve, smooth=0.1).getUniformSamples()
 
-		#return frontierPathPoint, pathSplice
 		return frontierPathPoint, overSmoothedPath
 
 

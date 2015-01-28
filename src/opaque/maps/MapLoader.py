@@ -29,7 +29,7 @@ class MapLoader:
 		self.args = args
 
 		#self.mapAlgorithm = PoseGraph.PoseGraph(self.probe, self.contacts)	
-		self.mapAlgorithm = BayesMapper.BayesMapper(self.probe.getWalls(), args = self.args)	
+		self.mapAlgorithm = BayesMapper.BayesMapper(self.probe.robotParam, self.probe.getWalls(), args = self.args)	
 
 		print "mapAlgorithm:", self
 
@@ -48,10 +48,15 @@ class MapLoader:
 			print self
 			print self.mapAlgorithm
 			self.mapAlgorithm = pickle.load(inputVal)
+
+			self.mapAlgorithm.robotParam = self.probe.robotParam
+
 			print self.mapAlgorithm
 			self.mapAlgorithm.saveState()
 
 			for val in self.mapAlgorithm.mapHyps.values():
+				val.robotParam = self.probe.robotParam
+
 				self.mapAlgorithm.drawPathAndHull2(val)
 
 			#self.mapAlgorithm.loadSeries("../results/result_2013_08_24_cross", 238)

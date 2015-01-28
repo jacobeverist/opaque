@@ -45,13 +45,14 @@ def printStack():
 
 class BayesMapper:
 
-	def __init__(self, walls, args = None):
+	def __init__(self, robotParam, walls, args = None):
 		
 		#self.maxNumPoses = maxNumPoses
 		#self.numPoseParticles = numPoseParticles
 		#self.bloomFeature = bloomFeature
 		#self.bendFeature = bendFeature
 
+		self.robotParam = robotParam
 		self.args = args
 
 		#self.probe = probe
@@ -67,7 +68,7 @@ class BayesMapper:
 		""" initialize to a single map hypothesis """
 		self.particleIDs = 0
 		self.mapHyps = {}
-		self.mapHyps[self.particleIDs] = MapState(self.poseData, self.particleIDs, args = self.args)
+		self.mapHyps[self.particleIDs] = MapState(self.robotParam, self.poseData, self.particleIDs, args = self.args)
 		self.particleIDs += 1
 		#self.mapHyps[self.particleIDs] = self.mapHyps[0].copy(self.particleIDs)
 		#self.mapHyps[self.particleIDs] = MapState(self.poseData, self.particleIDs)
@@ -91,6 +92,8 @@ class BayesMapper:
 		self.poseData.frontProbeError = {}
 		self.poseData.backProbeError = {}
 		self.poseData.spatialFeatures = {}
+		self.poseData.rootPoses = {}
+		self.poseData.localPostures = {}
 
 	
 		self.pathDrawCount = 0
@@ -176,7 +179,8 @@ class BayesMapper:
 		self.poseData.backProbeError[nodeID] = newNode.backProbeError
 		self.poseData.travelDirs[nodeID] = newNode.travelDir
 		self.poseData.spatialFeatures[nodeID] = newNode.spatialFeatures
-
+		self.poseData.rootPoses[nodeID] = newNode.rootPose
+		self.poseData.localPostures[nodeID] = newNode.localPosture
 
 		for mid, mapHyp in self.mapHyps.iteritems():
 			mapHyp.updatePoseData(self.poseData)
@@ -222,6 +226,8 @@ class BayesMapper:
 		self.poseData.backProbeError[nodeID] = newNode.backProbeError
 		self.poseData.travelDirs[nodeID] = newNode.travelDir
 		self.poseData.spatialFeatures[nodeID] = newNode.spatialFeatures
+		self.poseData.rootPoses[nodeID] = newNode.rootPose
+		self.poseData.localPostures[nodeID] = newNode.localPosture
 
 
 		for mid, mapHyp in self.mapHyps.iteritems():
@@ -300,6 +306,7 @@ class BayesMapper:
 
 		print "integrating node", nodeID
 
+
 		if nodeID > 0:
 			
 			" ESTIMATE TRAVEL WITH MEDIAL OVERLAP CONSTRAINT OF EVEN NUMBER POSE "
@@ -308,6 +315,9 @@ class BayesMapper:
 				if nodeID % 2 == 1:
 
 					for pID, currHyp in hypSet.iteritems():
+						currHyp.drawWhatever()
+						currHyp.drawWhatever2(self.walls)
+						#exit(1)
 
 						time1 = time.time()
 						currHyp.batchDisplaceParticles(nodeID-1, nodeID)
@@ -336,6 +346,8 @@ class BayesMapper:
 
 
 			for pID, currHyp in hypSet.iteritems():
+				currHyp.drawWhatever()
+				currHyp.drawWhatever2(self.walls)
 				currHyp.drawPoseParticles()
 				if isInsert:
 					newNodeSet = [nodeID1, nodeID2]
@@ -360,6 +372,8 @@ class BayesMapper:
 				time2 = time.time()
 
 				#print "TIME localize", pID, "=", time2-time1
+				mapHyp.drawWhatever()
+				mapHyp.drawWhatever2(self.walls)
 
 			for pID, currHyp in hypSet.iteritems():
 
@@ -568,6 +582,8 @@ class BayesMapper:
 		saveFile += "self.poseData.backProbeError = " + repr(self.poseData.backProbeError) + "\n"
 		saveFile += "self.poseData.travelDirs = " + repr(self.poseData.travelDirs) + "\n"
 		saveFile += "self.poseData.spatialFeatures = " + repr(self.poseData.spatialFeatures) + "\n"
+		saveFile += "self.poseData.rootPoses = " + repr(self.poseData.rootPoses) + "\n"
+		saveFile += "self.poseData.localPostures = " + repr(self.poseData.localPostures) + "\n"
 
 		saveFile += "mapHypIDs = " + repr(self.mapHyps.keys()) + "\n"
 
