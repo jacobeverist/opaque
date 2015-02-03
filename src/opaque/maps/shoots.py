@@ -1315,7 +1315,8 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 				xP.append(p[0])
 				yP.append(p[1])
 
-			pylab.plot(xP,yP, color=color, linewidth=4)
+			#pylab.plot(xP,yP, color=color, linewidth=4)
+			pylab.plot(xP,yP, color='k', linewidth=4)
 
 		#if globalJunctionPose != None:
 
@@ -1354,7 +1355,7 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 			spatialFeature0 = poseData.spatialFeatures[nodeID][0]
 			isSpatialFeature0 = spatialFeature0["bloomPoint"] != None or spatialFeature0["archPoint"] != None or spatialFeature0["inflectionPoint"] != None
 
-			pylab.plot(xP,yP, color=color, alpha=0.2)
+			#pylab.plot(xP,yP, color=color, alpha=0.2)
 		
 		xP = []
 		yP = []
@@ -1362,7 +1363,8 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 			xP.append(p[0])
 			yP.append(p[1])
 			
-		pylab.plot(xP,yP, '--', color=color, linewidth=4)
+		#pylab.plot(xP,yP, '--', color=color, linewidth=4)
+		pylab.plot(xP,yP, color='k', linewidth=2)
 
 		"""
 		xP = []
@@ -1384,7 +1386,7 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 		pylab.axis("equal")
 		pylab.title("Path %d %d %d" % (hypothesisID, pathID, maxNodeID))
 		#pylab.title("paths: %s numNodes: %d %d, hyp %d %3.2f" % (repr(mapHyp.getPathIDs()), poseData.numNodes, highestNodeID, mapHyp.hypothesisID, mapHyp.utility))
-		pylab.savefig("pathAndHull_%02u_%03u_%02u_%04u.png" % (hypothesisID, maxNodeID, pathID, topCount))
+		pylab.savefig("pathAndHull_%02u_%03u_%02u_%04uc.png" % (hypothesisID, maxNodeID, pathID, topCount))
 
 		#self.topCount += 1
 
@@ -1393,14 +1395,14 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 		xP = []
 		yP = []
 		
-		for path in medialLongPaths:
-			xP = []
-			yP = []
-			for p in path:
-				xP.append(p[0])
-				yP.append(p[1])
+		#for path in medialLongPaths:
+		#	xP = []
+		#	yP = []
+		#	for p in path:
+		#		xP.append(p[0])
+		#		yP.append(p[1])
 
-			pylab.plot(xP,yP, color=color, linewidth=4, alpha=1.0)
+		#	pylab.plot(xP,yP, color=color, linewidth=4, alpha=1.0)
 
 		print "drawing pathID", pathID, "for nodes:", nodeSet
 		for nodeID in nodeSet:
@@ -1408,7 +1410,8 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 			spatialFeature0 = poseData.spatialFeatures[nodeID][0]
 			isSpatialFeature0 = spatialFeature0["bloomPoint"] != None or spatialFeature0["archPoint"] != None or spatialFeature0["inflectionPoint"] != None
 
-			if isSpatialFeature0:
+			#if isSpatialFeature0:
+			if True:
 				xP = []
 				yP = []
 
@@ -1438,24 +1441,52 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 
 				pylab.plot(xP,yP, color='k', alpha = 0.7)
 
-		xP = []
-		yP = []
-		for point_L, pThresh, pName in localLandmarks:
-			xP.append(point_L[0])
-			yP.append(point_L[1])
+		#xP = []
+		#yP = []
+		#for point_L, pThresh, pName in localLandmarks:
+		#	xP.append(point_L[0])
+		#	yP.append(point_L[1])
 
-		pylab.scatter(xP, yP, zorder=9, color='k')
+		#pylab.scatter(xP, yP, zorder=9, color='k')
 
 		print "pathAndHull:", topCount
 
 		pylab.axis("equal")
 		pylab.title("Path %d %d %d" % (hypothesisID, pathID, maxNodeID))
-		pylab.savefig("pathAndHull_%02u_%03u_%02u_%04u_b.png" % (hypothesisID, maxNodeID, pathID, topCount))
+		pylab.savefig("pathAndHull_%02u_%03u_%02u_%04u_a.png" % (hypothesisID, maxNodeID, pathID, topCount))
 
 		#self.topCount += 1
 
 		pylab.clf()
 	 		
+		print "drawing pathID", pathID, "for nodes:", nodeSet
+		for nodeID in nodeSet:
+			xP = []
+			yP = []
+
+			estPose1 = nodePoses[nodeID]
+	
+			hull1 = poseData.aHulls[nodeID]
+	
+			" set the origin of pose 1 "
+			poseOrigin = Pose(estPose1)
+	
+			points = []
+			for p in hull1:
+				p1 = poseOrigin.convertLocalToGlobal(p)
+				points.append(p1)
+			
+			for p in points:
+				xP.append(p[0])
+				yP.append(p[1])
+			
+			pylab.plot(xP,yP, color='k')
+
+		pylab.axis("equal")
+		pylab.title("Path %d %d %d" % (hypothesisID, pathID, maxNodeID))
+		pylab.savefig("pathAndHull_%02u_%03u_%02u_%04u_b.png" % (hypothesisID, maxNodeID, pathID, topCount))
+		pylab.clf()
+
 		colors = []
 		colors.append([127, 127, 255])
 		colors.append([127, 255, 127])
@@ -1489,12 +1520,13 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 			compNum = components[globalNodePoint1]
 
 			#print "compNum:", compNum, colors[compNum]
-			pylab.plot(xP,yP, color=colors[compNum])
+			#pylab.plot(xP,yP, color=colors[compNum])
+			pylab.plot(xP,yP, color='k')
 
 
 		pylab.axis("equal")
 		pylab.title("Path %d %d %d" % (hypothesisID, pathID, maxNodeID))
-		pylab.savefig("pathAndHull_%02u_%03u_%02u_%04u_c.png" % (hypothesisID, maxNodeID, pathID, topCount))
+		pylab.savefig("pathAndHull_%02u_%03u_%02u_%04ud.png" % (hypothesisID, maxNodeID, pathID, topCount))
 
 
 
@@ -4952,6 +4984,16 @@ def computeJointBranch(localPathSegsByID, localTerms, localPaths, localSkeletons
 				yP = [globalNodePoint1[1], globalNodePoint2[1]]
 
 				pylab.plot(xP,yP, color='k', alpha=0.2)
+
+			xP = []
+			yP = []
+			for i in range(len(landmarks_G)):
+				p1 = landmarks_G[i][0]
+				xP.append(p1[0])
+				yP.append(p1[1])
+
+			pylab.scatter(xP,yP,color='k')
+
 
 			#for tipPoint_G in tipPoints_G:
 

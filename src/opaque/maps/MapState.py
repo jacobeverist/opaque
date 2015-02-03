@@ -1147,6 +1147,8 @@ class MapState:
 			
 			arcDist0 = self.stepDists[jobIndex][1]
 			arcDist1 = self.stepDists[jobIndex][2]
+			hypPose0 = self.stepDists[jobIndex][3]
+			hypPose1 = self.stepDists[jobIndex][4]
 			spliceU0 = self.stepDists[jobIndex][5]
 			spliceU1 = self.stepDists[jobIndex][6]
 			motionBias = self.stepDists[jobIndex][7]
@@ -1167,6 +1169,8 @@ class MapState:
 			resultDict = {}
 			resultDict["newPose0"] = newPose0
 			resultDict["newPose1"] = newPose1
+			resultDict["hypPose0"] = hypPose0
+			resultDict["hypPose1"] = hypPose1
 			resultDict["controlPoses_P"] = controlPoses
 			resultDict["displaceProb0"] = displaceProb0
 			resultDict["displaceProb1"] = displaceProb1
@@ -1415,8 +1419,13 @@ class MapState:
 			#			"controlPose" : [0.0,0.0,0.0] }		
 			
 			for particleIndex in range(len(self.stepResults)):
+
+
 				part = self.stepResults[particleIndex]
 				hypPose0 = part["newPose0"]
+
+				#del part["hypPose0"]
+				#del part["hypPose1"]
 
 
 				origBranchDists = {}
@@ -2235,7 +2244,8 @@ class MapState:
 		#fig, (ax1, ax2, ax3, ax4, ax5) = plt.subplots(5,  sharex=False, sharey=False)
 		#fig, (ax2, ax3, ax4, ax5) = plt.subplots(4,  sharex=True, sharey=False)
 		#fig, (ax2, ax3, ax4, ax5, ax6, ax7) = plt.subplots(6,  sharex=True, sharey=False)
-		fig, (ax2, ax3, ax4, ax5, ax6, ax7, ax8) = plt.subplots(7,  sharex=True, sharey=False)
+		#fig, (ax2, ax3, ax4, ax5, ax6, ax7, ax8) = plt.subplots(7,  sharex=True, sharey=False)
+		fig, (ax3, ax4, ax5, ax6, ax2, ax7, ax8) = plt.subplots(7,  sharex=True, sharey=False)
 		#fig.set_size_inches(16,12)
 		#fig.tight_layout(pad=4.0)
 		#fig.tight_layout()
@@ -2401,25 +2411,25 @@ class MapState:
 		xP = [self.stepResults[self.currMaxIndex]["arcDist0"],]
 		yP = [self.stepResults[self.currMaxIndex]["evalProb"],]
 		maxSpliceIndex = self.stepResults[self.currMaxIndex]["spliceIndex"]
-		ax2.scatter(xP,yP, color=self.colors[maxSpliceIndex], zorder=10)
+		ax2.scatter(xP,yP, color=self.colors[maxSpliceIndex], zorder=10, marker='x', linewidth=4)
 
 		yP = [self.stepResults[self.currMaxIndex]["landmarkSum"],]
-		ax3.scatter(xP,yP, color=self.colors[maxSpliceIndex], zorder=10)
+		ax3.scatter(xP,yP, color=self.colors[maxSpliceIndex], zorder=10, marker='x', linewidth=4)
 
 		yP = [self.stepResults[self.currMaxIndex]["angDiff0"],]
-		ax4.scatter(xP,yP, color=self.colors[maxSpliceIndex], zorder=10)
+		ax4.scatter(xP,yP, color=self.colors[maxSpliceIndex], zorder=10, marker='x', linewidth=4)
 
 		yP = [self.stepResults[self.currMaxIndex]["overlap0"],]
-		ax5.scatter(xP,yP, color=self.colors[maxSpliceIndex], zorder=10)
+		ax5.scatter(xP,yP, color=self.colors[maxSpliceIndex], zorder=10, marker='x', linewidth=4)
 
 		yP = [self.stepResults[self.currMaxIndex]["contigFrac0"],]
-		ax6.scatter(xP,yP, color=self.colors[maxSpliceIndex], zorder=10)
+		ax6.scatter(xP,yP, color=self.colors[maxSpliceIndex], zorder=10, marker='x', linewidth=4)
 
 		yP = [self.stepResults[self.currMaxIndex]["motionBias"],]
-		ax7.scatter(xP,yP, color=self.colors[maxSpliceIndex], zorder=10)
+		ax7.scatter(xP,yP, color=self.colors[maxSpliceIndex], zorder=10, marker='x', linewidth=4)
 
 		yP = [self.stepResults[self.currMaxIndex]["evalWithBias"],]
-		ax8.scatter(xP,yP, color=self.colors[maxSpliceIndex], zorder=10)
+		ax8.scatter(xP,yP, color=self.colors[maxSpliceIndex], zorder=10, marker='x', linewidth=4)
 
 		for k in range(len(probLists)):
 			splice = probLists[k]
@@ -2432,7 +2442,8 @@ class MapState:
 				yP.append(valTuple[1])
 
 			print "plot probLists:", xP#, yP
-			ax2.plot(xP,yP, color = self.colors[k], marker='x', linestyle='--')
+			#ax2.plot(xP,yP, color = self.colors[k], marker='.', linestyle='--')
+			ax2.plot(xP,yP, color = self.colors[k], marker='.')
 
 		for k in range(len(landmarkLists)):
 			splice = landmarkLists[k]
@@ -2445,7 +2456,8 @@ class MapState:
 				yP.append(valTuple[1])
 
 			#ax3.plot(xP,yP, color = self.colors[k])
-			ax3.plot(xP,yP, color = self.colors[k], marker='x', linestyle='--')
+			#ax3.plot(xP,yP, color = self.colors[k], marker='.', linestyle='--')
+			ax3.plot(xP,yP, color = self.colors[k], marker='.')
 
 		for k in range(len(angDiffLists0)):
 			splice = angDiffLists0[k]
@@ -2457,7 +2469,8 @@ class MapState:
 				xP.append(valTuple[0])
 				yP.append(valTuple[1])
 
-			ax4.plot(xP,yP, color = self.colors[k], marker='x', linestyle='--')
+			#ax4.plot(xP,yP, color = self.colors[k], marker='.', linestyle='--')
+			ax4.plot(xP,yP, color = self.colors[k], marker='.')
 
 			splice = angDiffLists1[k]
 			xP = []
@@ -2468,7 +2481,8 @@ class MapState:
 				xP.append(valTuple[0])
 				yP.append(valTuple[1])
 
-			ax4.plot(xP,yP, color = self.colors[k], marker='x', linestyle='--')
+			#ax4.plot(xP,yP, color = self.colors[k], marker='.', linestyle='--')
+			ax4.plot(xP,yP, color = self.colors[k], marker='.')
 
 		for k in range(len(overlapLists0)):
 			splice = overlapLists0[k]
@@ -2480,7 +2494,8 @@ class MapState:
 				xP.append(valTuple[0])
 				yP.append(valTuple[1])
 
-			ax5.plot(xP,yP, color = self.colors[k], marker='x', linestyle='--')
+			#ax5.plot(xP,yP, color = self.colors[k], marker='.', linestyle='--')
+			ax5.plot(xP,yP, color = self.colors[k], marker='.')
 
 			splice = overlapLists1[k]
 			xP = []
@@ -2491,7 +2506,8 @@ class MapState:
 				xP.append(valTuple[0])
 				yP.append(valTuple[1])
 
-			ax5.plot(xP,yP, color = self.colors[k], marker='x', linestyle='--')
+			#ax5.plot(xP,yP, color = self.colors[k], marker='.', linestyle='--')
+			ax5.plot(xP,yP, color = self.colors[k], marker='.')
 
 		for k in range(len(contigFracLists0)):
 			splice = contigFracLists0[k]
@@ -2503,7 +2519,8 @@ class MapState:
 				xP.append(valTuple[0])
 				yP.append(valTuple[1])
 
-			ax6.plot(xP,yP, color = self.colors[k], marker='x', linestyle='--')
+			#ax6.plot(xP,yP, color = self.colors[k], marker='.', linestyle='--')
+			ax6.plot(xP,yP, color = self.colors[k], marker='.')
 
 			splice = contigFracLists1[k]
 			xP = []
@@ -2514,7 +2531,8 @@ class MapState:
 				xP.append(valTuple[0])
 				yP.append(valTuple[1])
 
-			ax6.plot(xP,yP, color = self.colors[k], marker='x', linestyle='--')
+			#ax6.plot(xP,yP, color = self.colors[k], marker='.', linestyle='--')
+			ax6.plot(xP,yP, color = self.colors[k], marker='.')
 
 		for k in range(len(biasLists)):
 			splice = biasLists[k]
@@ -2527,7 +2545,8 @@ class MapState:
 				yP.append(valTuple[1])
 
 			#ax6.plot(xP,yP, color = self.colors[k])
-			ax7.plot(xP,yP, color = self.colors[k], marker='x', linestyle='--')
+			#ax7.plot(xP,yP, color = self.colors[k], marker='.', linestyle='--')
+			ax7.plot(xP,yP, color = self.colors[k], marker='.')
 
 		for k in range(len(finalSumLists)):
 			splice = finalSumLists[k]
@@ -2540,7 +2559,8 @@ class MapState:
 				yP.append(valTuple[1])
 
 			#ax7.plot(xP,yP, color = self.colors[k])
-			ax8.plot(xP,yP, color = self.colors[k], marker='x', linestyle='--')
+			#ax8.plot(xP,yP, color = self.colors[k], marker='.', linestyle='--')
+			ax8.plot(xP,yP, color = self.colors[k], marker='.')
 
 
 		controlPoses_G = computeGlobalControlPoses(self.getControlPoses(), self.getParentHash())
@@ -2628,6 +2648,7 @@ class MapState:
 		ax6.set_ylabel('contigFrac')
 		ax7.set_ylabel('motion')
 		ax8.set_ylabel('final')
+		ax8.set_xlabel('splice arc length')
 		
 		#pylab.axis("equal")
 		#ax1.set_aspect("equal")
@@ -2930,28 +2951,82 @@ class MapState:
 
 		allPathIDs = self.getPathIDs()
 
+		nodeID0 = self.poseData.numNodes-2
+		nodeID1 = self.poseData.numNodes-1
+		medial0 = self.poseData.medialAxes[nodeID0]
+		medial1 = self.poseData.medialAxes[nodeID1]
+		controlPoses_G = self.getGlobalControlPoses()
+
 		pylab.ioff()
 		print pylab.isinteractive()
 		pylab.clf()
 		#pylab.axis("equal")
 
 
-		nodeID0 = self.poseData.numNodes-2
-		nodeID1 = self.poseData.numNodes-1
-		medial0 = self.poseData.medialAxes[nodeID0]
-		medial1 = self.poseData.medialAxes[nodeID1]
+		for k, segs in self.globalSegments.iteritems():
+			for seg in segs:
+				xP = []
+				yP = []
+				for p in seg:
+					xP.append(p[0])
+					yP.append(p[1])
+				#pylab.plot(xP,yP, color = self.colors[k], linewidth=4)
+				pylab.plot(xP,yP, color = 'k', linewidth=1)
+
+		pylab.axis("equal")
+		pylab.title("nodeIDs %d %d hypID %d" % (nodeID0, nodeID1, self.hypothesisID))
+		pylab.savefig("moveEstimate2_%04u_%04ua.png" % (self.hypothesisID, self.posePlotCount))
+		print "moveEstimate2_%04u_%04u.png" % (self.hypothesisID, self.posePlotCount)
+
+		pylab.clf()
+
+		for k, segs in self.globalSegments.iteritems():
+			for seg in segs:
+				xP = []
+				yP = []
+				for p in seg:
+					xP.append(p[0])
+					yP.append(p[1])
+				pylab.plot(xP,yP, color = 'k', linewidth=1)
 
 
-		controlPoses_G = self.getGlobalControlPoses()
-		#self.stepResults.append((newPose0, newPose1))
+		poseX = []
+		poseY = []
 
-		#for samp in self.stepDists:
 		for samp in self.stepResults:
-			#self.stepDists.append((j, newDist0, newDist1, newPose0, newPose1))
-			#hypPose0 = samp[3]
-			#hypPose1 = samp[4]
-			hypPose0 = samp["newPose0"]
-			hypPose1 = samp["newPose1"]
+
+			hypPose0 = samp["hypPose0"]
+			hypPose1 = samp["hypPose1"]
+
+			poseX.append(hypPose0[0])
+			poseY.append(hypPose0[1])
+
+		pylab.scatter(poseX, poseY, color='k', zorder=7)
+
+		pylab.axis("equal")
+		pylab.title("nodeIDs %d %d hypID %d" % (nodeID0, nodeID1, self.hypothesisID))
+		pylab.savefig("moveEstimate2_%04u_%04ub.png" % (self.hypothesisID, self.posePlotCount))
+		print "moveEstimate2_%04u_%04u.png" % (self.hypothesisID, self.posePlotCount)
+
+		pylab.clf()
+
+		for k, segs in self.globalSegments.iteritems():
+			for seg in segs:
+				xP = []
+				yP = []
+				for p in seg:
+					xP.append(p[0])
+					yP.append(p[1])
+				pylab.plot(xP,yP, color = 'k', linewidth=1)
+
+		poseX = []
+		poseY = []
+
+		for samp in self.stepResults:
+
+			hypPose0 = samp["hypPose0"]
+			hypPose1 = samp["hypPose1"]
+
 
 			poseOrigin0 = Pose(hypPose0)
 			xP = []
@@ -2974,6 +3049,93 @@ class MapState:
 
 			pylab.plot(xP,yP, color = 'b', alpha = 0.4, zorder=7)
 
+		pylab.axis("equal")
+		pylab.title("nodeIDs %d %d hypID %d" % (nodeID0, nodeID1, self.hypothesisID))
+		pylab.savefig("moveEstimate2_%04u_%04uc.png" % (self.hypothesisID, self.posePlotCount))
+		print "moveEstimate2_%04u_%04u.png" % (self.hypothesisID, self.posePlotCount)
+
+		pylab.clf()
+
+		for k, segs in self.globalSegments.iteritems():
+			for seg in segs:
+				xP = []
+				yP = []
+				for p in seg:
+					xP.append(p[0])
+					yP.append(p[1])
+				pylab.plot(xP,yP, color = 'k', linewidth=1)
+
+
+		poseX = []
+		poseY = []
+
+		for samp in self.stepResults:
+
+			hypPose0 = samp["newPose0"]
+			hypPose1 = samp["newPose1"]
+
+			poseX.append(hypPose0[0])
+			poseY.append(hypPose0[1])
+
+		pylab.scatter(poseX, poseY, color='k', zorder=7)
+
+		pylab.axis("equal")
+		pylab.title("nodeIDs %d %d hypID %d" % (nodeID0, nodeID1, self.hypothesisID))
+		pylab.savefig("moveEstimate2_%04u_%04ud.png" % (self.hypothesisID, self.posePlotCount))
+		print "moveEstimate2_%04u_%04u.png" % (self.hypothesisID, self.posePlotCount)
+
+		pylab.clf()
+
+		for k, segs in self.globalSegments.iteritems():
+			for seg in segs:
+				xP = []
+				yP = []
+				for p in seg:
+					xP.append(p[0])
+					yP.append(p[1])
+				pylab.plot(xP,yP, color = 'k', linewidth=1)
+		
+		for samp in self.stepResults:
+			hypPose0 = samp["newPose0"]
+			hypPose1 = samp["newPose1"]
+		
+			poseOrigin0 = Pose(hypPose0)
+			xP = []
+			yP = []
+			for p in medial0:
+				p1 = poseOrigin0.convertLocalToGlobal(p)
+				xP.append(p1[0])
+				yP.append(p1[1])
+
+			pylab.plot(xP,yP, color = 'r', alpha = 0.4, zorder=7)
+
+			poseOrigin1 = Pose(hypPose1)
+
+			xP = []
+			yP = []
+			for p in medial1:
+				p1 = poseOrigin1.convertLocalToGlobal(p)
+				xP.append(p1[0])
+				yP.append(p1[1])
+
+			pylab.plot(xP,yP, color = 'b', alpha = 0.4, zorder=7)
+
+		pylab.axis("equal")
+		pylab.title("nodeIDs %d %d hypID %d" % (nodeID0, nodeID1, self.hypothesisID))
+		pylab.savefig("moveEstimate2_%04u_%04ue.png" % (self.hypothesisID, self.posePlotCount))
+		print "moveEstimate2_%04u_%04u.png" % (self.hypothesisID, self.posePlotCount)
+
+		pylab.clf()
+
+
+		for k, segs in self.globalSegments.iteritems():
+			for seg in segs:
+				xP = []
+				yP = []
+				for p in seg:
+					xP.append(p[0])
+					yP.append(p[1])
+				pylab.plot(xP,yP, color = 'k', linewidth=1)
 		
 		#for pathID in allPathIDs:
 
@@ -3009,14 +3171,6 @@ class MapState:
 		#if len(xP) > 0:
 		#	pylab.scatter(xP, yP, color='k', linewidth=1, zorder=9, alpha=0.9)
 
-		for k, segs in self.globalSegments.iteritems():
-			for seg in segs:
-				xP = []
-				yP = []
-				for p in seg:
-					xP.append(p[0])
-					yP.append(p[1])
-				pylab.plot(xP,yP, color = self.colors[k], linewidth=4)
 
 		"""
 		xP = []
@@ -3085,7 +3239,7 @@ class MapState:
 			p1 = poseOrigin0.convertLocalToGlobal(p)
 			xP.append(p1[0])
 			yP.append(p1[1])
-		pylab.plot(xP,yP,color='k', zorder=10, linewidth=1)
+		pylab.plot(xP,yP,color='r', zorder=10, linewidth=1)
 
 		xP = []
 		yP = []
@@ -3093,7 +3247,7 @@ class MapState:
 			p1 = poseOrigin1.convertLocalToGlobal(p)
 			xP.append(p1[0])
 			yP.append(p1[1])
-		pylab.plot(xP,yP,color='k', zorder=10, linewidth=1)
+		pylab.plot(xP,yP,color='b', zorder=10, linewidth=1)
 
 		direction = self.poseData.travelDirs[nodeID0]
 
@@ -3126,9 +3280,7 @@ class MapState:
 		
 		pylab.axis("equal")
 		pylab.title("nodeIDs %d %d hypID %d" % (nodeID0, nodeID1, self.hypothesisID))
-
-
-		pylab.savefig("moveEstimate2_%04u_%04u.png" % (self.hypothesisID, self.posePlotCount))
+		pylab.savefig("moveEstimate2_%04u_%04uf.png" % (self.hypothesisID, self.posePlotCount))
 		print "moveEstimate2_%04u_%04u.png" % (self.hypothesisID, self.posePlotCount)
 
 		self.posePlotCount += 1
