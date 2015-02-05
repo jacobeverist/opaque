@@ -19,6 +19,9 @@ import alphamod
 
 import cPickle as pickle
 
+CONST_PIXELSIZE = 0.05
+CONST_MIDJOINT = 19
+
 class MapLoader:
 
 	def __init__(self, probe, contacts, args = None):
@@ -35,11 +38,7 @@ class MapLoader:
 
 		self.localNodes = []
 
-		MAPSIZE = 20.0
-		#self.occMap = OccupancyMap(self.probe, self, MAPSIZE)
-
 	def restorePickle(self, dirName, nodeID):
-		PIXELSIZE = 0.05
 		print self
 
 		with open(dirName + '/' + 'map_%04u.obj' % nodeID, 'rb') as inputVal:
@@ -59,34 +58,15 @@ class MapLoader:
 
 				self.mapAlgorithm.drawPathAndHull2(val)
 
-			#self.mapAlgorithm.loadSeries("../results/result_2013_08_24_cross", 238)
-
-			"""
-			print "loading node", 12		
-			currNode = LocalNode(self.probe, self.contacts, 12, 19, PIXELSIZE)
-			currNode.readFromFile2("../results/result_2013_08_24_cross", 12)
-			self.localNodes.append(currNode)
-			self.mapAlgorithm.loadNewNode(currNode)
-			self.mapAlgorithm.saveState()
-		
-			print "loading node", 13		
-			currNode = LocalNode(self.probe, self.contacts, 13, 19, PIXELSIZE)
-			currNode.readFromFile2("../results/result_2013_08_24_cross", 13)
-			self.localNodes.append(currNode)
-			self.mapAlgorithm.loadNewNode(currNode)
-			self.mapAlgorithm.saveState()
-			"""
-		
 
 	def loadSeries(self, dirName, startID, endID):
 	
-		PIXELSIZE = 0.05
 		#initNum = len(self.localNodes)
 
 		for i in range(startID, endID+1):
 
 			print "loading node", i		
-			currNode = LocalNode(self.probe, self.contacts, i, 19, PIXELSIZE, useBloom = self.args.bloomFeature, useBend = self.args.bendFeature)		
+			currNode = LocalNode(self.probe, self.contacts, i, CONST_MIDJOINT, CONST_PIXELSIZE, useBloom = self.args.bloomFeature, useBend = self.args.bendFeature)		
 
 			currNode.readFromFile2(dirName, i)
 
@@ -106,21 +86,19 @@ class MapLoader:
 
 	def loadData(self, dirName, num_poses):
 
-		PIXELSIZE = 0.05
 		for i in range(0, num_poses):
 			print "loading node", i		
-			currNode = LocalNode(self.probe, self.contacts, i, 19, PIXELSIZE, useBloom = self.args.bloomFeature, useBend = self.args.bendFeature)
+			currNode = LocalNode(self.probe, self.contacts, i, CONST_MIDJOINT, CONST_PIXELSIZE, useBloom = self.args.bloomFeature, useBend = self.args.bendFeature)
 			currNode.readFromFile2(dirName, i)
 			self.localNodes.append(currNode)
 			
 
 	def loadDataSeries(self, dirName, num_poses):
 	
-		PIXELSIZE = 0.05
 		for i in range(0, num_poses):
 
 			print "loading node", i		
-			#currNode = LocalNode(self.probe, self.contacts, i, 19, PIXELSIZE)
+			#currNode = LocalNode(self.probe, self.contacts, i, CONST_MIDJOINT, CONST_PIXELSIZE)
 
 			#currNode.readFromFile2(dirName, i)
 
@@ -138,19 +116,18 @@ class MapLoader:
 
 		self.mapAlgorithm.restoreState(dirName, num_poses)
 
-		PIXELSIZE = 0.05
 		for i in range(0, num_poses):
 
 			print "loading node", i			
-			currNode = LocalNode(self.probe, self.contacts, i, 19, PIXELSIZE, useBloom = self.args.bloomFeature, useBend = self.args.bendFeature)
+			currNode = LocalNode(self.probe, self.contacts, i, CONST_MIDJOINT, CONST_PIXELSIZE, useBloom = self.args.bloomFeature, useBend = self.args.bendFeature)
 			currNode.readFromFile2(dirName, i)
 			self.localNodes.append(currNode)
 			currNode.setGPACPose(self.mapAlgorithm.nodePoses[i])
 			self.mapAlgorithm.nodeHash[i] = currNode
 
-		foreNode = LocalNode(self.probe, self.contacts, num_poses, 19, PIXELSIZE, useBloom = self.args.bloomFeature, useBend = self.args.bendFeature)
+		foreNode = LocalNode(self.probe, self.contacts, num_poses, CONST_MIDJOINT, CONST_PIXELSIZE, useBloom = self.args.bloomFeature, useBend = self.args.bendFeature)
 		foreNode.readFromFile2(dirName, num_poses)
-		backNode = LocalNode(self.probe, self.contacts, num_poses+1, 19, PIXELSIZE, useBloom = self.args.bloomFeature, useBend = self.args.bendFeature)
+		backNode = LocalNode(self.probe, self.contacts, num_poses+1, CONST_MIDJOINT, CONST_PIXELSIZE, useBloom = self.args.bloomFeature, useBend = self.args.bendFeature)
 		backNode.readFromFile2(dirName, num_poses+1)
 		self.mapAlgorithm.insertPose(foreNode, backNode, initLocation = foreNode.getEstPose())
 		
@@ -158,7 +135,7 @@ class MapLoader:
 		for i in range(num_poses+2, num_poses+70):
 
 			print "loading node", i		
-			currNode = LocalNode(self.probe, self.contacts, i, 19, PIXELSIZE,  useBloom = self.args.bloomFeature, useBend = self.args.bendFeature)
+			currNode = LocalNode(self.probe, self.contacts, i, CONST_MIDJOINT, CONST_PIXELSIZE,  useBloom = self.args.bloomFeature, useBend = self.args.bendFeature)
 			currNode.readFromFile2(dirName, i)
 			self.localNodes.append(currNode)
 			self.mapAlgorithm.loadNewNode(currNode)
@@ -211,7 +188,7 @@ class MapLoader:
 
 			self.currNode.saveToFile()
 
-		self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, self.pixelSize, stabilizePose = self.isStable, faceDir = True,  useBloom = self.args.bloomFeature, useBend = self.args.bendFeature)		
+		self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, CONST_MIDJOINT, self.pixelSize, stabilizePose = self.isStable, faceDir = True,  useBloom = self.args.bloomFeature, useBend = self.args.bendFeature)		
 		
 		self.mapAlgorithm.addNode(self.currNode)
 
@@ -220,7 +197,7 @@ class MapLoader:
 
 	def initNode(self, estPose, direction):
 
-		self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, self.pixelSize, stabilizePose = self.isStable, faceDir = True,  useBloom = self.args.bloomFeature, useBend = self.args.bendFeature)
+		self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, CONST_MIDJOINT, self.pixelSize, stabilizePose = self.isStable, faceDir = True,  useBloom = self.args.bloomFeature, useBend = self.args.bendFeature)
 
 		self.mapAlgorithm.addInitNode(self.currNode, estPose)
 		

@@ -219,6 +219,7 @@ class LocalNode:
 	def getIsFeatureless(self):
 
 		print "isBowtie:", self.isBowtie
+		return self.isFeatureless
 		
 		if self.isFeatureless != None:
 			return self.isFeatureless

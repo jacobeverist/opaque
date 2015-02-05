@@ -16,9 +16,8 @@ from StablePose import StablePose
 #from math import *
 
 # Map Space Parameters
-PIXELSIZE = 0.05
-MAPSIZE = 40.0
-#MAPSIZE = 20.0
+CONST_PIXELSIZE = 0.05
+CONST_MIDJOINT = 19
 
 class MapUser:
 
@@ -35,14 +34,14 @@ class MapUser:
 		#self.mapAlgorithm = PoseGraph(self.probe, self.contacts)
 		self.mapAlgorithm = BayesMapper.BayesMapper(self.probe.robotParam, self.probe.getWalls(), args = self.args)	
 
-		self.initPose = self.probe.getActualJointPose(19)
+		self.initPose = self.probe.getActualJointPose(CONST_MIDJOINT)
 		
 		self.currNode = 0
 		self.foreNode = 0
 		self.backNode = 0
 		self.localNodes = []
 
-		self.pixelSize = PIXELSIZE
+		self.pixelSize = CONST_PIXELSIZE
 
 		self.navPlotCount = 0
 
@@ -117,8 +116,8 @@ class MapUser:
 			pylab.gca().add_patch(polygon)
 			#pylab.plot(xP,yP, color='k', alpha=0.5)
 
-		#rootPose = self.contacts.getAverageSegPose(19)
-		rootPose = self.contacts.getAveragePose(19)
+		#rootPose = self.contacts.getAverageSegPose(CONST_MIDJOINT)
+		rootPose = self.contacts.getAveragePose(CONST_MIDJOINT)
 		mapHyps = self.mapAlgorithm.mapHyps
 
 		for hypID, mapHyp in mapHyps.iteritems():
@@ -135,7 +134,7 @@ class MapUser:
 				zTotal = rootPose[1]
 				totalAngle = rootPose[2]
 
-				joints = range(-1,19)
+				joints = range(-1,CONST_MIDJOINT)
 				joints.reverse()
 
 				for i in joints:
@@ -172,7 +171,7 @@ class MapUser:
 					#pylab.plot(xP,yP, color='k', alpha=0.5)
 					#actualConfig.append([i, [p4,p3,p2,p1], self.contacts.initMask[i]])
 
-				joints = range(19, self.probe.numSegs-1)
+				joints = range(CONST_MIDJOINT, self.probe.numSegs-1)
 				
 				#xTotal = 0.0
 				#zTotal = 0.0
@@ -221,8 +220,8 @@ class MapUser:
 
 			#pose = self.probe.getActualJointPose(i)
 			#pose = self.probe.getActualSegPose(i)
-			#pose = self.probe.getJointPose(rootPose, 19, i)
-			#pose = self.probe.getJointPose([0.0,0.0,0.0], 19, i)
+			#pose = self.probe.getJointPose(rootPose, CONST_MIDJOINT, i)
+			#pose = self.probe.getJointPose([0.0,0.0,0.0], CONST_MIDJOINT, i)
 			pose = self.currNode.getJointPose(i)
 			#pose = self.contacts.getAverageSegPose(i)
 			xTotal = pose[0]
@@ -381,7 +380,6 @@ class MapUser:
 
 
 	def restorePickle(self, dirName, nodeID):
-		PIXELSIZE = 0.05
 		print self
 
 		#with open('map_%04u.obj' % nodeID, 'rb') as inputVal:
@@ -398,25 +396,6 @@ class MapUser:
 			for val in self.mapAlgorithm.mapHyps.values():
 				self.mapAlgorithm.drawPathAndHull2(val)
 
-			#self.mapAlgorithm.loadSeries("../results/result_2013_08_24_cross", 238)
-
-			"""
-			print "loading node", 12		
-			currNode = LocalNode(self.probe, self.contacts, 12, 19, PIXELSIZE)
-			currNode.readFromFile2("../results/result_2013_08_24_cross", 12)
-			self.localNodes.append(currNode)
-			self.mapAlgorithm.loadNewNode(currNode)
-			self.mapAlgorithm.saveState()
-		
-			print "loading node", 13		
-			currNode = LocalNode(self.probe, self.contacts, 13, 19, PIXELSIZE)
-			currNode.readFromFile2("../results/result_2013_08_24_cross", 13)
-			self.localNodes.append(currNode)
-			self.mapAlgorithm.loadNewNode(currNode)
-			self.mapAlgorithm.saveState()
-			"""
-		
-
 
 	def restoreSeries(self, dirName, num_poses):
 
@@ -425,15 +404,15 @@ class MapUser:
 		for i in range(0, num_poses):
 
 			print "loading node", i			
-			self.currNode = LocalNode(self.probe, self.contacts, i, 19, self.pixelSize)
+			self.currNode = LocalNode(self.probe, self.contacts, i, CONST_MIDJOINT, self.pixelSize)
 			self.currNode.readFromFile2(dirName, i)			
 			self.currNode.setGPACPose(self.mapAlgorithm.nodePoses[i])
 			self.mapAlgorithm.nodeHash[i] = self.currNode
 
 		
-		foreNode = LocalNode(self.probe, self.contacts, num_poses, 19, self.pixelSize)
+		foreNode = LocalNode(self.probe, self.contacts, num_poses, CONST_MIDJOINT, self.pixelSize)
 		foreNode.readFromFile2(dirName, num_poses)
-		backNode = LocalNode(self.probe, self.contacts, num_poses+1, 19, self.pixelSize)
+		backNode = LocalNode(self.probe, self.contacts, num_poses+1, CONST_MIDJOINT, self.pixelSize)
 		backNode.readFromFile2(dirName, num_poses+1)
 		self.mapAlgorithm.insertPose(foreNode, backNode, initLocation = foreNode.getEstPose())
 		
@@ -449,7 +428,7 @@ class MapUser:
 		for i in range(0, num_poses):
 
 			print "loading node", i		
-			currNode = LocalNode(self.probe, self.contacts, i, 19, self.pixelSize)
+			currNode = LocalNode(self.probe, self.contacts, i, CONST_MIDJOINT, self.pixelSize)
 			currNode.readFromFile(dirName, i)
 			self.mapAlgorithm.loadNewNode(currNode)
 			self.drawConstraints(i)
@@ -467,7 +446,7 @@ class MapUser:
 		
 		for i in range(0,num_poses):
 			print "loading node", i			
-			self.currNode = LocalNode(self.probe, self.contacts, i, 19, self.pixelSize)
+			self.currNode = LocalNode(self.probe, self.contacts, i, CONST_MIDJOINT, self.pixelSize)
 			self.currNode.readFromFile(dirName, i)
 			nodeHash[i] = self.currNode
 
@@ -495,7 +474,7 @@ class MapUser:
 		#
 		#	self.currNode.saveToFile()
 
-		self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, self.pixelSize, stabilizePose = self.isStable, faceDir = faceDir, travelDir = travelDir)
+		self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, CONST_MIDJOINT, self.pixelSize, stabilizePose = self.isStable, faceDir = faceDir, travelDir = travelDir)
 		
 		self.mapAlgorithm.addInPlaceNode(self.currNode)
 
@@ -519,10 +498,10 @@ class MapUser:
 
 		
 		if faceDir:
-			self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, self.pixelSize, stabilizePose = self.isStable, faceDir = faceDir, travelDir = travelDir, useBloom = self.args.bloomFeature, useBend = self.args.bendFeature)		
+			self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, CONST_MIDJOINT, self.pixelSize, stabilizePose = self.isStable, faceDir = faceDir, travelDir = travelDir, useBloom = self.args.bloomFeature, useBend = self.args.bendFeature)		
 			self.foreNode = self.currNode
 		else:
-			self.currNode = LocalNode(self.probe, self.contacts, self.numNodes+1, 19, self.pixelSize, stabilizePose = self.isStable, faceDir = faceDir, travelDir = travelDir, useBloom = self.args.bloomFeature, useBend = self.args.bendFeature)		
+			self.currNode = LocalNode(self.probe, self.contacts, self.numNodes+1, CONST_MIDJOINT, self.pixelSize, stabilizePose = self.isStable, faceDir = faceDir, travelDir = travelDir, useBloom = self.args.bloomFeature, useBend = self.args.bendFeature)		
 			self.backNode = self.currNode
 		
 		#self.mapAlgorithm.addNode(self.currNode)
@@ -552,11 +531,11 @@ class MapUser:
 
 		print "estPose:", estPose
 
-		self.foreNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, self.pixelSize, stabilizePose = self.isStable, faceDir = True, travelDir = direction)		
+		self.foreNode = LocalNode(self.probe, self.contacts, self.numNodes, CONST_MIDJOINT, self.pixelSize, stabilizePose = self.isStable, faceDir = True, travelDir = direction)		
 		self.foreNode.setEstPose(estPose)
 		self.foreNode.setGndPose(estPose)
 
-		print "stable:", self.contacts.getAverageSegPose(19)
+		print "stable:", self.contacts.getAverageSegPose(CONST_MIDJOINT)
 
 		print "insert:", self.foreNode.getGlobalGPACPose()
 		self.currNode = self.foreNode
@@ -565,7 +544,7 @@ class MapUser:
 		self.stablePose.setDirection(True)
 		self.currNode.update()
 
-		self.backNode = LocalNode(self.probe, self.contacts, self.numNodes+1, 19, self.pixelSize, stabilizePose = self.isStable, faceDir = False, travelDir = direction)		
+		self.backNode = LocalNode(self.probe, self.contacts, self.numNodes+1, CONST_MIDJOINT, self.pixelSize, stabilizePose = self.isStable, faceDir = False, travelDir = direction)		
 		self.backNode.setEstPose(estPose)
 		self.backNode.setGndPose(estPose)
 		print "insert:", self.backNode.getGlobalGPACPose()
@@ -965,7 +944,6 @@ class MapUser:
 		allTermsVisited = {}
 		termToHypID = {}
 
-		#targetPoint = [2.6496513887401183, -3.6864527536076519]
 		#targetPoint = [2.255,5.93]
 		targetPoint = [3.296, 0.48]
 
