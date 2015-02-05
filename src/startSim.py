@@ -59,6 +59,7 @@ from opaque.robot.QuickProbe import QuickProbe
 from opaque.robot.BulletProbe import BulletProbe
 
 from opaque.TestNavigation import TestNavigation
+from opaque.TestNavigation2 import TestNavigation2
 from opaque.TestProcess import TestProcess
 #from opaque.TestUnit import TestUnit
 from opaque.ControlError import *
@@ -112,6 +113,17 @@ def cleanup():
 		for p in ParticleFilter.pool_dispPosePart2:
 			p.terminate()
 
+	if len(ParticleFilter.pool_localLandmark) > 0:
+
+		ParticleFilter.qin_localLandmark.close()
+		ParticleFilter.qin_localLandmark.join_thread()
+
+		ParticleFilter.qout_localLandmark.close()
+		ParticleFilter.qout_localLandmark.cancel_join_thread()
+
+		for p in ParticleFilter.pool_localLandmark:
+			p.terminate()
+
 
 			
 atexit.register(cleanup)
@@ -144,7 +156,7 @@ def createTest():
 	# args.numPoseParticles
 	# args.bloomFeature
 	# args.bendFeature 
-	currControl = TestNavigation(probe, drawThings, args)
+	currControl = TestNavigation2(probe, drawThings, args)
 	#maxNumPoses = args.maxNumPoses, numPoseParticles = args.numPoseParticles, bloomFeature = args.bloomFeature, bendFeature=args.bendFeature)
 	
 	probe.addControl(currControl)

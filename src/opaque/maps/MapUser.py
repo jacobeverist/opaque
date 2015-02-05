@@ -1,6 +1,7 @@
 import BayesMapper
 from LocalNode import LocalNode, getLongestPath, computeHullAxis
 from MapProcess import getInPlaceGuess, getStepGuess
+from Splices import getMultiDeparturePoint, orientPath
 from Pose import Pose
 import pylab
 import numpy
@@ -15,9 +16,8 @@ from StablePose import StablePose
 #from math import *
 
 # Map Space Parameters
-PIXELSIZE = 0.05
-MAPSIZE = 40.0
-#MAPSIZE = 20.0
+CONST_PIXELSIZE = 0.05
+CONST_MIDJOINT = 19
 
 class MapUser:
 
@@ -32,16 +32,16 @@ class MapUser:
 		self.args = args
 		
 		#self.mapAlgorithm = PoseGraph(self.probe, self.contacts)
-		self.mapAlgorithm = BayesMapper.BayesMapper(self.probe.getWalls(), args = self.args)	
+		self.mapAlgorithm = BayesMapper.BayesMapper(self.probe.robotParam, self.probe.getWalls(), args = self.args)	
 
-		self.initPose = self.probe.getActualJointPose(19)
+		self.initPose = self.probe.getActualJointPose(CONST_MIDJOINT)
 		
 		self.currNode = 0
 		self.foreNode = 0
 		self.backNode = 0
 		self.localNodes = []
 
-		self.pixelSize = PIXELSIZE
+		self.pixelSize = CONST_PIXELSIZE
 
 		self.navPlotCount = 0
 
@@ -116,8 +116,8 @@ class MapUser:
 			pylab.gca().add_patch(polygon)
 			#pylab.plot(xP,yP, color='k', alpha=0.5)
 
-		#rootPose = self.contacts.getAverageSegPose(19)
-		rootPose = self.contacts.getAveragePose(19)
+		#rootPose = self.contacts.getAverageSegPose(CONST_MIDJOINT)
+		rootPose = self.contacts.getAveragePose(CONST_MIDJOINT)
 		mapHyps = self.mapAlgorithm.mapHyps
 
 		for hypID, mapHyp in mapHyps.iteritems():
@@ -134,7 +134,7 @@ class MapUser:
 				zTotal = rootPose[1]
 				totalAngle = rootPose[2]
 
-				joints = range(-1,19)
+				joints = range(-1,CONST_MIDJOINT)
 				joints.reverse()
 
 				for i in joints:
@@ -171,7 +171,7 @@ class MapUser:
 					#pylab.plot(xP,yP, color='k', alpha=0.5)
 					#actualConfig.append([i, [p4,p3,p2,p1], self.contacts.initMask[i]])
 
-				joints = range(19, self.probe.numSegs-1)
+				joints = range(CONST_MIDJOINT, self.probe.numSegs-1)
 				
 				#xTotal = 0.0
 				#zTotal = 0.0
@@ -220,8 +220,8 @@ class MapUser:
 
 			#pose = self.probe.getActualJointPose(i)
 			#pose = self.probe.getActualSegPose(i)
-			#pose = self.probe.getJointPose(rootPose, 19, i)
-			#pose = self.probe.getJointPose([0.0,0.0,0.0], 19, i)
+			#pose = self.probe.getJointPose(rootPose, CONST_MIDJOINT, i)
+			#pose = self.probe.getJointPose([0.0,0.0,0.0], CONST_MIDJOINT, i)
 			pose = self.currNode.getJointPose(i)
 			#pose = self.contacts.getAverageSegPose(i)
 			xTotal = pose[0]
@@ -259,7 +259,7 @@ class MapUser:
 			#pylab.plot(xP,yP, color='k', alpha=0.5)
 		"""
 
-		if len(path) > 0:
+		if path != None and len(path) > 0:
 
 			xP = []
 			yP = []
@@ -270,7 +270,7 @@ class MapUser:
 			#pylab.plot(xP,yP, color='r', alpha=0.5, zorder=2)
 			pylab.plot(xP,yP, color='r', linewidth=2, zorder=2)
 
-		if len(goalPoint) > 0:
+		if goalPoint != None and len(goalPoint) > 0:
 			pylab.scatter([goalPoint[0],], [goalPoint[1],], color='k', zorder=3)
 
 		activeHypID = self.mapAlgorithm.activeHypID
@@ -291,6 +291,29 @@ class MapUser:
 					pylab.plot(xP,yP, color='g', linewidth=2, zorder=1)
 
 
+		if self.numNodes > 0:
+			nodeID = self.numNodes-1
+
+			hull1 = self.mapAlgorithm.poseData.aHulls[nodeID]
+			medial1 = self.mapAlgorithm.poseData.medialAxes[nodeID]
+
+			estPose1 = self.mapAlgorithm.mapHyps[0].getNodePose(nodeID)
+
+			poseOrigin = Pose(estPose1)
+
+			medialSpline1 = SplineFit(medial1, smooth=0.1)
+			points1 = medialSpline1.getUniformSamples(interpAngle=True)
+		
+			points1_offset = []
+			xP = []
+			yP = []
+			for p in points1:
+				result = poseOrigin.convertLocalOffsetToGlobal(p)
+				points1_offset.append(result)
+				xP.append(result[0])
+				yP.append(result[1])
+
+			pylab.plot(xP, yP, color='k')
 
 		if activeHypID != None:
 			pass
@@ -327,6 +350,7 @@ class MapUser:
 		pylab.axis("equal")
 		#pylab.xlim(-4.0,2.0)
 		#pylab.ylim(-2.0,2.0)
+		pylab.title("%d poses" % self.mapAlgorithm.poseData.numNodes)
 		pylab.savefig("navEstimate_%04u.png" % self.navPlotCount)
 		self.navPlotCount += 1
 
@@ -356,7 +380,6 @@ class MapUser:
 
 
 	def restorePickle(self, dirName, nodeID):
-		PIXELSIZE = 0.05
 		print self
 
 		#with open('map_%04u.obj' % nodeID, 'rb') as inputVal:
@@ -373,25 +396,6 @@ class MapUser:
 			for val in self.mapAlgorithm.mapHyps.values():
 				self.mapAlgorithm.drawPathAndHull2(val)
 
-			#self.mapAlgorithm.loadSeries("../results/result_2013_08_24_cross", 238)
-
-			"""
-			print "loading node", 12		
-			currNode = LocalNode(self.probe, self.contacts, 12, 19, PIXELSIZE)
-			currNode.readFromFile2("../results/result_2013_08_24_cross", 12)
-			self.localNodes.append(currNode)
-			self.mapAlgorithm.loadNewNode(currNode)
-			self.mapAlgorithm.saveState()
-		
-			print "loading node", 13		
-			currNode = LocalNode(self.probe, self.contacts, 13, 19, PIXELSIZE)
-			currNode.readFromFile2("../results/result_2013_08_24_cross", 13)
-			self.localNodes.append(currNode)
-			self.mapAlgorithm.loadNewNode(currNode)
-			self.mapAlgorithm.saveState()
-			"""
-		
-
 
 	def restoreSeries(self, dirName, num_poses):
 
@@ -400,15 +404,15 @@ class MapUser:
 		for i in range(0, num_poses):
 
 			print "loading node", i			
-			self.currNode = LocalNode(self.probe, self.contacts, i, 19, self.pixelSize)
+			self.currNode = LocalNode(self.probe, self.contacts, i, CONST_MIDJOINT, self.pixelSize)
 			self.currNode.readFromFile2(dirName, i)			
 			self.currNode.setGPACPose(self.mapAlgorithm.nodePoses[i])
 			self.mapAlgorithm.nodeHash[i] = self.currNode
 
 		
-		foreNode = LocalNode(self.probe, self.contacts, num_poses, 19, self.pixelSize)
+		foreNode = LocalNode(self.probe, self.contacts, num_poses, CONST_MIDJOINT, self.pixelSize)
 		foreNode.readFromFile2(dirName, num_poses)
-		backNode = LocalNode(self.probe, self.contacts, num_poses+1, 19, self.pixelSize)
+		backNode = LocalNode(self.probe, self.contacts, num_poses+1, CONST_MIDJOINT, self.pixelSize)
 		backNode.readFromFile2(dirName, num_poses+1)
 		self.mapAlgorithm.insertPose(foreNode, backNode, initLocation = foreNode.getEstPose())
 		
@@ -424,7 +428,7 @@ class MapUser:
 		for i in range(0, num_poses):
 
 			print "loading node", i		
-			currNode = LocalNode(self.probe, self.contacts, i, 19, self.pixelSize)
+			currNode = LocalNode(self.probe, self.contacts, i, CONST_MIDJOINT, self.pixelSize)
 			currNode.readFromFile(dirName, i)
 			self.mapAlgorithm.loadNewNode(currNode)
 			self.drawConstraints(i)
@@ -442,7 +446,7 @@ class MapUser:
 		
 		for i in range(0,num_poses):
 			print "loading node", i			
-			self.currNode = LocalNode(self.probe, self.contacts, i, 19, self.pixelSize)
+			self.currNode = LocalNode(self.probe, self.contacts, i, CONST_MIDJOINT, self.pixelSize)
 			self.currNode.readFromFile(dirName, i)
 			nodeHash[i] = self.currNode
 
@@ -470,7 +474,7 @@ class MapUser:
 		#
 		#	self.currNode.saveToFile()
 
-		self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, self.pixelSize, stabilizePose = self.isStable, faceDir = faceDir, travelDir = travelDir)
+		self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, CONST_MIDJOINT, self.pixelSize, stabilizePose = self.isStable, faceDir = faceDir, travelDir = travelDir)
 		
 		self.mapAlgorithm.addInPlaceNode(self.currNode)
 
@@ -494,10 +498,10 @@ class MapUser:
 
 		
 		if faceDir:
-			self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, self.pixelSize, stabilizePose = self.isStable, faceDir = faceDir, travelDir = travelDir, useBloom = self.args.bloomFeature, useBend = self.args.bendFeature)		
+			self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, CONST_MIDJOINT, self.pixelSize, stabilizePose = self.isStable, faceDir = faceDir, travelDir = travelDir, useBloom = self.args.bloomFeature, useBend = self.args.bendFeature)		
 			self.foreNode = self.currNode
 		else:
-			self.currNode = LocalNode(self.probe, self.contacts, self.numNodes+1, 19, self.pixelSize, stabilizePose = self.isStable, faceDir = faceDir, travelDir = travelDir, useBloom = self.args.bloomFeature, useBend = self.args.bendFeature)		
+			self.currNode = LocalNode(self.probe, self.contacts, self.numNodes+1, CONST_MIDJOINT, self.pixelSize, stabilizePose = self.isStable, faceDir = faceDir, travelDir = travelDir, useBloom = self.args.bloomFeature, useBend = self.args.bendFeature)		
 			self.backNode = self.currNode
 		
 		#self.mapAlgorithm.addNode(self.currNode)
@@ -525,19 +529,34 @@ class MapUser:
 
 	def insertPose(self, estPose, direction):
 
+		print "estPose:", estPose
 
-		self.currNode = LocalNode(self.probe, self.contacts, self.numNodes, 19, self.pixelSize, stabilizePose = self.isStable, faceDir = True, travelDir = direction)		
-		self.foreNode = self.currNode
-		self.forceUpdate(True)		
-		self.currNode = LocalNode(self.probe, self.contacts, self.numNodes+1, 19, self.pixelSize, stabilizePose = self.isStable, faceDir = False, travelDir = direction)		
-		self.backNode = self.currNode
-		self.forceUpdate(False)		
+		self.foreNode = LocalNode(self.probe, self.contacts, self.numNodes, CONST_MIDJOINT, self.pixelSize, stabilizePose = self.isStable, faceDir = True, travelDir = direction)		
+		self.foreNode.setEstPose(estPose)
+		self.foreNode.setGndPose(estPose)
 
-		self.mapAlgorithm.insertPose(self.foreNode, self.backNode, initLocation = estPose)
-		#self.mapAlgorithm.addInitNode(self.foreNode, estPose)
-		#self.mapAlgorithm.loadNewNode(self.foreNode)
-		#self.mapAlgorithm.loadNewNode(self.backNode)
+		print "stable:", self.contacts.getAverageSegPose(CONST_MIDJOINT)
 
+		print "insert:", self.foreNode.getGlobalGPACPose()
+		self.currNode = self.foreNode
+		#self.forceUpdate(True)		
+
+		self.stablePose.setDirection(True)
+		self.currNode.update()
+
+		self.backNode = LocalNode(self.probe, self.contacts, self.numNodes+1, CONST_MIDJOINT, self.pixelSize, stabilizePose = self.isStable, faceDir = False, travelDir = direction)		
+		self.backNode.setEstPose(estPose)
+		self.backNode.setGndPose(estPose)
+		print "insert:", self.backNode.getGlobalGPACPose()
+		self.currNode = self.backNode
+		#self.forceUpdate(False)		
+		self.stablePose.setDirection(False)
+		self.currNode.update()
+
+		print "insert:", self.foreNode.getGlobalGPACPose()
+		print "insert:", self.backNode.getGlobalGPACPose()
+		self.mapAlgorithm.insertNewNode(self.foreNode)
+		self.mapAlgorithm.insertNewNode(self.backNode)
 		
 		self.stablePose.reset()
 		self.stablePose.setNode(self.currNode)	
@@ -555,20 +574,19 @@ class MapUser:
 		self.currNode.updateCorrectPosture()
 
 	def forceUpdate(self, isForward=True):
+
+
 		self.stablePose.setDirection(isForward)
 		self.currNode.update()
-
 
 		nodeID = self.currNode.nodeID
 		direction = self.currNode.travelDir
 		distEst = 1.0
 
-
 		mapHyp = self.getMaxHyp()
 
 		poseData = deepcopy(mapHyp.poseData)
 
-	
 		if nodeID > 0:
 
 			foreNodeID = self.foreNode.nodeID
@@ -586,6 +604,8 @@ class MapUser:
 			poseData.backProbeError[foreNodeID] = self.foreNode.backProbeError
 			poseData.travelDirs[foreNodeID] = self.foreNode.travelDir
 			poseData.spatialFeatures[foreNodeID] = self.foreNode.spatialFeatures
+			poseData.rootPoses[foreNodeID] = self.foreNode.rootPose
+			poseData.localPostures[foreNodeID] = self.foreNode.correctedPosture
 
 			if nodeID % 2 == 0:
 
@@ -616,6 +636,8 @@ class MapUser:
 				poseData.backProbeError[backNodeID] = self.backNode.backProbeError
 				poseData.travelDirs[backNodeID] = self.backNode.travelDir
 				poseData.spatialFeatures[backNodeID] = self.backNode.spatialFeatures
+				poseData.rootPoses[backNodeID] = self.backNode.rootPose
+				poseData.localPostures[backNodeID] = self.backNode.correctedPosture
 
 				" the guess process gives a meaningful guess for these node's poses "
 				" before this, it is meaningless "
@@ -642,6 +664,8 @@ class MapUser:
 		self.isDirty = True
 
 		self.stablePose.setDirection(isForward)
+
+		#self.currNode.update()
 
 		" if the configuration is a stable pose, the maximum displacement is not exceeded "
 		if self.stablePose.isStable():
@@ -693,8 +717,90 @@ class MapUser:
 
 		print "return currNode.getEstPose():", nodeID
 		return self.currNode.getEstPose()
-
 	
+	def getDirection(self, wayPath):
+
+		nodeID = self.numNodes-1
+
+		hull1 = self.mapAlgorithm.poseData.aHulls[nodeID]
+		medial1 = self.mapAlgorithm.poseData.medialAxes[nodeID]
+
+		estPose1 = self.mapAlgorithm.mapHyps[self.mapAlgorithm.activeHypID].getNodePose(nodeID)
+
+		poseOrigin = Pose(estPose1)
+
+		medialSpline1 = SplineFit(medial1, smooth=0.1)
+		points1 = medialSpline1.getUniformSamples(interpAngle=True)
+	
+		points1_offset = []
+		for p in points1:
+			result = poseOrigin.convertLocalOffsetToGlobal(p)
+			points1_offset.append(result)
+	
+		globalMedialSpline = SplineFit(points1_offset, smooth=0.1)
+		globalMedialPoints = globalMedialSpline.getUniformSamples()			
+
+		orientedWayPath = orientPath(wayPath, points1_offset)
+
+		dist1 = sqrt((orientedWayPath[0][0]-wayPath[0][0])**2 + (orientedWayPath[0][1]-wayPath[0][1])**2)
+		dist2 = sqrt((orientedWayPath[-1][0]-wayPath[0][0])**2 + (orientedWayPath[-1][1]-wayPath[0][1])**2)
+
+		if dist1 < dist2:
+			return False
+		else:
+			return True
+
+		#" - get position of both tips "
+		#frontTip = globalMedialPoints[0]
+		#backTip = globalMedialPoints[-1]
+
+		#results0 = getMultiDeparturePoint(splice, medial0_vec, currPose, currPose, [0,], nodeID, spliceIndex=k, plotIter=False)
+
+	def isFollowing(self, wayPath, foreAvg = 0.0, backAvg = 0.0):
+
+		" - get splice of wayPath "
+		
+		" - get GPAC of pose "
+		nodeID = self.numNodes-1
+
+		hull1 = self.mapAlgorithm.poseData.aHulls[nodeID]
+		medial1 = self.mapAlgorithm.poseData.medialAxes[nodeID]
+
+		estPose1 = self.mapAlgorithm.mapHyps[self.mapAlgorithm.activeHypID].getNodePose(nodeID)
+
+		poseOrigin = Pose(estPose1)
+
+		medialSpline1 = SplineFit(medial1, smooth=0.1)
+		points1 = medialSpline1.getUniformSamples(interpAngle=True)
+	
+		points1_offset = []
+		for p in points1:
+			result = poseOrigin.convertLocalOffsetToGlobal(p)
+			points1_offset.append(result)
+	
+		globalMedialSpline = SplineFit(points1_offset, smooth=0.1)
+		globalMedialPoints = globalMedialSpline.getUniformSamples()			
+		
+		" - get position of both tips "
+		frontTip = globalMedialPoints[0]
+		backTip = globalMedialPoints[-1]
+		#frontTipPathPoint = self.getNearestPathPoint(frontTip)
+		#backTipPathPoint = self.getNearestPathPoint(backTip)
+		
+		pathSpline = SplineFit(wayPath)
+		#minDist, uVal, uPoint = pathSpline.findClosestPoint(dest)
+		
+		frontMinDist, frontUVal, frontUPoint = pathSpline.findClosestPoint(frontTip)
+		backMinDist, backUVal, backUPoint = pathSpline.findClosestPoint(backTip)
+
+		results0 = getMultiDeparturePoint(wayPath, points1, estPose1, estPose1, [0,], nodeID, spliceIndex=0, plotIter=False)
+		contigFrac = results0[12]
+
+		#frontMinDist, frontUVal, frontUPoint = pathSpline.findClosestPoint(frontTipPathPoint)
+		#backMinDist, backUVal, backUPoint = pathSpline.findClosestPoint(backTipPathPoint)
+
+		return frontMinDist, backMinDist, contigFrac
+		
 	def isDestReached(self, dest, wayPath, foreAvg = 0.0, backAvg = 0.0):
 		#dest = self.localWayPoints[0]			
 
@@ -749,6 +855,8 @@ class MapUser:
 		else:
 			goalDist = backMag
 
+		# FIXME:  this collision checks should go in the localization section
+		# which would automatically localize us to the terminal point
 		if frontMag < 0.8 and foreAvg >= 1.1:
 			destReached = True
 
@@ -836,6 +944,9 @@ class MapUser:
 		allTermsVisited = {}
 		termToHypID = {}
 
+		#targetPoint = [2.255,5.93]
+		targetPoint = [3.296, 0.48]
+
 		" get the termination point and orientation of each path "
 		for hypID, mapHyp in self.mapAlgorithm.mapHyps.iteritems():
 			terms = mapHyp.getPathTerms()
@@ -853,7 +964,19 @@ class MapUser:
 		print "allTerms:", allTerms
 		print "allTermsVisited:", allTermsVisited
 		
+		#for k, term in allTerms.iteritems():
+
+		#	dist = sqrt((term[0]-targetPoint[0])**2+(term[1]-targetPoint[1])**2)
+		#	print "targetDist=", dist, term, targetPoint
+
+		#	if dist < 0.5:
+		#		print "selecting term", k, "for hyp ID", termToHypID[k]
+
+		#		self.mapAlgorithm.activeHypID = termToHypID[k]
+		#		return term,k
+		
 		for k, term in allTerms.iteritems():
+
 			if not allTermsVisited[k]:
 				print "selecting term", k, "for hyp ID", termToHypID[k]
 
@@ -904,9 +1027,134 @@ class MapUser:
 				allTermsVisited[key] = termsVisited[key]
 				termToHypID[key] = hypID
 
-
 		newTermPoint = allTerms[termID] 
 		return newTermPoint
+
+	def computePathSplice(self, termID, termPoint):
+
+		frontierPoint = self.getDestination(termID, termPoint)
+
+
+		allSplices = []
+		""" find all splices that terminate at the terminal destination """
+		allSplices = self.mapAlgorithm.mapHyps[0].getAllSplices2()
+		#for hypID, mapHyp in self.mapAlgorithm.mapHyps.iteritems():
+		#	allSplices = mapHyp.getAllSplices2()
+		#	break
+
+		termSplices = []
+		for spliceIndex in range(len(allSplices)):
+			sPath = allSplices[spliceIndex]
+			path = sPath['skelPath']
+			termPoints = sPath['termPath']
+
+			term1 = termPoints[0]
+			term2 = termPoints[1]
+
+			dist1 = sqrt((term1[0]-frontierPoint[0])**2 + (term1[1]-frontierPoint[1])**2)
+			dist2 = sqrt((term2[0]-frontierPoint[0])**2 + (term2[1]-frontierPoint[1])**2)
+
+			if dist1 < 0.1 or dist2 < 0.1:
+				termSplices.append(path)
+
+		
+		""" find the splice that is coaligned with current pose's spatial curve """
+
+		nodeID = self.mapAlgorithm.poseData.numNodes-1
+
+		medial0 = self.mapAlgorithm.poseData.medialAxes[nodeID]
+
+		medialSpline0 = SplineFit(medial0, smooth=0.1)
+		medial0_vec = medialSpline0.getUniformSamples()
+
+		currPose = self.mapAlgorithm.mapHyps[0].getNodePose(nodeID)
+
+		maxContigFrac = 0.0
+		maxSpliceIndex = 0
+		for k in range(len(termSplices)):
+
+			splice = termSplices[k]
+
+			results0 = getMultiDeparturePoint(splice, medial0_vec, currPose, currPose, [0,], nodeID, spliceIndex=k, plotIter=False)
+
+			contigFrac0 = results0[12]
+
+			if contigFrac0 >= maxContigFrac:
+				maxContigFrac = contigFrac0
+				maxSpliceIndex = k
+
+		pathSplice = deepcopy(termSplices[maxSpliceIndex])
+
+
+		""" destination should be at the n'th index """
+		dist1 = sqrt((pathSplice[0][0]-frontierPoint[0])**2 + (pathSplice[0][1]-frontierPoint[1])**2)
+		dist2 = sqrt((pathSplice[-1][0]-frontierPoint[0])**2 + (pathSplice[-1][1]-frontierPoint[1])**2)
+
+		if dist1 < dist2:
+			pathSplice.reverse()
+
+		frontierPathPoint = self.getNearestPathPoint(frontierPoint)
+
+		return frontierPathPoint, pathSplice
+
+		""" over smooth sharp corners """
+		newCurve = []
+		rangeWidth = 50
+
+		pose1 = pathSplice[0]
+		pose2 = pathSplice[rangeWidth]
+
+		newX = pose1[0] + (pose2[0]-pose1[0]) / 2.0
+		newY = pose1[1] + (pose2[1]-pose1[1]) / 2.0
+
+		joinP = [newX,newY]
+
+		dist = sqrt((pose1[0]-joinP[0])**2+(pose1[1]-joinP[1])**2)
+		vec = [joinP[0]-pose1[0], joinP[1]-pose1[1]]
+		vec[0] /= dist
+		vec[1] /= dist
+		max_spacing = 0.02
+		numPoints = int(dist/max_spacing)
+
+		for j in range(numPoints-1):
+			newP = [j*max_spacing*vec[0] + pose1[0], j*max_spacing*vec[1] + pose1[1]]
+			newCurve.append(newP)
+
+
+		for k in range(0,len(pathSplice)-rangeWidth):
+			pose1 = pathSplice[k]
+			pose2 = pathSplice[k+rangeWidth]
+
+			newX = pose1[0] + (pose2[0]-pose1[0]) / 2.0
+			newY = pose1[1] + (pose2[1]-pose1[1]) / 2.0
+
+
+			newCurve.append([newX,newY])
+
+
+		pose1 = pathSplice[len(pathSplice)-rangeWidth-1]
+		pose2 = pathSplice[len(pathSplice)-1]
+
+		newX = pose1[0] + (pose2[0]-pose1[0]) / 2.0
+		newY = pose1[1] + (pose2[1]-pose1[1]) / 2.0
+
+		joinP = [newX,newY]
+
+		dist = sqrt((pose2[0]-joinP[0])**2+(pose2[1]-joinP[1])**2)
+		vec = [-joinP[0]+pose2[0], -joinP[1]+pose2[1]]
+		vec[0] /= dist
+		vec[1] /= dist
+		max_spacing = 0.02
+		numPoints = int(dist/max_spacing)
+
+		for j in range(1,numPoints):
+			newP = [j*max_spacing*vec[0] + pose2[0], j*max_spacing*vec[1] + pose2[1]]
+			newCurve.append(newP)
+
+		overSmoothedPath = SplineFit(newCurve, smooth=0.1).getUniformSamples()
+
+		return frontierPathPoint, overSmoothedPath
+
 
 	def recomputePath(self, termID, termPoint):
 

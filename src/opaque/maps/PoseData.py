@@ -24,6 +24,8 @@ class PoseData:
 		self.frontProbeError = {}
 		self.backProbeError = {}
 		self.spatialFeatures = {}
+		self.rootPoses = {}
+		self.localPostures = {}
 
 	
 

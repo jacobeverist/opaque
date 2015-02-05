@@ -20,6 +20,10 @@ import pylab
 import matplotlib.pyplot as plt
 import graph
 
+import glob
+import os
+import shutil
+
 from MapState import MapState
 
 import random
@@ -41,13 +45,14 @@ def printStack():
 
 class BayesMapper:
 
-	def __init__(self, walls, args = None):
+	def __init__(self, robotParam, walls, args = None):
 		
 		#self.maxNumPoses = maxNumPoses
 		#self.numPoseParticles = numPoseParticles
 		#self.bloomFeature = bloomFeature
 		#self.bendFeature = bendFeature
 
+		self.robotParam = robotParam
 		self.args = args
 
 		#self.probe = probe
@@ -63,7 +68,7 @@ class BayesMapper:
 		""" initialize to a single map hypothesis """
 		self.particleIDs = 0
 		self.mapHyps = {}
-		self.mapHyps[self.particleIDs] = MapState(self.poseData, self.particleIDs, args = self.args)
+		self.mapHyps[self.particleIDs] = MapState(self.robotParam, self.poseData, self.particleIDs, args = self.args)
 		self.particleIDs += 1
 		#self.mapHyps[self.particleIDs] = self.mapHyps[0].copy(self.particleIDs)
 		#self.mapHyps[self.particleIDs] = MapState(self.poseData, self.particleIDs)
@@ -87,6 +92,8 @@ class BayesMapper:
 		self.poseData.frontProbeError = {}
 		self.poseData.backProbeError = {}
 		self.poseData.spatialFeatures = {}
+		self.poseData.rootPoses = {}
+		self.poseData.localPostures = {}
 
 	
 		self.pathDrawCount = 0
@@ -148,6 +155,52 @@ class BayesMapper:
 		return self.mapHyps[topID]
 
 	@logFunction
+	def insertNewNode(self, newNode):
+
+		nodeID = self.poseData.numNodes
+
+		print "incrementing numNodes"
+		print "inserting", nodeID, newNode.getGlobalGPACPose()
+
+		print self.poseData.numNodes
+		self.poseData.numNodes += 1
+		print self.poseData.numNodes
+		
+		hull1, medial1 = computeHullAxis(nodeID, newNode, tailCutOff = False)
+		self.poseData.aHulls[nodeID] = hull1
+		self.poseData.medialAxes[nodeID] = medial1
+		self.poseData.numLeafs[nodeID] = newNode.getNumLeafs()
+		self.poseData.faceDirs[nodeID] = newNode.faceDir
+		self.poseData.isBowties[nodeID] = newNode.isBowtie			
+		self.poseData.medialLongPaths[nodeID] = newNode.medialLongPaths
+		self.poseData.correctedPostures[nodeID] = newNode.getStableGPACPosture()
+		self.poseData.isNodeFeatureless[nodeID] = newNode.getIsFeatureless()
+		self.poseData.frontProbeError[nodeID] = newNode.frontProbeError
+		self.poseData.backProbeError[nodeID] = newNode.backProbeError
+		self.poseData.travelDirs[nodeID] = newNode.travelDir
+		self.poseData.spatialFeatures[nodeID] = newNode.spatialFeatures
+		self.poseData.rootPoses[nodeID] = newNode.rootPose
+		self.poseData.localPostures[nodeID] = newNode.localPosture
+
+		for mid, mapHyp in self.mapHyps.iteritems():
+			mapHyp.updatePoseData(self.poseData)
+
+		""" for each current map hypothesis, integrate the new node """
+		currHyps = self.mapHyps
+		for mid, mapHyp in currHyps.iteritems():
+
+			print "loading", nodeID, "hyp", mapHyp.hypothesisID
+
+			mapHyp.gndPoses[nodeID] = newNode.getGndGlobalGPACPose()
+			mapHyp.gndRawPoses[nodeID] = newNode.getGndPose()
+			mapHyp.nodePoses[nodeID] = newNode.getGlobalGPACPose()
+			mapHyp.nodeRawPoses[nodeID] = newNode.getEstPose()
+
+
+		self.mapHyps = self.integrateNode(currHyps, nodeID, isInsert = True)
+
+
+	@logFunction
 	def loadNewNode(self, newNode):
 
 		#self.currNode = newNode
@@ -173,6 +226,8 @@ class BayesMapper:
 		self.poseData.backProbeError[nodeID] = newNode.backProbeError
 		self.poseData.travelDirs[nodeID] = newNode.travelDir
 		self.poseData.spatialFeatures[nodeID] = newNode.spatialFeatures
+		self.poseData.rootPoses[nodeID] = newNode.rootPose
+		self.poseData.localPostures[nodeID] = newNode.localPosture
 
 
 		for mid, mapHyp in self.mapHyps.iteritems():
@@ -186,27 +241,8 @@ class BayesMapper:
 
 			mapHyp.gndPoses[nodeID] = newNode.getGndGlobalGPACPose()
 			mapHyp.gndRawPoses[nodeID] = newNode.getGndPose()
-			#mapHyp.setNodePose(nodeID, newNode.getGlobalGPACPose())
 			mapHyp.nodePoses[nodeID] = newNode.getGlobalGPACPose()
-
-			" FIXME:  raw pose does not get updated yet with GPAC pose "
-
-			#print "rawPoses:", mapHyp.nodeRawPoses[nodeID], newNode.getEstPose()
-
 			mapHyp.nodeRawPoses[nodeID] = newNode.getEstPose()
-
-			#pathIDs = mapHyp.getPathIDs()
-			#for k in range(mapHyp.numPoseParticles):
-			#	for pathID in pathIDs:
-
-			#		if pathID != 0:
-			#			particle = mapHyp.poseParticles["snapshots2"][0][k]
-
-						#controlPoseDist = particle.junctionData[pathID]["controlPoseDist"]
-						#branchPoseDist = particle.junctionData[pathID]["branchPoseDist"]
-
-						#print "hypID,pathID,particleIndex:", mapHyp.hypothesisID, pathID, k, controlPoseDist
-					
 
 		self.mapHyps = self.integrateNode(currHyps, nodeID)
 
@@ -263,24 +299,30 @@ class BayesMapper:
 		self.mapHyps = self.integrateNode(currHyps, nodeID)
 
 	@logFunction
-	def integrateNode(self, hypSet, nodeID):
+	def integrateNode(self, hypSet, nodeID, isInsert = False):
 
 		" DIRECTION OF TRAVEL FROM PREVIOUS POSE PAIR "
 		direction = self.poseData.travelDirs[nodeID]
 
 		print "integrating node", nodeID
 
+
 		if nodeID > 0:
 			
 			" ESTIMATE TRAVEL WITH MEDIAL OVERLAP CONSTRAINT OF EVEN NUMBER POSE "
-			if self.poseData.numNodes >= 4:
+			if self.poseData.numNodes >= 4 and not isInsert:
 
 				if nodeID % 2 == 1:
 
 					for pID, currHyp in hypSet.iteritems():
+						currHyp.drawWhatever()
+						currHyp.drawWhatever2(self.walls)
+						#exit(1)
+
 						time1 = time.time()
 						currHyp.batchDisplaceParticles(nodeID-1, nodeID)
 
+						currHyp.drawDist()
 						currHyp.drawPoseParticles()
 						time2 = time.time()
 						print "TIME displace", currHyp.hypothesisID, "=", time2-time1 
@@ -301,10 +343,25 @@ class BayesMapper:
 
 			time1 = time.time()
 			self.shootIDs, self.particleIDs, hypSet = addToPaths2(self.shootIDs, self.particleIDs, hypSet, nodeID1, nodeID2)
+
+
 			for pID, currHyp in hypSet.iteritems():
+				currHyp.drawWhatever()
+				currHyp.drawWhatever2(self.walls)
 				currHyp.drawPoseParticles()
+				if isInsert:
+					newNodeSet = [nodeID1, nodeID2]
+					currHyp.snapPoseToSkeleton(newNodeSet)
+					currHyp.generatePaths()
+					currHyp.drawPoseParticles()
+					currHyp.initializePoseParticles()
+
 			time2 = time.time()
 			print "TIME addToPaths =", time2-time1 
+
+
+		if self.poseData.numNodes >= 2 and self.poseData.numNodes % 2 == 0 and not isInsert:
+
 
 			for pID, mapHyp in hypSet.iteritems():
 				time1 = time.time()
@@ -314,29 +371,94 @@ class BayesMapper:
 
 				time2 = time.time()
 
-				print "TIME localize", pID, "=", time2-time1
+				#print "TIME localize", pID, "=", time2-time1
+				mapHyp.drawWhatever()
+				mapHyp.drawWhatever2(self.walls)
 
 			for pID, currHyp in hypSet.iteritems():
+
+				if True:
+
+					while True:
+						print pID, "subsumption:", currHyp.subsumptionMatrix, [len(currHyp.localTerms[k]) for k in currHyp.localTerms.keys()], currHyp.terminalSimilarity
+
+						allPathIDs = currHyp.localTerms.keys()
+						parentHash = currHyp.getParentHash()
+
+						termCount = {}
+						terminalSimilarity = currHyp.terminalSimilarity
+						subsumptionMatrix = currHyp.subsumptionMatrix
+						for pathID in allPathIDs:
+							termCount[pathID] = len(currHyp.localTerms[pathID])
+							
+						print "termCount:", termCount
+
+						mergeJobs = []
+
+						for jIndex in range(len(allPathIDs)):
+							pathID1 = allPathIDs[jIndex]
+							termCount1 = termCount[pathID1]
+							
+							for kIndex in range(jIndex+1, len(allPathIDs)):
+								pathID2 = allPathIDs[kIndex]
+								termCount2 = termCount[pathID2]
+
+								subCount1 = subsumptionMatrix[pathID1][pathID2]
+								subCount2 = subsumptionMatrix[pathID2][pathID1]
+								termMatchCount = terminalSimilarity[pathID1][pathID2]
+
+								subSum = subCount1 + subCount2 - termMatchCount
+
+								if subSum >= termCount1 and subSum >= termCount2:
+									if parentHash[pathID1] == pathID2:
+										mergeJobs.append((pathID1,pathID2))
+									elif parentHash[pathID2] == pathID1:
+										mergeJobs.append((pathID2,pathID1))
+									else:	
+										mergeJobs.append((pathID1,pathID2))
+
+						""" only merge the first job, regenerate and recompute after it """
+						
+						print "mergeJobs:", mergeJobs
+
+						if len(mergeJobs) > 0:
+							job1 = mergeJobs[0]
+							if job1[0] > job1[1]:
+								currHyp.mergePath(job1[0], targetPathID=job1[1])
+							else:
+								currHyp.mergePath(job1[1], targetPathID=job1[0])
+
+							currHyp.generatePaths()
+							currHyp.drawPoseParticles()
+
+						if len(mergeJobs) == 0:
+							break
 
 
 				""" merge a shoot if it does not diverge """
 				if False:
-					if 1 in currHyp.pathClasses.keys():
-						currHyp.mergePath(1)
-						currHyp.generatePaths()
-						currHyp.drawPoseParticles()
-
-				else:
 
 					isSubsumed = False
-					print pID, "branchDivergeCount:", currHyp.branchDivergeCount
-					for val in currHyp.branchDivergeCount.values():
-						if val >= 2:
+					print pID, "branchDivergeCount:", currHyp.branchDivergeCount, currHyp.branchSubsumeIDs, currHyp.branchTermDivergenceDist, currHyp.subsumptionMatrix, [len(currHyp.localTerms[k]) for k in currHyp.localTerms.keys()]
+					for skelID, val in currHyp.branchDivergeCount.iteritems():
+
+						distList = currHyp.branchTermDivergenceDist[skelID]
+						distList.sort(reverse=True)
+
+						if skelID != 0 and val >= 2 and (distList[0] >= 0.8 or distList[0] <= 0.2):
 							isSubsumed = True
+
+					#if len(currHyp.branchSubsumeIDs[0]) > 0:
+					#	mergePathID = currHyp.branchSubsumeIDs[0][0]
+					#	distList = currHyp.branchTermDivergenceDist[mergePathID]
+					#	distList.sort(reverse=True)
+					#	if distList[0] >= 0.8 or distList[0] <= 0.2:
+					#		isSubsumed = True
+
 
 					while isSubsumed:
 
-						print pID, "branchDivergeCount:", currHyp.branchDivergeCount
+						print pID, "branchDivergeCount:", currHyp.branchDivergeCount, currHyp.branchSubsumeIDs
 
 						pathIDs = currHyp.branchDivergeCount.keys()
 						
@@ -344,22 +466,75 @@ class BayesMapper:
 						# FIXME: need way to merge the root to a child if root is subsumed
 						
 						for pathID, divergeCount in currHyp.branchDivergeCount.iteritems():
-							if divergeCount >= 2:
-								currHyp.mergePath(pathID)
-								currHyp.generatePaths()
-								currHyp.drawPoseParticles()
+							if False and pathID == 0 and len(currHyp.branchSubsumeIDs[0]) > 0:
+
+								mergePathID = currHyp.branchSubsumeIDs[0][0]
+								mergeNodeIDs = deepcopy(currHyp.pathClasses[mergePathID]["nodeSet"])
+
+
+								distList = currHyp.branchTermDivergenceDist[mergePathID]
+								distList.sort(reverse=True)
 								
-								break
+								if distList[0] >= 0.8 or distList[0] <= 0.2:
+
+									currHyp.mergePath(mergePathID, targetPathID=pathID)
+									currHyp.generatePaths()
+									currHyp.drawPoseParticles()
+
+									#currHyp.snapLandmarkToSkeleton(targetNodeIDs=mergeNodeIDs)
+									#currHyp.generatePaths()
+									#currHyp.drawPoseParticles()
+
+									break
+
+							elif pathID != 0 and divergeCount >= 2:
+								mergePathID = pathID
+								mergeNodeIDs = deepcopy(currHyp.pathClasses[mergePathID]["nodeSet"])
+
+								distList = currHyp.branchTermDivergenceDist[mergePathID]
+								distList.sort(reverse=True)
+								
+								if distList[0] >= 0.8 or distList[0] <= 0.2:
+
+									currHyp.mergePath(pathID)
+									currHyp.generatePaths()
+									currHyp.drawPoseParticles()
+
+									#currHyp.snapLandmarkToSkeleton(targetNodeIDs=mergeNodeIDs)
+									#currHyp.generatePaths()
+									#currHyp.drawPoseParticles()
+
+									break
 
 						isSubsumed = False
-						for val in currHyp.branchDivergeCount.values():
-							if val >= 2:
+						#for val in currHyp.branchDivergeCount.values():
+						#	if val >= 2:
+						#		isSubsumed = True
+						for skelID, val in currHyp.branchDivergeCount.iteritems():
+
+							distList = currHyp.branchTermDivergenceDist[skelID]
+							distList.sort(reverse=True)
+
+							if skelID != 0 and val >= 2 and (distList[0] >= 0.8 or distList[0] <= 0.2):
 								isSubsumed = True
+
+						#if len(currHyp.branchSubsumeIDs[0]) > 0:
+						#	mergePathID = currHyp.branchSubsumeIDs[0][0]
+						#	distList = currHyp.branchTermDivergenceDist[mergePathID]
+						#	distList.sort(reverse=True)
+						#	if distList[0] >= 0.8 or distList[0] <= 0.2:
+						#		isSubsumed = True
 
 				""" evaluate the map integrity """
 				currHyp.computeEval()
 
 				self.drawPathAndHull2(currHyp)
+
+			for pID, currHyp in hypSet.iteritems():
+				currHyp.stepResults = {}
+				currHyp.snapToParent()
+				currHyp.generatePaths()
+				currHyp.drawPoseParticles()
 
 
 		""" remove defective maps """
@@ -370,6 +545,9 @@ class BayesMapper:
 			#	toDelete.append(pID)
 			#	if pID == self.activeHypID:
 			#		self.activeHypID = None
+
+
+
 
 				
 		#for pID in toDelete:
@@ -404,6 +582,8 @@ class BayesMapper:
 		saveFile += "self.poseData.backProbeError = " + repr(self.poseData.backProbeError) + "\n"
 		saveFile += "self.poseData.travelDirs = " + repr(self.poseData.travelDirs) + "\n"
 		saveFile += "self.poseData.spatialFeatures = " + repr(self.poseData.spatialFeatures) + "\n"
+		saveFile += "self.poseData.rootPoses = " + repr(self.poseData.rootPoses) + "\n"
+		saveFile += "self.poseData.localPostures = " + repr(self.poseData.localPostures) + "\n"
 
 		saveFile += "mapHypIDs = " + repr(self.mapHyps.keys()) + "\n"
 
@@ -445,63 +625,6 @@ class BayesMapper:
 		nodeID = self.poseData.numNodes
 		self.nodeHash[nodeID] = newNode
 		self.poseData.numNodes += 1
-
-
-	@logFunction
-	def selectSplice(self, mapHyp, nodeID1, nodeID2, medial1, medial2, estPose1, estPose2, orderedPathIDs1, orderedPathIDs2):
-		
-		splicedPaths1 = mapHyp.splicePathIDs(orderedPathIDs1)
-		splicedPaths2 = mapHyp.splicePathIDs(orderedPathIDs2)
-
-		
-		medialSpline1 = SplineFit(medial1, smooth=0.1)
-		medial1_vec = medialSpline1.getUniformSamples()
-		medialSpline2 = SplineFit(medial2, smooth=0.1)
-		medial2_vec = medialSpline2.getUniformSamples()
-
-
-		print "received", len(splicedPaths1), "spliced paths from path IDs", orderedPathIDs1
-		print "received", len(splicedPaths2), "spliced paths from path IDs", orderedPathIDs2
-
-		" departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2 |"
-		" departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2 "
-
-		poseOrigin1 = Pose(estPose1)
-		globalMedial1 = []
-		for p in medial1:
-			globalMedial1.append(poseOrigin1.convertLocalToGlobal(p))
-
-		results1 = []		
-		for k in range(len(splicedPaths1)):
-			path = splicedPaths1[k]			
-			path = orientPath(path, globalMedial1)
-			result = getMultiDeparturePoint(path, medial1_vec, estPose1, estPose1, orderedPathIDs1, nodeID1)
-			results1.append(result+(k,))
-
-
-		results1 = sorted(results1, key=itemgetter(14))
-		results1 = sorted(results1, key=itemgetter(12), reverse=True)				
-
-		poseOrigin2 = Pose(estPose2)
-		globalMedial2 = []
-		for p in medial2:
-			globalMedial2.append(poseOrigin2.convertLocalToGlobal(p))
-
-		results2 = []		
-		for k in range(len(splicedPaths2)):
-			path = splicedPaths2[k]			
-			path = orientPath(path, globalMedial2)
-			result = getMultiDeparturePoint(path, medial2_vec, estPose2, estPose2, orderedPathIDs2, nodeID2)
-			results2.append(result+(k,))
-
-		results2 = sorted(results2, key=itemgetter(14))
-		results2 = sorted(results2, key=itemgetter(12), reverse=True)				
-
-
-		""" NOTE:  We only discriminated based on node k but not node k+1 """
-		kIndex = results1[0][15]
-
-		return splicedPaths1[kIndex]
 
 
 	@logFunction
@@ -676,54 +799,6 @@ class BayesMapper:
 			
 
 
-		"""
-		for path in mapHyp.theoryMedialLongPaths:
-			xP = []
-			yP = []
-			for p in path:
-				xP.append(p[0])
-				yP.append(p[1])
-
-			pylab.plot(xP,yP, color='k')
-
-			globJuncPose = self.getGlobalJunctionPose(pathID)
-			if globJuncPose != None:
-				pylab.scatter([globJuncPose[0],], [globJuncPose[1],], color='k')
-
-		"""
-
-		"""
-		
-		xP = []
-		yP = []
-		for p in vertices:
-			xP.append(p[0])
-			yP.append(p[1])
-		pylab.plot(xP,yP, color='r')
-		
-		sizes = []
-		for path in longPaths:
-			sizes.append(len(path))
-		
-		bufStr1 = ""
-		for dist in juncDists:
-			if dist != None:
-				bufStr1 += "%1.2f " % dist
-
-
-		bufStr2 = ""
-		for juncAngs in juncAngSet:
-			for angs in juncAngs:
-				if angs != None:
-					bufStr2 += "%1.2f %1.2f " % (angs[0],angs[1])
-		
-		pylab.axis("equal")
-		pylab.title("Path %d %s %s %s" % (pathID, sizes,bufStr1,bufStr2))
-		pylab.savefig("medialOut2_%04u.png" % self.topCount)
-		print "saving medialOut2_%04u.png" % self.topCount
-		self.topCount += 1
-		"""
-
 		""" convert the controlPose to coordinates local to the parent frame """
 		parentPathIDs = mapHyp.getParentHash()
 
@@ -733,15 +808,6 @@ class BayesMapper:
 
 
 		for k in pathIDs:
-			"""
-			xP = []
-			yP = []
-			
-			for p in mapHyp.paths[k]:
-				xP.append(p[0])
-				yP.append(p[1])
-			ax3.plot(xP,yP, color=self.colors[k], linewidth=4)
-			"""
 
 			shootControlPose_G = globalControlPoses_G[k]
 			currFrame = Pose(shootControlPose_G)
@@ -761,41 +827,6 @@ class BayesMapper:
 			nodeSet = mapHyp.getNodes(k)
 
 			print "drawing pathID", k, "for nodes:", nodeSet
-			"""
-			for nodeID in nodeSet:
-				xP = []
-				yP = []
-
-				estPose1 = mapHyp.nodePoses[nodeID]
-		
-				if self.poseData.isBowties[nodeID]:			
-					hull1 = self.poseData.aHulls[nodeID]
-					#medial1 = self.poseData.medialAxes[nodeID]
-					#hull1 = computeBareHull(self.nodeHash[nodeID], sweep = False, static = True)
-				else:
-					#hull1 = computeBareHull(self.nodeHash[nodeID], sweep = False)
-					hull1 = self.poseData.aHulls[nodeID]
-		
-				" set the origin of pose 1 "
-				poseOrigin = Pose(estPose1)
-		
-				points = []
-				for p in hull1:
-					p1 = poseOrigin.convertLocalToGlobal(p)
-					points.append(p1)
-				
-				for p in points:
-					xP.append(p[0])
-					yP.append(p[1])
-				
-				if nodeID == highestNodeID:
-					ax3.plot(xP,yP, color=(0,0,0))
-				elif nodeID == highestNodeID-1:
-					ax3.plot(xP,yP, color=(0.5,0.5,0.5))
-				else:
-					ax3.plot(xP,yP, color=self.colors[k])
-			"""
-					
 			
 			xP = []
 			yP = []
@@ -803,10 +834,7 @@ class BayesMapper:
 				xP.append(p[0])
 				yP.append(p[1])
 				
-			#ax3.plot(xP,yP, '--', color=self.colors[k], linewidth=4)
-			#ax4.plot(xP,yP, '--', color=self.colors[k], linewidth=4)
 			ax3.plot(xP,yP, color=self.colors[k], linewidth=1)
-			#ax4.plot(xP,yP, color=self.colors[k], linewidth=4)
 
 		for k in pathIDs:
 
@@ -814,26 +842,6 @@ class BayesMapper:
 			if globJuncPose != None:
 				ax3.scatter([globJuncPose[0],], [globJuncPose[1],], color='k', zorder=10)
 
-
-		#trimmedPaths = mapHyp.trimmedPaths
-		
-		#for k,path in trimmedPaths.iteritems():
-		#	print "path has", len(path), "points"
-		#	xP = []
-		#	yP = []
-		#	for p in path:
-		#		xP.append(p[0])
-		#		yP.append(p[1])
-
-		#	ax4.plot(xP,yP, color = self.colors[k], linewidth=4)
-
-		#	globJuncPose = mapHyp.getGlobalJunctionPose(k)
-		#	if globJuncPose != None:
-		#		ax4.scatter([globJuncPose[0],], [globJuncPose[1],], color='k')
-			
-
-
-		#pylab.xlim(-4,4)
 
 		#self.plotEnv()
 		self.plotEnv(ax1)
@@ -844,17 +852,11 @@ class BayesMapper:
 		print "quadPath:", self.pathDrawCount
 		printStack()
 
-		#pylab.xlim(-10, 12)
-		#pylab.ylim(-10, 10)
-		#ax3.set_title("paths: %s numNodes: %d %d, hyp %d %3.2f" % (repr(mapHyp.getPathIDs()), self.poseData.numNodes, highestNodeID, mapHyp.hypothesisID, mapHyp.utility))
-		#ax4.set_title("paths: %s numNodes: %d %d, hyp %d %3.2f" % (repr(mapHyp.getPathIDs()), self.poseData.numNodes, highestNodeID, mapHyp.hypothesisID, mapHyp.utility))
-
 		ax1.set_title("Pose Robot Static Postures")
 		ax2.set_title("Pose Alpha Shapes")
 		ax3.set_title("Pose Union Medial Axes")
 		ax4.set_title("Trimmed Paths")
 
-		#foo = "paths: %s, nodeID: %d, hyp %d %3.2f" % (repr(mapHyp.getPathIDs()), highestNodeID, mapHyp.hypothesisID, mapHyp.utility)
 		fig.suptitle("paths: %s, nodeID: %d, hyp %d %3.2f" % (repr(mapHyp.getPathIDs()), highestNodeID, mapHyp.hypothesisID, mapHyp.mapOverlapSum), fontsize=18, y=0.99)
 		plt.savefig("quadPath_%04u_%04u.png" % (highestNodeID, mapHyp.hypothesisID))
 

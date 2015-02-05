@@ -6,6 +6,31 @@ from math import sqrt
 
 
 
+def nodeToLocalLandmarks(pathID, nodeLandmarks, pathClasses, exemptNodes = []):
+
+	""" collect landmarks that we can localize against """
+	landmarks_L = []
+
+	nodeSet = pathClasses[pathID]["nodeSet"]
+
+	for nodeID in nodeSet:
+
+		if nodeLandmarks[pathID][nodeID] != None:
+			landmarkPoint_N, threshN, landName = nodeLandmarks[pathID][nodeID]
+
+			nodePose_L = pathClasses[pathID]["localNodePoses"][nodeID]
+			poseFrame_L = Pose(nodePose_L)
+
+			if not nodeID in exemptNodes:
+				landmarkPoint_L = poseFrame_L.convertLocalToGlobal(landmarkPoint_N)
+				landmarkPoint_tuple = (landmarkPoint_L, threshN, landName)
+				landmarks_L.append(landmarkPoint_tuple)
+
+
+
+	return landmarks_L
+
+
 def nodeToGlobalLandmarks(controlPoses, pathIDs, parentHash, nodeLandmarks, pathClasses, exemptNodes = []):
 
 	#print "nodeLandmarks:", nodeLandmarks
@@ -53,17 +78,16 @@ def getNodeLandmark(nodeID, poseData):
 	targetNodeLandmark_N = None
 	spatialFeature = poseData.spatialFeatures[nodeID][0]
 
-	if spatialFeature["bloomPoint"] != None:
+	if spatialFeature["inflectionPoint"] != None:
+		landmarkPoint_N = spatialFeature["inflectionPoint"]
+		targetNodeLandmark_N = (landmarkPoint_N, BEND_THRESH, "bendPoint")
+	elif spatialFeature["bloomPoint"] != None:
 		landmarkPoint_N = spatialFeature["bloomPoint"]
 		targetNodeLandmark_N = (landmarkPoint_N, BLOOM_THRESH, "bloomPoint")
-
 	elif spatialFeature["archPoint"] != None:
 		landmarkPoint_N = spatialFeature["archPoint"]
 		targetNodeLandmark_N = (landmarkPoint_N, ARCH_THRESH, "archPoint")
 
-	elif spatialFeature["inflectionPoint"] != None:
-		landmarkPoint_N = spatialFeature["inflectionPoint"]
-		targetNodeLandmark_N = (landmarkPoint_N, BEND_THRESH, "bendPoint")
 
 
 	return targetNodeLandmark_N

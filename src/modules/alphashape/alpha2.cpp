@@ -48,6 +48,11 @@ int runAlg(int nPoints, double cRadius, double *cPoints, int *cNumVert, double *
 	// the number of solid components
 	int n = A.number_of_solid_components();
 
+
+	//std::cout << n << std::endl;
+	if (n > 1)
+		return 1;
+
 	int numVertices = 0;
 
 	CGAL::Unique_hash_map< Vertex_handle , int > V;

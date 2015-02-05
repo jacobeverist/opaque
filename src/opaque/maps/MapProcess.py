@@ -79,7 +79,7 @@ def getInPlaceGuess(poseData, nodeID1, nodeID2, estPose1, estPose2, supportLine,
 	
 
 	if poseData.numLeafs[nodeID1] > 2 or poseData.numLeafs[nodeID2] > 2:
-		transform, overHist = makeMultiJunctionMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose1, estPose2, isMove = False, inPlace = False, isForward = direction )
+		transform, overHist = makeMultiJunctionMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose1, estPose2, isMove = False, inPlace = True, isForward = direction )
 	else:
 		transform, overHist = makeMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose1, estPose2, isMove = False, inPlace = True, isForward = direction)
 	
@@ -94,7 +94,7 @@ def getInPlaceGuess(poseData, nodeID1, nodeID2, estPose1, estPose2, supportLine,
 		#estPose1 = mapHyp.nodePoses[nodeID1]		
 		resultSum3 = checkSupport(estPose1, medial2, nodeID1, nodeID2, offset3, supportLine)
 
-	print "INPLACE sums:", resultSum1, resultSum3
+	#print "INPLACE sums:", resultSum1, resultSum3
 
 	#poseOrigin = Pose(mapHyp.nodePoses[nodeID1])
 	poseOrigin = Pose(estPose1)
@@ -545,7 +545,7 @@ def makeMultiJunctionMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose
 						angleSum2 += ang2
 				
 				" select global path orientation based on which has the smallest angle between tangent vectors "
-				print i, "angleSum1 =", angleSum1, "angleSum2 =", angleSum2
+				#print i, "angleSum1 =", angleSum1, "angleSum2 =", angleSum2
 				if angleSum1 > angleSum2:
 					medial2Reverse = deepcopy(medial2)
 					medial2Reverse.reverse()
@@ -585,7 +585,7 @@ def makeMultiJunctionMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose
 					moveDist = -0.3
 					u2 = medialSpline2.getUOfDist(originU2, moveDist, distIter = 0.001)
 				
-				print "computed u2 =", u2, "from originU2 =", originU2
+				#print "computed u2 =", u2, "from originU2 =", originU2
 
 				u1 = originU1
 				angGuess = 0.0
@@ -594,7 +594,7 @@ def makeMultiJunctionMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose
 
 				transform = matrix([[result[0]], [result[1]], [result[2]]])
 				
-				print "making overlap constraint:", result[0], result[1], result[2]
+				#print "making overlap constraint:", result[0], result[1], result[2]
 				
 				angDiff = abs(diffAngle(diffOffset[2], transform[2,0]))			
 				#totalGuesses.append((angDiff, result[2], result[3], result[4]))
@@ -701,7 +701,7 @@ def makeMultiJunctionMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose
 						angleSum2 += ang2
 				
 				" select global path orientation based on which has the smallest angle between tangent vectors "
-				print i, "angleSum1 =", angleSum1, "angleSum2 =", angleSum2
+				#print i, "angleSum1 =", angleSum1, "angleSum2 =", angleSum2
 				if angleSum1 > angleSum2:
 					medial2Reverse = deepcopy(medial2)
 					medial2Reverse.reverse()
@@ -720,7 +720,7 @@ def makeMultiJunctionMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose
 					originU1 = 0.6
 					originU2 = 0.4
 					u2 = originU2
-					print "computed u2 =", u2, "from originU2 =", originU2
+					#print "computed u2 =", u2, "from originU2 =", originU2
 
 				else:
 					poseOrigin = Pose(estPose1)
@@ -747,7 +747,7 @@ def makeMultiJunctionMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose
 
 				transform = matrix([[result[0]], [result[1]], [result[2]]])
 				
-				print "making overlap constraint:", result[0], result[1], result[2]
+				#print "making overlap constraint:", result[0], result[1], result[2]
 				
 				angDiff = abs(diffAngle(diffOffset[2], transform[2,0]))			
 
@@ -801,8 +801,8 @@ def makeMultiJunctionMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose
 	
 	print "Multi-Junction Overlap of", nodeID1, "and", nodeID2
 	selectedIndex = 0
-	for k in range(len(results)):
-		print results[k]
+	#for k in range(len(results)):
+	#	print results[k]
 		
 
 	for k in range(len(results)):
@@ -848,7 +848,7 @@ def makeMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose1, estPose2, 
 		originU2 = 0.5
 		
 		u2 = originU2
-		print "computed u2 =", u2, "from originU2 =", originU2
+		#print "computed u2 =", u2, "from originU2 =", originU2
 
 	elif isMove:
 		
@@ -890,7 +890,7 @@ def makeMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose1, estPose2, 
 			
 			
 			#u2 = 0.4
-		print "computed u2 =", u2, "from originU2 =", originU2
+		#print "computed u2 =", u2, "from originU2 =", originU2
 		 
 	else:
 		poseOrigin = Pose(estPose1)
@@ -914,12 +914,12 @@ def makeMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose1, estPose2, 
 	u1 = originU1
 	angGuess = 0.0
 
-	#result, hist = gen_icp.overlapICP_GPU2(estPose1, [u1, u2, angGuess], medial1, medial2, [0.0,0.0], [0.0,0.0], inPlace = inPlace, plotIter = False, n1 = nodeID1, n2 = nodeID2, uRange = uRange)
-	result, hist = gen_icp.overlapICP_GPU2(estPose1, [u1, u2, angGuess], medial1, medial2, [0.0,0.0], [0.0,0.0], inPlace = inPlace, plotIter = True, n1 = nodeID1, n2 = nodeID2, uRange = uRange)
+	result, hist = gen_icp.overlapICP_GPU2(estPose1, [u1, u2, angGuess], medial1, medial2, [0.0,0.0], [0.0,0.0], inPlace = inPlace, plotIter = False, n1 = nodeID1, n2 = nodeID2, uRange = uRange)
+	#result, hist = gen_icp.overlapICP_GPU2(estPose1, [u1, u2, angGuess], medial1, medial2, [0.0,0.0], [0.0,0.0], inPlace = inPlace, plotIter = True, n1 = nodeID1, n2 = nodeID2, uRange = uRange)
 
 	transform = matrix([[result[0]], [result[1]], [result[2]]])
 	
-	print "making overlap constraint:", result[0], result[1], result[2]
+	#print "making overlap constraint:", result[0], result[1], result[2]
 
 	return transform, hist
 
@@ -975,7 +975,13 @@ def addToPaths2(shootIDs, particleIDs, hypSet, nodeID1, nodeID2):
 	""" check for branching conditions from path, spawn new hypotheses """
 	hypSet, shootIDs, particleIDs = checkForeBranch2(hypSet, nodeID1, nodeID2, shootIDs, particleIDs)
 
+	print "mid memberShootIDs:", hypSet[0].memberShootIDs1, hypSet[0].memberShootIDs2
+
 	hypSet, shootIDs, particleIDs = checkBackBranch2(hypSet, nodeID1, nodeID2, shootIDs, particleIDs)
+
+	print "final memberShootIDs:", hypSet[0].memberShootIDs1, hypSet[0].memberShootIDs2
+
+
 
 	addNodesToShoot(hypSet, nodeID1, nodeID2)
 
@@ -1030,7 +1036,7 @@ def addNodesToShoot(hypSet, nodeID1, nodeID2):
 		
 		" GET THE ORDERED LIST OF OVERLAPPING PATHS FOR EACH NODE "
 
-		memberShootIDs1 = mapHyp.memberShootIDs1
+		memberShootIDs1 = deepcopy(mapHyp.memberShootIDs1)
 		print "memberShootIDs1:", memberShootIDs1
 
 		isNewID = False
@@ -1038,6 +1044,11 @@ def addNodesToShoot(hypSet, nodeID1, nodeID2):
 			if shootID not in mapHyp.globalLongPaths.keys():
 				isNewID = True
 				mapHyp.addNode(nodeID1,shootID)
+
+		#if not isNewID:
+		#	memberShootIDs1.sort(reverse=True)	
+		#	mostJuniorShootID = memberShootIDs1[0]
+		#	mapHyp.addNode(nodeID1,mostJuniorShootID)
 
 		if not isNewID:
 
@@ -1079,7 +1090,7 @@ def addNodesToShoot(hypSet, nodeID1, nodeID2):
 
 
 
-		memberShootIDs2 = mapHyp.memberShootIDs2
+		memberShootIDs2 = deepcopy(mapHyp.memberShootIDs2)
 		print "memberShootIDs2:", memberShootIDs2
 
 		isNewID = False
@@ -1087,6 +1098,11 @@ def addNodesToShoot(hypSet, nodeID1, nodeID2):
 			if shootID not in mapHyp.globalLongPaths.keys():
 				isNewID = True
 				mapHyp.addNode(nodeID2,shootID)
+
+		#if not isNewID:
+		#	memberShootIDs2.sort(reverse=True)	
+		#	mostJuniorShootID = memberShootIDs2[0]
+		#	mapHyp.addNode(nodeID2,mostJuniorShootID)
 
 		if not isNewID:
 
@@ -1240,7 +1256,7 @@ def computeLocalDivergence2(hypSet, nodeID1, nodeID2):
 
 		mapHyp.departureResultSet1 = result1
 		mapHyp.overlapSplice1 = sPath1
-		mapHyp.memberShootIDs1 = sPath1['memberShootIDs']
+		mapHyp.memberShootIDs1 = deepcopy(sPath1['memberShootIDs'])
 
 		if len(resultSet2) > 1:
 			contigFrac0 = resultSet2[0][12]
@@ -1274,7 +1290,10 @@ def computeLocalDivergence2(hypSet, nodeID1, nodeID2):
 
 		mapHyp.departureResultSet2 = result2
 		mapHyp.overlapSplice2 = sPath2
-		mapHyp.memberShootIDs2 = sPath2['memberShootIDs']
+		mapHyp.memberShootIDs2 = deepcopy(sPath2['memberShootIDs'])
+
+
+		print "init memberShootIDs:", mapHyp.memberShootIDs1, mapHyp.memberShootIDs2
 
 
 @logFunction
@@ -1478,6 +1497,9 @@ def checkForeBranch2(hypSet, nodeID1, nodeID2, shootIDs, particleIDs):
 
 		shootIDs, pathBranchIDs = branchHyp.determineBranchPair2(nodeID1, nodeID2, frontExist1, frontExist2, frontInterior1, frontInterior2, depAngle1, depAngle2, depPoint1, depPoint2, dirFlag, isUnique1, isUnique2, shootIDs)
 
+
+		print "fore pathBranchIDs:", pathBranchIDs
+
 		if pathBranchIDs[0] != None:
 			branchHyp.memberShootIDs1.append(pathBranchIDs[0])
 
@@ -1673,6 +1695,8 @@ def checkBackBranch2(hypSet, nodeID1, nodeID2, shootIDs, particleIDs):
 
 
 		shootIDs, pathBranchIDs = branchHyp.determineBranchPair2(nodeID1, nodeID2, backExist1, backExist2, backInterior1, backInterior2, depAngle1, depAngle2, depPoint1, depPoint2, dirFlag, isUnique1, isUnique2, shootIDs)
+
+		print "back pathBranchIDs:", pathBranchIDs
 
 		if pathBranchIDs[0] != None:
 			branchHyp.memberShootIDs1.append(pathBranchIDs[0])

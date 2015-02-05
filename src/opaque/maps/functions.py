@@ -1,9 +1,12 @@
 from math import *
 from copy import *
 from func import IsContained
-from numpy import matrix
+from numpy import matrix, exp, power
 import sys
 import traceback
+
+def gaussian(x, mu, stdDev):
+	return exp(-power(x - mu, 2.) / (2 * power(stdDev, 2.)))
 
 def logFunction(func):
 

@@ -126,8 +126,8 @@ class LocalNode:
 		self.rootNode = rootNode
 		
 		
-		self.frontProbeError = []
-		self.backProbeError = []
+		self.frontProbeError = [0.0]
+		self.backProbeError = [0.0]
 
 		self._refnodes = []
 		self._refent = []
@@ -198,7 +198,8 @@ class LocalNode:
 		
 		self.hasDeparture = False
 		
-		self.isFeatureless = None
+		#self.isFeatureless = None
+		self.isFeatureless = True
 				
 		#pylab.clf()
 
@@ -216,9 +217,14 @@ class LocalNode:
 		self.partnerNodeID = nodeID	
 		
 	def getIsFeatureless(self):
+
+		print "isBowtie:", self.isBowtie
+		return self.isFeatureless
 		
 		if self.isFeatureless != None:
 			return self.isFeatureless
+
+		""" not using the below calculation anymore """
 		
 		print "isBowtie:", self.isBowtie
 		
@@ -273,11 +279,11 @@ class LocalNode:
 			p_1, i_1, minDist = functions.findClosestPoint(linePoints2, p)
 			distances.append(minDist)
 			
-		sum = 0.0
+		sumVal = 0.0
 		for dist in distances:
-			sum += dist
+			sumVal += dist
 		
-		distAvg = sum / len(distances)
+		distAvg = sumVal / len(distances)
 		
 		print "node", self.nodeID, "has featurelessness of", distAvg
 		if distAvg > 0.04:
@@ -1201,8 +1207,6 @@ class LocalNode:
 			print "returning caseE"
 			return self.longPaths, self.medialLongPaths, self.medialTailCuts, self.longMedialWidths, self.bowtieValues
 
-			self.spatialFeatures.append(results)
-
 
 		
 		" FIND BOUNDING BOX "		
@@ -1438,7 +1442,7 @@ class LocalNode:
 			
 			self.longPaths[k] = realPath
 					
-		if True:
+		if False:
 			pylab.clf()
 	
 			for path in self.longPaths:
@@ -1634,9 +1638,9 @@ class LocalNode:
 
 
 			
-			if isIntersect1:
+			if self.faceDir and isIntersect1:
 				medial2.insert(0, point1)
-			if isIntersect2:
+			if not self.faceDir and isIntersect2:
 				medial2.append(point2)
 			
 
@@ -2084,11 +2088,19 @@ class LocalNode:
 
 				print "spatial", self.nodeID, contigInflection, maxDeriv, len(longPathWidth), contigPointIndex, contigBoundaries
 				print "mass deriv:", [(k, contigLen[k], contigArea[k], contigDensity[k], longPathWidth[contigPointIndex[k]]["angDeriv2"]) for k in range(len(contigPointIndex))]
+				print "contigArea:", self.nodeID, contigArea
+				print "contigLen:", self.nodeID, contigLen
+				print "contigDensity:", self.nodeID, contigDensity
 
 				#if maxDeriv >= 0.35:
 				#if maxDeriv >= 0.6 and longPathWidth[contigInflection-1]["angDeriv2"] < maxDeriv and longPathWidth[contigInflection+1]["angDeriv2"] < maxDeriv:
 				#if maxDeriv >= 0.6:
 				#if False:
+
+				""" use this calculation to determine the featureless property """
+				if maxDeriv >= 0.6:
+					self.isFeatureless = False
+
 				if self.useBend and maxDeriv >= 0.6:
 
 					inflectionPoint = None
@@ -2116,6 +2128,7 @@ class LocalNode:
 
 				else:
 					inflectionPoint = None
+
 
 				" conditions for a bloom detection "
 				bloomPoint = None
@@ -2159,12 +2172,15 @@ class LocalNode:
 
 					print self.nodeID, "arch boundaries:", frontBoundIndex, backBoundIndex, len(longPathWidth), cLen, dens, angDeriv, asymm, area, negArea, slopes[0]+slopes[1]
 					#print frontBoundIndex > 6, backBoundIndex < len(longPathWidth)-7, angDeriv < 0.03, cLen > 5, cLen <= 20, area > 0.1, (slopes[0]+slopes[1]) > 0.37
-					print frontBoundIndex > 6, backBoundIndex < len(longPathWidth)-7, angDeriv < 0.1, cLen > 5, cLen <= 20, area > 0.1, (slopes[0]+slopes[1]) > 0.37
+					#print frontBoundIndex > 6, backBoundIndex < len(longPathWidth)-7, angDeriv < 0.1, cLen > 5, cLen <= 20, area > 0.1, (slopes[0]+slopes[1]) > 0.37
+					print frontBoundIndex > 6, backBoundIndex < len(longPathWidth)-7, angDeriv < 0.1, cLen > 5, cLen <= 20, area > 0.1, (slopes[0]+slopes[1]) > 0.4
 
+					#ax2.annotate("%1.2f %1.2f %1.2f %1.3f %s" % (dens, asymm, area, negArea, repr(slopes[0]+slopes[1])), xy=(contigCenterMass[0], 0.3), xytext=(contigCenterMass[0], 0.8), color='b')
 
 					#if (frontBoundIndex > 6 and backBoundIndex < len(longPathWidth)-7) and angDeriv < 0.03 and cLen > 5 and cLen <= 20 and area > 0.2 and dens >= 0.03:
 					#if (frontBoundIndex > 6 and backBoundIndex < len(longPathWidth)-7) and angDeriv < 0.03 and cLen > 5 and cLen <= 20 and area > 0.2 and (slopes[0]+slopes[1]) > 0.37:
-					if (frontBoundIndex > 6 and backBoundIndex < len(longPathWidth)-7) and angDeriv < 0.1 and cLen > 5 and cLen <= 20 and area > 0.1 and (slopes[0]+slopes[1]) > 0.37:
+					#if (frontBoundIndex > 6 and backBoundIndex < len(longPathWidth)-7) and angDeriv < 0.1 and cLen > 5 and cLen <= 20 and area > 0.1 and (slopes[0]+slopes[1]) > 0.37:
+					if (frontBoundIndex > 6 and backBoundIndex < len(longPathWidth)-7) and angDeriv < 0.1 and cLen > 5 and cLen <= 20 and area > 0.1 and (slopes[0]+slopes[1]) > 0.40:
 						# and angDeriv < 0.1:
 						#pass and cLen < 25 and dens >= 0.03:
 						archPoint = longPathWidth[pointIndex]["linePoint"]
@@ -2172,6 +2188,16 @@ class LocalNode:
 						print "arch ACCEPT"
 					else:
 						print "arch REJECT"
+
+
+				for k in range(len(contigLen)):
+
+					if contigLen[k] > 40 and contigDensity[k] > 0.1:
+						print self.nodeID, "BOWTIE from spatial features"
+						self.isBowtie = True
+
+					#print "contigLen:", self.nodeID, contigLen
+					#print "contigDensity:", self.nodeID, contigDensity
 
 
 
@@ -2190,8 +2216,17 @@ class LocalNode:
 				results["contigNegArea"] = contigNegArea
 				results["contigSlopes"] = contigSlopes
 				results["medialWidths"] = longPathWidth
-				results["bloomPoint"] = bloomPoint
-				results["archPoint"] = archPoint
+				if self.isBowtie:
+					results["bloomPoint"] = None
+					results["archPoint"] = None
+				else:
+					results["bloomPoint"] = bloomPoint
+					results["archPoint"] = archPoint
+
+				""" bend feature overrides other features """
+				if inflectionPoint != None:
+					results["bloomPoint"] = None
+					results["archPoint"] = None
 
 
 				self.spatialFeatures.append(results)
@@ -2555,8 +2590,12 @@ class LocalNode:
 
 		greatCount, divSums = bowtieValues[0]
 		print "divSums:", greatCount, divSums
+
+		if self.isBowtie:
+			pass
+			print "BOWTIE"
 		
-		if divSums[2] < divSums[0] and divSums[2] < divSums[4]:
+		elif divSums[2] < divSums[0] and divSums[2] < divSums[4]:
 			self.isBowtie = True
 			print "BOWTIE"
 		elif greatCount >= 4:
@@ -2598,7 +2637,8 @@ class LocalNode:
 		longPaths, medialLongPaths, medialTailCuts, longMedialWidths, bowtieValues = self.computeFullSkeleton(hull)
 
 		#maxPath = deepcopy(longPaths[0])
-		maxPath = deepcopy(medialLongPaths[0])
+		#maxPath = deepcopy(medialLongPaths[0])
+		maxPath = deepcopy(medialTailCuts[0])
 
 		self.medialCComputed = True		
 		self.medialPathC = maxPath
@@ -3025,7 +3065,8 @@ class LocalNode:
 		
 		if len(points) > 0:
 				
-			self.c_vert = self.computeAlpha2(points, radius = 0.12)
+			#self.c_vert = self.computeAlpha2(points, radius = 0.12)
+			self.c_vert = self.computeAlpha2(points, radius = 0.4)
 			" cut out the repeat vertex "
 			self.c_vert = self.c_vert[:-1]
 			
@@ -3184,6 +3225,8 @@ class LocalNode:
 		random.seed(0)		
 		
 		isDone = False
+		#ALPHA_RADIUS = 0.1
+		ALPHA_RADIUS = 0.2
 		
 		while not isDone:
 	
@@ -3200,7 +3243,8 @@ class LocalNode:
 			try:			
 
 				saveFile = ""	
-				saveFile += "radius = " + repr(radius) + "\n"
+				#saveFile += "radius = " + repr(radius) + "\n"
+				saveFile += "radius = " + repr(ALPHA_RADIUS) + "\n"
 				saveFile += "perturbPoints = " + repr(perturbPoints) + "\n"
 				
 				isWritten = False
@@ -3214,7 +3258,7 @@ class LocalNode:
 					else:
 						isWritten = True
 	
-				vertices = alphamod.doAlpha(radius,perturbPoints)
+				vertices = alphamod.doAlpha(ALPHA_RADIUS,perturbPoints)
 				numVert = len(vertices)
 	
 				os.remove("doLocalAlphaInput_%08u.txt" % (alphaPlotCount))
@@ -3244,6 +3288,13 @@ class LocalNode:
 			except:
 				print "hull has holes!  retrying..."
 				#print sArr	
+	
+				sys.stdout.flush()
+				sys.stderr.flush()
+
+				""" slightly increase the alpha radius """
+				ALPHA_RADIUS += 0.01
+
 
 		return vertices
 

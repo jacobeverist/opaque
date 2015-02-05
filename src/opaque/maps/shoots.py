@@ -145,7 +145,8 @@ def computeSkeletonFromImage(medialPointSoup):
 	global medialCount
 
 	""" radius constant for alpha shape algorithm """
-	ALPHA_RADIUS = 0.2
+	#ALPHA_RADIUS = 0.2
+	ALPHA_RADIUS = 0.1
 
 
 	""" attempt to compute the alpha hull multiple times until it is successful """
@@ -219,6 +220,13 @@ def computeSkeletonFromImage(medialPointSoup):
 		except:
 			print "hull has holes!	retrying..."
 	
+			sys.stdout.flush()
+			sys.stderr.flush()
+
+			""" slightly increase the alpha radius """
+			ALPHA_RADIUS += 0.01
+
+
 	""" cut out the repeat vertex """
 	vertices = vertices[:-1]
 	
@@ -381,6 +389,7 @@ def computePathSegments(juncIDs, leafIDs, tree, gridHash, vertices):
 	leafSegments = []
 	internalSegments = []
 
+	juncNeighPaths = []
 	retPaths = []
 
 	if len(juncIDs) > 0:
@@ -399,6 +408,18 @@ def computePathSegments(juncIDs, leafIDs, tree, gridHash, vertices):
 				resultPath = getSegPaths(childNode, otherJuncIDs, leafIDs, [jID], tree, isVisited)
 				if len(resultPath) > 2:
 					retPaths.append(resultPath)
+				elif len(resultPath) == 2:
+
+					if resultPath[0] in juncIDs and resultPath[1] in juncIDs:
+
+						" in the rare case that two junction nodes are neighbors "
+						print "short path:", resultPath
+
+						juncNeighPaths.append(resultPath)
+
+					
+
+
 	else:
 		isVisited = {}
 		for k, v in tree.items():
@@ -461,6 +482,7 @@ def computePathSegments(juncIDs, leafIDs, tree, gridHash, vertices):
 	""" convert grid segments to real segments """
 	realLeafSegments = []
 	realInternalSegments = []
+	realJuncNeighPaths = []
 	for seg in leafSegments:
 		newSeg = []
 		for p in seg:
@@ -473,6 +495,12 @@ def computePathSegments(juncIDs, leafIDs, tree, gridHash, vertices):
 		for p in seg:
 			newSeg.append(gridHash[p])
 		realInternalSegments.append(newSeg)
+
+	for seg in juncNeighPaths:
+		newSeg = []
+		for p in seg:
+			newSeg.append(gridHash[p])
+		realJuncNeighPaths.append(newSeg)
 
 	#realJuncIDs = []
 	#for jID in juncIDs:
@@ -540,7 +568,8 @@ def computePathSegments(juncIDs, leafIDs, tree, gridHash, vertices):
 		internalPoints = internalSpline.getUniformSamples()
 		smoothInternalSegments.append(internalPoints)
 	
-	allRealSegments = longLeafSegments + realInternalSegments
+	#allRealSegments = longLeafSegments + realInternalSegments
+	allRealSegments = longLeafSegments + realInternalSegments + realJuncNeighPaths
 
 	smoothPathSegs = smoothLeafSegments + smoothInternalSegments
 
@@ -563,7 +592,26 @@ def computePathSegments(juncIDs, leafIDs, tree, gridHash, vertices):
 			dist = sqrt((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2)
 
 			skeletonGraph.add_edge(p1,p2,wt=dist)
+
+
+	#""" join junctions that are neighbors so we don't have disconnected graph (RARE) """
+	#for seg in realJuncNeighPaths:
+	#	realJuncNeighPaths.apend(newSeg)
 	
+	#for segIndex in range(len(allRealSegments)):
+
+	#	for segIndex2 in range(segIndex+1, len(allRealSegments)):
+	
+	#	for seg in allRealSegments:
+	#		for k in range(0,len(seg)-1):
+	#			p1 = tuple(seg[k])
+	#			p2 = tuple(seg[k+1])
+
+	#			dist = sqrt((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2)
+
+	#			skeletonGraph.add_edge(p1,p2,wt=dist)
+
+
 	"""
 	origControlOrigin = Pose(controlPose)
 
@@ -818,7 +866,7 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 		with junctions and leaves as terminals """
 	smoothLeafSegments, smoothInternalSegments, localSkeletonGraph, smoothLeafTerms = computePathSegments(junctions, leaves, uni_mst, gridHash, vertices)
 
-	print "computePathSegments:", len(smoothLeafSegments), len(smoothInternalSegments), "paths from", len(junctions), "junctions and", len(leaves), "leaves", [len(pMem) for pMem in smoothLeafSegments], [len(pMem) for pMem in smoothInternalSegments], "terms =", smoothLeafTerms
+	print pathID, "computePathSegments:", len(smoothLeafSegments), len(smoothInternalSegments), "paths from", len(junctions), "junctions and", len(leaves), "leaves", [len(pMem) for pMem in smoothLeafSegments], [len(pMem) for pMem in smoothInternalSegments], "terms =", smoothLeafTerms, "leaves =", leaves, "junctions =", junctions
 
 
 	"""
@@ -1173,6 +1221,7 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 	
 	maxNodeID = max(nodeSet)
 	if plotIter:
+		"""
 		pylab.clf()
 
 		for path in medialLongPaths:
@@ -1196,7 +1245,6 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 
 				pylab.plot(xP,yP, color='k')
 
-		#globalJunctionPose = self.getGlobalJunctionPose(pathID)
 		if globalJunctionPose != None:
 			pylab.scatter([globalJunctionPose[0],], [globalJunctionPose[1],], color='k')
 
@@ -1228,6 +1276,9 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 		pylab.title("Path %d %d %s %s %s" % (hypothesisID, pathID, sizes,bufStr1,bufStr2))
 		pylab.savefig("medialOut2_%02u_%03u_%04u.png" % (hypothesisID, maxNodeID, topCount))
 		print "saving medialOut2_%02u_%03u_%04u.png" % (hypothesisID, maxNodeID, topCount)
+
+		"""
+
 
 		" 1) plot the pose of local splines and postures "
 		" 2) plot the alpha shape of the union of pose alpha shapes and medial axis tree "
@@ -1264,18 +1315,19 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 				xP.append(p[0])
 				yP.append(p[1])
 
-			pylab.plot(xP,yP, color=color, linewidth=4)
+			#pylab.plot(xP,yP, color=color, linewidth=4)
+			pylab.plot(xP,yP, color='k', linewidth=4)
 
-		if globalJunctionPose != None:
+		#if globalJunctionPose != None:
 
-			for path in theoryMedialLongPaths:
-				xP = []
-				yP = []
-				for p in path:
-					xP.append(p[0])
-					yP.append(p[1])
+		#	for path in theoryMedialLongPaths:
+		#		xP = []
+		#		yP = []
+		#		for p in path:
+		#			xP.append(p[0])
+		#			yP.append(p[1])
 
-				pylab.plot(xP,yP, color='k')
+		#		pylab.plot(xP,yP, color='k')
 
 		#nodeSet = self.getNodes(pathID)
 
@@ -1286,13 +1338,7 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 
 			estPose1 = nodePoses[nodeID]
 	
-			if poseData.isBowties[nodeID]:			
-				hull1 = poseData.aHulls[nodeID]
-				#medial1 = poseData.medialAxes[nodeID]
-				#hull1 = computeBareHull(self.nodeHash[nodeID], sweep = False, static = True)
-			else:
-				#hull1 = computeBareHull(self.nodeHash[nodeID], sweep = False)
-				hull1 = poseData.aHulls[nodeID]
+			hull1 = poseData.aHulls[nodeID]
 	
 			" set the origin of pose 1 "
 			poseOrigin = Pose(estPose1)
@@ -1306,14 +1352,10 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 				xP.append(p[0])
 				yP.append(p[1])
 			
-			#if nodeID == highestNodeID:
-			#	pylab.plot(xP,yP, color=(0,0,0))
-			#elif nodeID == highestNodeID-1:
-			#	pylab.plot(xP,yP, color=(0.5,0.5,0.5))
-			#else:
-			#	pylab.plot(xP,yP, color=color)
-			pylab.plot(xP,yP, color=color)
-				
+			spatialFeature0 = poseData.spatialFeatures[nodeID][0]
+			isSpatialFeature0 = spatialFeature0["bloomPoint"] != None or spatialFeature0["archPoint"] != None or spatialFeature0["inflectionPoint"] != None
+
+			#pylab.plot(xP,yP, color=color, alpha=0.2)
 		
 		xP = []
 		yP = []
@@ -1321,8 +1363,10 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 			xP.append(p[0])
 			yP.append(p[1])
 			
-		pylab.plot(xP,yP, '--', color=color, linewidth=4)
+		#pylab.plot(xP,yP, '--', color=color, linewidth=4)
+		pylab.plot(xP,yP, color='k', linewidth=2)
 
+		"""
 		xP = []
 		yP = []
 		for point_L, pThresh, pName in localLandmarks:
@@ -1331,9 +1375,9 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 
 		pylab.scatter(xP, yP, zorder=9, color='k')
 
-		#globalJunctionPose = self.getGlobalJunctionPose(pathID)
 		if globalJunctionPose != None:
 			pylab.scatter([globalJunctionPose[0],], [globalJunctionPose[1],], color='m', zorder=10)
+		"""
 
 		#self.plotEnv()
 		
@@ -1342,9 +1386,149 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 		pylab.axis("equal")
 		pylab.title("Path %d %d %d" % (hypothesisID, pathID, maxNodeID))
 		#pylab.title("paths: %s numNodes: %d %d, hyp %d %3.2f" % (repr(mapHyp.getPathIDs()), poseData.numNodes, highestNodeID, mapHyp.hypothesisID, mapHyp.utility))
-		pylab.savefig("pathAndHull_%02u_%03u_%04u.png" % (hypothesisID, maxNodeID, topCount))
+		pylab.savefig("pathAndHull_%02u_%03u_%02u_%04uc.png" % (hypothesisID, maxNodeID, pathID, topCount))
 
 		#self.topCount += 1
+
+		pylab.clf()
+			
+		xP = []
+		yP = []
+		
+		#for path in medialLongPaths:
+		#	xP = []
+		#	yP = []
+		#	for p in path:
+		#		xP.append(p[0])
+		#		yP.append(p[1])
+
+		#	pylab.plot(xP,yP, color=color, linewidth=4, alpha=1.0)
+
+		print "drawing pathID", pathID, "for nodes:", nodeSet
+		for nodeID in nodeSet:
+
+			spatialFeature0 = poseData.spatialFeatures[nodeID][0]
+			isSpatialFeature0 = spatialFeature0["bloomPoint"] != None or spatialFeature0["archPoint"] != None or spatialFeature0["inflectionPoint"] != None
+
+			#if isSpatialFeature0:
+			if True:
+				xP = []
+				yP = []
+
+				estPose1 = nodePoses[nodeID]
+		
+				if poseData.isBowties[nodeID]:			
+					medial1 = poseData.medialAxes[nodeID]
+				else:
+					medial1 = poseData.medialAxes[nodeID]
+		
+				" set the origin of pose 1 "
+				poseOrigin = Pose(estPose1)
+		
+				points = []
+				for p in medial1:
+					p1 = poseOrigin.convertLocalToGlobal(p)
+					points.append(p1)
+
+				medialSpline = SplineFit(points, smooth=0.1)
+
+				smoothPoints = medialSpline.getUniformSamples()
+				
+				for p in smoothPoints:
+					xP.append(p[0])
+					yP.append(p[1])
+				
+
+				pylab.plot(xP,yP, color='k', alpha = 0.7)
+
+		#xP = []
+		#yP = []
+		#for point_L, pThresh, pName in localLandmarks:
+		#	xP.append(point_L[0])
+		#	yP.append(point_L[1])
+
+		#pylab.scatter(xP, yP, zorder=9, color='k')
+
+		print "pathAndHull:", topCount
+
+		pylab.axis("equal")
+		pylab.title("Path %d %d %d" % (hypothesisID, pathID, maxNodeID))
+		pylab.savefig("pathAndHull_%02u_%03u_%02u_%04u_a.png" % (hypothesisID, maxNodeID, pathID, topCount))
+
+		#self.topCount += 1
+
+		pylab.clf()
+	 		
+		print "drawing pathID", pathID, "for nodes:", nodeSet
+		for nodeID in nodeSet:
+			xP = []
+			yP = []
+
+			estPose1 = nodePoses[nodeID]
+	
+			hull1 = poseData.aHulls[nodeID]
+	
+			" set the origin of pose 1 "
+			poseOrigin = Pose(estPose1)
+	
+			points = []
+			for p in hull1:
+				p1 = poseOrigin.convertLocalToGlobal(p)
+				points.append(p1)
+			
+			for p in points:
+				xP.append(p[0])
+				yP.append(p[1])
+			
+			pylab.plot(xP,yP, color='k')
+
+		pylab.axis("equal")
+		pylab.title("Path %d %d %d" % (hypothesisID, pathID, maxNodeID))
+		pylab.savefig("pathAndHull_%02u_%03u_%02u_%04u_b.png" % (hypothesisID, maxNodeID, pathID, topCount))
+		pylab.clf()
+
+		colors = []
+		colors.append([127, 127, 255])
+		colors.append([127, 255, 127])
+		colors.append([255, 127, 127])
+		colors.append([255, 127, 255])
+		colors.append([255, 255, 127])
+		colors.append([127, 255, 255])
+
+
+		for color in colors:
+			color[0] = float(color[0])/256.0
+			color[1] = float(color[1])/256.0
+			color[2] = float(color[2])/256.0
+
+
+		xP = []
+		yP = []
+		
+		localSkeletonGraph = leaf2LeafPathJunctions["skeletonGraph"]
+
+		components = localSkeletonGraph.connected_components()
+
+		for edge in localSkeletonGraph.edges():
+		
+			globalNodePoint1 = edge[0]
+			globalNodePoint2 = edge[1]
+
+			xP = [globalNodePoint1[0], globalNodePoint2[0]]
+			yP = [globalNodePoint1[1], globalNodePoint2[1]]
+
+			compNum = components[globalNodePoint1]
+
+			#print "compNum:", compNum, colors[compNum]
+			#pylab.plot(xP,yP, color=colors[compNum])
+			pylab.plot(xP,yP, color='k')
+
+
+		pylab.axis("equal")
+		pylab.title("Path %d %d %d" % (hypothesisID, pathID, maxNodeID))
+		pylab.savefig("pathAndHull_%02u_%03u_%02u_%04ud.png" % (hypothesisID, maxNodeID, pathID, topCount))
+
+
 
 	print "juncAngSet:", juncAngSet
 
@@ -1523,6 +1707,8 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 @logFunction
 def spliceSkeletons(localSkeletons, controlPoses, junctionPoses, parentPathIDs):
 
+	global pathPlotCount
+
 	#SPLICE_DIST = 0.05
 	SPLICE_DIST = 0.2
 
@@ -1619,6 +1805,7 @@ def spliceSkeletons(localSkeletons, controlPoses, junctionPoses, parentPathIDs):
 
 
 	""" connect the children to their parents via the junction node """
+	"""
 	for pathID in pathIDs:
 		juncNode = junctionNodes[pathID]
 		parentPathID = parentPathIDs[pathID]
@@ -1647,14 +1834,17 @@ def spliceSkeletons(localSkeletons, controlPoses, junctionPoses, parentPathIDs):
 
 			print "add parent junc edge", juncNode, minParentNode, minParentDist
 			spliceSkeleton.add_edge(juncNode, minParentNode, wt=minParentDist)
+	"""
 	
 	skelIDs = globalSkeletons.keys()
 
 	#for j in range(len(globalSkeletons)):
 	#	for k in range(j, len(globalSkeletons)):
 
+	candPairs = []
+
 	for j in range(len(skelIDs)):
-		for k in range(j, len(skelIDs)):
+		for k in range(j+1, len(skelIDs)):
 			jID = skelIDs[j]
 			kID = skelIDs[k]
 
@@ -1670,9 +1860,11 @@ def spliceSkeletons(localSkeletons, controlPoses, junctionPoses, parentPathIDs):
 				node1 = nodes1[m]
 				node2 = nodes2[indices1[m]]
 
-				if dist1 <= SPLICE_DIST:
+				candPairs.append((dist1, node1, node2))
+
+				#if dist1 <= SPLICE_DIST:
 					#print "add_edge(", node1, node2, dist1
-					spliceSkeleton.add_edge(node1, node2, wt=dist1)
+				#	spliceSkeleton.add_edge(node1, node2, wt=dist1)
 	
 			for m in range(len(distances2)):
 				dist2 = distances2[m]
@@ -1680,10 +1872,81 @@ def spliceSkeletons(localSkeletons, controlPoses, junctionPoses, parentPathIDs):
 				node2 = nodes2[m]
 				node1 = nodes1[indices2[m]]
 
-				if dist2 <= SPLICE_DIST:
+				candPairs.append((dist2, node2, node1))
+
+				#if dist2 <= SPLICE_DIST:
 					#print "add_edge(", node1, node2, dist2
-					spliceSkeleton.add_edge(node2, node1, wt=dist2)
+				#	spliceSkeleton.add_edge(node2, node1, wt=dist2)
+	
+	candPairs.sort()
+
+	kIndex = 0
+	isConnected = False
+
+	while not isConnected and len(candPairs) > 0: 
+
+		while candPairs[kIndex][0] <= SPLICE_DIST:
+			cand = candPairs[kIndex]
+			spliceSkeleton.add_edge(cand[1], cand[2], wt=cand[0])
+
+			kIndex += 1
+
+
+		components = spliceSkeleton.connected_components()
+		compIDs = components.values()
+		compIDs = list(set(compIDs))
 		
+		print "compIDs:", compIDs
+
+		if len(compIDs) <= 1:
+			isConnected = True
+		
+		SPLICE_DIST += 0.01
+
+
+	pylab.clf()
+		
+	colors = []
+	colors.append([127, 127, 255])
+	colors.append([127, 255, 127])
+	colors.append([255, 127, 127])
+	colors.append([255, 127, 255])
+	colors.append([255, 255, 127])
+	colors.append([127, 255, 255])
+
+
+	for color in colors:
+		color[0] = float(color[0])/256.0
+		color[1] = float(color[1])/256.0
+		color[2] = float(color[2])/256.0
+
+
+	xP = []
+	yP = []
+	
+	components = spliceSkeleton.connected_components()
+
+	for edge in spliceSkeleton.edges():
+	
+		globalNodePoint1 = edge[0]
+		globalNodePoint2 = edge[1]
+
+		xP = [globalNodePoint1[0], globalNodePoint2[0]]
+		yP = [globalNodePoint1[1], globalNodePoint2[1]]
+
+		compNum = components[globalNodePoint1]
+
+		#print "compNum:", compNum, colors[compNum]
+		pylab.plot(xP,yP, color=colors[compNum])
+
+
+	pylab.axis("equal")
+	#pylab.title("Path %d %d %d" % (hypothesisID, pathID, maxNodeID))
+	pylab.savefig("spliceSkeleton_%04u.png" % pathPlotCount)
+
+	pathPlotCount += 1
+
+	
 	return spliceSkeleton
 
 @logFunction
@@ -1957,7 +2220,8 @@ def __remote_multiJointBranch(rank, qin, qout):
 				numNodes = job[10]
 				hypID = job[11]
 
-				result = computeJointBranch(localPathSegs, localTerms, localPaths, localSkeletons, controlPoses, tipPoints, junctionPoses, landmarks, parentPathIDs, arcDists, numNodes, hypID)
+				result = evaluateJointBranch(localPathSegs, localTerms, localPaths, localSkeletons, controlPoses, tipPoints, junctionPoses, landmarks, parentPathIDs, arcDists, numNodes, hypID)
+				#result = computeJointBranch(localPathSegs, localTerms, localPaths, localSkeletons, controlPoses, tipPoints, junctionPoses, landmarks, parentPathIDs, arcDists, numNodes, hypID)
 				#result = None
 
 				results.append(result)
@@ -3032,7 +3296,7 @@ def getSoupDivergence(globalJunctionPose, pointSoup, path2, angThresh = 0.8, hyp
 
 
 @logFunction
-def getSimpleSoupDeparture(tipPoint_G, globalJunctionPose, pointSoup, path2, angThresh = 0.8, hypothesisID = 0, numNodes = 0, pathID = 0, plotIter = False):
+def getSimpleSoupDeparture(tipPoint_G, globalJunctionPose, pointSoup, path2, angThresh = 0.8, hypothesisID = 0, numNodes = 0, pathID = 0, candControlPose=None, plotIter = False):
 
 	" return exception if we receive an invalid path "		  
 	if len(path2) == 0:
@@ -3168,6 +3432,8 @@ def getSimpleSoupDeparture(tipPoint_G, globalJunctionPose, pointSoup, path2, ang
 
 		pylab.clf()
 
+
+
 		xP = []
 		yP = []
 		for p in pointSoup:
@@ -3186,6 +3452,13 @@ def getSimpleSoupDeparture(tipPoint_G, globalJunctionPose, pointSoup, path2, ang
 		yP = [frontPose[1], backPose[1]]
 
 		pylab.scatter(xP,yP, color='b', linewidth=1,zorder=2)
+
+
+		xP = [candControlPose[0],]
+		yP = [candControlPose[1],]
+
+		pylab.scatter(xP, yP, color='r', linewidth=1,zorder=2)
+
 
 		pylab.axis("equal")
 		#pylab.title("hyp %d nodeID %d %1.2f %d %1.2f" % ( hypothesisID, numNodes, newBranchPoses_L[pathID][2], totalMatchCount, distSum ))
@@ -3612,7 +3885,7 @@ def getInitSkeletonBranchPoint(globalJunctionPose, currShootID, globalMedial_G, 
 			maxSpliceID = maxContigIndex
 			maxSkeletonContigFrac = maxContigFrac
 
-	#print "initSkeletonBranchPoint:", maxSkeletonID, maxSpliceSegID, maxSkeletonContigFrac
+	print "initSkeletonBranchPoint:", maxSkeletonID, maxSpliceID, maxSkeletonContigFrac
 
 	#controlSplice = shootSplicesByID_G[maxSkeletonID][maxSpliceID]
 	#controlTerm1_G, controlTerm2_G, controlSplice = shootSplices_G[maxSpliceID]
@@ -3691,18 +3964,18 @@ def getInitSkeletonBranchPoint(globalJunctionPose, currShootID, globalMedial_G, 
 	
 	""" compute the control point """
 	#commonU1, commonU2, commonP1, commonP2 = selectCommonOrigin(controlSeg, orientedMedial_G)
-	commonU1, commonU2, commonP1, commonP2 = selectCommonOrigin(controlSplice, orientedMedial_G)
-
-
-
-	""" get branch point from all skeletons """
-	branchPose_G, isDiverge, noTipDist, tipPoint_G = getSimpleSoupDeparture(None, globalJunctionPose, allPointSoup_G, globalMedial_G, angThresh = 2*pi)
+	commonU1, commonU2, commonP1, commonP2 = selectCommonOrigin(controlSplice, orientedMedial_G, plotIter=plotIter)
 
 
 	""" convert control pose from global to parent frame """
 	controlPose_G = commonP1
 	controlPose_G[2] = 0.0
 	controlParentID = maxSkeletonID
+
+	""" get branch point from all skeletons """
+	branchPose_G, isDiverge, noTipDist, tipPoint_G = getSimpleSoupDeparture(None, globalJunctionPose, allPointSoup_G, globalMedial_G, angThresh = 2*pi, candControlPose=controlPose_G, plotIter=plotIter)
+
+
 	#parentControlPose_G = globalControlPoses[controlParentID]
 	#shootFrame = Pose(parentControlPose_G)
 	#controlPose_P = shootFrame.convertGlobalPoseToLocal(controlPose_G)
@@ -3760,13 +4033,16 @@ def getSkeletonPath(skeleton, term1, term2):
 	endNode = minEndNode
 
 
-	print "nodes path from", startNode, "to", endNode
+	print "nodes path from", startNode, "to", endNode, minStartDist, minEndDist
 	shortestSpliceTree, shortestSpliceDist = skeleton.shortest_path(endNode)
 	try:
 		currNode = shortestSpliceTree[startNode]					 
 	except:
 		print repr(skeleton)
 		print repr(shortestSpliceTree)
+		#shortestSpliceTree, shortestSpliceDist = skeleton.shortest_path(startNode)
+		#print repr(shortestSpliceTree)
+		print skeleton.connected_components()
 		raise
 
 	splicedSkel = [startNode]
@@ -4329,6 +4605,145 @@ def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, 
 
 	return globJuncPose, controlPoint, angDeriv
 
+@logFunction
+def evaluateJointBranch(localPathSegsByID, localTerms, localPaths, localSkeletons, controlPoses, tipPoints, junctionPoses, landmarks, parentPathIDs, arcDists, numNodes=0, hypothesisID=0):
+
+	print "evaluateJointBranch()", numNodes
+	sys.stdout.flush()
+
+	
+	""" 
+	Evaluate and return only:
+	1. landmark cost
+	2. match count
+	3. overlap cost
+	"""
+
+
+
+	newBranchPoses_L = {0:None}
+	newBranchPoses_G = {0:None}
+	newTipPoints_L = {0:None}
+	newTipPoints_G = {0:None}
+	trimmedPaths = {}
+	branchTermPaths = {}
+	longestPaths = {0 : localPaths[0]}
+	arcDist = 0.0
+	newArcDist = 0.0
+
+	""" operate only the non-root skeletons """
+	allPathIDs = deepcopy(parentPathIDs.keys())
+	branchPathIDs = deepcopy(parentPathIDs.keys())
+	branchPathIDs.remove(0)
+	branchPathIDs.sort()
+
+	""" result object """
+	branchResult = {}
+	branchResult["branchPathIDs"] = branchPathIDs
+	branchResult["arcDists"] = arcDists
+	branchResult["controlSet"] = controlPoses
+	branchResult["matchCounts"] = {}
+	branchResult["costSum"] = {}
+
+	controlPoses_G = computeGlobalControlPoses(controlPoses, parentPathIDs)
+
+
+	pathSegsByID_G  = {}
+	for pathID in allPathIDs:
+		controlPose_G = controlPoses_G[pathID]
+		currFrame_G = Pose(controlPose_G)
+		localPathSegs = localPathSegsByID[pathID]
+		pathSegs_G = []
+		for k in range(len(localPathSegs)):
+			localSeg = localPathSegs[k]
+			placedSeg = []
+			for p in localSeg:
+				p1 = currFrame_G.convertLocalOffsetToGlobal(p)
+				placedSeg.append(p1)
+			pathSegs_G.append(placedSeg)
+		pathSegsByID_G[pathID] = pathSegs_G
+
+	for pathID in branchPathIDs:
+
+		#parentID = parentPathIDs[pathID]
+
+		#controlPose_P = controlPoses[pathID]
+
+		""" place the segments back into parent frame with control point from arc distance """
+		#localPathSegs = localPathSegsByID[pathID]
+		#childFrame = Pose(controlPose_P)
+		#childPathSegs_P = []
+		#for k in range(len(localPathSegs)):
+		#	localSeg = localPathSegs[k]
+		#	placedSeg = []
+		#	for p in localSeg:
+		#		p1 = childFrame.convertLocalOffsetToGlobal(p)
+		#		placedSeg.append(p1)
+		#	childPathSegs_P.append(placedSeg)
+
+		# FIXME:  add in parent skeleton, all other non-descendant skeletons
+		#parentPathSegs = localPathSegsByID[parentID]
+
+
+		allPathSegs = []
+		for skelID, otherSegs in pathSegsByID_G.iteritems():
+			if skelID != pathID:
+				allPathSegs += otherSegs
+
+		""" evaluate overlap of parent and child skeleton """
+		#lastCost1, matchCount1 = skeletonOverlapCost(childPathSegs_P, parentPathSegs, plotIter = False, numNodes = numNodes, pathID = pathID, arcDist = arcDists[pathID])
+		lastCost1, matchCount1 = skeletonOverlapCost(pathSegsByID_G[pathID], allPathSegs, plotIter = False, numNodes = numNodes, pathID = pathID, arcDist = arcDists[pathID])
+
+		""" store the computed branch point and evaluation results """
+		branchResult["matchCounts"][pathID] = matchCount1
+		branchResult["costSum"][pathID] = lastCost1
+
+	""" sum the match counts and cost across branches """
+	totalMatchCount = 0
+	totalCost = 0.0
+	for pathID in branchPathIDs:
+		totalMatchCount += branchResult["matchCounts"][pathID]
+		totalCost += branchResult["costSum"][pathID] 
+	
+	if totalMatchCount > 0:
+		branchResult["totalMatchCount"] = math.log(totalMatchCount)
+	else:
+		branchResult["totalMatchCount"] = 0
+
+	branchResult["totalCost"] = totalCost
+
+	landmarks_G = []
+	for pathID in allPathIDs:
+		currFrame = Pose(controlPoses_G[pathID])
+		for point_L, pointThresh, pointName in landmarks[pathID]:
+			point_G = currFrame.convertLocalToGlobal(point_L)
+			landmarks_G.append((point_G, pointThresh, pointName))
+	
+	LANDMARK_THRESH = 7.0
+	CLOSE_THRESH = 0.3
+
+	distSum = 0.0
+	for i in range(len(landmarks_G)):
+		p1 = landmarks_G[i][0]
+		thresh1 = landmarks_G[i][1]
+		for j in range(i+1, len(landmarks_G)):
+			p2 = landmarks_G[j][0]
+			thresh2 = landmarks_G[j][1]
+			dist = sqrt((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2)
+
+			maxThresh = thresh1
+			if thresh2 > thresh1:
+				maxThresh = thresh2
+
+			if dist < LANDMARK_THRESH:
+				distSum += sqrt(dist*dist/(thresh1*thresh1 + thresh2*thresh2))
+
+	branchResult["landmarkCost"] = distSum
+
+	return branchResult
+
+
+
 
 @logFunction
 def computeJointBranch(localPathSegsByID, localTerms, localPaths, localSkeletons, controlPoses, tipPoints, junctionPoses, landmarks, parentPathIDs, arcDists, numNodes=0, hypothesisID=0):
@@ -4430,7 +4845,7 @@ def computeJointBranch(localPathSegsByID, localTerms, localPaths, localSkeletons
 	spliceSkeleton_G = spliceSkeletons(localSkeletons, controlPoses_G, newBranchPoses_L, parentPathIDs)
 
 
-	splicedPaths_G = computeAllSplices3(controlPoses_G, localTerms, localPathSegsByID, spliceSkeleton_G)
+	splicedPaths_G = computeAllSplices4(controlPoses_G, localTerms, localPathSegsByID, spliceSkeleton_G)
 	
 	""" store the splices """
 	branchResult["splices_G"] = deepcopy(splicedPaths_G)
@@ -4534,23 +4949,23 @@ def computeJointBranch(localPathSegsByID, localTerms, localPaths, localSkeletons
 			trimPath_L = trimmedPaths[pathID]
 
 
-			for splicePath in splicedPaths_G:
+			#for splicePath in splicedPaths_G:
 
-				xP = []
-				yP = []
-				for p in splicePath:
-					xP.append(p[0])
-					yP.append(p[1])
-				pylab.plot(xP,yP, color='r', zorder=10, alpha=0.3)
+			#	xP = []
+			#	yP = []
+			#	for p in splicePath:
+			#		xP.append(p[0])
+			#		yP.append(p[1])
+			#	pylab.plot(xP,yP, color='r', zorder=10, alpha=0.3)
 
 
-			xP = []
-			yP = []
-			for p in trimPath_L:
-				p1 = childFrame.convertLocalToGlobal(p)
-				xP.append(p1[0])
-				yP.append(p1[1])
-				pylab.plot(xP,yP, color='k', alpha=0.8, zorder=8)
+			#xP = []
+			#yP = []
+			#for p in trimPath_L:
+			#	p1 = childFrame.convertLocalToGlobal(p)
+			#	xP.append(p1[0])
+			#	yP.append(p1[1])
+			#	pylab.plot(xP,yP, color='k', alpha=0.8, zorder=8)
 
 			#xP = []
 			#yP = []
@@ -4570,24 +4985,35 @@ def computeJointBranch(localPathSegsByID, localTerms, localPaths, localSkeletons
 
 				pylab.plot(xP,yP, color='k', alpha=0.2)
 
-			for tipPoint_G in tipPoints_G:
+			xP = []
+			yP = []
+			for i in range(len(landmarks_G)):
+				p1 = landmarks_G[i][0]
+				xP.append(p1[0])
+				yP.append(p1[1])
 
-				xP = [tipPoint_G[0],]
-				yP = [tipPoint_G[1],]
+			pylab.scatter(xP,yP,color='k')
 
-				pylab.scatter(xP,yP, color='b', zorder=9)
 
-			for tipPoint_G in oldTipPoints_G:
+			#for tipPoint_G in tipPoints_G:
 
-				xP = [tipPoint_G[0],]
-				yP = [tipPoint_G[1],]
+			#	xP = [tipPoint_G[0],]
+			#	yP = [tipPoint_G[1],]
 
-				pylab.scatter(xP,yP, color='y', zorder=9)
+			#	pylab.scatter(xP,yP, color='b', zorder=9)
 
-			pylab.scatter([newBranchPoses_G[pathID][0],], [newBranchPoses_G[pathID][1],], color='m', zorder = 9)
+			#for tipPoint_G in oldTipPoints_G:
+
+			#	xP = [tipPoint_G[0],]
+			#	yP = [tipPoint_G[1],]
+
+			#	pylab.scatter(xP,yP, color='y', zorder=9)
+
+			#pylab.scatter([newBranchPoses_G[pathID][0],], [newBranchPoses_G[pathID][1],], color='m', zorder = 9)
 			#pylab.scatter([controlPoses_G[pathID][0],], [controlPoses_G[pathID][1],], color='b')
 
 
+		"""
 		xP = []
 		yP = []
 		for pathID in allPathIDs:
@@ -4598,6 +5024,7 @@ def computeJointBranch(localPathSegsByID, localTerms, localPaths, localSkeletons
 				yP.append(point_G[1])
 
 		pylab.scatter(xP, yP, color='k', zorder=9)
+		"""
 
 
 		pylab.axis("equal")
@@ -4814,6 +5241,236 @@ def computeAllSplices2(controlPoses_G, localTerms, localSegments, spliceSkeleton
 
 		finalResults.append(splicePoints1)
 
+	return finalResults
+
+def computeAllSplices4(controlPoses_G, localTerms, localSegments, spliceSkeleton):
+
+	DIST_THRESH = 0.4
+	DIVERGE_THRESH = 0.8
+
+	globalTerms = {}
+
+	for pathID, terms in localTerms.iteritems():
+		globalTerms[pathID] = []
+		shootFrame = Pose(controlPoses_G[pathID])
+		for term in terms:
+			globalP = shootFrame.convertLocalToGlobal(term)
+			globalTerms[pathID].append(globalP)
+	
+	
+	globalSegments = {}
+
+	for pathID, segs in localSegments.iteritems():
+		globalSegments[pathID] = []
+		shootFrame = Pose(controlPoses_G[pathID])
+		for seg in segs:
+			globalSeg = []
+			for p in seg:
+				globalP = shootFrame.convertLocalOffsetToGlobal(p)
+				globalSeg.append(globalP)
+
+			globalSegments[pathID].append(globalSeg)
+	
+	""" of all the terms, find the ones that are not subsumed by other shoots """
+
+	allTerms_L = {}
+	allTerms_G = {}
+	currKeys = globalSegments.keys()
+
+	for currK1 in range(len(currKeys)): 
+
+		pathID1 = currKeys[currK1]
+		segs1 = globalSegments[pathID1]
+
+		terms_L = localTerms[pathID1]
+
+
+		shootFrame = Pose(controlPoses_G[pathID1])
+
+		allTerms_L[pathID1] = []
+		allTerms_G[pathID1] = []
+
+
+		for term1 in terms_L:
+
+			term1_G = shootFrame.convertLocalToGlobal(term1)
+
+			minDist2 = 1e100
+			minP2 = None
+			subSkelID = None
+
+			for currK2 in range(len(currKeys)): 
+
+				if currK2 != currK1:
+
+					pathID2 = currKeys[currK2]
+					segs2 = globalSegments[pathID2]
+
+					thisMinDist = 1e100
+
+					for seg2 in segs2:
+						for p in seg2:
+
+							dist2 = sqrt((p[0]-term1_G[0])**2 + (p[1]-term1_G[1])**2)
+
+							if dist2 < thisMinDist:
+								thisMinDist = dist2
+
+							if dist2 < minDist2:
+								minDist2 = dist2
+								minP2 = p
+								subSkelID = pathID2
+					
+					#if thisMinDist <= DIST_THRESH:
+					#	self.subsumptionMatrix[pathID1][pathID2] += 1
+
+					#otherTerms_G = self.globalTerms[pathID2]
+					#for p in otherTerms_G:
+
+					#	dist = sqrt((p[0]-term1_G[0])**2 + (p[1]-term1_G[1])**2)
+
+					#	if dist < DIST_THRESH:
+					#		self.terminalSimilarity[pathID1][pathID2] += 1
+
+			
+			print pathID1, minDist2, "terms:", term1_G
+			if minDist2 > DIST_THRESH:
+				allTerms_L[pathID1].append(term1)
+				allTerms_G[pathID1].append(term1_G)
+
+			else:
+
+				""" check if this terminal is close to another terminal in different shoot """
+				isCoincident = False
+				for currK2 in range(currK1+1, len(currKeys)): 
+					pathID2 = currKeys[currK2]
+					otherTerms_G = globalTerms[pathID2]
+					for p in otherTerms_G:
+
+						dist = sqrt((p[0]-term1_G[0])**2 + (p[1]-term1_G[1])**2)
+
+						if dist < DIST_THRESH:
+							isCoincident = True
+			
+				isUnique = True
+				for pathID, otherTerms_G in allTerms_G.iteritems():
+					for p in otherTerms_G:
+						dist = sqrt((p[0]-term1_G[0])**2 + (p[1]-term1_G[1])**2)
+
+						if dist < DIST_THRESH:
+							print term1_G, "is similar to", p
+							isUnique = False
+
+				if isCoincident and isUnique:
+					print "adding", term1_G
+					allTerms_L[pathID1].append(term1)
+					allTerms_G[pathID1].append(term1_G)
+
+
+
+	termList = []
+	pathIDs = allTerms_G.keys()
+
+	for pathID in pathIDs:
+		for term_G in allTerms_G[pathID]:
+			termList.append(term_G)
+	
+
+
+	termCombos = []
+	for j in range(len(termList)):
+		for k in range(j+1, len(termList)):
+			termCombos.append((termList[j], termList[k]))
+
+
+	finalResults = []
+
+
+	print "termCombos:", termCombos
+	
+	for termPath in termCombos:
+
+		memberShootIDs = {}
+		joinPairs = []
+
+		startPose = termPath[0]
+		endPose = termPath[1]
+
+		print "startPose, endPose:", startPose, endPose
+
+		minStartDist = 1e100
+		minStartNode = None
+		minEndDist = 1e100
+		minEndNode = None
+		
+		for edge in spliceSkeleton.edges():
+		
+			globalNodePoint1 = edge[0]
+			globalNodePoint2 = edge[1]
+
+			dist1 = sqrt((globalNodePoint1[0]-startPose[0])**2 + (globalNodePoint1[1]-startPose[1])**2)
+			dist2 = sqrt((globalNodePoint2[0]-startPose[0])**2 + (globalNodePoint2[1]-startPose[1])**2)
+
+			if dist1 < minStartDist:
+				minStartDist = dist1
+				minStartNode = globalNodePoint1
+
+			if dist2 < minStartDist:
+				minStartDist = dist2
+				minStartNode = globalNodePoint2
+
+			dist1 = sqrt((globalNodePoint1[0]-endPose[0])**2 + (globalNodePoint1[1]-endPose[1])**2)
+			dist2 = sqrt((globalNodePoint2[0]-endPose[0])**2 + (globalNodePoint2[1]-endPose[1])**2)
+
+			if dist1 < minEndDist:
+				minEndDist = dist1
+				minEndNode = globalNodePoint1
+
+			if dist2 < minEndDist:
+				minEndDist = dist2
+				minEndNode = globalNodePoint2
+
+
+		startNode = minStartNode
+		endNode = minEndNode
+
+
+		print "nodes path from", startNode, "to", endNode
+		shortestSpliceTree, shortestSpliceDist = spliceSkeleton.shortest_path(endNode)
+		currNode = shortestSpliceTree[startNode]					 
+
+		nodeAttrs = spliceSkeleton.get_node_attributes(startNode)
+		memberPathID = None
+		for attr in nodeAttrs:
+			if attr[0] == "pathID":
+				memberPathID = attr[1]
+
+		memberShootIDs[memberPathID] = None
+
+		splicedSkel = [startNode]
+		while currNode != endNode:
+			splicedSkel.append(currNode)
+
+			nodeAttrs = spliceSkeleton.get_node_attributes(currNode)
+			memberPathID = None
+			for attr in nodeAttrs:
+				if attr[0] == "pathID":
+					memberPathID = attr[1]
+
+			memberShootIDs[memberPathID] = None
+
+			nextNode = shortestSpliceTree[currNode]
+			currNode = nextNode
+		splicedSkel.append(currNode)
+
+		splicedSkel = ensureEnoughPoints(splicedSkel, max_spacing = 0.08, minPoints = 5)
+		spliceSpline1 = SplineFit(splicedSkel, smooth=0.1)
+		splicePoints1 = spliceSpline1.getUniformSamples()
+
+
+		finalResults.append(splicePoints1)
+		
+	
 	return finalResults
 
 
@@ -5672,7 +6329,7 @@ def skeletonOverlapCost(childPathSegs, parentPathSegs, plotIter = False, numNode
 
 
 @logFunction
-def selectCommonOrigin(globalPath1, globalPath2):
+def selectCommonOrigin(globalPath1, globalPath2, plotIter=False):
 
 	""" FIXME:  change function so that it always returns a common pair, biasing towards it's current location """
 	""" alternately, make a new function that gives the option to enforce locality to common pair """
@@ -5682,23 +6339,36 @@ def selectCommonOrigin(globalPath1, globalPath2):
 
 	globalSamples1 = globalSpline1.getUniformSamples(spacing = 0.04)
 	globalSamples2 = globalSpline2.getUniformSamples(spacing = 0.04)
+
+	print "globalSamples:", len(globalPath1), len(globalPath2), len(globalSamples1), len(globalSamples2)
+	#print "globalPath1:", globalPath1
+	#print "globalPath2:", globalPath2
 	
 	""" compute the local variance of the angle """
-	globalVar1 = computePathAngleVariance(globalSamples1)
-	globalVar2 = computePathAngleVariance(globalSamples2)
+	#globalVar1 = computePathAngleVariance(globalSamples1, varWidth=20)
+	#globalVar2 = computePathAngleVariance(globalSamples2, varWidth=20)
+	globalVar1 = computePathAngleVariance(globalSamples1, varWidth=50)
+	globalVar2 = computePathAngleVariance(globalSamples2, varWidth=50)
 
   
 	""" now lets find closest points and save their local variances """			
 	closestPairs = []
 	allPairs = []
 	TERM_DIST = 20
+	MATCH_THRESH = 0.5
 
 	""" stay 1/20th away from terminators of both shoot curves """
 	pathRail1 = int(len(globalSamples1) / 20.0)
 	pathRail2 = int(len(globalSamples2) / 20.0)
 
-	print "rails:", len(globalSamples1), len(globalSamples2), pathRail1, pathRail2
+	#print "rails:", len(globalSamples1), len(globalSamples2), pathRail1, pathRail2
 
+	maxDist = 0.0
+	minAllDist = 1e100
+	maxVar1 = 0.0
+	maxVar2 = 0.0
+	minVar1 = 1e100
+	minVar2 = 1e100
 	
 	for i in range(pathRail1, len(globalSamples1)-pathRail1):
 		pG = globalSamples1[i]
@@ -5714,8 +6384,32 @@ def selectCommonOrigin(globalPath1, globalPath2):
 				minDist = dist
 				minJ = j
 		
-		if True:
-			allPairs.append((i,minJ,minDist,globalVar1[i][0],globalVar2[minJ][0],globalVar1[i][1],globalVar2[minJ][1]))
+		#if True:
+		if minDist < MATCH_THRESH:
+
+			mean1 = globalVar1[i][0]
+			mean2 = globalVar2[minJ][0]
+
+			var1 = globalVar1[i][1]
+			var2 = globalVar2[minJ][1]
+
+			allPairs.append((i,minJ,minDist,mean1,mean2,var1,var2))
+			
+			if minDist > maxDist:
+				maxDist = minDist
+
+			if minAllDist > minDist:
+				minAllDist = minDist
+			
+			if maxVar1 < var1:
+				maxVar1 = var1
+			if minVar1 > var1:
+				minVar1 = var1
+
+			if maxVar2 < var2:
+				maxVar2 = var2
+			if minVar2 > var2:
+				minVar2 = var2
 
 	for j in range(pathRail2, len(globalSamples2)-pathRail2):
 		pM = globalSamples2[j]
@@ -5731,28 +6425,75 @@ def selectCommonOrigin(globalPath1, globalPath2):
 				minDist = dist
 				minI = i
 
-		if True:		
-			allPairs.append((minI,j,minDist,globalVar1[minI][0],globalVar2[j][0],globalVar1[minI][1],globalVar2[j][1]))
+		#if True:		
+		if minDist < MATCH_THRESH:
+
+			mean1 = globalVar1[minI][0]
+			mean2 = globalVar2[j][0]
+
+			var1 = globalVar1[minI][1]
+			var2 = globalVar2[j][1]
+
+			allPairs.append((minI,j,minDist,mean1,mean2,var1,var2))
+			print "vars:", var1, var2, minDist
 		
+			if minDist > maxDist:
+				maxDist = minDist
+
+			if minAllDist > minDist:
+				minAllDist = minDist
+			
+			if maxVar1 < var1:
+				maxVar1 = var1
+			if minVar1 > var1:
+				minVar1 = var1
+
+			if maxVar2 < var2:
+				maxVar2 = var2
+			if minVar2 > var2:
+				minVar2 = var2
+
 	" remove duplicates "
 	allPairs = list(set(allPairs))
 
 	""" sorty by match distance """
 	allPairs = sorted(allPairs, key=itemgetter(2))
+
+	print "min max thresh:", minVar1, minVar2, maxVar1, maxVar2, minAllDist, maxDist, math.log(minVar1), math.log(minVar2), math.log(maxVar1), math.log(maxVar2)
 	
 	maxDistThresh = allPairs[-1][2]
-	minDistThresh = 0.1
+	minDistThresh = 0.01
+	minVarThresh = 0.01
 
 	""" ensure that the while loop is executed at least once """
 	if minDistThresh > maxDistThresh:
 		maxDistThresh = minDistThresh
 	
-	print "minDistThresh,maxDistThresh =", allPairs[0][2], allPairs[-1][2]
+	#print "minDistThresh,maxDistThresh =", allPairs[0][2], allPairs[-1][2]
 
 	if len(allPairs) == 0:
 		raise
 
+	evalPairs = []
+
+	for pair in allPairs:			
+		evalCost = (maxDistThresh-pair[2]) * (math.log(maxVar1)-math.log(pair[5])) * (math.log(maxVar2)-math.log(pair[6]))
+		#evalCost = (maxDistThresh-pair[2]) * (math.log(pair[5]) - math.log(minVar1)) * (math.log(pair[6])-math.log(minVar2))
+		evalPairs.append(pair + (evalCost,))
+
+	evalPairs = sorted(evalPairs, key=itemgetter(7), reverse=True)
+	for pair in evalPairs:
+		print "evalPairs:", pair[2], math.log(maxVar1) - math.log(pair[5]), math.log(maxVar2) - math.log(pair[6]), pair[7], math.log(pair[5]), math.log(pair[6]), pair[3], pair[4], globalSamples1[pair[0]][2], globalSamples2[pair[1]][2]
+		#print "evalPairs:", pair[2], math.log(pair[5])-math.log(minVar1), math.log(pair[6])-math.log(minVar2), pair[7], math.log(pair[5]), math.log(pair[6])
+
+	originU2 = globalSpline2.findU(globalSamples2[evalPairs[0][1]])	
+	originU1 = globalSpline1.findU(globalSamples1[evalPairs[0][0]])
+
+	cPoint2 = globalSamples2[evalPairs[0][1]]
+	cPoint1 = globalSamples1[evalPairs[0][0]]
+
 	
+	"""
 	originU2 = 0.5
 	originU1 = 0.5
 
@@ -5762,13 +6503,13 @@ def selectCommonOrigin(globalPath1, globalPath2):
 	while minDistThresh <= maxDistThresh:
 		closestPairs = []
 		for pair in allPairs:			
-			if pair[2] < minDistThresh:				
+			if pair[2] < minDistThresh and pair[5] < minVarThresh and pair[6] < minVarThresh:				
 				closestPairs.append(pair)
 		
 		" sort by lowest angular variance"
 		closestPairs = sorted(closestPairs, key=itemgetter(5,6))
 
-		print len(closestPairs), "closest pairs for dist", minDistThresh
+		#print len(closestPairs), "closest pairs for dist", minDistThresh
 
 		if len(closestPairs) > 0:
 			originU2 = globalSpline2.findU(globalSamples2[closestPairs[0][1]])	
@@ -5776,10 +6517,64 @@ def selectCommonOrigin(globalPath1, globalPath2):
 
 			cPoint2 = globalSamples2[closestPairs[0][1]]
 			cPoint1 = globalSamples1[closestPairs[0][0]]
+
+			print "maxVar:", closestPairs[0][5], closestPairs[0][6], closestPairs[0][2]
 			
 			break
 		
-		minDistThresh += 0.1
+		minDistThresh += 0.01
+		minVarThresh += 0.01
+	"""
+
+
+	
+
+	if plotIter:
+
+		pylab.clf()
+
+		xP = []
+		yP = []
+		for p in globalSamples1:
+			xP.append(p[0])
+			yP.append(p[1])
+
+		pylab.plot(xP,yP, color='r')
+		#pylab.plot(xP,yP)
+
+		xP = []
+		yP = []
+		for p in globalSamples2:
+			xP.append(p[0])
+			yP.append(p[1])
+
+		pylab.plot(xP,yP, color='b')
+		#pylab.plot(xP,yP)
+
+
+		#print "globalSamples:", len(globalSamples1), len(globalSamples2)
+		#print "globalSamples:", xP
+
+
+		for pair in allPairs:
+
+			#if pair[2] <= minDistThresh:
+			xP = [globalSamples1[pair[0]][0], globalSamples2[pair[1]][0]]
+			yP = [globalSamples1[pair[0]][1], globalSamples2[pair[1]][1]]
+
+			pylab.plot(xP,yP, color='k', alpha=0.1)
+			pylab.scatter(xP,yP, color='k', alpha=0.1)
+
+		xP = [cPoint2[0], cPoint1[0]]
+		yP = [cPoint2[1], cPoint1[1]]
+		pylab.scatter(xP,yP, color='g', alpha=0.8)
+
+
+		pylab.axis("equal")
+		pylab.title("%1.3f %1.3f" % (minDistThresh, maxDistThresh))
+		pylab.savefig("selectCommonOrigin.png")
+
+		#print "allPairs:", allPairs
 	
 	u2 = originU2
 	u1 = originU1
@@ -5828,7 +6623,7 @@ def selectLocalCommonOrigin(globalPath, medial1, estPose1):
 	pathRail = int(len(globalSamples) / 20.0)
 	medialRail = int(len(globalMedialSamples) / 20.0)
 
-	print "rails:", len(globalSamples), len(globalMedialSamples), pathRail, medialRail
+	#print "rails:", len(globalSamples), len(globalMedialSamples), pathRail, medialRail
 
 	
 	for i in range(pathRail, len(globalSamples)-pathRail):
@@ -5893,7 +6688,7 @@ def selectLocalCommonOrigin(globalPath, medial1, estPose1):
 	if minDistThresh > maxDistThresh:
 		maxDistThresh = minDistThresh
 	
-	print "minDistThresh,maxDistThresh =", allPairs[0][2], allPairs[-1][2]
+	#print "minDistThresh,maxDistThresh =", allPairs[0][2], allPairs[-1][2]
 
 
 	if len(allPairs) == 0:
@@ -5912,7 +6707,7 @@ def selectLocalCommonOrigin(globalPath, medial1, estPose1):
 		" sort by lowest angular variance"
 		closestPairs = sorted(closestPairs, key=itemgetter(5,6))
 
-		print len(closestPairs), "closest pairs for dist", minDistThresh
+		#print len(closestPairs), "closest pairs for dist", minDistThresh
 
 		if len(closestPairs) > 0:
 			originU2 = medialSpline1.findU(medialSamples[closestPairs[0][1]])	
@@ -5929,39 +6724,42 @@ def selectLocalCommonOrigin(globalPath, medial1, estPose1):
 	return u1, u2
 
 
-def computePathAngleVariance(pathSamples):
+def computePathAngleVariance(pathSamples, varWidth = 40):
+
 	pathVar = []
 	
 	" compute the local variance of the angle "
-	VAR_WIDTH = 40
 	for i in range(len(pathSamples)):
+
+		" anchor value to measure angle in terms of difference.  avoids pi,-pi discontinuity "
+		anchorVal = pathSamples[i][2]
 		
-		lowK = i - VAR_WIDTH/2
+		lowK = i - varWidth/2
 		if lowK < 0:
 			lowK = 0
 			
-		highK = i + VAR_WIDTH/2
+		highK = i + varWidth/2
 		if highK >= len(pathSamples):
 			highK = len(pathSamples)-1
 		
 		localSamp = []
 		for k in range(lowK, highK+1):
-			localSamp.append(pathSamples[k][2])
+			localSamp.append(diffAngle(pathSamples[k][2],anchorVal))
 		
-		sum = 0.0
+		sumVal = 0.0
 		for val in localSamp:
-			sum += val
+			sumVal += val
 			
-		meanSamp = sum / float(len(localSamp))
+		meanSamp = sumVal / float(len(localSamp))
 		
 
-		sum = 0
+		sumVal = 0
 		for k in range(len(localSamp)):
-			sum += (localSamp[k] - meanSamp)*(localSamp[k] - meanSamp)
+			sumVal += (localSamp[k] - meanSamp)*(localSamp[k] - meanSamp)
 	
-		varSamp = sum / float(len(localSamp))
+		varSamp = sumVal / float(len(localSamp))
 		
-		pathVar.append((meanSamp, varSamp))		 
+		pathVar.append((normalizeAngle(meanSamp+anchorVal), varSamp))		 
 
 	return pathVar
 

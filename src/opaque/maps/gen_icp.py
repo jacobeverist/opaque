@@ -1260,7 +1260,10 @@ def overlapICP_GPU2(estPose1, initGuess, medialPoints1, medialPoints2, rootPose1
 	uHigh = medialSpline2.getUOfDist(u2, uRange, distIter = 0.001)
 	uLow = medialSpline2.getUOfDist(u2, -uRange, distIter = 0.001)
 	
-	if inPlace:
+	#if inPlace:
+	if False:
+		#uHigh = u2 + 0.08
+		#uLow = u2 - 0.08
 		uHigh = u2 + 0.08
 		uLow = u2 - 0.08
 
@@ -1286,7 +1289,8 @@ def overlapICP_GPU2(estPose1, initGuess, medialPoints1, medialPoints2, rootPose1
 	offset = computeOffset(point1, point2, ang1, ang2 + currAng)
 
 	costThresh = 0.004
-	minMatchDist = 2.0
+	#minMatchDist = 2.0
+	minMatchDist = 0.4
 	lastCost = 1e100
 	
 	startIteration = numIterations
@@ -1344,7 +1348,7 @@ def overlapICP_GPU2(estPose1, initGuess, medialPoints1, medialPoints2, rootPose1
 		for i in range(len(points2_offset)):
 			p_2 = poly2[i]
 
-			if isInCircle(p_2, radius1, center1):
+			if inPlace or isInCircle(p_2, radius1, center1):
 
 				" for every transformed point of A, find it's closest neighbor in B "
 				#p_1, minDist = findClosestPointInB(points1, p_2, [0.0,0.0,0.0])
@@ -1363,7 +1367,7 @@ def overlapICP_GPU2(estPose1, initGuess, medialPoints1, medialPoints2, rootPose1
 		for i in range(len(points1)):
 			p_1 = poly1[i]
 	
-			if isInCircle(p_1, radius2, center2):
+			if inPlace or isInCircle(p_1, radius2, center2):
 		
 				" for every point of B, find it's closest neighbor in transformed A "
 				p_2, i_2, minDist = findClosestPointInA(points2_offset, p_1)
@@ -1412,8 +1416,8 @@ def overlapICP_GPU2(estPose1, initGuess, medialPoints1, medialPoints2, rootPose1
 		currAng = functions.normalizeAngle(newAng)
 		currU = newU
 		
-		if inPlace:
-			print "currU =", currU, "currAng =", currAng, "newCost =", newCost
+		#if inPlace:
+		#	print "currU =", currU, "currAng =", currAng, "newCost =", newCost
 
 		" compute offset from newU and newAng"
 
@@ -1753,7 +1757,7 @@ def globalPathToNodeOverlapICP2(initGuess, globalPath, medialPoints, plotIter = 
 	if uLow <= 0.0:
 		uLow = 0.0
 
-	print "u1,u2,u3,uHigh,uLow,currU,currAng:", u1, u2, u3, uHigh, uLow, currU, currAng
+	#print "u1,u2,u3,uHigh,uLow,currU,currAng:", u1, u2, u3, uHigh, uLow, currU, currAng
 	
 	
 	uSet = [i*0.01 for i in range(100)]
@@ -1900,7 +1904,7 @@ def globalPathToNodeOverlapICP2(initGuess, globalPath, medialPoints, plotIter = 
 		#if plotIter and pose2[0] > 1.8:
 		#	print poses_2
 
-		print "newCost =", newCost
+		#print "newCost =", newCost
 
 		newU = newParam[0]
 		newAng = newParam[1]
@@ -1929,7 +1933,7 @@ def globalPathToNodeOverlapICP2(initGuess, globalPath, medialPoints, plotIter = 
 		isTerminate = False
 		if abs(lastCost - newCost) < costThresh or (numIterations - startIteration) > 10:
 			isTerminate = True
-			print "terminating globalOverlap_GPU2:", lastCost, newCost, costThresh, numIterations-startIteration
+			#print "terminating globalOverlap_GPU2:", lastCost, newCost, costThresh, numIterations-startIteration
 		
 		" update after check for termination condition "
 		lastCost = newCost

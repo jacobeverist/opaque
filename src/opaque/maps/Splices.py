@@ -182,6 +182,53 @@ def batchGlobalMultiFit(initGuesses, splices, medial, initPose, pathIDs, nodeID)
 	return knn
 
 
+def getPostureAngDiff(foreAngle0, foreAngle1, midAngle0, midAngle1, backAngle0, backAngle1):
+
+	foreAngDiff0 = abs(diffAngle(foreAngle0, foreAngle1))
+	midAngDiff0 = abs(diffAngle(midAngle0, midAngle1))
+	backAngDiff0 = abs(diffAngle(backAngle0, backAngle1))
+
+	""" sum the smallest two differences """
+	diffList = [foreAngDiff0, midAngDiff0, backAngDiff0]
+	diffList.sort()
+
+	return diffList[0] + diffList[1]
+
+def getTipAngles(medial2, estPose2):
+
+	poseOrigin = Pose(estPose2)
+
+	points2_offset = []
+	for p in medial2:
+		result = poseOrigin.convertLocalOffsetToGlobal(p)
+		points2_offset.append(result)
+
+
+	" tip angles "
+	angSum1 = 0.0
+	angSum2 = 0.0
+	angs1 = []
+	angs2 = []
+	phi1 = normalizeAngle(points2_offset[0][2])
+	phi2 = normalizeAngle(points2_offset[-1][2])
+	for i in range(0,20):
+		ang1 = normalizeAngle(points2_offset[i][2]-phi1)
+		ang2 = normalizeAngle(points2_offset[-i-1][2]-phi2)
+		angSum1 += ang1
+		angSum2 += ang2
+		
+		angs1.append(ang1+phi1)
+		angs2.append(ang2+phi2)
+
+	angle1 = angSum1 / 10.0 + phi1
+	angle2 = angSum2 / 10.0 + phi2
+
+	" invert one angle so opposite tips have opposite angles "
+	angle1 = normalizeAngle(angle1 + pi)
+
+
+
+	return angle1, angle2
 		
 
 
@@ -325,13 +372,14 @@ def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, node
 	" invert one angle so opposite tips have opposite angles "
 	angle1 = normalizeAngle(angle1 + pi)
 
-	print "ang1:", angle1, angs1
-	print "ang2:", angle2, angs2
-	print "diff:", diffAngle(angle1, angle2)
+	#print "ang1:", angle1, angs1
+	#print "ang2:", angle2, angs2
+	#print "diff:", diffAngle(angle1, angle2)
 	
 	distSum = 0.0
 	contigCount = 0
 	maxContig = 0
+	maxSum = 0.0
 	distances = []
 	indices = []
 	kdInput = []
@@ -352,16 +400,23 @@ def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, node
 
 		distances.append(minDist)
 		indices.append(i_1)
-		distSum += minDist
 		
 		if minDist < CONTIG_DIST:
 			contigCount += 1
+			distSum += minDist
+
 			if contigCount > maxContig:
 				maxContig = contigCount
+				maxSum = distSum
 		else:
 			contigCount = 0
+			distSum = 0.0
 	
-	overlapSum = distSum / float(len(points2_offset))
+	#overlapSum = distSum / float(len(points2_offset))
+	if maxContig > 0.0:
+		overlapSum = maxSum / float(maxContig)
+	else:
+		overlapSum = 1e100
 	
 	#print "maxContig,overlapSum:", maxContig, overlapSum
 
@@ -535,7 +590,7 @@ def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, node
 
 	angDiff2 = abs(diffAngle(initPose2[2], estPose2[2]))
 	
-	print "returning:", angDiff2, contigFrac, overlapSum
+	#print "returning:", angDiff2, contigFrac, overlapSum
 		
 	" sum of closest points on front and back "
 	" select the one with minimal cost "
@@ -652,7 +707,7 @@ def getMultiDeparturePoint(currPath, medial2, initPose2, estPose2, pathIDs, node
 		pylab.title("%d %s: [%d,%d] [%d,%d] %1.2f %1.2f %1.2f %1.2f" % (nodeID, repr(pathIDs), isExist1, isExist2, isInterior1, isInterior2, contigFrac, angDiff2, angle1, angle2))
 		pylab.savefig("multi_departure_%04u_%02u_%04u_%03u_%01u.png" % (nodeID, hypID, pathPlotCount, spliceIndex, particleIndex))
 			
-	print "multi_departure %d: %1.2f %1.2f %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, [%d,%d] [%d,%d], [%d,%d]" % (nodeID, angDiff2, contigFrac, maxFront, maxBack, dist1, dist2, matchVar1, matchVar2, angle1, angle2, isExist1, isExist2, isInterior1, isInterior2, frontDepI, backDepI)
+	#print "multi_departure %d: %1.2f %1.2f %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, %1.2f, [%d,%d] [%d,%d], [%d,%d]" % (nodeID, angDiff2, contigFrac, maxFront, maxBack, dist1, dist2, matchVar1, matchVar2, angle1, angle2, isExist1, isExist2, isInterior1, isInterior2, frontDepI, backDepI)
 	
 	
 	" if the medial axis does not overlap the path contiguously enough, mark a high discrepancy "
@@ -725,7 +780,7 @@ def orientPath(globalPath, globalRefPath, dist_thresh = 0.5):
 			angleSum2 += ang2
 	
 	" select global path orientation based on which has the smallest angle between tangent vectors "
-	print i, "angleSum1 =", angleSum1, "angleSum2 =", angleSum2
+	#print i, "angleSum1 =", angleSum1, "angleSum2 =", angleSum2
 	if angleSum1 > angleSum2:
 
 		#for k in range(len(pathPointsReverse)):
@@ -820,7 +875,7 @@ def orientPathLean(globalPath, globalRefPath, dist_thresh = 0.5):
 			angleSum2 += ang2
 	
 	" select global path orientation based on which has the smallest angle between tangent vectors "
-	print i, "angleSum1 =", angleSum1, "angleSum2 =", angleSum2
+	#print i, "angleSum1 =", angleSum1, "angleSum2 =", angleSum2
 	if angleSum1 > angleSum2:
 
 		#for k in range(len(pathPointsReverse)):
@@ -832,34 +887,6 @@ def orientPathLean(globalPath, globalRefPath, dist_thresh = 0.5):
 		orientedGlobalPath = pathPoints
 	
 	return orientedGlobalPath
-
-
-def getTipAngles(pathPoints):
-	
-	" tip angles "
-	angSum1 = 0.0
-	angSum2 = 0.0
-	angs1 = []
-	angs2 = []
-	phi1 = normalizeAngle(pathPoints[0][2])
-	phi2 = normalizeAngle(pathPoints[-1][2])
-	for i in range(10):
-		ang1 = normalizeAngle(pathPoints[i][2]-phi1)
-		ang2 = normalizeAngle(pathPoints[-i-1][2]-phi2)
-		angSum1 += ang1
-		angSum2 += ang2
-		
-		angs1.append(ang1+phi1)
-		angs2.append(ang2+phi2)
-	
-	angle1 = angSum1 / 10.0 + phi1
-	angle2 = angSum2 / 10.0 + phi2
-	
-	" invert one angle so opposite tips have opposite angles "
-	angle1 = normalizeAngle(angle1 + pi)
-
-
-	return angle1, angle2
 
 
 
