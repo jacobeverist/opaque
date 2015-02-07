@@ -139,14 +139,16 @@ def extendToHull(path, hull):
 
 	return currPath
 
+CONST_ALPHA_RADIUS = 0.1
+
 def computeSkeletonFromImage(medialPointSoup):
 
 	global alphaPlotCount
 	global medialCount
 
 	""" radius constant for alpha shape algorithm """
-	#ALPHA_RADIUS = 0.2
-	ALPHA_RADIUS = 0.1
+	#radius = 0.2
+	radius = CONST_ALPHA_RADIUS
 
 
 	""" attempt to compute the alpha hull multiple times until it is successful """
@@ -185,7 +187,7 @@ def computeSkeletonFromImage(medialPointSoup):
 	
 			""" the data to be input in text form """
 			saveFile = ""	 
-			saveFile += "ALPHA_RADIUS = " + repr(ALPHA_RADIUS) + "\n"
+			saveFile += "radius = " + repr(radius) + "\n"
 			saveFile += "perturbPoints = " + repr(perturbPoints) + "\n"
 
 			""" save the input data for debug purposes in case we crash """
@@ -201,7 +203,7 @@ def computeSkeletonFromImage(medialPointSoup):
 					isWritten = True
 
 			""" call CGAL alpha shape 2D function with noise-added points """
-			vertices = alphamod.doAlpha(ALPHA_RADIUS,perturbPoints)
+			vertices = alphamod.doAlpha(radius,perturbPoints)
 
 			""" delete the temporary file since we were successful """
 			os.remove("doAlphaInput_%08u.txt" % (alphaPlotCount))
@@ -224,7 +226,7 @@ def computeSkeletonFromImage(medialPointSoup):
 			sys.stderr.flush()
 
 			""" slightly increase the alpha radius """
-			ALPHA_RADIUS += 0.01
+			radius += 0.01
 
 
 	""" cut out the repeat vertex """
@@ -254,9 +256,9 @@ def computeSkeletonFromImage(medialPointSoup):
 
 
 	""" SPECIFY SIZE OF GRID AND CONVERSION PARAMETERS from the bounding box """
-	PIXELSIZE = 0.05
+	CONST_PIXELSIZE = 0.05
 	mapSize = 2*max(max(maxX,math.fabs(minX)),max(maxY,math.fabs(minY))) + 1
-	pixelSize = PIXELSIZE
+	pixelSize = CONST_PIXELSIZE
 	numPixel = int(2.0*mapSize / pixelSize + 1.0)
 	divPix = math.floor((2.0*mapSize/pixelSize)/mapSize)
 	
@@ -1709,8 +1711,8 @@ def spliceSkeletons(localSkeletons, controlPoses, junctionPoses, parentPathIDs):
 
 	global pathPlotCount
 
-	#SPLICE_DIST = 0.05
-	SPLICE_DIST = 0.2
+	#CONST_SPLICE_DIST = 0.05
+	CONST_SPLICE_DIST = 0.2
 
 
 	globalSkeletons = {}
@@ -1862,7 +1864,7 @@ def spliceSkeletons(localSkeletons, controlPoses, junctionPoses, parentPathIDs):
 
 				candPairs.append((dist1, node1, node2))
 
-				#if dist1 <= SPLICE_DIST:
+				#if dist1 <= CONST_SPLICE_DIST:
 					#print "add_edge(", node1, node2, dist1
 				#	spliceSkeleton.add_edge(node1, node2, wt=dist1)
 	
@@ -1874,7 +1876,7 @@ def spliceSkeletons(localSkeletons, controlPoses, junctionPoses, parentPathIDs):
 
 				candPairs.append((dist2, node2, node1))
 
-				#if dist2 <= SPLICE_DIST:
+				#if dist2 <= CONST_SPLICE_DIST:
 					#print "add_edge(", node1, node2, dist2
 				#	spliceSkeleton.add_edge(node2, node1, wt=dist2)
 	
@@ -1885,7 +1887,7 @@ def spliceSkeletons(localSkeletons, controlPoses, junctionPoses, parentPathIDs):
 
 	while not isConnected and len(candPairs) > 0: 
 
-		while candPairs[kIndex][0] <= SPLICE_DIST:
+		while candPairs[kIndex][0] <= CONST_SPLICE_DIST:
 			cand = candPairs[kIndex]
 			spliceSkeleton.add_edge(cand[1], cand[2], wt=cand[0])
 
@@ -1901,7 +1903,7 @@ def spliceSkeletons(localSkeletons, controlPoses, junctionPoses, parentPathIDs):
 		if len(compIDs) <= 1:
 			isConnected = True
 		
-		SPLICE_DIST += 0.01
+		CONST_SPLICE_DIST += 0.01
 
 
 	pylab.clf()
@@ -1986,68 +1988,6 @@ def __num_processors():
 		get_nprocs.restype = ctypes.c_int
 		get_nprocs.argtypes = []
 		return get_nprocs()
-
-def __remote_prof_multiBranch(rank, qin, qout):
-
-	try:
-		pid = os.getpid()
-		" while loop "		
-		#cProfile.run('__remote_multiBranch(rank, qin, qout)', "branch_%d.prof" % pid )
-		cProfile.runctx("__remote_multiBranch(rank, qin, qout)", globals(), locals(), "branch_%d.prof" % pid)	
-	
-	except:
-		traceback.print_exc()
-		print "Exception:", sys.exc_info()[0]
-
-
-def __remote_multiBranch(rank, qin, qout):
-
-
-	try:
-		#sys.stdout = open("branch_" + str(os.getpid()) + ".out", "w")
-		#sys.stderr = open("branch_" + str(os.getpid()) + ".err", "w")
-		sys.stdout = open("branch_" + str(rank) + ".out", "a")
-		sys.stderr = open("branch_" + str(rank) + ".err", "a")
-		print 'module name:', __name__
-		print 'parent process:', os.getppid()
-		print 'process id:', os.getpid()
-
-		print "started __remote_multiBranch"
-
-		while 1:
-			# read input queue (block until data arrives)
-			results = []
-			nc, args = qin.get()
-
-			foo = None
-			badVal = foo[0]
-			# process data
-			for job in args:
-
-				#branchJobs.append((pathID, parentID, origGlobJuncPose, childPath, parentPath, trimmedParent, smoothPathSegs, arcDist))
-
-				pathID = job[0]
-				parentID = job[1]
-				localPathSegs = job[2]
-				localPaths = job[3]
-				arcDist = job[4]
-				localSkeletons = job[5]
-				controlPoses = job[6]
-				junctionPoses = job[7]
-				parentPathIDs = job[8]
-				numNodes = job[9]
-				hypID = job[10]
-
-				result = computeBranch(pathID, parentID, localPathSegs, localPaths, arcDist, localSkeletons, controlPoses, junctionPoses, parentPathIDs, numNodes, hypID)
-
-				results.append(result)
-							   
-			# write to output queue
-			qout.put((nc,results))
-	except:
-		print "Worker process failed. Exiting"
-		qout.put((None,None))
-		raise
 
 
 def batchJointBranch(branchJobs):
@@ -2242,88 +2182,7 @@ def __remote_multiJointBranch(rank, qin, qout):
 		raise
 
 
-def batchBranch(branchJobs):
 
-	global renderGlobalPlotCount
-	global pool_branch
-	global qin_branch
-	global qout_branch
-
-	ndata = len(branchJobs)
-	
-	args = []
-	
-	for k in range(ndata):
-		arg = branchJobs[k]
-		args.append(arg)
-	
-	nproc = __num_processors()
-	
-	#nproc *= 2
-	print "nproc =", nproc
-	
-	# compute chunk size
-	chunk_size = ndata / nproc
-	chunk_size = 2 if chunk_size < 2 else chunk_size
-	
-	print "chunk_size =", chunk_size
-	print "max_size =", ndata/chunk_size
-	
-	# set up a pool of processes
-	if len(pool_branch) == 0:
-
-		qin_branch = processing.Queue(maxsize=ndata/chunk_size)
-		qout_branch = processing.Queue(maxsize=ndata/chunk_size)
-		pool_branch = [processing.Process(target=__remote_multiBranch,
-		#pool_branch = [processing.Process(target=__remote_prof_multiBranch,
-				args=(rank, qin_branch, qout_branch))
-					for rank in range(nproc)]
-		for p in pool_branch: p.start()
-	
-	# put data chunks in input queue
-	cur, nc = 0, 0
-	#print "args =", args
-	while 1:
-		#_data = data[:,cur:cur+chunk_size]
-		_data = args[cur:cur+chunk_size]
-		#print "_data =", _data
-		print "nc = ", nc
-		print "cur =", cur
-		if len(_data) == 0: break
-		#print "put(", (nc,_data), ")"
-		qin_branch.put((nc,_data))
-		print "DONE"
-		cur += chunk_size
-		nc += 1
-	
-	print "BATCH FINISHED"
-	
-	
-	# read output queue
-	knn = []
-	while len(knn) < nc:
-		knn += [qout_branch.get()]
-	
-	#print "received output:", knn
-		
-	# avoid race condition
-	_knn = [n for i,n in sorted(knn)]
-	knn = []
-	for tmp in _knn:
-		knn += tmp
-
-	#print "sorted output:", knn
-		
-
-	#print "terminating pool"
-	# terminate workers
-	#for p in pool_branch:
-	#	print "terminate"
-	#	p.terminate()
-	#	print "terminated"
-		
-	print "returning"
-	return knn
 
 @logFunction
 def getTangentIntersections(path1, path2, frontDepI, backDepI, path1FrontDepI, path1BackDepI, path2JuncI, path1JuncI, plotCount, hypothesisID = 0, nodeID = 0, plotIter = False):
@@ -3161,12 +3020,12 @@ def getSoupDivergence(globalJunctionPose, pointSoup, path2, angThresh = 0.8, hyp
 		" and the associated index of the point on the parent path "
 		indices.append(i_1)
 
-	DIST_THRESH = 0.3
+	CONST_DIVERGE_THRESH = 0.3
 
 	""" find the point that first crosses distance threshold """
 	currI = 0
 	try:
-		while distances[currI] > DIST_THRESH:
+		while distances[currI] > CONST_DIVERGE_THRESH:
 			currI += 1
 	except:
 		""" index out of bounds, back track """
@@ -3178,7 +3037,7 @@ def getSoupDivergence(globalJunctionPose, pointSoup, path2, angThresh = 0.8, hyp
 
 	currI = len(distances)-1
 	try:
-		while currI >= 0 and distances[currI] > DIST_THRESH:
+		while currI >= 0 and distances[currI] > CONST_DIVERGE_THRESH:
 			currI -= 1
 	except:
 		""" index out of bounds, back track """
@@ -3194,12 +3053,14 @@ def getSoupDivergence(globalJunctionPose, pointSoup, path2, angThresh = 0.8, hyp
 	juncDist1 = sqrt((globalJunctionPose[0]-frontPoint[0])**2 + (globalJunctionPose[1]-frontPoint[1])**2)
 	juncDist2 = sqrt((globalJunctionPose[0]-backPoint[0])**2 + (globalJunctionPose[1]-backPoint[1])**2)
 
+	CONST_DIVERGE_OFFSET = 20
+
 
 	frontNoDiverge = False
 	backNoDiverge = False
 
 	#pathPoints2[0:frontIndex+1]
-	frontIndexEnd = frontIndex-20
+	frontIndexEnd = frontIndex-CONST_DIVERGE_OFFSET
 	if frontIndexEnd < 0:
 		frontIndexEnd = 0
 	if frontIndex-frontIndexEnd > 0:
@@ -3230,7 +3091,7 @@ def getSoupDivergence(globalJunctionPose, pointSoup, path2, angThresh = 0.8, hyp
 
 	#pathPoints2[backIndex:len(distances)]
 
-	backIndexEnd = backIndex+20
+	backIndexEnd = backIndex+CONST_DIVERGE_OFFSET
 	if backIndexEnd >= len(distances):
 		backIndexEnd = len(distances)-1
 	if backIndexEnd-backIndex > 0:
@@ -3322,12 +3183,13 @@ def getSimpleSoupDeparture(tipPoint_G, globalJunctionPose, pointSoup, path2, ang
 		" and the associated index of the point on the parent path "
 		indices.append(i_1)
 
-	DIST_THRESH = 0.1
+	CONST_DIVERGE_THRESH2 = 0.1
+	CONST_DIVERGE_OFFSET = 20
 
 	""" find the point that first crosses distance threshold """
 	currI = 0
 	try:
-		while distances[currI] > DIST_THRESH:
+		while distances[currI] > CONST_DIVERGE_THRESH2:
 			currI += 1
 	except:
 		""" index out of bounds, back track """
@@ -3338,7 +3200,7 @@ def getSimpleSoupDeparture(tipPoint_G, globalJunctionPose, pointSoup, path2, ang
 
 	currI = len(distances)-1
 	try:
-		while currI >= 0 and distances[currI] > DIST_THRESH:
+		while currI >= 0 and distances[currI] > CONST_DIVERGE_THRESH2:
 			currI -= 1
 	except:
 		""" index out of bounds, back track """
@@ -3366,7 +3228,7 @@ def getSimpleSoupDeparture(tipPoint_G, globalJunctionPose, pointSoup, path2, ang
 	backNoDiverge = False
 
 	#pathPoints2[0:frontIndex+1]
-	frontIndexEnd = frontIndex-20
+	frontIndexEnd = frontIndex-CONST_DIVERGE_OFFSET
 	if frontIndexEnd < 0:
 		frontIndexEnd = 0
 	if frontIndex-frontIndexEnd > 0:
@@ -3397,7 +3259,7 @@ def getSimpleSoupDeparture(tipPoint_G, globalJunctionPose, pointSoup, path2, ang
 
 	#pathPoints2[backIndex:len(distances)]
 
-	backIndexEnd = backIndex+20
+	backIndexEnd = backIndex+CONST_DIVERGE_OFFSET
 	if backIndexEnd >= len(distances):
 		backIndexEnd = len(distances)-1
 	if backIndexEnd-backIndex > 0:
@@ -3521,17 +3383,19 @@ def getAngleDerivatives(pathPoints1):
 
 	""" compute the angle derivative at each point of the curves """
 
+	CONST_ANGLE_WINDOW = 6
+
 	angDerivs1 = []
 	for k in range(len(pathPoints1)):
 		
-		if (k-6) > 0 and (k+6) < len(pathPoints1):
+		if (k-CONST_ANGLE_WINDOW) > 0 and (k+CONST_ANGLE_WINDOW) < len(pathPoints1):
 
 			diffs = []
 
-			for l in range(0,7):
+			for l in range(0,CONST_ANGLE_WINDOW+1):
 
-				if (k-6+l) >= 0 and (k+l) < len(pathPoints1):
-					ang1 = pathPoints1[k-6+l][2]
+				if (k-CONST_ANGLE_WINDOW+l) >= 0 and (k+l) < len(pathPoints1):
+					ang1 = pathPoints1[k-CONST_ANGLE_WINDOW+l][2]
 					ang2 = pathPoints1[k+l][2]
 					diffs.append(fabs(ang1-ang2))
 
@@ -4131,7 +3995,7 @@ def getSkeletonBranchPoint(tipPoint_G, globalJunctionPose, currShootID, parentSh
 
 	ancestorPointSoup_G = []
 	allPointSoup_G = []
-	CONTIG_DIST = 0.2
+	#CONTIG_DIST = 0.2
 
 	pathSegsByID_G = {}
 	#for shootID in nonDescentIDs:
@@ -4719,8 +4583,8 @@ def evaluateJointBranch(localPathSegsByID, localTerms, localPaths, localSkeleton
 			point_G = currFrame.convertLocalToGlobal(point_L)
 			landmarks_G.append((point_G, pointThresh, pointName))
 	
-	LANDMARK_THRESH = 7.0
-	CLOSE_THRESH = 0.3
+	CONST_LANDMARK_THRESH = 7.0
+	#CLOSE_THRESH = 0.3
 
 	distSum = 0.0
 	for i in range(len(landmarks_G)):
@@ -4735,7 +4599,7 @@ def evaluateJointBranch(localPathSegsByID, localTerms, localPaths, localSkeleton
 			if thresh2 > thresh1:
 				maxThresh = thresh2
 
-			if dist < LANDMARK_THRESH:
+			if dist < CONST_LANDMARK_THRESH:
 				distSum += sqrt(dist*dist/(thresh1*thresh1 + thresh2*thresh2))
 
 	branchResult["landmarkCost"] = distSum
@@ -4888,8 +4752,9 @@ def computeJointBranch(localPathSegsByID, localTerms, localPaths, localSkeletons
 	#LANDMARK_THRESH = 1e100
 	#LANDMARK_THRESH = 3.0
 	#LANDMARK_THRESH = 4.5
-	LANDMARK_THRESH = 7.0
-	CLOSE_THRESH = 0.3
+	CONST_LANDMARK_THRESH = 7.0
+	#LANDMARK_THRESH = 7.0
+	#CLOSE_THRESH = 0.3
 
 	distSum = 0.0
 	for i in range(len(landmarks_G)):
@@ -4904,7 +4769,7 @@ def computeJointBranch(localPathSegsByID, localTerms, localPaths, localSkeletons
 			if thresh2 > thresh1:
 				maxThresh = thresh2
 
-			if dist < LANDMARK_THRESH:
+			if dist < CONST_LANDMARK_THRESH:
 				#distSum += sqrt(dist*dist/(maxThresh*maxThresh))
 
 				distSum += sqrt(dist*dist/(thresh1*thresh1 + thresh2*thresh2))
@@ -5048,205 +4913,10 @@ def computeJointBranch(localPathSegsByID, localTerms, localPaths, localSkeletons
 	return branchResult
 
 
-def computeAllSplices2(controlPoses_G, localTerms, localSegments, spliceSkeleton):
-
-	"""
-	1) get all terminals of each skeleton
-	2) eliminate terminals that are "subsumed" by other shoots
-	3) find splices between the remaining terminals
-
-
-	FIXME: how to eliminate so many possibilities when junctions are not aligned?
-	FIXME: what if two terminals are very close to one another, how to select only one? not both or zero
-
-	"""
-	DIST_THRESH = 0.2
-
-	globalTerms = {}
-
-	for pathID, terms in localTerms.iteritems():
-		globalTerms[pathID] = []
-		shootFrame = Pose(controlPoses_G[pathID])
-		for term in terms:
-			globalP = shootFrame.convertLocalToGlobal(term)
-			globalTerms[pathID].append(globalP)
-	
-	
-	globalSegments = {}
-
-	for pathID, segs in localSegments.iteritems():
-		globalSegments[pathID] = []
-		shootFrame = Pose(controlPoses_G[pathID])
-		for seg in segs:
-			globalSeg = []
-			for p in seg:
-				globalP = shootFrame.convertLocalOffsetToGlobal(p)
-				globalSeg.append(globalP)
-
-			globalSegments[pathID].append(globalSeg)
-
-
-	""" of all the terms, find the ones that are not subsumed by other shoots """
-
-	branchDivergeCount = {}
-
-	subsumedTerms_L = {}
-	allTerms_L = {}
-	allTerms_G = {}
-	currKeys = globalSegments.keys()
-
-	for currK1 in range(len(currKeys)): 
-
-		pathID1 = currKeys[currK1]
-		branchDivergeCount[pathID1] = 0
-		segs1 = globalSegments[pathID1]
-
-		terms_L = localTerms[pathID1]
-
-
-		shootFrame = Pose(controlPoses_G[pathID1])
-
-		allTerms_L[pathID1] = []
-		allTerms_G[pathID1] = []
-
-
-		for term1 in terms_L:
-
-			term1_G = shootFrame.convertLocalToGlobal(term1)
-
-			minDist2 = 1e100
-			minP2 = None
-
-			for currK2 in range(len(currKeys)): 
-
-				if currK2 != currK1:
-
-					pathID2 = currKeys[currK2]
-					segs2 = globalSegments[pathID2]
-
-					for seg2 in segs2:
-						for p in seg2:
-
-							dist2 = sqrt((p[0]-term1_G[0])**2 + (p[1]-term1_G[1])**2)
-
-							if dist2 < minDist2:
-								minDist2 = dist2
-								minP2 = p
-			
-			print pathID1, minDist2, "terms:", term1_G
-			if minDist2 > DIST_THRESH:
-				allTerms_L[pathID1].append(term1)
-				allTerms_G[pathID1].append(term1_G)
-			else:
-				branchDivergeCount[pathID1] += 1
-
-
-	termList = []
-	pathIDs = allTerms_G.keys()
-
-	for pathID in pathIDs:
-		for term_G in allTerms_G[pathID]:
-			termList.append(term_G)
-	
-	termCombos = []
-	for j in range(len(termList)):
-		for k in range(j+1, len(termList)):
-			termCombos.append((termList[j], termList[k]))
-
-
-	finalResults = []
-
-
-	print "termCombos:", termCombos
-	
-	for termPath in termCombos:
-
-		memberShootIDs = {}
-		joinPairs = []
-
-		startPose = termPath[0]
-		endPose = termPath[1]
-
-		print "startPose, endPose:", startPose, endPose
-
-		minStartDist = 1e100
-		minStartNode = None
-		minEndDist = 1e100
-		minEndNode = None
-		
-		for edge in spliceSkeleton.edges():
-		
-			globalNodePoint1 = edge[0]
-			globalNodePoint2 = edge[1]
-
-			dist1 = sqrt((globalNodePoint1[0]-startPose[0])**2 + (globalNodePoint1[1]-startPose[1])**2)
-			dist2 = sqrt((globalNodePoint2[0]-startPose[0])**2 + (globalNodePoint2[1]-startPose[1])**2)
-
-			if dist1 < minStartDist:
-				minStartDist = dist1
-				minStartNode = globalNodePoint1
-
-			if dist2 < minStartDist:
-				minStartDist = dist2
-				minStartNode = globalNodePoint2
-
-			dist1 = sqrt((globalNodePoint1[0]-endPose[0])**2 + (globalNodePoint1[1]-endPose[1])**2)
-			dist2 = sqrt((globalNodePoint2[0]-endPose[0])**2 + (globalNodePoint2[1]-endPose[1])**2)
-
-			if dist1 < minEndDist:
-				minEndDist = dist1
-				minEndNode = globalNodePoint1
-
-			if dist2 < minEndDist:
-				minEndDist = dist2
-				minEndNode = globalNodePoint2
-
-
-		startNode = minStartNode
-		endNode = minEndNode
-
-
-		print "nodes path from", startNode, "to", endNode
-		shortestSpliceTree, shortestSpliceDist = spliceSkeleton.shortest_path(endNode)
-		currNode = shortestSpliceTree[startNode]					 
-
-		nodeAttrs = spliceSkeleton.get_node_attributes(startNode)
-		memberPathID = None
-		for attr in nodeAttrs:
-			if attr[0] == "pathID":
-				memberPathID = attr[1]
-
-		memberShootIDs[memberPathID] = None
-
-		splicedSkel = [startNode]
-		while currNode != endNode:
-			#print "currNode:", currNode
-			splicedSkel.append(currNode)
-
-			nodeAttrs = spliceSkeleton.get_node_attributes(currNode)
-			memberPathID = None
-			for attr in nodeAttrs:
-				if attr[0] == "pathID":
-					memberPathID = attr[1]
-
-			memberShootIDs[memberPathID] = None
-
-			nextNode = shortestSpliceTree[currNode]
-			currNode = nextNode
-		splicedSkel.append(currNode)
-
-		splicedSkel = ensureEnoughPoints(splicedSkel, max_spacing = 0.08, minPoints = 5)
-		spliceSpline1 = SplineFit(splicedSkel, smooth=0.1)
-		splicePoints1 = spliceSpline1.getUniformSamples()
-
-		finalResults.append(splicePoints1)
-
-	return finalResults
 
 def computeAllSplices4(controlPoses_G, localTerms, localSegments, spliceSkeleton):
 
-	DIST_THRESH = 0.4
-	DIVERGE_THRESH = 0.8
+	CONST_SUB_THRESH = 0.4
 
 	globalTerms = {}
 
@@ -5321,7 +4991,7 @@ def computeAllSplices4(controlPoses_G, localTerms, localSegments, spliceSkeleton
 								minP2 = p
 								subSkelID = pathID2
 					
-					#if thisMinDist <= DIST_THRESH:
+					#if thisMinDist <= CONST_SUB_THRESH:
 					#	self.subsumptionMatrix[pathID1][pathID2] += 1
 
 					#otherTerms_G = self.globalTerms[pathID2]
@@ -5329,12 +4999,12 @@ def computeAllSplices4(controlPoses_G, localTerms, localSegments, spliceSkeleton
 
 					#	dist = sqrt((p[0]-term1_G[0])**2 + (p[1]-term1_G[1])**2)
 
-					#	if dist < DIST_THRESH:
+					#	if dist < CONST_SUB_THRESH:
 					#		self.terminalSimilarity[pathID1][pathID2] += 1
 
 			
 			print pathID1, minDist2, "terms:", term1_G
-			if minDist2 > DIST_THRESH:
+			if minDist2 > CONST_SUB_THRESH:
 				allTerms_L[pathID1].append(term1)
 				allTerms_G[pathID1].append(term1_G)
 
@@ -5349,7 +5019,7 @@ def computeAllSplices4(controlPoses_G, localTerms, localSegments, spliceSkeleton
 
 						dist = sqrt((p[0]-term1_G[0])**2 + (p[1]-term1_G[1])**2)
 
-						if dist < DIST_THRESH:
+						if dist < CONST_SUB_THRESH:
 							isCoincident = True
 			
 				isUnique = True
@@ -5357,7 +5027,7 @@ def computeAllSplices4(controlPoses_G, localTerms, localSegments, spliceSkeleton
 					for p in otherTerms_G:
 						dist = sqrt((p[0]-term1_G[0])**2 + (p[1]-term1_G[1])**2)
 
-						if dist < DIST_THRESH:
+						if dist < CONST_SUB_THRESH:
 							print term1_G, "is similar to", p
 							isUnique = False
 
@@ -5473,672 +5143,6 @@ def computeAllSplices4(controlPoses_G, localTerms, localSegments, spliceSkeleton
 	
 	return finalResults
 
-
-def computeAllSplices3(controlPoses_G, localTerms, localSegments, spliceSkeleton):
-
-	"""
-	1) get all terminals of each skeleton
-	2) eliminate terminals that are "subsumed" by other shoots
-	3) find splices between the remaining terminals
-
-
-	FIXME: how to eliminate so many possibilities when junctions are not aligned?
-	FIXME: what if two terminals are very close to one another, how to select only one? not both or zero
-
-	"""
-	DIST_THRESH = 0.2
-
-	
-	globalTerms = {}
-
-	for pathID, terms in localTerms.iteritems():
-		globalTerms[pathID] = []
-		shootFrame = Pose(controlPoses_G[pathID])
-		for term in terms:
-			globalP = shootFrame.convertLocalToGlobal(term)
-			globalTerms[pathID].append(globalP)
-	
-	
-	globalSegments = {}
-
-	for pathID, segs in localSegments.iteritems():
-		globalSegments[pathID] = []
-		shootFrame = Pose(controlPoses_G[pathID])
-		for seg in segs:
-			globalSeg = []
-			for p in seg:
-				globalP = shootFrame.convertLocalOffsetToGlobal(p)
-				globalSeg.append(globalP)
-
-			globalSegments[pathID].append(globalSeg)
-
-
-	""" of all the terms, find the ones that are not subsumed by other shoots """
-
-	branchDivergeCount = {}
-
-	subsumedTerms_L = {}
-	allTerms_L = {}
-	allTerms_G = {}
-
-	allTerms_L = {}
-	allTerms_G = {}
-	currKeys = globalSegments.keys()
-
-	for currK1 in range(len(currKeys)): 
-
-		pathID1 = currKeys[currK1]
-		branchDivergeCount[pathID1] = 0
-		segs1 = globalSegments[pathID1]
-
-		terms_L = localTerms[pathID1]
-
-
-		shootFrame = Pose(controlPoses_G[pathID1])
-
-		allTerms_L[pathID1] = []
-		allTerms_G[pathID1] = []
-
-
-		for term1 in terms_L:
-
-			term1_G = shootFrame.convertLocalToGlobal(term1)
-
-			minDist2 = 1e100
-			minP2 = None
-
-			for currK2 in range(len(currKeys)): 
-
-				if currK2 != currK1:
-
-					pathID2 = currKeys[currK2]
-					segs2 = globalSegments[pathID2]
-
-					for seg2 in segs2:
-						for p in seg2:
-
-							dist2 = sqrt((p[0]-term1_G[0])**2 + (p[1]-term1_G[1])**2)
-
-							if dist2 < minDist2:
-								minDist2 = dist2
-								minP2 = p
-			
-			print pathID1, minDist2, "terms:", term1_G
-			if minDist2 > DIST_THRESH:
-				allTerms_L[pathID1].append(term1)
-				allTerms_G[pathID1].append(term1_G)
-				#print pathID1, "terms:", term1
-			else:
-				if pathID1 != 0:
-					branchDivergeCount[pathID1] += 1
-
-
-				""" check if this terminal is close to another terminal in different shoot """
-				isCoincident = False
-				for currK2 in range(currK1+1, len(currKeys)): 
-					pathID2 = currKeys[currK2]
-					otherTerms_G = globalTerms[pathID2]
-					for p in otherTerms_G:
-
-						dist = sqrt((p[0]-term1_G[0])**2 + (p[1]-term1_G[1])**2)
-
-						if dist < DIST_THRESH:
-							print term1_G, "is coincident to", p
-							isCoincident = True
-				
-				isUnique = True
-				for pathID, otherTerms_G in allTerms_G.iteritems():
-					for p in otherTerms_G:
-						dist = sqrt((p[0]-term1_G[0])**2 + (p[1]-term1_G[1])**2)
-
-						if dist < DIST_THRESH:
-							print term1_G, "is similar to", p
-							isUnique = False
-
-				if isCoincident and isUnique:
-					print "adding", term1_G
-					allTerms_L[pathID1].append(term1)
-					allTerms_G[pathID1].append(term1_G)
-
-
-
-
-	subsumedTerms_L = allTerms_L
-
-	termList = []
-	pathIDs = allTerms_G.keys()
-
-	for pathID in pathIDs:
-		for term_G in allTerms_G[pathID]:
-			termList.append(term_G)
-	
-
-
-	termCombos = []
-	for j in range(len(termList)):
-		for k in range(j+1, len(termList)):
-			termCombos.append((termList[j], termList[k]))
-
-
-	finalResults = []
-
-
-	print "termCombos:", termCombos
-	
-	for termPath in termCombos:
-
-		memberShootIDs = {}
-		joinPairs = []
-
-		startPose = termPath[0]
-		endPose = termPath[1]
-
-		print "startPose, endPose:", startPose, endPose
-
-		minStartDist = 1e100
-		minStartNode = None
-		minEndDist = 1e100
-		minEndNode = None
-		
-		for edge in spliceSkeleton.edges():
-		
-			globalNodePoint1 = edge[0]
-			globalNodePoint2 = edge[1]
-
-			dist1 = sqrt((globalNodePoint1[0]-startPose[0])**2 + (globalNodePoint1[1]-startPose[1])**2)
-			dist2 = sqrt((globalNodePoint2[0]-startPose[0])**2 + (globalNodePoint2[1]-startPose[1])**2)
-
-			if dist1 < minStartDist:
-				minStartDist = dist1
-				minStartNode = globalNodePoint1
-
-			if dist2 < minStartDist:
-				minStartDist = dist2
-				minStartNode = globalNodePoint2
-
-			dist1 = sqrt((globalNodePoint1[0]-endPose[0])**2 + (globalNodePoint1[1]-endPose[1])**2)
-			dist2 = sqrt((globalNodePoint2[0]-endPose[0])**2 + (globalNodePoint2[1]-endPose[1])**2)
-
-			if dist1 < minEndDist:
-				minEndDist = dist1
-				minEndNode = globalNodePoint1
-
-			if dist2 < minEndDist:
-				minEndDist = dist2
-				minEndNode = globalNodePoint2
-
-
-		startNode = minStartNode
-		endNode = minEndNode
-
-
-		try: 
-			print "nodes path from", startNode, "to", endNode
-			shortestSpliceTree, shortestSpliceDist = spliceSkeleton.shortest_path(endNode)
-			currNode = shortestSpliceTree[startNode]					 
-
-			nodeAttrs = spliceSkeleton.get_node_attributes(startNode)
-			memberPathID = None
-			for attr in nodeAttrs:
-				if attr[0] == "pathID":
-					memberPathID = attr[1]
-
-			memberShootIDs[memberPathID] = None
-
-			splicedSkel = [startNode]
-			while currNode != endNode:
-				#print "currNode:", currNode
-				splicedSkel.append(currNode)
-
-				nodeAttrs = spliceSkeleton.get_node_attributes(currNode)
-				memberPathID = None
-				for attr in nodeAttrs:
-					if attr[0] == "pathID":
-						memberPathID = attr[1]
-
-				memberShootIDs[memberPathID] = None
-
-				nextNode = shortestSpliceTree[currNode]
-				currNode = nextNode
-		except:
-			print repr(spliceSkeleton)
-			print repr(shortestSpliceTree)
-			raise
-
-		splicedSkel.append(currNode)
-
-		splicedSkel = ensureEnoughPoints(splicedSkel, max_spacing = 0.08, minPoints = 5)
-		spliceSpline1 = SplineFit(splicedSkel, smooth=0.1)
-		splicePoints1 = spliceSpline1.getUniformSamples()
-
-
-		#sPath = {}
-		#sPath['termPath'] = termPath
-		#sPath['skelPath'] = splicePoints1
-		#sPath['memberShootIDs'] = memberShootIDs.keys()
-		
-		finalResults.append(splicePoints1)
-		
-	
-	return finalResults
-
-
-@logFunction
-def computeBranch(pathID, parentID, localPathSegsByID, localPaths, arcDist, localSkeletons, controlPoses, junctionPoses, parentPathIDs, numNodes=0, hypothesisID=0):
-
-
-	origControlPose = controlPoses[pathID]
-	oldLocalJuncPose_C = junctionPoses[pathID]
-
-
-
-	if parentID != None: 
-
-		parentPath_P = localPaths[parentID]
-
-		""" parent path information """
-		pathSpline_P = SplineFit(parentPath_P)
-
-		""" f(arcDist) = position on the spline curve of the parent path """
-		""" NOTE:  angle is the tangent angle, not branch angle """
-		""" LOCATION OF MODIFIED CONTROL POINT ON PARENT """
-		newArcDist = arcDist
-		newControlPose_P = pathSpline_P.getPointOfDist(newArcDist)
-		modControlPose_P = copy(newControlPose_P)
-		modControlPose_P[2] = 0.0
-
-
-		""" old junction point in parent frame """
-		offsetOrigin1 = Pose(modControlPose_P)
-		modJuncPose_P = offsetOrigin1.convertLocalOffsetToGlobal(oldLocalJuncPose_C)
-
-
-		""" place the segments back into parent frame with control point from arc distance """
-
-		localPathSegs = localPathSegsByID[pathID]
-		offsetOrigin1 = Pose(modControlPose_P)
-		placedPathSegs = []
-		for k in range(len(localPathSegs)):
-			localSeg = localPathSegs[k]
-			placedSeg = []
-			for p in localSeg:
-				p1 = offsetOrigin1.convertLocalOffsetToGlobal(p)
-				placedSeg.append(p1)
-			placedPathSegs.append(placedSeg)
-
-		# FIXME:  add in parent skeleton, all other non-descendant skeletons
-
-		""" evaluate overlap of parent and child skeleton """
-		lastCost1, matchCount1 = gen_icp.branchEstimateCost2(modControlPose_P, placedPathSegs, parentPath_P, plotIter = True, n1 = pathID, n2 = parentID, arcDist = arcDist)
-
-		""" originally designed to compute the discrepancy between initial and final poses of ICP,
-			now there is no ICP so there is no discrepancy """
-		distDisc = 0.0
-		angDisc = 0.0
-
-		controlPoses[pathID] = modControlPose_P
-		controlPoses_G = computeGlobalControlPoses(controlPoses, parentPathIDs)
-
-		""" get the trimmed child shoot at the new designated branch point from parent """
-		newPath3, newTipPoint_L, localJuncPose_C, particlePath, isNoDiverge =  trimBranch(pathID, parentID, modControlPose_P, oldLocalJuncPose_C, localPathSegsByID, localPaths, parentPathIDs, controlPoses_G, plotIter=False, arcDist = arcDist, nodeID=numNodes, hypothesisID = hypothesisID)
-
-		juncDiscDist = 0.0
-		juncDiscAngle = 0.0
-
-
-		newGlobJuncPose = offsetOrigin1.convertLocalOffsetToGlobal(localJuncPose_C)
-
-		#junctionPoses[pathID] = newGlobJuncPose
-		junctionPoses[pathID] = localJuncPose_C
-		controlPoses[pathID] = modControlPose_P
-
-		controlPoses_G = computeGlobalControlPoses(controlPoses, parentPathIDs)
-
-		spliceSkeleton_G = spliceSkeletons(localSkeletons, controlPoses_G, junctionPoses, parentPathIDs)
-
-		parentFrame = Pose(controlPoses_G[parentID])
-
-		""" the terminals of the parent shoot """
-		parentTerm1 = parentPath_P[0]
-		parentTerm2 = parentPath_P[-1]
-
-		""" following terminal comparisons are in local coordinates """
-
-		""" the terminals of the child shoot """
-		dist1 = sqrt((localJuncPose_C[0]-newPath3[0][0])**2 + (localJuncPose_C[1]-newPath3[0][1])**2)
-		dist2 = sqrt((localJuncPose_C[0]-newPath3[-1][0])**2 + (localJuncPose_C[1]-newPath3[-1][1])**2)
-
-		if dist1 < dist2:
-			childTerm = newPath3[-1]
-		else:
-			childTerm = newPath3[0]
-
-		dist3 = sqrt((childTerm[0]-particlePath[0][0])**2 + (childTerm[1]-particlePath[0][1])**2)
-		dist4 = sqrt((childTerm[0]-particlePath[-1][0])**2 + (childTerm[1]-particlePath[-1][1])**2)
-
-		if dist3 < dist4:
-			childTerm2 = particlePath[-1]
-		else:
-			childTerm2 = particlePath[0]
-
-		""" two different splices between child and parent terminals """
-		globalChildTerm1 = offsetOrigin1.convertLocalToGlobal(childTerm)
-		globalChildTerm2 = offsetOrigin1.convertLocalToGlobal(childTerm2)
-		globalParentTerm1 = parentFrame.convertLocalToGlobal(parentTerm1)
-		globalParentTerm2 = parentFrame.convertLocalToGlobal(parentTerm2)
-		termPaths_G = [(globalParentTerm1, globalChildTerm1), (globalParentTerm2, globalChildTerm1), (globalChildTerm2, globalChildTerm1)]
-
-		splicedPaths = []
-		for termPath in termPaths_G:
-
-			""" use splice skeleton to find shortest path """
-			startPose = termPath[0]
-			endPose = termPath[-1]
-
-			minStartDist = 1e100
-			minStartNode = None
-			minEndDist = 1e100
-			minEndNode = None
-			
-			for edge in spliceSkeleton_G.edges():
-			
-				globalNodePoint1 = edge[0]
-				globalNodePoint2 = edge[1]
-
-				dist1 = sqrt((globalNodePoint1[0]-startPose[0])**2 + (globalNodePoint1[1]-startPose[1])**2)
-				dist2 = sqrt((globalNodePoint2[0]-startPose[0])**2 + (globalNodePoint2[1]-startPose[1])**2)
-
-				if dist1 < minStartDist:
-					minStartDist = dist1
-					minStartNode = globalNodePoint1
-
-				if dist2 < minStartDist:
-					minStartDist = dist2
-					minStartNode = globalNodePoint2
-
-				dist1 = sqrt((globalNodePoint1[0]-endPose[0])**2 + (globalNodePoint1[1]-endPose[1])**2)
-				dist2 = sqrt((globalNodePoint2[0]-endPose[0])**2 + (globalNodePoint2[1]-endPose[1])**2)
-
-				if dist1 < minEndDist:
-					minEndDist = dist1
-					minEndNode = globalNodePoint1
-
-				if dist2 < minEndDist:
-					minEndDist = dist2
-					minEndNode = globalNodePoint2
-
-
-			startNode = minStartNode
-			endNode = minEndNode
-
-
-			shortestSpliceTree, shortestSpliceDist = spliceSkeleton_G.shortest_path(endNode)
-			currNode = shortestSpliceTree[startNode]					 
-			splicedSkel = [startNode]
-			while currNode != endNode:
-				splicedSkel.append(currNode)
-				nextNode = shortestSpliceTree[currNode]
-				currNode = nextNode
-			splicedSkel.append(currNode)
-
-			splicedSkel = ensureEnoughPoints(splicedSkel, max_spacing = 0.08, minPoints = 5)
-			spliceSpline1 = SplineFit(splicedSkel, smooth=0.1)
-			splicePoints1 = spliceSpline1.getUniformSamples()
-
-			splicedPaths.append(splicePoints1)
-		
-
-		""" cache the generated result and package it for later retrieval """
-		newSplices = deepcopy(splicedPaths)
-		# initProb = 0.0
-		#initProb = matchCount1*(1000.0-lastCost1)
-		initProb = matchCount1
-		#part2 = (parentID, modJuncPose, modControlPose, newArcDist, pathID, matchCount1, lastCost1, distDisc, angDisc, initProb, newSplices, juncDiscAngle, juncDiscDist)
-
-		part2 = {}
-		part2["parentID"] = parentID
-		#part2["modJuncPose"] = newGlobJuncPose
-		part2["modJuncPose"] = localJuncPose_C
-		part2["modControlPose"] = modControlPose_P
-		part2["newArcDist"] = newArcDist
-		part2["pathID"] = pathID
-		part2["matchCount"] = matchCount1
-		part2["lastCost"] = lastCost1
-		part2["distDisc"] = distDisc
-		part2["angDisc"] = angDisc
-		part2["initProb"] = initProb
-		part2["newSplices"] = newSplices
-		part2["juncDiscAngle"] = juncDiscAngle
-		part2["juncDiscDist"] = juncDiscDist
-		part2["termPaths"] = termPaths_G
-
-		#if plotIter:
-		if True:
-
-			#numNodes = 0
-			#pathPlotCount = 0
-
-			
-			pylab.clf()
-
-			#for splicePath in newSplices:
-
-			#	xP = []
-			#	yP = []
-			#	for p in splicePath:
-			#		xP.append(p[0])
-			#		yP.append(p[1])
-			#	pylab.plot(xP,yP, color='k', alpha=0.8)
-
-
-			xP = []
-			yP = []
-			for p in newPath3:
-				p1 = offsetOrigin1.convertLocalToGlobal(p)
-				xP.append(p1[0])
-				yP.append(p1[1])
-				pylab.plot(xP,yP, color='k', alpha=0.8)
-
-			xP = []
-			yP = []
-			for p in particlePath:
-				p1 = offsetOrigin1.convertLocalToGlobal(p)
-				xP.append(p1[0])
-				yP.append(p1[1])
-				pylab.plot(xP,yP, color='m', alpha=0.5)
-
-			for edge in spliceSkeleton_G.edges():
-			
-				globalNodePoint1 = edge[0]
-				globalNodePoint2 = edge[1]
-
-				xP = [globalNodePoint1[0], globalNodePoint2[0]]
-				yP = [globalNodePoint1[1], globalNodePoint2[1]]
-
-				pylab.plot(xP,yP, color='k', alpha=0.2)
-
-			for termPath in termPaths_G:
-				startPose = termPath[0]
-				endPose = termPath[-1]
-
-				xP = [startPose[0], endPose[0]]
-				yP = [startPose[1], endPose[1]]
-
-				pylab.scatter(xP,yP, color='r')
-
-			pylab.scatter([newGlobJuncPose[0],], [newGlobJuncPose[1],], color='m')
-			pylab.scatter([modControlPose_P[0],], [modControlPose_P[1],], color='b')
-
-			pylab.axis("equal")
-			pylab.title("hyp %d nodeID %d %1.2f %1.2f %1.2f" % ( hypothesisID, numNodes, juncDiscDist, juncDiscAngle, newGlobJuncPose[2] ))
-			pylab.savefig("computeBranch_%04u_%04u_%1.1f.png" % (hypothesisID, numNodes, arcDist))
-
-			print "saving computeBranch_%04u_%04u_%1.1f.png" % (hypothesisID, numNodes, arcDist)
-
-			
-		#pathPlotCount += 1
-
-		"""
-		result values are as follows:
-		0 = parent ID
-		1 = pose of the branch point
-		2 = arc distance on the parent curve of the branch point
-		3 = child ID
-		4 = match count from ICP algorithm
-		5 = last cost from ICP algorithm
-		6 = discrepancy distance of new pose from old pose, zeroed for this function
-		7 = angle discrepancy difference of new pose from old pose
-		8 = initial probability value of this branch position, initialized to 0.0 in this function
-		9 = set of splices including the branch at this position
-		10 = angle discrepancy 
-		11 = dist discrepancy 
-		"""
-
-		return part2
- 
-
-@logFunction
-def trimBranch(pathID, parentPathID, controlPose_P, oldTipPoint_L, oldBranchPose_L, localPathSegsByID, localPaths, parentPathIDs, controlPoses_G, plotIter = False, hypothesisID = 0, nodeID = 0, arcDist = 0.0):
-
-	global pathPlotCount 
-
-
-	localFrame = Pose(controlPose_P)
-	#localFrame = Pose(controlPoses_G[pathID])
-
-	""" get branch point landmark """
-	currFrame = Pose(controlPoses_G[pathID])
-	oldBranchPose_G = currFrame.convertLocalOffsetToGlobal(oldBranchPose_L)
-	oldTipPoint_G = currFrame.convertLocalToGlobal(oldTipPoint_L)
-
-	print "oldBranchPose_L, oldTipPoint_L =", oldBranchPose_L, oldTipPoint_L
-	print "oldBranchPose_G, oldTipPoint_G =", oldBranchPose_G, oldTipPoint_G
-
-
-	try:
-		branchPose_G, isNoDiverge, tipDist, branchTipPoint_G = getSkeletonBranchPoint(oldTipPoint_G, oldBranchPose_G, pathID, parentPathIDs, localPathSegsByID, localPaths, controlPoses_G, plotIter= plotIter, hypothesisID = hypothesisID, nodeID=nodeID, arcDist = arcDist)
-	except:
-		branchPose_G, isNoDiverge, tipDist, branchTipPoint_G = getSkeletonBranchPoint(oldTipPoint_G, oldBranchPose_G, pathID, parentPathIDs, localPathSegsByID, localPaths, controlPoses_G, angThresh=pi, plotIter= plotIter, hypothesisID = hypothesisID, nodeID=nodeID, arcDist = arcDist)
-
-	branchPose_L = currFrame.convertGlobalPoseToLocal(branchPose_G)
-	branchPose_P = localFrame.convertLocalOffsetToGlobal(branchPose_L)
-
-	branchTipPoint_L = currFrame.convertGlobalToLocal(branchTipPoint_G)
-	branchTipPoint_P = localFrame.convertLocalToGlobal(branchTipPoint_L)
-
-	""" get trimmed path """
-
-	partPathSegs = []
-
-	#path1 = parentPath
-	#path2 = childPath
-
-	path1 = localPaths[parentPathID]
-	path2 = localPaths[pathID]
-
-	particlePath2 = []
-	for p in path2:
-		p1 = localFrame.convertLocalToGlobal(p)
-		particlePath2.append(p1)
-		
-
-	p_1, branchIndex, minDist = gen_icp.findClosestPointInA(particlePath2, branchPose_P)
-	p_2, tipIndex, minDist = gen_icp.findClosestPointInA(particlePath2, branchTipPoint_P)
-
-	if branchIndex == len(particlePath2)-1:
-		branchIndex = len(particlePath2)-2
-		tipIndex = len(particlePath2)-1
-
-	elif branchIndex == 0:
-		branchIndex = 1
-		tipIndex = 0
-
-	if tipIndex < branchIndex:
-		newPath2 = particlePath2[:branchIndex+1]
-		newPath2.reverse()
-	else:
-		newPath2 = particlePath2[branchIndex:]
-
-	newTipPoint_P = newPath2[-1]
-	newTipPoint_L = localFrame.convertGlobalToLocal(newTipPoint_P)
-	newTipPoint_G = currFrame.convertLocalToGlobal(newTipPoint_L)
-
-	print "trimBranch:", hypothesisID, nodeID, pathID, arcDist, tipDist, oldTipPoint_G, branchTipPoint_G, newTipPoint_G, branchTipPoint_P, newTipPoint_P, branchPose_G, branchIndex, tipIndex, len(particlePath2), p_1, p_2
-
-	""" convert path so that the points are uniformly distributed """
-	newPath3 = ensureEnoughPoints(newPath2, max_spacing = 0.08, minPoints = 5)
-
-	if plotIter:
-		numNodes = 0
-		#pathPlotCount = 0
-
-		
-		pylab.clf()
-		xP = []
-		yP = []
-		for p in newPath3:
-			xP.append(p[0])
-			yP.append(p[1])
-		pylab.plot(xP,yP, color=(0.0,0.0,1.0), zorder=9)
-
-		xP = []
-		yP = []
-		for p in path1:
-			xP.append(p[0])
-			yP.append(p[1])
-		pylab.plot(xP,yP, color=(1.0,0.5,0.5))
-
-		xP = []
-		yP = []
-		for p in particlePath2:
-			xP.append(p[0])
-			yP.append(p[1])
-			pylab.plot(xP,yP, color='m', alpha=0.5, zorder=8)
-
-		
-		pylab.scatter([branchPose_P[0],], [branchPose_P[1],], color='r')
-		pylab.scatter([controlPose_P[0],], [controlPose_P[1],], color='b')
-		#pylab.scatter([origControlPose[0],], [origControlPose[1],], color='g')
-		#pylab.scatter([branchPose_G[0],], [branchPose_G[1],], color='m')
-
-		pylab.axis("equal")
-		pylab.title("hyp %d nodeID %d %1.2f" % ( hypothesisID, nodeID, branchPose_G[2]))
-		pylab.savefig("trimDeparture_%04u_%04u_%1.1f_%d.png" % (hypothesisID, nodeID, arcDist, pathPlotCount))
-
-		print "saving trimDeparture_%04u_%04u_%1.1f_%d.png" % (hypothesisID, nodeID, arcDist, pathPlotCount)
-		
-		pathPlotCount += 1
-
-	""" convert back to local coordinate system for each shoot """
-
-
-	#branchTipPoint_L = currFrame.convertGlobalToLocal(branchTipPoint_G)
-	#branchTipPoint_P = localFrame.convertLocalToGlobal(branchTipPoint_L)
-	oldBranchPose_G = currFrame.convertLocalOffsetToGlobal(oldBranchPose_L)
-
-	#print "trimBranch:", hypothesisID, nodeID, pathID, arcDist, tipDist, oldTipPoint_G, branchTipPoint_G, newTipPoint_G, branchTipPoint_P, newTipPoint_P, branchIndex, tipIndex, len(particlePath2), p_1, p_2
-
-	#print "oldTipPoint, newTipPoint:", oldTipPoint_G, newTipPoint_G, hypothesisID, nodeID, arcDist
-
-	localNewPath3 = []
-	for p in newPath3:
-		p1 = localFrame.convertGlobalToLocal(p)
-		localNewPath3.append(p1)
-
-	localParticlePath2 = []
-	for p in particlePath2:
-		p1 = localFrame.convertGlobalToLocal(p)
-		localParticlePath2.append(p1)
-
-	localJuncPose = localFrame.convertGlobalPoseToLocal(branchPose_P)
-
-	print "localJuncPose = branchPose_L", localJuncPose, branchPose_L
-
-	#return localNewPath3, localJuncPose, localParticlePath2
-	return localNewPath3, newTipPoint_L, branchPose_L, localParticlePath2, isNoDiverge
-
-
-
 @logFunction
 def skeletonOverlapCost(childPathSegs, parentPathSegs, plotIter = False, numNodes = 0, pathID = 0, arcDist = 0.0):
 
@@ -6182,11 +5186,10 @@ def skeletonOverlapCost(childPathSegs, parentPathSegs, plotIter = False, numNode
 		return errVal
 
 	
-	costThresh = 0.004
-	minMatchDist = 0.1
-	minMatchDist2 = 0.1
+	CONST_MATCH_THRESH = 0.1
 	lastCost = 1e100
-	matchAngTol = math.pi/4.0
+
+	COST_MATCH_ANG_TOL = math.pi/4.0
 	
 	" sample a series of points from the medial curves "
 	" augment points with point-to-line covariances "
@@ -6212,9 +5215,9 @@ def skeletonOverlapCost(childPathSegs, parentPathSegs, plotIter = False, numNode
 		p_1 = parentVecSoup[i]
 
 		try:
-			p_2, i_2, minDist = gen_icp.findClosestPointWithAngle(childVecSoup, p_1, matchAngTol)
+			p_2, i_2, minDist = gen_icp.findClosestPointWithAngle(childVecSoup, p_1, COST_MATCH_ANG_TOL)
 
-			if minDist <= minMatchDist:
+			if minDist <= CONST_MATCH_THRESH:
 	
 				" add to the list of match pairs less than 1.0 distance apart "
 				" keep A points and covariances untransformed "
@@ -6231,9 +5234,9 @@ def skeletonOverlapCost(childPathSegs, parentPathSegs, plotIter = False, numNode
 		p_1 = childVecSoup[i]
 
 		try:
-			p_2, i_2, minDist = gen_icp.findClosestPointWithAngle(parentVecSoup, p_1, matchAngTol)
+			p_2, i_2, minDist = gen_icp.findClosestPointWithAngle(parentVecSoup, p_1, COST_MATCH_ANG_TOL)
 
-			if minDist <= minMatchDist2:
+			if minDist <= CONST_MATCH_THRESH:
 	
 				" add to the list of match pairs less than 1.0 distance apart "
 				" keep A points and covariances untransformed "
@@ -6331,6 +5334,8 @@ def skeletonOverlapCost(childPathSegs, parentPathSegs, plotIter = False, numNode
 @logFunction
 def selectCommonOrigin(globalPath1, globalPath2, plotIter=False):
 
+	CONST_VAR_WIDTH = 50
+
 	""" FIXME:  change function so that it always returns a common pair, biasing towards it's current location """
 	""" alternately, make a new function that gives the option to enforce locality to common pair """
 	
@@ -6347,19 +5352,20 @@ def selectCommonOrigin(globalPath1, globalPath2, plotIter=False):
 	""" compute the local variance of the angle """
 	#globalVar1 = computePathAngleVariance(globalSamples1, varWidth=20)
 	#globalVar2 = computePathAngleVariance(globalSamples2, varWidth=20)
-	globalVar1 = computePathAngleVariance(globalSamples1, varWidth=50)
-	globalVar2 = computePathAngleVariance(globalSamples2, varWidth=50)
+	globalVar1 = computePathAngleVariance(globalSamples1, varWidth=CONST_VAR_WIDTH)
+	globalVar2 = computePathAngleVariance(globalSamples2, varWidth=CONST_VAR_WIDTH)
 
   
 	""" now lets find closest points and save their local variances """			
 	closestPairs = []
 	allPairs = []
-	TERM_DIST = 20
-	MATCH_THRESH = 0.5
+	CONST_COMMON_MATCH_THRESH = 0.5
+
+	CONST_RAIL_FRAC = 20.0
 
 	""" stay 1/20th away from terminators of both shoot curves """
-	pathRail1 = int(len(globalSamples1) / 20.0)
-	pathRail2 = int(len(globalSamples2) / 20.0)
+	pathRail1 = int(len(globalSamples1) / CONST_RAIL_FRAC)
+	pathRail2 = int(len(globalSamples2) / CONST_RAIL_FRAC)
 
 	#print "rails:", len(globalSamples1), len(globalSamples2), pathRail1, pathRail2
 
@@ -6385,7 +5391,7 @@ def selectCommonOrigin(globalPath1, globalPath2, plotIter=False):
 				minJ = j
 		
 		#if True:
-		if minDist < MATCH_THRESH:
+		if minDist < CONST_COMMON_MATCH_THRESH:
 
 			mean1 = globalVar1[i][0]
 			mean2 = globalVar2[minJ][0]
@@ -6426,7 +5432,7 @@ def selectCommonOrigin(globalPath1, globalPath2, plotIter=False):
 				minI = i
 
 		#if True:		
-		if minDist < MATCH_THRESH:
+		if minDist < CONST_COMMON_MATCH_THRESH:
 
 			mean1 = globalVar1[minI][0]
 			mean2 = globalVar2[j][0]
@@ -6618,10 +5624,11 @@ def selectLocalCommonOrigin(globalPath, medial1, estPose1):
 	" now lets find closest points and save their local variances "			
 	closestPairs = []
 	allPairs = []
-	TERM_DIST = 20
 
-	pathRail = int(len(globalSamples) / 20.0)
-	medialRail = int(len(globalMedialSamples) / 20.0)
+	CONST_RAIL_FRAC = 20.0
+
+	pathRail = int(len(globalSamples) / CONST_RAIL_FRAC)
+	medialRail = int(len(globalMedialSamples) / CONST_RAIL_FRAC)
 
 	#print "rails:", len(globalSamples), len(globalMedialSamples), pathRail, medialRail
 

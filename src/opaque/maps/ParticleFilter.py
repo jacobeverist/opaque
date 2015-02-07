@@ -529,7 +529,7 @@ def localizeLandmarkPose( poseData, pathSplices2, pathID, nodeID, sIndex, sampDi
 
 		print nodeID, sIndex, "landmarks:", landmark0_G, landmarks_G
 
-		LANDMARK_THRESH = 7.0
+		CONST_LANDMARK_THRESH = 7.0
 		for i in range(len(landmarks_G)):
 			p1 = landmarks_G[i][0]
 			threshG = landmarks_G[i][1]
@@ -541,7 +541,7 @@ def localizeLandmarkPose( poseData, pathSplices2, pathID, nodeID, sIndex, sampDi
 					maxThresh = threshG
 
 				dist0 = sqrt((p1[0]-landmark0_G[0][0])**2 + (p1[1]-landmark0_G[0][1])**2)
-				if dist0 < LANDMARK_THRESH:
+				if dist0 < CONST_LANDMARK_THRESH:
 					poseSum += sqrt(dist0*dist0/(threshG*threshG + thresh0*thresh0))
 
 
@@ -560,8 +560,11 @@ def localizeLandmarkPose( poseData, pathSplices2, pathID, nodeID, sIndex, sampDi
 		print "angDiff/contigFrac:", angDiff2, contigFrac_2
 		print "overlapSum:", overlapSum2
 		print "newProb:", newProb2
+	
+		CONST_ANG_DIFF_FILTER = 0.5
+		CONST_CONTIG_FILTER = 0.7
 
-		if angDiff2 < 0.5 and contigFrac_2 > 0.7:
+		if angDiff2 < CONST_ANG_DIFF_FILTER and contigFrac_2 > CONST_CONTIG_FILTER:
 			resultMoves2.append((resultPose2,lastCost2,matchCount2,fabs(0.0)) + result2 + (orientedSplicePath, newProb2))
 	
 	
@@ -1253,11 +1256,10 @@ def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, me
 		angDiff0 = 0.0
 		angDiff1 = 0.0
 		
-	#LANDMARK_THRESH = 1e100
-	#LANDMARK_THRESH = 3.0
-	LANDMARK_THRESH = 7.0
-	#LANDMARK_THRESH = 4.5
-	CLOSE_THRESH = 0.3
+	#CONST_LANDMARK_THRESH = 1e100
+	#CONST_LANDMARK_THRESH = 3.0
+	CONST_LANDMARK_THRESH = 7.0
+	#CONST_LANDMARK_THRESH = 4.5
 	poseSum = 0.0
 	landmark0_G = None
 	landmark1_G = None
@@ -1286,7 +1288,7 @@ def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, me
 				maxThresh = threshG
 
 			dist0 = sqrt((p1[0]-landmark0_G[0][0])**2 + (p1[1]-landmark0_G[0][1])**2)
-			if dist0 < LANDMARK_THRESH:
+			if dist0 < CONST_LANDMARK_THRESH:
 
 				#poseSum += sqrt(dist0*dist0/(maxThresh*maxThresh))
 				poseSum += sqrt(dist0*dist0/(threshG*threshG + thresh0*thresh0))
@@ -1303,7 +1305,7 @@ def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, me
 				maxThresh = threshG
 
 			dist1 = sqrt((p1[0]-landmark1_G[0][0])**2 + (p1[1]-landmark1_G[0][1])**2)
-			if dist1 < LANDMARK_THRESH:
+			if dist1 < CONST_LANDMARK_THRESH:
 				#poseSum += sqrt(dist1*dist1/(maxThresh*maxThresh))
 				
 				poseSum += sqrt(dist1*dist1/(threshG*threshG + thresh1*thresh1))

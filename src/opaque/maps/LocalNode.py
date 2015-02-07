@@ -28,6 +28,10 @@ estPlotCount = 0
 alphaPlotCount = 0
 splineCount = 0
 THRESH_WIDTH = 0.45
+CONST_MIDJOINT = 19
+CONST_HEADJOINT = 0
+CONST_TAILJOINT = 39
+CONST_PIXELSIZE = 0.05
 
 def computeBareHull(node1, sweep = False, static = False):
 	
@@ -368,14 +372,14 @@ class LocalNode:
 			localBackPosture.append(localBackProfile.convertGlobalPoseToLocal(localPosture[i]))
 	
 		foreCost = 0.0
-		for j in range(0,20):
+		for j in range(0,CONST_MIDJOINT+1):
 			p1 = originForePosture[j]
 			p2 = localForePosture[j]
 			
 			foreCost += sqrt((p2[0]-p1[0])**2 + (p2[1]-p1[1])**2)		   
 		
 		backCost = 0.0
-		for j in range(20,39):
+		for j in range(CONST_MIDJOINT,CONST_TAILJOINT):
 			p1 = originBackPosture[j]
 			p2 = localBackPosture[j]
 			
@@ -733,13 +737,13 @@ class LocalNode:
 		zTotal = 0.0
 		totalAngle = 0.0		
 
-		joints = range(self.rootNode, 39)
+		joints = range(self.rootNode, CONST_TAILJOINT)
 
 		for i in joints:
 			xTotal = xTotal + segLength*cos(totalAngle)
 			zTotal = zTotal + segLength*sin(totalAngle)
 
-			if i < 38:
+			if i < CONST_TAILJOINT-1:
 				totalAngle = totalAngle - self.probe.getServo(i+1)
 				totalAngle = self.normalizeAngle(totalAngle)
 						
@@ -1228,9 +1232,8 @@ class LocalNode:
 	
 	
 		" SPECIFY SIZE OF GRID AND CONVERSION PARAMETERS "
-		PIXELSIZE = 0.05
 		mapSize = 2*max(max(maxX1,math.fabs(minX1)),max(maxY1,math.fabs(minY1))) + 1
-		pixelSize = PIXELSIZE
+		pixelSize = CONST_PIXELSIZE
 		numPixel = int(2.0*mapSize / pixelSize + 1.0)
 		divPix = math.floor((2.0*mapSize/pixelSize)/mapSize)
 
@@ -1813,20 +1816,20 @@ class LocalNode:
 				currU = nextU
 
 	
-			#DERIV_WIDTH = 6
-			DERIV_WIDTH = 16
+			#CONST_DERIV_WIDTH = 6
+			CONST_DERIV_WIDTH = 16
 
 
 			for k in range(len(medialWidth)):
 				
-				if (k-DERIV_WIDTH) > 0 and (k+DERIV_WIDTH) < len(medialWidth):
+				if (k-CONST_DERIV_WIDTH) > 0 and (k+CONST_DERIV_WIDTH) < len(medialWidth):
 
 					diffs = []
 
-					for l in range(0,DERIV_WIDTH+1):
+					for l in range(0,CONST_DERIV_WIDTH+1):
 
-						if (k-DERIV_WIDTH+l) >= 0 and (k+l) < len(medialWidth):
-							ang1 = medialWidth[k-DERIV_WIDTH+l]["linePoint"][2]
+						if (k-CONST_DERIV_WIDTH+l) >= 0 and (k+l) < len(medialWidth):
+							ang1 = medialWidth[k-CONST_DERIV_WIDTH+l]["linePoint"][2]
 							ang2 = medialWidth[k+l]["linePoint"][2]
 							diffs.append(fabs(diffAngle(normalizeAngle(ang1),normalizeAngle(ang2))))
 
@@ -1897,7 +1900,7 @@ class LocalNode:
 				contigFinalIndex = 0
 
 
-				TURN_WIDTH = 15
+				CONST_TURN_WIDTH = 15
 
 				#for val in longPathWidth:
 				for kIndex in range(len(longPathWidth)):
@@ -1910,7 +1913,7 @@ class LocalNode:
 					distU = val["distU"]
 					asymm = val["asymm"]
 
-					if angDeriv > maxDeriv and kIndex > TURN_WIDTH and kIndex < (len(longPathWidth)-TURN_WIDTH):
+					if angDeriv > maxDeriv and kIndex > CONST_TURN_WIDTH and kIndex < (len(longPathWidth)-CONST_TURN_WIDTH):
 						maxDeriv = angDeriv
 						contigInflection = kIndex
 
@@ -2097,11 +2100,14 @@ class LocalNode:
 				#if maxDeriv >= 0.6:
 				#if False:
 
+				CONST_MAX_DERIV = 0.6
+				CONST_DERIV_OFFSET = 0.2
+
 				""" use this calculation to determine the featureless property """
-				if maxDeriv >= 0.6:
+				if maxDeriv >= CONST_MAX_DERIV:
 					self.isFeatureless = False
 
-				if self.useBend and maxDeriv >= 0.6:
+				if self.useBend and maxDeriv >= CONST_MAX_DERIV:
 
 					inflectionPoint = None
 
@@ -2113,7 +2119,7 @@ class LocalNode:
 
 							angDeriv = longPathWidth[centerMassIndex]["angDeriv2"]
 							#if angDeriv >= maxDeriv - 0.2:
-							if angDeriv >= 0.6:
+							if angDeriv >= CONST_MAX_DERIV:
 								inflectionPoint = copy(longPathWidth[centerMassIndex]["linePoint"])
 								#print self.nodeID, "inflection boundaries:", inflectionPoint, contigInflection, angDeriv, maxDeriv, len(longPathWidth)
 								print self.nodeID, "inflection boundaries:", inflectionPoint, centerMassIndex, angDeriv, maxDeriv, len(longPathWidth)
@@ -2121,7 +2127,7 @@ class LocalNode:
 					if inflectionPoint == None:
 						if longPathWidth[contigInflection-1]["angDeriv2"] < maxDeriv and longPathWidth[contigInflection+1]["angDeriv2"] < maxDeriv:
 							angDeriv = longPathWidth[contigInflection]["angDeriv2"]
-							if angDeriv >= maxDeriv - 0.2:
+							if angDeriv >= maxDeriv - CONST_DERIV_OFFSET:
 								inflectionPoint = copy(longPathWidth[contigInflection]["linePoint"])
 								print self.nodeID, "inflection boundaries:", inflectionPoint, contigInflection, angDeriv, maxDeriv, len(longPathWidth)
 
@@ -2129,6 +2135,9 @@ class LocalNode:
 				else:
 					inflectionPoint = None
 
+				CONST_CONTIGLEN = 25
+				CONST_CONTIGDENSITY = 0.05
+				CONST_INDEX_RAIL = 6
 
 				" conditions for a bloom detection "
 				bloomPoint = None
@@ -2145,9 +2154,10 @@ class LocalNode:
 
 					print self.nodeID, "bloom boundaries:", frontBoundIndex, backBoundIndex, len(longPathWidth), cLen, dens, angDeriv, asymm, area, negArea, slopes[0]+slopes[1]
 
-					print frontBoundIndex <= 6, backBoundIndex >= len(longPathWidth)-7, cLen < 25, dens >= 0.05
+					print frontBoundIndex <= CONST_INDEX_RAIL, backBoundIndex >= len(longPathWidth)-CONST_INDEX_RAIL-1, cLen < CONST_CONTIGLEN, dens >= CONST_CONTIGDENSITY 
 
-					if (frontBoundIndex <= 6 or backBoundIndex >= len(longPathWidth)-7) and cLen < 25 and dens >= 0.05:
+					#if (frontBoundIndex <= 6 or backBoundIndex >= len(longPathWidth)-7) and cLen < 25 and dens >= 0.05:
+					if (frontBoundIndex <= CONST_INDEX_RAIL or backBoundIndex >= len(longPathWidth)-CONST_INDEX_RAIL-1) and cLen < CONST_CONTIGLEN and dens >= CONST_CONTIGDENSITY:
 						bloomPoint = longPathWidth[pointIndex]["linePoint"]
 
 						#ax2.annotate("%1.2f %1.2f %1.2f %1.3f %s" % (dens, asymm, area, negArea, repr(slopes[0]+slopes[1])), xy=(contigCenterMass[0], 0.3), xytext=(contigCenterMass[0], 0.8), color='k')
@@ -2156,6 +2166,12 @@ class LocalNode:
 					else:
 						print "bloom REJECT"
 
+				CONST_CONTIGLEN2 = 5
+				CONST_CONTIGLEN3 = 20
+				CONST_CONTIGAREA = 0.1
+				CONST_ANGDERIV = 0.1
+				CONST_SLOPE = 0.4
+				CONST_INDEX_RAIL = 6
 
 				" conditions for a arch detection "
 				archPoint = None
@@ -2171,28 +2187,22 @@ class LocalNode:
 					slopes = contigSlopes[0]
 
 					print self.nodeID, "arch boundaries:", frontBoundIndex, backBoundIndex, len(longPathWidth), cLen, dens, angDeriv, asymm, area, negArea, slopes[0]+slopes[1]
-					#print frontBoundIndex > 6, backBoundIndex < len(longPathWidth)-7, angDeriv < 0.03, cLen > 5, cLen <= 20, area > 0.1, (slopes[0]+slopes[1]) > 0.37
-					#print frontBoundIndex > 6, backBoundIndex < len(longPathWidth)-7, angDeriv < 0.1, cLen > 5, cLen <= 20, area > 0.1, (slopes[0]+slopes[1]) > 0.37
-					print frontBoundIndex > 6, backBoundIndex < len(longPathWidth)-7, angDeriv < 0.1, cLen > 5, cLen <= 20, area > 0.1, (slopes[0]+slopes[1]) > 0.4
+					print frontBoundIndex > CONST_INDEX_RAIL, backBoundIndex < len(longPathWidth)-CONST_INDEX_RAIL-1, angDeriv < CONST_ANGDERIV, cLen > CONST_CONTIGLEN2, cLen <= CONST_CONTIGLEN3, area > CONST_CONTIGAREA, (slopes[0]+slopes[1]) > CONST_SLOPE
 
-					#ax2.annotate("%1.2f %1.2f %1.2f %1.3f %s" % (dens, asymm, area, negArea, repr(slopes[0]+slopes[1])), xy=(contigCenterMass[0], 0.3), xytext=(contigCenterMass[0], 0.8), color='b')
-
-					#if (frontBoundIndex > 6 and backBoundIndex < len(longPathWidth)-7) and angDeriv < 0.03 and cLen > 5 and cLen <= 20 and area > 0.2 and dens >= 0.03:
-					#if (frontBoundIndex > 6 and backBoundIndex < len(longPathWidth)-7) and angDeriv < 0.03 and cLen > 5 and cLen <= 20 and area > 0.2 and (slopes[0]+slopes[1]) > 0.37:
-					#if (frontBoundIndex > 6 and backBoundIndex < len(longPathWidth)-7) and angDeriv < 0.1 and cLen > 5 and cLen <= 20 and area > 0.1 and (slopes[0]+slopes[1]) > 0.37:
-					if (frontBoundIndex > 6 and backBoundIndex < len(longPathWidth)-7) and angDeriv < 0.1 and cLen > 5 and cLen <= 20 and area > 0.1 and (slopes[0]+slopes[1]) > 0.40:
-						# and angDeriv < 0.1:
-						#pass and cLen < 25 and dens >= 0.03:
+					if (frontBoundIndex > CONST_INDEX_RAIL and backBoundIndex < len(longPathWidth)-CONST_INDEX_RAIL-7) and angDeriv < CONST_ANGDERIV and cLen > CONST_CONTIGLEN2 and cLen <= CONST_CONTIGLEN3 and area > CONST_CONTIGAREA and (slopes[0]+slopes[1]) > CONST_SLOPE:
 						archPoint = longPathWidth[pointIndex]["linePoint"]
 
 						print "arch ACCEPT"
 					else:
 						print "arch REJECT"
 
+				CONST_CONTIGLEN_BOWTIE = 40
+				CONST_CONTIGDENSITY2 = 0.1
+
 
 				for k in range(len(contigLen)):
 
-					if contigLen[k] > 40 and contigDensity[k] > 0.1:
+					if contigLen[k] > CONST_CONTIGLEN_BOWTIE and contigDensity[k] > CONST_CONTIGDENSITY2:
 						print self.nodeID, "BOWTIE from spatial features"
 						self.isBowtie = True
 
@@ -3066,7 +3076,7 @@ class LocalNode:
 		if len(points) > 0:
 				
 			#self.c_vert = self.computeAlpha2(points, radius = 0.12)
-			self.c_vert = self.computeAlpha2(points, radius = 0.4)
+			self.c_vert = self.computeAlpha2(points)
 			" cut out the repeat vertex "
 			self.c_vert = self.c_vert[:-1]
 			
@@ -3120,14 +3130,14 @@ class LocalNode:
 			#print points
 		
 			if sweep:	
-				self.b_vert = self.computeAlpha2(points, radius = 0.001)
+				self.b_vert = self.computeAlpha2(points)
 				" cut out the repeat vertex "
 				self.b_vert = self.b_vert[:-1]
 				
 				self.b_vert = self.convertAlphaUniform(self.b_vert)
 
 			else:
-				self.a_vert = self.computeAlpha2(points, radius = 0.2)
+				self.a_vert = self.computeAlpha2(points)
 				" cut out the repeat vertex "
 				self.a_vert = self.a_vert[:-1]
 				
@@ -3217,7 +3227,7 @@ class LocalNode:
 		return new_vert			
 		#self.a_vert = new_vert
 	
-	def computeAlpha2(self, points, radius = 0.2):
+	def computeAlpha2(self, points):
 		
 		global alphaPlotCount
 		plotIter = False
@@ -3226,7 +3236,9 @@ class LocalNode:
 		
 		isDone = False
 		#ALPHA_RADIUS = 0.1
-		ALPHA_RADIUS = 0.2
+		CONST_ALPHA_RADIUS = 0.2
+
+		radius = CONST_ALPHA_RADIUS
 		
 		while not isDone:
 	
@@ -3243,8 +3255,7 @@ class LocalNode:
 			try:			
 
 				saveFile = ""	
-				#saveFile += "radius = " + repr(radius) + "\n"
-				saveFile += "radius = " + repr(ALPHA_RADIUS) + "\n"
+				saveFile += "radius = " + repr(radius) + "\n"
 				saveFile += "perturbPoints = " + repr(perturbPoints) + "\n"
 				
 				isWritten = False
@@ -3258,7 +3269,7 @@ class LocalNode:
 					else:
 						isWritten = True
 	
-				vertices = alphamod.doAlpha(ALPHA_RADIUS,perturbPoints)
+				vertices = alphamod.doAlpha(radius,perturbPoints)
 				numVert = len(vertices)
 	
 				os.remove("doLocalAlphaInput_%08u.txt" % (alphaPlotCount))
@@ -3293,7 +3304,7 @@ class LocalNode:
 				sys.stderr.flush()
 
 				""" slightly increase the alpha radius """
-				ALPHA_RADIUS += 0.01
+				radius += 0.01
 
 
 		return vertices

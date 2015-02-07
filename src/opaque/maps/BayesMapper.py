@@ -526,7 +526,7 @@ class BayesMapper:
 						#		isSubsumed = True
 
 				""" evaluate the map integrity """
-				currHyp.computeEval()
+				#currHyp.computeEval()
 
 				self.drawPathAndHull2(currHyp)
 

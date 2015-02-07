@@ -46,6 +46,11 @@ def __num_processors():
 		get_nprocs.argtypes = []
 		return get_nprocs()
 
+CONST_MIDJOINT = 19
+CONST_HEADJOINT = 0
+CONST_TAILJOINT = 39
+CONST_LOW_VAR = 0.001
+CONST_HIGH_VAR = 0.05
 
 @logFunction
 def getInPlaceGuess(poseData, nodeID1, nodeID2, estPose1, estPose2, supportLine, direction):
@@ -99,7 +104,9 @@ def getInPlaceGuess(poseData, nodeID1, nodeID2, estPose1, estPose2, supportLine,
 	#poseOrigin = Pose(mapHyp.nodePoses[nodeID1])
 	poseOrigin = Pose(estPose1)
 
-	if len(supportLine) > 0 and resultSum1 < resultSum3 and resultSum3 - resultSum1 > 100.0:
+	CONST_SUM_DIFF = 100.0
+
+	if len(supportLine) > 0 and resultSum1 < resultSum3 and resultSum3 - resultSum1 > CONST_SUM_DIFF:
 		newEstPose2 = poseOrigin.convertLocalOffsetToGlobal(offset1)
 		#mapHyp.nodePoses[nodeID2] = estPose2
 	else:
@@ -113,6 +120,8 @@ def getStepGuess(poseData, nodeID0, nodeID2, estPose0, estPose2, direction, dist
 	
 	#poseData = mapHyp.poseData
 
+	CONST_MID_HIST_THRESH = 10
+
 	" ESTIMATE TRAVEL WITH MEDIAL OVERLAP CONSTRAINT OF EVEN NUMBER POSE "
 	if nodeID2 >= 2:
 
@@ -123,7 +132,7 @@ def getStepGuess(poseData, nodeID0, nodeID2, estPose0, estPose2, direction, dist
 			transform, hist1 = makeMultiJunctionMedialOverlapConstraint(poseData, nodeID0, nodeID2, estPose0, estPose2, isMove = True, isForward = direction )
 		else:			
 			transform1, hist1 = makeMedialOverlapConstraint(poseData, nodeID0, nodeID2, estPose0, estPose2, isMove = True, isForward = direction, distEst = distEst )
-			if hist1[2] > 0 or hist1[1] > 10 and hist1[2] == 0:
+			if hist1[2] > 0 or hist1[1] > CONST_MID_HIST_THRESH and hist1[2] == 0:
 				transform2, hist2 = makeMedialOverlapConstraint(poseData, nodeID0, nodeID2, estPose0, estPose2, isMove = True, isForward = not direction , distEst = distEst)
 
 				if hist1[2] < hist2[2]:
@@ -197,14 +206,14 @@ def makeInPlaceConstraint(poseData, nodeID1, nodeID2):
 		localBackPosture.append(localBackProfile.convertGlobalPoseToLocal(localPosture[i]))
 
 	foreCost = 0.0
-	for j in range(0,20):
+	for j in range(0,CONST_MIDJOINT+1):
 		p1 = originForePosture[j]
 		p2 = localForePosture[j]
 		
 		foreCost += sqrt((p2[0]-p1[0])**2 + (p2[1]-p1[1])**2)		   
 	
 	backCost = 0.0
-	for j in range(20,39):
+	for j in range(CONST_MIDJOINT+1,CONST_TAILJOINT):
 		p1 = originBackPosture[j]
 		p2 = localBackPosture[j]
 		
@@ -247,9 +256,10 @@ def makeInPlaceConstraint(poseData, nodeID1, nodeID2):
 	
 	return transform
 
+CONST_MATCH_DIST1 = 2.0
 
 @logFunction
-def computeMedialError(nodeID1, nodeID2, offset, medial1, medial2, minMatchDist = 2.0):
+def computeMedialError(nodeID1, nodeID2, offset, medial1, medial2, minMatchDist = CONST_MATCH_DIST1):
 
 	#poseData = mapHyp.poseData
 	#medial1 = poseData.medialLongPaths[nodeID1][tail1]
@@ -258,8 +268,8 @@ def computeMedialError(nodeID1, nodeID2, offset, medial1, medial2, minMatchDist 
 	medialSpline1 = SplineFit(medial1, smooth=0.1)
 	medialSpline2 = SplineFit(medial2, smooth=0.1)
 
-	points1 = gen_icp.addGPACVectorCovariance(medialSpline1.getUniformSamples(),high_var=0.05, low_var = 0.001)
-	points2 = gen_icp.addGPACVectorCovariance(medialSpline2.getUniformSamples(),high_var=0.05, low_var = 0.001)
+	points1 = gen_icp.addGPACVectorCovariance(medialSpline1.getUniformSamples(),high_var=CONST_HIGH_VAR, low_var = CONST_LOW_VAR)
+	points2 = gen_icp.addGPACVectorCovariance(medialSpline2.getUniformSamples(),high_var=CONST_HIGH_VAR, low_var = CONST_LOW_VAR)
 
 	" transform pose 2 by initial offset guess "	
 	" transform the new pose "
@@ -357,6 +367,7 @@ def computeMedialError(nodeID1, nodeID2, offset, medial1, medial2, minMatchDist 
 	return sum1, matchCount
 
 
+CONST_MATCH_DIST2 = 2.0
 
 @logFunction
 def checkSupport(estPose1, medial2, nodeID1, nodeID2, offset, supportLine):
@@ -366,7 +377,7 @@ def checkSupport(estPose1, medial2, nodeID1, nodeID2, offset, supportLine):
 	#medial2 = poseData.medialAxes[nodeID2]
 	#estPose1 = mapHyp.nodePoses[nodeID1]		
 	
-	minMatchDist2 = 2.0
+	minMatchDist2 = CONST_MATCH_DIST2
 		
 	" set the initial guess "
 	poseOrigin = Pose(estPose1)
@@ -376,10 +387,10 @@ def checkSupport(estPose1, medial2, nodeID1, nodeID2, offset, supportLine):
 		localSupport.append(poseOrigin.convertGlobalToLocal(pnt))
 
 	supportSpline = SplineFit(localSupport, smooth=0.1)		
-	supportPoints = gen_icp.addGPACVectorCovariance(supportSpline.getUniformSamples(),high_var=0.05, low_var = 0.001)
+	supportPoints = gen_icp.addGPACVectorCovariance(supportSpline.getUniformSamples(),high_var=CONST_HIGH_VAR, low_var = CONST_LOW_VAR)
 		
 	medialSpline2 = SplineFit(medial2, smooth=0.1)
-	points2 = gen_icp.addGPACVectorCovariance(medialSpline2.getUniformSamples(),high_var=0.05, low_var = 0.001)
+	points2 = gen_icp.addGPACVectorCovariance(medialSpline2.getUniformSamples(),high_var=CONST_HIGH_VAR, low_var = CONST_LOW_VAR)
 
 
 	" transform pose 2 by initial offset guess "	
@@ -445,6 +456,7 @@ def checkSupport(estPose1, medial2, nodeID1, nodeID2, offset, supportLine):
 		
 	return sum1
 
+CONST_MATCH_DIST3 = 0.5
 
 
 @logFunction
@@ -636,12 +648,11 @@ def makeMultiJunctionMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose
 					overlapSum /= matchCount
 		
 		
-				#medialError, matchCount = computeMedialError(nodeID1, nodeID2, offset, minMatchDist = 0.5, tail1=k, tail2=l)
 
 				#poseData = mapHyp.poseData
 				medial1 = poseData.medialLongPaths[nodeID1][k]
 				medial2 = poseData.medialLongPaths[nodeID2][l]
-				medialError, matchCount = computeMedialError(nodeID1, nodeID2, offset, medial1, medial2, minMatchDist = 0.5)
+				medialError, matchCount = computeMedialError(nodeID1, nodeID2, offset, medial1, medial2, minMatchDist = CONST_MATCH_DIST3)
 
 		
 				" None result used to be covariance matrix "
@@ -791,7 +802,7 @@ def makeMultiJunctionMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose
 				#poseData = mapHyp.poseData
 				medial1 = poseData.medialLongPaths[nodeID1][k]
 				medial2 = poseData.medialLongPaths[nodeID2][l]
-				medialError, matchCount = computeMedialError(nodeID1, nodeID2, offset, medial1, medial2, minMatchDist = 0.5)
+				medialError, matchCount = computeMedialError(nodeID1, nodeID2, offset, medial1, medial2, minMatchDist = CONST_MATCH_DIST3)
 
 		
 				" None result used to be covariance matrix "
@@ -824,7 +835,7 @@ def makeMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose1, estPose2, 
 
 	#print "recomputing hulls and medial axis"
 	" compute the medial axis for each pose "
-	
+
 	posture1 = poseData.correctedPostures[nodeID1]
 	posture2 = poseData.correctedPostures[nodeID2]
 
@@ -841,6 +852,8 @@ def makeMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose1, estPose2, 
 	originU2 = medialSpline2.findU([0.0,0.0])	
 
 	#distEst = 0.5
+
+	CONST_COLLISION_AVG = 1.1
 
 	if inPlace:
 		" FULL LENGTH MEDIAL AXIS "
@@ -862,7 +875,8 @@ def makeMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose1, estPose2, 
 					frontSum += n
 				foreAvg = frontSum / len(frontProbeError)
 								
-				if foreAvg >= 1.4:
+				#if foreAvg >= 1.4:
+				if foreAvg >= CONST_COLLISION_AVG:
 					u2 = medialSpline2.getUOfDist(originU2, 0.0, distIter = 0.001)
 				else:	
 					u2 = medialSpline2.getUOfDist(originU2, distEst, distIter = 0.001)
@@ -881,7 +895,8 @@ def makeMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose1, estPose2, 
 					backSum += n
 				backAvg = backSum / len(backProbeError)
 								
-				if backAvg >= 1.4:
+				#if backAvg >= 1.4:
+				if backAvg >= CONST_COLLISION_AVG:
 					u2 = medialSpline2.getUOfDist(originU2, 0.0, distIter = 0.001)
 				else:	
 					u2 = medialSpline2.getUOfDist(originU2, -distEst, distIter = 0.001)
@@ -1295,13 +1310,12 @@ def computeLocalDivergence2(hypSet, nodeID1, nodeID2):
 
 		print "init memberShootIDs:", mapHyp.memberShootIDs1, mapHyp.memberShootIDs2
 
+" 60 degree threshold "
+CONST_ANG_THRESH = 1.047
 
 @logFunction
 def checkForeBranch2(hypSet, nodeID1, nodeID2, shootIDs, particleIDs):
 	
-	" 60 degree threshold "
-	ANG_THRESH = 1.047
-
 	newHyps = {}
 	poseData = hypSet.values()[0].poseData
 
@@ -1438,7 +1452,7 @@ def checkForeBranch2(hypSet, nodeID1, nodeID2, shootIDs, particleIDs):
 
 		isBranched = False
 		if foreTerm1 and foreTerm2:
-			if fabs(frontAngDiff) < ANG_THRESH:
+			if fabs(frontAngDiff) < CONST_ANG_THRESH:
 				if isUnique1 and isUnique2:
 					isBranched = True
 				if isUnique1 and not isUnique2:
@@ -1461,14 +1475,14 @@ def checkForeBranch2(hypSet, nodeID1, nodeID2, shootIDs, particleIDs):
 						isBranched = True
 		elif foreTerm1 and not foreTerm2:
 			if isUnique1:
-				if frontExist2 and fabs(frontAngDiff) < ANG_THRESH:
+				if frontExist2 and fabs(frontAngDiff) < CONST_ANG_THRESH:
 					isBranched = True
 				else:
 					if dirFlag == 0:
 						isBranched = True
 		elif foreTerm2 and not foreTerm1:
 			if isUnique2:
-				if frontExist1 and fabs(frontAngDiff) < ANG_THRESH:
+				if frontExist1 and fabs(frontAngDiff) < CONST_ANG_THRESH:
 					isBranched = True
 				else:
 					if dirFlag == 1:		
@@ -1513,9 +1527,6 @@ def checkForeBranch2(hypSet, nodeID1, nodeID2, shootIDs, particleIDs):
 
 @logFunction
 def checkBackBranch2(hypSet, nodeID1, nodeID2, shootIDs, particleIDs):
-
-	" 60 degree threshold "
-	ANG_THRESH = 1.047
 
 	newHyps = {}
 	poseData = hypSet.values()[0].poseData
@@ -1637,7 +1648,7 @@ def checkBackBranch2(hypSet, nodeID1, nodeID2, shootIDs, particleIDs):
 
 		isBranched = False
 		if backTerm1 and backTerm2:
-			if fabs(backAngDiff) < ANG_THRESH:
+			if fabs(backAngDiff) < CONST_ANG_THRESH:
 				if isUnique1 and isUnique2:
 					isBranched = True
 				if isUnique1 and not isUnique2:
@@ -1660,14 +1671,14 @@ def checkBackBranch2(hypSet, nodeID1, nodeID2, shootIDs, particleIDs):
 						isBranched = True
 		elif backTerm1 and not backTerm2:
 			if isUnique1:
-				if backExist2 and fabs(backAngDiff) < ANG_THRESH:
+				if backExist2 and fabs(backAngDiff) < CONST_ANG_THRESH:
 					isBranched = True
 				else:
 					if dirFlag == 0:
 						isBranched = True
 		elif backTerm2 and not backTerm1:
 			if isUnique2:
-				if backExist1 and fabs(backAngDiff) < ANG_THRESH:
+				if backExist1 and fabs(backAngDiff) < CONST_ANG_THRESH:
 					isBranched = True
 				else:
 					if dirFlag == 1:		

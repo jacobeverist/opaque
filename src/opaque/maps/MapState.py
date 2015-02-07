@@ -157,128 +157,6 @@ def computePathAngleVariance(pathSamples):
 	return pathVar
 
 
-@logFunction
-def getOverlapCondition(medial2, estPose2, supportLine, nodeID, plotIter = False, overlapPlotCount = 0):
-
-	if len(supportLine) == 0:
-		return 1e100
-
-	#medial2 = self.poseData.medialAxes[nodeID]
-
-	#estPose2 = self.nodePoses[nodeID]
-	
-	minMatchDist2 = 0.2
-		
-	" set the initial guess "
-	poseOrigin = Pose(estPose2)
-	
-	localSupport = []
-	for pnt in supportLine:
-		localSupport.append(poseOrigin.convertGlobalToLocal(pnt))
-
-	supportSpline = SplineFit(localSupport, smooth=0.1)		   
-	vecPoints1 = supportSpline.getUniformSamples()
-	supportPoints = gen_icp.addGPACVectorCovariance(vecPoints1,high_var=0.05, low_var = 0.001)
-		
-	medialSpline2 = SplineFit(medial2, smooth=0.1)
-	vecPoints2 = medialSpline2.getUniformSamples()
-	points2 = gen_icp.addGPACVectorCovariance(vecPoints2,high_var=0.05, low_var = 0.001)
-
-	" transformed points without associated covariance "
-	poly2 = []
-	for p in points2:
-		poly2.append([p[0],p[1]])			 
-	
-	support_pairs = []
-	for i in range(len(vecPoints2)):
-		
-		p_2 = vecPoints2[i]
-
-		" for every transformed point of A, find it's closest neighbor in B "
-		try:
-			p_1, minI, minDist = gen_icp.findClosestPointWithAngle(vecPoints1, p_2, math.pi/8.0)
-
-			if minDist <= minMatchDist2:
-				C2 = points2[i][2]
-				C1 = supportPoints[minI][2]
-
-				" we store the untransformed point, but the transformed covariance of the A point "
-				support_pairs.append([points2[i],supportPoints[minI],C2,C1])
-		except:
-			pass
-
-	cost = 0.0
-	if len(support_pairs) == 0:
-		cost = 1e100
-	else:
-		vals = []
-		sum1 = 0.0
-		for pair in support_pairs:
-	
-			a = pair[0]
-			b = pair[1]
-			Ca = pair[2]
-			Cb = pair[3]
-	
-			ax = a[0]
-			ay = a[1]		 
-			bx = b[0]
-			by = b[1]
-	
-			c11 = Ca[0][0]
-			c12 = Ca[0][1]
-			c21 = Ca[1][0]
-			c22 = Ca[1][1]
-					
-			b11 = Cb[0][0]
-			b12 = Cb[0][1]
-			b21 = Cb[1][0]
-			b22 = Cb[1][1]	  
-		
-			val = gen_icp.computeMatchErrorP([0.0,0.0,0.0], [ax,ay], [bx,by], [c11,c12,c21,c22], [b11,b12,b21,b22])
-			
-			vals.append(val)
-			sum1 += val
-			
-		cost = sum1 / len(support_pairs)
-		
-
-	if plotIter:
-		pylab.clf()
-		xP = []
-		yP = []
-		for p in supportPoints:
-			xP.append(p[0])
-			yP.append(p[1])
-		pylab.plot(xP,yP, color='b')
-
-		xP = []
-		yP = []
-		for p in poly2:
-			xP.append(p[0])
-			yP.append(p[1])
-		pylab.plot(xP,yP, color='r')
-		
-		for pair in support_pairs:
-			p1 = pair[0]
-			p2 = pair[1]
-			xP = [p1[0],p2[0]]
-			yP = [p1[1],p2[1]]
-			pylab.plot(xP,yP)
-				
-		pylab.xlim(-5,10)
-		pylab.ylim(-8,8)
-		pylab.title("nodeID %d, cost = %f, count = %d" % (nodeID, cost, len(support_pairs)))
-		pylab.savefig("overlapCost_%04u.png" % overlapPlotCount)
-		#overlapPlotCount += 1
-	
-	if len(support_pairs) == 0:
-		return 1e100
-
-	return cost
-
-
-
 
 class MapState:
 	
@@ -372,8 +250,14 @@ class MapState:
 
 		""" number of branch hypotheses and spacing between them for a branch point distribution """
 		#self.DIV_LEN = 0.2
-		self.DIV_LEN = 0.1
-		self.NUM_BRANCHES = 5
+
+		CONST_DIV_LEN = 0.1
+		CONST_NUM_BRANCHES = 5
+
+
+
+		self.DIV_LEN = CONST_DIV_LEN
+		self.NUM_BRANCHES = CONST_NUM_BRANCHES
 		#self.DIV_LEN = 0.1
 		#self.NUM_BRANCHES = 1
 
@@ -645,17 +529,17 @@ class MapState:
 			oldDist0 = pathSpline.dist_u(oldU0)
 			oldDist1 = pathSpline.dist_u(oldU1)
 
-			STEP_DIST = 0.2
-			NUM_SAMPLES = 10
+			CONST_STEP_DIST1 = 0.2
+			CONST_NUM_SAMPLES1 = 10
 
 
 			""" sample points in the neighborhood """
-			stepHigh = STEP_DIST * floor(NUM_SAMPLES/2.0)
-			stepLow = -STEP_DIST * floor(NUM_SAMPLES/2.0)
+			stepHigh = CONST_STEP_DIST1 * floor(CONST_NUM_SAMPLES1/2.0)
+			stepLow = -CONST_STEP_DIST1 * floor(CONST_NUM_SAMPLES1/2.0)
 
 			""" compute the sample points for the pose point distribution """
-			for k in range(NUM_SAMPLES):
-				newStepDist = stepLow + k * STEP_DIST
+			for k in range(CONST_NUM_SAMPLES1):
+				newStepDist = stepLow + k * CONST_STEP_DIST1
 
 				newU0 = pathSpline.getUOfDist(oldU0, newStepDist)
 				newU1 = pathSpline.getUOfDist(oldU1, newStepDist)
@@ -754,6 +638,8 @@ class MapState:
 				oldNodePose_L = self.pathClasses[pathID]["localNodePoses"][nodeID]
 				prevPose0 = oldNodePose_L
 
+				CONST_CONTIG_FRAC_THRESH1 = 0.1
+
 
 				""" find the splices that our poses match to so we can perform displacements """
 				matchedSplices = []
@@ -768,7 +654,7 @@ class MapState:
 
 					print nodeID, "contigFrac0:", k, contigFrac0
 
-					if contigFrac0 > 0.1:
+					if contigFrac0 > CONST_CONTIG_FRAC_THRESH1:
 						matchedSplices.append(splice)
 
 
@@ -779,11 +665,11 @@ class MapState:
 					globalMedial0.append(poseOrigin0.convertLocalToGlobal(p))
 
 				""" compute the distribution spread based on how long we've gone unfeatured or unlandmarked """
-				STEP_DIST = 0.1
-				NUM_SAMPLES = 10 
+				CONST_STEP_DIST2 = 0.1
+				CONST_NUM_SAMPLES2 = 10 
 
 
-				#print nodeID, "NUM_SAMPLES =", NUM_SAMPLES
+				#print nodeID, "CONST_NUM_SAMPLES2 =", CONST_NUM_SAMPLES2
 
 				isFeatureless0 = self.poseData.isNodeFeatureless[nodeID]
 
@@ -806,12 +692,12 @@ class MapState:
 					dispU0 = pathSpline.getUOfDist(oldU0, distEst)
 
 					""" sample points in the neighborhood """
-					stepHigh = STEP_DIST * floor(NUM_SAMPLES/2.0)
-					stepLow = -STEP_DIST * floor(NUM_SAMPLES/2.0)
+					stepHigh = CONST_STEP_DIST2 * floor(CONST_NUM_SAMPLES2/2.0)
+					stepLow = -CONST_STEP_DIST2 * floor(CONST_NUM_SAMPLES2/2.0)
 
 					""" compute the sample points for the pose point distribution """
-					for k in range(NUM_SAMPLES):
-						newStepDist = stepLow + k * STEP_DIST
+					for k in range(CONST_NUM_SAMPLES2):
+						newStepDist = stepLow + k * CONST_STEP_DIST2
 
 						newU0 = pathSpline.getUOfDist(dispU0, newStepDist)
 
@@ -911,6 +797,7 @@ class MapState:
 		for sPath in sPaths0:
 			allSplices.append(sPath['skelPath'])
 
+		CONST_CONTIG_FRAC_THRESH2 = 0.1
 
 		""" find the splices that our poses match to so we can perform displacements """
 		matchedSplices = []
@@ -928,7 +815,7 @@ class MapState:
 
 			print nodeID0, nodeID1, "contigFrac0,contigFrac1:", k, contigFrac0, contigFrac1
 
-			if contigFrac0 > 0.1 and contigFrac1 > 0.1:
+			if contigFrac0 > CONST_CONTIG_FRAC_THRESH2 and contigFrac1 > CONST_CONTIG_FRAC_THRESH2:
 				matchedSplices.append(splice)
 
 		if len(matchedSplices) == 0:
@@ -943,12 +830,7 @@ class MapState:
 			globalMedial0.append(poseOrigin0.convertLocalToGlobal(p))
 
 		""" compute the distribution spread based on how long we've gone unfeatured or unlandmarked """
-		#STEP_DIST = 0.2
-		STEP_DIST = 0.4
-		NUM_SAMPLES = 10 + self.unfeaturedStepCount * 2
-
-
-		#print nodeID0, "NUM_SAMPLES =", NUM_SAMPLES
+		CONST_STEP_DIST3 = 0.4
 
 		isFeatureless0 = self.poseData.isNodeFeatureless[nodeID0]
 		isFeatureless1 = self.poseData.isNodeFeatureless[nodeID1]
@@ -977,6 +859,8 @@ class MapState:
 			self.collisionLandmarks
 		except:
 			self.collisionLandmarks = {}
+
+		CONST_COLLISION_AVG = 1.1
 		
 		if direction:
 			
@@ -988,7 +872,7 @@ class MapState:
 
 			print nodeID0, nodeID1, "fore collision avg:", foreAvg
 
-			if foreAvg >= 1.1:
+			if foreAvg >= CONST_COLLISION_AVG:
 				collisionState[nodeID0][0] = True
 				print nodeID0, nodeID1, "forward collision motion"
 
@@ -1004,12 +888,14 @@ class MapState:
 
 			print nodeID0, nodeID1, "back collision avg:", backAvg
 
-			if backAvg >= 1.1:
+			if backAvg >= CONST_COLLISION_AVG:
 				collisionState[nodeID1][1] = True
 				print nodeID0, nodeID1, "backward collision motion"
 
 				self.collisionLandmarks[nodeID1] = medial1[-1]
 
+
+		CONST_PART_MOTION_DIST = 0.8
 
 		#travelDist0 = 0., travelDist1):
 		#for matchSplice in matchedSplices:
@@ -1029,13 +915,13 @@ class MapState:
 				if collisionState[nodeID0][0] or (not isFeatureless0 and not isFeatureless1):
 					distEst = 0.0
 				else:
-					distEst = -0.8
+					distEst = -CONST_PART_MOTION_DIST
 			else:
 
 				if collisionState[nodeID1][1] or (not isFeatureless0 and not isFeatureless1):
 					distEst = 0.0
 				else:
-					distEst = 0.8
+					distEst = CONST_PART_MOTION_DIST
 
 			print "distEst:", distEst
 
@@ -1052,22 +938,24 @@ class MapState:
 
 			meanDist = pathSpline.dist_u(dispU0)
 
-			#STEP_DIST = 0.2
-			#NUM_SAMPLES = 10
-
 			maxArcDist = pathSpline.dist_u(1.0)
 
-			numSamples = int(pathSpline.dist_u(1.0)/STEP_DIST)
+			numSamples = int(pathSpline.dist_u(1.0)/CONST_STEP_DIST3)
 
 			print nodeID0, "numSamples =", numSamples, ", maxArcDist =", maxArcDist
 
 			""" sample points in the neighborhood """
-			stepHigh = STEP_DIST * floor(numSamples/2.0)
-			stepLow = -STEP_DIST * floor(numSamples/2.0)
+			stepHigh = CONST_STEP_DIST3 * floor(numSamples/2.0)
+			stepLow = -CONST_STEP_DIST3 * floor(numSamples/2.0)
 
-			SPARSE_DIST = 0.4
-			DENSE_DIST = 0.4
-			DENSE_ANG_THRESH = pi/6.0 # 30 degrees
+			#SPARSE_DIST = 0.4
+			CONST_DENSE_DIST = 0.4
+			#DENSE_ANG_THRESH = pi/6.0 # 30 degrees
+
+			CONST_MOTION_STDDEV = 0.5
+			CONST_MOTION_AMP = 0.25
+
+			CONST_SAMPLE_DIST_LIMIT = 3.0
 
 			""" compute the sample points for the pose point distribution """
 			#for k in range(numSamples):
@@ -1089,21 +977,22 @@ class MapState:
 
 
 				#motionBias = 0.1 * gaussian(newDist0, meanDist, 0.5)
-				motionBias = 0.25 * gaussian(newDist0, meanDist, 0.5)
+				motionBias = CONST_MOTION_AMP * gaussian(newDist0, meanDist, CONST_MOTION_STDDEV)
 
-				if abs(meanDist-newDist0) < 3.0:
+				if abs(meanDist-newDist0) < CONST_SAMPLE_DIST_LIMIT:
 					print "sample dist:", newStepDist, newDist0, newDist1, newU0, newU1, motionBias
 					self.stepDists.append((j, newDist0, newDist1, newPose0, newPose1, newU0, newU1, motionBias))
 
-				frontCurveU = pathSpline.getUOfDist(0.0, newStepDist + 2.5)
-				backCurveU = pathSpline.getUOfDist(0.0, newStepDist - 2.5)
-				frontPose = pathSpline.point_u(frontCurveU)
-				backPose = pathSpline.point_u(backCurveU)
+				#frontCurveU = pathSpline.getUOfDist(0.0, newStepDist + 2.5)
+				#backCurveU = pathSpline.getUOfDist(0.0, newStepDist - 2.5)
+				#frontPose = pathSpline.point_u(frontCurveU)
+				#backPose = pathSpline.point_u(backCurveU)
 
-				if abs(newPose0[2]-frontPose[2]) > DENSE_ANG_THRESH or abs(newPose0[2]-backPose[2]) > DENSE_ANG_THRESH:
-					newStepDist += DENSE_DIST
-				else:
-					newStepDist += SPARSE_DIST
+				newStepDist += CONST_DENSE_DIST
+				#if abs(newPose0[2]-frontPose[2]) > DENSE_ANG_THRESH or abs(newPose0[2]-backPose[2]) > DENSE_ANG_THRESH:
+				#	newStepDist += DENSE_DIST
+				#else:
+				#	newStepDist += SPARSE_DIST
 
 		branchPoses_G = self.getGlobalBranchPoses()
 		branchPoses_L = self.getLocalBranchPoses()
@@ -1327,7 +1216,7 @@ class MapState:
 
 		#cProfile.run('runTest(probe)', 'test_prof')
 
-		JOINT_DIST = 3.0
+		#JOINT_DIST = 3.0
 
 		poseData = self.poseData
 
@@ -1488,8 +1377,9 @@ class MapState:
 						#if origBranchDists[pathID] < JOINT_DIST:
 						#if False:
 						#if True:
+						CONST_SKEL_LOCALIZE_COUNT = 20
 						""" localize the shoots every 20 poses """
-						if self.poseData.numNodes % 20 == 0:
+						if self.poseData.numNodes % CONST_SKEL_LOCALIZE_COUNT == 0:
 
 							#if minIndex < 8:
 							#	minIndex = 8
@@ -1847,13 +1737,13 @@ class MapState:
 				#ANG_THRESH = 2.0*pi/3.0
 				#ANG_THRESH = 1.0*pi/3.0
 				#ANG_THRESH = 0.5*pi/3.0
-				ANG_THRESH = pi/3.0
+				CONST_TIP_ANG_THRESH = pi/3.0
 
 
 				#if fabs(diffAngle(initPose0[2],newPose0[2])) > 2.0*pi/3.0 or fabs(diffAngle(initPose1[2],newPose1[2])) > 2.0*pi/3.0:
 				#if fabs(diffAngle(initPose0[2],newPose0[2])) > ANG_THRESH or fabs(diffAngle(initPose1[2],newPose1[2])) > ANG_THRESH:
 
-				if tipAngDiff0 > ANG_THRESH or tipAngDiff1 > ANG_THRESH:
+				if tipAngDiff0 > CONST_TIP_ANG_THRESH or tipAngDiff1 > CONST_TIP_ANG_THRESH:
 					print "reject because change in tip angle is too different"
 					isReject = True
 				else:
@@ -3718,8 +3608,8 @@ class MapState:
 
 		"""
 		#DIST_THRESH = 0.2
-		DIST_THRESH = 0.4
-		DIVERGE_THRESH = 0.8
+		#DIVERGE_THRESH = 0.8
+		CONST_SUB_THRESH = 0.4
 
 		
 		""" of all the terms, find the ones that are not subsumed by other shoots """
@@ -3804,7 +3694,7 @@ class MapState:
 									minP2 = p
 									subSkelID = pathID2
 						
-						if thisMinDist <= DIST_THRESH:
+						if thisMinDist <= CONST_SUB_THRESH:
 							self.subsumptionMatrix[pathID1][pathID2] += 1
 
 						otherTerms_G = self.globalTerms[pathID2]
@@ -3812,13 +3702,13 @@ class MapState:
 
 							dist = sqrt((p[0]-term1_G[0])**2 + (p[1]-term1_G[1])**2)
 
-							if dist < DIST_THRESH:
+							if dist < CONST_SUB_THRESH:
 								self.terminalSimilarity[pathID1][pathID2] += 1
 
 				
 				self.branchTermDivergenceDist[pathID1].append(minDist2)
 				print pathID1, minDist2, "terms:", term1_G
-				if minDist2 > DIST_THRESH:
+				if minDist2 > CONST_SUB_THRESH:
 					allTerms_L[pathID1].append(term1)
 					allTerms_G[pathID1].append(term1_G)
 					#print pathID1, "terms:", term1
@@ -3838,7 +3728,7 @@ class MapState:
 
 							dist = sqrt((p[0]-term1_G[0])**2 + (p[1]-term1_G[1])**2)
 
-							if dist < DIST_THRESH:
+							if dist < CONST_SUB_THRESH:
 								isCoincident = True
 					#if isCoincident:
 					#	allTerms_L[pathID1].append(term1)
@@ -3850,7 +3740,7 @@ class MapState:
 						for p in otherTerms_G:
 							dist = sqrt((p[0]-term1_G[0])**2 + (p[1]-term1_G[1])**2)
 
-							if dist < DIST_THRESH:
+							if dist < CONST_SUB_THRESH:
 								print term1_G, "is similar to", p
 								isUnique = False
 
@@ -4891,9 +4781,9 @@ class MapState:
 	def updateLandmarks(self):
 
 
-		BEND_THRESH = 0.9
-		ARCH_THRESH = 0.05
-		BLOOM_THRESH = 0.05
+		CONST_BEND_THRESH = 0.9
+		CONST_ARCH_THRESH = 0.05
+		CONST_BLOOM_THRESH = 0.05
 
 
 		pathIDs = self.getPathIDs()
@@ -4928,22 +4818,22 @@ class MapState:
 					print self.hypothesisID, "adding inflectionPoint for node", nodeID, "in path", pathID
 					landmarkPoint_N = spatialFeature["inflectionPoint"]
 					landmarkPoint_L = poseFrame_L.convertLocalToGlobal(landmarkPoint_N)
-					self.localLandmarks[pathID].append((landmarkPoint_L, BEND_THRESH, "bendPoint"))
-					self.nodeLandmarks[pathID][nodeID] = (landmarkPoint_N, BEND_THRESH, "bendPoint")
+					self.localLandmarks[pathID].append((landmarkPoint_L, CONST_BEND_THRESH, "bendPoint"))
+					self.nodeLandmarks[pathID][nodeID] = (landmarkPoint_N, CONST_BEND_THRESH, "bendPoint")
 
 				elif spatialFeature["bloomPoint"] != None:
 					print self.hypothesisID, "adding bloomPoint for node", nodeID, "in path", pathID
 					landmarkPoint_N = spatialFeature["bloomPoint"]
 					landmarkPoint_L = poseFrame_L.convertLocalToGlobal(landmarkPoint_N)
-					self.localLandmarks[pathID].append((landmarkPoint_L, BLOOM_THRESH, "bloomPoint"))
-					self.nodeLandmarks[pathID][nodeID] = (landmarkPoint_N, BLOOM_THRESH, "bloomPoint")
+					self.localLandmarks[pathID].append((landmarkPoint_L, CONST_BLOOM_THRESH, "bloomPoint"))
+					self.nodeLandmarks[pathID][nodeID] = (landmarkPoint_N, CONST_BLOOM_THRESH, "bloomPoint")
 
 				elif spatialFeature["archPoint"] != None:
 					print self.hypothesisID, "adding archPoint for node", nodeID, "in path", pathID
 					landmarkPoint_N = spatialFeature["archPoint"]
 					landmarkPoint_L = poseFrame_L.convertLocalToGlobal(landmarkPoint_N)
-					self.localLandmarks[pathID].append((landmarkPoint_L, ARCH_THRESH, "archPoint"))
-					self.nodeLandmarks[pathID][nodeID] = (landmarkPoint_N, ARCH_THRESH, "archPoint")
+					self.localLandmarks[pathID].append((landmarkPoint_L, CONST_ARCH_THRESH, "archPoint"))
+					self.nodeLandmarks[pathID][nodeID] = (landmarkPoint_N, CONST_ARCH_THRESH, "archPoint")
 
 
 				#if landmarkPoint_L != None:
@@ -5719,17 +5609,17 @@ class MapState:
 		" BEING MORE PERMISSIVE IN CREATING NEW BRANCHES BECAUSE WE CAN MERGE LATER "
 
 		" cartesian distance "
-		DISC_THRESH = 0.5
+		#DISC_THRESH = 0.5
 
-		JOINT_DIST = 3.0
+		CONST_JOINT_DIST = 3.0
 
 		" 60 degree threshold "
 		#ANG_THRESH = 0.523 # pi/6
-		ANG_THRESH = pi/8
+		#ANG_THRESH = pi/8
 		
 		" maximum distance to the parent terminal point before creating a junction point "
 		#TERM_THRESH = 0.8
-		TERM_THRESH = 0.5
+		#TERM_THRESH = 0.5
 		
 		pathIDs = self.getPathIDs()
 
@@ -5742,7 +5632,7 @@ class MapState:
 				junctionPoint = self.getGlobalJunctionPose(pathID)
 				neighDist = sqrt((depPoint[0]-junctionPoint[0])**2 + (depPoint[1]-junctionPoint[1])**2)
 
-				if neighDist < JOINT_DIST:
+				if neighDist < CONST_JOINT_DIST:
 					neighborCount += 1
 
 		if neighborCount >= 2:
@@ -5772,8 +5662,10 @@ class MapState:
 					minLandDist = landmarkDist
 					minLandmark = point_G
 
+		CONST_LANDMARK_DIST_THRESH = 1.0
+
 		#if minLandDist >= 0.5:
-		if minLandDist >= 1.0:
+		if minLandDist >= CONST_LANDMARK_DIST_THRESH:
 			print "REJECT, proposed branch point is not close enough to a spatial landmark", nodeID1, pathID, minLandDist, minLandmark, neighborCount, depPoint
 			return False, parentPathID
 
@@ -5783,59 +5675,6 @@ class MapState:
 		#	return False, parentPathID
 
 		return True, -1
-		
-
-	@logFunction
-	def determineBranchSingle(self, nodeID1, frontExist1, frontInterior1, depAngle1, depPoint1, parentPathID1, dirFlag):
-	   
-		"""
-		3) one node is departing only
-			- is only one departure ( other node has no departure, or has external departure but not same angle )
-			- is a false departure	( falseness happens if bad map data, ignore )
-		
-		Now, we have the departing angles, but we need to compare them with each other. 
-		
-		dirFlag specifies which node we want to check branches on.	We do not want to branch with the anchored end of a probe sweep   
-		"""
-
-		foreTerm1 = frontInterior1 and frontExist1
-
-		pathBranchID = -1
-		isBranch = False
-		isNew = False
-		
-		if foreTerm1:
-
-			isUnique1, duplicatePathID1 = self.checkUniqueBranch(parentPathID1, nodeID1, depAngle1, depPoint1)
-				
-			if isUnique1:
-				   
-				" foreTerm1 has unique departure "	  
-				pathID = parentPathID1
-				branchNodeID = nodeID1
-				globalJunctionPoint = depPoint1
-				depAng = depAngle1
-				junctionAug = [globalJunctionPoint[0], globalJunctionPoint[1], depAng]
-
-				poseOrigin = Pose(self.nodeRawPoses[branchNodeID])
-				newPathID = self.addPath(branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
-				pathBranchID = newPathID
-				isBranch = True
-				isNew = True
-
-					
-			if duplicatePathID1 != -1:
-				pathBranchID = duplicatePathID1
-				isBranch = True
-
-		else:
-			" no new departure, just add nodes to the leaf paths "
-			pathID = parentPathID1
-			branchNodeID = nodeID1
-			globalJunctionPoint = depPoint1
-			
-		
-		return isBranch, pathBranchID, isNew
 		
 
 	@logFunction
@@ -5872,7 +5711,7 @@ class MapState:
 		frontAngDiff = diffAngle(depAngle1, depAngle2)
 		
 		" 60 degree threshold "
-		ANG_THRESH = 1.047
+		CONST_ANG_THRESH = 1.047
 
 		pathBranchIDs = [None, None]
 
@@ -5880,7 +5719,7 @@ class MapState:
 		if foreTerm1 and foreTerm2:
 
 			" both departing case: check if same or different "
-			if fabs(frontAngDiff) < ANG_THRESH:
+			if fabs(frontAngDiff) < CONST_ANG_THRESH:
 
 				" are on top of each other and are branching to the same path "
 				if isUnique1 and isUnique2:
@@ -5986,7 +5825,7 @@ class MapState:
 
 			if isUnique1:
 				   
-				if frontExist2 and fabs(frontAngDiff) < ANG_THRESH:
+				if frontExist2 and fabs(frontAngDiff) < CONST_ANG_THRESH:
 					" both have same departure "
 					branchNodeID = nodeID1
 					globalJunctionPoint = depPoint1
@@ -6020,7 +5859,7 @@ class MapState:
 		elif foreTerm2 and not foreTerm1:
 
 			if isUnique2:
-				if frontExist1 and fabs(frontAngDiff) < ANG_THRESH:
+				if frontExist1 and fabs(frontAngDiff) < CONST_ANG_THRESH:
 
 					" both have same departure "
 					branchNodeID = nodeID2
