@@ -1,0 +1,27 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fnil\fcharset0 Cochin;}
+{\colortbl;\red255\green255\blue255;}
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\f0\fs28 \cf0 \
+\
+The results as they stand.  WE earlier presented videos showing one-off examples of successful mapping.  Each of the maps was built in controlled conditions with parameters that were specifically tuned to the particular feature of the map.\
+\
+In our desire to make a more unified mapping approach, a generalized algorithm is not as successful for individual maps, but produces mediocre results over all.  Frequently the robot fails to map the environment correctly because it erroneously eliminated the correct map.  We differentiate between eliminating the correct map possibility and the maximum likelihood map being the incorrect map.  A maximum likelihood map may be incorrect, but the possibility for the correct map still exists.  If the correct map is eliminated, there is no chance for recovering the correct map.\
+\
+The results for mapping single path environments is very successful.  With the exception of sharp 90 degree turns, the robot can map any single path with very few problems.  One of the major challenges of this type of the map is creating phantom branches.  This occurs when the robot backs up and returns to a junction feature that diverges from the existing path.  The challenge is to determine whether or not the map should have a new shoot branch or whether the robot should be localized to an existing location.  This is an example of the data association problem which is a hard problem.   Our current approach is to consider both possibilities and use criteria for elimination.\
+\
+Sharp turns like in the 90 degree junction are not always successfully mapped.  This is primarily because robot turning is compliant and exploration of turns is serendipitous.  A robot that fails to map a 90 degree junction is a robot that has not yet discovered the turn.  In the event of that the robot discovers a piece of the junction, it can continue further mapping through navigation to the undiscovered point.\
+\
+The 60 degree and curved path environments are successfully mapped with no errors because there are few poses that appear to be new branching events.  Nor are there chances for mislocalization of the robot.\
+\
+The Y junction, cross junction, and T junction environments are capable of taking advantage of spatial landmark features.  If there is a bulge in the spatial image created by sweeping the environment, a detector is used to create a landmark that is indicative of the center of a junction.  For the multi-arm junctions in question, sweeping inside the junction will show a "bloom" feature.  \
+\
+Challenges:\
+- pose particles don't always cover the correct location so the pose is localized incorrectly\
+- branch shoots are sometimes "reversed" when moved around because the branch characteristics change too much as it's moved around and shoot computation algorithm doesn't recognize the correct direction.\
+- branch location utility is not currently used in evaluating pose particles\
+- bend features are important indicators of junctions, but have high error which can jumble the representation of the junction\
+\
+\
+}

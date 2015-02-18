@@ -30,19 +30,21 @@
 <li>
 <p class="binderItem"><strong>First Paragraph</strong><br/>#Introduction<br/>
 <br/>
- In this dissertation, we develop an algorithmic approach for robotically mapping confined environments using internal sensors only.  Some challenging environments such as underground caves and pipes are impossible to explore and map with the currently external sensor technology.  Such environments can be too confined or too hostile for humans to explore.  Robotic solutions are possible, but such environments often cause available external sensors to fail.  A robotic solution that...</p>
+ In this dissertation, we develop an algorithmic approach for robotically mapping confined environments using internal sensors only.  Some challenging environments such as underground caves and pipes are impossible to explore and map with external sensors.  Such environments often cause external sensors to fail because they are too confined, too hostile for the sensors, or incompatible to the fluid medium.  These environments are also impossible for humans to explore for similar r...</p>
 </li>
 <hr/>
 <ul>
 <li>
-<p class="binderItem"><strong>Motivations</strong><br/>For example, an approach that is invariant to ambient fluid (air, water, muddy water, etc.) would significantly impact cave exploration and underground science by the access to still deeper and smaller cave arteries regardless of whether they are submerged in water.  Search and rescue operations would have additional tools for locating survivors in complicated debris piles or collapsed mines.  Utility service workers would be able to map and inspect pipe networks without having to excavate or in...</p>
+<p class="binderItem"><strong>Motivations</strong><br/>For example, an approach that is invariant to ambient fluid (air, water, muddy water, etc.) would significantly impact cave exploration and underground science by the access to still deeper and smaller cave arteries regardless of whether they are submerged in water.  Search and rescue operations would have additional tools for locating survivors in complicated debris piles or collapsed mines.  Utility service workers would be able to map and inspect pipe networks without having to excavate or ev...</p>
 </li>
 <li>
-<p class="binderItem"><strong>Challenges</strong><br/>##Limitations of Exteroceptive Sensors<br/>
+<p class="binderItem"><strong>Challenges</strong><br/>## Challenges <br/>
 <br/>
-Exteroceptive sensors are sensors that are affixed externally and designed to sense information about the robot's environment.  They're biological equivalent include such things as vision, hearing, touch, taste and smell.  The robot equivalent include touch, cameras, sonar, and laser range-finders.<br/>
+###Limitations of Exteroceptive Sensors<br/>
 <br/>
-Currently we cannot effectively explore and map these environments with exteroceptive sensors.  Current state-of-the-art mapping methods depend on exteroceptiv...</p>
+Exteroceptive sensors are sensors that are affixed externally and designed to sense information about the robot's environment.  They're biological equivalents include such things as vision, hearing, touch, taste and smell.  The robot equivalents include touch, cameras, sonar, and laser range-finders.<br/>
+<br/>
+Currently we cannot effectively explore and map these environments with exteroceptive sensors.  Current state-of-the-art mapping methods dep...</p>
 </li>
 <li>
 <p class="binderItem"><strong>Related Work</strong><br/>##Related Work<br/>
@@ -54,6 +56,18 @@ The mapping of confined spaces is a recurring theme in the research literature. 
 <br/>
 To address these challenges, our approach is to develop algorithmic methods for utilizing proprioceptive joint angle information on an articulated mobile robot to enable exploration and mapping of a confined environment.  From a series of complete posture information sets, we build up void space information into a posture image and integrate it into a whole map.  We hypothesize that with the posture images taken at multiple robot poses in the environment, we can integrate them into a...</p>
 </li>
+<hr/>
+<ul>
+<li>
+<p class="binderItem"><strong>draft Experimental System</strong><br/>##Experimental System<br/>
+<br/>
+Robot setup, joints and geometry, environmental parameters, simulation.<br/>
+<br/>
+We explicitly chose to develop our approach in a simulation environment in order to rapidly develop a theoretical framework to the problem of mapping without external sensing.  In future work, we will apply these techniques to physical robots.<br/>
+<br/>
+We choose to use the Bullet physics engine (version 2.77) because it is free, open source, mature, and actively developed.  Though it is primarily designed for...</p>
+</li>
+</ul>
 </ul>
 <hr/>
 <li>
@@ -68,35 +82,14 @@ To address these challenges, our approach is to develop algorithmic methods for 
 <li>
 <p class="binderItem"><strong>Pose Map</strong><br/>Simple map, just sensor data and poses in the environment</p>
 </li>
-</ul>
-<hr/>
 <li>
-<p class="binderItem"><strong>Control and Locomotion</strong><br/>#Control and Locomotion</p>
-</li>
-<hr/>
-<ul>
-<li>
-<p class="binderItem"><strong>Control Methodology</strong><br/>##Control Methodology<br/>
+<p class="binderItem"><strong>draft sensing copy</strong><br/><br/>
 <br/>
-Backbone curve fitting, IK method, segmented behaviors</p>
-</li>
-<li>
-<p class="binderItem"><strong>Behaviors</strong><br/>##Behaviors<br/>
+##Problem<br/>
 <br/>
-Locomotion steps, extensions, path-following, anchoring</p>
-</li>
-</ul>
-<hr/>
-<li>
-<p class="binderItem"><strong>Defining Position</strong><br/>#Defining Position</p>
-</li>
-<hr/>
-<ul>
-<li>
-<p class="binderItem"><strong>Defining Pose and Direction</strong><br/>Orientation and coordinate frame on articulated robot</p>
-</li>
-<li>
-<p class="binderItem"><strong>Motion Models</strong><br/>Estimating travel of articulated robot</p>
+Now that we are able to travel through the environment and estimate our motion, the next order of business is to be able to sense the environment.  With no exteroceptive sensors, this is quite a challenging problem.  Somehow, we must use our proprioceptive joint sensors to build some information about the environment.<br/>
+<br/>
+We use a common sense assumption that the robot's body can never intersect with an obstacle.  We call this the Obstacle-Exclusion Assumption.  If we take the corollar...</p>
 </li>
 </ul>
 <hr/>
@@ -105,6 +98,45 @@ Locomotion steps, extensions, path-following, anchoring</p>
 </li>
 <hr/>
 <ul>
+<li>
+<p class="binderItem"><strong>Problem</strong><br/><br/>
+How to build features and landmarks from void space data?  Need to build a map and localize against.  Most feature techniques use boundary information as primitives for environmental features.  Need approach that uses only void space.<br/>
+<br/>
+<br/>
+Features to build the map<br/>
+<br/>
+Boundary features<br/>
+Obstacles/walls<br/>
+Corners<br/>
+<br/>
+Void space features<br/>
+Shape features<br/>
+Spatial features</p>
+</li>
+<li>
+<p class="binderItem"><strong>Spatial Curve</strong><br/>Shape of the sensed void space in local environment should give us information.<br/>
+How can we extract this information and represent it in an useful way?<br/>
+<br/>
+Spatial curve ct = scurve(It) where It is posture image<br/>
+Smoothed version gives us a curve representation of the local space<br/>
+<br/>
+</p>
+</li>
+<li>
+<p class="binderItem"><strong>Spatial Features</strong><br/>3 different spatial features from posture images<br/>
+blooms<br/>
+arches<br/>
+bends<br/>
+Landmarks usually indicate junctions or gaps in space<br/>
+Can match landmarks together to improve the map<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+</p>
+</li>
 <li>
 <p class="binderItem"><strong>Finding Landmarks</strong><br/>Landmark features to track environment, difficult using only proprioceptive sensing</p>
 </li>
@@ -126,10 +158,126 @@ Locomotion steps, extensions, path-following, anchoring</p>
 </ul>
 <hr/>
 <li>
-<p class="binderItem"><strong>Pose-Based Mapping</strong><br/>#Pose-Based Mapping</p>
+<p class="binderItem"><strong>Defining Position</strong><br/>#Defining Position</p>
 </li>
 <hr/>
 <ul>
+<li>
+<p class="binderItem"><strong>Presentation Raw</strong><br/><br/>
+Articulated robot has no high-inertia center of mass to serve as its coordinate frame.<br/>
+Individual segments are rotating and undulating<br/>
+Need method to determine direction of snake robot.<br/>
+Information not provided by individual body segments<br/>
+<br/>
+<br/>
+Posture curve generated by smoothed B-spline with joint locations as inputs<br/>
+Generates the posture frame for local coordinate system<br/>
+<br/>
+Different from spatial curve which represents local sensed environment <br/>
+</p>
+</li>
+<li>
+<p class="binderItem"><strong>Defining Pose and Direction</strong><br/>Orientation and coordinate frame on articulated robot</p>
+</li>
+<li>
+<p class="binderItem"><strong>Motion Models</strong><br/>Estimating travel of articulated robot</p>
+</li>
+<li>
+<p class="binderItem"><strong>draft Motion Estimation copy</strong><br/>##Problem<br/>
+<br/>
+<br/>
+Now that our snake robot is capable of moving through the environment with the adaptive concertina gait behavior, we need some way of estimating how far it is moving and in which direction.<br/>
+<br/>
+As we established earlier, we have no external sensors because we assume their failure from environmental conditions.  We cannot rely on GPS since it is not effective underground or in pipes.  We do not have wheeled shaft encoders since we have no wheels and do not expect to always travel through...</p>
+</li>
+</ul>
+<hr/>
+<li>
+<p class="binderItem"><strong>Control and Locomotion</strong><br/>#Control and Locomotion<br/>
+<br/>
+Simulated robot control<br/>
+algorithms tuned for simulated environment<br/>
+Adaptive anchoring<br/>
+making strong and stable anchors to the walls with verification<br/>
+Concertina locomotion<br/>
+Practical heuristic for sensor-deprived environment<br/>
+Snake control, backbone curves (Chirikjian)<br/>
+inverse kinematics by fitting to a curve<br/>
+Segmented behaviors<br/>
+sections of linkage controlled by different behaviors<br/>
+Smooth motion and compliance<br/>
+interpolated and compliant motion<br/>
+Stability detection<br/>
+checking ...</p>
+</li>
+<hr/>
+<ul>
+<li>
+<p class="binderItem"><strong>Control Methodology</strong><br/>##Control Methodology<br/>
+<br/>
+Backbone curve fitting, IK method, segmented behaviors</p>
+</li>
+<li>
+<p class="binderItem"><strong>Behaviors</strong><br/>##Behaviors<br/>
+<br/>
+Locomotion steps, extensions, path-following, anchoring</p>
+</li>
+<li>
+<p class="binderItem"><strong>draft control and behaviors copy</strong><br/><br/>
+##Problem<br/>
+<br/>
+FIXME: Related work and our contrasted difference.  What can we achieve that others cannot.  Why is our approach better for this particular case?  <br/>
+<br/>
+In order to successfully control a snake robot and have it move through the environment, we need a solution for locomotion, motion planning, and handling collisions.  Since we have no exteroceptive sensors, this makes the problem challenging.  The robot is unable to sense what is right in front of it and must move blindly.  The snake cou...</p>
+</li>
+</ul>
+<hr/>
+<li>
+<p class="binderItem"><strong>Building Maps</strong><br/>#Building Maps<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+In-place constraint<br/>
+step constraint<br/>
+<br/>
+<br/>
+</p>
+</li>
+<hr/>
+<ul>
+<li>
+<p class="binderItem"><strong>building maps</strong><br/>##Mapping Problem Definition<br/>
+<br/>
+<br/>
+ • naive method<br/>
+ • axis method<br/>
+ • junction method<br/>
+ • search method<br/>
+<br/>
+<br/>
+Given the actions of locomotion steps \\(A_{1:t} = {f, b, f, f, f, … , b, b}\\) where:<br/>
+<br/>
+<!--<br/>
+\[<br/>
+    A_i = <br/>
+\begin{cases}<br/>
+    f, & \text{forward step}\\<br/>
+    b, & \text{backward step}<br/>
+\end{cases}<br/>
+\]<br/>
+--><br/>
+<br/>
+and the sensor data posture vectors:<br/>
+<br/>
+\\( \bar{\phi}_t = { \phi^t_1, \phi^t_2, … , \phi^t_{M-1}, \phi^t_M} \\)<br/>
+<br/>
+the posture sequence:<br/>
+<br/>
+\\( \bar{\Phi}_{1:t} = { \bar{\phi}_1, \bar{\phi}_2, … , \bar{\...</p>
+</li>
 <li>
 <p class="binderItem"><strong>Inter-Pose Correction</strong><br/>Correct transform between poses by ICP on medial axis</p>
 </li>
@@ -155,6 +303,15 @@ We then compute the alpha shape of C with a radius of [0.2].   The resultant alp
 Given the set of points that are the skeletonization image, the pixels are converted into nodes of a graph, and edges are added between them if they are adjacent or diagonal neighbors.  The pixel indices are converted back into global coordinates to give us ...</p>
 </li>
 </ul>
+<hr/>
+<li>
+<p class="binderItem"><strong>draft loop-closing copy</strong><br/><br/>
+##Problem Definition<br/>
+<br/>
+In the previous chapter we discussed the basics of creating a map using the pose graph representation.  In the examples, our robot was traveling forward through a pipe-like environment while building a map of its traversal.  Each pose created a node in the pose graph and an edge forming a geometric constraint between its neighbors.<br/>
+<br/>
+Each geometric constraint between poses was either an in-place constraint between a pair of nodes at the same anchored location, or a step con...</p>
+</li>
 </ul>
 <hr/>
 <li>
@@ -357,7 +514,7 @@ The definition of the divergence point is not obvious from the offset.  Given th
 </ul>
 <hr/>
 <li>
-<p class="binderItem"><strong>Probabilistic Mapping</strong><br/>#Probabilistic Mapping</p>
+<p class="binderItem"><strong>Searching for Best Map</strong><br/>#Searching for Best Map</p>
 </li>
 <hr/>
 <ul>
@@ -374,6 +531,14 @@ The definition of the divergence point is not obvious from the offset.  Given th
 <p class="binderItem"><strong>Branch Decision</strong><br/>Shoot map for each go/nogo branch decision.   Eliminate options based on degenerate conditions.</p>
 </li>
 </ul>
+<hr/>
+<li>
+<p class="binderItem"><strong>Results</strong><br/><br/>
+<br/>
+The results as they stand.  WE earlier presented videos showing one-off examples of successful mapping.  Each of the maps was built in controlled conditions with parameters that were specifically tuned to the particular feature of the map.<br/>
+<br/>
+In our desire to make a more unified mapping approach, a generalized algorithm is not as successful for individual maps, but produces mediocre results over all.  Frequently the robot fails to map the environment correctly because it erroneously eliminated t...</p>
+</li>
 </ul>
 
 </td>

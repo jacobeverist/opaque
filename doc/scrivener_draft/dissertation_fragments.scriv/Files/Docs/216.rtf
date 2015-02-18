@@ -1,0 +1,64 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fnil\fcharset0 Cochin;}
+{\colortbl;\red255\green255\blue255;}
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\f0\fs28 \cf0 \
+Starting in 2006, in search of a research topic, I was trying to make the Superbot modules do interesting things.  One of the things that frustrated me was that the available sensors were limited and located in odd places.  Furthermore, the act of adding more sensors was expensive to do for a modular robot system.  Given any configuration of the robot, one needed to figure out the best use of the sensors for the position that they're in.\
+\
+My idea was to try and see what could be done with just the modules themselves and to see what could be learned about the environment without the use of external sensors.  Particularly, I wanted to focus on the configuration of the modules and joint sensors that gave their posture.\
+\
+My first approach was to use machine learning methods to learn intrinsic properties about the environment and the robot such that optimal behaviors could be learned.  Although successful in exploiting evolutionary algorithms to evolve optimized behaviors to maximize a utility function, I did not necessarily learn very much about the environment.\
+\
+The learning approach breaks down once the environment becomes complicated.  Generic gaits do not give us useful environmental information in complex environments.  They are only one-trick ponies that fail when something about the environment changes.\
+\
+Secondly, I tried to utilize the concept of surprise to generate environmental information.  Given the steady gait and joint sensor signals, we utilized mathematical methods to identify unexpected events from the sensor experience.  Though we were able to identify outliers and surprising events from the sensor signals, there was no way to follow up and reason about the environment because we had no environmental information.  Surprise is based on breaking of the experience from the built model.  Our model was very basic and gave us no tactical information about the environment.\
+\
+The evolutionary methods are good for learning morphology and control of the robot, the surprise detection is good for detecting change in the robot-environment system, and some method is needed to build information about the environment.\
+\
+Given that the morphology of the robot is known, whose posture is controlled by a set of joints whose joint angle is measured by joint sensors, what information can we learn about the environment with this restricted sensory experience?  Delving into the literature, we explored the field of 
+\i geometric probing
+\i0  and 
+\i contact detection
+\i0 .\
+\
+Geometric probing entails the computational geometry approach of reconstructing polygons from contact points detected when using finger probes (Cole, Yap, Skiena).   The research entails algorithms for reconstructing the polygon given the data and probing strategies for reconstructing the polygon with the minimum number of probes.  In order for geometric probing to be useful, we need some way of detecting a collision with a probe.  Geometric probing is also only restricted to polygon objects.  Any environments with complex features, smoothed surfaces, and partially observed obstacles will not be applicable.  This research originally focused on a manipulator operating on an object in an operational space.  Using this approach on a mobile robot exploring an unknown environment would be challenging to extend single polygon cases to whole environments.\
+\
+Critically, the algorithms assume that you can direct your probe at any location from any direction with low cost, no risk, and perfect reliability.  When in reality, navigating a mobile robot to make these probes is very risky since we could damage the robot or it could even lose its way.  It can never be certain that it has arrived at the location it wants to be.\
+\
+In the contact detection literature, this work was also considered in the context of a manipulator exploring an object in a fixed operational space.  Instead of direct finger probes of contact points, contacts with the object are geometrically inferred from the compliant motion of the robot's manipulator joints as it slides across the object.  There are several papers that discuss the approach in detail (Kaneko, Grupen, Hadaicher).\
+\
+We attempted to take the work of contact detection and apply it to a mobile robot case.  We made a simple mobile box robot with a 2-joint arm that it uses to sweep the environment.  When it impacts the wall, it slides across it and infers the boundary of the environment using the contact detection methods.\
+\
+At every step in the environment, by sweeping the arm around and coming into contact with the walls, we were able to reconstruct some piecewise sections of the environment.   However, stopping and sweeping at very short intervals is required to build comprehensive and overlapping views of the environment.  The act of contact detection from sweeping is a very slow process.  The consequences are that frequent requirements to stop to probe, time-consuming step to actually perform the sweep, and small piecewise views on the environment mean that a lot of time is spent to get a very small amount of information.\
+\
+We asked ourselves, how can we increase the amount of information we get by an order of magnitude?  Well, one of the things that is overlooked is the morphology of the robot as a source of environmental information.  By virtue of the robot being present in space, it is indicating a lack of obstacles.  If we continue with this line of reasoning and we sweep a probe around, the union of all its postures gives an even large volume of void space.   This information creates a complementary view of the environment to the presence of obstacles determined by contact detection.\
+\
+Why has this not come up before?  Well, most mobile robots have consisted of a robot on a single rigid body chassis where multiple sensors are mounted.  The robot body is small in comparison to the environment and the lack of articulation of the body does not provide any sensor information beyond its estimated pose.  Almost all of the information about the environment comes from its sensors and dwarfs any local information that is implicit in the robot's presence in space.  Therefore, there was never any need to exploit this information.\
+\
+Now that we know in what circumstances proprioceptive spatial awareness is not important, we can then focus on situations where it is.  Any situation where we build environmental information by sweeping the void space with the robot's body would require the environment to be confined.  Placing the robot in a wide-open field would tell us nothing beyond that there is nothing within reaching distance of the robot.   Attempting move through this environment would also register no change.  The sensor experience at every point in the environment would be completely identical and give us no information.\
+\
+Any environment that could be exploited should have some confining or claustrophobic properties.  There should be obstacles that the robot comes into contact with that restricts and puts boundaries on the void space of the environment swept out by the robot.  Any location in the environment where there are no obstacles is an information-free location.  Where the void space is unrestricted, the robot's body is unrestricted and is able to perform an "optimal sweep".\
+\
+Presently, we were using an abstract robot which consists of just a mobile base and a 2-joint arm.  The base consists of just a cube that is moved around a simulated environment.  Locomotion is not modeled and only the base's position is controlled directly.    However, since the abstract robot was only giving two sensor's worth of joint data, we decided to model something more realistic that has many joints.\
+\
+Somewhat arbitrarily, we decided to model a snake robot with 40 segments and 39 joints.  We decided this because snake robot's were often presented as ideal exploration robots, but there were few examples of a snake robot performing tasks beyond locomotion.  We wanted to see if we could apply proprioceptive spatial mapping a snake robot exploration task.\
+\
+Furthermore, we wanted to see if having large amounts of joints will affect the mapping task in any way.   Our hypothesis was that more joints would equal better void space information.  From experiments this turned out to be true, but it is difficult to measure in what sense it is better.  Given the parameters of a snake robot, we can bound the types of environments that can be explored.  However, the trade off is in the increase in error from the multiple joints.  There are ways to handle this error with sensor calibration, higher resolution sensors, backlash reduction, and minimized noise.\
+\
+One of the first things that we noticed is that with the removal of a large-mass high inertia base, we have lost a stable ground reference frame.  That is, previously the probe arm's posture was kinematically computed with respect to the robot chassis which was directly related to the environment.  However, with the whole body of the snake robot moving around, we lack a reference frame from which to compute the sweep postures and relate them consistently together.  If we choose one segment on the body to act as a reference frame, the resultant union of sweep postures ends up looking like a bow-tie shape.  Clearly this does not represent the environment it is placed in.\
+\
+It was quickly determined that if we were to make use of void space data, we needed some anchor to the environment to provide the stable reference frame.  Kinematics are computed with respect to this stable reference frame to provide a consistent view of the void space environment.  But how do we provide this stable reference frame?\
+\
+Given that there are 40 body segments, we have 40 possible reference frames to choose from.  The question then becomes, which reference frame do we choose and how do we ensure that it is a stable reference frame?  We first apply anchors to one half of the snake robot and search within those body segments of the anchors for a stable reference frame.   We analyze the joint angles of the anchor bodies for any variance.   We select the section of joints that are the most stable and use a body within as our reference frame.\
+\
+Should at any time the reference frame become unstable, we have a method to recapture a close enough reference frame once the joints stabilize again.  \
+\
+A related problem is at which point do we designate the "position" of the robot in space if it is a hyper-redundant robot with no clear reference frame.  One option is to compute the center of mass as our location, but when the snake robot is turning, the center of mass resides in space outside of the robot.  A better approach is to use points on the rigid bodies as inputs to a B-spline curve.  With enough smoothness, the curve represents the gross posture of the robot, regardless of the configuration of the anchors.\
+\
+Furthermore, this curve gives us a "facing direction" of the robot.  The same point on the curve that is our reference position of the robot gives us a tangent angle that represents the orientation of the robot in the environment.  This is important since the orientation of each of the segments is wildly different due to the concertina posture.  What makes this different from a standard robot frame is that it is dynamically generated instead of a static property.\
+\
+So now that we have 1) a stable reference frame, 2) a position of the robot, and 3) an orientation of the robot, we now have the tools by which we can be placing sensor data into space.  \
+\
+The next big challenge became estimating the motion of the robot when it locomotes through the environment.  Once we do this, we can get estimates on the position of the robot in the environment and plot its local void space sweeps into a larger map.\
+}
