@@ -1,0 +1,68 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fnil\fcharset0 Cochin;\f1\fmodern\fcharset0 Courier;}
+{\colortbl;\red255\green255\blue255;}
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\f0\fs28 \cf0 ## Problem [sensing:problem]\
+\
+Need to argue here that we are forced to use a contact sensing modality.  However, existing contact sensing solutions only return contact point data, i.e. point and location of the boundary.  Whereas, with range-based solution, both boundary and void space information are returned.  Mostly void space in fact.\
+\
+Types of sensing can be classified with the following table.  The biological senses are grouped with their analogous robotics counterparts.\
+\
+<!--\
+\
+\\begin\{center\}\
+	\\begin\{tabular\}\{| c | p\{5cm\} | p\{5cm\} |\}\
+	\\hline\
+	 	& Biology	& Robotics \\\\ \\hline\
+	Exteroception & sight, hearing, touch, taste, smell & camera, sonar, LIDAR, tactile \\\\ \\hline\
+	Interoception & hunger, hot, cold, thirst, pain & battery sensor, temperature \\\\ \\hline\
+	Proprioception & relative positions of neighboring parts of the body, strength of effort & joint sensor, strain sensor, current sensor, accelerometer, gyros, INS \\\\ \\hline\
+	\\end\{tabular\}\
+\\end\{center\}\
+-->\
+\
+\
+For the mapping problem, we are going to need a lot of data to build a map of the environment.  Existing contact solutions that rely on proprioception such as finger probing and geometric contact detection are too time-consuming to extract data in large volumes.  Similarly, other contact sensing solutions such as bump sensors, whiskers or tactile surfaces give more 
+\i uncertain
+\i0  and 
+\i noisy
+\i0  contact data while still being time-consuming.
+\f1\fs24 \
+
+\f0\fs28 \
+The existing contacts detection approaches that use proprioception are based in the robotic manipulation literature.  An end effector as affixed to an arm affixed to ground in an operational workspace.  Contact points are inferred from a combination of the choice of motion, the proprioceptive sensors, and the geometry of the robot.  The two major approaches are geometric contact detection and finger probing.  The first slides the linkage of the arms along a surface to be detected and reconstruct the contact points from the joint values.  The latter infers the contact point from the halting of motion of the end effector along a linear path.\
+\pard\pardeftab720\li540\fi-540
+\cf0 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+\cf0 We observe that none of the existing contact sensing solutions emphasize extracting void space as part of their sensing roles.  We recognize that in the absence of a range sensor to provide void space data, we can use the body of the robot to extract void space instead.  In fact, void space data is extracted in significantly more volumes that it becomes practical to use contact sensing solution to build maps.  In this dissertation, we build maps primarily with void space data.  We use a rough collision detector to detect dead-ends and is our only instance using any boundary information.\
+\
+The ratio of the volume of boundary information to void space information can be modeled by the scan angle of a particular range sensor.  For a particular scan angle, volume of information can be modeled as number of pixels for some pixel resolution.  The number of pixels of void space and boundary can be computed from the area and arc length of a fraction of a circle.\
+\
+For some scan angle \\\\(\\theta\\\\) and some boundary range \\\\(r\\\\), the arc length \\\\(L\\\\) and area \\\\(A\\\\) is:\
+\
+\
+<!--\
+\\begin\{equation*\}\
+L = r \\theta\
+\\end\{equation*\}\
+\\begin\{equation\}\
+A = \\frac\{r^2 \\theta\}\{2\} \
+\\end\{equation\}\
+-->\
+\
+For some pixel size \\\\(p_d\\\\), the ratio of the volume of void space to the volume of boundary is:\
+\
+<!--\
+\\begin\{equation*\}\
+\\frac\{A\}\{L*d_p\}  = \\frac\{2 * r * \\theta\}\{r^2 * \\theta * d_p\} = \\frac\{2\}\{r * d_p\} \
+\\end\{equation*\}\
+-->\
+\
+We can see, for any reasonable set of values, a range sensor provides far more void space data than boundary data.  For instance, for \\\\(r=10.0\\\\) and a pixel width of \\\\(d_p = 0.1\\\\), the ratio of void space to boundary data is \\\\(\\frac\{2\}\{r * d_p\}= 2\\\\).  This void space data is often used in many SLAM techniques.  Therefore, in a contact-based mapping approach, it would be reasonable to seek out some way to find the comparable void space data for contact sensing and exploit it.\
+\
+For our particular sensing approach, we chose to use proprioceptive sensors because we want to use the intrinsic geometry of the robot's body as the sensor.  For any confined environment, it will be difficult to find the workspace to deploy many of the extended contact sensing approaches such whiskers or probes and use them effectively.  Furthermore, a specifically designed external contact sensors such as tactile surfaces or bump sensors will see repeated and near-constant use and may give overly noisy and uncertain data coupled with hastened wear-and-tear.   Any approach that uses the existing robot body and does not depend on adding more sensors will be of great use to sensor-challenged and confined environments with existing robots unaugmented.\
+\
+Our approach is to use the body of the robot to sweep the space of the environment and build up a model of the void space of the environment.  From this void space, we can build up a map of the environment without explicitly sensing the obstacles and boundary.  We focus on identifying, not where the obstacles are, but where they are not.   Through this, we hope to extract the maximum amount of information about the environment with the minimal amount of sensors and action.\
+\
+}

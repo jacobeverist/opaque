@@ -1,0 +1,196 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fnil\fcharset0 Cochin;}
+{\colortbl;\red255\green255\blue255;}
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\f0\fs28 \cf0 \
+\
+##Tracking Motion\
+\
+<!--\
+%-What a reference is\
+%-each active reference can be used to compute the pose of the snake at that given time\
+%-active references may disagree with each other\
+%-take current oldest active reference to compute current pose\
+%-How to create new references (kinematic computation)\
+%-When to deactivate references (violation of local/pre stability)\
+%-Loss of all references recovery\
+-->\
+\
+In order to track motion through the environment, we need to establish our mathematical framework for defining the relative position of things between the robot and the environment.  We then define the concept of a  *reference pose* to track the position of the environment while the snake is in motion.\
+\
+###Pose and Coordinate Frames\
+\
+![Pose of rigid body with respect to global frame.][fig:pose_frame1]\
+\
+[fig:pose_frame1]: {\field{\*\fldinst{HYPERLINK "scrivlnk://203"}}{\fldrslt 3_pose_frame1.png}} width=400px\
+\
+A pose \\\\(P\\\\) defines the position and orientation of a rigid body in a 2D plane.  Each pose is defined with respect to a coordinate frame \\\\(O\\\\) using 3 values: \\\\((x,y,\\theta)\\\\).  A coordinate frame is either affixed in the global environment or affixed to a rigid body on the snake.  An example of the global frame \\\\(O_g\\\\) and a pose \\\\(P_k\\\\) are shown in [](#fig:pose_frame1).\
+\
+By convention, we will specify in the superscript which coordinate frame a pose \\\\(k\\\\) is defined with respect to.  For the global frame, the pose is written as \\\\(P_k^g\\\\).  If the pose is with respect to some other coordinate frame \\\\(O_a\\\\), the pose is written as \\\\(P_k^a\\\\).  If the superscript is omitted, we assume the global frame.\
+\
+![Pose of A and B with respect to global frame.][fig:pose_frame2]\
+\
+[fig:pose_frame2]: {\field{\*\fldinst{HYPERLINK "scrivlnk://190"}}{\fldrslt 3_pose_frame2.png}} width=400px\
+\
+In a robot system with multiple rigid bodies, we will have a coordinate frame for each body.  Often times, we wish to transform poses between coordinate frames.  To do this, we first need to define the relationship between coordinate frames, specified by the pose of their origins.  In the global frame \\\\(O_g\\\\), the pose of the origin \\\\(O_g\\\\) is \\\\(P_g = (0,0,0)\\\\).  For two example coordinate frames attached to rigid bodies, we define the pose of origin \\\\(O_a\\\\) to be \\\\(P_a = (x_a, y_a, \\theta_a)\\\\) and the pose of origin \\\\(O_b\\\\) to be \\\\(P_b = (x_b, y_b, \\theta_b)\\\\) as shown in [](#fig:pose_frame2).\
+\
+Suppose we wanted to compute pose \\\\(b\\\\) with respect to frame \\\\(O_a\\\\).  That is, we wish to find \\\\(P_b^a\\\\) and we are given \\\\(P_a^g\\\\) and \\\\(P_b^g\\\\).  First we focus on finding the Cartesian component of the pose, point \\\\(p_b^a = (x_b^a, y_b^a)\\\\).  We compute the angle portion \\\\(\\theta_b^a\\\\) separately.  From [](#fig:pose_frame2), we define the following:\
+\
+<!--\
+\\begin\{equation\}\
+\\label\{equ:coord1\}\
+R_a =\
+\\begin\{bmatrix\}\
+cos(\\theta_a) & sin(\\theta_a) \\\\\
+-sin(\\theta_a) & cos(\\theta_a)\
+\\end\{bmatrix\}\
+\\end\{equation\}\
+-->\
+\
+This is the rotation matrix for the difference in orientation between the global frame \\\\(O_g\\\\) and local frame \\\\(O_a\\\\).\
+\
+<!--\
+\\begin\{equation\}\
+\\label\{equ:coord2\}\
+d_a = \\sqrt\{(x_a)^2 + (y_a)^2\} \
+\\end\{equation\}\
+-->\
+\
+This is the Cartesian distance from the global frame's origin to the local frame's origin.\
+\
+<!--\
+\\begin\{equation\}\
+\\cos(\\gamma_a) = \\frac\{(x_a,y_a) \\cdot (1,0)\}\{|(x_a, y_a)| |1|\} = \\frac\{x_a\}\{d_a\} \
+\\end\{equation\}\
+\\begin\{equation\}\
+\\label\{equ:coord3\}\
+\\gamma_a = s \\cdot \\arccos \\left( \\frac\{x_a\}\{d_a\} \\right) \
+\\quad\
+\\left\\\{ \
+  \\begin\{array\}\{l l\}\
+    s = 1 & \\quad \\text\{if $y_a \\geq 0$\}\\\\\
+    s = -1 & \\quad \\text\{if $y_a < 0$\}\
+  \\end\{array\} \\right.\
+\\end\{equation\}\
+-->\
+\
+\\\\(\\gamma_a\\\\) is the angle of the vector from the global origin to the local frame origin.  The sign of \\\\(\\gamma_a\\\\) is determined to be negative if \\\\(y_a < 0\\\\).  Otherwise, \\\\(\\gamma_a\\\\) is positive.  This value corresponds to the angle shown in [](#fig:pose_frame2).\
+\
+<!--\
+\\begin\{equation\}\
+\\label\{equ:coord4\}\
+G_a = \
+\\begin\{bmatrix\}\
+cos(\\gamma_a) & sin(\\gamma_a) \\\\\
+-sin(\\gamma_a) & cos(\\gamma_a)\
+\\end\{bmatrix\}\
+\\end\{equation\}\
+-->\
+\
+\\\\(G_a\\\\) is the rotation matrix to rotate the local frame's origin onto the x-axis of the global frame.\
+\
+To find \\\\(p_b^a\\\\) in frame \\\\(O_a\\\\) from \\\\(p_b^g\\\\) in \\\\(O_g\\\\), we compute:\
+\
+<!--\
+\\begin\{equation\}\
+\\label\{equ:g_to_c_cart\}\
+p_b^a =\
+\\begin\{bmatrix\}\
+x_b^a \\\\\
+y_b^a \\\\\
+\\end\{bmatrix\}\
+ = R_a \{G_a\}^\{\\mathbf\{T\}\} \\left(G_a p_b^g \
+-\
+\\begin\{bmatrix\}\
+d_a \\\\\
+0\
+\\end\{bmatrix\}\
+\\right)\
+\\end\{equation\}\
+--> \
+\
+To find the converse, \\\\(p_b^g\\\\) from \\\\(p_b^a\\\\), we do the following:\
+\
+<!--\
+\\begin\{equation\}\
+\\label\{equ:c_to_g_cart\}\
+p_b^g =\
+\\begin\{bmatrix\}\
+x_b^g \\\\\
+y_b^g \\\\\
+\\end\{bmatrix\}\
+ = \{G_a\}^\{\\mathbf\{T\}\} \\left(\
+\\begin\{bmatrix\}\
+d_a \\\\\
+0\
+\\end\{bmatrix\}\
++ G_a \{R_a\}^\{\\mathbf\{T\}\} p_b^a \\right)\
+\\end\{equation\}\
+-->\
+\
+This approach performs a sequence of rotations to separate translation and rotation of the pose when converting between frames.  To compute the angle portion of the pose, we perform the rotation sequence by addition and subtraction of angles.  Following the sequence, we get the following: \
+\
+<!--\
+\\begin\{equation*\}\
+\\theta^a_b = \\theta_b^g + \\gamma_a - \\gamma_a - \\theta_a\
+\\end\{equation*\}\
+This reduces to:\
+\\begin\{equation\}\
+\\label\{equ:g_to_c_ori\}\
+\\theta^a_b = \\theta_b^g - \\theta_a\
+\\end\{equation\}\
+-->\
+\
+The converse is achieved similarly using Equation [](#equ:c_to_g_cart) and the following rotation sequence:\
+\
+<!--\
+\\begin\{equation*\}\
+\\theta_b^g = \\theta_b^a + \\theta_a + \\gamma_a - \\gamma_a \
+\\end\{equation*\}\
+\\begin\{equation\}\
+\\label\{equ:c_to_g_ori\}\
+\\theta_b^g = \\theta_b^a + \\theta_a\
+\\end\{equation\}\
+-->\
+\
+The final result for the pose computation is to put the Cartesian and angular components together.\
+\
+<!--\
+\\begin\{equation\}\
+P_b^a =\
+\\begin\{bmatrix\}\
+x_b^a \\\\\
+y_b^a \\\\\
+\\theta_b^a \
+\\end\{bmatrix\}\
+\\quad\
+\\left\\\{ \
+  \\begin\{array\}\{l l\}\
+    x_b^a,y_b^a & \\quad \\text\{from Equation \\ref\{equ:g_to_c_cart\}\}\\\\\
+    \\theta_b^a & \\quad \\text\{from Equation \\ref\{equ:g_to_c_ori\}\}\
+  \\end\{array\} \\right.\
+\\end\{equation\}\
+-->\
+\
+And the converse is:\
+\
+<!--\
+\\begin\{equation\}\
+P_b^g =\
+\\begin\{bmatrix\}\
+x_b^g \\\\\
+y_b^g \\\\\
+\\theta_b^g \
+\\end\{bmatrix\}\
+\\quad\
+\\left\\\{ \
+  \\begin\{array\}\{l l\}\
+    x_b^g,y_b^g & \\quad \\text\{from Equation \\ref\{equ:c_to_g_cart\}\}\\\\\
+    \\theta_b^g & \\quad \\text\{from Equation \\ref\{equ:c_to_g_ori\}\}\
+  \\end\{array\} \\right.\
+\\end\{equation\}\
+-->\
+\
+\
+Now that we have established the mathematical framework for relating the pose of the rigid bodies to the environment and each other, we describe our concept of reference poses to track motion in the environment.}

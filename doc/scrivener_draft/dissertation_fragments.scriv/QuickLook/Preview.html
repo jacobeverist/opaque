@@ -28,6 +28,16 @@
 
 <ul>
 <li>
+<p class="binderItem"><strong>Abstract</strong><br/><br/>
+<!--<br/>
+\topmatter{Abstract}<br/>
+--><br/>
+<br/>
+In many real-world environments such as flooded pipes or caves, exteroceptive sensors, such as vision, range or touch, often fail to give any useful information for robotic tasks.  This may result from complete sensor failure or incompatibility with the ambient environment.  We investigate how proprioceptive sensors can help robots to successfully explore, map and navigate in these types of challenging environments.<br/>
+<br/>
+Our approach is to use a snake robot with propr...</p>
+</li>
+<li>
 <p class="binderItem"><strong>First Paragraph</strong><br/>#Introduction<br/>
 <br/>
  In this dissertation, we develop an algorithmic approach for robotically mapping confined environments using internal sensors only.  Some challenging environments such as underground caves and pipes are impossible to explore and map with external sensors.  Such environments often cause external sensors to fail because they are too confined, too hostile for the sensors, or incompatible to the fluid medium.  These environments are also impossible for humans to explore for similar r...</p>
@@ -71,30 +81,105 @@ We choose to use the Bullet physics engine (version 2.77) because it is free, op
 </ul>
 <hr/>
 <li>
-<p class="binderItem"><strong>Sensing Space</strong><br/>#Sensing Space [chap:sensing]<br/>
-</p>
+<p class="binderItem"><strong>Sensing Space</strong><br/>#Sensing Space [chap:sensing]</p>
 </li>
 <hr/>
 <ul>
 <li>
-<p class="binderItem"><strong>Proprioceptive Sensing</strong><br/>Sense the environment with internal sensors</p>
+<p class="binderItem"><strong>rationale</strong><br/>## Problem [sensing:problem]<br/>
+<br/>
+Need to argue here that we are forced to use a contact sensing modality.  However, existing contact sensing solutions only return contact point data, i.e. point and location of the boundary.  Whereas, with range-based solution, both boundary and void space information are returned.  Mostly void space in fact.<br/>
+<br/>
+Types of sensing can be classified with the following table.  The biological senses are grouped with their analogous robotics counterparts.<br/>
+<br/>
+<!--<br/>
+<br/>
+\begin{cent...</p>
 </li>
 <li>
-<p class="binderItem"><strong>Pose Map</strong><br/>Simple map, just sensor data and poses in the environment</p>
+<p class="binderItem"><strong>void space</strong><br/><br/>
+## How to Sense<br/>
+<br/>
+We use a common sense assumption that the robot's body can never intersect with an obstacle.  We call this the Obstacle-Exclusion Assumption.  If we take the corollary of this assumption, we conclude that all space that intersects with the robot's body must be free space.  If we record the robot's body posture over time, we can use this to build a map of the local environment's free space.<br/>
+<br/>
+We need 3 key ingredients to build an accurate map of the free space in the local enviro...</p>
 </li>
 <li>
-<p class="binderItem"><strong>draft sensing copy</strong><br/><br/>
+<p class="binderItem"><strong>posture image</strong><br/>## Posture Image<br/>
 <br/>
-##Problem<br/>
+Using the control method shown in Control chapter to sweep out the void space of the local environment, we show how we capture sensor data and process it for consumption for our later mapping algorithms.<br/>
 <br/>
-Now that we are able to travel through the environment and estimate our motion, the next order of business is to be able to sense the environment.  With no exteroceptive sensors, this is quite a challenging problem.  Somehow, we must use our proprioceptive joint sensors to build some information about the environment.<br/>
+###Data Capture<br/>
 <br/>
-We use a common sense assumption that the robot's body can never intersect with an obstacle.  We call this the Obstacle-Exclusion Assumption.  If we take the corollar...</p>
+Once the posture of the snake has stabilized and the anchor points give us good reference poses to the global frame, our objective is take the posture vector, \\(\bar{\phi_t}\\) at time \\(t\\), and convert it to a 2D spatial representation of free space, \\(M...</p>
+</li>
+<li>
+<p class="binderItem"><strong>convex hull</strong><br/><br/>
+## Data Processing<br/>
+<br/>
+Once we have the raw sensor data successfully plotted into a local occupancy map, we must convert this data into a form that is useful for our mapping algorithms.  Here, we present three different forms of data processing that we use in our approach.<br/>
+<br/>
+###Convex Hull<br/>
+<br/>
+One way we process our free space data is by taking its convex hull.  In theory, this would create some smooth boundaries and can plausibly represent the true local space under some certain conditions.   The def...</p>
+</li>
+<li>
+<p class="binderItem"><strong>alpha shape</strong><br/><br/>
+###Alpha Shape<br/>
+<br/>
+An alternative to the convex hull is the alpha shape \cite{Edelsbrunner:1983p772}.  Like the convex hull, it creates a polygon or polygons that contain all the points.  Unlike the convex hull, it can construct a containing polygon with concave or even hole features.  <br/>
+<br/>
+![Alpha Shape example from \cite[cgal:d-as2-12b]][alpha_cgal]<br/>
+<br/>
+[alpha_cgal]: alphashape.png width=400px<br/>
+<br/>
+To construct the alpha shape, first we choose a radius \\(r\\) for a circle \\(C\\).  Next, if a pair of poi...</p>
+</li>
+<li>
+<p class="binderItem"><strong>medial axis</strong><br/><br/>
+<br/>
+###Medial Axis<br/>
+<br/>
+Although polygons that represent the sweeped free space are useful, we need something that is more compact that also filters out the smoothing effects of blind spots and sharp features.  That is, we want an approach where the negative effects of missing data, erroneous data, and loss of salient features are minimized.<br/>
+<br/>
+For this purpose, we compute the medial axis, also sometimes known as thinning or skeletonization [cite].  This concept takes a shape and reduces it to a path or...</p>
+</li>
+<li>
+<p class="binderItem"><strong>slip prevention</strong><br/><br/>
+## Managing Slip<br/>
+<br/>
+Since the possibility of error occurring in our free space maps is very real and has the consequences of making the data near-useless, we want to do all we can to prevent and mitigate any failure conditions.  As the primary source of error is anchor slip, we do all we can to focus on this issue while probing the environment.  We use a number of techniques for both prevention and detection of error.  We describe all of our approaches below.<br/>
+<br/>
+###Slip Prevention<br/>
+<br/>
+We have 6 strate...</p>
+</li>
+<li>
+<p class="binderItem"><strong>averaging ref poses</strong><br/><br/>
+####Averaging Reference Poses<br/>
+<br/>
+For our fourth strategy, when actually using the reference poses to compute the position of the snake in our local free space map, we want to use as many of the reference poses as possible while filtering out any errors that would occur from possible pathological cases.   If just one reference pose is erroneous and we use that reference pose to compute position of the snake in free space,  it will severely damage our results.  We want to mitigate the possibility o...</p>
+</li>
+<li>
+<p class="binderItem"><strong>separation of sweep maps</strong><br/><br/>
+####Separation of Sweep Maps<br/>
+<br/>
+Our fifth and final strategy for preventing errors in our sensor maps is to divide the forward sweep phase and backward sweep phase into separate maps.  From our experiments, we determined that a consistent source of error occurs when switching the anchoring responsibility from the back half of the snake to the front half.  The series of events of retracting the front half of the snake to anchors and extending the back half for sweeping tends to cause some disconti...</p>
+</li>
+<li>
+<p class="binderItem"><strong>root pose adjustment</strong><br/><br/>
+###Slip Mitigation<br/>
+<br/>
+In the case that error is introduced into our local free space map, we are interested in mitigating its negative effects.   We have developed two approaches for handling error when it occurs during sensing.<br/>
+<br/>
+Since we start our mapping process by determining the global pose of the local origin \\(P_{19}\\), error occurs when \\(P_{19}\\) is no longer in its proper place.  Either it moves by translation or more commonly and critically, it experiences rotational error.  <br/>
+<br/>
+####R...</p>
 </li>
 </ul>
 <hr/>
 <li>
-<p class="binderItem"><strong>Environmental Landmarks</strong><br/>#Environmental Landmarks</p>
+<p class="binderItem"><strong>Environmental Landmarks</strong><br/>#Environmental Landmarks [chap:landmarks]</p>
 </li>
 <hr/>
 <ul>
@@ -114,6 +199,18 @@ Shape features<br/>
 Spatial features</p>
 </li>
 <li>
+<p class="binderItem"><strong>Features of Environment</strong><br/>Landmark features to track environment, difficult using only proprioceptive sensing</p>
+</li>
+<li>
+<p class="binderItem"><strong>Corner Examples and Results</strong><br/>Corner features extracted from posture image, much difficulties</p>
+</li>
+<li>
+<p class="binderItem"><strong>Wall Detection</strong><br/>Detect and measure the wall, time-consuming and sparse.</p>
+</li>
+<li>
+<p class="binderItem"><strong>Different Macro Features</strong><br/>1) anchor points spline, 2) polygon walls, 3) medial axis</p>
+</li>
+<li>
 <p class="binderItem"><strong>Spatial Curve</strong><br/>Shape of the sensed void space in local environment should give us information.<br/>
 How can we extract this information and represent it in an useful way?<br/>
 <br/>
@@ -122,6 +219,16 @@ Smoothed version gives us a curve representation of the local space<br/>
 <br/>
 </p>
 </li>
+<hr/>
+<ul>
+<li>
+<p class="binderItem"><strong>Macro Feature Extraction</strong><br/>postureimage->alpha shape->medial axis</p>
+</li>
+<li>
+<p class="binderItem"><strong>Pipe Shape, Macro Feature</strong><br/>Use general shape of environment, can be approximated with sparse data</p>
+</li>
+</ul>
+<hr/>
 <li>
 <p class="binderItem"><strong>Spatial Features</strong><br/>3 different spatial features from posture images<br/>
 blooms<br/>
@@ -137,63 +244,78 @@ Can match landmarks together to improve the map<br/>
 <br/>
 </p>
 </li>
-<li>
-<p class="binderItem"><strong>Finding Landmarks</strong><br/>Landmark features to track environment, difficult using only proprioceptive sensing</p>
-</li>
-<li>
-<p class="binderItem"><strong>Corner Examples and Results</strong><br/>Corner features extracted from posture image, much difficulties</p>
-</li>
-<li>
-<p class="binderItem"><strong>Wall Detection</strong><br/>Detect and measure the wall, time-consuming and sparse.</p>
-</li>
-<li>
-<p class="binderItem"><strong>Pipe Shape, Macro Feature</strong><br/>Use general shape of environment, can be approximated with sparse data</p>
-</li>
-<li>
-<p class="binderItem"><strong>Macro Feature Extraction</strong><br/>postureimage->alpha shape->medial axis</p>
-</li>
-<li>
-<p class="binderItem"><strong>Different Macro Features</strong><br/>1) anchor points spline, 2) polygon walls, 3) medial axis</p>
-</li>
 </ul>
 <hr/>
 <li>
-<p class="binderItem"><strong>Defining Position</strong><br/>#Defining Position</p>
+<p class="binderItem"><strong>Defining Position</strong><br/>#Defining Position [chap:position]</p>
 </li>
 <hr/>
 <ul>
 <li>
-<p class="binderItem"><strong>Presentation Raw</strong><br/><br/>
-Articulated robot has no high-inertia center of mass to serve as its coordinate frame.<br/>
-Individual segments are rotating and undulating<br/>
-Need method to determine direction of snake robot.<br/>
-Information not provided by individual body segments<br/>
+<p class="binderItem"><strong>rationale</strong><br/>##Problem [position:problem]<br/>
 <br/>
-<br/>
-Posture curve generated by smoothed B-spline with joint locations as inputs<br/>
-Generates the posture frame for local coordinate system<br/>
-<br/>
-Different from spatial curve which represents local sensed environment <br/>
-</p>
-</li>
-<li>
-<p class="binderItem"><strong>Defining Pose and Direction</strong><br/>Orientation and coordinate frame on articulated robot</p>
-</li>
-<li>
-<p class="binderItem"><strong>Motion Models</strong><br/>Estimating travel of articulated robot</p>
-</li>
-<li>
-<p class="binderItem"><strong>draft Motion Estimation copy</strong><br/>##Problem<br/>
 <br/>
 <br/>
 Now that our snake robot is capable of moving through the environment with the adaptive concertina gait behavior, we need some way of estimating how far it is moving and in which direction.<br/>
 <br/>
-As we established earlier, we have no external sensors because we assume their failure from environmental conditions.  We cannot rely on GPS since it is not effective underground or in pipes.  We do not have wheeled shaft encoders since we have no wheels and do not expect to always travel through...</p>
+As we established earlier, we have no external sensors because we assume their failure from environmental conditions.  We cannot rely on GPS since it is not effective underground or in pipes.  We do not have wheeled shaft encoders since we have no wheels and do not expect to a...</p>
+</li>
+<li>
+<p class="binderItem"><strong>anchoring and slip</strong><br/><br/>
+<br/>
+Our proprioceptive approach achieves motion estimation by anchoring multiple points of the body with the environment and kinematically tracking the change in distance between the immobilized parts as the snake contracts and extends.  This gives us a motion estimation method that only depends on the joint sensors.  We show the effectiveness in a series of experiments.<br/>
+ <br/>
+<br/>
+##Immobilizing the Anchors [sec:anchors]<br/>
+<br/>
+<br/>
+<!--<br/>
+%-Immobilize anchors to create global references<br/>
+%-Conditions when immobility...</p>
+</li>
+<li>
+<p class="binderItem"><strong>poses of rigid bodies on snake</strong><br/><br/>
+<br/>
+##Tracking Motion<br/>
+<br/>
+<!--<br/>
+%-What a reference is<br/>
+%-each active reference can be used to compute the pose of the snake at that given time<br/>
+%-active references may disagree with each other<br/>
+%-take current oldest active reference to compute current pose<br/>
+%-How to create new references (kinematic computation)<br/>
+%-When to deactivate references (violation of local/pre stability)<br/>
+%-Loss of all references recovery<br/>
+--><br/>
+<br/>
+In order to track motion through the environment, we need to establish our mathematical fra...</p>
+</li>
+<li>
+<p class="binderItem"><strong>computing stable ref poses</strong><br/><br/>
+###Reference Poses<br/>
+<br/>
+A reference pose is the position and orientation of a rigid body segment that has been immobilized with respect to the global frame.  A reference pose is valuable because it gives a fixed reference point to the global environment and allows us to track the motion of the rest of the robot.   Special care must be taken to ensure that when using a reference pose, the rigid body it's attached to is truly immobilized.<br/>
+<br/>
+A reference pose is either active or inactive.  A reference i...</p>
+</li>
+<li>
+<p class="binderItem"><strong>posture curve and posture frame</strong><br/><br/>
+##Robot-Centered Coordinate Frame [sec:GPAC]<br/>
+<br/>
+<!--<br/>
+%-N possible local coordinate systems in snake<br/>
+%-none are very good to represent pose of snake because of the high variance in orientation.  Try to relate two poses to each other, orientation has almost no correlation<br/>
+%-orientation is also primary source of error<br/>
+%-prefer a coordinate system that represents the gross posture and pose of snake.  COM can sometimes be out of body<br/>
+%-GPAC pose proposed.<br/>
+--><br/>
+<br/>
+Though we now have a local coordinate fra...</p>
 </li>
 </ul>
 <hr/>
 <li>
-<p class="binderItem"><strong>Control and Locomotion</strong><br/>#Control and Locomotion<br/>
+<p class="binderItem"><strong>Control and Locomotion</strong><br/>#Control and Locomotion [chap:control]<br/>
 <br/>
 Simulated robot control<br/>
 algorithms tuned for simulated environment<br/>
@@ -207,8 +329,7 @@ Segmented behaviors<br/>
 sections of linkage controlled by different behaviors<br/>
 Smooth motion and compliance<br/>
 interpolated and compliant motion<br/>
-Stability detection<br/>
-checking ...</p>
+Stability dete...</p>
 </li>
 <hr/>
 <ul>
@@ -218,30 +339,297 @@ checking ...</p>
 Backbone curve fitting, IK method, segmented behaviors</p>
 </li>
 <li>
-<p class="binderItem"><strong>Behaviors</strong><br/>##Behaviors<br/>
+<p class="binderItem"><strong>Behaviors</strong><br/>##Behaviors [control:behaviors]<br/>
 <br/>
 Locomotion steps, extensions, path-following, anchoring</p>
 </li>
 <li>
-<p class="binderItem"><strong>draft control and behaviors copy</strong><br/><br/>
-##Problem<br/>
+<p class="binderItem"><strong>biological concertina</strong><br/><br/>
+##Problem [control:problem]<br/>
 <br/>
 FIXME: Related work and our contrasted difference.  What can we achieve that others cannot.  Why is our approach better for this particular case?  <br/>
 <br/>
-In order to successfully control a snake robot and have it move through the environment, we need a solution for locomotion, motion planning, and handling collisions.  Since we have no exteroceptive sensors, this makes the problem challenging.  The robot is unable to sense what is right in front of it and must move blindly.  The snake cou...</p>
+In order to successfully control a snake robot and have it move through the environment, we need a solution for locomotion, motion planning, and handling collisions.  Since we have no exteroceptive sensors, this makes the problem challenging.  The robot is unable to sense what is right in front of it and must move blind...</p>
+</li>
+<li>
+<p class="binderItem"><strong>backbone curve fitting</strong><br/><br/>
+For both of these requirements, we use the backbone curve-fitting methodology first described by \cite{Chirikijan:1995p774}.  This method of control is to produce a parameterized curve that represents the desired posture of the snake over time. Over time the curve changes to reflect desired changes in the snake posture. Snake backbone curve fitting is achieved by finding the joint positions that best fit the snake body onto the curve. This is found either by direct calculation or a search algor...</p>
+</li>
+<li>
+<p class="binderItem"><strong>adaptive anchoring</strong><br/><br/>
+##Anchoring<br/>
+<br/>
+In order to fit the anchor points to a pipe of unknown width, we need some way of sensing the walls.  Since we have no exteroceptive sensors, the best way of sensing the width of the walls is by contact.  Since we have no direct contact sensor per se, we must detect contact indirectly through the robot's proprioceptive joint sensors.<br/>
+<br/>
+Using the backbone curve fitting approach, we take one period of a sine curve as the template form we wish the robot to follow.  We then modify this ...</p>
+</li>
+<li>
+<p class="binderItem"><strong>behavior architecture</strong><br/><br/>
+## Behavior Architecture<br/>
+<br/>
+Our method of control is a behavior-based architecture that is charged with reading and tasking the servo-based motor controllers of each joint.  Each behavior may be a primitive low-level behavior or a high-level composite behavior composed of multiple sub-behaviors.  Furthermore, a behavior may have complete control of every joint on the snake or the joints may be divided between different but mutually supporting behaviors.  This architecture allows us to achieve a h...</p>
+</li>
+<li>
+<p class="binderItem"><strong>smooth motion</strong><br/><br/>
+##Smooth Motion [sec:smooth]<br/>
+<br/>
+We desire the motion of our snake robot to be slow and smooth in nature.  It does us no benefit for the motion to be sudden and jerky.  Moments of high acceleration can have unintended consequences that result in our anchor points slipping.  Either collisions with the environment or transient internal dynamics can cause the anchor points to slip.<br/>
+<br/>
+Our method of ensuring smooth motion is to take the initial and target posture of the joints of the snake, perform line...</p>
+</li>
+<li>
+<p class="binderItem"><strong>behavior merging</strong><br/><br/>
+##Behavior Merging [sec:merge]<br/>
+<br/>
+<br/>
+There are a few methods for merging behaviors that overlap in some way.  One way of the previous section is for two behaviors to overlap temporally and using the HoldTransition behavior to handle a smooth transition from one configuration to another.<br/>
+<br/>
+In the event that two behaviors control adjacent sets of joints or overlap their control in some way, a conflict resolution is method is needed to not only select the proper command for contested joints, but to pre...</p>
+</li>
+<li>
+<p class="binderItem"><strong>compliant motion</strong><br/><br/>
+##Compliant Motion<br/>
+<br/>
+In the previous section, we mentioned compliance but not our implementation.  Compliant motion is a much used technique in robotics and has been discussed widely (cite).  The two approaches are either passive or active compliance.  Our approach is to use passive compliance since we have no means to detect contact or sense obstacles.<br/>
+<br/>
+Passive compliance is achieved by changing the settings on the max torque parameter of each joint's servo controller.  We use a high setting fo...</p>
+</li>
+<li>
+<p class="binderItem"><strong>stable motion</strong><br/><br/>
+##Stability Assurance [sec:stability]<br/>
+<br/>
+In a previous section on smooth motion, we discussed an interpolation technique to smoothly transition from one posture to another.  The primary motive of this was to keep the parts of the snake body that are immobilized from being destabilized by transient forces and causing anchor slip.  Static forces from prolonged pushing against an obstacle or wall are a separate matter.<br/>
+<br/>
+For a pose transition that has a sufficiently large number of interpolation step...</p>
+</li>
+<li>
+<p class="binderItem"><strong>adaptive concertina gait</strong><br/><br/>
+##Adaptive Step<br/>
+<br/>
+<!--<br/>
+%Show the behavior sequence in high-level terms.  Show graphics.<br/>
+<br/>
+%Explain each behavior step in terms of the concepts we already learned.<br/>
+--><br/>
+<br/>
+Using these tools at our disposable, we can now build a suitable locomotion behavior for an unknown pipe with no exteroception.  The entirety of our designed behavior is shown in [](#adaptive_step) and is called the adaptive concertina gait, a biologically-inspired gait based on the concertina gait but modified for the change in se...</p>
+</li>
+<li>
+<p class="binderItem"><strong>snake to environment analysis</strong><br/><br/>
+##Analysis<br/>
+<br/>
+<br/>
+Our theoretical contribution is a quantitative analysis of the trade-space between environmental characteristics, snake robot morphology, and locomotion control parameters.  That is, given a snake robot morphology and control parameters, what types of environments can we successfully explore.  Conversely, given a specific environment, what robot morphology and control parameters are required to successfully explore it.<br/>
+<br/>
+First we will perform an analysis of the trade-space for formi...</p>
+</li>
+<li>
+<p class="binderItem"><strong>sensing behavior</strong><br/><br/>
+## Sensing Behavior<br/>
+<br/>
+In order to capture as much information about the environment as we can, we need to sweep the robot's body around as much as possible while trying to cover as much space as possible without losing our reference pose to the global frame.  Therefore, we have devised a behavior assemblage that separates responsibility for anchoring on one half of the snake and for probing the environment with the other.  This assemblage is shown in [](#pokewalls1).  The resulting behavior is s...</p>
 </li>
 </ul>
 <hr/>
 <li>
-<p class="binderItem"><strong>Building Maps</strong><br/>#Building Maps<br/>
+<p class="binderItem"><strong>Building Maps</strong><br/>#Building Maps [chap:maps]</p>
+</li>
+<hr/>
+<ul>
+<li>
+<p class="binderItem"><strong>problem</strong><br/>Challenges of build map.  Given features and actions, why existing methods are not sufficient for current problem</p>
+</li>
+<li>
+<p class="binderItem"><strong>Naive Method</strong><br/>using only last pose to estimate location using spatial curve</p>
+</li>
+<hr/>
+<ul>
+<li>
+<p class="binderItem"><strong>overlap function</strong><br/>Correct transform between poses by ICP on medial axis</p>
+</li>
+<li>
+<p class="binderItem"><strong>generalized ICP</strong><br/>general ICP, curve algorithms for naive method</p>
+</li>
+<li>
+<p class="binderItem"><strong>constraints</strong><br/>### Constraints<br/>
+<br/>
+Now that we have fully defined our overlap function, there are two types of constraints we can make with this function:   the *in-place constraint* and the *step constraint*.  <br/>
+<br/>
+The in-place constraint, shown in [](#inplace_constraint), performs an overlap with two collocated poses that separate the forward and backward sweeping behavior.  Given pose \\(X_k\\), find pose \\(X_{k+1}\\):<br/>
+<br/>
+<!--<br/>
+\begin{equation}<br/>
+X_{k+1} = \mathrm{overlap}(X_k, I_k, I_{k+1}, \varnothing)<br/>
+\end{equatio...</p>
+</li>
+<li>
+<p class="binderItem"><strong>Results</strong><br/>results of naive method for single path pipes</p>
+</li>
+</ul>
+<hr/>
+<li>
+<p class="binderItem"><strong>Axis Method</strong><br/>challenges of backtracking, how naive method only uses last pose and is insufficient for backtracking.  Need to use whole history to follow past map</p>
+</li>
+<hr/>
+<ul>
+<li>
+<p class="binderItem"><strong>generating axis</strong><br/>###Generating the path [gen_axis]<br/>
+<br/>
+![Computing Axis from Union of Posture Images][global_medial_axis]<br/>
+<br/>
+[global_medial_axis]: global_medial_axis width=400px<br/>
+<br/>
+<br/>
+We define the axis to be the medial axis of the union of the globally situated alpha shapes of the posture images.  The axis is computed from a collection of poses that represent the past robot's trajectory.  <br/>
+<br/>
+The topology of an axis is computed from the union of all of the poses' alpha shapes.  The union of the alpha shapes is populated w...</p>
+</li>
+<li>
+<p class="binderItem"><strong>overlap_axis function</strong><br/>### OverlapAxis Function [sec:overlapAxis]<br/>
+<br/>
+Now that we have axis computed from the union of alpha shapes of posture images, new poses can now be constrained to the axis.  In the event that the robot backtracks, it will utilize the full history of robot's poses to localize the robot's new position.<br/>
+<br/>
+We define a new function similar to **overlap**, called **overlapAxis**, that functions the same way as the overlap function.  However, instead of overlapping spatial curves with spatial curves, it o...</p>
+</li>
+<li>
+<p class="binderItem"><strong>Results</strong><br/>Results of axis method for single path pipes</p>
+</li>
+</ul>
+</ul>
+<hr/>
+<li>
+<p class="binderItem"><strong>Mapping with Junctions</strong><br/>#Mapping with Junctions [chap:junctions]</p>
+</li>
+<hr/>
+<ul>
+<li>
+<p class="binderItem"><strong>problem</strong><br/>axis method insufficient for maps with junctions.  Structures are undefined. How to ICP a tree instead of a curve? Need generalized solution for arbitrary amounts of "branches"</p>
+</li>
+<li>
+<p class="binderItem"><strong>Junction Method</strong><br/>## Junction Method<br/>
+<br/>
+The approach we use to handle junctions in the environment is called the **junction method**.  We first need to introduce a new map representation.</p>
+</li>
+<hr/>
+<ul>
+<li>
+<p class="binderItem"><strong>Skeleton Mapping</strong><br/>Each shoot is path graph, with two leaves.  Except for root, all shoots have origin from a parent shoot at the branch point</p>
+</li>
+<li>
+<p class="binderItem"><strong>Generating Skeletons</strong><br/>Basic algorithm to generate medial axis of each shoot set, and cut the medial axis to create the shoots.</p>
+</li>
+<li>
+<p class="binderItem"><strong>Adding Poses to Skeletons</strong><br/>### Adding New Poses to Skeleton Map<br/>
+<br/>
+Now that we have described how to generate a skeleton given a set of data, we need to explain how we go about adding new poses to a map.  In the base case, the first two poses are added to the initial skeleton.  The initial skeleton then becomes the root skeleton and ancestor to all future skeletons.  A skeleton map can have one or more skeletons.  We explain how to add a pose to a single skeleton map and then explain how to add a pose to a multi-skeleton ma...</p>
+</li>
+<li>
+<p class="binderItem"><strong>Results</strong><br/><br/>
+### Results<br/>
+<br/>
+Our results show that results of skeleton mapping with the junction method.<br/>
+<br/>
+The pseudocode describing the axis method mapping approach is shown in algorithm [](#alg:junction_method).  The portion to estimating the motion of all possible splices on the skeleton map is in algorithm [](#alg:motion_skeletons).  The portion devoted to adding the pose to the right skeleton is in algorithm [](#alg:add_skeletons).  The portion regarding generating the skeleton is in algorithm [](#alg:gen_...</p>
+</li>
+</ul>
+</ul>
+<hr/>
+<li>
+<p class="binderItem"><strong>Searching for Best Map</strong><br/>#Searching for Best Map [chap:search]</p>
+</li>
+<hr/>
+<ul>
+<li>
+<p class="binderItem"><strong>branch uncertainty</strong><br/>## Search Method<br/>
+<br/>
+Branching in right location?<br/>
+New branch, existing branch, or no branch?<br/>
+Pose in right location?<br/>
+Leads to a search method</p>
+</li>
+<hr/>
+<ul>
+<li>
+<p class="binderItem"><strong>uncertainty of junction-1</strong><br/><br/>
+Take for instance the 3-point T junction shown in Figure [X].  There are three possible occupancy states for the robot to fit into the junction.   As we can see, states 0 and 1 together give us a complete representation of the junction.  However, it is not clear from just the estimated poses and local spline curves of the data that they should be matched up together.  There is ambiguity in their relationship since the poses can be arranged in a number of different configurations that represent ...</p>
+</li>
+</ul>
+<hr/>
+<li>
+<p class="binderItem"><strong>discretize poses and control</strong><br/>## Discretize Map Parameters<br/>
+<br/>
+Uniformly discretize possible poses on every splice curve<br/>
+Sample many spatial relations between skeletons<br/>
+Select best evaluated state as our map<br/>
+<br/>
+</p>
+</li>
+<li>
+<p class="binderItem"><strong>parameterization</strong><br/><br/>
+##Parameterization<br/>
+<br/>
+Possible poses of the new posture image Xt<br/>
+Skeleton sets: Grouping of all posture image with pose information Sk<br/>
+Spatial relationship between skeletons, control points bk</p>
+</li>
+<li>
+<p class="binderItem"><strong>spatial transform of skeletons</strong><br/><br/>
+## Spatial Transform of Skeletons<br/>
+<br/>
+Control point on “parent” skeleton<br/>
+<br/>
+Reduced to 1D search space</p>
+</li>
+<li>
+<p class="binderItem"><strong>Search Method Steps</strong><br/><br/>
+## Search Method Steps<br/>
+Objective: solve best fit for Xt, skeletons S1:k, and spatial relation b1:k<br/>
+<br/>
+Motion Estimation<br/>
+Add-to-Skeletons<br/>
+Overlap Skeletons<br/>
+Localize Pose to Map<br/>
+Merge Skeletons</p>
+</li>
+<li>
+<p class="binderItem"><strong>Motion Estimation</strong><br/><br/>
+## Motion Estimation<br/>
+<br/>
+Select discrete possible poses uniformly along all splices of the set of overlapping skeletons<br/>
+Evaluate based on consistency F(x)<br/>
+F(x) = -2*overlapSum0 – 2*overlapSum1 – angDiff0/Pi – angDiff1/Pi + 2*normLandmarkSum<br/>
+Bias likelihood with Gaussian curve representing motion estimated from last best pose<br/>
+Select best possible pose, keep all past sampled possible poses<br/>
+<br/>
+</p>
+</li>
+<li>
+<p class="binderItem"><strong>Add to Map</strong><br/><br/>
+## Add to Map<br/>
+<br/>
+Determine if pose’s spatial curve is diverging<br/>
+Create new branching skeleton if diverging<br/>
+Otherwise, add to an existing skeleton</p>
+</li>
+<li>
+<p class="binderItem"><strong>Skeleton Overlapping State</strong><br/><br/>
+## Skeletons Overlapping State<br/>
+<br/>
+Evaluate all skeleton states<br/>
+Maximize evaluation function G(b12)<br/>
+Measures overlap and landmark consistency<br/>
+G(b12) = normLandmarkCost * normMatchCount</p>
+</li>
+<li>
+<p class="binderItem"><strong>Localization</strong><br/><br/>
+## Localization<br/>
+ICP localize all previous samples across all splices<br/>
+Select maximum evaluated pose H(x)<br/>
+H(x) = normLandmarkSum * contigFrac0 * contigFrac1<br/>
+Correct the map with best fit pose<br/>
 <br/>
 <br/>
 <br/>
-<br/>
-<br/>
-<br/>
-In-place constraint<br/>
-step constraint<br/>
 <br/>
 <br/>
 </p>
@@ -249,180 +637,29 @@ step constraint<br/>
 <hr/>
 <ul>
 <li>
-<p class="binderItem"><strong>building maps</strong><br/>##Mapping Problem Definition<br/>
-<br/>
-<br/>
- • naive method<br/>
- • axis method<br/>
- • junction method<br/>
- • search method<br/>
-<br/>
-<br/>
-Given the actions of locomotion steps \\(A_{1:t} = {f, b, f, f, f, … , b, b}\\) where:<br/>
-<br/>
-<!--<br/>
-\[<br/>
-    A_i = <br/>
-\begin{cases}<br/>
-    f, & \text{forward step}\\<br/>
-    b, & \text{backward step}<br/>
-\end{cases}<br/>
-\]<br/>
---><br/>
-<br/>
-and the sensor data posture vectors:<br/>
-<br/>
-\\( \bar{\phi}_t = { \phi^t_1, \phi^t_2, … , \phi^t_{M-1}, \phi^t_M} \\)<br/>
-<br/>
-the posture sequence:<br/>
-<br/>
-\\( \bar{\Phi}_{1:t} = { \bar{\phi}_1, \bar{\phi}_2, … , \bar{\...</p>
-</li>
-<li>
-<p class="binderItem"><strong>Inter-Pose Correction</strong><br/>Correct transform between poses by ICP on medial axis</p>
-</li>
-<li>
-<p class="binderItem"><strong>Paired Pose Correction</strong><br/>Same, ICP on medial axis between forward-backward probe pairs</p>
-</li>
-<li>
-<p class="binderItem"><strong>Constraint Mapping</strong><br/>Show map using simple pose constraints between poses.  Unclear how to solve data association problem</p>
-</li>
-<li>
-<p class="binderItem"><strong>Aggregate Pose Constraint Mapping</strong><br/>Global medial axis from union of posture images</p>
+<p class="binderItem"><strong>Localizing on Skeletons Map</strong><br/>Splicing shoots together, performing ICP on splices.  Take best guess.  </p>
 </li>
 <hr/>
 <ul>
 <li>
-<p class="binderItem"><strong>compute path topology</strong><br/>To compute the raw medial axis of a path, we must take the union of the set of its constituent poses.  For every pose, we take the set of points that constitute the polygon representing the pose's alpha shape in the local coordinate frame.  For every point set B of every pose P, we transform the set B to B' in the global frame.  The union of all sets B' is the resultant point set C.<br/>
+<p class="binderItem"><strong>Finding Best Fitted Location</strong><br/><br/>
+### Finding the Best Fitted Location<br/>
 <br/>
-We then compute the alpha shape of C with a radius of [0.2].   The resultant alpha shape is mapped onto an image ...</p>
+Immediately after motion estimation, branch detection, and skeleton categorization, our next task is to find the best likely location for the current pose.  We measure the likelihood in terms of the best possible fit of the current posture curve to the current skeleton map.  To do this, we again utilize ICP between the posture curve and splice curves representing different permutations of spliced sections of the skeleton map.<br/>
+<br/>
+For instance, if we wanted to ...</p>
 </li>
 <li>
-<p class="binderItem"><strong>computeTopology</strong><br/>The topology of a path is computed from the union of all of the poses' alpha hulls classified into that particular path.  The hull is populated with points in a grid and the medial axis is computed using the skeletonization (?) algorithm.  <br/>
+<p class="binderItem"><strong>Choosing Skeleton Splices</strong><br/>###Choosing Skeleton Splices<br/>
 <br/>
-Given the set of points that are the skeletonization image, the pixels are converted into nodes of a graph, and edges are added between them if they are adjacent or diagonal neighbors.  The pixel indices are converted back into global coordinates to give us ...</p>
-</li>
-</ul>
-<hr/>
-<li>
-<p class="binderItem"><strong>draft loop-closing copy</strong><br/><br/>
-##Problem Definition<br/>
+In step 1), if there is only one skeleton in the skeleton map then the resultant splice is simply the parent skeleton itself.  However, if there is more than one skeleton, a number of possible splices are possible.   We can take an exhaustive approach and select all possible splices, including splices with multiple junctions contained within them.<br/>
 <br/>
-In the previous chapter we discussed the basics of creating a map using the pose graph representation.  In the examples, our robot was traveling forward through a pipe-like environment while building a map of its traversal.  Each pose created a node in the pose graph and an edge forming a geometric constraint between its neighbors.<br/>
-<br/>
-Each geometric constraint between poses was either an in-place constraint between a pair of nodes at the same anchored location, or a step con...</p>
-</li>
-</ul>
-<hr/>
-<li>
-<p class="binderItem"><strong>Mapping with Junctions</strong><br/>#Mapping with Junctions</p>
-</li>
-<hr/>
-<ul>
-<li>
-<p class="binderItem"><strong>Map Algorithm</strong><br/>## Map Algorithm<br/>
-<br/>
-1) Estimation motion of step<br/>
-<br/>
-2) Collect posture image<br/>
-<br/>
-3) Determine if there is a branch, if so, fork process (yes/no cases)  (NEW)<br/>
-<br/>
-4) Add pose to best fit shoot, generate new map  (NEW)<br/>
-<br/>
-5) Localize pose to most likely location in existing shoot map, fix map (NEW)<br/>
-<br/>
-6) go to 1)</p>
-</li>
-<hr/>
-<ul>
-<li>
-<p class="binderItem"><strong>mapping algorithm</strong><br/><br/>
-ESTIMATE MOTION<br/>
-- estimate position of pose based on motion estimation from the previous fore pose: {f, b}<br/>
-<br/>
-SENSE ENVIRONMENT<br/>
-- capture environmental information through probing<br/>
- - perform forward sweep for front pose<br/>
- - generate local spline<br/>
-<br/>
-ESTIMATE MOTION<br/>
-- estimate position of pose based on a zero move estimation from the paired fore pose: {0}<br/>
-<br/>
-SENSE ENVIRONMENT<br/>
-- capture environmental information through probing<br/>
- - perform backward sweep for back pose<br/>
- - generate local spline<br/>
-<br/>
-CLASSIFY PO...</p>
-</li>
-</ul>
-<hr/>
-<li>
-<p class="binderItem"><strong>Junctions</strong><br/>Breaking off from main medial axis indicates junction.  Junctions only partially observable.</p>
-</li>
-<hr/>
-<ul>
-<li>
-<p class="binderItem"><strong>Partial Observability of Junctions</strong><br/>One of the fundamental challenges of exploring environments with no ability to sense at a distance, there is no quick way to distinguish a wall from the limit of arm extension.  That is, when the robot's body sweeps and reaches the limit of its motion, by either collision, slip, or complete extension, there is no way to immediately distinguish that the boundary of its swept space is an obstacle or just more free space. [complete extension is well-defined, therefore, it can be tagged when complet...</p>
-</li>
-</ul>
-<hr/>
-<li>
-<p class="binderItem"><strong>Shoot Map Representation</strong><br/>Each shoot is path graph, with two leaves.  Except for root, all shoots have origin from a parent shoot at the branch point</p>
-</li>
-<li>
-<p class="binderItem"><strong>Generating Shoots</strong><br/>Basic algorithm to generate medial axis of each shoot set, and cut the medial axis to create the shoots.</p>
-</li>
-<li>
-<p class="binderItem"><strong>Adding Poses to Shoots</strong><br/>##Adding Poses to Shoots<br/>
-<br/>
-If first poses, add to root shoot.<br/>
-<br/>
-Check for branching conditions<br/>
-<br/>
-Best Overlap, get ordered overlapping path ids<br/>
-<br/>
-Select child shoot IDs, add pose to the shoot.</p>
-</li>
-<hr/>
-<ul>
-<li>
-<p class="binderItem"><strong>add pose algorithm</strong><br/>MOVE ESTIMATION<br/>
-- estimate position of nodes based on motion estimation from the previous pose<br/>
-<br/>
-<br/>
-MAP INTEGRATION<br/>
-- integrate the new pose into the map<br/>
-<br/>
-<br/>
-ADD NEW POSES, CREATE NEW PATHS<br/>
-- Which path or set of paths does this pose currently overlap?<br/>
- getOrderedOverlappingPaths()<br/>
- - of all splices in local neighborhood, find the best fit based on highest contiguity with initial estimated pose<br/>
- - in order of best fits, pick the first that overlaps all constituent paths, that is, does not have paths ...</p>
-</li>
-</ul>
-<hr/>
-<li>
-<p class="binderItem"><strong>Detecting branch</strong><br/>Algorithm to detect a divergence of a pose from a shoot and deciding there is a branch.</p>
-</li>
-<li>
-<p class="binderItem"><strong>Localizing on Shoot Map</strong><br/>Splicing shoots together, performing ICP on splices.  Take best guess.  </p>
-</li>
-<hr/>
-<ul>
-<li>
-<p class="binderItem"><strong>Choosing Shoot Splices</strong><br/>###Choosing Shoot Splices<br/>
-<br/>
-In step 1), if there is only one shoot in the shoot map then the resultant splice is simply the parent shoot itself.  However, if there is more than one shoot, a number of possible splices are possible.   We can take an exhaustive approach and select all possible splices, including splices with multiple junctions contained within them.<br/>
-<br/>
-One approach we can take is to select all splices that terminate at every possible combination of terminal points in the shoot map.  S...</p>
+One approach we can take is to select all splices that terminate at every possible combination of terminal points in th...</p>
 </li>
 <li>
 <p class="binderItem"><strong>Selecting Initial Poses for ICP</strong><br/>###Selecting Initial Poses for ICP<br/>
 <br/>
-Now that we have our set of shoot splices on which we will localize the current pose, we must determine the initial pose for each splice to input to our ICP algorithm.  The ICP algorithm takes two sets of points and an initial transform between them and outputs another transform that represents the best possible fit.  In our case, the two sets of points are uniform samples from the posture curve and the shoot splice curve respectively.   The initial transform ...</p>
+Now that we have our set of skeleton splices on which we will localize the current pose, we must determine the initial pose for each splice to input to our ICP algorithm.  The ICP algorithm takes two sets of points and an initial transform between them and outputs another transform that represents the best possible fit.  In our case, the two sets of points are uniform samples from the posture curve and the skeleton splice curve respectively.   The initial tran...</p>
 </li>
 <li>
 <p class="binderItem"><strong>ICP Algorithm</strong><br/>###ICP Algorithm<br/>
@@ -458,12 +695,6 @@ Given all of the results, we need to select just one as our final localized pose
 <hr/>
 <ul>
 <li>
-<p class="binderItem"><strong>computeDivergence</strong><br/><br/>
-The purpose of the divergence computation is to detect the concrete event of the target curve diverging from the host curve.  This is used to classify whether or not a junction has been detected or whether the host path is simply being extended.<br/>
-<br/>
-The difficulty associated with this task is that there is no discrete event to determine a divergence.  It is measured by passing a threshold that must be calibrated to the task.  The thresholds are both sensitive to cartesian distance and angular diff...</p>
-</li>
-<li>
 <p class="binderItem"><strong>getOrderedOverlappingPaths</strong><br/>getOrderedOverlappingPaths()<br/>
 <br/>
 The purpose of this function is to find the minimum fitting path splice for a given target local spline curve.  <br/>
@@ -497,15 +728,7 @@ Contiguity is computed by counting the number of poi...</p>
 The computation is achieved by taking the target curve, which is usually the local spline, and for each point along the local spline, find its closest matched point on the secondary curve, usually the path.  The sum of all the cartesian distances is added up and the result is the overlap sum divided by the number of p...</p>
 </li>
 <li>
-<p class="binderItem"><strong>Divergence of Curves</strong><br/>A fundamental primitive problem when mapping confined environments is determing when two partially overlapping curve segments diverge from each other.  That is, at which point does curve A diverge from curve B.  See the attached figure.<br/>
-<br/>
-The definition of the divergence point is not obvious from the offset.  Given that the two curves are not exactly overlapping and that the instance where curve A begins its divergence, it is not clear where the point should be defined.  Generally, we want an ext...</p>
-</li>
-<li>
 <p class="binderItem"><strong>getOverlapDeparture</strong></p>
-</li>
-<li>
-<p class="binderItem"><strong>getTangentIntersections</strong></p>
 </li>
 <li>
 <p class="binderItem"><strong>isFeatureless</strong></p>
@@ -514,10 +737,13 @@ The definition of the divergence point is not obvious from the offset.  Given th
 </ul>
 <hr/>
 <li>
-<p class="binderItem"><strong>Searching for Best Map</strong><br/>#Searching for Best Map</p>
+<p class="binderItem"><strong>Merge Skeletons</strong><br/><br/>
+## Merge Skeletons<br/>
+Merge skeletons together if they are fully constrained<br/>
+<br/>
+<br/>
+</p>
 </li>
-<hr/>
-<ul>
 <li>
 <p class="binderItem"><strong>Space of Possibilities</strong><br/>Poses, Branches, Branch Locations.   Some decisions can lead to irrevocable consequences.  Replicated shoots, circular cases.</p>
 </li>
@@ -533,12 +759,33 @@ The definition of the divergence point is not obvious from the offset.  Given th
 </ul>
 <hr/>
 <li>
-<p class="binderItem"><strong>Results</strong><br/><br/>
+<p class="binderItem"><strong>Experiments</strong><br/># Experiments</p>
+</li>
+<hr/>
+<ul>
+<li>
+<p class="binderItem"><strong>Experimental Setup</strong><br/>##  Experimental Setup</p>
+</li>
+<li>
+<p class="binderItem"><strong>Results</strong><br/>## Results [experiment:results]<br/>
 <br/>
 The results as they stand.  WE earlier presented videos showing one-off examples of successful mapping.  Each of the maps was built in controlled conditions with parameters that were specifically tuned to the particular feature of the map.<br/>
 <br/>
-In our desire to make a more unified mapping approach, a generalized algorithm is not as successful for individual maps, but produces mediocre results over all.  Frequently the robot fails to map the environment correctly because it erroneously eliminated t...</p>
+In our desire to make a more unified mapping approach, a generalized algorithm is not as successful for individual maps, but produces mediocre results over all.  Frequently the robot fails to map the environment correctly beca...</p>
 </li>
+</ul>
+<hr/>
+<li>
+<p class="binderItem"><strong>Conclusion</strong></p>
+</li>
+<hr/>
+<ul>
+<li>
+<p class="binderItem"><strong>Conclusion</strong><br/>## Conclusion<br/>
+<br/>
+Foo</p>
+</li>
+</ul>
 </ul>
 
 </td>

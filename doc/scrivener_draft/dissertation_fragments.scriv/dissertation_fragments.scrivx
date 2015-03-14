@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<ScrivenerProject Version="1.0" Creator="SCRMAC-2.5-25239" Modified="2015-02-18 00:06:04 -0800">
+<ScrivenerProject Version="1.0" Creator="SCRMAC-2.5-25239" Modified="2015-03-13 19:36:41 -0700">
     <Binder>
         <BinderItem ID="0" Type="DraftFolder" Created="2013-10-20 19:24:47 -0700" Modified="2013-10-20 19:24:47 -0700">
             <Title>Draft</Title>
@@ -13,6 +13,16 @@
                 </OutlinerExpandedState>
             </CorkboardAndOutliner>
             <Children>
+                <BinderItem ID="269" Type="Text" Created="2015-03-01 22:56:21 -0800" Modified="2015-03-01 22:56:37 -0800">
+                    <Title>Abstract</Title>
+                    <MetaData>
+                        <IncludeInCompile>Yes</IncludeInCompile>
+                        <NotesTextSelection>0,0</NotesTextSelection>
+                    </MetaData>
+                    <TextSettings>
+                        <TextSelection>475,0</TextSelection>
+                    </TextSettings>
+                </BinderItem>
                 <BinderItem ID="78" Type="Text" Created="2014-02-24 21:09:15 -0800" Modified="2014-10-07 11:22:10 -0700">
                     <Title>First Paragraph</Title>
                     <MetaData>
@@ -20,7 +30,7 @@
                         <NotesTextSelection>0,0</NotesTextSelection>
                     </MetaData>
                     <TextSettings>
-                        <TextSelection>196,0</TextSelection>
+                        <TextSelection>742,0</TextSelection>
                     </TextSettings>
                     <Children>
                         <BinderItem ID="80" Type="Text" Created="2013-11-01 22:05:17 -0700" Modified="2014-10-07 11:19:44 -0700">
@@ -53,7 +63,7 @@
                                 <TextSelection>1119,0</TextSelection>
                             </TextSettings>
                         </BinderItem>
-                        <BinderItem ID="85" Type="Text" Created="2013-11-01 22:08:27 -0700" Modified="2014-04-06 16:08:15 -0700">
+                        <BinderItem ID="85" Type="Text" Created="2013-11-01 22:08:27 -0700" Modified="2015-02-26 23:43:25 -0800">
                             <Title>Approach</Title>
                             <MetaData>
                                 <IncludeInCompile>Yes</IncludeInCompile>
@@ -63,21 +73,21 @@
                                 <TextSelection>682,0</TextSelection>
                             </TextSettings>
                             <Children>
-                                <BinderItem ID="143" Type="Text" Created="2014-03-28 16:55:36 -0700" Modified="2014-04-02 20:45:46 -0700">
+                                <BinderItem ID="143" Type="Text" Created="2014-03-28 16:55:36 -0700" Modified="2015-03-12 19:45:04 -0700">
                                     <Title>draft Experimental System</Title>
                                     <MetaData>
                                         <IncludeInCompile>Yes</IncludeInCompile>
                                         <NotesTextSelection>0,0</NotesTextSelection>
                                     </MetaData>
                                     <TextSettings>
-                                        <TextSelection>340,0</TextSelection>
+                                        <TextSelection>688,0</TextSelection>
                                     </TextSettings>
                                 </BinderItem>
                             </Children>
                         </BinderItem>
                     </Children>
                 </BinderItem>
-                <BinderItem ID="101" Type="Folder" Created="2014-02-23 00:17:35 -0800" Modified="2014-04-02 00:23:30 -0700">
+                <BinderItem ID="101" Type="Folder" Created="2014-02-23 00:17:35 -0800" Modified="2015-02-22 10:39:37 -0800">
                     <Title>Sensing Space</Title>
                     <MetaData>
                         <IncludeInCompile>Yes</IncludeInCompile>
@@ -86,40 +96,113 @@
                     <TextSettings>
                         <TextSelection>0,0</TextSelection>
                     </TextSettings>
+                    <CorkboardAndOutliner>
+                        <SelectedSubdocumentIDs>231</SelectedSubdocumentIDs>
+                    </CorkboardAndOutliner>
                     <Children>
-                        <BinderItem ID="103" Type="Text" Created="2014-02-17 00:13:42 -0800" Modified="2015-02-17 23:11:16 -0800">
-                            <Title>Proprioceptive Sensing</Title>
+                        <BinderItem ID="231" Type="Text" Created="2015-02-22 10:39:30 -0800" Modified="2015-03-04 20:37:52 -0800">
+                            <Title>rationale</Title>
                             <MetaData>
                                 <IncludeInCompile>Yes</IncludeInCompile>
                                 <NotesTextSelection>0,0</NotesTextSelection>
                             </MetaData>
                             <TextSettings>
-                                <TextSelection>2190,0</TextSelection>
+                                <TextSelection>11,0</TextSelection>
                             </TextSettings>
                         </BinderItem>
-                        <BinderItem ID="104" Type="Text" Created="2014-02-17 00:14:41 -0800" Modified="2014-04-01 21:45:11 -0700">
-                            <Title>Pose Map</Title>
+                        <BinderItem ID="215" Type="Text" Created="2014-03-28 18:10:05 -0700" Modified="2015-03-01 17:09:17 -0800">
+                            <Title>void space</Title>
                             <MetaData>
                                 <IncludeInCompile>Yes</IncludeInCompile>
                                 <NotesTextSelection>0,0</NotesTextSelection>
                             </MetaData>
                             <TextSettings>
-                                <TextSelection>129,0</TextSelection>
+                                <TextSelection>16,0</TextSelection>
                             </TextSettings>
                         </BinderItem>
-                        <BinderItem ID="215" Type="Text" Created="2014-03-28 18:10:05 -0700" Modified="2014-04-02 20:45:41 -0700">
-                            <Title>draft sensing copy</Title>
+                        <BinderItem ID="232" Type="Text" Created="2015-02-22 10:45:28 -0800" Modified="2015-03-12 19:45:04 -0700">
+                            <Title>posture image</Title>
                             <MetaData>
                                 <IncludeInCompile>Yes</IncludeInCompile>
                                 <NotesTextSelection>0,0</NotesTextSelection>
                             </MetaData>
                             <TextSettings>
-                                <TextSelection>5882,0</TextSelection>
+                                <TextSelection>238,0</TextSelection>
+                            </TextSettings>
+                        </BinderItem>
+                        <BinderItem ID="233" Type="Text" Created="2015-02-22 10:46:06 -0800" Modified="2015-03-01 17:09:40 -0800">
+                            <Title>convex hull</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>274,0</TextSelection>
+                            </TextSettings>
+                        </BinderItem>
+                        <BinderItem ID="234" Type="Text" Created="2015-02-22 10:46:32 -0800" Modified="2015-03-01 17:09:40 -0800">
+                            <Title>alpha shape</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>4,0</TextSelection>
+                            </TextSettings>
+                        </BinderItem>
+                        <BinderItem ID="235" Type="Text" Created="2015-02-22 10:46:43 -0800" Modified="2015-03-01 17:12:28 -0800">
+                            <Title>medial axis</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>5,0</TextSelection>
+                            </TextSettings>
+                        </BinderItem>
+                        <BinderItem ID="236" Type="Text" Created="2015-02-22 10:47:08 -0800" Modified="2015-03-01 17:12:55 -0800">
+                            <Title>slip prevention</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>1740,0</TextSelection>
+                            </TextSettings>
+                        </BinderItem>
+                        <BinderItem ID="262" Type="Text" Created="2015-03-01 17:12:53 -0800" Modified="2015-03-01 17:13:02 -0800">
+                            <Title>averaging ref poses</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>732,0</TextSelection>
+                            </TextSettings>
+                        </BinderItem>
+                        <BinderItem ID="237" Type="Text" Created="2015-02-22 10:48:19 -0800" Modified="2015-03-01 17:12:50 -0800">
+                            <Title>separation of sweep maps</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>5,0</TextSelection>
+                            </TextSettings>
+                        </BinderItem>
+                        <BinderItem ID="238" Type="Text" Created="2015-02-22 10:48:45 -0800" Modified="2015-03-01 17:11:48 -0800">
+                            <Title>root pose adjustment</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>366,0</TextSelection>
                             </TextSettings>
                         </BinderItem>
                     </Children>
                 </BinderItem>
-                <BinderItem ID="111" Type="Folder" Created="2014-02-23 00:20:37 -0800" Modified="2014-03-27 16:43:13 -0700">
+                <BinderItem ID="111" Type="Folder" Created="2014-02-23 00:20:37 -0800" Modified="2015-03-06 21:44:46 -0800">
                     <Title>Environmental Landmarks</Title>
                     <MetaData>
                         <IncludeInCompile>Yes</IncludeInCompile>
@@ -136,7 +219,47 @@
                                 <NotesTextSelection>0,0</NotesTextSelection>
                             </MetaData>
                             <TextSettings>
-                                <TextSelection>235,0</TextSelection>
+                                <TextSelection>307,0</TextSelection>
+                            </TextSettings>
+                        </BinderItem>
+                        <BinderItem ID="112" Type="Text" Created="2014-02-14 19:07:52 -0800" Modified="2015-02-22 18:21:19 -0800">
+                            <Title>Features of Environment</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>555,0</TextSelection>
+                            </TextSettings>
+                        </BinderItem>
+                        <BinderItem ID="113" Type="Text" Created="2014-02-17 01:02:29 -0800" Modified="2014-03-27 16:43:13 -0700">
+                            <Title>Corner Examples and Results</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>414,0</TextSelection>
+                            </TextSettings>
+                        </BinderItem>
+                        <BinderItem ID="114" Type="Text" Created="2014-02-17 01:07:31 -0800" Modified="2015-02-21 19:53:31 -0800">
+                            <Title>Wall Detection</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>387,0</TextSelection>
+                            </TextSettings>
+                        </BinderItem>
+                        <BinderItem ID="117" Type="Text" Created="2014-02-17 10:56:47 -0800" Modified="2014-03-27 16:43:12 -0700">
+                            <Title>Different Macro Features</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>1261,0</TextSelection>
                             </TextSettings>
                         </BinderItem>
                         <BinderItem ID="224" Type="Text" Created="2015-02-17 23:14:11 -0800" Modified="2015-02-17 23:16:43 -0800">
@@ -148,6 +271,28 @@
                             <TextSettings>
                                 <TextSelection>279,0</TextSelection>
                             </TextSettings>
+                            <Children>
+                                <BinderItem ID="116" Type="Text" Created="2014-02-17 01:17:56 -0800" Modified="2014-03-27 16:43:12 -0700">
+                                    <Title>Macro Feature Extraction</Title>
+                                    <MetaData>
+                                        <IncludeInCompile>Yes</IncludeInCompile>
+                                        <NotesTextSelection>0,0</NotesTextSelection>
+                                    </MetaData>
+                                    <TextSettings>
+                                        <TextSelection>525,0</TextSelection>
+                                    </TextSettings>
+                                </BinderItem>
+                                <BinderItem ID="115" Type="Text" Created="2014-02-17 01:10:57 -0800" Modified="2014-03-27 16:43:12 -0700">
+                                    <Title>Pipe Shape, Macro Feature</Title>
+                                    <MetaData>
+                                        <IncludeInCompile>Yes</IncludeInCompile>
+                                        <NotesTextSelection>0,0</NotesTextSelection>
+                                    </MetaData>
+                                    <TextSettings>
+                                        <TextSelection>515,0</TextSelection>
+                                    </TextSettings>
+                                </BinderItem>
+                            </Children>
                         </BinderItem>
                         <BinderItem ID="225" Type="Text" Created="2015-02-17 23:14:19 -0800" Modified="2015-02-17 23:17:34 -0800">
                             <Title>Spatial Features</Title>
@@ -159,69 +304,9 @@
                                 <TextSelection>181,0</TextSelection>
                             </TextSettings>
                         </BinderItem>
-                        <BinderItem ID="112" Type="Text" Created="2014-02-14 19:07:52 -0800" Modified="2014-03-27 16:43:13 -0700">
-                            <Title>Finding Landmarks</Title>
-                            <MetaData>
-                                <IncludeInCompile>Yes</IncludeInCompile>
-                                <NotesTextSelection>0,0</NotesTextSelection>
-                            </MetaData>
-                            <TextSettings>
-                                <TextSelection>2058,0</TextSelection>
-                            </TextSettings>
-                        </BinderItem>
-                        <BinderItem ID="113" Type="Text" Created="2014-02-17 01:02:29 -0800" Modified="2014-03-27 16:43:13 -0700">
-                            <Title>Corner Examples and Results</Title>
-                            <MetaData>
-                                <IncludeInCompile>Yes</IncludeInCompile>
-                                <NotesTextSelection>0,0</NotesTextSelection>
-                            </MetaData>
-                            <TextSettings>
-                                <TextSelection>382,0</TextSelection>
-                            </TextSettings>
-                        </BinderItem>
-                        <BinderItem ID="114" Type="Text" Created="2014-02-17 01:07:31 -0800" Modified="2014-03-27 16:43:13 -0700">
-                            <Title>Wall Detection</Title>
-                            <MetaData>
-                                <IncludeInCompile>Yes</IncludeInCompile>
-                                <NotesTextSelection>0,0</NotesTextSelection>
-                            </MetaData>
-                            <TextSettings>
-                                <TextSelection>507,0</TextSelection>
-                            </TextSettings>
-                        </BinderItem>
-                        <BinderItem ID="115" Type="Text" Created="2014-02-17 01:10:57 -0800" Modified="2014-03-27 16:43:12 -0700">
-                            <Title>Pipe Shape, Macro Feature</Title>
-                            <MetaData>
-                                <IncludeInCompile>Yes</IncludeInCompile>
-                                <NotesTextSelection>0,0</NotesTextSelection>
-                            </MetaData>
-                            <TextSettings>
-                                <TextSelection>515,0</TextSelection>
-                            </TextSettings>
-                        </BinderItem>
-                        <BinderItem ID="116" Type="Text" Created="2014-02-17 01:17:56 -0800" Modified="2014-03-27 16:43:12 -0700">
-                            <Title>Macro Feature Extraction</Title>
-                            <MetaData>
-                                <IncludeInCompile>Yes</IncludeInCompile>
-                                <NotesTextSelection>0,0</NotesTextSelection>
-                            </MetaData>
-                            <TextSettings>
-                                <TextSelection>525,0</TextSelection>
-                            </TextSettings>
-                        </BinderItem>
-                        <BinderItem ID="117" Type="Text" Created="2014-02-17 10:56:47 -0800" Modified="2014-03-27 16:43:12 -0700">
-                            <Title>Different Macro Features</Title>
-                            <MetaData>
-                                <IncludeInCompile>Yes</IncludeInCompile>
-                                <NotesTextSelection>0,0</NotesTextSelection>
-                            </MetaData>
-                            <TextSettings>
-                                <TextSelection>0,0</TextSelection>
-                            </TextSettings>
-                        </BinderItem>
                     </Children>
                 </BinderItem>
-                <BinderItem ID="108" Type="Folder" Created="2014-02-23 00:19:15 -0800" Modified="2014-03-27 16:43:13 -0700">
+                <BinderItem ID="108" Type="Folder" Created="2014-02-23 00:19:15 -0800" Modified="2015-03-06 21:44:55 -0800">
                     <Title>Defining Position</Title>
                     <MetaData>
                         <IncludeInCompile>Yes</IncludeInCompile>
@@ -231,50 +316,59 @@
                         <TextSelection>0,0</TextSelection>
                     </TextSettings>
                     <Children>
-                        <BinderItem ID="226" Type="Text" Created="2015-02-17 23:30:55 -0800" Modified="2015-02-17 23:31:55 -0800">
-                            <Title>Presentation Raw</Title>
+                        <BinderItem ID="213" Type="Text" Created="2014-03-28 18:05:00 -0700" Modified="2015-03-04 20:47:12 -0800">
+                            <Title>rationale</Title>
                             <MetaData>
                                 <IncludeInCompile>Yes</IncludeInCompile>
                                 <NotesTextSelection>0,0</NotesTextSelection>
                             </MetaData>
                             <TextSettings>
-                                <TextSelection>449,0</TextSelection>
+                                <TextSelection>467,0</TextSelection>
                             </TextSettings>
                         </BinderItem>
-                        <BinderItem ID="109" Type="Text" Created="2014-02-17 00:42:41 -0800" Modified="2014-03-27 16:43:13 -0700">
-                            <Title>Defining Pose and Direction</Title>
+                        <BinderItem ID="239" Type="Text" Created="2015-02-22 19:04:30 -0800" Modified="2015-02-22 19:07:03 -0800">
+                            <Title>anchoring and slip</Title>
                             <MetaData>
                                 <IncludeInCompile>Yes</IncludeInCompile>
                                 <NotesTextSelection>0,0</NotesTextSelection>
                             </MetaData>
                             <TextSettings>
-                                <TextSelection>225,0</TextSelection>
+                                <TextSelection>422,1</TextSelection>
                             </TextSettings>
                         </BinderItem>
-                        <BinderItem ID="110" Type="Text" Created="2014-02-17 00:51:38 -0800" Modified="2014-03-27 16:43:13 -0700">
-                            <Title>Motion Models</Title>
+                        <BinderItem ID="240" Type="Text" Created="2015-02-22 19:06:43 -0800" Modified="2015-02-22 19:28:50 -0800">
+                            <Title>poses of rigid bodies on snake</Title>
                             <MetaData>
-                                <StatusID>2</StatusID>
                                 <IncludeInCompile>Yes</IncludeInCompile>
                                 <NotesTextSelection>0,0</NotesTextSelection>
                             </MetaData>
                             <TextSettings>
-                                <TextSelection>340,0</TextSelection>
+                                <TextSelection>6432,0</TextSelection>
                             </TextSettings>
                         </BinderItem>
-                        <BinderItem ID="213" Type="Text" Created="2014-03-28 18:05:00 -0700" Modified="2014-04-02 20:45:27 -0700">
-                            <Title>draft Motion Estimation copy</Title>
+                        <BinderItem ID="241" Type="Text" Created="2015-02-22 19:28:37 -0800" Modified="2015-03-12 19:45:27 -0700">
+                            <Title>computing stable ref poses</Title>
                             <MetaData>
                                 <IncludeInCompile>Yes</IncludeInCompile>
                                 <NotesTextSelection>0,0</NotesTextSelection>
                             </MetaData>
                             <TextSettings>
-                                <TextSelection>18130,0</TextSelection>
+                                <TextSelection>6734,0</TextSelection>
+                            </TextSettings>
+                        </BinderItem>
+                        <BinderItem ID="242" Type="Text" Created="2015-02-22 19:29:07 -0800" Modified="2015-02-22 19:53:16 -0800">
+                            <Title>posture curve and posture frame</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>1993,0</TextSelection>
                             </TextSettings>
                         </BinderItem>
                     </Children>
                 </BinderItem>
-                <BinderItem ID="105" Type="Folder" Created="2014-02-24 14:14:23 -0800" Modified="2015-02-17 23:39:02 -0800">
+                <BinderItem ID="105" Type="Folder" Created="2014-02-24 14:14:23 -0800" Modified="2015-03-06 21:44:59 -0800">
                     <Title>Control and Locomotion</Title>
                     <MetaData>
                         <IncludeInCompile>Yes</IncludeInCompile>
@@ -291,10 +385,10 @@
                                 <NotesTextSelection>0,0</NotesTextSelection>
                             </MetaData>
                             <TextSettings>
-                                <TextSelection>54,0</TextSelection>
+                                <TextSelection>78,0</TextSelection>
                             </TextSettings>
                         </BinderItem>
-                        <BinderItem ID="107" Type="Text" Created="2014-02-24 14:18:00 -0800" Modified="2014-03-27 16:43:13 -0700">
+                        <BinderItem ID="107" Type="Text" Created="2014-02-24 14:18:00 -0800" Modified="2015-03-04 20:47:12 -0800">
                             <Title>Behaviors</Title>
                             <MetaData>
                                 <IncludeInCompile>Yes</IncludeInCompile>
@@ -304,19 +398,119 @@
                                 <TextSelection>55,0</TextSelection>
                             </TextSettings>
                         </BinderItem>
-                        <BinderItem ID="214" Type="Text" Created="2014-03-28 18:00:58 -0700" Modified="2014-04-06 16:09:21 -0700">
-                            <Title>draft control and behaviors copy</Title>
+                        <BinderItem ID="214" Type="Text" Created="2014-03-28 18:00:58 -0700" Modified="2015-03-04 20:47:12 -0800">
+                            <Title>biological concertina</Title>
                             <MetaData>
                                 <IncludeInCompile>Yes</IncludeInCompile>
                                 <NotesTextSelection>0,0</NotesTextSelection>
                             </MetaData>
                             <TextSettings>
-                                <TextSelection>5213,76</TextSelection>
+                                <TextSelection>3822,0</TextSelection>
+                            </TextSettings>
+                        </BinderItem>
+                        <BinderItem ID="244" Type="Text" Created="2015-02-22 22:31:05 -0800" Modified="2015-02-22 23:06:42 -0800">
+                            <Title>backbone curve fitting</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>4086,0</TextSelection>
+                            </TextSettings>
+                        </BinderItem>
+                        <BinderItem ID="245" Type="Text" Created="2015-02-22 22:31:48 -0800" Modified="2015-02-22 22:32:38 -0800">
+                            <Title>adaptive anchoring</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>6791,0</TextSelection>
+                            </TextSettings>
+                        </BinderItem>
+                        <BinderItem ID="246" Type="Text" Created="2015-02-22 22:32:36 -0800" Modified="2015-03-04 20:40:43 -0800">
+                            <Title>behavior architecture</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>3717,0</TextSelection>
+                            </TextSettings>
+                        </BinderItem>
+                        <BinderItem ID="247" Type="Text" Created="2015-02-22 22:33:19 -0800" Modified="2015-02-22 22:33:45 -0800">
+                            <Title>smooth motion</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>1637,0</TextSelection>
+                            </TextSettings>
+                        </BinderItem>
+                        <BinderItem ID="248" Type="Text" Created="2015-02-22 22:33:38 -0800" Modified="2015-02-22 22:34:28 -0800">
+                            <Title>behavior merging</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>6148,0</TextSelection>
+                            </TextSettings>
+                        </BinderItem>
+                        <BinderItem ID="249" Type="Text" Created="2015-02-22 22:34:18 -0800" Modified="2015-02-22 22:36:41 -0800">
+                            <Title>compliant motion</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>1445,0</TextSelection>
+                            </TextSettings>
+                        </BinderItem>
+                        <BinderItem ID="250" Type="Text" Created="2015-02-22 22:36:27 -0800" Modified="2015-02-22 22:37:25 -0800">
+                            <Title>stable motion</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>4002,0</TextSelection>
+                            </TextSettings>
+                        </BinderItem>
+                        <BinderItem ID="251" Type="Text" Created="2015-02-22 22:36:46 -0800" Modified="2015-02-22 22:37:25 -0800">
+                            <Title>adaptive concertina gait</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>1650,0</TextSelection>
+                            </TextSettings>
+                        </BinderItem>
+                        <BinderItem ID="252" Type="Text" Created="2015-02-22 22:37:19 -0800" Modified="2015-02-22 22:37:57 -0800">
+                            <Title>snake to environment analysis</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>8110,0</TextSelection>
+                            </TextSettings>
+                        </BinderItem>
+                        <BinderItem ID="253" Type="Text" Created="2015-02-22 22:37:51 -0800" Modified="2015-02-22 22:37:57 -0800">
+                            <Title>sensing behavior</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>1036,0</TextSelection>
                             </TextSettings>
                         </BinderItem>
                     </Children>
                 </BinderItem>
-                <BinderItem ID="118" Type="Folder" Created="2014-02-23 00:23:38 -0800" Modified="2015-02-18 00:01:04 -0800">
+                <BinderItem ID="118" Type="Folder" Created="2014-02-23 00:23:38 -0800" Modified="2015-03-06 21:45:06 -0800">
                     <Title>Building Maps</Title>
                     <MetaData>
                         <IncludeInCompile>Yes</IncludeInCompile>
@@ -325,92 +519,117 @@
                     <TextSettings>
                         <TextSelection>0,0</TextSelection>
                     </TextSettings>
+                    <CorkboardAndOutliner>
+                        <SelectedSubdocumentIDs>261</SelectedSubdocumentIDs>
+                    </CorkboardAndOutliner>
                     <Children>
-                        <BinderItem ID="220" Type="Text" Created="2015-02-12 23:03:34 -0800" Modified="2015-02-17 22:34:30 -0800">
-                            <Title>building maps</Title>
+                        <BinderItem ID="228" Type="Text" Created="2014-03-28 19:04:22 -0700" Modified="2015-03-07 01:27:21 -0800">
+                            <Title>problem</Title>
                             <MetaData>
                                 <IncludeInCompile>Yes</IncludeInCompile>
                                 <NotesTextSelection>0,0</NotesTextSelection>
                             </MetaData>
                             <TextSettings>
-                                <TextSelection>628,0</TextSelection>
+                                <TextSelection>2031,0</TextSelection>
                             </TextSettings>
                         </BinderItem>
-                        <BinderItem ID="119" Type="Text" Created="2014-02-17 17:24:58 -0800" Modified="2014-04-06 16:08:15 -0700">
-                            <Title>Inter-Pose Correction</Title>
+                        <BinderItem ID="258" Type="Text" Created="2015-03-01 16:49:25 -0800" Modified="2015-03-07 00:01:51 -0800">
+                            <Title>Naive Method</Title>
                             <MetaData>
                                 <IncludeInCompile>Yes</IncludeInCompile>
                                 <NotesTextSelection>0,0</NotesTextSelection>
                             </MetaData>
                             <TextSettings>
-                                <TextSelection>894,0</TextSelection>
-                            </TextSettings>
-                        </BinderItem>
-                        <BinderItem ID="120" Type="Text" Created="2014-02-17 17:49:04 -0800" Modified="2014-03-27 16:43:12 -0700">
-                            <Title>Paired Pose Correction</Title>
-                            <MetaData>
-                                <IncludeInCompile>Yes</IncludeInCompile>
-                                <NotesTextSelection>0,0</NotesTextSelection>
-                            </MetaData>
-                            <TextSettings>
-                                <TextSelection>708,0</TextSelection>
-                            </TextSettings>
-                        </BinderItem>
-                        <BinderItem ID="121" Type="Text" Created="2014-02-17 17:54:50 -0800" Modified="2014-03-27 16:43:12 -0700">
-                            <Title>Constraint Mapping</Title>
-                            <MetaData>
-                                <IncludeInCompile>Yes</IncludeInCompile>
-                                <NotesTextSelection>0,0</NotesTextSelection>
-                            </MetaData>
-                            <TextSettings>
-                                <TextSelection>2228,0</TextSelection>
-                            </TextSettings>
-                        </BinderItem>
-                        <BinderItem ID="122" Type="Text" Created="2014-02-17 21:14:04 -0800" Modified="2014-04-06 16:08:15 -0700">
-                            <Title>Aggregate Pose Constraint Mapping</Title>
-                            <MetaData>
-                                <IncludeInCompile>Yes</IncludeInCompile>
-                                <NotesTextSelection>0,0</NotesTextSelection>
-                            </MetaData>
-                            <TextSettings>
-                                <TextSelection>934,0</TextSelection>
+                                <TextSelection>2202,0</TextSelection>
                             </TextSettings>
                             <Children>
-                                <BinderItem ID="14" Type="Text" Created="2013-10-23 08:58:39 -0700" Modified="2014-04-06 16:08:15 -0700">
-                                    <Title>compute path topology</Title>
+                                <BinderItem ID="119" Type="Text" Created="2014-02-17 17:24:58 -0800" Modified="2015-03-12 19:45:27 -0700">
+                                    <Title>overlap function</Title>
                                     <MetaData>
                                         <IncludeInCompile>Yes</IncludeInCompile>
                                         <NotesTextSelection>0,0</NotesTextSelection>
                                     </MetaData>
                                     <TextSettings>
-                                        <TextSelection>1795,0</TextSelection>
+                                        <TextSelection>2369,0</TextSelection>
                                     </TextSettings>
                                 </BinderItem>
-                                <BinderItem ID="32" Type="Text" Created="2013-12-09 13:20:57 -0800" Modified="2014-04-06 16:08:15 -0700">
-                                    <Title>computeTopology</Title>
+                                <BinderItem ID="256" Type="Text" Created="2015-03-01 15:35:13 -0800" Modified="2015-03-08 16:36:58 -0700">
+                                    <Title>generalized ICP</Title>
                                     <MetaData>
                                         <IncludeInCompile>Yes</IncludeInCompile>
                                         <NotesTextSelection>0,0</NotesTextSelection>
                                     </MetaData>
                                     <TextSettings>
-                                        <TextSelection>1114,0</TextSelection>
+                                        <TextSelection>3000,0</TextSelection>
+                                    </TextSettings>
+                                </BinderItem>
+                                <BinderItem ID="293" Type="Text" Created="2015-03-08 16:42:02 -0700" Modified="2015-03-08 23:36:30 -0700">
+                                    <Title>constraints</Title>
+                                    <MetaData>
+                                        <IncludeInCompile>Yes</IncludeInCompile>
+                                        <NotesTextSelection>0,0</NotesTextSelection>
+                                    </MetaData>
+                                    <TextSettings>
+                                        <TextSelection>1038,91</TextSelection>
+                                    </TextSettings>
+                                </BinderItem>
+                                <BinderItem ID="257" Type="Text" Created="2015-03-01 15:35:54 -0800" Modified="2015-03-12 19:45:27 -0700">
+                                    <Title>Results</Title>
+                                    <MetaData>
+                                        <IncludeInCompile>Yes</IncludeInCompile>
+                                        <NotesTextSelection>0,0</NotesTextSelection>
+                                    </MetaData>
+                                    <TextSettings>
+                                        <TextSelection>206,755</TextSelection>
                                     </TextSettings>
                                 </BinderItem>
                             </Children>
                         </BinderItem>
-                        <BinderItem ID="217" Type="Text" Created="2014-03-28 19:06:31 -0700" Modified="2014-04-05 19:10:23 -0700">
-                            <Title>draft loop-closing copy</Title>
+                        <BinderItem ID="217" Type="Text" Created="2014-03-28 19:06:31 -0700" Modified="2015-03-08 23:29:23 -0700">
+                            <Title>Axis Method</Title>
                             <MetaData>
                                 <IncludeInCompile>Yes</IncludeInCompile>
                                 <NotesTextSelection>0,0</NotesTextSelection>
                             </MetaData>
                             <TextSettings>
-                                <TextSelection>15531,0</TextSelection>
+                                <TextSelection>540,0</TextSelection>
                             </TextSettings>
+                            <Children>
+                                <BinderItem ID="289" Type="Text" Created="2015-03-04 23:40:46 -0800" Modified="2015-03-11 08:54:30 -0700">
+                                    <Title>generating axis</Title>
+                                    <MetaData>
+                                        <IncludeInCompile>Yes</IncludeInCompile>
+                                        <NotesTextSelection>0,0</NotesTextSelection>
+                                    </MetaData>
+                                    <TextSettings>
+                                        <TextSelection>524,0</TextSelection>
+                                    </TextSettings>
+                                </BinderItem>
+                                <BinderItem ID="260" Type="Text" Created="2015-03-01 17:06:25 -0800" Modified="2015-03-13 00:45:07 -0700">
+                                    <Title>overlap_axis function</Title>
+                                    <MetaData>
+                                        <IncludeInCompile>Yes</IncludeInCompile>
+                                        <NotesTextSelection>0,0</NotesTextSelection>
+                                    </MetaData>
+                                    <TextSettings>
+                                        <TextSelection>27,0</TextSelection>
+                                    </TextSettings>
+                                </BinderItem>
+                                <BinderItem ID="261" Type="Text" Created="2015-03-01 17:07:27 -0800" Modified="2015-03-12 19:45:27 -0700">
+                                    <Title>Results</Title>
+                                    <MetaData>
+                                        <IncludeInCompile>Yes</IncludeInCompile>
+                                        <NotesTextSelection>0,0</NotesTextSelection>
+                                    </MetaData>
+                                    <TextSettings>
+                                        <TextSelection>834,925</TextSelection>
+                                    </TextSettings>
+                                </BinderItem>
+                            </Children>
                         </BinderItem>
                     </Children>
                 </BinderItem>
-                <BinderItem ID="123" Type="Folder" Created="2014-02-24 01:00:02 -0800" Modified="2014-03-27 16:43:12 -0700">
+                <BinderItem ID="123" Type="Folder" Created="2014-02-24 01:00:02 -0800" Modified="2015-03-09 22:59:22 -0700">
                     <Title>Mapping with Junctions</Title>
                     <MetaData>
                         <IncludeInCompile>Yes</IncludeInCompile>
@@ -419,314 +638,374 @@
                     <TextSettings>
                         <TextSelection>0,0</TextSelection>
                     </TextSettings>
+                    <CorkboardAndOutliner>
+                        <SelectedSubdocumentIDs>134</SelectedSubdocumentIDs>
+                    </CorkboardAndOutliner>
                     <Children>
-                        <BinderItem ID="135" Type="Text" Created="2014-03-23 16:21:25 -0700" Modified="2014-04-02 22:18:33 -0700">
-                            <Title>Map Algorithm</Title>
+                        <BinderItem ID="263" Type="Text" Created="2015-03-01 20:33:32 -0800" Modified="2015-03-13 19:36:31 -0700">
+                            <Title>problem</Title>
                             <MetaData>
                                 <IncludeInCompile>Yes</IncludeInCompile>
                                 <NotesTextSelection>0,0</NotesTextSelection>
                             </MetaData>
                             <TextSettings>
-                                <TextSelection>207,0</TextSelection>
+                                <TextSelection>5336,0</TextSelection>
+                            </TextSettings>
+                        </BinderItem>
+                        <BinderItem ID="305" Type="Text" Created="2015-03-12 19:38:20 -0700" Modified="2015-03-12 19:39:24 -0700">
+                            <Title>Junction Method</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>0,0</TextSelection>
                             </TextSettings>
                             <Children>
-                                <BinderItem ID="16" Type="Text" Created="2013-10-23 21:58:17 -0700" Modified="2014-04-06 16:08:15 -0700">
-                                    <Title>mapping algorithm</Title>
+                                <BinderItem ID="125" Type="Text" Created="2014-02-18 18:50:23 -0800" Modified="2015-03-12 20:19:35 -0700">
+                                    <Title>Skeleton Mapping</Title>
                                     <MetaData>
                                         <IncludeInCompile>Yes</IncludeInCompile>
                                         <NotesTextSelection>0,0</NotesTextSelection>
                                     </MetaData>
                                     <TextSettings>
-                                        <TextSelection>851,0</TextSelection>
+                                        <TextSelection>1860,0</TextSelection>
                                     </TextSettings>
                                 </BinderItem>
-                            </Children>
-                        </BinderItem>
-                        <BinderItem ID="124" Type="Text" Created="2014-02-17 23:15:18 -0800" Modified="2014-04-06 16:08:15 -0700">
-                            <Title>Junctions</Title>
-                            <MetaData>
-                                <IncludeInCompile>Yes</IncludeInCompile>
-                                <NotesTextSelection>0,0</NotesTextSelection>
-                            </MetaData>
-                            <TextSettings>
-                                <TextSelection>1371,0</TextSelection>
-                            </TextSettings>
-                            <References>
-                                <Reference BinderID="51" Destination="[Internal Link]">Union of Posture Images</Reference>
-                            </References>
-                            <Children>
-                                <BinderItem ID="3" Type="Text" Created="2013-10-20 19:24:47 -0700" Modified="2014-10-07 10:14:23 -0700">
-                                    <Title>Partial Observability of Junctions</Title>
+                                <BinderItem ID="126" Type="Text" Created="2014-02-18 18:50:54 -0800" Modified="2015-03-12 19:45:27 -0700">
+                                    <Title>Generating Skeletons</Title>
                                     <MetaData>
                                         <IncludeInCompile>Yes</IncludeInCompile>
                                         <NotesTextSelection>0,0</NotesTextSelection>
                                     </MetaData>
                                     <TextSettings>
-                                        <TextSelection>1136,0</TextSelection>
+                                        <TextSelection>972,24</TextSelection>
                                     </TextSettings>
                                 </BinderItem>
-                            </Children>
-                        </BinderItem>
-                        <BinderItem ID="125" Type="Text" Created="2014-02-18 18:50:23 -0800" Modified="2014-04-06 16:08:15 -0700">
-                            <Title>Shoot Map Representation</Title>
-                            <MetaData>
-                                <IncludeInCompile>Yes</IncludeInCompile>
-                                <NotesTextSelection>0,0</NotesTextSelection>
-                            </MetaData>
-                            <TextSettings>
-                                <TextSelection>1329,0</TextSelection>
-                            </TextSettings>
-                        </BinderItem>
-                        <BinderItem ID="126" Type="Text" Created="2014-02-18 18:50:54 -0800" Modified="2014-03-27 16:43:12 -0700">
-                            <Title>Generating Shoots</Title>
-                            <MetaData>
-                                <IncludeInCompile>Yes</IncludeInCompile>
-                                <NotesTextSelection>0,0</NotesTextSelection>
-                            </MetaData>
-                            <TextSettings>
-                                <TextSelection>826,0</TextSelection>
-                            </TextSettings>
-                        </BinderItem>
-                        <BinderItem ID="127" Type="Text" Created="2014-03-23 15:59:25 -0700" Modified="2014-03-27 16:43:12 -0700">
-                            <Title>Adding Poses to Shoots</Title>
-                            <MetaData>
-                                <IncludeInCompile>Yes</IncludeInCompile>
-                                <NotesTextSelection>0,0</NotesTextSelection>
-                            </MetaData>
-                            <TextSettings>
-                                <TextSelection>66,0</TextSelection>
-                            </TextSettings>
-                            <Children>
-                                <BinderItem ID="13" Type="Text" Created="2013-10-23 08:53:53 -0700" Modified="2013-10-23 21:59:10 -0700">
-                                    <Title>add pose algorithm</Title>
+                                <BinderItem ID="127" Type="Text" Created="2014-03-23 15:59:25 -0700" Modified="2015-03-13 00:45:07 -0700">
+                                    <Title>Adding Poses to Skeletons</Title>
                                     <MetaData>
                                         <IncludeInCompile>Yes</IncludeInCompile>
                                         <NotesTextSelection>0,0</NotesTextSelection>
                                     </MetaData>
                                     <TextSettings>
-                                        <TextSelection>510,0</TextSelection>
+                                        <TextSelection>3307,22</TextSelection>
                                     </TextSettings>
                                 </BinderItem>
-                            </Children>
-                        </BinderItem>
-                        <BinderItem ID="128" Type="Text" Created="2014-02-19 00:43:16 -0800" Modified="2014-04-02 22:07:52 -0700">
-                            <Title>Detecting branch</Title>
-                            <MetaData>
-                                <IncludeInCompile>Yes</IncludeInCompile>
-                                <NotesTextSelection>0,0</NotesTextSelection>
-                            </MetaData>
-                            <TextSettings>
-                                <TextSelection>1118,0</TextSelection>
-                            </TextSettings>
-                        </BinderItem>
-                        <BinderItem ID="129" Type="Text" Created="2014-02-19 00:45:00 -0800" Modified="2014-04-06 16:08:15 -0700">
-                            <Title>Localizing on Shoot Map</Title>
-                            <MetaData>
-                                <IncludeInCompile>Yes</IncludeInCompile>
-                                <NotesTextSelection>0,0</NotesTextSelection>
-                            </MetaData>
-                            <TextSettings>
-                                <TextSelection>26,0</TextSelection>
-                            </TextSettings>
-                            <Children>
-                                <BinderItem ID="130" Type="Text" Created="2014-03-23 20:06:17 -0700" Modified="2014-04-03 21:39:52 -0700">
-                                    <Title>Choosing Shoot Splices</Title>
+                                <BinderItem ID="135" Type="Text" Created="2014-03-23 16:21:25 -0700" Modified="2015-03-13 01:00:58 -0700">
+                                    <Title>Results</Title>
                                     <MetaData>
                                         <IncludeInCompile>Yes</IncludeInCompile>
                                         <NotesTextSelection>0,0</NotesTextSelection>
                                     </MetaData>
                                     <TextSettings>
-                                        <TextSelection>1,0</TextSelection>
-                                    </TextSettings>
-                                </BinderItem>
-                                <BinderItem ID="131" Type="Text" Created="2014-03-23 20:07:17 -0700" Modified="2014-04-03 21:50:56 -0700">
-                                    <Title>Selecting Initial Poses for ICP</Title>
-                                    <MetaData>
-                                        <IncludeInCompile>Yes</IncludeInCompile>
-                                        <NotesTextSelection>0,0</NotesTextSelection>
-                                    </MetaData>
-                                    <TextSettings>
-                                        <TextSelection>1629,0</TextSelection>
-                                    </TextSettings>
-                                </BinderItem>
-                                <BinderItem ID="132" Type="Text" Created="2014-03-23 20:16:38 -0700" Modified="2014-04-03 21:39:52 -0700">
-                                    <Title>ICP Algorithm</Title>
-                                    <MetaData>
-                                        <IncludeInCompile>Yes</IncludeInCompile>
-                                        <NotesTextSelection>0,0</NotesTextSelection>
-                                    </MetaData>
-                                    <TextSettings>
-                                        <TextSelection>1,0</TextSelection>
-                                    </TextSettings>
-                                </BinderItem>
-                                <BinderItem ID="133" Type="Text" Created="2014-03-23 20:07:31 -0700" Modified="2014-04-03 21:39:52 -0700">
-                                    <Title>Collate, Sort, Filter</Title>
-                                    <MetaData>
-                                        <IncludeInCompile>Yes</IncludeInCompile>
-                                        <NotesTextSelection>0,0</NotesTextSelection>
-                                    </MetaData>
-                                    <TextSettings>
-                                        <TextSelection>735,0</TextSelection>
-                                    </TextSettings>
-                                </BinderItem>
-                            </Children>
-                        </BinderItem>
-                        <BinderItem ID="134" Type="Text" Created="2014-02-19 00:45:55 -0800" Modified="2014-04-02 22:19:28 -0700">
-                            <Title>Curve segment algorithms</Title>
-                            <MetaData>
-                                <IncludeInCompile>Yes</IncludeInCompile>
-                                <NotesTextSelection>0,0</NotesTextSelection>
-                            </MetaData>
-                            <TextSettings>
-                                <TextSelection>114,0</TextSelection>
-                            </TextSettings>
-                            <Children>
-                                <BinderItem ID="9" Type="Text" Created="2013-10-20 20:27:48 -0700" Modified="2013-10-23 18:15:34 -0700">
-                                    <Title>computeDivergence</Title>
-                                    <MetaData>
-                                        <IncludeInCompile>Yes</IncludeInCompile>
-                                        <NotesTextSelection>0,0</NotesTextSelection>
-                                    </MetaData>
-                                    <TextSettings>
-                                        <TextSelection>1805,0</TextSelection>
-                                    </TextSettings>
-                                </BinderItem>
-                                <BinderItem ID="11" Type="Text" Created="2013-10-22 14:59:02 -0700" Modified="2014-04-06 16:08:15 -0700">
-                                    <Title>getOrderedOverlappingPaths</Title>
-                                    <MetaData>
-                                        <IncludeInCompile>Yes</IncludeInCompile>
-                                        <NotesTextSelection>0,0</NotesTextSelection>
-                                    </MetaData>
-                                    <TextSettings>
-                                        <TextSelection>633,0</TextSelection>
-                                    </TextSettings>
-                                </BinderItem>
-                                <BinderItem ID="7" Type="Text" Created="2013-10-20 20:00:47 -0700" Modified="2014-04-06 16:08:15 -0700">
-                                    <Title>computeOverlapCondition</Title>
-                                    <MetaData>
-                                        <IncludeInCompile>Yes</IncludeInCompile>
-                                        <NotesTextSelection>0,0</NotesTextSelection>
-                                    </MetaData>
-                                    <TextSettings>
-                                        <TextSelection>0,0</TextSelection>
-                                    </TextSettings>
-                                </BinderItem>
-                                <BinderItem ID="204" Type="Text" Created="2014-04-03 22:08:34 -0700" Modified="2014-04-03 22:08:51 -0700">
-                                    <Title>orientPath</Title>
-                                    <MetaData>
-                                        <IncludeInCompile>Yes</IncludeInCompile>
-                                        <NotesTextSelection>0,0</NotesTextSelection>
-                                    </MetaData>
-                                    <TextSettings>
-                                        <TextSelection>0,0</TextSelection>
-                                    </TextSettings>
-                                </BinderItem>
-                                <BinderItem ID="8" Type="Text" Created="2013-10-20 20:15:40 -0700" Modified="2014-04-06 16:08:15 -0700">
-                                    <Title>getContiguityFraction</Title>
-                                    <MetaData>
-                                        <IncludeInCompile>Yes</IncludeInCompile>
-                                        <NotesTextSelection>0,0</NotesTextSelection>
-                                    </MetaData>
-                                    <TextSettings>
-                                        <TextSelection>112,0</TextSelection>
-                                    </TextSettings>
-                                </BinderItem>
-                                <BinderItem ID="6" Type="Text" Created="2013-10-20 19:25:39 -0700" Modified="2013-10-20 20:04:09 -0700">
-                                    <Title>computeOverlapSum</Title>
-                                    <MetaData>
-                                        <IncludeInCompile>Yes</IncludeInCompile>
-                                        <FileExtension>rtf</FileExtension>
-                                        <NotesTextSelection>0,0</NotesTextSelection>
-                                    </MetaData>
-                                    <TextSettings>
-                                        <TextSelection>325,0</TextSelection>
-                                    </TextSettings>
-                                </BinderItem>
-                                <BinderItem ID="31" Type="Text" Created="2013-11-26 19:43:55 -0800" Modified="2013-11-26 19:49:53 -0800">
-                                    <Title>Divergence of Curves</Title>
-                                    <MetaData>
-                                        <IncludeInCompile>Yes</IncludeInCompile>
-                                        <NotesTextSelection>0,0</NotesTextSelection>
-                                    </MetaData>
-                                    <TextSettings>
-                                        <TextSelection>758,0</TextSelection>
-                                    </TextSettings>
-                                </BinderItem>
-                                <BinderItem ID="207" Type="Text" Created="2014-04-11 23:46:56 -0700" Modified="2014-04-11 23:47:01 -0700">
-                                    <Title>getOverlapDeparture</Title>
-                                    <MetaData>
-                                        <IncludeInCompile>Yes</IncludeInCompile>
-                                        <NotesTextSelection>0,0</NotesTextSelection>
-                                    </MetaData>
-                                    <TextSettings>
-                                        <TextSelection>0,0</TextSelection>
-                                    </TextSettings>
-                                </BinderItem>
-                                <BinderItem ID="208" Type="Text" Created="2014-04-13 23:39:52 -0700" Modified="2014-04-13 23:40:06 -0700">
-                                    <Title>getTangentIntersections</Title>
-                                    <MetaData>
-                                        <IncludeInCompile>Yes</IncludeInCompile>
-                                        <NotesTextSelection>0,0</NotesTextSelection>
-                                    </MetaData>
-                                    <TextSettings>
-                                        <TextSelection>0,0</TextSelection>
-                                    </TextSettings>
-                                </BinderItem>
-                                <BinderItem ID="209" Type="Text" Created="2014-04-14 21:54:23 -0700" Modified="2014-04-14 21:54:25 -0700">
-                                    <Title>isFeatureless</Title>
-                                    <MetaData>
-                                        <IncludeInCompile>Yes</IncludeInCompile>
-                                        <NotesTextSelection>0,0</NotesTextSelection>
-                                    </MetaData>
-                                    <TextSettings>
-                                        <TextSelection>0,0</TextSelection>
+                                        <TextSelection>511,0</TextSelection>
                                     </TextSettings>
                                 </BinderItem>
                             </Children>
                         </BinderItem>
                     </Children>
                 </BinderItem>
-                <BinderItem ID="136" Type="Folder" Created="2014-02-24 01:00:43 -0800" Modified="2015-02-17 23:40:40 -0800">
+                <BinderItem ID="136" Type="Folder" Created="2014-02-24 01:00:43 -0800" Modified="2015-03-12 19:28:24 -0700">
                     <Title>Searching for Best Map</Title>
                     <MetaData>
                         <IncludeInCompile>Yes</IncludeInCompile>
                         <NotesTextSelection>0,0</NotesTextSelection>
                     </MetaData>
                     <TextSettings>
-                        <TextSelection>0,0</TextSelection>
+                        <TextSelection>37,0</TextSelection>
                     </TextSettings>
                     <Children>
-                        <BinderItem ID="137" Type="Text" Created="2014-02-19 00:53:41 -0800" Modified="2014-04-06 19:02:22 -0700">
+                        <BinderItem ID="270" Type="Text" Created="2015-03-01 23:12:17 -0800" Modified="2015-03-03 02:17:51 -0800">
+                            <Title>branch uncertainty</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>16,0</TextSelection>
+                            </TextSettings>
+                            <Children>
+                                <BinderItem ID="273" Type="Text" Created="2015-03-03 02:08:05 -0800" Modified="2015-03-03 02:15:51 -0800">
+                                    <Title>uncertainty of junction-1</Title>
+                                    <MetaData>
+                                        <IncludeInCompile>Yes</IncludeInCompile>
+                                        <NotesTextSelection>0,0</NotesTextSelection>
+                                    </MetaData>
+                                    <TextSettings>
+                                        <TextSelection>1145,0</TextSelection>
+                                    </TextSettings>
+                                </BinderItem>
+                            </Children>
+                        </BinderItem>
+                        <BinderItem ID="274" Type="Text" Created="2015-03-03 02:08:29 -0800" Modified="2015-03-03 02:11:32 -0800">
+                            <Title>discretize poses and control</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>178,0</TextSelection>
+                            </TextSettings>
+                        </BinderItem>
+                        <BinderItem ID="275" Type="Text" Created="2015-03-03 02:11:25 -0800" Modified="2015-03-03 02:12:15 -0800">
+                            <Title>parameterization</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>191,0</TextSelection>
+                            </TextSettings>
+                        </BinderItem>
+                        <BinderItem ID="276" Type="Text" Created="2015-03-03 02:12:12 -0800" Modified="2015-03-03 02:12:43 -0800">
+                            <Title>spatial transform of skeletons</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>100,0</TextSelection>
+                            </TextSettings>
+                        </BinderItem>
+                        <BinderItem ID="277" Type="Text" Created="2015-03-03 02:12:41 -0800" Modified="2015-03-03 02:14:54 -0800">
+                            <Title>Search Method Steps</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>190,0</TextSelection>
+                            </TextSettings>
+                        </BinderItem>
+                        <BinderItem ID="278" Type="Text" Created="2015-03-03 02:14:32 -0800" Modified="2015-03-03 02:21:50 -0800">
+                            <Title>Motion Estimation</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>393,0</TextSelection>
+                            </TextSettings>
+                        </BinderItem>
+                        <BinderItem ID="279" Type="Text" Created="2015-03-03 02:14:42 -0800" Modified="2015-03-03 02:14:54 -0800">
+                            <Title>Add to Map</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>144,0</TextSelection>
+                            </TextSettings>
+                        </BinderItem>
+                        <BinderItem ID="280" Type="Text" Created="2015-03-03 02:14:48 -0800" Modified="2015-03-03 02:15:08 -0800">
+                            <Title>Skeleton Overlapping State</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>182,0</TextSelection>
+                            </TextSettings>
+                        </BinderItem>
+                        <BinderItem ID="281" Type="Text" Created="2015-03-03 02:14:57 -0800" Modified="2015-03-03 02:22:15 -0800">
+                            <Title>Localization</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>199,0</TextSelection>
+                            </TextSettings>
+                            <Children>
+                                <BinderItem ID="129" Type="Text" Created="2014-02-19 00:45:00 -0800" Modified="2015-03-02 23:46:36 -0800">
+                                    <Title>Localizing on Skeletons Map</Title>
+                                    <MetaData>
+                                        <IncludeInCompile>Yes</IncludeInCompile>
+                                        <NotesTextSelection>0,0</NotesTextSelection>
+                                    </MetaData>
+                                    <TextSettings>
+                                        <TextSelection>809,0</TextSelection>
+                                    </TextSettings>
+                                    <Children>
+                                        <BinderItem ID="272" Type="Text" Created="2015-03-02 23:46:26 -0800" Modified="2015-03-02 23:46:36 -0800">
+                                            <Title>Finding Best Fitted Location</Title>
+                                            <MetaData>
+                                                <IncludeInCompile>Yes</IncludeInCompile>
+                                                <NotesTextSelection>0,0</NotesTextSelection>
+                                            </MetaData>
+                                            <TextSettings>
+                                                <TextSelection>1084,0</TextSelection>
+                                            </TextSettings>
+                                        </BinderItem>
+                                        <BinderItem ID="130" Type="Text" Created="2014-03-23 20:06:17 -0700" Modified="2015-03-02 00:17:16 -0800">
+                                            <Title>Choosing Skeleton Splices</Title>
+                                            <MetaData>
+                                                <IncludeInCompile>Yes</IncludeInCompile>
+                                                <NotesTextSelection>0,0</NotesTextSelection>
+                                            </MetaData>
+                                            <TextSettings>
+                                                <TextSelection>807,0</TextSelection>
+                                            </TextSettings>
+                                        </BinderItem>
+                                        <BinderItem ID="131" Type="Text" Created="2014-03-23 20:07:17 -0700" Modified="2015-03-02 00:13:29 -0800">
+                                            <Title>Selecting Initial Poses for ICP</Title>
+                                            <MetaData>
+                                                <IncludeInCompile>Yes</IncludeInCompile>
+                                                <NotesTextSelection>0,0</NotesTextSelection>
+                                            </MetaData>
+                                            <TextSettings>
+                                                <TextSelection>1578,0</TextSelection>
+                                            </TextSettings>
+                                        </BinderItem>
+                                        <BinderItem ID="132" Type="Text" Created="2014-03-23 20:16:38 -0700" Modified="2015-03-01 20:27:10 -0800">
+                                            <Title>ICP Algorithm</Title>
+                                            <MetaData>
+                                                <IncludeInCompile>Yes</IncludeInCompile>
+                                                <NotesTextSelection>0,0</NotesTextSelection>
+                                            </MetaData>
+                                            <TextSettings>
+                                                <TextSelection>384,0</TextSelection>
+                                            </TextSettings>
+                                        </BinderItem>
+                                        <BinderItem ID="133" Type="Text" Created="2014-03-23 20:07:31 -0700" Modified="2015-03-01 20:27:10 -0800">
+                                            <Title>Collate, Sort, Filter</Title>
+                                            <MetaData>
+                                                <IncludeInCompile>Yes</IncludeInCompile>
+                                                <NotesTextSelection>0,0</NotesTextSelection>
+                                            </MetaData>
+                                            <TextSettings>
+                                                <TextSelection>735,0</TextSelection>
+                                            </TextSettings>
+                                        </BinderItem>
+                                    </Children>
+                                </BinderItem>
+                                <BinderItem ID="134" Type="Text" Created="2014-02-19 00:45:55 -0800" Modified="2015-03-01 20:27:10 -0800">
+                                    <Title>Curve segment algorithms</Title>
+                                    <MetaData>
+                                        <IncludeInCompile>Yes</IncludeInCompile>
+                                        <NotesTextSelection>0,0</NotesTextSelection>
+                                    </MetaData>
+                                    <TextSettings>
+                                        <TextSelection>114,0</TextSelection>
+                                    </TextSettings>
+                                    <Children>
+                                        <BinderItem ID="11" Type="Text" Created="2013-10-22 14:59:02 -0700" Modified="2015-03-01 20:27:10 -0800">
+                                            <Title>getOrderedOverlappingPaths</Title>
+                                            <MetaData>
+                                                <IncludeInCompile>Yes</IncludeInCompile>
+                                                <NotesTextSelection>0,0</NotesTextSelection>
+                                            </MetaData>
+                                            <TextSettings>
+                                                <TextSelection>633,0</TextSelection>
+                                            </TextSettings>
+                                        </BinderItem>
+                                        <BinderItem ID="7" Type="Text" Created="2013-10-20 20:00:47 -0700" Modified="2015-03-01 20:27:10 -0800">
+                                            <Title>computeOverlapCondition</Title>
+                                            <MetaData>
+                                                <IncludeInCompile>Yes</IncludeInCompile>
+                                                <NotesTextSelection>0,0</NotesTextSelection>
+                                            </MetaData>
+                                            <TextSettings>
+                                                <TextSelection>0,0</TextSelection>
+                                            </TextSettings>
+                                        </BinderItem>
+                                        <BinderItem ID="204" Type="Text" Created="2014-04-03 22:08:34 -0700" Modified="2014-04-03 22:08:51 -0700">
+                                            <Title>orientPath</Title>
+                                            <MetaData>
+                                                <IncludeInCompile>Yes</IncludeInCompile>
+                                                <NotesTextSelection>0,0</NotesTextSelection>
+                                            </MetaData>
+                                            <TextSettings>
+                                                <TextSelection>0,0</TextSelection>
+                                            </TextSettings>
+                                        </BinderItem>
+                                        <BinderItem ID="8" Type="Text" Created="2013-10-20 20:15:40 -0700" Modified="2015-03-01 20:27:10 -0800">
+                                            <Title>getContiguityFraction</Title>
+                                            <MetaData>
+                                                <IncludeInCompile>Yes</IncludeInCompile>
+                                                <NotesTextSelection>0,0</NotesTextSelection>
+                                            </MetaData>
+                                            <TextSettings>
+                                                <TextSelection>112,0</TextSelection>
+                                            </TextSettings>
+                                        </BinderItem>
+                                        <BinderItem ID="6" Type="Text" Created="2013-10-20 19:25:39 -0700" Modified="2015-03-01 20:27:10 -0800">
+                                            <Title>computeOverlapSum</Title>
+                                            <MetaData>
+                                                <IncludeInCompile>Yes</IncludeInCompile>
+                                                <FileExtension>rtf</FileExtension>
+                                                <NotesTextSelection>0,0</NotesTextSelection>
+                                            </MetaData>
+                                            <TextSettings>
+                                                <TextSelection>325,0</TextSelection>
+                                            </TextSettings>
+                                        </BinderItem>
+                                        <BinderItem ID="207" Type="Text" Created="2014-04-11 23:46:56 -0700" Modified="2014-04-11 23:47:01 -0700">
+                                            <Title>getOverlapDeparture</Title>
+                                            <MetaData>
+                                                <IncludeInCompile>Yes</IncludeInCompile>
+                                                <NotesTextSelection>0,0</NotesTextSelection>
+                                            </MetaData>
+                                            <TextSettings>
+                                                <TextSelection>0,0</TextSelection>
+                                            </TextSettings>
+                                        </BinderItem>
+                                        <BinderItem ID="209" Type="Text" Created="2014-04-14 21:54:23 -0700" Modified="2014-04-14 21:54:25 -0700">
+                                            <Title>isFeatureless</Title>
+                                            <MetaData>
+                                                <IncludeInCompile>Yes</IncludeInCompile>
+                                                <NotesTextSelection>0,0</NotesTextSelection>
+                                            </MetaData>
+                                            <TextSettings>
+                                                <TextSelection>0,0</TextSelection>
+                                            </TextSettings>
+                                        </BinderItem>
+                                    </Children>
+                                </BinderItem>
+                            </Children>
+                        </BinderItem>
+                        <BinderItem ID="282" Type="Text" Created="2015-03-03 02:15:03 -0800" Modified="2015-03-03 02:22:59 -0800">
+                            <Title>Merge Skeletons</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>80,0</TextSelection>
+                            </TextSettings>
+                        </BinderItem>
+                        <BinderItem ID="137" Type="Text" Created="2014-02-19 00:53:41 -0800" Modified="2015-03-03 22:04:04 -0800">
                             <Title>Space of Possibilities</Title>
                             <MetaData>
                                 <IncludeInCompile>Yes</IncludeInCompile>
                                 <NotesTextSelection>0,0</NotesTextSelection>
                             </MetaData>
                             <TextSettings>
-                                <TextSelection>0,25</TextSelection>
+                                <TextSelection>1006,0</TextSelection>
                             </TextSettings>
                         </BinderItem>
-                        <BinderItem ID="138" Type="Text" Created="2014-02-19 00:49:43 -0800" Modified="2014-04-10 21:02:27 -0700">
+                        <BinderItem ID="138" Type="Text" Created="2014-02-19 00:49:43 -0800" Modified="2015-03-02 00:14:09 -0800">
                             <Title>Pose Particle Filter</Title>
                             <MetaData>
                                 <IncludeInCompile>Yes</IncludeInCompile>
                                 <NotesTextSelection>0,0</NotesTextSelection>
                             </MetaData>
                             <TextSettings>
-                                <TextSelection>40,0</TextSelection>
+                                <TextSelection>427,0</TextSelection>
                             </TextSettings>
                         </BinderItem>
-                        <BinderItem ID="139" Type="Text" Created="2014-02-19 00:50:22 -0800" Modified="2014-04-11 02:10:55 -0700">
+                        <BinderItem ID="139" Type="Text" Created="2014-02-19 00:50:22 -0800" Modified="2015-03-02 00:14:24 -0800">
                             <Title>Pose+BranchLoc Particles</Title>
                             <MetaData>
                                 <IncludeInCompile>Yes</IncludeInCompile>
                                 <NotesTextSelection>0,0</NotesTextSelection>
                             </MetaData>
                             <TextSettings>
-                                <TextSelection>5503,10</TextSelection>
+                                <TextSelection>929,0</TextSelection>
                             </TextSettings>
                         </BinderItem>
-                        <BinderItem ID="140" Type="Text" Created="2014-02-19 00:52:37 -0800" Modified="2014-04-09 09:22:47 -0700">
+                        <BinderItem ID="140" Type="Text" Created="2014-02-19 00:52:37 -0800" Modified="2015-03-02 00:14:29 -0800">
                             <Title>Branch Decision</Title>
                             <MetaData>
                                 <IncludeInCompile>Yes</IncludeInCompile>
@@ -738,15 +1017,59 @@
                         </BinderItem>
                     </Children>
                 </BinderItem>
-                <BinderItem ID="218" Type="Text" Created="2014-11-20 20:29:30 -0800" Modified="2014-11-20 21:47:07 -0800">
-                    <Title>Results</Title>
+                <BinderItem ID="264" Type="Folder" Created="2015-03-01 20:47:46 -0800" Modified="2015-03-01 20:48:54 -0800">
+                    <Title>Experiments</Title>
                     <MetaData>
                         <IncludeInCompile>Yes</IncludeInCompile>
                         <NotesTextSelection>0,0</NotesTextSelection>
                     </MetaData>
                     <TextSettings>
-                        <TextSelection>3041,0</TextSelection>
+                        <TextSelection>0,0</TextSelection>
                     </TextSettings>
+                    <Children>
+                        <BinderItem ID="283" Type="Text" Created="2015-03-03 02:23:44 -0800" Modified="2015-03-03 02:28:25 -0800">
+                            <Title>Experimental Setup</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>23,0</TextSelection>
+                            </TextSettings>
+                        </BinderItem>
+                        <BinderItem ID="218" Type="Text" Created="2014-11-20 20:29:30 -0800" Modified="2015-03-04 20:47:12 -0800">
+                            <Title>Results</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>0,0</TextSelection>
+                            </TextSettings>
+                        </BinderItem>
+                    </Children>
+                </BinderItem>
+                <BinderItem ID="285" Type="Folder" Created="2015-03-04 13:41:32 -0800" Modified="2015-03-04 13:41:35 -0800">
+                    <Title>Conclusion</Title>
+                    <MetaData>
+                        <IncludeInCompile>Yes</IncludeInCompile>
+                        <NotesTextSelection>0,0</NotesTextSelection>
+                    </MetaData>
+                    <TextSettings>
+                        <TextSelection>0,0</TextSelection>
+                    </TextSettings>
+                    <Children>
+                        <BinderItem ID="284" Type="Text" Created="2015-03-03 02:30:00 -0800" Modified="2015-03-04 13:41:49 -0800">
+                            <Title>Conclusion</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>39,0</TextSelection>
+                            </TextSettings>
+                        </BinderItem>
+                    </Children>
                 </BinderItem>
             </Children>
         </BinderItem>
@@ -760,7 +1083,179 @@
                 <TextSelection>0,0</TextSelection>
             </TextSettings>
             <Children>
-                <BinderItem ID="33" Type="Text" Created="2013-12-10 23:53:05 -0800" Modified="2014-02-14 11:29:40 -0800">
+                <BinderItem ID="288" Type="Text" Created="2015-03-04 23:40:39 -0800" Modified="2015-03-09 00:42:46 -0700">
+                    <Title>bound to axis</Title>
+                    <MetaData>
+                        <IncludeInCompile>Yes</IncludeInCompile>
+                        <NotesTextSelection>0,0</NotesTextSelection>
+                    </MetaData>
+                    <TextSettings>
+                        <TextSelection>0,1073</TextSelection>
+                    </TextSettings>
+                </BinderItem>
+                <BinderItem ID="220" Type="Text" Created="2015-02-12 23:03:34 -0800" Modified="2015-03-05 11:33:51 -0800">
+                    <Title>building maps</Title>
+                    <MetaData>
+                        <IncludeInCompile>Yes</IncludeInCompile>
+                        <NotesTextSelection>0,0</NotesTextSelection>
+                    </MetaData>
+                    <TextSettings>
+                        <TextSelection>195,0</TextSelection>
+                    </TextSettings>
+                    <Children>
+                        <BinderItem ID="292" Type="Text" Created="2015-03-07 01:41:46 -0800" Modified="2015-03-07 01:41:50 -0800">
+                            <Title>multi-axis spatial curves</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>1029,0</TextSelection>
+                            </TextSettings>
+                        </BinderItem>
+                        <BinderItem ID="254" Type="Text" Created="2015-03-01 15:34:32 -0800" Modified="2015-03-07 00:01:44 -0800">
+                            <Title>in-place constraint</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>3557,0</TextSelection>
+                            </TextSettings>
+                            <Children>
+                                <BinderItem ID="120" Type="Text" Created="2014-02-17 17:49:04 -0800" Modified="2015-03-01 16:51:28 -0800">
+                                    <Title>Paired Pose Correction</Title>
+                                    <MetaData>
+                                        <IncludeInCompile>Yes</IncludeInCompile>
+                                        <NotesTextSelection>0,0</NotesTextSelection>
+                                    </MetaData>
+                                    <TextSettings>
+                                        <TextSelection>737,0</TextSelection>
+                                    </TextSettings>
+                                </BinderItem>
+                            </Children>
+                        </BinderItem>
+                        <BinderItem ID="255" Type="Text" Created="2015-03-01 15:34:56 -0800" Modified="2015-03-01 16:51:28 -0800">
+                            <Title>step constraint</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>4,0</TextSelection>
+                            </TextSettings>
+                        </BinderItem>
+                    </Children>
+                </BinderItem>
+                <BinderItem ID="20" Type="Folder" Created="2013-11-01 22:04:43 -0700" Modified="2014-02-24 21:06:25 -0800">
+                    <Title>Introduction</Title>
+                    <MetaData>
+                        <IncludeInCompile>Yes</IncludeInCompile>
+                        <NotesTextSelection>0,0</NotesTextSelection>
+                    </MetaData>
+                    <TextSettings>
+                        <TextSelection>0,0</TextSelection>
+                    </TextSettings>
+                    <CorkboardAndOutliner>
+                        <SelectedSubdocumentIDs></SelectedSubdocumentIDs>
+                        <OutlinerExpandedState>
+                            <ItemID>28</ItemID>
+                        </OutlinerExpandedState>
+                    </CorkboardAndOutliner>
+                    <Children>
+                        <BinderItem ID="26" Type="Text" Created="2013-11-01 22:15:01 -0700" Modified="2014-02-24 21:00:38 -0800">
+                            <Title>Problem</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>974,0</TextSelection>
+                            </TextSettings>
+                        </BinderItem>
+                        <BinderItem ID="22" Type="Text" Created="2013-11-01 22:05:17 -0700" Modified="2013-11-01 22:08:03 -0700">
+                            <Title>Motivations</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>2,604</TextSelection>
+                            </TextSettings>
+                        </BinderItem>
+                        <BinderItem ID="23" Type="Text" Created="2013-11-01 22:05:45 -0700" Modified="2013-11-01 22:18:49 -0700">
+                            <Title>Challenges</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>665,0</TextSelection>
+                            </TextSettings>
+                        </BinderItem>
+                        <BinderItem ID="27" Type="Text" Created="2013-11-01 22:18:54 -0700" Modified="2013-11-01 22:19:11 -0700">
+                            <Title>Related Work</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>1744,0</TextSelection>
+                            </TextSettings>
+                        </BinderItem>
+                        <BinderItem ID="28" Type="Text" Created="2013-11-01 22:20:08 -0700" Modified="2014-02-24 21:03:56 -0800">
+                            <Title>Scope</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>2977,0</TextSelection>
+                            </TextSettings>
+                        </BinderItem>
+                        <BinderItem ID="29" Type="Text" Created="2013-11-01 22:22:03 -0700" Modified="2013-11-01 22:22:29 -0700">
+                            <Title>Justification</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>797,0</TextSelection>
+                            </TextSettings>
+                        </BinderItem>
+                        <BinderItem ID="24" Type="Text" Created="2013-11-01 22:08:27 -0700" Modified="2013-11-01 22:29:05 -0700">
+                            <Title>Approach</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>760,0</TextSelection>
+                            </TextSettings>
+                        </BinderItem>
+                        <BinderItem ID="25" Type="Text" Created="2013-11-01 22:09:03 -0700" Modified="2013-11-01 22:09:15 -0700">
+                            <Title>Evaluation</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>117,0</TextSelection>
+                            </TextSettings>
+                        </BinderItem>
+                        <BinderItem ID="21" Type="Text" Created="2013-11-01 22:04:52 -0700" Modified="2013-11-01 22:05:19 -0700">
+                            <Title>Contributions</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>483,0</TextSelection>
+                            </TextSettings>
+                        </BinderItem>
+                    </Children>
+                </BinderItem>
+                <BinderItem ID="33" Type="Text" Created="2013-12-10 23:53:05 -0800" Modified="2015-02-22 19:31:14 -0800">
                     <Title>localizing branch location</Title>
                     <MetaData>
                         <IncludeInCompile>Yes</IncludeInCompile>
@@ -770,7 +1265,7 @@
                         <TextSelection>1456,0</TextSelection>
                     </TextSettings>
                 </BinderItem>
-                <BinderItem ID="34" Type="Text" Created="2013-12-31 21:15:19 -0800" Modified="2013-12-31 21:22:54 -0800">
+                <BinderItem ID="34" Type="Text" Created="2013-12-31 21:15:19 -0800" Modified="2015-02-22 19:31:14 -0800">
                     <Title>timeline</Title>
                     <MetaData>
                         <IncludeInCompile>Yes</IncludeInCompile>
@@ -780,7 +1275,7 @@
                         <TextSelection>473,0</TextSelection>
                     </TextSettings>
                 </BinderItem>
-                <BinderItem ID="12" Type="Text" Created="2013-10-22 23:10:17 -0700" Modified="2013-10-23 17:55:26 -0700">
+                <BinderItem ID="12" Type="Text" Created="2013-10-22 23:10:17 -0700" Modified="2015-02-22 19:31:14 -0800">
                     <Title>path fragment</Title>
                     <MetaData>
                         <IncludeInCompile>Yes</IncludeInCompile>
@@ -790,7 +1285,7 @@
                         <TextSelection>652,0</TextSelection>
                     </TextSettings>
                 </BinderItem>
-                <BinderItem ID="210" Type="Text" Created="2014-04-18 00:31:35 -0700" Modified="2014-04-18 00:44:00 -0700">
+                <BinderItem ID="210" Type="Text" Created="2014-04-18 00:31:35 -0700" Modified="2015-02-22 19:31:14 -0800">
                     <Title>detecting junctions better</Title>
                     <MetaData>
                         <IncludeInCompile>Yes</IncludeInCompile>
@@ -800,161 +1295,89 @@
                         <TextSelection>0,0</TextSelection>
                     </TextSettings>
                 </BinderItem>
-                <BinderItem ID="216" Type="Text" Created="2014-10-08 22:36:10 -0700" Modified="2014-10-12 01:10:18 -0700">
+                <BinderItem ID="216" Type="Text" Created="2014-10-08 22:36:10 -0700" Modified="2015-02-22 19:31:14 -0800">
                     <Title>The Story</Title>
                     <MetaData>
                         <IncludeInCompile>Yes</IncludeInCompile>
                         <NotesTextSelection>0,0</NotesTextSelection>
                     </MetaData>
                     <TextSettings>
-                        <TextSelection>11339,0</TextSelection>
+                        <TextSelection>443,0</TextSelection>
                     </TextSettings>
                 </BinderItem>
-                <BinderItem ID="219" Type="Text" Created="2015-02-12 00:02:52 -0800" Modified="2015-02-12 22:53:22 -0800">
+                <BinderItem ID="219" Type="Text" Created="2015-02-12 00:02:52 -0800" Modified="2015-02-22 19:31:13 -0800">
                     <Title>New Contribution</Title>
                     <MetaData>
                         <IncludeInCompile>Yes</IncludeInCompile>
                         <NotesTextSelection>0,0</NotesTextSelection>
                     </MetaData>
                     <TextSettings>
-                        <TextSelection>2060,0</TextSelection>
+                        <TextSelection>930,0</TextSelection>
                     </TextSettings>
                 </BinderItem>
-            </Children>
-        </BinderItem>
-        <BinderItem ID="20" Type="Folder" Created="2013-11-01 22:04:43 -0700" Modified="2014-02-24 21:06:25 -0800">
-            <Title>Introduction</Title>
-            <MetaData>
-                <IncludeInCompile>Yes</IncludeInCompile>
-                <NotesTextSelection>0,0</NotesTextSelection>
-            </MetaData>
-            <TextSettings>
-                <TextSelection>0,0</TextSelection>
-            </TextSettings>
-            <CorkboardAndOutliner>
-                <SelectedSubdocumentIDs></SelectedSubdocumentIDs>
-                <OutlinerExpandedState>
-                    <ItemID>28</ItemID>
-                </OutlinerExpandedState>
-            </CorkboardAndOutliner>
-            <Children>
-                <BinderItem ID="26" Type="Text" Created="2013-11-01 22:15:01 -0700" Modified="2014-02-24 21:00:38 -0800">
-                    <Title>Problem</Title>
+                <BinderItem ID="110" Type="Text" Created="2014-02-17 00:51:38 -0800" Modified="2015-03-01 15:37:31 -0800">
+                    <Title>Motion Models</Title>
+                    <MetaData>
+                        <StatusID>2</StatusID>
+                        <IncludeInCompile>Yes</IncludeInCompile>
+                        <NotesTextSelection>0,0</NotesTextSelection>
+                    </MetaData>
+                    <TextSettings>
+                        <TextSelection>364,0</TextSelection>
+                    </TextSettings>
+                </BinderItem>
+                <BinderItem ID="121" Type="Text" Created="2014-02-17 17:54:50 -0800" Modified="2015-03-01 17:15:41 -0800">
+                    <Title>constraints not work</Title>
                     <MetaData>
                         <IncludeInCompile>Yes</IncludeInCompile>
                         <NotesTextSelection>0,0</NotesTextSelection>
                     </MetaData>
                     <TextSettings>
-                        <TextSelection>974,0</TextSelection>
+                        <TextSelection>323,0</TextSelection>
                     </TextSettings>
                 </BinderItem>
-                <BinderItem ID="22" Type="Text" Created="2013-11-01 22:05:17 -0700" Modified="2013-11-01 22:08:03 -0700">
-                    <Title>Motivations</Title>
+                <BinderItem ID="14" Type="Text" Created="2013-10-23 08:58:39 -0700" Modified="2015-03-04 23:44:33 -0800">
+                    <Title>compute path topology</Title>
                     <MetaData>
                         <IncludeInCompile>Yes</IncludeInCompile>
                         <NotesTextSelection>0,0</NotesTextSelection>
                     </MetaData>
                     <TextSettings>
-                        <TextSelection>2,604</TextSelection>
+                        <TextSelection>767,0</TextSelection>
                     </TextSettings>
                 </BinderItem>
-                <BinderItem ID="23" Type="Text" Created="2013-11-01 22:05:45 -0700" Modified="2013-11-01 22:18:49 -0700">
-                    <Title>Challenges</Title>
+                <BinderItem ID="290" Type="Text" Created="2015-03-04 23:41:47 -0800" Modified="2015-03-09 00:52:35 -0700">
+                    <Title>guess pose</Title>
                     <MetaData>
                         <IncludeInCompile>Yes</IncludeInCompile>
                         <NotesTextSelection>0,0</NotesTextSelection>
                     </MetaData>
                     <TextSettings>
-                        <TextSelection>665,0</TextSelection>
+                        <TextSelection>820,0</TextSelection>
                     </TextSettings>
                 </BinderItem>
-                <BinderItem ID="27" Type="Text" Created="2013-11-01 22:18:54 -0700" Modified="2013-11-01 22:19:11 -0700">
-                    <Title>Related Work</Title>
+                <BinderItem ID="299" Type="Text" Created="2015-03-01 17:06:25 -0800" Modified="2015-03-09 00:57:22 -0700">
+                    <Title>add new pose to axis copy</Title>
                     <MetaData>
                         <IncludeInCompile>Yes</IncludeInCompile>
                         <NotesTextSelection>0,0</NotesTextSelection>
                     </MetaData>
                     <TextSettings>
-                        <TextSelection>1744,0</TextSelection>
+                        <TextSelection>816,0</TextSelection>
                     </TextSettings>
                 </BinderItem>
-                <BinderItem ID="28" Type="Text" Created="2013-11-01 22:20:08 -0700" Modified="2014-02-24 21:03:56 -0800">
-                    <Title>Scope</Title>
+                <BinderItem ID="31" Type="Text" Created="2013-11-26 19:43:55 -0800" Modified="2015-03-01 20:27:10 -0800">
+                    <Title>Divergence of Curves</Title>
                     <MetaData>
                         <IncludeInCompile>Yes</IncludeInCompile>
                         <NotesTextSelection>0,0</NotesTextSelection>
                     </MetaData>
                     <TextSettings>
-                        <TextSelection>2977,0</TextSelection>
+                        <TextSelection>0,150</TextSelection>
                     </TextSettings>
                 </BinderItem>
-                <BinderItem ID="29" Type="Text" Created="2013-11-01 22:22:03 -0700" Modified="2013-11-01 22:22:29 -0700">
-                    <Title>Justification</Title>
-                    <MetaData>
-                        <IncludeInCompile>Yes</IncludeInCompile>
-                        <NotesTextSelection>0,0</NotesTextSelection>
-                    </MetaData>
-                    <TextSettings>
-                        <TextSelection>797,0</TextSelection>
-                    </TextSettings>
-                </BinderItem>
-                <BinderItem ID="24" Type="Text" Created="2013-11-01 22:08:27 -0700" Modified="2013-11-01 22:29:05 -0700">
-                    <Title>Approach</Title>
-                    <MetaData>
-                        <IncludeInCompile>Yes</IncludeInCompile>
-                        <NotesTextSelection>0,0</NotesTextSelection>
-                    </MetaData>
-                    <TextSettings>
-                        <TextSelection>760,0</TextSelection>
-                    </TextSettings>
-                </BinderItem>
-                <BinderItem ID="25" Type="Text" Created="2013-11-01 22:09:03 -0700" Modified="2013-11-01 22:09:15 -0700">
-                    <Title>Evaluation</Title>
-                    <MetaData>
-                        <IncludeInCompile>Yes</IncludeInCompile>
-                        <NotesTextSelection>0,0</NotesTextSelection>
-                    </MetaData>
-                    <TextSettings>
-                        <TextSelection>117,0</TextSelection>
-                    </TextSettings>
-                </BinderItem>
-                <BinderItem ID="21" Type="Text" Created="2013-11-01 22:04:52 -0700" Modified="2013-11-01 22:05:19 -0700">
-                    <Title>Contributions</Title>
-                    <MetaData>
-                        <IncludeInCompile>Yes</IncludeInCompile>
-                        <NotesTextSelection>0,0</NotesTextSelection>
-                    </MetaData>
-                    <TextSettings>
-                        <TextSelection>483,0</TextSelection>
-                    </TextSettings>
-                </BinderItem>
-            </Children>
-        </BinderItem>
-        <BinderItem ID="37" Type="Folder" Created="2014-02-14 19:34:06 -0800" Modified="2014-02-14 19:34:08 -0800">
-            <Title>Outline</Title>
-            <MetaData>
-                <IncludeInCompile>Yes</IncludeInCompile>
-                <NotesTextSelection>0,0</NotesTextSelection>
-            </MetaData>
-            <TextSettings>
-                <TextSelection>0,0</TextSelection>
-            </TextSettings>
-            <CorkboardAndOutliner>
-                <SelectedSubdocumentIDs></SelectedSubdocumentIDs>
-                <OutlinerExpandedState>
-                    <ItemID>62</ItemID>
-                    <ItemID>63</ItemID>
-                    <ItemID>64</ItemID>
-                    <ItemID>65</ItemID>
-                    <ItemID>66</ItemID>
-                    <ItemID>68</ItemID>
-                    <ItemID>69</ItemID>
-                    <ItemID>70</ItemID>
-                </OutlinerExpandedState>
-            </CorkboardAndOutliner>
-            <Children>
-                <BinderItem ID="62" Type="Folder" Created="2014-02-23 00:17:35 -0800" Modified="2014-02-23 00:17:44 -0800">
-                    <Title>Sensing Space</Title>
+                <BinderItem ID="208" Type="Text" Created="2014-04-13 23:39:52 -0700" Modified="2014-04-13 23:40:06 -0700">
+                    <Title>getTangentIntersections</Title>
                     <MetaData>
                         <IncludeInCompile>Yes</IncludeInCompile>
                         <NotesTextSelection>0,0</NotesTextSelection>
@@ -962,41 +1385,19 @@
                     <TextSettings>
                         <TextSelection>0,0</TextSelection>
                     </TextSettings>
-                    <Children>
-                        <BinderItem ID="72" Type="Text" Created="2014-02-24 14:15:42 -0800" Modified="2014-02-24 14:39:39 -0800">
-                            <Title>Experimental System</Title>
-                            <MetaData>
-                                <IncludeInCompile>Yes</IncludeInCompile>
-                                <NotesTextSelection>0,0</NotesTextSelection>
-                            </MetaData>
-                            <TextSettings>
-                                <TextSelection>71,0</TextSelection>
-                            </TextSettings>
-                        </BinderItem>
-                        <BinderItem ID="38" Type="Text" Created="2014-02-17 00:13:42 -0800" Modified="2014-02-19 00:32:13 -0800">
-                            <Title>Proprioceptive Sensing</Title>
-                            <MetaData>
-                                <IncludeInCompile>Yes</IncludeInCompile>
-                                <NotesTextSelection>0,0</NotesTextSelection>
-                            </MetaData>
-                            <TextSettings>
-                                <TextSelection>0,0</TextSelection>
-                            </TextSettings>
-                        </BinderItem>
-                        <BinderItem ID="39" Type="Text" Created="2014-02-17 00:14:41 -0800" Modified="2014-02-19 00:32:13 -0800">
-                            <Title>Pose Map</Title>
-                            <MetaData>
-                                <IncludeInCompile>Yes</IncludeInCompile>
-                                <NotesTextSelection>0,0</NotesTextSelection>
-                            </MetaData>
-                            <TextSettings>
-                                <TextSelection>120,0</TextSelection>
-                            </TextSettings>
-                        </BinderItem>
-                    </Children>
                 </BinderItem>
-                <BinderItem ID="70" Type="Folder" Created="2014-02-24 14:14:23 -0800" Modified="2014-03-12 21:44:51 -0700">
-                    <Title>Control and Locomotion</Title>
+                <BinderItem ID="9" Type="Text" Created="2013-10-20 20:27:48 -0700" Modified="2015-03-10 23:00:18 -0700">
+                    <Title>computeDivergence</Title>
+                    <MetaData>
+                        <IncludeInCompile>Yes</IncludeInCompile>
+                        <NotesTextSelection>0,0</NotesTextSelection>
+                    </MetaData>
+                    <TextSettings>
+                        <TextSelection>1185,0</TextSelection>
+                    </TextSettings>
+                </BinderItem>
+                <BinderItem ID="303" Type="Text" Created="2015-03-11 01:03:32 -0700" Modified="2015-03-11 01:03:39 -0700">
+                    <Title>junctions_outline</Title>
                     <MetaData>
                         <IncludeInCompile>Yes</IncludeInCompile>
                         <NotesTextSelection>0,0</NotesTextSelection>
@@ -1004,31 +1405,9 @@
                     <TextSettings>
                         <TextSelection>0,0</TextSelection>
                     </TextSettings>
-                    <Children>
-                        <BinderItem ID="71" Type="Text" Created="2014-02-24 14:14:48 -0800" Modified="2014-02-24 14:40:19 -0800">
-                            <Title>Control Methodology</Title>
-                            <MetaData>
-                                <IncludeInCompile>Yes</IncludeInCompile>
-                                <NotesTextSelection>0,0</NotesTextSelection>
-                            </MetaData>
-                            <TextSettings>
-                                <TextSelection>54,0</TextSelection>
-                            </TextSettings>
-                        </BinderItem>
-                        <BinderItem ID="73" Type="Text" Created="2014-02-24 14:18:00 -0800" Modified="2014-02-24 14:40:28 -0800">
-                            <Title>Behaviors</Title>
-                            <MetaData>
-                                <IncludeInCompile>Yes</IncludeInCompile>
-                                <NotesTextSelection>0,0</NotesTextSelection>
-                            </MetaData>
-                            <TextSettings>
-                                <TextSelection>55,0</TextSelection>
-                            </TextSettings>
-                        </BinderItem>
-                    </Children>
                 </BinderItem>
-                <BinderItem ID="63" Type="Folder" Created="2014-02-23 00:19:15 -0800" Modified="2014-02-24 01:01:54 -0800">
-                    <Title>Defining Position</Title>
+                <BinderItem ID="304" Type="Text" Created="2015-03-11 01:34:53 -0700" Modified="2015-03-11 01:34:59 -0700">
+                    <Title>skeleton paramters</Title>
                     <MetaData>
                         <IncludeInCompile>Yes</IncludeInCompile>
                         <NotesTextSelection>0,0</NotesTextSelection>
@@ -1036,348 +1415,36 @@
                     <TextSettings>
                         <TextSelection>0,0</TextSelection>
                     </TextSettings>
-                    <Children>
-                        <BinderItem ID="40" Type="Text" Created="2014-02-17 00:42:41 -0800" Modified="2014-02-19 00:32:43 -0800">
-                            <Title>Defining Pose and Direction</Title>
-                            <MetaData>
-                                <IncludeInCompile>Yes</IncludeInCompile>
-                                <NotesTextSelection>0,0</NotesTextSelection>
-                            </MetaData>
-                            <TextSettings>
-                                <TextSelection>225,0</TextSelection>
-                            </TextSettings>
-                        </BinderItem>
-                        <BinderItem ID="41" Type="Text" Created="2014-02-17 00:51:38 -0800" Modified="2014-02-23 00:09:46 -0800">
-                            <Title>Motion Models</Title>
-                            <MetaData>
-                                <StatusID>2</StatusID>
-                                <IncludeInCompile>Yes</IncludeInCompile>
-                                <NotesTextSelection>0,0</NotesTextSelection>
-                            </MetaData>
-                            <TextSettings>
-                                <TextSelection>340,0</TextSelection>
-                            </TextSettings>
-                        </BinderItem>
-                    </Children>
                 </BinderItem>
-                <BinderItem ID="64" Type="Folder" Created="2014-02-23 00:20:37 -0800" Modified="2014-02-23 00:21:18 -0800">
-                    <Title>Environmental Landmarks</Title>
+                <BinderItem ID="13" Type="Text" Created="2013-10-23 08:53:53 -0700" Modified="2015-03-03 21:59:12 -0800">
+                    <Title>add pose algorithm</Title>
                     <MetaData>
                         <IncludeInCompile>Yes</IncludeInCompile>
                         <NotesTextSelection>0,0</NotesTextSelection>
                     </MetaData>
                     <TextSettings>
-                        <TextSelection>0,0</TextSelection>
+                        <TextSelection>182,0</TextSelection>
                     </TextSettings>
-                    <Children>
-                        <BinderItem ID="36" Type="Text" Created="2014-02-14 19:07:52 -0800" Modified="2014-03-20 21:27:02 -0700">
-                            <Title>Finding Landmarks</Title>
-                            <MetaData>
-                                <IncludeInCompile>Yes</IncludeInCompile>
-                                <NotesTextSelection>0,0</NotesTextSelection>
-                            </MetaData>
-                            <TextSettings>
-                                <TextSelection>2058,0</TextSelection>
-                            </TextSettings>
-                        </BinderItem>
-                        <BinderItem ID="43" Type="Text" Created="2014-02-17 01:02:29 -0800" Modified="2014-02-19 00:33:28 -0800">
-                            <Title>Corner Examples and Results</Title>
-                            <MetaData>
-                                <IncludeInCompile>Yes</IncludeInCompile>
-                                <NotesTextSelection>0,0</NotesTextSelection>
-                            </MetaData>
-                            <TextSettings>
-                                <TextSelection>382,0</TextSelection>
-                            </TextSettings>
-                        </BinderItem>
-                        <BinderItem ID="44" Type="Text" Created="2014-02-17 01:07:31 -0800" Modified="2014-02-23 00:12:13 -0800">
-                            <Title>Wall Detection</Title>
-                            <MetaData>
-                                <IncludeInCompile>Yes</IncludeInCompile>
-                                <NotesTextSelection>0,0</NotesTextSelection>
-                            </MetaData>
-                            <TextSettings>
-                                <TextSelection>507,0</TextSelection>
-                            </TextSettings>
-                        </BinderItem>
-                        <BinderItem ID="45" Type="Text" Created="2014-02-17 01:10:57 -0800" Modified="2014-02-19 00:34:41 -0800">
-                            <Title>Pipe Shape, Macro Feature</Title>
-                            <MetaData>
-                                <IncludeInCompile>Yes</IncludeInCompile>
-                                <NotesTextSelection>0,0</NotesTextSelection>
-                            </MetaData>
-                            <TextSettings>
-                                <TextSelection>515,0</TextSelection>
-                            </TextSettings>
-                        </BinderItem>
-                        <BinderItem ID="46" Type="Text" Created="2014-02-17 01:17:56 -0800" Modified="2014-02-19 00:35:04 -0800">
-                            <Title>Macro Feature Extraction</Title>
-                            <MetaData>
-                                <IncludeInCompile>Yes</IncludeInCompile>
-                                <NotesTextSelection>0,0</NotesTextSelection>
-                            </MetaData>
-                            <TextSettings>
-                                <TextSelection>525,0</TextSelection>
-                            </TextSettings>
-                        </BinderItem>
-                        <BinderItem ID="47" Type="Text" Created="2014-02-17 10:56:47 -0800" Modified="2014-02-19 00:37:14 -0800">
-                            <Title>Different Macro Features</Title>
-                            <MetaData>
-                                <IncludeInCompile>Yes</IncludeInCompile>
-                                <NotesTextSelection>0,0</NotesTextSelection>
-                            </MetaData>
-                            <TextSettings>
-                                <TextSelection>0,0</TextSelection>
-                            </TextSettings>
-                        </BinderItem>
-                    </Children>
                 </BinderItem>
-                <BinderItem ID="65" Type="Folder" Created="2014-02-23 00:23:38 -0800" Modified="2014-02-23 00:24:08 -0800">
-                    <Title>Pose-Based Mapping</Title>
+                <BinderItem ID="128" Type="Text" Created="2014-02-19 00:43:16 -0800" Modified="2015-03-02 00:12:53 -0800">
+                    <Title>Detecting branch</Title>
                     <MetaData>
                         <IncludeInCompile>Yes</IncludeInCompile>
                         <NotesTextSelection>0,0</NotesTextSelection>
                     </MetaData>
                     <TextSettings>
-                        <TextSelection>0,0</TextSelection>
+                        <TextSelection>486,0</TextSelection>
                     </TextSettings>
-                    <Children>
-                        <BinderItem ID="48" Type="Text" Created="2014-02-17 17:24:58 -0800" Modified="2014-02-19 00:37:30 -0800">
-                            <Title>Inter-Pose Correction</Title>
-                            <MetaData>
-                                <IncludeInCompile>Yes</IncludeInCompile>
-                                <NotesTextSelection>0,0</NotesTextSelection>
-                            </MetaData>
-                            <TextSettings>
-                                <TextSelection>1954,0</TextSelection>
-                            </TextSettings>
-                        </BinderItem>
-                        <BinderItem ID="49" Type="Text" Created="2014-02-17 17:49:04 -0800" Modified="2014-02-19 00:37:48 -0800">
-                            <Title>Paired Pose Correction</Title>
-                            <MetaData>
-                                <IncludeInCompile>Yes</IncludeInCompile>
-                                <NotesTextSelection>0,0</NotesTextSelection>
-                            </MetaData>
-                            <TextSettings>
-                                <TextSelection>708,0</TextSelection>
-                            </TextSettings>
-                        </BinderItem>
-                        <BinderItem ID="50" Type="Text" Created="2014-02-17 17:54:50 -0800" Modified="2014-03-20 22:58:32 -0700">
-                            <Title>Constraint Mapping</Title>
-                            <MetaData>
-                                <IncludeInCompile>Yes</IncludeInCompile>
-                                <NotesTextSelection>0,0</NotesTextSelection>
-                            </MetaData>
-                            <TextSettings>
-                                <TextSelection>2228,0</TextSelection>
-                            </TextSettings>
-                        </BinderItem>
-                        <BinderItem ID="51" Type="Text" Created="2014-02-17 21:14:04 -0800" Modified="2014-03-20 23:04:33 -0700">
-                            <Title>Aggregate Pose Constraint Mapping</Title>
-                            <MetaData>
-                                <IncludeInCompile>Yes</IncludeInCompile>
-                                <NotesTextSelection>0,0</NotesTextSelection>
-                            </MetaData>
-                            <TextSettings>
-                                <TextSelection>1980,0</TextSelection>
-                            </TextSettings>
-                        </BinderItem>
-                    </Children>
                 </BinderItem>
-                <BinderItem ID="68" Type="Folder" Created="2014-02-24 01:00:02 -0800" Modified="2014-02-24 01:00:10 -0800">
-                    <Title>Mapping with Junctions</Title>
+                <BinderItem ID="16" Type="Text" Created="2013-10-23 21:58:17 -0700" Modified="2015-03-01 20:27:10 -0800">
+                    <Title>mapping algorithm</Title>
                     <MetaData>
                         <IncludeInCompile>Yes</IncludeInCompile>
                         <NotesTextSelection>0,0</NotesTextSelection>
                     </MetaData>
                     <TextSettings>
-                        <TextSelection>0,0</TextSelection>
+                        <TextSelection>244,0</TextSelection>
                     </TextSettings>
-                    <CorkboardAndOutliner>
-                        <SelectedSubdocumentIDs>57</SelectedSubdocumentIDs>
-                    </CorkboardAndOutliner>
-                    <Children>
-                        <BinderItem ID="52" Type="Text" Created="2014-02-17 23:15:18 -0800" Modified="2014-02-19 00:39:36 -0800">
-                            <Title>Junctions</Title>
-                            <MetaData>
-                                <IncludeInCompile>Yes</IncludeInCompile>
-                                <NotesTextSelection>0,0</NotesTextSelection>
-                            </MetaData>
-                            <TextSettings>
-                                <TextSelection>1360,0</TextSelection>
-                            </TextSettings>
-                            <References>
-                                <Reference BinderID="51" Destination="[Internal Link]">Union of Posture Images</Reference>
-                            </References>
-                        </BinderItem>
-                        <BinderItem ID="53" Type="Text" Created="2014-02-18 18:50:23 -0800" Modified="2014-02-22 22:32:40 -0800">
-                            <Title>Shoot Map Representation</Title>
-                            <MetaData>
-                                <IncludeInCompile>Yes</IncludeInCompile>
-                                <NotesTextSelection>0,0</NotesTextSelection>
-                            </MetaData>
-                            <TextSettings>
-                                <TextSelection>1329,0</TextSelection>
-                            </TextSettings>
-                        </BinderItem>
-                        <BinderItem ID="54" Type="Text" Created="2014-02-18 18:50:54 -0800" Modified="2014-02-23 22:17:53 -0800">
-                            <Title>Generating Shoots</Title>
-                            <MetaData>
-                                <IncludeInCompile>Yes</IncludeInCompile>
-                                <NotesTextSelection>0,0</NotesTextSelection>
-                            </MetaData>
-                            <TextSettings>
-                                <TextSelection>826,0</TextSelection>
-                            </TextSettings>
-                        </BinderItem>
-                        <BinderItem ID="92" Type="Text" Created="2014-03-23 15:59:25 -0700" Modified="2014-03-26 19:46:24 -0700">
-                            <Title>Adding Poses to Shoots</Title>
-                            <MetaData>
-                                <IncludeInCompile>Yes</IncludeInCompile>
-                                <NotesTextSelection>0,0</NotesTextSelection>
-                            </MetaData>
-                            <TextSettings>
-                                <TextSelection>66,0</TextSelection>
-                            </TextSettings>
-                        </BinderItem>
-                        <BinderItem ID="55" Type="Text" Created="2014-02-19 00:43:16 -0800" Modified="2014-02-24 14:13:36 -0800">
-                            <Title>Detecting branch</Title>
-                            <MetaData>
-                                <IncludeInCompile>Yes</IncludeInCompile>
-                                <NotesTextSelection>0,0</NotesTextSelection>
-                            </MetaData>
-                            <TextSettings>
-                                <TextSelection>1549,0</TextSelection>
-                            </TextSettings>
-                        </BinderItem>
-                        <BinderItem ID="56" Type="Text" Created="2014-02-19 00:45:00 -0800" Modified="2014-03-23 20:17:11 -0700">
-                            <Title>Localizing on Shoot Map</Title>
-                            <MetaData>
-                                <IncludeInCompile>Yes</IncludeInCompile>
-                                <NotesTextSelection>0,0</NotesTextSelection>
-                            </MetaData>
-                            <TextSettings>
-                                <TextSelection>756,0</TextSelection>
-                            </TextSettings>
-                            <Children>
-                                <BinderItem ID="95" Type="Text" Created="2014-03-23 20:06:17 -0700" Modified="2014-03-23 20:07:19 -0700">
-                                    <Title>Choosing Shoot Splices</Title>
-                                    <MetaData>
-                                        <IncludeInCompile>Yes</IncludeInCompile>
-                                        <NotesTextSelection>0,0</NotesTextSelection>
-                                    </MetaData>
-                                    <TextSettings>
-                                        <TextSelection>1593,0</TextSelection>
-                                    </TextSettings>
-                                </BinderItem>
-                                <BinderItem ID="97" Type="Text" Created="2014-03-23 20:07:17 -0700" Modified="2014-03-23 20:07:33 -0700">
-                                    <Title>Selecting Initial Poses for ICP</Title>
-                                    <MetaData>
-                                        <IncludeInCompile>Yes</IncludeInCompile>
-                                        <NotesTextSelection>0,0</NotesTextSelection>
-                                    </MetaData>
-                                    <TextSettings>
-                                        <TextSelection>1602,0</TextSelection>
-                                    </TextSettings>
-                                </BinderItem>
-                                <BinderItem ID="99" Type="Text" Created="2014-03-23 20:16:38 -0700" Modified="2014-03-26 23:25:17 -0700">
-                                    <Title>ICP Algorithm</Title>
-                                    <MetaData>
-                                        <IncludeInCompile>Yes</IncludeInCompile>
-                                        <NotesTextSelection>0,0</NotesTextSelection>
-                                    </MetaData>
-                                    <TextSettings>
-                                        <TextSelection>193,0</TextSelection>
-                                    </TextSettings>
-                                </BinderItem>
-                                <BinderItem ID="98" Type="Text" Created="2014-03-23 20:07:31 -0700" Modified="2014-03-24 19:02:30 -0700">
-                                    <Title>Collate, Sort, Filter</Title>
-                                    <MetaData>
-                                        <IncludeInCompile>Yes</IncludeInCompile>
-                                        <NotesTextSelection>0,0</NotesTextSelection>
-                                    </MetaData>
-                                    <TextSettings>
-                                        <TextSelection>727,0</TextSelection>
-                                    </TextSettings>
-                                </BinderItem>
-                            </Children>
-                        </BinderItem>
-                        <BinderItem ID="57" Type="Text" Created="2014-02-19 00:45:55 -0800" Modified="2014-03-26 22:11:45 -0700">
-                            <Title>Curve segment algorithms</Title>
-                            <MetaData>
-                                <IncludeInCompile>Yes</IncludeInCompile>
-                                <NotesTextSelection>0,0</NotesTextSelection>
-                            </MetaData>
-                            <TextSettings>
-                                <TextSelection>79,0</TextSelection>
-                            </TextSettings>
-                        </BinderItem>
-                        <BinderItem ID="94" Type="Text" Created="2014-03-23 16:21:25 -0700" Modified="2014-03-23 16:24:10 -0700">
-                            <Title>Map Algorithm</Title>
-                            <MetaData>
-                                <IncludeInCompile>Yes</IncludeInCompile>
-                                <NotesTextSelection>0,0</NotesTextSelection>
-                            </MetaData>
-                            <TextSettings>
-                                <TextSelection>262,0</TextSelection>
-                            </TextSettings>
-                        </BinderItem>
-                    </Children>
-                </BinderItem>
-                <BinderItem ID="69" Type="Folder" Created="2014-02-24 01:00:43 -0800" Modified="2014-02-24 01:00:50 -0800">
-                    <Title>Probabilistic Mapping</Title>
-                    <MetaData>
-                        <IncludeInCompile>Yes</IncludeInCompile>
-                        <NotesTextSelection>0,0</NotesTextSelection>
-                    </MetaData>
-                    <TextSettings>
-                        <TextSelection>0,0</TextSelection>
-                    </TextSettings>
-                    <CorkboardAndOutliner>
-                        <SelectedSubdocumentIDs>60</SelectedSubdocumentIDs>
-                    </CorkboardAndOutliner>
-                    <Children>
-                        <BinderItem ID="61" Type="Text" Created="2014-02-19 00:53:41 -0800" Modified="2014-02-19 00:55:05 -0800">
-                            <Title>Space of Possibilities</Title>
-                            <MetaData>
-                                <IncludeInCompile>Yes</IncludeInCompile>
-                                <NotesTextSelection>0,0</NotesTextSelection>
-                            </MetaData>
-                            <TextSettings>
-                                <TextSelection>0,0</TextSelection>
-                            </TextSettings>
-                        </BinderItem>
-                        <BinderItem ID="58" Type="Text" Created="2014-02-19 00:49:43 -0800" Modified="2014-02-23 00:09:17 -0800">
-                            <Title>Pose Particle Filter</Title>
-                            <MetaData>
-                                <IncludeInCompile>Yes</IncludeInCompile>
-                                <NotesTextSelection>0,0</NotesTextSelection>
-                            </MetaData>
-                            <TextSettings>
-                                <TextSelection>0,0</TextSelection>
-                            </TextSettings>
-                        </BinderItem>
-                        <BinderItem ID="59" Type="Text" Created="2014-02-19 00:50:22 -0800" Modified="2014-02-19 00:51:22 -0800">
-                            <Title>Pose+BranchLoc Particles</Title>
-                            <MetaData>
-                                <IncludeInCompile>Yes</IncludeInCompile>
-                                <NotesTextSelection>0,0</NotesTextSelection>
-                            </MetaData>
-                            <TextSettings>
-                                <TextSelection>0,0</TextSelection>
-                            </TextSettings>
-                        </BinderItem>
-                        <BinderItem ID="60" Type="Text" Created="2014-02-19 00:52:37 -0800" Modified="2014-02-19 00:53:28 -0800">
-                            <Title>Branch Decision</Title>
-                            <MetaData>
-                                <IncludeInCompile>Yes</IncludeInCompile>
-                                <NotesTextSelection>0,0</NotesTextSelection>
-                            </MetaData>
-                            <TextSettings>
-                                <TextSelection>0,0</TextSelection>
-                            </TextSettings>
-                        </BinderItem>
-                    </Children>
                 </BinderItem>
             </Children>
         </BinderItem>
@@ -1391,6 +1458,16 @@
                 <TextSelection>0,0</TextSelection>
             </TextSettings>
             <Children>
+                <BinderItem ID="230" Type="Text" Created="2015-02-21 23:53:04 -0800" Modified="2015-02-22 22:39:31 -0800">
+                    <Title>outline</Title>
+                    <MetaData>
+                        <IncludeInCompile>Yes</IncludeInCompile>
+                        <NotesTextSelection>0,0</NotesTextSelection>
+                    </MetaData>
+                    <TextSettings>
+                        <TextSelection>60,0</TextSelection>
+                    </TextSettings>
+                </BinderItem>
                 <BinderItem ID="18" Type="Text" Created="2013-11-01 21:56:41 -0700" Modified="2014-04-06 16:08:40 -0700">
                     <Title>abstract</Title>
                     <MetaData>
@@ -1398,7 +1475,7 @@
                         <NotesTextSelection>0,0</NotesTextSelection>
                     </MetaData>
                     <TextSettings>
-                        <TextSelection>829,0</TextSelection>
+                        <TextSelection>968,0</TextSelection>
                     </TextSettings>
                 </BinderItem>
                 <BinderItem ID="19" Type="Text" Created="2013-11-01 21:56:51 -0700" Modified="2014-04-06 16:08:40 -0700">
@@ -1490,7 +1567,7 @@
                         <NotesTextSelection>0,0</NotesTextSelection>
                     </MetaData>
                     <TextSettings>
-                        <TextSelection>221,0</TextSelection>
+                        <TextSelection>1794,0</TextSelection>
                     </TextSettings>
                 </BinderItem>
                 <BinderItem ID="148" Type="Text" Created="2014-03-28 18:05:00 -0700" Modified="2014-04-02 20:45:27 -0700">
@@ -1523,6 +1600,26 @@
                         <TextSelection>5895,0</TextSelection>
                     </TextSettings>
                 </BinderItem>
+                <BinderItem ID="229" Type="Text" Created="2015-02-21 17:10:01 -0800" Modified="2015-02-21 17:10:08 -0800">
+                    <Title>sensing behavior</Title>
+                    <MetaData>
+                        <IncludeInCompile>Yes</IncludeInCompile>
+                        <NotesTextSelection>0,0</NotesTextSelection>
+                    </MetaData>
+                    <TextSettings>
+                        <TextSelection>855,0</TextSelection>
+                    </TextSettings>
+                </BinderItem>
+                <BinderItem ID="243" Type="Text" Created="2015-02-22 19:29:52 -0800" Modified="2015-02-22 19:30:07 -0800">
+                    <Title>motion tracking results</Title>
+                    <MetaData>
+                        <IncludeInCompile>Yes</IncludeInCompile>
+                        <NotesTextSelection>0,0</NotesTextSelection>
+                    </MetaData>
+                    <TextSettings>
+                        <TextSelection>846,0</TextSelection>
+                    </TextSettings>
+                </BinderItem>
             </Children>
         </BinderItem>
         <BinderItem ID="141" Type="Folder" Created="2014-03-27 22:32:43 -0700" Modified="2014-03-27 22:32:46 -0700">
@@ -1535,6 +1632,146 @@
                 <TextSelection>0,0</TextSelection>
             </TextSettings>
             <Children>
+                <BinderItem ID="302" Type="PDF" Created="2015-03-09 23:02:50 -0700" Modified="2015-03-09 23:02:55 -0700">
+                    <Title>curve_events</Title>
+                    <MetaData>
+                        <IncludeInCompile>Yes</IncludeInCompile>
+                        <FileExtension>pdf</FileExtension>
+                        <NotesTextSelection>0,0</NotesTextSelection>
+                    </MetaData>
+                    <MediaSettings>
+                        <CurrentPDFPage>0</CurrentPDFPage>
+                    </MediaSettings>
+                    <References>
+                        <Reference BinderID="263" Destination="[Internal Link]">problem</Reference>
+                    </References>
+                </BinderItem>
+                <BinderItem ID="301" Type="PDF" Created="2015-03-09 23:01:25 -0700" Modified="2015-03-09 23:01:36 -0700">
+                    <Title>axis_method_junction_fail</Title>
+                    <MetaData>
+                        <IncludeInCompile>Yes</IncludeInCompile>
+                        <FileExtension>pdf</FileExtension>
+                        <NotesTextSelection>0,0</NotesTextSelection>
+                    </MetaData>
+                    <MediaSettings>
+                        <CurrentPDFPage>0</CurrentPDFPage>
+                    </MediaSettings>
+                    <References>
+                        <Reference BinderID="263" Destination="[Internal Link]">problem</Reference>
+                    </References>
+                </BinderItem>
+                <BinderItem ID="300" Type="PDF" Created="2015-03-09 22:59:56 -0700" Modified="2015-03-09 23:00:02 -0700">
+                    <Title>junction_example</Title>
+                    <MetaData>
+                        <IncludeInCompile>Yes</IncludeInCompile>
+                        <FileExtension>pdf</FileExtension>
+                        <NotesTextSelection>0,0</NotesTextSelection>
+                    </MetaData>
+                    <MediaSettings>
+                        <CurrentPDFPage>0</CurrentPDFPage>
+                    </MediaSettings>
+                    <References>
+                        <Reference BinderID="263" Destination="[Internal Link]">problem</Reference>
+                    </References>
+                </BinderItem>
+                <BinderItem ID="298" Type="PDF" Created="2015-03-09 00:54:51 -0700" Modified="2015-03-09 00:55:11 -0700">
+                    <Title>axis_results</Title>
+                    <MetaData>
+                        <IncludeInCompile>Yes</IncludeInCompile>
+                        <FileExtension>pdf</FileExtension>
+                        <NotesTextSelection>0,0</NotesTextSelection>
+                    </MetaData>
+                    <MediaSettings>
+                        <CurrentPDFPage>0</CurrentPDFPage>
+                    </MediaSettings>
+                    <References>
+                        <Reference BinderID="261" Destination="[Internal Link]">Results</Reference>
+                    </References>
+                </BinderItem>
+                <BinderItem ID="297" Type="PDF" Created="2015-03-08 23:30:21 -0700" Modified="2015-03-08 23:30:30 -0700">
+                    <Title>global_medial_axis</Title>
+                    <MetaData>
+                        <IncludeInCompile>Yes</IncludeInCompile>
+                        <FileExtension>pdf</FileExtension>
+                        <NotesTextSelection>0,0</NotesTextSelection>
+                    </MetaData>
+                    <MediaSettings>
+                        <CurrentPDFPage>0</CurrentPDFPage>
+                    </MediaSettings>
+                    <References>
+                        <Reference BinderID="289" Destination="[Internal Link]">generating axis</Reference>
+                    </References>
+                </BinderItem>
+                <BinderItem ID="294" Type="PDF" Created="2015-03-08 17:46:52 -0700" Modified="2015-03-08 17:47:00 -0700">
+                    <Title>inplace_constraint</Title>
+                    <MetaData>
+                        <IncludeInCompile>Yes</IncludeInCompile>
+                        <FileExtension>pdf</FileExtension>
+                        <NotesTextSelection>0,0</NotesTextSelection>
+                    </MetaData>
+                    <MediaSettings>
+                        <CurrentPDFPage>0</CurrentPDFPage>
+                    </MediaSettings>
+                    <References>
+                        <Reference BinderID="293" Destination="[Internal Link]">constraints</Reference>
+                    </References>
+                </BinderItem>
+                <BinderItem ID="295" Type="PDF" Created="2015-03-08 17:47:12 -0700" Modified="2015-03-08 17:47:18 -0700">
+                    <Title>step_constraint</Title>
+                    <MetaData>
+                        <IncludeInCompile>Yes</IncludeInCompile>
+                        <FileExtension>pdf</FileExtension>
+                        <NotesTextSelection>0,0</NotesTextSelection>
+                    </MetaData>
+                    <MediaSettings>
+                        <CurrentPDFPage>0</CurrentPDFPage>
+                    </MediaSettings>
+                    <References>
+                        <Reference BinderID="293" Destination="[Internal Link]">constraints</Reference>
+                    </References>
+                </BinderItem>
+                <BinderItem ID="296" Type="PDF" Created="2015-03-08 17:51:32 -0700" Modified="2015-03-08 17:51:49 -0700">
+                    <Title>naive_results</Title>
+                    <MetaData>
+                        <IncludeInCompile>Yes</IncludeInCompile>
+                        <FileExtension>pdf</FileExtension>
+                        <NotesTextSelection>0,0</NotesTextSelection>
+                    </MetaData>
+                    <MediaSettings>
+                        <CurrentPDFPage>0</CurrentPDFPage>
+                    </MediaSettings>
+                    <References>
+                        <Reference BinderID="257" Destination="[Internal Link]">Results</Reference>
+                    </References>
+                </BinderItem>
+                <BinderItem ID="287" Type="PDF" Created="2015-03-04 23:23:55 -0800" Modified="2015-03-04 23:24:07 -0800">
+                    <Title>image_to_spatial_curve</Title>
+                    <MetaData>
+                        <IncludeInCompile>Yes</IncludeInCompile>
+                        <FileExtension>pdf</FileExtension>
+                        <NotesTextSelection>0,0</NotesTextSelection>
+                    </MetaData>
+                    <MediaSettings>
+                        <CurrentPDFPage>0</CurrentPDFPage>
+                    </MediaSettings>
+                    <References>
+                        <Reference BinderID="118" Destination="[Internal Link]">Building Maps</Reference>
+                    </References>
+                </BinderItem>
+                <BinderItem ID="286" Type="PDF" Created="2015-03-04 23:17:44 -0800" Modified="2015-03-04 23:18:04 -0800">
+                    <Title>maps_inputs</Title>
+                    <MetaData>
+                        <IncludeInCompile>Yes</IncludeInCompile>
+                        <FileExtension>pdf</FileExtension>
+                        <NotesTextSelection>0,0</NotesTextSelection>
+                    </MetaData>
+                    <MediaSettings>
+                        <CurrentPDFPage>0</CurrentPDFPage>
+                    </MediaSettings>
+                    <References>
+                        <Reference BinderID="118" Destination="[Internal Link]">Building Maps</Reference>
+                    </References>
+                </BinderItem>
                 <BinderItem ID="202" Type="Image" Created="2013-02-10 19:22:51 -0800" Modified="2013-02-10 19:22:51 -0800">
                     <Title>4_snapshot_1</Title>
                     <MetaData>
@@ -2402,8 +2639,8 @@
                         <NotesTextSelection>0,0</NotesTextSelection>
                     </MetaData>
                 </BinderItem>
-                <BinderItem ID="35" Type="Text" Created="2014-02-14 11:32:35 -0800" Modified="2014-03-28 17:36:31 -0700">
-                    <Title>Untitled</Title>
+                <BinderItem ID="35" Type="Text" Created="2014-02-14 11:32:35 -0800" Modified="2015-02-18 00:11:01 -0800">
+                    <Title>markdown image example</Title>
                     <MetaData>
                         <IncludeInCompile>Yes</IncludeInCompile>
                         <NotesTextSelection>0,0</NotesTextSelection>
@@ -2419,7 +2656,7 @@
                         <NotesTextSelection>0,0</NotesTextSelection>
                     </MetaData>
                     <TextSettings>
-                        <TextSelection>1569,0</TextSelection>
+                        <TextSelection>2040,0</TextSelection>
                     </TextSettings>
                 </BinderItem>
             </Children>
@@ -2690,6 +2927,612 @@
                         <TextSelection>0,0</TextSelection>
                     </TextSettings>
                 </BinderItem>
+                <BinderItem ID="104" Type="Text" Created="2014-02-17 00:14:41 -0800" Modified="2015-02-21 18:33:34 -0800">
+                    <Title>Pose Map</Title>
+                    <MetaData>
+                        <IncludeInCompile>Yes</IncludeInCompile>
+                        <NotesTextSelection>0,0</NotesTextSelection>
+                    </MetaData>
+                    <TextSettings>
+                        <TextSelection>0,0</TextSelection>
+                    </TextSettings>
+                </BinderItem>
+                <BinderItem ID="103" Type="Text" Created="2014-02-17 00:13:42 -0800" Modified="2015-02-21 18:50:00 -0800">
+                    <Title>Proprioceptive Sensing</Title>
+                    <MetaData>
+                        <IncludeInCompile>Yes</IncludeInCompile>
+                        <NotesTextSelection>0,0</NotesTextSelection>
+                    </MetaData>
+                    <TextSettings>
+                        <TextSelection>0,0</TextSelection>
+                    </TextSettings>
+                </BinderItem>
+                <BinderItem ID="109" Type="Text" Created="2014-02-17 00:42:41 -0800" Modified="2015-02-22 19:51:00 -0800">
+                    <Title>Defining Pose and Direction</Title>
+                    <MetaData>
+                        <IncludeInCompile>Yes</IncludeInCompile>
+                        <NotesTextSelection>0,0</NotesTextSelection>
+                    </MetaData>
+                    <TextSettings>
+                        <TextSelection>31,0</TextSelection>
+                    </TextSettings>
+                </BinderItem>
+                <BinderItem ID="226" Type="Text" Created="2015-02-17 23:30:55 -0800" Modified="2015-02-22 19:51:37 -0800">
+                    <Title>Presentation Raw</Title>
+                    <MetaData>
+                        <IncludeInCompile>Yes</IncludeInCompile>
+                        <NotesTextSelection>0,0</NotesTextSelection>
+                    </MetaData>
+                    <TextSettings>
+                        <TextSelection>0,0</TextSelection>
+                    </TextSettings>
+                </BinderItem>
+                <BinderItem ID="37" Type="Folder" Created="2014-02-14 19:34:06 -0800" Modified="2014-02-14 19:34:08 -0800">
+                    <Title>Outline</Title>
+                    <MetaData>
+                        <IncludeInCompile>Yes</IncludeInCompile>
+                        <NotesTextSelection>0,0</NotesTextSelection>
+                    </MetaData>
+                    <TextSettings>
+                        <TextSelection>0,0</TextSelection>
+                    </TextSettings>
+                    <CorkboardAndOutliner>
+                        <SelectedSubdocumentIDs></SelectedSubdocumentIDs>
+                        <OutlinerExpandedState>
+                            <ItemID>62</ItemID>
+                            <ItemID>63</ItemID>
+                            <ItemID>64</ItemID>
+                            <ItemID>65</ItemID>
+                            <ItemID>66</ItemID>
+                            <ItemID>68</ItemID>
+                            <ItemID>69</ItemID>
+                            <ItemID>70</ItemID>
+                        </OutlinerExpandedState>
+                    </CorkboardAndOutliner>
+                    <Children>
+                        <BinderItem ID="62" Type="Folder" Created="2014-02-23 00:17:35 -0800" Modified="2014-02-23 00:17:44 -0800">
+                            <Title>Sensing Space</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>0,0</TextSelection>
+                            </TextSettings>
+                            <Children>
+                                <BinderItem ID="72" Type="Text" Created="2014-02-24 14:15:42 -0800" Modified="2014-02-24 14:39:39 -0800">
+                                    <Title>Experimental System</Title>
+                                    <MetaData>
+                                        <IncludeInCompile>Yes</IncludeInCompile>
+                                        <NotesTextSelection>0,0</NotesTextSelection>
+                                    </MetaData>
+                                    <TextSettings>
+                                        <TextSelection>71,0</TextSelection>
+                                    </TextSettings>
+                                </BinderItem>
+                                <BinderItem ID="38" Type="Text" Created="2014-02-17 00:13:42 -0800" Modified="2014-02-19 00:32:13 -0800">
+                                    <Title>Proprioceptive Sensing</Title>
+                                    <MetaData>
+                                        <IncludeInCompile>Yes</IncludeInCompile>
+                                        <NotesTextSelection>0,0</NotesTextSelection>
+                                    </MetaData>
+                                    <TextSettings>
+                                        <TextSelection>0,0</TextSelection>
+                                    </TextSettings>
+                                </BinderItem>
+                                <BinderItem ID="39" Type="Text" Created="2014-02-17 00:14:41 -0800" Modified="2014-02-19 00:32:13 -0800">
+                                    <Title>Pose Map</Title>
+                                    <MetaData>
+                                        <IncludeInCompile>Yes</IncludeInCompile>
+                                        <NotesTextSelection>0,0</NotesTextSelection>
+                                    </MetaData>
+                                    <TextSettings>
+                                        <TextSelection>120,0</TextSelection>
+                                    </TextSettings>
+                                </BinderItem>
+                            </Children>
+                        </BinderItem>
+                        <BinderItem ID="70" Type="Folder" Created="2014-02-24 14:14:23 -0800" Modified="2014-03-12 21:44:51 -0700">
+                            <Title>Control and Locomotion</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>0,0</TextSelection>
+                            </TextSettings>
+                            <Children>
+                                <BinderItem ID="71" Type="Text" Created="2014-02-24 14:14:48 -0800" Modified="2014-02-24 14:40:19 -0800">
+                                    <Title>Control Methodology</Title>
+                                    <MetaData>
+                                        <IncludeInCompile>Yes</IncludeInCompile>
+                                        <NotesTextSelection>0,0</NotesTextSelection>
+                                    </MetaData>
+                                    <TextSettings>
+                                        <TextSelection>54,0</TextSelection>
+                                    </TextSettings>
+                                </BinderItem>
+                                <BinderItem ID="73" Type="Text" Created="2014-02-24 14:18:00 -0800" Modified="2014-02-24 14:40:28 -0800">
+                                    <Title>Behaviors</Title>
+                                    <MetaData>
+                                        <IncludeInCompile>Yes</IncludeInCompile>
+                                        <NotesTextSelection>0,0</NotesTextSelection>
+                                    </MetaData>
+                                    <TextSettings>
+                                        <TextSelection>55,0</TextSelection>
+                                    </TextSettings>
+                                </BinderItem>
+                            </Children>
+                        </BinderItem>
+                        <BinderItem ID="63" Type="Folder" Created="2014-02-23 00:19:15 -0800" Modified="2014-02-24 01:01:54 -0800">
+                            <Title>Defining Position</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>0,0</TextSelection>
+                            </TextSettings>
+                            <Children>
+                                <BinderItem ID="40" Type="Text" Created="2014-02-17 00:42:41 -0800" Modified="2014-02-19 00:32:43 -0800">
+                                    <Title>Defining Pose and Direction</Title>
+                                    <MetaData>
+                                        <IncludeInCompile>Yes</IncludeInCompile>
+                                        <NotesTextSelection>0,0</NotesTextSelection>
+                                    </MetaData>
+                                    <TextSettings>
+                                        <TextSelection>225,0</TextSelection>
+                                    </TextSettings>
+                                </BinderItem>
+                                <BinderItem ID="41" Type="Text" Created="2014-02-17 00:51:38 -0800" Modified="2014-02-23 00:09:46 -0800">
+                                    <Title>Motion Models</Title>
+                                    <MetaData>
+                                        <StatusID>2</StatusID>
+                                        <IncludeInCompile>Yes</IncludeInCompile>
+                                        <NotesTextSelection>0,0</NotesTextSelection>
+                                    </MetaData>
+                                    <TextSettings>
+                                        <TextSelection>340,0</TextSelection>
+                                    </TextSettings>
+                                </BinderItem>
+                            </Children>
+                        </BinderItem>
+                        <BinderItem ID="64" Type="Folder" Created="2014-02-23 00:20:37 -0800" Modified="2014-02-23 00:21:18 -0800">
+                            <Title>Environmental Landmarks</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>0,0</TextSelection>
+                            </TextSettings>
+                            <Children>
+                                <BinderItem ID="36" Type="Text" Created="2014-02-14 19:07:52 -0800" Modified="2014-03-20 21:27:02 -0700">
+                                    <Title>Finding Landmarks</Title>
+                                    <MetaData>
+                                        <IncludeInCompile>Yes</IncludeInCompile>
+                                        <NotesTextSelection>0,0</NotesTextSelection>
+                                    </MetaData>
+                                    <TextSettings>
+                                        <TextSelection>2058,0</TextSelection>
+                                    </TextSettings>
+                                </BinderItem>
+                                <BinderItem ID="43" Type="Text" Created="2014-02-17 01:02:29 -0800" Modified="2014-02-19 00:33:28 -0800">
+                                    <Title>Corner Examples and Results</Title>
+                                    <MetaData>
+                                        <IncludeInCompile>Yes</IncludeInCompile>
+                                        <NotesTextSelection>0,0</NotesTextSelection>
+                                    </MetaData>
+                                    <TextSettings>
+                                        <TextSelection>382,0</TextSelection>
+                                    </TextSettings>
+                                </BinderItem>
+                                <BinderItem ID="44" Type="Text" Created="2014-02-17 01:07:31 -0800" Modified="2014-02-23 00:12:13 -0800">
+                                    <Title>Wall Detection</Title>
+                                    <MetaData>
+                                        <IncludeInCompile>Yes</IncludeInCompile>
+                                        <NotesTextSelection>0,0</NotesTextSelection>
+                                    </MetaData>
+                                    <TextSettings>
+                                        <TextSelection>507,0</TextSelection>
+                                    </TextSettings>
+                                </BinderItem>
+                                <BinderItem ID="45" Type="Text" Created="2014-02-17 01:10:57 -0800" Modified="2014-02-19 00:34:41 -0800">
+                                    <Title>Pipe Shape, Macro Feature</Title>
+                                    <MetaData>
+                                        <IncludeInCompile>Yes</IncludeInCompile>
+                                        <NotesTextSelection>0,0</NotesTextSelection>
+                                    </MetaData>
+                                    <TextSettings>
+                                        <TextSelection>515,0</TextSelection>
+                                    </TextSettings>
+                                </BinderItem>
+                                <BinderItem ID="46" Type="Text" Created="2014-02-17 01:17:56 -0800" Modified="2014-02-19 00:35:04 -0800">
+                                    <Title>Macro Feature Extraction</Title>
+                                    <MetaData>
+                                        <IncludeInCompile>Yes</IncludeInCompile>
+                                        <NotesTextSelection>0,0</NotesTextSelection>
+                                    </MetaData>
+                                    <TextSettings>
+                                        <TextSelection>525,0</TextSelection>
+                                    </TextSettings>
+                                </BinderItem>
+                                <BinderItem ID="47" Type="Text" Created="2014-02-17 10:56:47 -0800" Modified="2014-02-19 00:37:14 -0800">
+                                    <Title>Different Macro Features</Title>
+                                    <MetaData>
+                                        <IncludeInCompile>Yes</IncludeInCompile>
+                                        <NotesTextSelection>0,0</NotesTextSelection>
+                                    </MetaData>
+                                    <TextSettings>
+                                        <TextSelection>0,0</TextSelection>
+                                    </TextSettings>
+                                </BinderItem>
+                            </Children>
+                        </BinderItem>
+                        <BinderItem ID="65" Type="Folder" Created="2014-02-23 00:23:38 -0800" Modified="2014-02-23 00:24:08 -0800">
+                            <Title>Pose-Based Mapping</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>0,0</TextSelection>
+                            </TextSettings>
+                            <Children>
+                                <BinderItem ID="48" Type="Text" Created="2014-02-17 17:24:58 -0800" Modified="2014-02-19 00:37:30 -0800">
+                                    <Title>Inter-Pose Correction</Title>
+                                    <MetaData>
+                                        <IncludeInCompile>Yes</IncludeInCompile>
+                                        <NotesTextSelection>0,0</NotesTextSelection>
+                                    </MetaData>
+                                    <TextSettings>
+                                        <TextSelection>1954,0</TextSelection>
+                                    </TextSettings>
+                                </BinderItem>
+                                <BinderItem ID="49" Type="Text" Created="2014-02-17 17:49:04 -0800" Modified="2014-02-19 00:37:48 -0800">
+                                    <Title>Paired Pose Correction</Title>
+                                    <MetaData>
+                                        <IncludeInCompile>Yes</IncludeInCompile>
+                                        <NotesTextSelection>0,0</NotesTextSelection>
+                                    </MetaData>
+                                    <TextSettings>
+                                        <TextSelection>708,0</TextSelection>
+                                    </TextSettings>
+                                </BinderItem>
+                                <BinderItem ID="50" Type="Text" Created="2014-02-17 17:54:50 -0800" Modified="2014-03-20 22:58:32 -0700">
+                                    <Title>Constraint Mapping</Title>
+                                    <MetaData>
+                                        <IncludeInCompile>Yes</IncludeInCompile>
+                                        <NotesTextSelection>0,0</NotesTextSelection>
+                                    </MetaData>
+                                    <TextSettings>
+                                        <TextSelection>2228,0</TextSelection>
+                                    </TextSettings>
+                                </BinderItem>
+                                <BinderItem ID="51" Type="Text" Created="2014-02-17 21:14:04 -0800" Modified="2014-03-20 23:04:33 -0700">
+                                    <Title>Aggregate Pose Constraint Mapping</Title>
+                                    <MetaData>
+                                        <IncludeInCompile>Yes</IncludeInCompile>
+                                        <NotesTextSelection>0,0</NotesTextSelection>
+                                    </MetaData>
+                                    <TextSettings>
+                                        <TextSelection>1980,0</TextSelection>
+                                    </TextSettings>
+                                </BinderItem>
+                            </Children>
+                        </BinderItem>
+                        <BinderItem ID="68" Type="Folder" Created="2014-02-24 01:00:02 -0800" Modified="2014-02-24 01:00:10 -0800">
+                            <Title>Mapping with Junctions</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>0,0</TextSelection>
+                            </TextSettings>
+                            <CorkboardAndOutliner>
+                                <SelectedSubdocumentIDs>57</SelectedSubdocumentIDs>
+                            </CorkboardAndOutliner>
+                            <Children>
+                                <BinderItem ID="52" Type="Text" Created="2014-02-17 23:15:18 -0800" Modified="2014-02-19 00:39:36 -0800">
+                                    <Title>Junctions</Title>
+                                    <MetaData>
+                                        <IncludeInCompile>Yes</IncludeInCompile>
+                                        <NotesTextSelection>0,0</NotesTextSelection>
+                                    </MetaData>
+                                    <TextSettings>
+                                        <TextSelection>1360,0</TextSelection>
+                                    </TextSettings>
+                                    <References>
+                                        <Reference BinderID="51" Destination="[Internal Link]">Union of Posture Images</Reference>
+                                    </References>
+                                </BinderItem>
+                                <BinderItem ID="53" Type="Text" Created="2014-02-18 18:50:23 -0800" Modified="2014-02-22 22:32:40 -0800">
+                                    <Title>Shoot Map Representation</Title>
+                                    <MetaData>
+                                        <IncludeInCompile>Yes</IncludeInCompile>
+                                        <NotesTextSelection>0,0</NotesTextSelection>
+                                    </MetaData>
+                                    <TextSettings>
+                                        <TextSelection>1329,0</TextSelection>
+                                    </TextSettings>
+                                </BinderItem>
+                                <BinderItem ID="54" Type="Text" Created="2014-02-18 18:50:54 -0800" Modified="2014-02-23 22:17:53 -0800">
+                                    <Title>Generating Shoots</Title>
+                                    <MetaData>
+                                        <IncludeInCompile>Yes</IncludeInCompile>
+                                        <NotesTextSelection>0,0</NotesTextSelection>
+                                    </MetaData>
+                                    <TextSettings>
+                                        <TextSelection>826,0</TextSelection>
+                                    </TextSettings>
+                                </BinderItem>
+                                <BinderItem ID="92" Type="Text" Created="2014-03-23 15:59:25 -0700" Modified="2014-03-26 19:46:24 -0700">
+                                    <Title>Adding Poses to Shoots</Title>
+                                    <MetaData>
+                                        <IncludeInCompile>Yes</IncludeInCompile>
+                                        <NotesTextSelection>0,0</NotesTextSelection>
+                                    </MetaData>
+                                    <TextSettings>
+                                        <TextSelection>66,0</TextSelection>
+                                    </TextSettings>
+                                </BinderItem>
+                                <BinderItem ID="55" Type="Text" Created="2014-02-19 00:43:16 -0800" Modified="2014-02-24 14:13:36 -0800">
+                                    <Title>Detecting branch</Title>
+                                    <MetaData>
+                                        <IncludeInCompile>Yes</IncludeInCompile>
+                                        <NotesTextSelection>0,0</NotesTextSelection>
+                                    </MetaData>
+                                    <TextSettings>
+                                        <TextSelection>1549,0</TextSelection>
+                                    </TextSettings>
+                                </BinderItem>
+                                <BinderItem ID="56" Type="Text" Created="2014-02-19 00:45:00 -0800" Modified="2014-03-23 20:17:11 -0700">
+                                    <Title>Localizing on Shoot Map</Title>
+                                    <MetaData>
+                                        <IncludeInCompile>Yes</IncludeInCompile>
+                                        <NotesTextSelection>0,0</NotesTextSelection>
+                                    </MetaData>
+                                    <TextSettings>
+                                        <TextSelection>756,0</TextSelection>
+                                    </TextSettings>
+                                    <Children>
+                                        <BinderItem ID="95" Type="Text" Created="2014-03-23 20:06:17 -0700" Modified="2014-03-23 20:07:19 -0700">
+                                            <Title>Choosing Shoot Splices</Title>
+                                            <MetaData>
+                                                <IncludeInCompile>Yes</IncludeInCompile>
+                                                <NotesTextSelection>0,0</NotesTextSelection>
+                                            </MetaData>
+                                            <TextSettings>
+                                                <TextSelection>1593,0</TextSelection>
+                                            </TextSettings>
+                                        </BinderItem>
+                                        <BinderItem ID="97" Type="Text" Created="2014-03-23 20:07:17 -0700" Modified="2014-03-23 20:07:33 -0700">
+                                            <Title>Selecting Initial Poses for ICP</Title>
+                                            <MetaData>
+                                                <IncludeInCompile>Yes</IncludeInCompile>
+                                                <NotesTextSelection>0,0</NotesTextSelection>
+                                            </MetaData>
+                                            <TextSettings>
+                                                <TextSelection>1602,0</TextSelection>
+                                            </TextSettings>
+                                        </BinderItem>
+                                        <BinderItem ID="99" Type="Text" Created="2014-03-23 20:16:38 -0700" Modified="2014-03-26 23:25:17 -0700">
+                                            <Title>ICP Algorithm</Title>
+                                            <MetaData>
+                                                <IncludeInCompile>Yes</IncludeInCompile>
+                                                <NotesTextSelection>0,0</NotesTextSelection>
+                                            </MetaData>
+                                            <TextSettings>
+                                                <TextSelection>193,0</TextSelection>
+                                            </TextSettings>
+                                        </BinderItem>
+                                        <BinderItem ID="98" Type="Text" Created="2014-03-23 20:07:31 -0700" Modified="2014-03-24 19:02:30 -0700">
+                                            <Title>Collate, Sort, Filter</Title>
+                                            <MetaData>
+                                                <IncludeInCompile>Yes</IncludeInCompile>
+                                                <NotesTextSelection>0,0</NotesTextSelection>
+                                            </MetaData>
+                                            <TextSettings>
+                                                <TextSelection>727,0</TextSelection>
+                                            </TextSettings>
+                                        </BinderItem>
+                                    </Children>
+                                </BinderItem>
+                                <BinderItem ID="57" Type="Text" Created="2014-02-19 00:45:55 -0800" Modified="2014-03-26 22:11:45 -0700">
+                                    <Title>Curve segment algorithms</Title>
+                                    <MetaData>
+                                        <IncludeInCompile>Yes</IncludeInCompile>
+                                        <NotesTextSelection>0,0</NotesTextSelection>
+                                    </MetaData>
+                                    <TextSettings>
+                                        <TextSelection>79,0</TextSelection>
+                                    </TextSettings>
+                                </BinderItem>
+                                <BinderItem ID="94" Type="Text" Created="2014-03-23 16:21:25 -0700" Modified="2014-03-23 16:24:10 -0700">
+                                    <Title>Map Algorithm</Title>
+                                    <MetaData>
+                                        <IncludeInCompile>Yes</IncludeInCompile>
+                                        <NotesTextSelection>0,0</NotesTextSelection>
+                                    </MetaData>
+                                    <TextSettings>
+                                        <TextSelection>262,0</TextSelection>
+                                    </TextSettings>
+                                </BinderItem>
+                            </Children>
+                        </BinderItem>
+                        <BinderItem ID="69" Type="Folder" Created="2014-02-24 01:00:43 -0800" Modified="2014-02-24 01:00:50 -0800">
+                            <Title>Probabilistic Mapping</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>0,0</TextSelection>
+                            </TextSettings>
+                            <CorkboardAndOutliner>
+                                <SelectedSubdocumentIDs>60</SelectedSubdocumentIDs>
+                            </CorkboardAndOutliner>
+                            <Children>
+                                <BinderItem ID="61" Type="Text" Created="2014-02-19 00:53:41 -0800" Modified="2014-02-19 00:55:05 -0800">
+                                    <Title>Space of Possibilities</Title>
+                                    <MetaData>
+                                        <IncludeInCompile>Yes</IncludeInCompile>
+                                        <NotesTextSelection>0,0</NotesTextSelection>
+                                    </MetaData>
+                                    <TextSettings>
+                                        <TextSelection>0,0</TextSelection>
+                                    </TextSettings>
+                                </BinderItem>
+                                <BinderItem ID="58" Type="Text" Created="2014-02-19 00:49:43 -0800" Modified="2014-02-23 00:09:17 -0800">
+                                    <Title>Pose Particle Filter</Title>
+                                    <MetaData>
+                                        <IncludeInCompile>Yes</IncludeInCompile>
+                                        <NotesTextSelection>0,0</NotesTextSelection>
+                                    </MetaData>
+                                    <TextSettings>
+                                        <TextSelection>0,0</TextSelection>
+                                    </TextSettings>
+                                </BinderItem>
+                                <BinderItem ID="59" Type="Text" Created="2014-02-19 00:50:22 -0800" Modified="2014-02-19 00:51:22 -0800">
+                                    <Title>Pose+BranchLoc Particles</Title>
+                                    <MetaData>
+                                        <IncludeInCompile>Yes</IncludeInCompile>
+                                        <NotesTextSelection>0,0</NotesTextSelection>
+                                    </MetaData>
+                                    <TextSettings>
+                                        <TextSelection>0,0</TextSelection>
+                                    </TextSettings>
+                                </BinderItem>
+                                <BinderItem ID="60" Type="Text" Created="2014-02-19 00:52:37 -0800" Modified="2014-02-19 00:53:28 -0800">
+                                    <Title>Branch Decision</Title>
+                                    <MetaData>
+                                        <IncludeInCompile>Yes</IncludeInCompile>
+                                        <NotesTextSelection>0,0</NotesTextSelection>
+                                    </MetaData>
+                                    <TextSettings>
+                                        <TextSelection>0,0</TextSelection>
+                                    </TextSettings>
+                                </BinderItem>
+                            </Children>
+                        </BinderItem>
+                    </Children>
+                </BinderItem>
+                <BinderItem ID="124" Type="Text" Created="2014-02-17 23:15:18 -0800" Modified="2015-03-01 20:37:47 -0800">
+                    <Title></Title>
+                    <MetaData>
+                        <IncludeInCompile>Yes</IncludeInCompile>
+                        <NotesTextSelection>0,0</NotesTextSelection>
+                    </MetaData>
+                    <TextSettings>
+                        <TextSelection>0,0</TextSelection>
+                    </TextSettings>
+                    <References>
+                        <Reference BinderID="51" Destination="[Internal Link]">Union of Posture Images</Reference>
+                    </References>
+                    <Children>
+                        <BinderItem ID="3" Type="Text" Created="2013-10-20 19:24:47 -0700" Modified="2015-03-01 20:37:26 -0800">
+                            <Title>Partial Observability of Junctions</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>0,0</TextSelection>
+                            </TextSettings>
+                        </BinderItem>
+                    </Children>
+                </BinderItem>
+                <BinderItem ID="265" Type="Text" Created="2015-03-01 20:48:12 -0800" Modified="2015-03-01 20:48:12 -0800">
+                    <Title>Untitled</Title>
+                    <MetaData>
+                        <IncludeInCompile>Yes</IncludeInCompile>
+                        <NotesTextSelection>0,0</NotesTextSelection>
+                    </MetaData>
+                    <TextSettings>
+                        <TextSelection>0,0</TextSelection>
+                    </TextSettings>
+                </BinderItem>
+                <BinderItem ID="267" Type="Folder" Created="2015-03-01 20:55:38 -0800" Modified="2015-03-01 20:55:41 -0800">
+                    <Title>Abstract</Title>
+                    <MetaData>
+                        <IncludeInCompile>Yes</IncludeInCompile>
+                        <NotesTextSelection>0,0</NotesTextSelection>
+                    </MetaData>
+                    <TextSettings>
+                        <TextSelection>0,0</TextSelection>
+                    </TextSettings>
+                </BinderItem>
+                <BinderItem ID="271" Type="Text" Created="2015-03-01 23:13:39 -0800" Modified="2015-03-01 23:14:18 -0800">
+                    <Title>Junction Method</Title>
+                    <MetaData>
+                        <IncludeInCompile>Yes</IncludeInCompile>
+                        <NotesTextSelection>0,0</NotesTextSelection>
+                    </MetaData>
+                    <TextSettings>
+                        <TextSelection>2,0</TextSelection>
+                    </TextSettings>
+                </BinderItem>
+                <BinderItem ID="259" Type="Text" Created="2015-03-01 16:53:34 -0800" Modified="2015-03-01 16:53:48 -0800">
+                    <Title>Search Method</Title>
+                    <MetaData>
+                        <IncludeInCompile>Yes</IncludeInCompile>
+                        <NotesTextSelection>0,0</NotesTextSelection>
+                    </MetaData>
+                    <TextSettings>
+                        <TextSelection>17,0</TextSelection>
+                    </TextSettings>
+                </BinderItem>
+                <BinderItem ID="266" Type="Folder" Created="2015-03-01 20:48:24 -0800" Modified="2015-03-03 02:29:46 -0800">
+                    <Title>Conclusion</Title>
+                    <MetaData>
+                        <IncludeInCompile>Yes</IncludeInCompile>
+                        <NotesTextSelection>0,0</NotesTextSelection>
+                    </MetaData>
+                    <TextSettings>
+                        <TextSelection>0,0</TextSelection>
+                    </TextSettings>
+                </BinderItem>
+                <BinderItem ID="291" Type="Text" Created="2015-03-04 23:41:56 -0800" Modified="2015-03-04 23:47:36 -0800">
+                    <Title>results</Title>
+                    <MetaData>
+                        <IncludeInCompile>Yes</IncludeInCompile>
+                        <NotesTextSelection>0,0</NotesTextSelection>
+                    </MetaData>
+                    <TextSettings>
+                        <TextSelection>28,0</TextSelection>
+                    </TextSettings>
+                </BinderItem>
+                <BinderItem ID="268" Type="Text" Created="2015-03-01 20:56:12 -0800" Modified="2015-03-07 15:35:19 -0800">
+                    <Title>Preface</Title>
+                    <MetaData>
+                        <IncludeInCompile>Yes</IncludeInCompile>
+                        <NotesTextSelection>0,0</NotesTextSelection>
+                    </MetaData>
+                    <TextSettings>
+                        <TextSelection>96,0</TextSelection>
+                    </TextSettings>
+                </BinderItem>
+                <BinderItem ID="122" Type="Text" Created="2014-02-17 21:14:04 -0800" Modified="2015-03-08 23:21:04 -0700">
+                    <Title>Axis Method</Title>
+                    <MetaData>
+                        <IncludeInCompile>Yes</IncludeInCompile>
+                        <NotesTextSelection>0,0</NotesTextSelection>
+                    </MetaData>
+                    <TextSettings>
+                        <TextSelection>17,0</TextSelection>
+                    </TextSettings>
+                </BinderItem>
+                <BinderItem ID="32" Type="Text" Created="2013-12-09 13:20:57 -0800" Modified="2015-03-09 00:31:14 -0700">
+                    <Title>computeTopology</Title>
+                    <MetaData>
+                        <IncludeInCompile>Yes</IncludeInCompile>
+                        <NotesTextSelection>0,0</NotesTextSelection>
+                    </MetaData>
+                    <TextSettings>
+                        <TextSelection>14,0</TextSelection>
+                    </TextSettings>
+                </BinderItem>
             </Children>
         </BinderItem>
     </Binder>
@@ -2699,7 +3542,7 @@
         </Collection>
         <Collection Type="RecentSearch" ID="{2fdc4d8b-f44c-44bb-8ee2-2509d571efe5}" Color="0.922 0.91 0.98">
             <Title>Search Results</Title>
-            <SearchSettings Operator="Exact" Type="All" CaseSensitive="No">!()</SearchSettings>
+            <SearchSettings Operator="Exact" Type="All" CaseSensitive="No">X_t</SearchSettings>
         </Collection>
     </Collections>
     <LabelSettings>
@@ -2734,7 +3577,7 @@
     <ProjectTargets Notify="No">
         <DraftTarget Type="Words" CountIncludedOnly="No" CurrentCompileGroupOnly="No" Deadline="2013-10-21 01:05:50 -0700" IgnoreDeadline="Yes">0</DraftTarget>
         <SessionTarget Type="Words" CountDraftOnly="No" AllowNegatives="No" ResetType="Midnight" DeterminedFromDeadline="No" WritingDays="" CanWriteOnDeadlineDate="No">500</SessionTarget>
-        <PreviousSession Words="5" Characters="37" Date="2015-02-18 00:00:02 -0800"></PreviousSession>
+        <PreviousSession Words="19" Characters="136" Date="2015-03-13 01:00:09 -0700"></PreviousSession>
     </ProjectTargets>
     <PrintSettings PaperSize="612.0,792.0" LeftMargin="18.0" RightMargin="18.0" TopMargin="11.9906" BottomMargin="11.9906" PaperType="na-letter" Orientation="Portrait" HorizontalPagination="Clip" VerticalPagination="Auto" ScaleFactor="1.0" HorizontallyCentered="Yes" VerticallyCentered="Yes" Collates="No" ReverseOrder="No" PagesAcross="1" PagesDown="1"></PrintSettings>
 </ScrivenerProject>

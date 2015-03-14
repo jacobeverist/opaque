@@ -1,0 +1,98 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fnil\fcharset0 Cochin;}
+{\colortbl;\red255\green255\blue255;}
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\f0\fs28 \cf0 \
+##Anchoring\
+\
+In order to fit the anchor points to a pipe of unknown width, we need some way of sensing the walls.  Since we have no exteroceptive sensors, the best way of sensing the width of the walls is by contact.  Since we have no direct contact sensor per se, we must detect contact indirectly through the robot's proprioceptive joint sensors.\
+\
+Using the backbone curve fitting approach, we take one period of a sine curve as the template form we wish the robot to follow.  We then modify this sine period's amplitude, at each step refitting the snake robot to the larger amplitude, until the robot make's contact with the walls.  This establishes two points of contact with the wall which assist in immobilizing the snake body.\
+\
+It is clear from [](#onePeriod) that as the amplitude of the curve increases, more segments are needed to complete the curve.  If the sine curve is rooted at the tip of the snake, this results in the curve translating towards the snake's center of mass.  Instead, we root the sine curve on an internal segment, as seen in [](#anchor1), so that the position of the anchor points remain relatively fixed no matter the amplitude and the number of segments required to fit the curve.\
+\
+![Anchor with not enough segments][anchor1]\
+\
+[anchor1]: {\field{\*\fldinst{HYPERLINK "scrivlnk://169"}}{\fldrslt 2_anchoring_1.png}} width=400px\
+\
+![Anchor Points][fig:anchor_points]\
+\
+[fig:anchor_points]: {\field{\*\fldinst{HYPERLINK "scrivlnk://170"}}{\fldrslt ref_points_pose2.png}} width=400px\
+\
+\
+Two points of contact are not statically stable if we disregard friction.  Though friction exists in our simulation and in reality, we do not rely on it to completely immobilize our robot.  Our normal forces are often small and the dynamic and transient forces can easily cause a contact slip.  Therefore, we need at least 3 contact points to consider an anchor to be statically stable.\
+\
+One way to achieve this is by adding new sine period sections to create another pair of anchors.  The amplitude of the new sine period is separate from the previous anchor's amplitude and is represented by a new curve attached to the previous one. This way the amplitudes remain independent.  The equation to describe two sets of sine period curves with independently controlled amplitudes are as follows:\
+\
+<!--\
+\\begin\{equation\}\
+y = \\mathrm\{U\}(x)  \\mathrm\{U\}(2\\pi-x) A_1 \\sin(fx) + \\mathrm\{U\}(x-2\\pi) \\mathrm\{U\}(4\\pi-x) A_2 \\sin(fx)\
+\\end\{equation\}\
+-->\
+\
+where \\\\(f\\\\) is the frequency and \\\\(\\mathrm\{U\}(x)\\\\) is a unit step function.  Or to generalize for \\\\(N\\\\) periods and \\\\(N\\\\) pairs of anchor points:\
+\
+<!--\
+\\begin\{equation\}\
+y = \\sum_\{i=0\}^\{N-1\} \\mathrm\{U\}(x-i 2\\pi) \\mathrm\{U\}((i+1) 2\\pi-x) A_i \\sin(fx)\
+\\end\{equation\}\
+-->\
+\
+for each anchor curve amplitude \\\\(A_i\\\\).\
+\
+So now that we have the means to control the amplitude of our anchor points, we need some means of detecting that a contact is made and another to make sure the anchor is secure. \
+\
+Our approach is to gradually increase the amplitude of an anchor curve until contact with both walls has been made.  We will continue to increase the amplitude until we see significant joint error occur when fitting to the curve.  If the amplitude because larger than the width of the pipe, the snake will attempt fitting to a curve that is impossible to fit to and will experience a discrepancy in its joint positions compared to where it desires them to be.\
+\
+The structure of this error will normally take the form of one or two large discrepancies surrounded by numerous small errors.  This reflects that usually one or two joints will seriously buckle against the wall, while the rest of the surrounding joints can reach their commanded position without disturbance.  An example of an anchor curve with larger amplitude than the width of the pipe is shown in [](#anchor2).\
+\
+![Anchor with amplitude larger than pipe width.][anchor2]\
+\
+[anchor2]: {\field{\*\fldinst{HYPERLINK "scrivlnk://171"}}{\fldrslt 2_anchoring_2.png}} width=400px\
+\
+The contact is flagged once the maximum error reaches a certain threshold across all the joints of the anchor curve.  Of the joints \\\\(M\\\\) of the anchor curve and the error \\\\(e_j\\\\), if there exists \\\\(e_j > 0.3\\\\) radians, than we flag a contact.  It isn't so much that we are detecting a contact but a minimum pushing threshold against the wall.  The robot is pushing hard enough to cause joint error over an experimentally determined threshold.\
+\
+If \\\\(j_k\\\\) through \\\\(j_\{k+M\}\\\\) are the joints comprising the fitted anchor curve, the error of one joint is defined by \\\\(e_k = |\\phi_k-\\alpha_k|\\\\).  The maximum error is defined by \\\\(e_\{max\} = \\mathrm\{max\}(e_k, e_\{k+1\} \\cdots e_\{k+M-1\}, e_\{k+M\})\\\\).\
+\
+The amplitude is initially changed by large increments to quickly find the walls.  Once the threshold has been reached, the current and last amplitude are marked as the max and min amplitudes respectively.  We then proceed to perform a finer and finer search on the amplitudes between the max and min boundaries until we reach a snug fit that is just over the error threshold.  This is a kind of numerical search(?).\
+\
+The pseudocode for this algorithm is as follows:\
+\
+<!--\
+\\begin\{algorithm\}\
+\\caption\{Anchor Fitting\}          % give the algorithm a caption\
+\\label\{alg:anchor\}\
+\\begin\{algorithmic\}\
+\
+\\State $\\hat\{A\} \\Leftarrow 0$\
+\\State $A_\{min\} \\Leftarrow 0$\
+\\State $A_\{max\} \\Leftarrow \\infty$\
+\\State $\\delta A \\Leftarrow 0.04$\
+\
+\\While\{$ (A_\{max\}-A_\{min\} >= 0.001) \\And (\\delta A >= 0.01)  $\} \
+\
+  \\State $\\hat\{A\} \\Leftarrow \\hat\{A\} + \\delta A$\
+  \\State $e_\{flag\} \\Leftarrow \\mathrm\{setAnchorAmp\}(\\hat\{A\})$\
+ \
+  \\If \{ $\\neg e_\{flag\}$ \}\
+    \\State $A_\{min\} \\Leftarrow \\hat\{A\}$\
+  \\Else\
+    \\State $A_\{max\} \\Leftarrow \\hat\{A\}$\
+    \\State $\\delta A \\Leftarrow \\delta A / 2$\
+    \\State $\\hat\{A\} \\Leftarrow A_\{min\}$\
+    \\State $\\mathrm\{setAnchorAmp\}(\\hat\{A\})$\
+\
+  \\EndIf\
+\
+\\EndWhile\
+\
+\\end\{algorithmic\}\
+\\end\{algorithm\}\
+-->\
+\
+The main objective of this code is to reduce the difference between maxAmp and minAmp as much as possible.  minAmp and maxAmp are the closest amplitudes under and over the error threshold respectively.  The function setAnchorAmp() sets the amplitude, performs the curve fitting, and reports back any error condition as described earlier.  Once this algorithm is complete, we have made a successful anchor with two contact points under compression without the fitted anchor curve being distorted by joint buckling.\
+\
+##Curves\
+\
+When we describe curves for use in backbone curve fitting, they must be assigned to a frame of reference and usually have a starting point.  Most often, the frame of reference chosen is one of the local segment frames on the snake body.  However, sometimes we could choose the global frame if we wanted to navigate or probe something specific in the environment.  The local frame curves that we use all start from a specific body segment and sprout from that segment like a plant.  We say that this curve is rooted in segment X.}

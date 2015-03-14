@@ -1,0 +1,40 @@
+\documentclass{USC-Thesis}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{algorithm}
+%\usepackage{algorithmic}
+%\usepackage{algorithmicx}
+\usepackage{algpseudocode}
+
+\usepackage{hyperref}
+
+\let\oldlistofalgorithms = \listofalgorithms
+\renewcommand{\listofalgorithms}{  
+\newpage
+    \addcontentsline{toc}{chapter}{\listalgorithmname}
+    \pagestyle{plain}
+    \begin{singlespace} 
+    \oldlistofalgorithms
+    \end{singlespace}}
+
+%\let\oldbibliography = \bibliography
+%\renewcommand{\bibliography}{  
+%\newpage
+%    \addcontentsline{toc}{chapter}{Bibliography}
+%    \pagestyle{plain}
+%    \begin{singlespace} 
+%    \oldbibliography
+%    \end{singlespace}}
+
+%\let\oldappendix = \appendix
+%\renewcommand{\appendix}{  
+%\newpage
+%    \addcontentsline{toc}{chapter}{Appendix}
+%    \pagestyle{plain}
+%    \begin{singlespace} 
+%    \oldappendix
+%    \end{singlespace}}
+
+\begin{document}

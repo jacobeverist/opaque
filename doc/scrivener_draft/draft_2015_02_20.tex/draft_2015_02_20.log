@@ -1,0 +1,1301 @@
+This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013) (format=pdflatex 2013.5.30)  4 MAR 2015 20:47
+entering extended mode
+ restricted \write18 enabled.
+ %&-line parsing enabled.
+**draft_2015_02_20.tex
+(./draft_2015_02_20.tex
+LaTeX2e <2011/06/27>
+Babel <3.9f> and hyphenation patterns for 78 languages loaded.
+(./mmd-scrivcustom-header.tex
+(/Users/jse26711/Library/texmf/tex/latex/USC-Thesis.cls
+Document Class: USC-Thesis 2000/07/15
+This document is formatted by USC-Thesis latex class in accordance with Ph.D. t
+hesis format requirements of University of Southern California. Use at your own
+ risk!
+(/usr/local/texlive/2013/texmf-dist/tex/latex/setspace/setspace.sty
+Package: setspace 2011/12/19 v6.7a set line spacing
+)
+(/usr/local/texlive/2013/texmf-dist/tex/latex/base/report.cls
+Document Class: report 2007/10/19 v1.4h Standard LaTeX document class
+(/usr/local/texlive/2013/texmf-dist/tex/latex/base/size11.clo
+File: size11.clo 2007/10/19 v1.4h Standard LaTeX file (size option)
+)
+\c@part=\count79
+\c@chapter=\count80
+\c@section=\count81
+\c@subsection=\count82
+\c@subsubsection=\count83
+\c@paragraph=\count84
+\c@subparagraph=\count85
+\c@figure=\count86
+\c@table=\count87
+\abovecaptionskip=\skip41
+\belowcaptionskip=\skip42
+\bibindent=\dimen102
+))
+(/usr/local/texlive/2013/texmf-dist/tex/latex/graphics/graphicx.sty
+Package: graphicx 1999/02/16 v1.0f Enhanced LaTeX Graphics (DPC,SPQR)
+
+(/usr/local/texlive/2013/texmf-dist/tex/latex/graphics/keyval.sty
+Package: keyval 1999/03/16 v1.13 key=value parser (DPC)
+\KV@toks@=\toks14
+)
+(/usr/local/texlive/2013/texmf-dist/tex/latex/graphics/graphics.sty
+Package: graphics 2009/02/05 v1.0o Standard LaTeX Graphics (DPC,SPQR)
+
+(/usr/local/texlive/2013/texmf-dist/tex/latex/graphics/trig.sty
+Package: trig 1999/03/16 v1.09 sin cos tan (DPC)
+)
+(/usr/local/texlive/2013/texmf-dist/tex/latex/latexconfig/graphics.cfg
+File: graphics.cfg 2010/04/23 v1.9 graphics configuration of TeX Live
+)
+Package graphics Info: Driver file: pdftex.def on input line 91.
+
+(/usr/local/texlive/2013/texmf-dist/tex/latex/pdftex-def/pdftex.def
+File: pdftex.def 2011/05/27 v0.06d Graphics/color for pdfTeX
+
+(/usr/local/texlive/2013/texmf-dist/tex/generic/oberdiek/infwarerr.sty
+Package: infwarerr 2010/04/08 v1.3 Providing info/warning/error messages (HO)
+)
+(/usr/local/texlive/2013/texmf-dist/tex/generic/oberdiek/ltxcmds.sty
+Package: ltxcmds 2011/11/09 v1.22 LaTeX kernel commands for general use (HO)
+)
+\Gread@gobject=\count88
+))
+\Gin@req@height=\dimen103
+\Gin@req@width=\dimen104
+)
+(/usr/local/texlive/2013/texmf-dist/tex/latex/amsmath/amsmath.sty
+Package: amsmath 2013/01/14 v2.14 AMS math features
+\@mathmargin=\skip43
+
+For additional information on amsmath, use the `?' option.
+(/usr/local/texlive/2013/texmf-dist/tex/latex/amsmath/amstext.sty
+Package: amstext 2000/06/29 v2.01
+
+(/usr/local/texlive/2013/texmf-dist/tex/latex/amsmath/amsgen.sty
+File: amsgen.sty 1999/11/30 v2.0
+\@emptytoks=\toks15
+\ex@=\dimen105
+))
+(/usr/local/texlive/2013/texmf-dist/tex/latex/amsmath/amsbsy.sty
+Package: amsbsy 1999/11/29 v1.2d
+\pmbraise@=\dimen106
+)
+(/usr/local/texlive/2013/texmf-dist/tex/latex/amsmath/amsopn.sty
+Package: amsopn 1999/12/14 v2.01 operator names
+)
+\inf@bad=\count89
+LaTeX Info: Redefining \frac on input line 210.
+\uproot@=\count90
+\leftroot@=\count91
+LaTeX Info: Redefining \overline on input line 306.
+\classnum@=\count92
+\DOTSCASE@=\count93
+LaTeX Info: Redefining \ldots on input line 378.
+LaTeX Info: Redefining \dots on input line 381.
+LaTeX Info: Redefining \cdots on input line 466.
+\Mathstrutbox@=\box26
+\strutbox@=\box27
+\big@size=\dimen107
+LaTeX Font Info:    Redeclaring font encoding OML on input line 566.
+LaTeX Font Info:    Redeclaring font encoding OMS on input line 567.
+\macc@depth=\count94
+\c@MaxMatrixCols=\count95
+\dotsspace@=\muskip10
+\c@parentequation=\count96
+\dspbrk@lvl=\count97
+\tag@help=\toks16
+\row@=\count98
+\column@=\count99
+\maxfields@=\count100
+\andhelp@=\toks17
+\eqnshift@=\dimen108
+\alignsep@=\dimen109
+\tagshift@=\dimen110
+\tagwidth@=\dimen111
+\totwidth@=\dimen112
+\lineht@=\dimen113
+\@envbody=\toks18
+\multlinegap=\skip44
+\multlinetaggap=\skip45
+\mathdisplay@stack=\toks19
+LaTeX Info: Redefining \[ on input line 2665.
+LaTeX Info: Redefining \] on input line 2666.
+)
+(/usr/local/texlive/2013/texmf-dist/tex/latex/amsfonts/amsfonts.sty
+Package: amsfonts 2013/01/14 v3.01 Basic AMSFonts support
+\symAMSa=\mathgroup4
+\symAMSb=\mathgroup5
+LaTeX Font Info:    Overwriting math alphabet `\mathfrak' in version `bold'
+(Font)                  U/euf/m/n --> U/euf/b/n on input line 106.
+)
+(/usr/local/texlive/2013/texmf-dist/tex/latex/amsfonts/amssymb.sty
+Package: amssymb 2013/01/14 v3.01 AMS font symbols
+)
+(/usr/local/texlive/2013/texmf-dist/tex/latex/algorithms/algorithm.sty
+Package: algorithm 2009/08/24 v0.1 Document Style `algorithm' - floating enviro
+nment
+
+(/usr/local/texlive/2013/texmf-dist/tex/latex/float/float.sty
+Package: float 2001/11/08 v1.3d Float enhancements (AL)
+\c@float@type=\count101
+\float@exts=\toks20
+\float@box=\box28
+\@float@everytoks=\toks21
+\@floatcapt=\box29
+)
+(/usr/local/texlive/2013/texmf-dist/tex/latex/base/ifthen.sty
+Package: ifthen 2001/05/26 v1.1c Standard LaTeX ifthen package (DPC)
+)
+\@float@every@algorithm=\toks22
+\c@algorithm=\count102
+)
+(/usr/local/texlive/2013/texmf-dist/tex/latex/algorithmicx/algpseudocode.sty
+Package: algpseudocode 
+
+(/usr/local/texlive/2013/texmf-dist/tex/latex/algorithmicx/algorithmicx.sty
+Package: algorithmicx 2005/04/27 v1.2 Algorithmicx
+
+Document Style algorithmicx 1.2 - a greatly improved `algorithmic' style
+\c@ALG@line=\count103
+\c@ALG@rem=\count104
+\c@ALG@nested=\count105
+\ALG@tlm=\skip46
+\ALG@thistlm=\skip47
+\c@ALG@Lnr=\count106
+\c@ALG@blocknr=\count107
+\c@ALG@storecount=\count108
+\c@ALG@tmpcounter=\count109
+\ALG@tmplength=\skip48
+)
+Document Style - pseudocode environments for use with the `algorithmicx' style
+) (/usr/local/texlive/2013/texmf-dist/tex/latex/hyperref/hyperref.sty
+Package: hyperref 2012/11/06 v6.83m Hypertext links for LaTeX
+
+(/usr/local/texlive/2013/texmf-dist/tex/generic/oberdiek/hobsub-hyperref.sty
+Package: hobsub-hyperref 2012/05/28 v1.13 Bundle oberdiek, subset hyperref (HO)
+
+
+(/usr/local/texlive/2013/texmf-dist/tex/generic/oberdiek/hobsub-generic.sty
+Package: hobsub-generic 2012/05/28 v1.13 Bundle oberdiek, subset generic (HO)
+Package: hobsub 2012/05/28 v1.13 Construct package bundles (HO)
+Package hobsub Info: Skipping package `infwarerr' (already loaded).
+Package hobsub Info: Skipping package `ltxcmds' (already loaded).
+Package: ifluatex 2010/03/01 v1.3 Provides the ifluatex switch (HO)
+Package ifluatex Info: LuaTeX not detected.
+Package: ifvtex 2010/03/01 v1.5 Detect VTeX and its facilities (HO)
+Package ifvtex Info: VTeX not detected.
+Package: intcalc 2007/09/27 v1.1 Expandable calculations with integers (HO)
+Package: ifpdf 2011/01/30 v2.3 Provides the ifpdf switch (HO)
+Package ifpdf Info: pdfTeX in PDF mode is detected.
+Package: etexcmds 2011/02/16 v1.5 Avoid name clashes with e-TeX commands (HO)
+Package etexcmds Info: Could not find \expanded.
+(etexcmds)             That can mean that you are not using pdfTeX 1.50 or
+(etexcmds)             that some package has redefined \expanded.
+(etexcmds)             In the latter case, load this package earlier.
+Package: kvsetkeys 2012/04/25 v1.16 Key value parser (HO)
+Package: kvdefinekeys 2011/04/07 v1.3 Define keys (HO)
+Package: pdftexcmds 2011/11/29 v0.20 Utility functions of pdfTeX for LuaTeX (HO
+)
+Package pdftexcmds Info: LuaTeX not detected.
+Package pdftexcmds Info: \pdf@primitive is available.
+Package pdftexcmds Info: \pdf@ifprimitive is available.
+Package pdftexcmds Info: \pdfdraftmode found.
+Package: pdfescape 2011/11/25 v1.13 Implements pdfTeX's escape features (HO)
+Package: bigintcalc 2012/04/08 v1.3 Expandable calculations on big integers (HO
+)
+Package: bitset 2011/01/30 v1.1 Handle bit-vector datatype (HO)
+Package: uniquecounter 2011/01/30 v1.2 Provide unlimited unique counter (HO)
+)
+Package hobsub Info: Skipping package `hobsub' (already loaded).
+Package: letltxmacro 2010/09/02 v1.4 Let assignment for LaTeX macros (HO)
+Package: hopatch 2012/05/28 v1.2 Wrapper for package hooks (HO)
+Package: xcolor-patch 2011/01/30 xcolor patch
+Package: atveryend 2011/06/30 v1.8 Hooks at the very end of document (HO)
+Package atveryend Info: \enddocument detected (standard20110627).
+Package: atbegshi 2011/10/05 v1.16 At begin shipout hook (HO)
+Package: refcount 2011/10/16 v3.4 Data extraction from label references (HO)
+Package: hycolor 2011/01/30 v1.7 Color options for hyperref/bookmark (HO)
+)
+(/usr/local/texlive/2013/texmf-dist/tex/generic/ifxetex/ifxetex.sty
+Package: ifxetex 2010/09/12 v0.6 Provides ifxetex conditional
+)
+(/usr/local/texlive/2013/texmf-dist/tex/latex/oberdiek/auxhook.sty
+Package: auxhook 2011/03/04 v1.3 Hooks for auxiliary files (HO)
+)
+(/usr/local/texlive/2013/texmf-dist/tex/latex/oberdiek/kvoptions.sty
+Package: kvoptions 2011/06/30 v3.11 Key value format for package options (HO)
+)
+\@linkdim=\dimen114
+\Hy@linkcounter=\count110
+\Hy@pagecounter=\count111
+
+(/usr/local/texlive/2013/texmf-dist/tex/latex/hyperref/pd1enc.def
+File: pd1enc.def 2012/11/06 v6.83m Hyperref: PDFDocEncoding definition (HO)
+)
+\Hy@SavedSpaceFactor=\count112
+
+(/usr/local/texlive/2013/texmf-dist/tex/latex/latexconfig/hyperref.cfg
+File: hyperref.cfg 2002/06/06 v1.2 hyperref configuration of TeXLive
+)
+Package hyperref Info: Hyper figures OFF on input line 4443.
+Package hyperref Info: Link nesting OFF on input line 4448.
+Package hyperref Info: Hyper index ON on input line 4451.
+Package hyperref Info: Plain pages OFF on input line 4458.
+Package hyperref Info: Backreferencing OFF on input line 4463.
+Package hyperref Info: Implicit mode ON; LaTeX internals redefined.
+Package hyperref Info: Bookmarks ON on input line 4688.
+\c@Hy@tempcnt=\count113
+
+(/usr/local/texlive/2013/texmf-dist/tex/latex/url/url.sty
+\Urlmuskip=\muskip11
+Package: url 2006/04/12  ver 3.3  Verb mode for urls, etc.
+)
+LaTeX Info: Redefining \url on input line 5041.
+\XeTeXLinkMargin=\dimen115
+\Fld@menulength=\count114
+\Field@Width=\dimen116
+\Fld@charsize=\dimen117
+Package hyperref Info: Hyper figures OFF on input line 6295.
+Package hyperref Info: Link nesting OFF on input line 6300.
+Package hyperref Info: Hyper index ON on input line 6303.
+Package hyperref Info: backreferencing OFF on input line 6310.
+Package hyperref Info: Link coloring OFF on input line 6315.
+Package hyperref Info: Link coloring with OCG OFF on input line 6320.
+Package hyperref Info: PDF/A mode OFF on input line 6325.
+LaTeX Info: Redefining \ref on input line 6365.
+LaTeX Info: Redefining \pageref on input line 6369.
+\Hy@abspage=\count115
+\c@Item=\count116
+\c@Hfootnote=\count117
+)
+
+Package hyperref Message: Driver (autodetected): hpdftex.
+
+(/usr/local/texlive/2013/texmf-dist/tex/latex/hyperref/hpdftex.def
+File: hpdftex.def 2012/11/06 v6.83m Hyperref driver for pdfTeX
+\Fld@listcount=\count118
+\c@bookmark@seq@number=\count119
+
+(/usr/local/texlive/2013/texmf-dist/tex/latex/oberdiek/rerunfilecheck.sty
+Package: rerunfilecheck 2011/04/15 v1.7 Rerun checks for auxiliary files (HO)
+Package uniquecounter Info: New unique counter `rerunfilecheck' on input line 2
+82.
+)
+\Hy@SectionHShift=\skip49
+)
+(./draft_2015_02_20.aux
+
+LaTeX Warning: Label `junctionmethod' multiply defined.
+
+
+LaTeX Warning: Label `pastedgraphic8.pdf' multiply defined.
+
+)
+\openout1 = `draft_2015_02_20.aux'.
+
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 40.
+LaTeX Font Info:    ... okay on input line 40.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 40.
+LaTeX Font Info:    ... okay on input line 40.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 40.
+LaTeX Font Info:    ... okay on input line 40.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 40.
+LaTeX Font Info:    ... okay on input line 40.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 40.
+LaTeX Font Info:    ... okay on input line 40.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 40.
+LaTeX Font Info:    ... okay on input line 40.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 40.
+LaTeX Font Info:    ... okay on input line 40.
+ (/usr/local/texlive/2013/texmf-dist/tex/context/base/supp-pdf.mkii
+[Loading MPS to PDF converter (version 2006.09.02).]
+\scratchcounter=\count120
+\scratchdimen=\dimen118
+\scratchbox=\box30
+\nofMPsegments=\count121
+\nofMParguments=\count122
+\everyMPshowfont=\toks23
+\MPscratchCnt=\count123
+\MPscratchDim=\dimen119
+\MPnumerator=\count124
+\makeMPintoPDFobject=\count125
+\everyMPtoPDFconversion=\toks24
+) (/usr/local/texlive/2013/texmf-dist/tex/latex/oberdiek/epstopdf-base.sty
+Package: epstopdf-base 2010/02/09 v2.5 Base part for package epstopdf
+
+(/usr/local/texlive/2013/texmf-dist/tex/latex/oberdiek/grfext.sty
+Package: grfext 2010/08/19 v1.1 Manage graphics extensions (HO)
+)
+Package grfext Info: Graphics extension search list:
+(grfext)             [.png,.pdf,.jpg,.mps,.jpeg,.jbig2,.jb2,.PNG,.PDF,.JPG,.JPE
+G,.JBIG2,.JB2,.eps]
+(grfext)             \AppendGraphicsExtensions on input line 452.
+
+(/usr/local/texlive/2013/texmf-dist/tex/latex/latexconfig/epstopdf-sys.cfg
+File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Liv
+e
+))
+\AtBeginShipoutBox=\box31
+Package hyperref Info: Link coloring OFF on input line 40.
+
+(/usr/local/texlive/2013/texmf-dist/tex/latex/hyperref/nameref.sty
+Package: nameref 2012/10/27 v2.43 Cross-referencing by name of section
+
+(/usr/local/texlive/2013/texmf-dist/tex/generic/oberdiek/gettitlestring.sty
+Package: gettitlestring 2010/12/03 v1.4 Cleanup title references (HO)
+)
+\c@section@level=\count126
+)
+LaTeX Info: Redefining \ref on input line 40.
+LaTeX Info: Redefining \pageref on input line 40.
+LaTeX Info: Redefining \nameref on input line 40.
+
+(./draft_2015_02_20.out) (./draft_2015_02_20.out)
+\@outlinefile=\write3
+\openout3 = `draft_2015_02_20.out'.
+
+)
+(./mmd-scrivcustom-begin-doc.tex
+LaTeX Font Info:    Try loading font information for U+msa on input line 8.
+
+(/usr/local/texlive/2013/texmf-dist/tex/latex/amsfonts/umsa.fd
+File: umsa.fd 2013/01/14 v3.01 AMS symbols A
+)
+LaTeX Font Info:    Try loading font information for U+msb on input line 8.
+
+(/usr/local/texlive/2013/texmf-dist/tex/latex/amsfonts/umsb.fd
+File: umsb.fd 2013/01/14 v3.01 AMS symbols B
+) [0
+
+{/usr/local/texlive/2013/texmf-var/fonts/map/pdftex/updmap/pdftex.map}] [2
+
+]
+(./draft_2015_02_20.toc [3
+
+] [4] [5])
+\tf@toc=\write4
+\openout4 = `draft_2015_02_20.toc'.
+
+ [6] (./draft_2015_02_20.lof
+LaTeX Font Info:    Try loading font information for OMS+cmr on input line 11.
+
+(/usr/local/texlive/2013/texmf-dist/tex/latex/base/omscmr.fd
+File: omscmr.fd 1999/05/25 v2.5h Standard LaTeX font definitions
+)
+LaTeX Font Info:    Font shape `OMS/cmr/m/n' in size <10.95> not available
+(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 11.
+ [7
+
+])
+\tf@lof=\write5
+\openout5 = `draft_2015_02_20.lof'.
+
+ [8]
+(./draft_2015_02_20.lot)
+\tf@lot=\write6
+\openout6 = `draft_2015_02_20.lot'.
+
+ [9
+
+] (./draft_2015_02_20.loa)
+\tf@loa=\write7
+\openout7 = `draft_2015_02_20.loa'.
+
+) [1
+
+] [2
+
+] [3
+
+]
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ô in font cmr10!
+ [4] [5]
+Chapter 1.
+[6
+
+] [7] [8] [9]
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ú in font cmr10!
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ù in font cmr10!
+ [10]
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ú in font cmr10!
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ù in font cmr10!
+ [11]
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ú in font cmr10!
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ù in font cmr10!
+ [12]
+Package epstopdf Info: Source file: <rectv2-red.eps>
+(epstopdf)                    date: 2015-03-04 20:47:25
+(epstopdf)                    size: 120389 bytes
+(epstopdf)             Output file: <rectv2-red-eps-converted-to.pdf>
+(epstopdf)                    date: 2015-03-04 20:47:33
+(epstopdf)                    size: 45979 bytes
+(epstopdf)             Command: <repstopdf --outfile=rectv2-red-eps-converted-t
+o.pdf rectv2-red.eps>
+(epstopdf)             \includegraphics on input line 131.
+Package epstopdf Info: Output file is already uptodate.
+
+<rectv2-red-eps-converted-to.pdf, id=807, 680.5425pt x 282.05376pt>
+File: rectv2-red-eps-converted-to.pdf Graphic file (type pdf)
+
+<use rectv2-red-eps-converted-to.pdf>
+Package pdftex.def Info: rectv2-red-eps-converted-to.pdf used on input line 131
+.
+(pdftex.def)             Requested size: 400.00049pt x 165.7819pt.
+ [13]
+<CurveDiagram.png, id=814, 550.055pt x 373.395pt>
+File: CurveDiagram.png Graphic file (type png)
+ <use CurveDiagram.png>
+Package pdftex.def Info: CurveDiagram.png used on input line 144.
+(pdftex.def)             Requested size: 400.00925pt x 271.53912pt.
+
+
+LaTeX Warning: Citation `Vona:2010p391' on page 14 undefined on input line 153.
+
+
+[14 <./rectv2-red-eps-converted-to.pdf>]
+Package hyperref Info: bookmark level for unknown algorithm defaults to 0 on in
+put line 161.
+ [15 <./CurveDiagram.png>]
+
+Package hyperref Warning: No autoref name for `algorithm' on input line 188.
+
+[16] [17]
+Chapter 2.
+
+Underfull \hbox (badness 2418) in paragraph at lines 214--214
+[]\OT1/cmr/m/n/10.95 joint sen-sor, strain sen-sor,
+ []
+
+[18
+
+] [19] [20] <PokeBehavior.png, id=854, 431.6125pt x 375.4025pt>
+File: PokeBehavior.png Graphic file (type png)
+
+<use PokeBehavior.png>
+Package pdftex.def Info: PokeBehavior.png used on input line 261.
+(pdftex.def)             Requested size: 400.01244pt x 347.9178pt.
+ [21 <./PokeBehavior.png>]
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ¶ in font cmr10!
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ¶ in font cmr10!
+ [22] [23] [24]
+Overfull \hbox (12.23381pt too wide) in paragraph at lines 376--377
+[]\OT1/cmr/m/n/10.95 To per-form this back-wards, to find seg-ment $18$, where 
+$\OML/cmm/m/it/10.95 k \OT1/cmr/m/n/10.95 + 1 = 19$ and $(\OML/cmm/m/it/10.95 x
+[]; y[]; ^^R[]\OT1/cmr/m/n/10.95 ) =
+ []
+
+[25]
+
+Package hyperref Warning: No autoref name for `algorithm' on input line 398.
+
+<4_snapshot_1.png, id=890, 642.4pt x 401.5pt>
+File: 4_snapshot_1.png Graphic file (type png)
+ <use 4_snapshot_1.png>
+Package pdftex.def Info: 4_snapshot_1.png used on input line 429.
+(pdftex.def)             Requested size: 400.00908pt x 250.00566pt.
+
+<localOccMapSingle0.png, id=892, 196.735pt x 197.73875pt>
+File: localOccMapSingle0.png Graphic file (type png)
+
+<use localOccMapSingle0.png>
+Package pdftex.def Info: localOccMapSingle0.png used on input line 440.
+(pdftex.def)             Requested size: 400.0312pt x 402.07222pt.
+ [26]
+<localOccDouble.png, id=899, 199.74625pt x 200.75pt>
+File: localOccDouble.png Graphic file (type png)
+ <use localOccDouble.png>
+Package pdftex.def Info: localOccDouble.png used on input line 449.
+(pdftex.def)             Requested size: 400.05232pt x 402.0626pt.
+
+[27] [28 <./4_snapshot_1.png>]
+<4_convex_freespace1.png, id=913, 361.35pt x 325.215pt>
+File: 4_convex_freespace1.png Graphic file (type png)
+
+<use 4_convex_freespace1.png>
+Package pdftex.def Info: 4_convex_freespace1.png used on input line 477.
+(pdftex.def)             Requested size: 400.0005pt x 360.00044pt.
+
+<4_convex_freespace2.png, id=914, 361.35pt x 325.215pt>
+File: 4_convex_freespace2.png Graphic file (type png)
+
+<use 4_convex_freespace2.png>
+Package pdftex.def Info: 4_convex_freespace2.png used on input line 486.
+(pdftex.def)             Requested size: 400.0005pt x 360.00044pt.
+ [29 <./localOccMapSingle0.png>]
+<alphashape.png, id=924, 297.11pt x 256.96pt>
+File: alphashape.png Graphic file (type png)
+ <use alphashape.png>
+Package pdftex.def Info: alphashape.png used on input line 511.
+(pdftex.def)             Requested size: 400.02034pt x 345.96353pt.
+ [30 <./localOccDouble.png>] <4_alpha_radius.png, id=931, 722.7pt x 220.825pt>
+File: 4_alpha_radius.png Graphic file (type png)
+
+<use 4_alpha_radius.png>
+Package pdftex.def Info: 4_alpha_radius.png used on input line 522.
+(pdftex.def)             Requested size: 400.00049pt x 122.22237pt.
+
+<4_alpha_freespace2.png, id=933, 361.35pt x 325.215pt>
+File: 4_alpha_freespace2.png Graphic file (type png)
+
+<use 4_alpha_freespace2.png>
+Package pdftex.def Info: 4_alpha_freespace2.png used on input line 533.
+(pdftex.def)             Requested size: 400.0005pt x 360.00044pt.
+ [31 <./4_convex_freespace1.png>] [32 <./4_convex_freespace2.png>] <4_medial_pr
+ocess.png, id=945, 462.528pt x 346.896pt>
+File: 4_medial_process.png Graphic file (type png)
+
+<use 4_medial_process.png>
+Package pdftex.def Info: 4_medial_process.png used on input line 564.
+(pdftex.def)             Requested size: 400.01768pt x 300.01326pt.
+ [33 <./alphashape.png>]
+<4_medial_process2.png, id=950, 462.528pt x 346.896pt>
+File: 4_medial_process2.png Graphic file (type png)
+
+<use 4_medial_process2.png>
+Package pdftex.def Info: 4_medial_process2.png used on input line 573.
+(pdftex.def)             Requested size: 400.01768pt x 300.01326pt.
+ [34 <./4_alpha_radius.png>] [35 <./4_alpha_freespace2.png>]
+
+Package amsmath Warning: Foreign command \atopwithdelims;
+(amsmath)                \frac or \genfrac should be used instead
+(amsmath)                 on input line 591.
+
+[36 <./4_medial_process.png>] [37 <./4_medial_process2.png>] [38]
+<4_ref_averaging.png, id=992, 642.4pt x 401.5pt>
+File: 4_ref_averaging.png Graphic file (type png)
+ <use 4_ref_averaging.png>
+Package pdftex.def Info: 4_ref_averaging.png used on input line 632.
+(pdftex.def)             Requested size: 400.00908pt x 250.00566pt.
+
+[39 <./4_ref_averaging.png>] <4_sweepmap_1.png, id=1001, 642.4pt x 501.875pt>
+File: 4_sweepmap_1.png Graphic file (type png)
+
+<use 4_sweepmap_1.png>
+Package pdftex.def Info: 4_sweepmap_1.png used on input line 648.
+(pdftex.def)             Requested size: 400.00908pt x 312.50708pt.
+ [40]
+<localMapError.png, id=1009, 217.81375pt x 200.75pt>
+File: localMapError.png Graphic file (type png)
+ <use localMapError.png>
+Package pdftex.def Info: localMapError.png used on input line 682.
+(pdftex.def)             Requested size: 400.0011pt x 368.66461pt.
+
+[41 <./4_sweepmap_1.png>] <plotGPAC0059.png, id=1019, 297.0297pt x 208.1376pt>
+File: plotGPAC0059.png Graphic file (type png)
+
+<use plotGPAC0059.png>
+Package pdftex.def Info: plotGPAC0059.png used on input line 696.
+(pdftex.def)             Requested size: 400.03459pt x 280.31621pt.
+ [42 <./localMapError.png>] [43 <./plotGPAC0059.png>]
+[44]
+Chapter 3.
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ú in font cmr10!
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ù in font cmr10!
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ú in font cmr10!
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ù in font cmr10!
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ú in font cmr10!
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ù in font cmr10!
+[45
+
+]
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ú in font cmr10!
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ù in font cmr10!
+ [46]
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ú in font cmr10!
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ù in font cmr10!
+ <PastedGraphic.pdf, id=1043, 497.86pt x 130.4875pt>
+File: PastedGraphic.pdf Graphic file (type pdf)
+
+<use PastedGraphic.pdf>
+Package pdftex.def Info: PastedGraphic.pdf used on input line 789.
+(pdftex.def)             Requested size: 419.17192pt x 109.86359pt.
+
+Overfull \hbox (179.98132pt too wide) in paragraph at lines 787--790
+\OT1/cmr/m/n/10.95 curve rep-re-sen-ta-tion of the local space [] 
+ []
+
+[47]
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ú in font cmr10!
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ù in font cmr10!
+ <PastedGraphic1.pdf, id=1052, 424.58624pt x 42.1575pt>
+File: PastedGraphic1.pdf Graphic file (type pdf)
+
+<use PastedGraphic1.pdf>
+Package pdftex.def Info: PastedGraphic1.pdf used on input line 828.
+(pdftex.def)             Requested size: 419.18848pt x 41.62152pt.
+ [48 <./PastedGraphic.pdf>]
+<PastedGraphic2.pdf, id=1073, 650.43pt x 504.88625pt>
+File: PastedGraphic2.pdf Graphic file (type pdf)
+ <use PastedGraphic2.pdf>
+Package pdftex.def Info: PastedGraphic2.pdf used on input line 836.
+(pdftex.def)             Requested size: 419.1718pt x 325.37563pt.
+
+<PastedGraphic3.pdf, id=1074, 650.43pt x 501.875pt>
+File: PastedGraphic3.pdf Graphic file (type pdf)
+ <use PastedGraphic3.pdf>
+Package pdftex.def Info: PastedGraphic3.pdf used on input line 845.
+(pdftex.def)             Requested size: 419.1718pt x 323.43503pt.
+
+[49 <./PastedGraphic1.pdf> <./PastedGraphic2.pdf>] [50 <./PastedGraphic3.pdf>]
+Chapter 4.
+[51
+
+] [52] [53] [54] <3_pose_frame1.png, id=1179, 626.34pt x 497.60907pt>
+File: 3_pose_frame1.png Graphic file (type png)
+
+<use 3_pose_frame1.png>
+Package pdftex.def Info: 3_pose_frame1.png used on input line 928.
+(pdftex.def)             Requested size: 400.0152pt x 317.80054pt.
+ <3_pose_frame2.png, id=1181, 626.34pt x 497.60907pt>
+File: 3_pose_frame2.png Graphic file (type png)
+
+<use 3_pose_frame2.png>
+Package pdftex.def Info: 3_pose_frame2.png used on input line 940.
+(pdftex.def)             Requested size: 400.0152pt x 317.80054pt.
+ [55] [56 <./3_pose_frame1.png>] [57 <./3_pose_frame2.png>] [58] [59]
+
+Package hyperref Warning: No autoref name for `algorithm' on input line 1143.
+
+
+Package hyperref Warning: No autoref name for `algorithm' on input line 1143.
+
+<3_frames_2.png, id=1242, 642.4pt x 401.5pt>
+File: 3_frames_2.png Graphic file (type png)
+ <use 3_frames_2.png>
+Package pdftex.def Info: 3_frames_2.png used on input line 1147.
+(pdftex.def)             Requested size: 400.00908pt x 250.00566pt.
+ [60] [61 <./3_frames_2.png>] [62] [63]
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ú in font cmr10!
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ù in font cmr10!
+File: plotGPAC0059.png Graphic file (type png)
+ <use plotGPAC0059.png>
+Package pdftex.def Info: plotGPAC0059.png used on input line 1267.
+(pdftex.def)             Requested size: 400.03459pt x 280.31621pt.
+ [64] [65] [66] [67]
+<PastedGraphic4.pdf, id=1291, 665.48625pt x 139.52126pt>
+File: PastedGraphic4.pdf Graphic file (type pdf)
+
+<use PastedGraphic4.pdf>
+Package pdftex.def Info: PastedGraphic4.pdf used on input line 1371.
+(pdftex.def)             Requested size: 419.16716pt x 87.87968pt.
+ [68 <./PastedGraphic4.pdf>]
+Chapter 5.
+<PastedGraphic5.pdf, id=1318, 804.00375pt x 456.70625pt>
+File: PastedGraphic5.pdf Graphic file (type pdf)
+
+<use PastedGraphic5.pdf>
+Package pdftex.def Info: PastedGraphic5.pdf used on input line 1404.
+(pdftex.def)             Requested size: 419.16396pt x 238.10185pt.
+ <PastedGraphic6.pdf, id=1319, 686.565pt x 481.8pt>
+File: PastedGraphic6.pdf Graphic file (type pdf)
+
+<use PastedGraphic6.pdf>
+Package pdftex.def Info: PastedGraphic6.pdf used on input line 1412.
+(pdftex.def)             Requested size: 419.16023pt x 294.14752pt.
+ [69
+
+ <./PastedGraphic5.pdf>] [70 <./PastedGraphic6.pdf>] <concertina_gait_Gans1980.
+jpg, id=1410, 131.74219pt x 73.02281pt>
+File: concertina_gait_Gans1980.jpg Graphic file (type jpg)
+
+<use concertina_gait_Gans1980.jpg>
+Package pdftex.def Info: concertina_gait_Gans1980.jpg used on input line 1440.
+(pdftex.def)             Requested size: 400.06818pt x 221.75203pt.
+ [71 <./concertina_gait_Gans1980.jpg>]
+<2_problem_1.png, id=1416, 642.4pt x 401.5pt>
+File: 2_problem_1.png Graphic file (type png)
+ <use 2_problem_1.png>
+Package pdftex.def Info: 2_problem_1.png used on input line 1464.
+(pdftex.def)             Requested size: 400.00908pt x 250.00566pt.
+ [72 <./2_problem_1.png>] <OnePeriodCurve.png, id=1423, 550.055pt x 441.65pt>
+File: OnePeriodCurve.png Graphic file (type png)
+
+<use OnePeriodCurve.png>
+Package pdftex.def Info: OnePeriodCurve.png used on input line 1481.
+(pdftex.def)             Requested size: 400.00925pt x 321.17531pt.
+ [73]
+
+LaTeX Warning: Reference `eq:ikcircle' on page 74 undefined on input line 1510.
+
+
+[74 <./OnePeriodCurve.png (PNG copy)>] [75]
+<2_anchoring_1.png, id=1443, 642.4pt x 401.5pt>
+File: 2_anchoring_1.png Graphic file (type png)
+ <use 2_anchoring_1.png>
+Package pdftex.def Info: 2_anchoring_1.png used on input line 1531.
+(pdftex.def)             Requested size: 400.00908pt x 250.00566pt.
+
+<ref_points_pose2.png, id=1444, 900.966pt x 467.346pt>
+File: ref_points_pose2.png Graphic file (type png)
+
+<use ref_points_pose2.png>
+Package pdftex.def Info: ref_points_pose2.png used on input line 1540.
+(pdftex.def)             Requested size: 400.00064pt x 207.48695pt.
+ [76 <./2_anchoring_1.png>] [77 <./ref_points_pose2.png>] <2_anchoring_2.png, i
+d=1458, 642.4pt x 401.5pt>
+File: 2_anchoring_2.png Graphic file (type png)
+ <use 2_anchoring_2.png>
+Package pdftex.def Info: 2_anchoring_2.png used on input line 1576.
+(pdftex.def)             Requested size: 400.00908pt x 250.00566pt.
+
+[78 <./2_anchoring_2.png>] [79]
+<2_behaviors_1.png, id=1468, 642.4pt x 401.5pt>
+File: 2_behaviors_1.png Graphic file (type png)
+ <use 2_behaviors_1.png>
+Package pdftex.def Info: 2_behaviors_1.png used on input line 1637.
+(pdftex.def)             Requested size: 400.00908pt x 250.00566pt.
+
+[80] [81 <./2_behaviors_1.png>]
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ì in font cmr10!
+ [82]
+<2_smooth_1.png, id=1483, 642.4pt x 401.5pt>
+File: 2_smooth_1.png Graphic file (type png)
+ <use 2_smooth_1.png>
+Package pdftex.def Info: 2_smooth_1.png used on input line 1665.
+(pdftex.def)             Requested size: 400.00908pt x 250.00566pt.
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ì in font cmr10!
+ [83 <./2_smooth_1.png>] <2_merging_1.png, id=1489, 642.4pt x 401.5pt>
+File: 2_merging_1.png Graphic file (type png)
+ <use 2_merging_1.png>
+Package pdftex.def Info: 2_merging_1.png used on input line 1689.
+(pdftex.def)             Requested size: 400.00908pt x 250.00566pt.
+
+[84] <2_behaviors_2.png, id=1498, 642.4pt x 401.5pt>
+File: 2_behaviors_2.png Graphic file (type png)
+ <use 2_behaviors_2.png>
+Package pdftex.def Info: 2_behaviors_2.png used on input line 1702.
+(pdftex.def)             Requested size: 400.00908pt x 250.00566pt.
+
+[85 <./2_merging_1.png>]
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ì in font cmr10!
+ [86 <./2_behaviors_2.png>]
+<2_behaviors_3.png, id=1512, 642.4pt x 401.5pt>
+File: 2_behaviors_3.png Graphic file (type png)
+ <use 2_behaviors_3.png>
+Package pdftex.def Info: 2_behaviors_3.png used on input line 1724.
+(pdftex.def)             Requested size: 400.00908pt x 250.00566pt.
+
+<2_behaviors_4.png, id=1514, 642.4pt x 401.5pt>
+File: 2_behaviors_4.png Graphic file (type png)
+ <use 2_behaviors_4.png>
+Package pdftex.def Info: 2_behaviors_4.png used on input line 1739.
+(pdftex.def)             Requested size: 400.00908pt x 250.00566pt.
+
+[87 <./2_behaviors_3.png>] [88 <./2_behaviors_4.png>] [89]
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ì in font cmr10!
+ [90]
+<AdaptiveStep.png, id=1536, 448.67625pt x 252.945pt>
+File: AdaptiveStep.png Graphic file (type png)
+ <use AdaptiveStep.png>
+Package pdftex.def Info: AdaptiveStep.png used on input line 1800.
+(pdftex.def)             Requested size: 400.01207pt x 225.51016pt.
+
+[91] [92 <./AdaptiveStep.png>] <2_adaptive_1.png, id=1546, 642.4pt x 401.5pt>
+File: 2_adaptive_1.png Graphic file (type png)
+
+<use 2_adaptive_1.png>
+Package pdftex.def Info: 2_adaptive_1.png used on input line 1836.
+(pdftex.def)             Requested size: 400.00908pt x 250.00566pt.
+ [93 <./2_adaptive_1.png>] [94]
+<2_adaptive_2.png, id=1562, 642.4pt x 401.5pt>
+File: 2_adaptive_2.png Graphic file (type png)
+ <use 2_adaptive_2.png>
+Package pdftex.def Info: 2_adaptive_2.png used on input line 1868.
+(pdftex.def)             Requested size: 400.00908pt x 250.00566pt.
+ [95 <./2_adaptive_2.png>] [96] <2_frontanchor_1.png, id=1575, 642.4pt x 401.5p
+t>
+File: 2_frontanchor_1.png Graphic file (type png)
+
+<use 2_frontanchor_1.png>
+Package pdftex.def Info: 2_frontanchor_1.png used on input line 1913.
+(pdftex.def)             Requested size: 400.00908pt x 250.00566pt.
+ <2_adaptive_3.png, id=1576, 642.4pt x 401.5pt>
+File: 2_adaptive_3.png Graphic file (type png)
+
+<use 2_adaptive_3.png>
+Package pdftex.def Info: 2_adaptive_3.png used on input line 1925.
+(pdftex.def)             Requested size: 400.00908pt x 250.00566pt.
+ [97] [98 <./2_frontanchor_1.png> <./2_adaptive_3.png>]
+<2_adaptive_4.png, id=1588, 642.4pt x 401.5pt>
+File: 2_adaptive_4.png Graphic file (type png)
+ <use 2_adaptive_4.png>
+Package pdftex.def Info: 2_adaptive_4.png used on input line 1956.
+(pdftex.def)             Requested size: 400.00908pt x 250.00566pt.
+ [99 <./2_adaptive_4.png>] [100]
+File: CurveDiagram.png Graphic file (type png)
+ <use CurveDiagram.png>
+Package pdftex.def Info: CurveDiagram.png used on input line 2004.
+(pdftex.def)             Requested size: 400.00925pt x 271.53912pt.
+
+<DegenerateCurve.png, id=1602, 510.90875pt x 304.13625pt>
+File: DegenerateCurve.png Graphic file (type png)
+
+<use DegenerateCurve.png>
+Package pdftex.def Info: DegenerateCurve.png used on input line 2028.
+(pdftex.def)             Requested size: 399.99622pt x 238.1117pt.
+ [101] [102 <./DegenerateCurve.png>]
+<2011_01_23_Plot_DegenerateAnchor.png, id=1613, 662.475pt x 412.54124pt>
+File: 2011_01_23_Plot_DegenerateAnchor.png Graphic file (type png)
+
+<use 2011_01_23_Plot_DegenerateAnchor.png>
+Package pdftex.def Info: 2011_01_23_Plot_DegenerateAnchor.png used on input lin
+e 2061.
+(pdftex.def)             Requested size: 399.99498pt x 249.08778pt.
+ [103 <./2011_01_23_Plot_DegenerateAnchor.png (PNG copy)>]
+<2011_01_24_Plot_WidthAnchor.png, id=1622, 662.475pt x 417.56pt>
+File: 2011_01_24_Plot_WidthAnchor.png Graphic file (type png)
+
+<use 2011_01_24_Plot_WidthAnchor.png>
+Package pdftex.def Info: 2011_01_24_Plot_WidthAnchor.png used on input line 209
+7.
+(pdftex.def)             Requested size: 399.99498pt x 252.11804pt.
+ [104] [105 <./2011_01_24_Plot_WidthAnchor.png (PNG copy)>]
+<2011_01_28_FitAlgorithm_Segs.png, id=1634, 745.78625pt x 366.36874pt>
+File: 2011_01_28_FitAlgorithm_Segs.png Graphic file (type png)
+
+<use 2011_01_28_FitAlgorithm_Segs.png>
+Package pdftex.def Info: 2011_01_28_FitAlgorithm_Segs.png used on input line 21
+27.
+(pdftex.def)             Requested size: 399.99883pt x 196.50008pt.
+ [106]
+<4_pokewalls_1.png, id=1643, 642.4pt x 401.5pt>
+File: 4_pokewalls_1.png Graphic file (type png)
+ <use 4_pokewalls_1.png>
+Package pdftex.def Info: 4_pokewalls_1.png used on input line 2147.
+(pdftex.def)             Requested size: 400.00908pt x 250.00566pt.
+
+[107 <./2011_01_28_FitAlgorithm_Segs.png>] [108 <./4_pokewalls_1.png>] [109]
+[110]
+Chapter 6.
+<PastedGraphic7.pdf, id=1663, 459.7175pt x 94.3525pt>
+File: PastedGraphic7.pdf Graphic file (type pdf)
+ <use PastedGraphic7.pdf>
+Package pdftex.def Info: PastedGraphic7.pdf used on input line 2206.
+(pdftex.def)             Requested size: 419.19235pt x 86.0351pt.
+
+<PastedGraphic8.pdf, id=1664, 673.51625pt x 279.0425pt>
+File: PastedGraphic8.pdf Graphic file (type pdf)
+
+<use PastedGraphic8.pdf>
+Package pdftex.def Info: PastedGraphic8.pdf used on input line 2213.
+(pdftex.def)             Requested size: 419.1687pt x 173.66452pt.
+ [111
+
+ <./PastedGraphic7.pdf> <./PastedGraphic8.pdf>]
+Missing character: There is no ‚ in font cmtt10!
+Missing character: There is no Ä in font cmtt10!
+Missing character: There is no ¢ in font cmtt10!
+Missing character: There is no ‚ in font cmtt10!
+Missing character: There is no Ä in font cmtt10!
+Missing character: There is no ¢ in font cmtt10!
+Missing character: There is no ‚ in font cmtt10!
+Missing character: There is no Ä in font cmtt10!
+Missing character: There is no ¢ in font cmtt10!
+Missing character: There is no ‚ in font cmtt10!
+Missing character: There is no Ä in font cmtt10!
+Missing character: There is no ¢ in font cmtt10!
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ¶ in font cmr10!
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ¶ in font cmr10!
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ¶ in font cmr10!
+
+[112] [113] <5_local_origin.png, id=1718, 389.455pt x 295.1025pt>
+File: 5_local_origin.png Graphic file (type png)
+
+<use 5_local_origin.png>
+Package pdftex.def Info: 5_local_origin.png used on input line 2311.
+(pdftex.def)             Requested size: 400.01402pt x 303.1034pt.
+ [114 <./5_local_origin.png>]
+<5_inplace_ICP.png, id=1727, 642.4pt x 481.8pt>
+File: 5_inplace_ICP.png Graphic file (type png)
+ <use 5_inplace_ICP.png>
+Package pdftex.def Info: 5_inplace_ICP.png used on input line 2335.
+(pdftex.def)             Requested size: 400.00908pt x 300.00679pt.
+
+[115 <./5_inplace_ICP.png>] [116]
+<5_step_ICP.png, id=1741, 438.63875pt x 459.7175pt>
+File: 5_step_ICP.png Graphic file (type png)
+ <use 5_step_ICP.png>
+Package pdftex.def Info: 5_step_ICP.png used on input line 2414.
+(pdftex.def)             Requested size: 400.0052pt x 419.22743pt.
+
+[117] [118 <./5_step_ICP.png>]
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ú in font cmr10!
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ù in font cmr10!
+ [119]
+Overfull \hbox (4.20088pt too wide) in paragraph at lines 2451--2452
+[]\OT1/cmr/m/n/10.95 Technically, the rel-a-tive off-set between two poses is a
+ 3 dimen-sion prob-lem (x,y,\OMS/cmsy/m/n/10.95 n\OT1/cmr/m/n/10.95 theta).
+ []
+
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ú in font cmr10!
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ù in font cmr10!
+[120]
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ¶ in font cmr10!
+ [121]
+
+Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
+(hyperref)                removing `math shift' on input line 2509.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
+(hyperref)                removing `subscript' on input line 2509.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
+(hyperref)                removing `math shift' on input line 2509.
+
+[122] [123] [124]
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ú in font cmr10!
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ù in font cmr10!
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ú in font cmr10!
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ù in font cmr10!
+ [125]
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ú in font cmr10!
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ù in font cmr10!
+ [126] [127] [128] [129] [130]
+Chapter 7.
+File: PastedGraphic.pdf Graphic file (type pdf)
+<use PastedGraphic.pdf>
+Package pdftex.def Info: PastedGraphic.pdf used on input line 2639.
+(pdftex.def)             Requested size: 419.17192pt x 109.86359pt.
+
+Overfull \hbox (332.55156pt too wide) in paragraph at lines 2638--2640
+\OT1/cmr/m/n/10.95 Axis con-straint map-ping does not work in envi-ron-ments wi
+th junc-tions [] 
+ []
+
+File: PastedGraphic1.pdf Graphic file (type pdf)
+<use PastedGraphic1.pdf>
+Package pdftex.def Info: PastedGraphic1.pdf used on input line 2643.
+(pdftex.def)             Requested size: 419.18848pt x 41.62152pt.
+
+Overfull \hbox (196.66214pt too wide) in paragraph at lines 2642--2644
+[]\OT1/cmr/m/n/10.95 Does not cor-rectly fit to axis with ICP [] 
+ []
+
+File: PastedGraphic4.pdf Graphic file (type pdf)
+<use PastedGraphic4.pdf>
+Package pdftex.def Info: PastedGraphic4.pdf used on input line 2651.
+(pdftex.def)             Requested size: 419.16716pt x 87.87968pt.
+
+Overfull \hbox (115.33812pt too wide) in paragraph at lines 2650--2652
+[]\OT1/cmr/m/n/10.95 Define Curve Events [] 
+ []
+
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ® in font cmr10!
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ® in font cmr10!
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ú in font cmr10!
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ù in font cmr10!
+[131
+
+] [132] [133]
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ú in font cmr10!
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ù in font cmr10!
+ [134]
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ¶ in font cmr10!
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ¶ in font cmr10!
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ¶ in font cmr10!
+ [135] [136] [137] [138]
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ú in font cmr10!
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ù in font cmr10!
+ [139]
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ú in font cmr10!
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ù in font cmr10!
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ú in font cmr10!
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ù in font cmr10!
+ [140]
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ú in font cmr10!
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ù in font cmr10!
+ [141] [142]
+[143]
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ú in font cmr10!
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ù in font cmr10!
+ [144] [145] [146] [147] [148] [149] [150] [151]
+Chapter 8.
+[152
+
+]
+File: PastedGraphic8.pdf Graphic file (type pdf)
+ <use PastedGraphic8.pdf>
+Package pdftex.def Info: PastedGraphic8.pdf used on input line 3246.
+(pdftex.def)             Requested size: 419.1687pt x 173.66452pt.
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ú in font cmr10!
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ù in font cmr10!
+ [153]
+File: PastedGraphic7.pdf Graphic file (type pdf)
+ <use PastedGraphic7.pdf>
+Package pdftex.def Info: PastedGraphic7.pdf used on input line 3265.
+(pdftex.def)             Requested size: 419.19235pt x 86.0351pt.
+
+Overfull \hbox (148.8813pt too wide) in paragraph at lines 3264--3266
+[]\OT1/cmr/m/n/10.95 Reduced to 1D search space [] 
+ []
+
+Missing character: There is no ‚ in font cmti10!
+Missing character: There is no Ä in font cmti10!
+Missing character: There is no ì in font cmti10!
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ì in font cmr10!
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ì in font cmr10!
+<PastedGraphic9.pdf, id=1916, 622.325pt x 280.04625pt> [154]
+File: PastedGraphic9.pdf Graphic file (type pdf)
+
+<use PastedGraphic9.pdf>
+Package pdftex.def Info: PastedGraphic9.pdf used on input line 3288.
+(pdftex.def)             Requested size: 419.16812pt x 188.62564pt.
+
+Overfull \hbox (17.0019pt too wide) in paragraph at lines 3288--3289
+[][] 
+ []
+
+<PastedGraphic10.pdf, id=1922, 676.5275pt x 507.8975pt>
+File: PastedGraphic10.pdf Graphic file (type pdf)
+
+<use PastedGraphic10.pdf>
+Package pdftex.def Info: PastedGraphic10.pdf used on input line 3290.
+(pdftex.def)             Requested size: 419.1743pt x 314.6917pt.
+
+Overfull \hbox (17.00809pt too wide) in paragraph at lines 3290--3291
+[][] 
+ []
+
+Missing character: There is no ‚ in font cmr10!
+Missing character: There is no Ä in font cmr10!
+Missing character: There is no ô in font cmr10!
+[155 <./PastedGraphic9.pdf> <./PastedGraphic10.pdf>]
+<PastedGraphic11.pdf, id=1964, 730.73pt x 541.02126pt>
+File: PastedGraphic11.pdf Graphic file (type pdf)
+
+<use PastedGraphic11.pdf>
+Package pdftex.def Info: PastedGraphic11.pdf used on input line 3318.
+(pdftex.def)             Requested size: 419.16298pt x 310.34183pt.
+
+<PastedGraphic12.pdf, id=1965, 668.4975pt x 502.87875pt>
+File: PastedGraphic12.pdf Graphic file (type pdf)
+
+<use PastedGraphic12.pdf>
+Package pdftex.def Info: PastedGraphic12.pdf used on input line 3326.
+(pdftex.def)             Requested size: 419.17677pt x 315.32666pt.
+
+<PastedGraphic14.pdf, id=1966, 327.2225pt x 263.98625pt>
+File: PastedGraphic14.pdf Graphic file (type pdf)
+
+<use PastedGraphic14.pdf>
+Package pdftex.def Info: PastedGraphic14.pdf used on input line 3338.
+(pdftex.def)             Requested size: 419.16791pt x 338.16306pt.
+
+Overfull \hbox (17.0017pt too wide) in paragraph at lines 3338--3339
+[][] 
+ []
+
+<PastedGraphic15.pdf, id=1967, 330.23375pt x 263.98625pt> [156]
+Overfull \vbox (71.03734pt too high) has occurred while \output is active []
+
+
+[157 <./PastedGraphic11.pdf> <./PastedGraphic14.pdf>]
+File: PastedGraphic15.pdf Graphic file (type pdf)
+
+<use PastedGraphic15.pdf>
+Package pdftex.def Info: PastedGraphic15.pdf used on input line 3340.
+(pdftex.def)             Requested size: 419.18054pt x 335.08961pt.
+
+Overfull \hbox (17.01433pt too wide) in paragraph at lines 3340--3341
+[][] 
+ []
+
+
+Overfull \vbox (72.94873pt too high) has occurred while \output is active []
+
+
+[158 <./PastedGraphic12.pdf> <./PastedGraphic15.pdf>] [159] [160] [161]
+[162] [163] [164] [165]
+Chapter 9.
+[166
+
+] [167] (./mmd-scrivcustom-footer.tex (./draft_2015_02_20.bbl [168]))
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 3523.
+
+[169
+
+]
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 3523.
+ (./draft_2015_02_20.aux)
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 3523.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 3523.
+
+
+
+Package rerunfilecheck Warning: File `draft_2015_02_20.out' has changed.
+(rerunfilecheck)                Rerun to get outlines right
+(rerunfilecheck)                or use package `bookmark'.
+
+Package rerunfilecheck Info: Checksums for `draft_2015_02_20.out':
+(rerunfilecheck)             Before: 85770A1F777C916A950F94810F4860B3;7809
+(rerunfilecheck)             After:  0FE95DC8B08AAC8E4B136B3EE3E21054;7860.
+
+LaTeX Warning: There were undefined references.
+
+
+LaTeX Warning: There were multiply-defined labels.
+
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 3523.
+ ) 
+Here is how much of TeX's memory you used:
+ 7767 strings out of 493315
+ 113328 string characters out of 6137904
+ 198246 words of memory out of 5000000
+ 10602 multiletter control sequences out of 15000+600000
+ 14045 words of font info for 53 fonts, out of 8000000 for 9000
+ 957 hyphenation exceptions out of 8191
+ 31i,12n,31p,975b,498s stack positions out of 5000i,500n,10000p,200000b,80000s
+</usr/local/texlive/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb
+></usr/local/texlive/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb>
+</usr/local/texlive/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx8.pfb></
+usr/local/texlive/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></u
+sr/local/texlive/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></us
+r/local/texlive/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></usr
+/local/texlive/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb></usr/l
+ocal/texlive/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></usr/loc
+al/texlive/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/local
+/texlive/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/local/te
+xlive/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/tex
+live/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/local/texli
+ve/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb></usr/local/texliv
+e/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb></usr/local/texlive
+/2013/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb>
+Output written on draft_2015_02_20.pdf (178 pages, 2118201 bytes).
+PDF statistics:
+ 2267 PDF objects out of 2487 (max. 8388607)
+ 1860 compressed objects within 19 object streams
+ 446 named destinations out of 1000 (max. 500000)
+ 1250 words of extra memory for PDF output out of 10000 (max. 10000000)
+

@@ -1,0 +1,183 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fnil\fcharset0 Cochin;\f1\ftech\fcharset77 Symbol;}
+{\colortbl;\red255\green255\blue255;}
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\f0\fs28 \cf0 \
+##Adaptive Step\
+\
+<!--\
+%Show the behavior sequence in high-level terms.  Show graphics.\
+\
+%Explain each behavior step in terms of the concepts we already learned.\
+-->\
+\
+Using these tools at our disposable, we can now build a suitable locomotion behavior for an unknown pipe with no exteroception.  The entirety of our designed behavior is shown in [](#adaptive_step) and is called the adaptive concertina gait, a biologically-inspired gait based on the concertina gait but modified for the change in sensors.  The behavior is divided into 6 states, and each level of [](#adaptive_step) shows one of those states.  We describe the states as follows:\
+\
+![Adaptive Step Concertina Gait][adaptive_step]\
+\
+[adaptive_step]: {\field{\*\fldinst{HYPERLINK "scrivlnk://178"}}{\fldrslt AdaptiveStep.png}} width=400px\
+\
+1) Rest-State (Initial): Rest-State is the initial fully anchored posture of the snake robot.  This is our initial pose and it acts as a stable platform from which exploratory or probing behaviors can be executed to sense the environment with little chance of slips or vibration due to the multiple anchor contact points.  There is no other action here than to hold the posture that it was already in.  The Rest-State is the initial state and the final state of the concertina gait.\
+\
+2) Front-Extend:  In the Front-Extend state, the forward segments are gradually transitioned from their initial position to a straight-forward position.  The joints are compliant to the boundaries of the environment to accommodate turns in the pipe.\
+\
+3) Front-Anchor:  The Front-Anchor state takes the extended portion of the snake and attempts to establish an anchor to the pipe as far forward as possible.  The locomotion distance is maximized the further forward the front anchor is.\
+\
+4) Back-Extend:  The Back-Extend state follows a successful Front-Anchor event.  All anchors established in the back segments are gradually extended until they are straight.  Again, the joints are compliant so that they can conform to the walls of the environment.\
+\
+5) Back-Anchor:  The Back-Anchor state involves establishing multiple anchors with the remainder of the body segments.\
+\
+6) Rest-State (Final):  Upon conclusion of the Back-Anchor state, a single step of the adaptive concertina gait is complete and the snake is now in the Rest-State.  From here we can do probing of the environment or perform another step forward.\
+\
+A successful transition through all the states results in a single step.  Multiple steps are used to travel through the environment.  We describe no steering mechanism for this locomotion gait because the robot has no means to sense the environment in front of it.  However, the robot's compliant posture will adapt to any junctions or pipe curvature and follow it.\
+\
+We now describe the implementation of each of these states and their composition of behaviors.\
+\
+\
+\
+###Front-Extend\
+\
+<!--\
+%GRAPHIC\
+%Merge(\
+%FrontExtend 
+\f1 \uc0\u8592 
+\f0  HoldSlideTransition 
+\f1 \uc0\u8592 
+\f0  Transition,\
+%HoldPosition\
+%)\
+-->\
+\
+![Front-Extend behavior assembly][adaptive1]\
+\
+[adaptive1]: {\field{\*\fldinst{HYPERLINK "scrivlnk://179"}}{\fldrslt 2_adaptive_1.png}} width=400px\
+\
+<!--\
+%Convergence merge of 0.0 extension and anchored state.  Precedence merge of FrontExtend and HoldPosition.  HoldPosition holds back half while FrontExtend controls front.  Passes extended state to HoldSlideTransition.  This manages convergence merge and slide with a Transition behavior to handle each step. \
+-->\
+\
+From the fully anchored Rest-State stage, the goal of the Front-Extend stage is to release the front anchors and stretch the front half of the snake as far forward as possible without compromising the rear anchors.  The further forward we can extend, the further the snake can travel in a single step.\
+\
+If the extended snake arm makes a lateral impact, the walls will guide the movement of the snake but not otherwise hinder the behavior.  In the event of an actual obstruction, the tip's movement will stop.  We are able to track whether the position of the tip hasn't moved overtime and are able to set a flag to abort the behavior at the current posture.\
+\
+Its implementation consists of 4 behaviors arranged as shown in [](#adaptive1).  We explain each behavior's functionality.\
+\
+**HoldPosition:** The purpose of this behavior is to output the same joint commands indefinitely.  It is instantiated with a vector of joint commands, and it continues to output these joint commands until termination.  In this case, it is instantiated with the entire initial anchored posture of the snake from Rest-State and continues to output this posture.  The behavior's output is gradually subsumed by the growth of the FrontExtend behavior in a precedence merge.  HoldPosition is placed 2nd in the behavior ordering at the root level for this reason.\
+\
+**Transition:** This behavior's purpose is to take an initial and final pose and interpolate a transition between the two, outputting the intermediate postures incrementally.  The number of interpolated steps used to transition between the poses is set by the parent behavior.  It is often a function of how much difference there is in the initial and final poses.  The clock-rate is dependent on the parent behaviors. Once it reaches the final pose, it returns a flag and continues to output the goal pose indefinitely until reset or deleted.  Here it is instantiated by the HoldSlideTransition behavior and reset each time it needs to make a new move command.\
+\
+**HoldSlideTransition:** This behavior was first mentioned in section [](#sec:merge) and implements the equation [](#equ:slide).  Its role is to use a convergence merge to transition from one posture to another.  The convergence parameter \\\\(c\\\\) is incremented over time to slide the convergence from the front to the back of the snake, to smoothly transition from the fully-anchored posture to the back-anchored and front-extended posture.\
+\
+For each change in \\\\(c\\\\), the Transition behavior is set up to interpolate smooth motion between the two postures.  Once the Transition behavior completes, \\\\(c\\\\) is incremented and Transition is reset to the new initial and final postures.  \\\\(c\\\\) is changed from 8 to 20 while using the joint numbers as the indices in the convergence merge equation shown in X, assuming that the joint numbering starts at 0 at the front tip.  An example of the HoldSlideTransition behavior in action is shown in [](#merging3).\
+\
+**FrontExtend:**  Finally, the FrontExtend behavior creates HoldSlideTransition as a child behavior and gives it its initial and final posture.  It passes through the output of HoldSlideTransition.  It also monitors the pose of the snake tip to see if any obstructions are encountered.  If the pose remains stationary for a period of time, an obstruction is declared and the behavior is halted.  The behavior returns a collision flag.\
+\
+###Front-Anchor\
+\
+![Front-Anchor behavior assembly][adaptive2]\
+\
+[adaptive2]: {\field{\*\fldinst{HYPERLINK "scrivlnk://180"}}{\fldrslt 2_adaptive_2.png}} width=400px\
+\
+<!--\
+%GRAPHIC\
+%Merge(\
+%FrontAnchor -> FrontAnchorFit, \
+%    |\
+%   V\
+%HoldTransition\
+%)\
+-->\
+\
+\
+Once the front-half of the snake has been extended by the Front-Extend stage, the next step is to place the first anchor using the already extended segments.  The complete posture of the snake is submitted to a HoldTransition behavior while the front half of the posture is modified by the FrontAnchorFit behavior.\
+\
+This stage attempts to create a 3-point anchor that is created with the previously extended segments.  The anchor is rooted at an internal joint starting from the merge joint 7 giving 8 segments with which to create the anchor.  In the event that not enough segments are available to create the full anchor, the anchoring process is restarted with +2 more segments by moving the root inward by 2 joints.  \
+\
+On successful completion of the 3-point anchor with the available segments, a test is performed to see if the anchor is secure, called a jerk-test.  This is accomplished by a sudden rotation of four joints adjacent to the merge joint not on the side of the front anchor.  While tracking the position of the anchor segments, if the anchored portion of the snake moves appreciably from the jerk-test, the anchor is deemed insecure, and the anchoring process is restarted with 2 more segments.\
+\
+Whenever the merge joint is moved inwards, this also results in the contact positions of the anchor points moving inward as well.  This can be useful for changing the anchor locations if no stable purchase is found, but also reduces the step distance of the gait by reducing the extension length.\
+\
+The composition of the behaviors is shown in [](#adaptive2) and described as follows:\
+\
+**HoldTransition:**\
+This behavior is originally initialized with the complete posture of the snake at the outcome of the Front-Extend stage.  The front portion is laterally modified by the FrontAnchor behavior whenever new changes are required to the front anchor shape.  The behavior is stepped and drives the robot joints for smooth transitions.\
+\
+Though the FrontAnchor behavior has priority over the HoldTransition behavior, FrontAnchor almost never drives an output but instead laterally modifies the HoldTransition behavior.  Therefore, the HoldTransition behavior is the primary driver of the snake robot.\
+\
+**FrontAnchor:**\
+This behavior has complete responsibility for the entire anchoring and testing process.  It creates a 3-point anchor for static stability instead of the 2-point anchors previously described in section 2.1.  This is because this will be the only anchor to the environment in the next stage.  Complete secureness is required to avoid any slip conditions.\
+\
+A 3-point anchor is created with a cosine curve of period 2.5pi shown in [](#frontanchor1).  The FrontAnchor behavior gradually increases the amplitude of this curve.  As the amplitude increases, more and more segments are required to complete the fit.  Should the curve be longer than the available number of segments, the anchoring process is restarted with the merge joint moved back 2 joints.\
+\
+The anchoring process is halted after search algorithm 2 completes.  The behavior then performs a jerk-test to determine if the anchor points are secure.  If k'th joint is the merge joint, then the joints [k+1,k+4] are rapidly changed in the following sequence:  [(0,0,0,0), (-60,-60,-60,-60), (0,0,0,0), (60,60,60,60)].  These joints are directly controlled by the FrontAnchor behavior to create sudden motion and override the parallel HoldTransition behavior that normally performs smooth motion.\
+\
+A secure anchor will register little movement in the anchor segments while an insecure anchor will move a great deal.  This movement is tracked through kinematics and assumes that the back anchors are secure and stable.  Once the deviation in position of the anchor segments is below a certain threshold, than we determine that this is a secure anchor and return success.\
+\
+**FrontAnchorFit:** \
+This behavior is responsible for computing the curve-fitting process described at the beginning of section 2.  It determines the correct joint orientations for a given curve.  The curve is input by the FrontAnchor behavior and modified accordingly.  The FrontAnchorFit behavior performs an efficient curve-fitting process assuming the curve starts rooted at the merge joint on the behavior boundary shown in [](#frontanchor1).\
+\
+![Posture that creates a 3-point anchor.][frontanchor1]\
+\
+[frontanchor1]: {\field{\*\fldinst{HYPERLINK "scrivlnk://181"}}{\fldrslt 2_frontanchor_1.png}} width=400px\
+\
+\
+###Back-Extend\
+\
+![Back-Extend behavior assembly.][adaptive3]\
+\
+[adaptive3]: {\field{\*\fldinst{HYPERLINK "scrivlnk://182"}}{\fldrslt 2_adaptive_3.png}} width=400px\
+\
+<!--\
+%GRAPHIC\
+%Merge(\
+%BackExtend\
+%    |\
+%    V\
+%HoldTransition\
+%)\
+-->\
+\
+After the front anchor has been securely established, the next stage's role is to remove the back anchors and extend the back half of the body straight.  If the environment prevents the back half from being straight, the joints are compliant to the environment and will extend as far as they are allowed.\
+\
+The behaviors are shown in [](#adaptive3) and described as follows:\
+\
+**BackExtend:**\
+This behavior simply takes all the joints on one side of the merge joint behavior boundary and commands their values to be 0.0.  It also sets all of these joints to have low torque to ensure compliant motion.  These values are sent laterally to the HoldTransition behavior.\
+\
+**HoldTransition:** \
+This behavior is initialized to the posture from the outcome of the Front-Anchor stage.  It receives as input from the FrontExtend behavior, the new straight 0.0 joint positions.  It manages the smooth motion from the back anchored position to the back extended position.\
+\
+\
+###Back-Anchor\
+\
+![Back-Anchor behavior assembly][adaptive4]\
+\
+[adaptive4]: {\field{\*\fldinst{HYPERLINK "scrivlnk://183"}}{\fldrslt 2_adaptive_4.png}} width=400px\
+\
+<!--\
+%GRAPHIC\
+%Merge(\
+%BackAnchor -> FastLocalCurveFit, \
+%    |\
+%    V\
+%HoldTransition\
+%)\
+-->\
+\
+The purpose of this stage is form the 2-point anchors described in section 2.1 with the remaining extended segments of the back half of the snake.  The sine curves are joined together with the front anchor cosine curve to make a continuous splice merge and produce a complete anchored posture of the whole snake.\
+\
+New pairs of anchor points are created, using one period of a sine curve each, until all of the remaining back segments are used up.  At each anchor pair, we use the adaptive anchoring algorithm 2 to detect contacts.  However, we do not perform a jerk-test like in the Front-Anchor stage because we only have the front anchor as our reference point and no extra joints to perform the jerking motion.  Furthermore, it is not as critical to determine if the back anchors are secure since there are more of them, and we have confidence in the security of our front anchor.\
+\
+\
+The behaviors are shown in [](#adaptive4) and described as follows:\
+\
+**HoldTransition:** \
+This behavior fulfills the same role as all of the other instances.  It takes the initial posture at the outcome of the previous stage and maintains that posture until modified by the primary behavior, BackAnchor.   It manages the smooth transition between postures.\
+\
+**BackAnchor:** \
+This behavior performs the anchor contact algorithm 2, modifies the curve parameters, and continues to add anchor pairs until it runs out of segments.  It creates the FastLocalCurveFit behavior as a child behavior.\
+\
+**FastLocalCurveFit:** \
+This behavior parameterizes the curves representing the series of back anchor curves of varying amplitudes.  It is also responsible for efficiently computing the joint positions to fit the snake to the curves.  Furthermore, it accepts compliance in the curve-fitting process between each anchor pair.  That is, at each merge joint between two anchor pairs, compliance is to find the best anchor posture and the posture is saved for the remainder of the stage.}

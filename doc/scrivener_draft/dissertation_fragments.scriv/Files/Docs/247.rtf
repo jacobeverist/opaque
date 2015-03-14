@@ -1,0 +1,17 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fnil\fcharset0 Cochin;}
+{\colortbl;\red255\green255\blue255;}
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\f0\fs28 \cf0 \
+##Smooth Motion [sec:smooth]\
+\
+We desire the motion of our snake robot to be slow and smooth in nature.  It does us no benefit for the motion to be sudden and jerky.  Moments of high acceleration can have unintended consequences that result in our anchor points slipping.  Either collisions with the environment or transient internal dynamics can cause the anchor points to slip.\
+\
+Our method of ensuring smooth motion is to take the initial and target posture of the joints of the snake, perform linear interpolation between the two poses, and incrementally change the joint angles along this linear path.  For instance, if the initial joint angles are \\\\(\{s_0 ... s_n\}\\\\) and the target joint angles are \\\\(\{t_0 ... t_n\}\\\\), the interpolated path for each joint \\\\(j\\\\) is found by \\\\(g_\{jr\} = s_j + (t_j \'96 s_j) * (r/100)\\\\) for \\\\(r \\to \{0, 100\}\\\\), for 100 interpolated points on the linear path.  The resultant motion is a smooth transition from initial to target posture as seen in [](#smooth1).\
+\
+![Smooth motion from interpolation of posture.][smooth1]\
+\
+[smooth1]: {\field{\*\fldinst{HYPERLINK "scrivlnk://173"}}{\fldrslt 2_smooth_1.png}} width=400px\
+\
+This is the definition of the HoldTransition behavior.  When it is instantiated, it is given an initial pose vector \\\\(S\\\\) and target pose \\\\(T\\\\), where some values of \\\\(t_i\\\\) in \\\\(T\\\\) and \\\\(s_i\\\\) in \\\\(S\\\\) may have NULL for no command.   At each step of the behavior, using the equation \\\\(g_\{jr\} = s_j + (t_j \'96 s_j) * (r/100)\\\\), \\\\(r\\\\) is incremented to compute the new joint command.  If \\\\(t_j\\\\) is NULL, then \\\\(g_\{jr\} = s_j\\\\).  Once \\\\(r = 100\\\\), it returns True on step() and on all subsequent steps, \\\\(g_j = t_j\\\\).}

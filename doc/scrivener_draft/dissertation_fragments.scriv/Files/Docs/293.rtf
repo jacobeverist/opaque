@@ -1,0 +1,39 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fnil\fcharset0 Cochin;}
+{\colortbl;\red255\green255\blue255;}
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\f0\fs28 \cf0 ### Constraints\
+\
+Now that we have fully defined our overlap function, there are two types of constraints we can make with this function:   the *in-place constraint* and the *step constraint*.  \
+\
+The in-place constraint, shown in [](#inplace_constraint), performs an overlap with two collocated poses that separate the forward and backward sweeping behavior.  Given pose \\\\(X_k\\\\), find pose \\\\(X_\{k+1\}\\\\):\
+\
+<!--\
+\\begin\{equation\}\
+X_\{k+1\} = \\mathrm\{overlap\}(X_k, I_k, I_\{k+1\}, \\varnothing)\
+\\end\{equation\}\
+-->\
+\
+![In-place Constraint][inplace_constraint]\
+\
+[inplace_constraint]: {\field{\*\fldinst{HYPERLINK "scrivlnk://294"}}{\fldrslt inplace_constraint}} width=300px\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+\cf0 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+\cf0 The step-constraint, shown in [](#step_constraint), is performed on two poses where a locomotion step is between them.  In particular, we only perform the overlap function between two poses that sweep in the same direction.  In our case, we only perform the step constraint between two forward sweeping poses.  Given the pose \\\\(X_k\\\\) and a forward locomotion step, we find the pose \\\\(X_\{k+2\}\\\\) with the following function call:\
+\
+<!--\
+\\begin\{equation\}\
+X_\{k+2\} = \\mathrm\{overlap\}(X_k, I_k, I_\{k+2\}, f)\
+\\end\{equation\}\
+-->\
+\
+![Step Constraint][step_constraint]\
+\
+[step_constraint]: {\field{\*\fldinst{HYPERLINK "scrivlnk://295"}}{\fldrslt step_constraint}} width=300px\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+\cf0 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+\cf0 These two function calls give us the tools to find all poses using only the most recent pose. \
+}

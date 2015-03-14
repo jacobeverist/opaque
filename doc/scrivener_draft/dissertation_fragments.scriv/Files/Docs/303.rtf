@@ -1,0 +1,62 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fnil\fcharset0 Cochin;}
+{\colortbl;\red255\green255\blue255;}
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\f0\fs28 \cf0 \
+\
+\
+\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+\cf0 These definitions are only verbally described but they can be evaluated with a set of curve comparison metrics.\
+\
+\
+* overlap\
+* contiguity fraction\
+* overlapSum\
+* divergence distance\
+\
+\
+\
+\pard\pardeftab720\li540\fi-540
+\cf0 Branching:\
+Look for cases where spatial curve branches off the existing skeleton\
+Create a new skeleton\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+\cf0 \
+\pard\pardeftab720\qc
+\cf0 Define Curve Events\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+\cf0 \
+\pard\pardeftab720\qc
+\cf0 Localization on Skeletons\uc0\u8232 (Junction Method)\
+\pard\pardeftab720\li540\fi-540
+\cf0 No longer curve-to-curve ICP\
+ICP to multiple skeletons\
+Multiple configurations\
+Create 
+\i splices
+\i0  on sets of overlapping skeletons\
+Defined by a path between any two skeleton terminals\
+\pard\pardeftab720\qc
+\cf0 \
+Fit a New Pose onto Past Skeletons\uc0\u8232 (Junction Method)\
+\pard\pardeftab720\li810\fi-810
+\cf0 \
+	\
+Collect set of skeleton terminals\
+Disregard terminals that are similar or subsumed by another skeleton\
+Collect (n choose 2) paths between each pair of n terminals\
+Perform ICP on each spliced path\
+Evaluate and select \'93best fit\'94 according to some criteria\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+\cf0 \
+\
+\
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+\cf0 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+\cf0 One of the fundamental challenges of exploring environments with no ability to sense at a distance, there is no quick way to distinguish a wall from the limit of arm extension.  That is, when the robot's body sweeps and reaches the limit of its motion, by either collision, slip, or complete extension, there is no way to immediately distinguish that the boundary of its swept space is an obstacle or just more free space. [complete extension is well-defined, therefore, it can be tagged when complete extension is made.  Planned motion vs. actual motion. ]\
+}

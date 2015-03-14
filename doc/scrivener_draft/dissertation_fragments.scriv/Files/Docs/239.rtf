@@ -1,0 +1,46 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fnil\fcharset0 Cochin;}
+{\colortbl;\red255\green255\blue255;}
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\f0\fs28 \cf0 \
+\
+Our proprioceptive approach achieves motion estimation by anchoring multiple points of the body with the environment and kinematically tracking the change in distance between the immobilized parts as the snake contracts and extends.  This gives us a motion estimation method that only depends on the joint sensors.  We show the effectiveness in a series of experiments.\
+ \
+\
+##Immobilizing the Anchors [sec:anchors]\
+\
+\
+<!--\
+%-Immobilize anchors to create global references\
+%-Conditions when immobility or anchor slip occurs\
+%-How to know when immobilized (heuristics)\
+-->\
+\
+A fundamental property of the adaptive concertina gait is that it creates anchors to the surrounding environment.  Our goal is to exploit this property to estimate our motion through the environment.  In order to do this, we need to ensure that our anchors remain an accurate frame of reference to the global environment.\
+\
+The primary goal of our previous work on maintaining smooth and stable motion of the snake in Chapter 2 was to prevent any sort of anchor slip that may harm our reference frame to the global environment.  It is critical that our anchors remain firmly immobilized with respect to the environment to ensure accurate measurement of motion.\
+\
+Though we are not able to localize the exact contact point of the anchor with the environment, we can assume that the segments comprising the anchoring curve are themselves immobilized and mechanically isolated by virtue of their static contacts with the environment.  We use these isolated bodies as immobilized references to the global environment.\
+\
+Whether or not we consider the use of a body segment as a reference is determined by our work in Section 2.8.  That is, if the joints in the local neighborhood of a segment are locally stable and the behavior's control bit for the attached joint is 0, we assume this segment is immobilized.  We can use immobilized segments as reference points to the global frame.\
+\
+We call the monitoring of local joint variances as local stability and the output of the control masks as prescriptive stability.  Though a body segment may be locally stable, it does not mean it is immobile.  If we also include prescriptive stability, the behavior's prediction of what joints should be moving and what should not, then we greatly decrease the chances that we will use a slipping anchor as a reference.\
+\
+If any point the anchor should slip while, our assumption that a body segment is immobilized is violated and could lead to accumulated errors in our motion technique.  Therefore, it is critical that we analyze and mitigate all the possible failure modes for anchoring.\
+\
+We are generally able to classify the types of anchoring and reference errors we encounter during both static and locomotive anchoring.  For each, we are forced to either avoid the condition from occurring or detect and correct it. We list the failure modes and explain our mitigation strategy for each.\
+\
+The  *floating reference* occurs when a locally stable segment is made a reference, but it is not part of an anchor. This was particularly troublesome in our early implementations, but we are able to largely avoid this failure mode by having the behaviors explicitly classifying which joints are part of an anchor. The other possibility for a floating anchor would be if an anchoring behavior erroneously reports success in establishing an anchor in free space. This was largely avoided by adding the more careful anchoring process in Section 2.2 that detects impacts to the walls and follows up by doing a jerk test to test whether the anchor is secure.\
+\
+A  *weak contact* occurs when the anchor the reference segment is on has an insecure anchor. This usually happens if an anchor is placed within a pipe junction or if one of the anchors of the Back-Anchor is insecure.  The Back-Anchor case is more likely since they are not jerk-tested.  Weak contacts usually do not display local instability since the physical contact stabilizes the local joints but does not immobilize them.  If it is available, we can use negative prescriptive stability from the behavior to minimize this failure but often occurs in prescriptively stable areas.  There is nothing we can do to prevent this error from being added to the pose estimation besides detecting it.  Luckily, a weak contact does not move much.  Its error is bounded.\
+\
+ *Buckling* occurs when the anchored joints are frozen in a non-optimal position and external stresses put excessive torque on one or more joints that forces the anchor into a reconfigured position. This is similar to mechanical buckling of structural members under compression.  In this case, it is for an articulated system attempting to hold a rigid pose. Buckling is easily detectable by tripping our local stability conditions and will quickly remove the references and reuse them once the joints have settled down. We have also reduced this occurrence by having our anchoring behaviors search for non-deforming anchors as a natural by-product of algorithm 2.\
+\
+ *Impulses* occur when the snake robot experiences a sudden collision or a buckling has occurred somewhere else in the robot. Usually this is not a fatal error and the robot will quickly return to its stable pose. However it can trip up the variance calculations and deactivate all the references we have leaving us with none. Recovery is achieved by resurrecting the last best reference, and assuming it is in the same pose.  We show how to do this in the next section.\
+\
+ *Funnel anchoring* occurs when a secure anchor is established between a pair of walls that are monotonically increasing in width. If the anchor receives a force that pushes it towards the direction of increasing width, its anchor can become permanently loose. This is especially problematic in cases of irregular environments where there are many possibilities for this to occur in local conditions. We currently do not have a solution for this yet.\
+\
+Finally there is a class of  *whole body slip* that is completely undetectable with only joint positions. That is, the whole body could be slipping through an environment such as a straight and featureless pipe without causing any joint variance at all. This would only occur if the ground was exceptionally slippery and able to use the robot's momentum to move it large distances or if the robot was on a slope and gravity was exerting a global force. We avoid this error by limiting the environments we explore. Other environments may require extra sensor instrumentation such as accelerometers to detect this failure mode.\
+\
+Rotational error is the dominant form of error we encounter because, unlike a traditional robot with a stable frame of reference on its chassis, every reference point in the snake robot's body is constantly in rotational motion. Any form of disturbance of a reference node will manifest itself with a rotational error that will propagate through kinematic computations of new reference nodes. Translational error occurs primarily by anchor slip.  Rotational error is easier to correct in our later localization process in Chapter 5.}

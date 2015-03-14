@@ -1,0 +1,1 @@
+challenges of backtracking, how naive method only uses last pose and is insufficient for backtracking.  Need to use whole history to follow past map

@@ -3,13 +3,32 @@
 {\colortbl;\red255\green255\blue255;}
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
 
-\f0\fs28 \cf0 ##Adding Poses to Shoots\
+\f0\fs28 \cf0 ### Adding New Poses to Skeleton Map\
 \
-If first poses, add to root shoot.\
+Now that we have described how to generate a skeleton given a set of data, we need to explain how we go about adding new poses to a map.  In the base case, the first two poses are added to the initial skeleton.  The initial skeleton then becomes the root skeleton and ancestor to all future skeletons.  A skeleton map can have one or more skeletons.  We explain how to add a pose to a single skeleton map and then explain how to add a pose to a multi-skeleton map.\
 \
-Check for branching conditions\
+Given one existing skeleton, to add a new pose, we select all splices for that particular skeleton.  For each splice, we attempt to fit to that curve using the existing ICP techniques from the *overlapAxis* function.  For each splice, we have a fitted result.  We evaluate the best fit according to some evaluation criteria.  We select the fitted pose for the best splice as the robot's new position and orientation after a locomotion step.  This is the motion estimation phase similar to [](#sec:overlapAxis).\
 \
-Best Overlap, get ordered overlapping path ids\
+After the motion has been estimated for the new poses, then we perform the divergence test described in [](#junction:problem).  After the test, the new pose's spatial curve is either contained, extending, or diverging from the selected splice of the current skeleton.  If it is either contained or extending, we add it to the existing skeleton.  If it is diverging, we create a new skeleton with this pose as its only member and set the current skeleton as its parent.\
 \
-Select child shoot IDs, add pose to the shoot.\
+That is the single skeleton case.  Now if the skeleton map has more than one skeleton, instead of the splices from a single skeleton, we find the splices of all the skeletons merged together.  That is, for the \\\\(m\\\\) trees, \\\\(\\hat\{T\}_\{1:m\}\\\\), merge them together by adding edges between nodes in the global frame that are less than a distance threshold.  In our case, the threshold distance is \\\\(0.2\\\\).\
+\
+Then we find the global terminals.  Though we can take the terminals of each of the individual skeletons, often times they are contained within another skeleton or they are similar to an existing terminal.  We only collect terminals that are not contained within another skeleton.  If a terminal is similar to another terminal, we only take one.  This results in a sparse set of unique terminals of the entire map.  \
+\
+Given these global terminals, we then find the terminal-to-terminal path of the merged graph of skeletons.  These paths become our new global splices.  For \\\\(n\\\\) terminals, there are \\\\( \\binom\{n\}\{2\} \\\\) possible splices.   We then perform the same set of motion estimation ICP fitting and best splice selection as the single skeleton case.  The final result is the best location and orientation for the robot given the map.\
+\
+Now that the best estimated location is chosen for this pose, it needs to be added to the map.  This means we need to determine which skeleton the pose should be added to, and whether or not a new skeleton needs to be created if it is diverging because of a new junction.\
+\
+The first thing we do is performance the divergence test.  Unlike in [](#junction:problem) where divergence is determined with respect to a curve, here we wish to determine if the pose's spatial curve diverges from a set of skeletons.   We accomplish this by defining a new function call \\\\(getPointSoupDivergence\\\\).  It is similar to the earlier divergence function, but instead we convert all of the global skeletons into a set of points and compute the closest skeleton point to all of the locations on the spatial curve. \
+\pard\pardeftab720\fi720\sl288\slmult1
+\cf0 	\
+The algorithm begins by finding the closest point distance of each point on the candidate diverging curve to the set of skeleton points.  We examine the closest point distances of both tips of the candidate curve.  If the closest point distance of the tip to its companion is above a threshold, \\\\(DIV\\_DIST\\\\), then we classify this curve as diverging from its host.  For our work, \\\\(DIV\\_DIST = 0.3\\\\).\
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+\cf0 If the curve is *not* diverging, then it is either extending or contained.   To determine which, we compare the identity of the matched points of both of tips of the candidate curve.  If either matched point is a skeleton terminal, then it is extending.  Otherwise, it is contained.  If the curve is diverging, then we need to create a new empty skeleton and this pose as its first member.\
+\
+In the event of no divergence, we have to determine which skeleton this pose should be added to.  First, we need to determine which skeletons the spatial curve is overlapping.  The spatial curve could be overlapping a single skeleton or a combination of overlapping skeletons.  We perform an overlap test for each individual skeleton to determine if any of its points are within range of the spatial curve.  If they are, then we consider this skeleton as a candidate for the new pose. \
+\
+Given the set of all overlapping skeletons, we select the most junior skeletons such that, none of the selected skeletons are ancestors of each other.  This means that we select single children or we select two siblings to add the pose to.  The reason for this will be discussed later in [](#chap:search).\
+\
 }

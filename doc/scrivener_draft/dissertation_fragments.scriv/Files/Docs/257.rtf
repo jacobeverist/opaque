@@ -1,0 +1,46 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fnil\fcharset0 Cochin;}
+{\colortbl;\red255\green255\blue255;}
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\f0\fs28 \cf0 \
+\
+### Results from Naive Method\
+\
+Some examples of the results from naive mapping method are shown in [](#naive_results).\
+\
+![Naive Method Results][naive_results]\
+\
+[naive_results]: {\field{\*\fldinst{HYPERLINK "scrivlnk://296"}}{\fldrslt naive_results}} width=300px\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+\cf0 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+\cf0 The pseudocode describing the naive method mapping approach is shown in algorithm [](#alg:naive_method).\
+<!--\
+\\begin\{algorithm\}\
+\\caption\{Naive Method\}       \
+\\label\{alg:naive_method\}\
+\\begin\{algorithmic\}\
+\
+\\State $X_0 \\Leftarrow (0,0,0)$\
+\\State $k \\Leftarrow 0$\
+\
+\\State Sweep forward and capture $I_k$\
+\\State Sweep backward and capture $I_\{k+1\}$\
+\\State $X_\{k+1\} = \\mathrm\{overlap\}(X_\{k\}, I_\{k\}, I_\{k+1\}, \\varnothing)$\
+\
+\
+\\While \{True\}\
+\\State $k \\Leftarrow k + 2$\
+\\State Locomotion step forward\
+\\State Sweep forward and capture $I_k$\
+\\State Sweep backward and capture $I_\{k+1\}$\
+\\State $X_k = \\mathrm\{overlap\}(X_\{k-2\}, I_\{k-2\}, I_\{k\}, f)$\
+\\State $X_\{k+1\} = \\mathrm\{overlap\}(X_\{k\}, I_\{k\}, I_\{k+1\}, \\varnothing)$\
+\
+\\EndWhile\
+\
+\\end\{algorithmic\}\
+\\end\{algorithm\}\
+-->\
+}

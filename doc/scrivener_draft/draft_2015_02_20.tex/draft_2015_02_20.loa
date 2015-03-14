@@ -1,0 +1,5 @@
+\contentsline {algorithm}{\numberline {1}{\ignorespaces PID Controller}}{16}{algorithm.1}
+\contentsline {algorithm}{\numberline {2}{\ignorespaces Point-in-Polygon Test}}{27}{algorithm.2}
+\contentsline {algorithm}{\numberline {3}{\ignorespaces Reference Pose Creation and Deactivation}}{62}{algorithm.3}
+\contentsline {algorithm}{\numberline {4}{\ignorespaces \emph {computeRefPose(i)}: Kinematics for Computing Reference Pose}}{62}{algorithm.4}
+\contentsline {algorithm}{\numberline {5}{\ignorespaces Anchor Fitting}}{79}{algorithm.5}

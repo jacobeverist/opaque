@@ -5,7 +5,7 @@
 
 \f0\fs28 \cf0 ##Space of Possibilities\
 \
-Given our shoot map representation in the previous chapter, our mapping decisions were based on a maximum likelihood evaluation of the pose's fitness.  The best possible fit at the given moment is made and the decision remains committed.  There is no opportunity to resolve ambiguity or correct decisions made in error.  For some applications, this is sufficient.  However, incorrect decisions can lead to irrevocable consequences in the map.  Such things can include multiple repeated instances of a junction, misidentification of a junction, distortion of the shoots, and self-intersecting shoots.\
+Given our skeleton map representation in the previous chapter, our mapping decisions were based on a maximum likelihood evaluation of the pose's fitness.  The best possible fit at the given moment is made and the decision remains committed.  There is no opportunity to resolve ambiguity or correct decisions made in error.  For some applications, this is sufficient.  However, incorrect decisions can lead to irrevocable consequences in the map.  Such things can include multiple repeated instances of a junction, misidentification of a junction, distortion of the skeletons, and self-intersecting skeletons.\
 \
 Some examples of maps where the decisions of whether or not to branch or fit into an existing junction, and the accumulation of pose error over time, are shown in Figure X.  (Y junction, 3-pass new branches) (T-junction backtracking fail)\
 \
@@ -31,11 +31,11 @@ Starting from Chapter 6, we represented the map in terms of poses of each postur
 \
 <!--\
 \\begin\{equation\}\
-X_\{1:t\} = \\( x_t, y_t, \\theta_t \\)\
+X_\{1:t\} = ( x_t, y_t, \\theta_t )\
 \\end\{equation\}\
 -->\
 \
-With the introduction of the shoot map representation in Chapter 7, we have add the shoot structure composed of pose node membership set and a branch point pose.\
+With the introduction of the skeleton map representation in Chapter 7, we have add the skeleton structure composed of pose node membership set and a branch point pose.\
 \
 <!--\
 \\begin\{equation\}\
@@ -44,7 +44,7 @@ S_\{1:N\} = \\\{b_i, c_i  \\mathrm\{for\} 0 \\leq i \\leq N \\\}\
 \
 \\begin\{equation\}\
 c_i = 
-\fs26 \cb2 \\\{\\exists k \\mathrm\{s.t.\} 0 \\leq k, k \\leq t\\\}, |c_i\} \\geq 1, \\mathrm\{for\} i = 1 \\mathrm\{to\} N
+\fs26 \cb2 \\\{\\exists k \\mathrm\{s.t.\} 0 \\leq k, k \\leq t\\\}, |c_i\\\} \\geq 1, \\mathrm\{for\} i = 1 \\mathrm\{to\} N
 \fs28 \cb1 \
 \\end\{equation\}\
  \

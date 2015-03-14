@@ -471,10 +471,10 @@ p.shot {text-align:left; text-indent:0; margin: 12pt 0pt 0pt 0pt; text-transform
 	<string>
 \bibliographystyle{alpha}   
 %\bibliography{references}
-\bibliography{/Users/jse26711/Dropbox/dissertation}{}
+\bibliography{../dissertation}
 
 
-\appendix    	% appendix is standard from latex report class.
+%\appendix    	% appendix is standard from latex report class.
 </string>
 	<key>SCRCompileMultiMarkdownLaTeXHeaderStringKey</key>
 	<string>\documentclass{USC-Thesis}
@@ -488,7 +488,7 @@ p.shot {text-align:left; text-indent:0; margin: 12pt 0pt 0pt 0pt; text-transform
 \usepackage{algpseudocode}
 
 \usepackage{hyperref}
-
+\DeclareMathOperator*{\argmin}{arg\,min}
 
 \let\oldlistofalgorithms = \listofalgorithms
 \renewcommand{\listofalgorithms}{  
@@ -498,6 +498,24 @@ p.shot {text-align:left; text-indent:0; margin: 12pt 0pt 0pt 0pt; text-transform
     \begin{singlespace} 
     \oldlistofalgorithms
     \end{singlespace}}
+
+%\let\oldbibliography = \bibliography
+%\renewcommand{\bibliography}{  
+%\newpage
+%    \addcontentsline{toc}{chapter}{Bibliography}
+%    \pagestyle{plain}
+%    \begin{singlespace} 
+%    \oldbibliography
+%    \end{singlespace}}
+
+%\let\oldappendix = \appendix
+%\renewcommand{\appendix}{  
+%\newpage
+%    \addcontentsline{toc}{chapter}{Appendix}
+%    \pagestyle{plain}
+%    \begin{singlespace} 
+%    \oldappendix
+%    \end{singlespace}}
 
 \begin{document}
 </string>

@@ -1,0 +1,1 @@
+axis method insufficient for maps with junctions.  Structures are undefined. How to ICP a tree instead of a curve? Need generalized solution for arbitrary amounts of "branches"

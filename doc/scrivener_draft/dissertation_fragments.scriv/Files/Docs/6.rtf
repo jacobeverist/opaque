@@ -1,12 +1,13 @@
-{\rtf1\ansi\ansicpg1252\uc1\deff0
-{\fonttbl{\f0\fnil\fcharset0\fprq2 Courier New;}}
-{\colortbl;\red0\green0\blue0;}
-\paperw12240\paperh15840\margl1800\margr1800\margt1440\margb1440\fet2\ftnbj\aenddoc
-\pgnrestart\pgnstarts0
-\pard\plain \fi720\ltrch\loch {\f0\fs24\b0\i0 The purpose of the overlap sum computation is to determine how well a proposed path splice curve overlaps another target curve such as a local spline or another path splice curve.}
-\par\plain \f0\fs24\b0\i0
-\par\plain {\f0\fs24\b0\i0 The computation is achieved by taking the target curve, which is usually the local spline, and for each point along the local spline, find its closest matched point on the secondary curve, usually the path.  The sum of all the cartesian distances is added up and the result is the overlap sum divided by the number of points to give a normalized result.}
-\par\plain \f0\fs24\b0\i0
-\par\plain {\f0\fs24\b0\i0 If extraordinarily short curve overlaps well, it will have a comparable value to a very long curve overlapping well.  It also introduces ambiguity for certain situations.  If a curve overlaps at a medium constant displacement offset, its will value have the same result as a curve that half overlaps well and half overlaps poorly.}
-\par\plain \f0\fs24\b0\i0
-\par\plain \f0\fs24\b0\i0}
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fnil\fcharset0 Cochin;}
+{\colortbl;\red255\green255\blue255;}
+\deftab720
+\pard\pardeftab720\fi720
+
+\f0\fs28 \cf0 The purpose of the overlap sum computation is to determine how well a proposed path splice curve overlaps another target curve such as a local spline or another path splice curve.\
+\
+The computation is achieved by taking the target curve, which is usually the local spline, and for each point along the local spline, find its closest matched point on the secondary curve, usually the path.  The sum of all the cartesian distances is added up and the result is the overlap sum divided by the number of points to give a normalized result.\
+\
+If extraordinarily short curve overlaps well, it will have a comparable value to a very long curve overlapping well.  It also introduces ambiguity for certain situations.  If a curve overlaps at a medium constant displacement offset, its will value have the same result as a curve that half overlaps well and half overlaps poorly.\
+\
+}

@@ -1,0 +1,119 @@
+\BOOKMARK [0][-]{chapter*.1}{Dedication}{}% 1
+\BOOKMARK [0][-]{chapter*.2}{List of Figures}{}% 2
+\BOOKMARK [0][-]{chapter*.3}{List of Tables}{}% 3
+\BOOKMARK [0][-]{chapter*.4}{List of Algorithms}{}% 4
+\BOOKMARK [0][-]{chapter*.6}{Preface}{}% 5
+\BOOKMARK [0][-]{chapter*.7}{Abstract}{}% 6
+\BOOKMARK [0][-]{chapter.1}{Introduction}{}% 7
+\BOOKMARK [1][-]{section.1.1}{Challenges}{chapter.1}% 8
+\BOOKMARK [2][-]{subsection.1.1.1}{Limitations of Exteroceptive Sensors}{section.1.1}% 9
+\BOOKMARK [2][-]{subsection.1.1.2}{Tracking Position}{section.1.1}% 10
+\BOOKMARK [2][-]{subsection.1.1.3}{Proprioceptive Sensors}{section.1.1}% 11
+\BOOKMARK [2][-]{subsection.1.1.4}{Void Space and Features}{section.1.1}% 12
+\BOOKMARK [2][-]{subsection.1.1.5}{Map Representation}{section.1.1}% 13
+\BOOKMARK [2][-]{subsection.1.1.6}{Data Association}{section.1.1}% 14
+\BOOKMARK [1][-]{section.1.2}{Related Work}{chapter.1}% 15
+\BOOKMARK [1][-]{section.1.3}{Approach}{chapter.1}% 16
+\BOOKMARK [1][-]{section.1.4}{Experimental System}{chapter.1}% 17
+\BOOKMARK [0][-]{chapter.2}{Sensing Space}{}% 18
+\BOOKMARK [1][-]{section.2.1}{Problem}{chapter.2}% 19
+\BOOKMARK [1][-]{section.2.2}{How to Sense}{chapter.2}% 20
+\BOOKMARK [1][-]{section.2.3}{Posture Image}{chapter.2}% 21
+\BOOKMARK [2][-]{subsection.2.3.1}{Data Capture}{section.2.3}% 22
+\BOOKMARK [1][-]{section.2.4}{Data Processing}{chapter.2}% 23
+\BOOKMARK [2][-]{subsection.2.4.1}{Convex Hull}{section.2.4}% 24
+\BOOKMARK [2][-]{subsection.2.4.2}{Alpha Shape}{section.2.4}% 25
+\BOOKMARK [2][-]{subsection.2.4.3}{Medial Axis}{section.2.4}% 26
+\BOOKMARK [1][-]{section.2.5}{Managing Slip}{chapter.2}% 27
+\BOOKMARK [2][-]{subsection.2.5.1}{Slip Prevention}{section.2.5}% 28
+\BOOKMARK [2][-]{subsection.2.5.2}{Slip Mitigation}{section.2.5}% 29
+\BOOKMARK [0][-]{chapter.3}{Environmental Landmarks}{}% 30
+\BOOKMARK [1][-]{section.3.1}{Finding Landmarks}{chapter.3}% 31
+\BOOKMARK [1][-]{section.3.2}{Corner Examples and Results}{chapter.3}% 32
+\BOOKMARK [1][-]{section.3.3}{Wall Detection}{chapter.3}% 33
+\BOOKMARK [1][-]{section.3.4}{Different Macro Features}{chapter.3}% 34
+\BOOKMARK [1][-]{section.3.5}{Macro Feature Extraction}{chapter.3}% 35
+\BOOKMARK [1][-]{section.3.6}{Pipe Shape, Macro Features}{chapter.3}% 36
+\BOOKMARK [0][-]{chapter.4}{Defining Position}{}% 37
+\BOOKMARK [1][-]{section.4.1}{Problem}{chapter.4}% 38
+\BOOKMARK [1][-]{section.4.2}{Immobilizing the Anchors}{chapter.4}% 39
+\BOOKMARK [1][-]{section.4.3}{Tracking Motion}{chapter.4}% 40
+\BOOKMARK [2][-]{subsection.4.3.1}{Pose and Coordinate Frames}{section.4.3}% 41
+\BOOKMARK [2][-]{subsection.4.3.2}{Reference Poses}{section.4.3}% 42
+\BOOKMARK [1][-]{section.4.4}{Robot-Centered Coordinate Frame}{chapter.4}% 43
+\BOOKMARK [2][-]{subsection.4.4.1}{Gross Posture Approximation Curve \(GPAC\)}{section.4.4}% 44
+\BOOKMARK [2][-]{subsection.4.4.2}{Generation of GPAC Local Frame}{section.4.4}% 45
+\BOOKMARK [2][-]{subsection.4.4.3}{Geometric Transform between Poses}{section.4.4}% 46
+\BOOKMARK [0][-]{chapter.5}{Control and Locomotion}{}% 47
+\BOOKMARK [1][-]{section.5.1}{Control Methodology}{chapter.5}% 48
+\BOOKMARK [1][-]{section.5.2}{Behaviors}{chapter.5}% 49
+\BOOKMARK [1][-]{section.5.3}{Problem}{chapter.5}% 50
+\BOOKMARK [1][-]{section.5.4}{Anchoring}{chapter.5}% 51
+\BOOKMARK [1][-]{section.5.5}{Curves}{chapter.5}% 52
+\BOOKMARK [1][-]{section.5.6}{Behavior Architecture}{chapter.5}% 53
+\BOOKMARK [1][-]{section.5.7}{Smooth Motion}{chapter.5}% 54
+\BOOKMARK [1][-]{section.5.8}{Behavior Merging}{chapter.5}% 55
+\BOOKMARK [1][-]{section.5.9}{Compliant Motion}{chapter.5}% 56
+\BOOKMARK [1][-]{section.5.10}{Stability Assurance}{chapter.5}% 57
+\BOOKMARK [1][-]{section.5.11}{Adaptive Step}{chapter.5}% 58
+\BOOKMARK [2][-]{subsection.5.11.1}{Front-Extend}{section.5.11}% 59
+\BOOKMARK [2][-]{subsection.5.11.2}{Front-Anchor}{section.5.11}% 60
+\BOOKMARK [2][-]{subsection.5.11.3}{Back-Extend}{section.5.11}% 61
+\BOOKMARK [2][-]{subsection.5.11.4}{Back-Anchor}{section.5.11}% 62
+\BOOKMARK [1][-]{section.5.12}{Analysis}{chapter.5}% 63
+\BOOKMARK [2][-]{subsection.5.12.1}{Case: Snake as a Curve}{section.5.12}% 64
+\BOOKMARK [2][-]{subsection.5.12.2}{Case: Snake with Width}{section.5.12}% 65
+\BOOKMARK [2][-]{subsection.5.12.3}{Case: Snake with Segments}{section.5.12}% 66
+\BOOKMARK [1][-]{section.5.13}{Sensing Behavior}{chapter.5}% 67
+\BOOKMARK [0][-]{chapter.6}{Building Maps}{}% 68
+\BOOKMARK [1][-]{section.6.1}{Problem}{chapter.6}% 69
+\BOOKMARK [1][-]{section.6.2}{Mapping Problem Definition}{chapter.6}% 70
+\BOOKMARK [1][-]{section.6.3}{Naive Method}{chapter.6}% 71
+\BOOKMARK [2][-]{subsection.6.3.1}{In-Place Constraint}{section.6.3}% 72
+\BOOKMARK [2][-]{subsection.6.3.2}{Step Constraint}{section.6.3}% 73
+\BOOKMARK [1][-]{section.6.4}{Generalized ICP}{chapter.6}% 74
+\BOOKMARK [1][-]{section.6.5}{Results from Naive Method}{chapter.6}% 75
+\BOOKMARK [2][-]{subsection.6.5.1}{Compare motion vs. step constraint}{section.6.5}% 76
+\BOOKMARK [1][-]{section.6.6}{Backtracking Along a Single Path}{chapter.6}% 77
+\BOOKMARK [2][-]{subsection.6.6.1}{Bounding Pc to the Path}{section.6.6}% 78
+\BOOKMARK [2][-]{subsection.6.6.2}{Results \043}{section.6.6}% 79
+\BOOKMARK [2][-]{subsection.6.6.3}{Inapplicability of GraphSLAM}{section.6.6}% 80
+\BOOKMARK [1][-]{section.6.7}{Axis Method}{chapter.6}% 81
+\BOOKMARK [2][-]{subsection.6.7.1}{Constrain New Pose to Axis}{section.6.7}% 82
+\BOOKMARK [1][-]{section.6.8}{Results from Axis Method}{chapter.6}% 83
+\BOOKMARK [0][-]{chapter.7}{Mapping with Junctions}{}% 84
+\BOOKMARK [1][-]{section.7.1}{Junction Method}{chapter.7}% 85
+\BOOKMARK [1][-]{section.7.2}{Skeleton Maps}{chapter.7}% 86
+\BOOKMARK [1][-]{section.7.3}{Generating Skeletons}{chapter.7}% 87
+\BOOKMARK [1][-]{section.7.4}{Adding Poses to Skeletons}{chapter.7}% 88
+\BOOKMARK [1][-]{section.7.5}{Detecting Branch}{chapter.7}% 89
+\BOOKMARK [1][-]{section.7.6}{Localizing On Skeleton Map}{chapter.7}% 90
+\BOOKMARK [2][-]{subsection.7.6.1}{Finding the Best Fitted Location}{section.7.6}% 91
+\BOOKMARK [2][-]{subsection.7.6.2}{Choosing Skeleton Splices}{section.7.6}% 92
+\BOOKMARK [2][-]{subsection.7.6.3}{Selecting Initial Poses for ICP}{section.7.6}% 93
+\BOOKMARK [2][-]{subsection.7.6.4}{ICP Algorithm}{section.7.6}% 94
+\BOOKMARK [2][-]{subsection.7.6.5}{Collate, Sort, Filter}{section.7.6}% 95
+\BOOKMARK [1][-]{section.7.7}{Curve Segment Algorithms}{chapter.7}% 96
+\BOOKMARK [1][-]{section.7.8}{Junction Method}{chapter.7}% 97
+\BOOKMARK [2][-]{subsection.7.8.1}{Map Algorithm}{section.7.8}% 98
+\BOOKMARK [0][-]{chapter.8}{Searching for Best Map}{}% 99
+\BOOKMARK [1][-]{section.8.1}{Search Method}{chapter.8}% 100
+\BOOKMARK [1][-]{section.8.2}{Discretize Map Parameters}{chapter.8}% 101
+\BOOKMARK [1][-]{section.8.3}{Parameterization}{chapter.8}% 102
+\BOOKMARK [1][-]{section.8.4}{Spatial Transform of Skeletons}{chapter.8}% 103
+\BOOKMARK [1][-]{section.8.5}{Search Method Steps}{chapter.8}% 104
+\BOOKMARK [1][-]{section.8.6}{Motion Estimation}{chapter.8}% 105
+\BOOKMARK [1][-]{section.8.7}{Add to Map}{chapter.8}% 106
+\BOOKMARK [1][-]{section.8.8}{Skeletons Overlapping State}{chapter.8}% 107
+\BOOKMARK [1][-]{section.8.9}{Localization}{chapter.8}% 108
+\BOOKMARK [1][-]{section.8.10}{Merge Skeletons}{chapter.8}% 109
+\BOOKMARK [1][-]{section.8.11}{Space of Possibilities}{chapter.8}% 110
+\BOOKMARK [1][-]{section.8.12}{Pose Particle Filter}{chapter.8}% 111
+\BOOKMARK [2][-]{subsection.8.12.1}{Particle Filter Implementation}{section.8.12}% 112
+\BOOKMARK [1][-]{section.8.13}{Pose + Branch Location Particles}{chapter.8}% 113
+\BOOKMARK [1][-]{section.8.14}{Branch Decision}{chapter.8}% 114
+\BOOKMARK [0][-]{chapter.9}{Experiments}{}% 115
+\BOOKMARK [1][-]{section.9.1}{Experimental Setup}{chapter.9}% 116
+\BOOKMARK [1][-]{section.9.2}{Results}{chapter.9}% 117
+\BOOKMARK [1][-]{section.9.3}{Conclusion}{chapter.9}% 118
+\BOOKMARK [0][-]{chapter*.15}{Bibliography}{}% 119

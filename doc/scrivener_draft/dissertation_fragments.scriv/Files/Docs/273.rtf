@@ -1,0 +1,24 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fnil\fcharset0 Cochin;}
+{\colortbl;\red255\green255\blue255;}
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\f0\fs28 \cf0 \
+Take for instance the 3-point T junction shown in Figure [X].  There are three possible occupancy states for the robot to fit into the junction.   As we can see, states 0 and 1 together give us a complete representation of the junction.  However, it is not clear from just the estimated poses and local spline curves of the data that they should be matched up together.  There is ambiguity in their relationship since the poses can be arranged in a number of different configurations that represent completely plausible environments.\
+\
+In order to reduce this ambiguity, we need additional observations of the junctions increase the likelihood that they fit together into a T junction.  In particular, if the robot goes from state 0 to state 2 and back to state 1, this would give us a blueprint to fit all of the poses together to create a complete T junction. \
+\
+Even though the data set we have gives us a very strong case for the detection of a T junction, there are still other possibilities in the event of poor motion estimation.  Other plausible environments from the given data are shown in Figure X.\
+\
+As we can see, the approach of mapping junctions using only free space data has its challenges.  There is no full proof way to map a junction using only partial observations with ambiguous resultant data.  However, we will see if a probabilistic approach will give us to cut through the ambiguity and focus our efforts on the most likely cases.  Furthermore, it could direct our efforts to make a costly targeted contact probing effort at the most likely junction location and resolve all confusion.\
+\
+When making the hypothesis of a junction, we have some leeway on its location depending on the type of junction states of the composing local medial axes.  As seen in Figure [X], if a junction has been hypothesize by the a local medial axis diverging from its parent path at location A with the shown junction state, there are a continuum of possible locations it could be at that are completely consistent.  Though these possibilities are constrained by the estimated positions, these possibilities give us our search space for fixing the final product.\
+\
+If we were to finally add in the local medial axis B in the depicted junction state, the freedom of movement gives us the option of resolving any conflicts and making the junction whole with the composed poses.  The ambiguity places boundaries on the search space.\
+\
+We call these unresolved junction arms to be 
+\i phantom arms
+\i0 .  We suspect that a junction arm exists, but we do not know until we actually explore them.  Furthermore, we do not know the junction's location until we have an extra pose in the correct junction state, or we have gathered evidence that a junction does not exist and decreased its probability.\
+\
+\
+}

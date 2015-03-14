@@ -1,0 +1,120 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fnil\fcharset0 Cochin;}
+{\colortbl;\red255\green255\blue255;}
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\f0\fs28 \cf0 \
+###Reference Poses\
+\
+A reference pose is the position and orientation of a rigid body segment that has been immobilized with respect to the global frame.  A reference pose is valuable because it gives a fixed reference point to the global environment and allows us to track the motion of the rest of the robot.   Special care must be taken to ensure that when using a reference pose, the rigid body it's attached to is truly immobilized.\
+\
+A reference pose is either active or inactive.  A reference is active once it is created as a result of its rigid body becoming immobilized.  We assess whether a reference pose is to be created by checking if it satisfies both our predictive stability and local stability conditions.  We discussed predictive and local stability in section [](#sec:stability), where predictive stability is the output of the behavior's control masks and local stability is the result of monitoring local joint variances.  Once the reference pose violates either of these conditions, it becomes inactive.\
+\
+To deactivate a reference pose, if a reference violates either of the stability conditions and it was previously active, we flip a bit to signal it as inactive.  Afterwards, we can create a new reference pose on this rigid body once it satisfies the stability conditions again.\
+\
+To create a new reference pose, its associated rigid body must first have been inactive.  Secondly, it must satisfy both prescriptive and local stability conditions.  Once the following conditions have been met, the new pose is computed kinematically with respect to another currently active reference pose.  If the pre-existing reference pose is correct, the kinematic computation of the new reference pose will be correct for its true position and orientation in the global environment.\
+\
+Given the arrangement of rigid bodies and their attached coordinate frames shown in [](#frames2), we need the kinematic equations for computing the pose of a rigid body given its neighbor's pose.  That is, if we already have an active reference pose, we wish to compute the pose of neighboring reference in the global frame using only the joint angles from the robot's posture.  To compute \\\\(P_\{k+1\}\\\\) if we are given \\\\(P_k\\\\), we do the following:\
+\
+<!--\
+\\begin\{equation\}\
+\\begin\{array\}\{l\}\
+\\displaystyle x_\{k+1\} = x_k + l \\cos(\\theta_k) \\\\\
+\\displaystyle y_\{k+1\} = y_k + l \\sin(\\theta_k) \\\\\
+\\displaystyle \\theta_\{k+1\} = \\theta_k - \\phi_\{k+1\}\
+\\end\{array\}\
+\\label\{kinem1\}\
+\\end\{equation\}\
+For the opposite direction, to compute $P_\{k+1\}$ given $P_k$, we do the following:\
+\\begin\{equation\}\
+\\begin\{array\}\{l\}\
+\\displaystyle \\theta_k = \\theta_\{k+1\} + \\phi_k \\\\\
+\\displaystyle x_k = x_\{k+1\} - l \\cos(\\theta_k) \\\\ \
+\\displaystyle y_k = y_\{k+1\} - l \\sin(\\theta_k)\
+\\end\{array\}\
+\\label\{kinem2\}\
+\\end\{equation\}\
+-->\
+\
+If we use the equations iteratively, we can compute the pose of a rigid body segment given the pose of any other segment. \
+\
+The algorithmic process for creating and deactivating reference poses is shown in algorithm [](#alg:reference), where \\\\(N\\\\) is the number of rigid body segments in the snake from which to create reference poses.  The implementation of the function for the kinematic computation of new reference poses is shown in algorithm [](#alg:kinematic).\
+\
+![Local coordinate frames attached to segments and described by reference poses.][frames2]\
+\
+[frames2]: {\field{\*\fldinst{HYPERLINK "scrivlnk://191"}}{\fldrslt 3_frames_2.png}} width=400px\
+\
+<!--\
+\\begin\{algorithm\}\
+\\caption\{Reference Pose Creation and Deactivation\}          % give the algorithm a caption\
+\\label\{alg:reference\}\
+\\begin\{algorithmic\}\
+\
+\\State $N \\Leftarrow 40$\
+\\State $activeMask \\Leftarrow $ array of size $N$ initialized to $0$\
+\\State $activeRefPoses \\Leftarrow $ array of size $N$ initialized to $\\varnothing$\
+\\State $preStabMask \\Leftarrow \\mathrm\{behaviorControlOutput\}()$\
+\\State $locStabMask \\Leftarrow \\mathrm\{stabilityCompute()\}$\
+\\For\{$i = 0 \\to N$\} \
+\\If  \{$preStabMask[i] \\And locStabMask[i]$\}\
+\\If    \{$!activeMask[i]$\}\
+\\State      $activeRefPoses[i] \\Leftarrow \\mathrm\{computeRefPose\}(i)$\
+\\State      $activeMask[i] \\Leftarrow 1$\
+\\EndIf\
+\\ElsIf \{$activeMask[i]$\}\
+\\State    $activeRefPoses[i] \\Leftarrow \\varnothing$\
+\\State    $activeMask[i] \\Leftarrow 0$\
+\\EndIf\
+\\EndFor\
+\
+\\end\{algorithmic\}\
+\\end\{algorithm\}\
+-->\
+\
+<!--\
+\\begin\{algorithm\}\
+\\caption\{\\emph\{computeRefPose(i)\}: Kinematics for Computing Reference Pose\}\
+\\label\{alg:kinematic\}\
+\\begin\{algorithmic\}\
+\
+\\State $N \\Leftarrow 40$\
+\\State $\\bar\{\\phi\} \\Leftarrow $ array of current joint angles \
+\\State $i \\Leftarrow $ target new reference pose index\
+\\State $j \\Leftarrow $ index of nearest active reference pose to $i$\
+\
+\\State $k = j$\
+\\State $(x_k, y_k, \\theta_k) \\Leftarrow (x_j, y_j, \\theta_j)$  \\Comment\{pose of active reference $j$\}\
+\
+\\If \{$i > j$\}\
+\\While \{$k < i$\}\
+\
+\\State $x_\{k+1\} = x_k + l \\cos(\\theta_k)$\
+\\State $y_\{k+1\} = y_k + l \\sin(\\theta_k)$\
+\\State $\\theta_\{k+1\} = \\theta_k - \\phi_\{k+1\}$\
+\\State $k = k + 1$\
+\\EndWhile\
+\
+\\ElsIf \{$i < j$\}\
+\\While \{$k > i$\}\
+\
+\\State $\\theta_\{k-1\} = \\theta_k + \\phi_\{k-1\}$\
+\\State $x_\{k-1\} = x_k - l \\cos(\\theta_\{k-1\})$\
+\\State $y_\{k-1\} = y_k - l \\sin(\\theta_\{k-1\})$\
+\\State $k = k - 1$\
+\
+\\EndWhile\
+\\EndIf\
+\
+\\State $(x_i, y_i, \\theta_i) \\Leftarrow (x_k, y_k, \\theta_k)$ \\Comment\{new pose for active reference $i$\}\
+\
+\\end\{algorithmic\}\
+\\end\{algorithm\}\
+-->\
+\
+This algorithm assumes that an active reference pose always exists.  There are two special cases when no reference poses are currently active.   In the first case, the algorithm is initializing and no reference poses have been created yet.  In the second case, all of the reference poses violate the stability condition and all have been deactivated.  These special cases are not shown in the algorithms, but we explain are approach here.\
+\
+For the first case, when we initialize, the first reference pose is set to \\\\((0,0,0)\\\\).  This becomes the origin of the global frame centered at the robot's starting position in the environment.  From this first initial reference pose, all new reference poses are derived. \
+\
+In the second case, no active reference poses are available since no stability conditions have been satisfied.  The robot has effectively lost track of its position in the environment.  In the event that a new reference pose needs to be created, there is no parent pose from which to kinematically compute.  Instead, from the last used inactive reference poses, we select the reference that was contiguously active the longest and use this as the parent pose to compute the new active reference pose.  The reasoning behind this is that a long-lived reference pose is more likely to be correct than a short-lived reference pose due to the sometimes intermittent nature of reference poses.  This last best reference pose approach is very effective in practice.  \
+\
+So long as the active reference poses satisfy the assumption of no-slip anchors and there always being at least one active reference, the tracking of the robot's trajectory through the environment is correct.  Violations of these assumptions introduce error into the motion estimation.}

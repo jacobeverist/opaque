@@ -1,0 +1,60 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fnil\fcharset0 Cochin;}
+{\colortbl;\red255\green255\blue255;}
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\f0\fs28 \cf0 ## Problem [junction:problem]\
+\
+The axis method approach works well for environments that are just a single continuous path.  However, it breaks down in the event the environment has a junction as shown in [](#junction_example).    The axis method assumes that a single continuous curve fully describes the environment.  The only localization problem is fitting the new pose's spatial curve onto this existing axis with ICP.\
+\
+If ICP is run with a spatial curve that branches off of the existing axis, it will result in finding a local minima that is incorrect as shown in [](#axis_method_junction_fail).  Clearly, this is a fundamental break down of the axis method approach.  We need some method that can handle the case of arbitrary types of junctions.\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+\cf0 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+\cf0 ![Existing Axis with Newly Discovered Junction][junction_example]\
+\
+[junction_example]: {\field{\*\fldinst{HYPERLINK "scrivlnk://300"}}{\fldrslt junction_example}} width=400px\
+\
+![Axis Method Failure with Junction][axis_method_junction_fail]\
+\
+[axis_method_junction_fail]: {\field{\*\fldinst{HYPERLINK "scrivlnk://301"}}{\fldrslt axis_method_junction_fail}} width=400px\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+\cf0 \
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+\cf0 One of the unique challenges of mapping sensor-challenged environments with junctions is that they are only partially observable.  That is, there is no direct observation using void space that will give a compete representation of the properties of the junction.  The robot may even be passing through a junction without detecting it as such.   Only by passing through all arms of the junction over time are we able to infer the location and properties of the junction.  \
+\
+Though we can reason and safely map long tubes with hard turns or curved and undulating paths, if we add junctions to the mix such as Y and T junctions, recognizing the encounter and the parameters of the junction becomes especially challenging.\
+\
+We define a junction to be the confluence of over two pipes at various angles.  For instance, an L bend we do not consider a junction, but a T is a junction.  To see how this is challenging, imagine the Figure [X] where the robot's body is within the L junction.  Similarly, the robot's body is in the T-junction in the same configuration.  Both position's give us the shape of the environment correctly.  However, we can only partially view the junction at any given time.\
+\
+In order to sense and completely characterize the T-junction, the robot would be need pass through or back up and make an effort to crawl down the neglected path.  If we knew that the unexplored pipe existed, this would be an easy proposition.  As it stands, it is very difficult to distinguish an opening from an obstacle.\
+\
+There are deliberative ways to completely map and characterize the environment as we travel.  The work of Mazzini and Dubowsky [cite] demonstrate a tactile probing approach to harsh and opaque environments.  Though this option is available to us, this has it's own challenges and drawbacks.\
+\
+For one, tactile probing is time consuming.  A robot would be spending all of its time touching the walls of the environment in a small range and not enough time exploring the environment in the larger range.  We decided very early on in our research [Everist2009] that although contact detection approaches have proven their effectiveness in producing detailed environmental maps, they are not a practical solution to exploring complex environments that won't take multiple days to complete.\
+\
+Similarly, the act of probing and sweeping the environment has the possibility of disrupting the position of the robot and adding defects to the contact data locations.  Tactile probing is particularly vulnerable to this since it involves actual pushing against obstacles and possibly disrupting the robot's anchors.\
+\
+For all of these reasons, it is desirable to find an approach for mapping environments with junctions when the junctions are only partially observable.  That is, at best, we do not know if we are in a junction until we come through it a second time.  Often times, junction discovery is serendipitous because openings look identical to obstacles in a free space map.  Without deliberate tactile probing, junction discovery will always be serendipitous for rapid mapping.\
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+\cf0 Evidence for the existence of a junction is given by a spatial curve partially overlapping a section of the global medial axis and then diverging from it at a sharp angle.  In fact, the relationship between a spatial curve and the axis it's being fitted to gives us clues on whether or not there is a junction.  If we examine the different types of overlapping events of a curve on a larger curve, we see there are three different possibilities as shown in [](#curve_events).\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sl288\slmult1\pardirnatural
+\cf0 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+\cf0 ![Curve Overlap Events][curve_events]\
+\
+[curve_events]: {\field{\*\fldinst{HYPERLINK "scrivlnk://302"}}{\fldrslt curve_events}} width=400px\
+\
+We must recognize that there are three possible ways for a new pose's medial axis to fit onto an existing global medial axis.  It can either 1) completely overlap, **contained** on the axis, 2) partially overlap by **extension**, pushing forward past the termination point of the axis, or 3) partially overlap by **divergence**, curving off the axis at a sharp angle signifying a junction-like feature.\
+\
+A fundamental primitive problem we have is determining when two partially overlapping curves diverge from each other.  Divergence between two curves is the point at which the overlapping curves separate.  It is not a complete overlap but a partial overlap of two noisy curves.  The challenge is defining under what conditions two curves are considered to be diverging and distinguish that from just contained or extending.  We define the function to be \\\\(\\Call\{computeDivergence\}\{\}\\\\).\
+\
+\pard\pardeftab720\fi720\sl288\slmult1
+\cf0 The difficulty associated with this task is that there is no discrete event to determine a divergence.  It is measured by passing a threshold that must be calibrated to the task.  The thresholds are both sensitive to cartesian distance and angular difference between the diverging curve and the divergence point on the host curve.\
+	\
+The algorithm begins by finding the closest point distance of each point on the candidate diverging curve to the host curve.  We examine the closest point distances of both tips of the candidate curve.  If the closest point distance of the tip to its companion is above a threshold, \\\\(DIV\\_DIST\\\\), and the difference of tangent angles is also above a threshold, \\\\(DIV\\_ANG\\\\), then we classify this curve as diverging from its host.  For our work, \\\\(DIV\\_DIST = 0.3\\\\) and \\\\(DIV\\_ANG = \\frac\{\\pi\}\{6\}\\\\).\
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+\cf0 If the curve is not diverging, then it is either extending or contained.   To determine which, we compare the identity of the matched points of both of tips of the candidate curve.  If either matched point is the tip of the host curve, then it is extending.  Otherwise, it is contained.}

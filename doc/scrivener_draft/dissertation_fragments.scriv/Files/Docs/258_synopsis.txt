@@ -1,0 +1,1 @@
+using only last pose to estimate location using spatial curve

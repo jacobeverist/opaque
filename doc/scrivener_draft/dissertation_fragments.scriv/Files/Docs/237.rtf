@@ -1,0 +1,28 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fnil\fcharset0 Cochin;}
+{\colortbl;\red255\green255\blue255;}
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\f0\fs28 \cf0 \
+####Separation of Sweep Maps\
+\
+Our fifth and final strategy for preventing errors in our sensor maps is to divide the forward sweep phase and backward sweep phase into separate maps.  From our experiments, we determined that a consistent source of error occurs when switching the anchoring responsibility from the back half of the snake to the front half.  The series of events of retracting the front half of the snake to anchors and extending the back half for sweeping tends to cause some discontinuity between the consensus of the back reference poses and the front reference poses.  This will show with a very distinct break in the combined free space map.\
+\
+![Separation of Sweep Maps.][ref_sweep_sep]\
+\
+[ref_sweep_sep]: {\field{\*\fldinst{HYPERLINK "scrivlnk://163"}}{\fldrslt 4_sweepmap_1.png}} width=400px\
+\
+To avoid this problem, we instead create two free space maps: one for the front sweep and one for the back sweep.  What was previously shown in [](#ref_sweep_sep)a will now become the pair of maps shown in Figure b.  Not only does this avoid corrupting the free space data in the map, but it allows us to treat the relationship between the two maps as a separate problem for which there are multiple solutions.  Our previous sensor processing algorithms work just as well because the alpha shape of the half-sweep free space map will result in an alpha hull from which an equivalent medial axis can be extracted.  \
+\
+We discuss our approach to managing the relationship between the two half-sweep local maps in the next chapter.\
+\
+<!--\
+%The fourth strategy is in regard to how to use the reference poses to compute the pose of a robot segment in space.  Instead of selecting one reference pose to use and hoping that it is 100 percent correct, we take a set of reference poses and average the computed position of a target segment.  How we select the set of references to use is by looking for the largest contiguous set.  That is, reference poses that are active and are all neighbors, we select the largest set.  If for instance, a set of 15 reference poses are used in time \\\\(t\\\\) and later reference pose 10 becomes deactived, for time \\\\(t+1\\\\), we assume that the poses \\\\(0-9\\\\) are still immobile and not \\\\(11-15\\\\).  Our heuristic assumes that it is much easier to move less segments than more.  \
+-->\
+\
+<!--\
+%-- averaged position from the back anchor reference poses\
+%-- only use backy-back reference poses to minimize possibility of bad reference poses being used.   Prescriptive stability is very conservative.\
+% Separation of forward sweep and backward sweep local maps.  Do not merge them but keep them separate and correctable.\
+% Error comes from the switch in posture from back-anchor/forward sweep to front-anchor/backward sweep\
+-->}

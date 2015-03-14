@@ -1,0 +1,65 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fnil\fcharset0 Cochin;}
+{\colortbl;\red255\green255\blue255;}
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\f0\fs28 \cf0 \
+###Step Constraint\
+\
+The step constraint is an alternative to the motion constraint.  Instead of tracking reference poses and using the motion estimation subsystem to extract a geometric transform, we approximate a motion estimate by a fixed displacement along the direction of travel.  This estimate is the average displacement for each locomotion step of the snake.\
+\
+There are a number of advantages to this approach.  Firstly, since we have already defined a forward and backward direction by derivation of the GPAC local coordinate frame, we have a clue of which direction the robot will travel.  Secondly, if we use this new approach, we are no longer concerned if error accumulates in our reference poses, since we no longer use them in estimating motion.\
+\
+To create the step constraint, we use a similar approach to the in-place constraint.  We start with the two GPACs, \\\\(\\beta_0^f(u)\\\\) and \\\\(\\beta_2^f(u)\\\\) of the two nodes \\\\(v_0^f\\\\) and \\\\(v_2^f\\\\) and find their closest points \\\\(I_0\\\\) and \\\\(I_2\\\\) to the origins \\\\(O_0\\\\) and \\\\(O_2\\\\).  We solve for the \\\\(u_0\\\\) and \\\\(u_2\\\\) such that:\
+\
+<!--\
+\\begin\{equation\}\
+\\beta_0^f(u_0) = I_0\
+\\end\{equation\}\
+\\begin\{equation\}\
+\\beta_2^f(u_2) = I_2\
+\\end\{equation\}\
+-->\
+\
+Just like the in-place constraint, we place the curves on top of each other such that \\\\(I_0 = I_2\\\\).\
+\
+In the next step, we differ from the in-place constraint.  Instead of keeping \\\\(I_0\\\\) and \\\\(I_2\\\\) intersected, we walk \\\\(\\beta_2^f\\\\) the length of the curve \\\\(\\beta_0^f\\\\) in the direction of the travel by the guessed distance while still intersecting at the point \\\\(I_0\\\\).  The point of intersection on \\\\(\\beta_2^f\\\\) is moved along by an arc length of \\\\(0.3\\\\), an estimated travel distance.\
+\
+Similarly to the in-place constraint, the positions of the curves are constrained according to the following equation:\
+\
+<!--\
+\\begin\{equation\}\
+\\beta_2^b(u_v) = I_0 +\
+\\begin\{bmatrix\}\
+0 \\\\\
+0 \\\\\
+\\theta_v\
+\\end\{bmatrix\}\
+\\end\{equation\}\
+-->\
+\
+Here, two parameters are varied by the ICP algorithm, \\\\(\\theta_v\\\\) for the relative orientation of the tangents at the curve intersections, and \\\\(u_v\\\\) for the position on the \\\\(\\beta_2^f\\\\) curve that intersects point \\\\(I_0\\\\) on curve \\\\(\\beta_0^f\\\\).  We perform a 2D iterative closest point such that a best fit overlap is found.  By varying the \\\\(u_v\\\\) parameter, we allow for our \\\\(0.3\\\\) displacement guess to be wrong and find a better fit if there are some curved features to match against.  Otherwise, it will tend to stay in the same neighborhood.  The system is shown in [](#fig:step_ICP).\
+\
+![Iterative Closest Point (ICP), finding for \\\\(U_v\\\\) and \\\\(\\theta_v\\\\) in step constraint][fig:step_ICP]\
+\
+[fig:step_ICP]: {\field{\*\fldinst{HYPERLINK "scrivlnk://201"}}{\fldrslt 5_step_ICP.png}} width=400px\
+\
+\
+<!--\
+% From this displaced position, the angle of the relative orientation of the curves is rotated about \\\\(I_2\\\\) until the best overlap is achieved by an iterative closest point (ICP) algorithm.\
+-->\
+\
+The geometric transform \\\\(T_\{02\}\\\\) is extracted from their relative offset at the end of ICP search.  The covariance matrix is hand-made, of the form:\
+\
+<!--\
+\\begin\{equation\}\
+C_\{02\} = \
+\\begin\{bmatrix\}\
+0.1 & 0 & 0 \\\\\
+0 & 0.01 & 0 \\\\\
+0 & 0 & 0.02\
+\\end\{bmatrix\}\
+\\end\{equation\}\
+-->\
+\
+This indicates that we would expect to see more error along the axis of travel (forward-backward) with its covariance of \\\\(0.1\\\\).  That is, the amount of displacement after each locomotion step is subject to more error than side-to-side.   In fact, the side-to-side error is an order of magnitude smaller because of our use of intersecting GPACs to guess motion, leaving little chance for sideways motion.   Similarly, the angular variance is also small since we ICP to keep the GPACs aligned.}

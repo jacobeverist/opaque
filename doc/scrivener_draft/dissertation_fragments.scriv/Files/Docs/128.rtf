@@ -5,8 +5,8 @@
 
 \f0\fs28 \cf0 ##Detecting Branch\
 \
-If a posture medial axis is detected that does not completely fit on the existing shoot, it is possible that we have discovered a branch.  It is vital that we properly and detect branching events in order to fit them properly into the map.  In the event that we add a posture image to a shoot that is not completely contained into the target shoot, this will distort the medial axis computation of the union of images and result in kinks the shoot curve.		\
-Branching is detected on the individual pose level.  For the medial axis of a single posture image, if the single medial axis curve diverges from a shoot, then it is said to be branching and a new child shoot should be formed.\
+If a posture medial axis is detected that does not completely fit on the existing skeleton, it is possible that we have discovered a branch.  It is vital that we properly and detect branching events in order to fit them properly into the map.  In the event that we add a posture image to a skeleton that is not completely contained into the target skeleton, this will distort the medial axis computation of the union of images and result in kinks the skeleton curve.		\
+Branching is detected on the individual pose level.  For the medial axis of a single posture image, if the single medial axis curve diverges from a skeleton, then it is said to be branching and a new child skeleton should be formed.\
 \
 Care must me taken in determining the parameters for when a curve is \'93diverging\'94.    We define divergence distance to be the distance between the target curve endpoint and the diverging point on the parent curve.  The diverging point is defined by the difference between the tangent angle of the point at which the curve last leaves the parent curve and the next point along the curve at which the minimum angle threshold has been made.  The closest point on the parent curve to this minimum angle threshold point is the diverging point.\
 \

@@ -3,23 +3,12 @@
 {\colortbl;\red255\green255\blue255;}
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
 
-\f0\fs28 \cf0 ##Shoot Map Representation\
+\f0\fs28 \cf0 ###Skeleton Maps\
 \
-To represent and keep track of junctions and any instance of \'93branching off\'94 from the main global medial axis, we introduce a new map representation called a shoot map.   First we define the concept of a 
-\i shoot
-\i0  to be a single path with an origin and termination point that represents a continuous representation of space with no junctions.  In the previous section, our global medial axis of the entire environment represented a single shoot, since there were no instances of branching.   Once a new junction is found, a new shoot is created with origin starting at the branching off point from the original shoot and termination point ending at the extent the posture images map the branch's space.  \
+To represent and keep track of junctions and any instance of \'93branching off\'94 from the main global medial axis, we introduce a new map representation called a skeleton map.   First we define the **skeleton** to be the medial axis of a union of posture images that permits multiple junction features.   In the previous section, our medial axis of the entire environment represented a single path where there were no junctions.   Once a divergence event is found, a new skeleton is created that represents the branching off.  The coordinate frame origin is placed on the original skeleton and becomes the *parent* of the new skeleton.\
 \
-Corresponding to the three cases of how a posture curve overlaps an existing global medial axis, 1) either the pose is contained within an existing shoot, 2) the pose extends the shoot, or 3) the pose is added to a new shoot that branches off.   Given the nature of the shoot structure, their is a parent-child relationship between shoots, with the stem being the root shoot.  All shoots except for the root, have an origin placed from another shoot.\
+Corresponding to the three cases of how a spatial curve overlaps an existing global medial axis, 1) either the pose is contained within an existing skeleton, 2) the pose extends the skeleton, or 3) the pose diverges and is added to a new skeleton that branches off.   Given the nature of the skeleton structure, their is a parent-child relationship between skeletons, with the stem being the root skeleton.  All skeletons except for the root, have an origin placed on its parent skeleton.\
 \
-The curve of a shoot is represented by an ordered series of points that are generated from the medial axis computation of the union of member posture images.  We say a pose is a member of a shoot S_p if it has some overlap with S_p but does not overlap a child, S_c, of S_p.   That is, if any portion of a pose overlaps a child S_c, the pose is a member of S_c and not S_p.  A pose can be a member of more than one shoot if there are more than one child shoots.   The member shoots can be siblings or any other combination where the shoots are not direct ancestors or descendants.\
+The skeleton is generated from the same computation as computing the global axis.  However, in the axis computation, we selected the longest path from leaf to leaf.  In the case of the skeleton, we keep the whole tree.  This allows the representation of junction features if they are needed.  We create new skeletons whenever a new spatial curve diverges from the parent skeleton and does not fit on to any existing skeleton.  We will explain this in detail later.\
 \
-The complete representation for a shoot map is the following parameters:\
-\
-* Poses: X_1:t\
-* Images: I_1:t\
-* Shoots: S_1:N\
-	* Shoot member pose sets, c_1 = \{1,2,\'85,k\}, \'85, c_N = \{k+1,\'85,t\}\
-	* Branch point: b_1:N = (x,y,\\theta)\
-\
-The first half are the same parameters used for the pose map.  We add the additional parameters of shoots.  A shoot is composed of a set of member poses and a branch point.  For a non-root shoot, the branch point is a location on its parent shoot and an accompanied direction.\
-}
+We say a pose is a member of a skeleton \\\\(T_p\\\\) if it has some overlap with \\\\(T_p\\\\) but does not overlap a child, \\\\(T_c\\\\), of \\\\(T_p\\\\).   That is, if any portion of a pose overlaps a child \\\\(T_c\\\\), the pose is a member of \\\\(T_c\\\\) and not \\\\(T_p\\\\).  A pose can be a member of more than one skeleton if there are more than one child skeletons.   The member skeletons can be siblings or any other combination where the skeletons are not direct ancestors or descendants.}

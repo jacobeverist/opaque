@@ -1,0 +1,163 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fnil\fcharset0 Cochin;}
+{\colortbl;\red255\green255\blue255;}
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\f0\fs28 \cf0 ## Posture Image\
+\
+Using the control method shown in Control chapter to sweep out the void space of the local environment, we show how we capture sensor data and process it for consumption for our later mapping algorithms.\
+\
+###Data Capture\
+\
+Once the posture of the snake has stabilized and the anchor points give us good reference poses to the global frame, our objective is take the posture vector, \\\\(\\bar\{\\phi_t\}\\\\) at time \\\\(t\\\\), and convert it to a 2D spatial representation of free space, \\\\(M_p\\\\) at the current pose \\\\(p\\\\).  We separate the tasks of spatial representation and positioning the data in the global frame.  To do this, we create a local map centered on the robot's body on which the spatial data is plotted while the robot remains in one position.\
+\
+The local map is an occupancy grid representation where each cell of the grid has two states:   *unknown* or  *free*.  If the body of the robot is present on a cell, this cell is marked  *free*.  Otherwise, it is  *unknown*.  It is unknown instead of  *occupied* because our approach does not have any means to specifically observe obstacles beyond contact detection heuristics.  The heuristics are not accurate enough to plot their positions into the occupancy grid, so we leave the cells unknown for now.\
+\
+The size of a cell is chosen for the desired accuracy we require.  Smaller cell sizes require more computational time, but larger cell sizes will result in blocky maps.  We choose our cell dimensions \\\\(s_p \\times s_p\\\\) to be \\\\(s_p = \\frac\{l\}\{3\} = 0.05\\\\), or one third the length of a snake segment.\
+\
+Given that we now have our cell dimensions, we can compute the dimensions of our local map to be \
+\
+<!--\
+\\begin\{eqnarray\}\
+\\label\{eqn:mapSize\}\
+s_M = l * N + 4\
+\\end\{eqnarray\}\
+-->\
+\
+where \\\\(l\\\\) is the segment length and \\\\(N\\\\) is the number of segments.  \\\\(s_M\\\\) is the maximum length from the origin at the center of our local coordinate system.  We want the dimensions to be larger than the worse case scenario of the snake's posture.  We also include an extra padding of \\\\(4\\\\) to ensure that the snake never reaches the boundary of the grid.\
+\
+The number of cells or pixels in our local map will be \\\\(n_p \\times n_p\\\\) where \
+\
+<!--\
+\\begin\{eqnarray\}\
+\\label\{eqn:numPixels\}\
+n_p = \\bigg\\lceil \\frac\{2 s_M\}\{s_p\} + 1 \\bigg\\rceil\
+\\end\{eqnarray\}\
+-->\
+\
+This equation ensures that \\\\(n_p\\\\) is an odd integer.  The \\\\(+1\\\\) factor adds an extra cell whose center will act as the origin of our local coordinate system.\
+\
+\
+Now that we have the dimensions of the grid space and its relation to Cartesian space, we need to know how to convert points from one space to the other.  To convert a grid index \\\\((i_x,i_y)\\\\) to Cartesian space point \\\\((p_x,p_y)\\\\) centered within the cell, we compute the following:\
+\
+<!--\
+\\begin\{eqnarray\}\
+\\label\{eqn:g_to_p\}\
+p_x = \\bigg(i_x - \\bigg\\lfloor\\frac\{n_p\}\{2\}\\bigg\\rfloor \\bigg)\\frac\{s_p\}\{2\} \\\\\
+p_y = \\bigg(i_y - \\bigg\\lfloor\\frac\{n_p\}\{2\}\\bigg\\rfloor \\bigg)\\frac\{s_p\}\{2\}\
+\\end\{eqnarray\}\
+-->\
+\
+Conversely, to find the index of a cell \\\\((i_x,i_y)\\\\) that contains a Cartesian point \\\\((p_x,p_y)\\\\), we compute the following:\
+\
+<!--\
+\\begin\{eqnarray\}\
+i_x = \\bigg\\lfloor \\frac\{p_x\}\{s_p\} \\bigg\\rceil + \\bigg\\lceil\\frac\{n_p\}\{2\}\\bigg\\rceil \\\\\
+i_y = \\bigg\\lfloor \\frac\{p_y\}\{s_p\} \\bigg\\rceil + \\bigg\\lceil\\frac\{n_p\}\{2\}\\bigg\\rceil\
+\\end\{eqnarray\}\
+-->\
+\
+Now that we have the tools for mapping positions in physical space to our grid space occupancy map, we need data to plot into the map.  Using kinematics, we compute the geometry of the posture of the snake.  We can represent this by a 4-sided rectangle for each segment of the snake.  We set the origin of our coordinate system on segment 19 and joint 19 which is the midway point for \\\\(N = 40\\\\).  We define this to be:\
+\
+<!--\
+\\begin\{equation\}\
+O_t = (x_\{19\}, y_\{19\}, \\theta_\{19\}) = (0, 0, 0)\
+\\end\{equation\}\
+-->\
+\
+where \\\\(O_t\\\\) is the pose of \\\\(P_\{19\}\\\\) in the local frame at time \\\\(t\\\\).  This may change which is explained in [](#sec:ref_stable).\
+\
+To compute the segment 19 rectangle, starting from the origin for \\\\(k = 19\\\\), \\\\(x_k = 0\\\\), \\\\(y_k = 0\\\\), and \\\\(\\theta_k = 0\\\\), we compute the following:\
+\
+<!--\
+%From 19, towards N\
+\\begin\{equation\}\
+\\label\{equ:rect1\}\
+\\begin\{array\}\{l\}\
+\\displaystyle x_\{k+1\} = x_k + l \\cos(\\theta_k) \\\\\
+\\displaystyle y_\{k+1\} = y_k + l \\sin(\\theta_k) \\\\\
+\\displaystyle \\theta_\{k+1\} = \\theta_k - \\phi_\{k+1\} \\\\\
+\\displaystyle p_1 = \\bigg( x_\{k+1\} - \\frac\{w\\sin(\\theta_k)\}\{2\} , y_\{k+1\} + \\frac\{w\\cos(\\theta_k)\}\{2\}\\bigg) \\\\\
+\\displaystyle p_2 = \\bigg( x_\{k+1\} + \\frac\{w\\sin(\\theta_k)\}\{2\}, y_\{k+1\} - \\frac\{w\\cos(\\theta_k)\}\{2\} \\bigg) \\\\\
+\\displaystyle p_3 = \\bigg( x_\{k+1\} - l\\cos(\\theta_k) + \\frac\{w\\sin(\\theta_k)\}\{2\}, y_\{k+1\} - l\\sin(\\theta_k) - \\frac\{w\\cos(\\theta_k)\}\{2\} \\bigg) \\\\\
+\\displaystyle p_4 = \\bigg( x_\{k+1\} - l\\cos(\\theta_k) - \\frac\{w\\sin(\\theta_k)\}\{2\}, y_\{k+1\} - l\\sin(\\theta_k) + \\frac\{w\\cos(\\theta_k)\}\{2\} \\bigg) \\\\\
+\\displaystyle R_k = (p_4,p_3,p_2,p_1)\
+\\end\{array\}\
+\\end\{equation\}\
+-->\
+\
+The result is the rectangle polygon \\\\(R_k\\\\), which represents the rectangle of the segment \\\\(19\\\\).  The next reference pose \\\\((x_\{k+1\},y_\{k+1\},\\theta_\{k+1\})\\\\) is also computed.  Here \\\\(k+1=20\\\\).  To compute the k\\textsuperscript\{th\} rectangle for \\\\(k \\geq 19\\\\), we need only compute this iteratively until we reach the desired segment.\
+\
+To perform this backwards, to find segment \\\\(18\\\\), where \\\\(k+1=19\\\\) and \\\\((x_\{k+1\}, y_\{k+1\}, \\theta_\{k+1\}) = O_t\\\\), we compute the following:\
+\
+<!--\
+\\begin\{equation\}\
+\\label\{equ:rect2\}\
+\\begin\{array\}\{l\}\
+\\displaystyle \\theta_k = \\theta_\{k+1\} + \\phi_k \\\\\
+\\displaystyle x_k = x_\{k+1\} - l \\cos(\\theta_k) \\\\ \
+\\displaystyle y_k = y_\{k+1\} - l \\sin(\\theta_k) \\\\\
+\\displaystyle p_1 = \\bigg( x_\{k+1\} - \\frac\{w\\sin(\\theta_k)\}\{2\} , y_\{k+1\} + \\frac\{w\\cos(\\theta_k)\}\{2\}\\bigg) \\\\\
+\\displaystyle p_2 = \\bigg( x_\{k+1\} + \\frac\{w\\sin(\\theta_k)\}\{2\}, y_\{k+1\} - \\frac\{w\\cos(\\theta_k)\}\{2\} \\bigg) \\\\\
+\\displaystyle p_3 = \\bigg( x_\{k+1\} - l\\cos(\\theta_k) + \\frac\{w\\sin(\\theta_k)\}\{2\}, y_\{k+1\} - l\\sin(\\theta_k) - \\frac\{w\\cos(\\theta_k)\}\{2\} \\bigg) \\\\\
+\\displaystyle p_4 = \\bigg( x_\{k+1\} - l\\cos(\\theta_k) - \\frac\{w\\sin(\\theta_k)\}\{2\}, y_\{k+1\} - l\\sin(\\theta_k) + \\frac\{w\\cos(\\theta_k)\}\{2\} \\bigg) \\\\ \
+\\displaystyle R_k = (p_4,p_3,p_2,p_1)\
+\\end\{array\}\
+\\end\{equation\}\
+-->\
+\
+The result is the same polygon as well as the new reference pose for segment \\\\(18\\\\).  To compute the k\\textsuperscript\{th\} segment rectangle for \\\\(k < 19\\\\), we need only use this equation iteratively.  Computation of all \\\\(N\\\\) rectangles results in the set of rectangles \\\\(\\bar\{R_t\}\\\\) for the current posture.\
+\
+Now that we have a set of rectangles which represent the geometry of the robot in its current posture, we want to plot its occupied space into the local occupancy map.  To do this, we need to convert polygons in Cartesian space into sets of grid points.  To do this, we use a point-in-polygon test algorithm for each of the pixels in the map.\
+\
+The simplest approach is as follows.  For each pixel, convert it to Cartesian space, test if it's contained in any of the polygons, and if it is, set the pixel to  *free*.  Otherwise, let the pixel remain in its current state.  The pseudocode for the point-in-polygon test for convex polygons derived from \\cite\{orourke98\} is seen in algorithm [](#alg:pip_test).\
+\
+<!--\
+\\begin\{algorithm\}\
+\\caption\{Point-in-Polygon Test\}          % give the algorithm a caption\
+\\label\{alg:pip_test\}\
+\\begin\{algorithmic\}\
+\
+\\State $R \\Leftarrow $ rectangle\
+\\State $P \\Leftarrow $ point\
+\
+\\For\{$i = 0 \\to 4$\}\
+\\State $A_x \\Leftarrow R[i \\bmod 4][0] $\
+\\State $A_y \\Leftarrow R[i \\bmod 4][1] $\
+\\State $B_x \\Leftarrow R[(i+1) \\bmod 4][0] $\
+\\State $B_y \\Leftarrow R[(i+1) \\bmod 4][1] $\
+\\State $C_x \\Leftarrow P[0] $\
+\\State $C_y \\Leftarrow P[1] $\
+\
+\\If\{$!((Bx - Ax) * (Cy - Ay) - (Cx - Ax)*(By - Ay) \\geq 0)$\}\
+\\State return False\
+\\EndIf\
+\\EndFor\
+\\State return True\
+\
+\\end\{algorithmic\}\
+\\end\{algorithm\}\
+-->\
+\
+![Snapshot of \\\\(\\bar\{\\phi_t\}\\\\) in local coordinates.][snapshot]\
+\
+[snapshot]: {\field{\*\fldinst{HYPERLINK "scrivlnk://202"}}{\fldrslt 4_snapshot_1.png}} width=400px\
+\
+\
+A single snapshot of the snake posture plotted into the local map is shown in [](#snapshot).  The posture \\\\(\\bar\{\\phi_t\}\\\\) is captured, the rectangles \\\\(\\bar\{R_t\}\\\\) representing the body segments are computed from kinematics, each pixel \\\\((i_x,i_y)\\\\) of the map \\\\(M_p\\\\) is converted to Cartesian space point \\\\((p_x,p_y)\\\\) and checked by the point-in-polygon algorithm if it is in a rectangle \\\\(R_k\\\\).  If it is, \\\\(M_p(i_x,i_y)\\\\)'s value is set to  *free*.  This is repeated for each point in each rectangle for a posture snapshot at time \\\\(t\\\\).\
+\
+\
+![Single forward sweep.][single_sweep]\
+\
+[single_sweep]: {\field{\*\fldinst{HYPERLINK "scrivlnk://154"}}{\fldrslt localOccMapSingle0.png}} width=400px\
+\
+![Forward and backward sweep.][double_sweep]\
+\
+[double_sweep]: {\field{\*\fldinst{HYPERLINK "scrivlnk://155"}}{\fldrslt localOccDouble.png}} width=400px\
+\
+\
+While running the PokeWalls behavior, we periodically take snapshots at the conclusion of each Transition step and plot them into the map.  A complete sweep with the PokeWalls behavior is shown in [](#single_sweep).   Furthermore, if we also perform a sweep with the other side of the snake, we can get a map like [](#double_sweep).\
+\
+Notice in [](#double_sweep) that there is a gap in the free space data in the center of the body.  These segments at the center remain immobilized throughout the sweeping process and never give extra information.  This gap in the center is our "blind spot" for this configuration.  It is necessary that the center remain immobilized to ensure anchors do not slip so that we maintain correct reference poses to the global frame.\
+\
+We have no guarantee that there are obstacles at the boundaries of our free space map.  We also have no quick way to determine if the boundary of our map is an obstacle or a frontier.  While the boundaries at the front and back are usually assumed to lead to more free space, anywhere along the sides could be a missed side passage that the snake failed to discover due to it being too small or being in our blind spot.  To combat this situation, we either must perform laborious and time-consuming contact probing of every surface, or use quick-and-dirty contact detection heuristics to guide our mapping process.}

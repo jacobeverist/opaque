@@ -1,0 +1,33 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fnil\fcharset0 Cochin;}
+{\colortbl;\red255\green255\blue255;}
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\f0\fs28 \cf0 \
+## Data Processing\
+\
+Once we have the raw sensor data successfully plotted into a local occupancy map, we must convert this data into a form that is useful for our mapping algorithms.  Here, we present three different forms of data processing that we use in our approach.\
+\
+###Convex Hull\
+\
+One way we process our free space data is by taking its convex hull.  In theory, this would create some smooth boundaries and can plausibly represent the true local space under some certain conditions.   The definition of the convex hull is, given a set of points \\\\(P\\\\), find the convex polygon \\\\(H\\\\) with minimum area that contains all of \\\\(P\\\\).\
+\
+To create our set of points \\\\(P\\\\), for each pixel \\\\((i_x,i_y)\\\\) of the occupancy map \\\\(M_p\\\\) whose state is  *free\}, convert the pixel to Cartesian space point \\\\((p_x,p_y)\\\\) using Equation [](#eqn:g_to_p) and add to \\\\(P\\\\).  Using any convex hull algorithm, produce the resultant polygon in Cartesian space.   For our work, we use the convex hull algorithm available in CGAL \\cite\{cgal:hs-chep2-12b\}.\
+\
+![Free space data before and after convex hull.][convex_free1]\
+\
+[convex_free1]: {\field{\*\fldinst{HYPERLINK "scrivlnk://156"}}{\fldrslt 4_convex_freespace1.png}} width=400px\
+\
+![Free space data of curved posture before and after convex hull.][convex_free2]\
+\
+[convex_free2]: {\field{\*\fldinst{HYPERLINK "scrivlnk://157"}}{\fldrslt 4_convex_freespace2.png}} width=400px\
+\
+An example of the convex hull operation on our free space data set appears in [](#convex_free1).  We can see for the case that the snake is in a straight pipe, the convex hull creates a natural representation of the local pipe environment, filling in the blanks of our blind spot.  However, if the pipe is curved as in [](#convex_free2), the convex property of the polygon necessarily erases any concave properties of the environment.  This also removes any sharp features of the environment such as corners.  Therefore, any use we may have for the convex hull will be in limited situations.\
+\
+<!--\
+%A common algorithm from computational geometry that finds a minimum convex polygon that fits all the points.  The points in our case are the grids that are marked with free space.   Convert theses pixesl to points at their centers, and we have input for a convex polygon.  The results look like 0.  Cite \\cite\{cgal:hs-chep2-12b\}\
+\
+%This has the capability of smoothing over the gaps from the blind spots.  Has shortcomings.  Loses corners.\
+\
+%Has some uses, but for curved pipes, we lose critical information about the true pipe dimensions and their curved topology.  Does not represent nonconvex features.\
+-->}

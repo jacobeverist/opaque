@@ -1,0 +1,57 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fnil\fcharset0 Cochin;}
+{\colortbl;\red255\green255\blue255;}
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\f0\fs28 \cf0 \
+##Behavior Merging [sec:merge]\
+\
+\
+There are a few methods for merging behaviors that overlap in some way.  One way of the previous section is for two behaviors to overlap temporally and using the HoldTransition behavior to handle a smooth transition from one configuration to another.\
+\
+In the event that two behaviors control adjacent sets of joints or overlap their control in some way, a conflict resolution is method is needed to not only select the proper command for contested joints, but to prevent either behavior from negatively affecting functionality of the other by modifying any positional assumptions or introducing any unintended forces or torques to the other side.\
+\
+A common occurrence is that two behaviors may try to control the same set of joints at the same time or otherwise.  This is a conflict that requires resolution by the parent behavior.  In this section we present three different ways to merge the outputs of different behaviors as means of conflict resolution.  They are, in the order presented, the precedence merge, the splice merge, the convergence merge, and the compliance merge respectively.\
+\
+Given that all child behaviors have an ordering, the default resolution method is to take the first behavior's control output over all others.  This is called precedence merging.  An ordering is always specified by the parent at the time it instantiates the child behaviors.  If the first behavior's output is NULL, then it goes to the next behavior and so on until a non-NULL value is found or the last behavior returns a NULL, in which case the parent also returns a NULL unless the parent otherwise specifies.\
+\
+Precedence merging can be crude when trying to maintain a stable and immobilized position in the environment.  Sudden changes at the behavior-boundary can cause jarring discontinuities on the snake's posture and result in loss of anchoring as seen in [](#merging1).  A more finessed approach would disallow these discontinuities and provide a non-disruptive merging.  The first approach that does this is the splice merge.\
+\
+![Discontinuity in behaviors results in clash of functionality.][merging1]\
+\
+[merging1]: {\field{\*\fldinst{HYPERLINK "scrivlnk://174"}}{\fldrslt 2_merging_1.png}} width=400px\
+\
+In the event that two behaviors overlap, we have the option of having a hard boundary between the behaviors centered on a single joint. Except in the rare case that both behaviors want to command the splice joint to the same angle, it is highly likely that the merge will be discontinuous.  In order to ensure that positional assumption is maintained for both behaviors, the behaviors must be spliced so that neither behavior disrupts the other.\
+\
+If the splice joint is \\\\(j_s\\\\), behavior A controls joints \\\\(j_0\\\\) through \\\\(j_s\\\\), behavior B controls joints \\\\(j_s\\\\) through \\\\(j_\{N-1\}\\\\), \\\\(S_\{s-1\}\\\\) is the body segment connected to \\\\(j_s\\\\) in behavior A, and \\\\(S_s\\\\) is the body segment connected to \\\\(j_s\\\\) in behavior B, we have the situation shown in [](#merging2)a.  If behavior A commands \\\\(j_s\\\\) to \\\\(\\alpha_a\\\\) to put segment \\\\(S_s\\\\) in the position shown in [](#merging2)b and conversely, if behavior B commands \\\\(j_s\\\\) to \\\\(\\alpha_b\\\\) to put segment \\\\(S_\{s-1\}\\\\) in the position shown in [](#merging2)c, the two behaviors can be spliced discontinuously with no disruption to either behavior by setting \\\\(j_s\\\\) to \\\\(\\alpha_s = \\alpha_a + \\alpha_b\\\\).  The result is shown in [](#merging2)d.\
+\
+![Splice joint and connecting segments.][merging2]\
+\
+[merging2]: {\field{\*\fldinst{HYPERLINK "scrivlnk://175"}}{\fldrslt 2_behaviors_2.png}} width=400px\
+\
+This is the behavior splicing approach because it stitches the behaviors together in a clinical way to ensure proper functionality of both.  Its primary role is to connect behaviors with discontinuous conflicts on the behavior boundary and whose positions must be maintained for functional purposes.  For more fuzzy continuous boundaries, we use the convergence merging approach.\
+\
+For the two behaviors shown in [](#merging3)a and [](#merging3)b, the resultant convergence merge is shown in [](#merging3)c.  For this approach, there is no discrete boundary but one behavior converging to another over several joints.  For a given joint \\\\(j_i\\\\) somewhere in this convergence zone, and the commanded values for behaviors A and B being \\\\(\\alpha_a\\\\) and \\\\(\\alpha_b\\\\), the converged command value for \\\\(j_i\\\\) is computed by:\
+\
+<!--\
+\\begin\{equation\}\
+\\label\{equ:slide\}\
+\\alpha_i = \\alpha_a + (\\alpha_b \'96 \\alpha_a) / ( 1 + \\exp(i-c))\
+\\end\{equation\}\
+-->\
+\
+where \\\\(c\\\\) is a calibration parameter that controls the magnitude and location of the convergence along the snake.  As \\\\(c \\to +\\infty\\\\), \\\\(\\alpha_i \\to \\alpha_b\\\\).  As \\\\(c \\to -\\infty\\\\), \\\\(\\alpha_i \\to \\alpha_a\\\\).  In practice, \\\\(|c| < 20\\\\) is more than sufficient for complete convergence to one behavior or the other.  The \\\\(i\\\\) parameter in the exponent ensures that the convergence value is different for each of the neighboring joints.  This produces the effect shown in [](#merging3)c.\
+\
+![Convergence merge.][merging3]\
+\
+[merging3]: {\field{\*\fldinst{HYPERLINK "scrivlnk://176"}}{\fldrslt 2_behaviors_3.png}} width=400px\
+\
+If we modify \\\\(c\\\\), this gives us a control knob on the merge and can be moved up and down.  If we move \\\\(c \\to +\\infty\\\\), behavior B takes complete control of the snake.  If we move \\\\(c \\to -\\infty\\\\), behavior A takes control of the snake.  \\\\(c\\\\) can be changed over time to create a sliding transition effect with a convergence boundary.  In fact, this is the basis for a behavior called HoldSlideTransition.\
+\
+A fourth and final way for two behaviors to be merged is the compliance merge.  This is the case where two behaviors are not adjacent but are far away from each other, but still interfere with each other somehow by inflicting unwanted forces and torques between the behaviors.\
+\
+A compliance merge resolves this by selecting a group of joints between the two behavior's joint sets to be compliant or non-actuated.  This has the result of absorbing any forces or torques transmitted by either behaviors and mechanically isolating one side of the snake from the other.  An example is shown in [](#merging4).\
+\
+![Compliance merge.][merging4]\
+\
+[merging4]: {\field{\*\fldinst{HYPERLINK "scrivlnk://177"}}{\fldrslt 2_behaviors_4.png}} width=400px}

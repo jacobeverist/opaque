@@ -1,1 +1,1 @@
-Global medial axis from union of posture images
+union of all poses produces the medial axis.  Represents path of the environment.  Use ICP on axis instead of last pose's spatial curve

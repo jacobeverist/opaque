@@ -1,0 +1,49 @@
+This is BibTeX, Version 0.99d (TeX Live 2013)
+Capacity: max_strings=35307, hash_size=35307, hash_prime=30011
+The top-level auxiliary file: draft_2015_02_20.aux
+The style file: alpha.bst
+Database file #1: ../dissertation.bib
+Warning--empty journal in Vona:2010p391
+Warning--empty year in Vona:2010p391
+You've used 1 entry,
+            2543 wiz_defined-function locations,
+            562 strings with 4559 characters,
+and the built_in function-call counts, 286 in all, are:
+= -- 23
+> -- 8
+< -- 1
++ -- 3
+- -- 2
+* -- 18
+:= -- 55
+add.period$ -- 2
+call.type$ -- 1
+change.case$ -- 5
+chr.to.int$ -- 1
+cite$ -- 3
+duplicate$ -- 14
+empty$ -- 21
+format.name$ -- 4
+if$ -- 51
+int.to.chr$ -- 1
+int.to.str$ -- 0
+missing$ -- 1
+newline$ -- 7
+num.names$ -- 3
+pop$ -- 11
+preamble$ -- 1
+purify$ -- 6
+quote$ -- 0
+skip$ -- 9
+stack$ -- 0
+substring$ -- 8
+swap$ -- 0
+text.length$ -- 1
+text.prefix$ -- 1
+top$ -- 0
+type$ -- 8
+warning$ -- 2
+while$ -- 2
+width$ -- 2
+write$ -- 11
+(There were 2 warnings)

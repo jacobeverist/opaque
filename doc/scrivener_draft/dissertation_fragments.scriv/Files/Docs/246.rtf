@@ -1,0 +1,25 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fnil\fcharset0 Cochin;}
+{\colortbl;\red255\green255\blue255;}
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\f0\fs28 \cf0 \
+## Behavior Architecture\
+\
+Our method of control is a behavior-based architecture that is charged with reading and tasking the servo-based motor controllers of each joint.  Each behavior may be a primitive low-level behavior or a high-level composite behavior composed of multiple sub-behaviors.  Furthermore, a behavior may have complete control of every joint on the snake or the joints may be divided between different but mutually supporting behaviors.  This architecture allows us to achieve a hierarchy of behavior design as well a separation of responsibilities in task achievement.  For instance, the back half of the robot could be responsible for anchoring, while the front half could be responsible for probing the environment as seen in the example architecture in [](#behaviors1).\
+\
+![Separation of functionality][behaviors1]\
+\
+[behaviors1]: {\field{\*\fldinst{HYPERLINK "scrivlnk://172"}}{\fldrslt 2_behaviors_1.png}} width=400px\
+\
+Each behavior in the behavior-based architecture is time-driven.  It is called periodically by a timer interrupt to compute the next commands for the following time-step.  This could be variable time or constant time, but to make our behavior design simple, we use 10ms constant time steps in our simulation.\
+\
+At each time step, the state of the robot is captured and driven to the behaviors.  The data includes a vector of joint angles \\\\(\\phi_i\\\\), a vector of commanded angles \\\\(\\alpha_i\\\\), and a vector of maximum torques \\\\(m_i\\\\).  These values were described in the previous section X.  The output of each behavior is a vector of new commanded angles \\\\(\\hat\{\\alpha\}_i\\\\), a vector of new max torques \\\\(\\hat\{m\}_i\\\\), and a vector of control bits \\\\(c_i\\\\).  The values of \\\\(\\hat\{\\alpha\}_i\\\\) can be any radian value within the joint range of motion or it can be NULL.  Likewise, the new max torque of \\\\(\\hat\{m\}_i\\\\) can be any non-negative max torque threshold or NULL.  The NULL outputs indicate that this behavior is not changing the value and if it should reach the servo-controller, it should persist with the previous value.\
+\
+The bits of the control vector, \\\\(c_i\\\\) , are either 1, to indicate that the behavior is modifying joint i, or 0, to indicate that it has been untouched by the behavior since its initial position when the behavior was instantiated.  This control vector is to signal the activity to parent behavior that this part of the snake is being moved or controlled.  The parent behavior does not need to respect these signals, but they are needed for some cases.\
+\
+Our behavior-based control architecture follows the rules of control subsumption.  That is, parent behaviors may override the outputs of child behaviors.  Since we can also run multiple behaviors in parallel on different parts of the snake, sometimes these behaviors will try to control the same joints.  When this happens, the parent behavior is responsible for either prioritizing the child behaviors or adding their own behavior merging approach.\
+\
+Asymmetric behaviors that run on only one side of the snake such as the front are reversible by nature.  That is, their direction can be reversed and run on the back instead.  All behaviors with directional or asymmetric properties have this capability..\
+\
+Finally, parent behaviors can instantiate and destroy child behaviors at will to fulfill their own control objective.  All behaviors are the child of some other behavior except the very top root-level behavior which is the main control program loaded into the robot and responsible for controlling every joint.  The root behavior is responsible for instantiating and destroying assemblages of behaviors to achieve tasks as specified in its programming.  We will discuss some of these behaviors and child behaviors in the following sections.}

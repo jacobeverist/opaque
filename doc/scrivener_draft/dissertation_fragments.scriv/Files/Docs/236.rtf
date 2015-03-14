@@ -1,0 +1,27 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fnil\fcharset0 Cochin;}
+{\colortbl;\red255\green255\blue255;}
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\f0\fs28 \cf0 \
+## Managing Slip\
+\
+Since the possibility of error occurring in our free space maps is very real and has the consequences of making the data near-useless, we want to do all we can to prevent and mitigate any failure conditions.  As the primary source of error is anchor slip, we do all we can to focus on this issue while probing the environment.  We use a number of techniques for both prevention and detection of error.  We describe all of our approaches below.\
+\
+###Slip Prevention\
+\
+We have 6 strategies for preventing anchor slip during the course of probing the environment.  These are the following:\
+\
+<!--\
+\\begin\{enumerate\} \\itemsep 1pt \\parskip 0pt \\parsep 0pt\
+  \\item Prescriptive Stability\
+  \\item Local Stability\
+  \\item Smooth Motion\
+  \\item Averaging Reference Poses\
+  \\item Separation of Sweep Maps\
+\\end\{enumerate\}\
+-->\
+\
+The first three we have discussed earlier, with prescriptive stability and local stability in section [](#sec:anchors) and smooth motion in section [](#sec:smooth).  We use prescriptive and local stability to determine which reference poses are available to be activated.  Whereas, smooth motion through the use of linearly interpolated steps by using the Transition behavior reduces the chance that our anchors will slip. \
+\
+The prescriptive stability selection of the PokeWalls behavior requires the robot to only use the anchored portion of the snake body for reference poses.  In particular, it is very conservative, where only the segments at the very back and mechanically isolated from any of the sweeping motions in the front will be used for reference.  This reduces the chance that any perturbations from the probing motions will have an effect on any of the active reference poses that we are using.}

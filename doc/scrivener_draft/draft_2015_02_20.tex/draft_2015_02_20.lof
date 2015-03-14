@@ -1,0 +1,57 @@
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {1.1}{\ignorespaces Example environment.}}{14}{figure.1.1}
+\contentsline {figure}{\numberline {1.2}{\ignorespaces Definitions of snake and pipe parameters.}}{15}{figure.1.2}
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {2.1}{\ignorespaces TODO: Remove the obstacle map. Free space map from PokeWalls behavior.}}{21}{figure.2.1}
+\contentsline {figure}{\numberline {2.2}{\ignorespaces Snapshot of $\mathaccentV {bar}016{\phi _t}$ in local coordinates.}}{28}{figure.2.2}
+\contentsline {figure}{\numberline {2.3}{\ignorespaces Single forward sweep.}}{29}{figure.2.3}
+\contentsline {figure}{\numberline {2.4}{\ignorespaces Forward and backward sweep.}}{30}{figure.2.4}
+\contentsline {figure}{\numberline {2.5}{\ignorespaces Free space data before and after convex hull.}}{31}{figure.2.5}
+\contentsline {figure}{\numberline {2.6}{\ignorespaces Free space data of curved posture before and after convex hull.}}{32}{figure.2.6}
+\contentsline {figure}{\numberline {2.7}{\ignorespaces Alpha Shape example from \textbackslash {}cite[cgal:d-as2--12b]}}{33}{figure.2.7}
+\contentsline {figure}{\numberline {2.8}{\ignorespaces Alpha Shape changing radius from \textbackslash {}cite(cgal:d-as2--12b)}}{34}{figure.2.8}
+\contentsline {figure}{\numberline {2.9}{\ignorespaces Alpha hull of free space data.}}{35}{figure.2.9}
+\contentsline {figure}{\numberline {2.10}{\ignorespaces Process of generating medial axis.}}{36}{figure.2.10}
+\contentsline {figure}{\numberline {2.11}{\ignorespaces Process of generating medial axis.}}{37}{figure.2.11}
+\contentsline {figure}{\numberline {2.12}{\ignorespaces Largest set of contiguous reference poses.}}{39}{figure.2.12}
+\contentsline {figure}{\numberline {2.13}{\ignorespaces Separation of Sweep Maps.}}{41}{figure.2.13}
+\contentsline {figure}{\numberline {2.14}{\ignorespaces Local map rotational error.}}{42}{figure.2.14}
+\contentsline {figure}{\numberline {2.15}{\ignorespaces Gross Posture Approximation Curve of sample posture.}}{43}{figure.2.15}
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {4.1}{\ignorespaces Pose of rigid body with respect to global frame.}}{56}{figure.4.1}
+\contentsline {figure}{\numberline {4.2}{\ignorespaces Pose of A and B with respect to global frame.}}{57}{figure.4.2}
+\contentsline {figure}{\numberline {4.3}{\ignorespaces Local coordinate frames attached to segments and described by reference poses.}}{61}{figure.4.3}
+\contentsline {figure}{\numberline {4.4}{\ignorespaces Robot Posture, Gross Posture Approximation Curve (GPAC), and Local Frame Origin}}{65}{figure.4.4}
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {5.1}{\ignorespaces Biological Concertina Gait of a Snake in a Confined Space. Image taken from \textbackslash {}cite\{Gans:1980p775\}}}{71}{figure.5.1}
+\contentsline {figure}{\numberline {5.2}{\ignorespaces Improperly tuned concertina posture using equation \autoref {eq:naiveconc}.}}{72}{figure.5.2}
+\contentsline {figure}{\numberline {5.3}{\ignorespaces One period sine curve}}{74}{figure.5.3}
+\contentsline {figure}{\numberline {5.4}{\ignorespaces Anchor with not enough segments}}{76}{figure.5.4}
+\contentsline {figure}{\numberline {5.5}{\ignorespaces Anchor Points}}{77}{figure.5.5}
+\contentsline {figure}{\numberline {5.6}{\ignorespaces Anchor with amplitude larger than pipe width.}}{78}{figure.5.6}
+\contentsline {figure}{\numberline {5.7}{\ignorespaces Separation of functionality}}{81}{figure.5.7}
+\contentsline {figure}{\numberline {5.8}{\ignorespaces Smooth motion from interpolation of posture.}}{83}{figure.5.8}
+\contentsline {figure}{\numberline {5.9}{\ignorespaces Discontinuity in behaviors results in clash of functionality.}}{85}{figure.5.9}
+\contentsline {figure}{\numberline {5.10}{\ignorespaces Splice joint and connecting segments.}}{86}{figure.5.10}
+\contentsline {figure}{\numberline {5.11}{\ignorespaces Convergence merge.}}{87}{figure.5.11}
+\contentsline {figure}{\numberline {5.12}{\ignorespaces Compliance merge.}}{88}{figure.5.12}
+\contentsline {figure}{\numberline {5.13}{\ignorespaces Adaptive Step Concertina Gait}}{92}{figure.5.13}
+\contentsline {figure}{\numberline {5.14}{\ignorespaces Front-Extend behavior assembly}}{93}{figure.5.14}
+\contentsline {figure}{\numberline {5.15}{\ignorespaces Front-Anchor behavior assembly}}{95}{figure.5.15}
+\contentsline {figure}{\numberline {5.16}{\ignorespaces Posture that creates a 3-point anchor.}}{98}{figure.5.16}
+\contentsline {figure}{\numberline {5.17}{\ignorespaces Back-Extend behavior assembly.}}{98}{figure.5.17}
+\contentsline {figure}{\numberline {5.18}{\ignorespaces Back-Anchor behavior assembly}}{99}{figure.5.18}
+\contentsline {figure}{\numberline {5.19}{\ignorespaces Parameterization of 3-point stable anchor in a smooth pipe.}}{102}{figure.5.19}
+\contentsline {figure}{\numberline {5.20}{\ignorespaces 3-point stable anchor with $w = 0$, $l = 0$, and $n = \infty .$.}}{102}{figure.5.20}
+\contentsline {figure}{\numberline {5.21}{\ignorespaces Plot of snake arc length $L$ for various values of $W$ and $P$.}}{103}{figure.5.21}
+\contentsline {figure}{\numberline {5.22}{\ignorespaces Plot of snake length $L$ while $P=1$, for various values of $W$ and $w$.}}{105}{figure.5.22}
+\contentsline {figure}{\numberline {5.23}{\ignorespaces Intersecting circles along the line of the curve. Demonstration of curve fitting algorithm.}}{107}{figure.5.23}
+\contentsline {figure}{\numberline {5.24}{\ignorespaces PokeWalls behavior assembly.}}{108}{figure.5.24}
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {6.1}{\ignorespaces Point $I_k$ on Curve $\beta _k$ from Local Origin $O_k$}}{114}{figure.6.1}
+\contentsline {figure}{\numberline {6.2}{\ignorespaces Iterative Closest Point (ICP), finding angle around $O_0$ and $O_1$}}{115}{figure.6.2}
+\contentsline {figure}{\numberline {6.3}{\ignorespaces Iterative Closest Point (ICP), finding for $U_v$ and $\theta _v$ in step constraint}}{118}{figure.6.3}
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }

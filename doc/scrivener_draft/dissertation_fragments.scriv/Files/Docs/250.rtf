@@ -1,0 +1,34 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fnil\fcharset0 Cochin;}
+{\colortbl;\red255\green255\blue255;}
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\f0\fs28 \cf0 \
+##Stability Assurance [sec:stability]\
+\
+In a previous section on smooth motion, we discussed an interpolation technique to smoothly transition from one posture to another.  The primary motive of this was to keep the parts of the snake body that are immobilized from being destabilized by transient forces and causing anchor slip.  Static forces from prolonged pushing against an obstacle or wall are a separate matter.\
+\
+For a pose transition that has a sufficiently large number of interpolation steps of sufficiently large duration, we can reasonably be assured that no transient forces from dynamics or collision will cause anchor slip because we are moving very very slowly.  However, sufficiently long transition times for reliability may be impractical for applications, since times for a simple transition can be upwards of 1-2 minutes using a conservative approach.  For a robot that performs hundreds of moves that require transitions, this is an unacceptable approach.\
+\
+If we focus on being able to detect transient forces on the snake body instead, we can use this to control the speed of our movements instead of a one-size-fits-all approach of long transition times for all motion.  We have developed a heuristic technique to do just this.\
+\
+Our approach is to use our only source of information, joint angle sensors, as make-shift stability monitors of the entire snake.  That is, if all the joints stop changing within a degree of variance, we can call the whole snake stable.  Once we have established that the snake is stable, we can perform another step of motion. \
+\
+For each, we compute a sliding window that computes the mean and variance of the set of values contained in.  If at every constant time step, we sample the value of some joint \\\\(i\\\\) to be \\\\(\\phi_\{it\}\\\\), then we compute:\
+\
+<!--\
+\\begin\{equation\}\
+\\mu = \\sum_\{t = j-K\}^\{j\} \\frac\{\\phi_\{it\}\}\{K\}\
+\\end\{equation\}\
+\\begin\{equation\}\
+\\sigma^2 = \\sum_\{t=j-K\}^\{j\} \\frac\{(\\phi_\{it\} \'96 \\mu)^2\}\{K\}\
+\\end\{equation\}\
+-->\
+\
+\\\\(K\\\\) is the width of the sliding window or the sample size used for computing the variance.  This and the time step size \\\\(\\delta t\\\\), are used to determine the resolution and length of variance computation.  In our implementation, with some exceptions, we use \\\\(\\delta t = 1\\mathrm\{ms\}\\\\) and \\\\(K = 20\\\\).  That is, for \\\\(N\\\\) joints, we compute the variance of each joint's angle for the last 20 readings once every 1ms.  This may be changed and retuned depending on the available computing resources, the resolution of the sensors, and the sensor's sample rate.\
+\
+Finally, we can determine if the snake is stable if all of the joint variances fall below a threshold \\\\(S_v\\\\) and stay that way for over time \\\\(S_t\\\\).  In our case, we set \\\\(S_v = 0.001\\\\) and \\\\(S_t = 50\\mathrm\{ms\}\\\\).\
+\
+We are primarily interested in preventing anchor slip.  Most often, it is not necessary to wait for the entire snake to hold still before moving.  Instead, we can focus just on the joints in the neighborhood of the anchor points.  By computing just the variances of the joints in the local neighborhood of the anchor points, we can determine local stability.  Using local stability, we gain some confidence that our anchor points do not slip between motion steps.\
+\
+In order to use this concept of local stability, we need to have some indication of which joints to monitor and which to ignore.  Fortunately, the control vector c, output of the behaviors mentioned in a previous section, is just the kind of information we need to know where to direct our local stability attention.  If the values of a control vector indicate '0', this means that these joints are not modified by the behavior and should remain stable before performing another move step.  If the values are '1', these joints are actively modified by the behavior and we should not expect these joints to remain stable between move steps.  The behavior prescriptively tells us how it should behave and the stability system processes it to accommodate.}

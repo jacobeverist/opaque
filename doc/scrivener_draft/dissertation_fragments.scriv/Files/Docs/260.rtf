@@ -1,0 +1,28 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fnil\fcharset0 Cochin;}
+{\colortbl;\red255\green255\blue255;}
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\f0\fs28 \cf0 ### OverlapAxis Function [sec:overlapAxis]\
+\
+Now that we have axis computed from the union of alpha shapes of posture images, new poses can now be constrained to the axis.  In the event that the robot backtracks, it will utilize the full history of robot's poses to localize the robot's new position.\
+\
+We define a new function similar to **overlap**, called **overlapAxis**, that functions the same way as the overlap function.  However, instead of overlapping spatial curves with spatial curves, it overlaps a single pose's spatial curve to the existing map axis.\
+\
+The objective of the function is to find a geometric transform between the spatial curves, \\\\(C_k\\\\), and the map axis, \\\\(C_g\\\\).  Unlike the **overlap** function, **overlapAxis** must have an initial guessed pose for \\\\(X_k\\\\).  The guess of \\\\(X_k\\\\), \\\\(\\hat\{X\}_k\\\\), is computed from the original step constraint in the previous section.  Therefore, the procedure to find the new \\\\(X_k\\\\) and it's companion \\\\(X_\{k+1\}\\\\) is as follows.\
+\
+<!--\
+\\begin\{equation\}\
+\\hat\{X\}_k = \\mathrm\{overlap\}(X_\{k-2\}, I_\{k-2\}, I_k, f)\
+\\end\{equation\}\
+\\begin\{equation\}\
+X_k = \\mathrm\{overlap\\_axis\}(\\hat\{X\}_k, I_k, C_g)\
+\\end\{equation\}\
+\\begin\{equation\}\
+X_\{k+1\} = \\mathrm\{overlap\}(X_\{k\}, I_\{k\}, I_\{k+1\}, \\varnothing)\
+\\end\{equation\}\
+-->\
+\
+The same ICP point matching, cost and search algorithms are run in **overlapAxis** described in the previous section.\
+\
+}

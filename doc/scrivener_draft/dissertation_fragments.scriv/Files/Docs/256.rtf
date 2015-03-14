@@ -1,0 +1,78 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fnil\fcharset0 Cochin;\f1\fnil\fcharset0 Verdana;}
+{\colortbl;\red255\green255\blue255;\red38\green38\blue38;}
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\f0\fs28 \cf0 \
+### Iterative Closest Point\
+\
+As part of the overlap function, we perform the ICP algorithm to make the two curves overlap.  Our ICP algorithm has specific requirements to our particular task.  We want to be able to partially overlap two curves, without the ICP algorithm maximizing the amount of overlap.\
+\
+To accomplish this, we need to constrain the type of closest point comparisons, and tailor the cost function to our desired outcome.  Specifically, we want the section of the two curves that are overlapped to be completely aligned and be able to escape local minima to find a better fit.\
+\
+For the cost evaluation, we used Generalized ICP, originally developed by <!-- \\cite\{Segal_generalized-icp\}-->.   Generalized ICP allows the evaluation of cost, weighting each of the points by a covariance to describe their orientation.  Therefore, lower evaluation costs are achieved by matching points that are similarly aligned.   The covariance of the point is computed by finding the tangent angle of the curve at that point.  Then a covariance matrix is generated from the direction vector.\
+\
+Our ICP algorithm is as follows.  First, we match closest points between the two curves.  For every point on \\\\(C_a\\\\), we find the closest point on \\\\(C_b\\\\).  If the closest point is greater than some threshold \\\\(D=0.2\\\\), or the difference in tangent angle between the two points is greater than \\\\(\\epsilon = \\frac\{\\pi\}\{4\}\\\\), then the match is discarded.  Otherwise, the match is accepted.  We perform the same closest point search for every point on \\\\(C_b\\\\), and find the closest point on \\\\(C_a\\\\) with the above restrictions.  Finally, we discard any duplicates.\
+\
+Now that we have the set of closest point pairs, we can evaluate the cost with a special distance function.  If \\\\(v_p\\\\) is the normalized direction vector of the point's orientation with an angle of \\\\(\\epsilon_p\\\\), the covariance of each point is computed by the following equation:\
+\
+<!--\
+\\begin\{equation\}\
+C_p = \
+\\begin\{bmatrix\}\
+0.05 & 0 \\\\\
+0 & 0.001 \
+\\end\{bmatrix\}\
+\\begin\{bmatrix\}\
+cos(\\epsilon) & -sin(\\epsilon) \\\\\
+sin(\\epsilon) & cos(\\epsilon) \
+\\end\{bmatrix\}\
+\\end\{equation\}\
+-->\
+\
+To compute the optimal transform of a set of matched points, given some transform \\\\(\\mathbf\{T\}\\\\) between the two sets of points and a displacement vector \\\\(d_i\\\\) between each particular match, the optimized \\\\(\\mathbf\{T\}\\\\) is computed in [](#eqn:icp).  The details of the derivation of this cost function can be found in <!-- \\cite\{Segal_generalized-icp\}-->.  \
+\
+<!--\
+\pard\pardeftab720
+
+\f1\fs26 \cf2 \expnd0\expndtw0\kerning0
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\f0\fs28 \cf0 \kerning1\expnd0\expndtw0 \\begin\{equation\}\
+\\label\{eqn:icp\}\
+\\mathbf\{T\} = \\argmin_\\mathbf\{T\} \\sum_i d_i^\{(\\mathbf\{T\})^T\} (C_i^a + \\mathbf\{T\} C_i^b \\mathbf\{T\}^T)^\{-1\} d_i^\{(\\mathbf\{T\})\} \
+\\end\{equation\}\
+-->\
+\
+\
+Iterating through the ICP algorithm continues, matching new points and finding the optimal transform \\\\(\\mathbf\{T\}\\\\) until the difference between the current and previous cost value is below a certain threshold.  It terminates and returns \\\\(\\mathbf\{T\}\\\\).\
+\
+\
+<!--\
+%* Orientation\
+%* Closest pairs intersection point\
+%* Closest pairs computation\
+%	* Local angle variance\
+%	* Closest point A -> B\
+%	* Closest point B -> A\
+%	* Select pair that has lowest angular variance\
+\
+%* Result serves as intersection point between two curves.  \
+%* 3DOF -> 2DOF conversion\
+%* (x,y,o) transform -> (u,o) transform\
+\
+%* Covariance and mahalanobis distance?  \
+%* Point-to-line constraint\
+%* Point-matching search\
+%* Cost function\
+%* Repeat N number of times or convergence (c1-c2) < minCostDiff\
+-->\
+\
+<!--\
+%@MISC\{Segal_generalized-icp,\
+%    author = \{Aleksandr V. Segal and Dirk Haehnel and Sebastian Thrun\},\
+%    title = \{Generalized-ICP\},\
+%    year = \{\}\
+%\}\
+-->}

@@ -1,0 +1,46 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fnil\fcharset0 Cochin;}
+{\colortbl;\red255\green255\blue255;}
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\f0\fs28 \cf0 \
+For both of these requirements, we use the backbone curve-fitting methodology first described by \\cite\{Chirikijan:1995p774\}.  This method of control is to produce a parameterized curve that represents the desired posture of the snake over time. Over time the curve changes to reflect desired changes in the snake posture. Snake backbone curve fitting is achieved by finding the joint positions that best fit the snake body onto the curve. This is found either by direct calculation or a search algorithm.\
+\
+An example of backbone curve fitting can be seen in [](#onePeriod).   The parameterized curve is shown in light blue in the background.   The blue snake body in the foreground is fitted onto the curve using an iterative search algorithm for each consecutive joint. \
+\
+![One period sine curve][onePeriod]\
+\
+[onePeriod]: {\field{\*\fldinst{HYPERLINK "scrivlnk://168"}}{\fldrslt OnePeriodCurve.png}} width=400px\
+\
+\
+A typical application would be to specify the posture of the snake using a sinusoidal curve and then applying an inverse kinematics technique to fit the snake to the curve.   The problem can be formulated iteratively as follows: for joints \\\\(i \\in [0,k]\\\\) and joint pose in space \\\\(p_i = \\langle x_i,y_i,\\theta_i \\rangle \\\\) are on the curve \\\\(\\beta\\\\) with parameter \\\\(t_i\\\\), find the joint angle \\\\(a_k\\\\) such that \\\\(p_\{k+1\}\\\\) is on the curve \\\\(\\beta\\\\) and \\\\(t_k < t_\{k+1\}\\\\).\
+\
+For the equation \\\\(\\beta\\\\) defined as:\
+\
+<!--\
+\\begin\{equation\}\
+\\label\{eq:curve1\}\
+y = A\\sin(2\\pi x)\
+\\end\{equation\}\
+-->\
+\
+the equation is monotonic along the \\\\(x\\\\) axis, so satisfying the criteria \\\\(t_i < t_\{i+1\}\\\\) is the same as satisfying \\\\(x_i < x_\{i+1\}\\\\).  \
+\
+If the length a of snake segment is \\\\(l\\\\), we specify a circle equation centered at the joint position \\\\((x_i,y_i)\\\\) with the following:\
+\
+<!--\
+\\begin\{equation\}\
+\\label\{eq:IKcircle\}\
+(x-x_i)^2 + (y-y_i)^2 = l\
+\\end\{equation\}\
+-->\
+\
+Finding solutions for the simultaneous equations [](#eq:curve1) and [](#eq:IKcircle) will give us possible solutions to \\\\(x_\{i+1\}\\\\) and \\\\(y_\{i+1\}\\\\).  For these two sets of equations, there are always at least 2 possible solutions.  We need only select the solution that satisfies the invariant condition \\\\(x_i < x_\{i+1\}\\\\).   There may be more than solution.  In which case, we select the \\\\(x_\{i+1\}\\\\) where \\\\((x_\{i+1\}-x_i)\\\\) is the smallest.  This prevents the snake from taking shortcuts across the curve and forces it to fit as closely as feasibly possible to the parameterized curve given the snake robot's dimensions.\
+\
+The above simultaneous equations do not have closed-form solutions and instead must be solved numerically.  This can be computationally expensive using general equation solvers.  Instead we propose a more specialized solver for this particular problem.\
+\
+We choose a series of uniform samples \\\\((q_0 ... q_k ... q_M)\\\\) around a circle of radius \\\\(l\\\\) centered at \\\\((x_i,y_i)\\\\) such that all points \\\\(q_k\\\\) have \\\\(x_k >= x_i\\\\).  We are looking for instance of crossover events where the line segment \\\\((q_k,q_\{k+1\})\\\\) crosses over the curve \\\\(\\beta\\\\).   Given at least one crossover event, we do a finer search between \\\\((q_k, q_\{k+1\})\\\\) to find the closest point on the circle to the curve \\\\(\\beta\\\\) and accept that as our candidate position for joint point \\\\(p_\{k+1\}\\\\).   As long as we assume that the curve \\\\(\\beta\\\\) is monotonic along the x-axis and a point of the curve \\\\(\\beta\\\\) can be computed quickly given an x-value, this is a faster method of computing intersections of the circle with the backbone curve than a general numerical solver.\
+\
+For instance, in [](#plot_3), we show a curve \\\\(\\beta\\\\) described by a sine curve and a series of circles intersecting with the curve that indicate candidate locations for placing the subsequent joint on the curve.  These are used to determine the appropriate joint angles to fit the snake onto the curve.\
+\
+Now that we have a means of changing the snake's posture to any desired form given a parameterized, monotonic curve that describes the posture, we now need to form an anchoring approach that will work for arbitrary pipe widths.}

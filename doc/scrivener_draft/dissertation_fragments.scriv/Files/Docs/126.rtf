@@ -3,28 +3,38 @@
 {\colortbl;\red255\green255\blue255;}
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
 
-\f0\fs28 \cf0 ##Generating Shoots\
+\f0\fs28 \cf0 ###Generating Skeletons\
 \
-Compute the union of posture images for a shoot set.   Cut and paste each medial axis at the designated branch points between the parent and child shoots.\
-\
-For each shoot S_j,\
-	For each pose k that is member of S_j,\
-		Plot posture image I_k to pose X_k\
-\
-	Find alpha shape A_j of union of pixels\
-	Find medial axis M_j of alpha shape.\
-\
-For every pair of shoots S_j, S_k,\
-	If S_j = isParentOf(S_k)\
-		Find closest point on M_k to b_k.\
-		Cut section from the extra portion of medial axis starting at b_k in the direction of b_k\
-		Add section to trimmed shoot map T_k\
-\
-	If isRoot(S_k):\
-		Add M_k to trimmed shoot map as T_k\
+To build the skeleton has the same computation as in [](#gen_axis).  However, in this case, we do not find the longest path.  We instead keep the whole tree.\
 \
 \
-Medial axis from union of set of posture images of particular shoot S where exists vertices degree > 2.\
-Trim the section closest point to the branch point in the direction oriented by the branch point b_k.\
+<!--\
+\\begin\{algorithm\}\
+\\caption\{Generate Skeleton from Posture Images\}       \
+\\label\{alg:skeleton\}\
+\\begin\{algorithmic\}\
+\\State \
+\\State $ I_\{0:t\} \\Leftarrow $ posture images\
+\\State $ H_\{0:t\} \\Leftarrow $ alpha shapes from posture images\
+\\State $ M_\{0:t\} \\Leftarrow $ uniformly distributed points inside alpha shape polygons\
+\\State\
+\\State Compute alpha shape of union of points\
+\\State $\\hat\{H\} \\Leftarrow \\mathrm\{alphaShape\}(M_\{0:t\}) $\
+\\State\
+\\State Fill points into alpha shape and make image\
+\\State $\\hat\{I\} \\Leftarrow \\mathrm\{polygonToImage\}(\\hat\{H\}) $\
+\\State\
+\\State Skeletonize the image\
+\\State $\\hat\{T\} \\Leftarrow \\mathrm\{skeletonize\}(\\hat\{I\}) $\
+\\State\
+\\State Compute set of leaf-to-leaf paths\
+\\State $\\hat\{C\}_\{1:j\} \\Leftarrow \\mathrm\{computeSplices\}(\\hat\{T\}) $\
+\\State \
+\\State \\Return $\\hat\{T\}, \\hat\{C\}_\{1:j\}$\
+\\end\{algorithmic\}\
+\\end\{algorithm\}\
+-->\
+\
+Shown in algorithm [](#alg:skeleton), we compute the union of the posture images by first finding the union of their alpha shape polygons, filling in the polygons with uniformly distributed points, and then finding the alpha shape of the union of points.    From this we find the skeletonization of the alpha shape polygon converted to image format.  We find all the possible paths between leafs and return them as a set of \\\\( j \\\\) "splices".\
 \
 }

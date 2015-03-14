@@ -2,22 +2,7 @@
 <Links Version="1.0" Anchor="RTF">
     <ScrivenerLinks>
         <TextLinks>
-            <LinkID Range="1194,16">152</LinkID>
-            <LinkID Range="3359,17">153</LinkID>
-            <LinkID Range="16564,16">202</LinkID>
-            <LinkID Range="17214,22">154</LinkID>
-            <LinkID Range="17312,18">155</LinkID>
-            <LinkID Range="19858,23">156</LinkID>
-            <LinkID Range="19993,23">157</LinkID>
-            <LinkID Range="21603,14">142</LinkID>
-            <LinkID Range="22032,18">158</LinkID>
-            <LinkID Range="22412,22">159</LinkID>
-            <LinkID Range="24215,20">160</LinkID>
-            <LinkID Range="24308,21">161</LinkID>
-            <LinkID Range="30615,19">162</LinkID>
-            <LinkID Range="32171,16">163</LinkID>
-            <LinkID Range="34756,17">164</LinkID>
-            <LinkID Range="36131,16">192</LinkID>
+            <LinkID Range="878,16">152</LinkID>
         </TextLinks>
     </ScrivenerLinks>
 </Links>
