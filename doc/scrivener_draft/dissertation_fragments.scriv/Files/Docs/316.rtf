@@ -1,0 +1,121 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fnil\fcharset0 Cochin;}
+{\colortbl;\red255\green255\blue255;\red247\green247\blue247;}
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\f0\fs28 \cf0 ### Parameterization\
+\
+In order to perform a search of the best map, we need to define the parameters of the map we will be searching over.  The ultimate goal is to search for the best possible values of \\\\(X_\{1:t\}\\\\) to produce the most consistent map given the posture image observations of \\\\(I_\{1:t\}\\\\) and the actions \\\\(A_\{1:t\}\\\\).\
+\
+To restate the experience of the robot, we have a series of actions:\
+\
+<!--\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+\cf0 \expnd0\expndtw0\kerning0
+\\begin\{equation\}\
+\pard\pardeftab720\sl288\slmult1
+\cf0 \expnd0\expndtw0\kerning0
+    A_t = \
+\\begin\{cases\}\
+    f, & \\text\{forward locomotion step\}\\\\\
+    b, & \\text\{backward locomotion step\}\\\\\
+    \\varnothing, & \\text\{no move (switch sweep side)\}\
+\\end\{cases\}\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+\cf0 \expnd0\expndtw0\kerning0
+\\end\{equation\}\
+\pard\pardeftab720\sl288\slmult1
+\cf0 \expnd0\expndtw0\kerning0
+    \kerning1\expnd0\expndtw0 -->\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+\cf0 \
+The robot has a series of observations that create posture images:\
+\
+<!--\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+\cf0 \expnd0\expndtw0\kerning0
+\\begin\{equation\}\
+\pard\pardeftab720\sl288\slmult1
+\cf0 \expnd0\expndtw0\kerning0
+    I_t = I_t(i,j) = \
+\\begin\{cases\}\
+    1, & \\text\{if void space\}\\\\\
+    0, & \\text\{if unknown\}\
+\\end\{cases\}\
+\\end\{equation\}\
+-->\
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+\cf0 \kerning1\expnd0\expndtw0 <!--\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+\cf0 \expnd0\expndtw0\kerning0
+\\begin\{equation\}\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+\cf0 \kerning1\expnd0\expndtw0 0 \\leq i \\leq N_g, \\quad 0  \\leq j \\leq N_g\expnd0\expndtw0\kerning0
+\
+\\end\{equation\}\
+\kerning1\expnd0\expndtw0 -->\
+\
+where \\\\(N_g\\\\) is the number of pixels on a side of the posture image.  The posture image can be reduced to a spatial curve representation:\
+\
+<!--\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+\cf0 \expnd0\expndtw0\kerning0
+\\begin\{equation\}\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+\cf0 \kerning1\expnd0\expndtw0 C_t \\Leftarrow \\Call\{scurve\}\{I_t\}\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+\cf0 \expnd0\expndtw0\kerning0
+\\end\{equation\}\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+\cf0 \kerning1\expnd0\expndtw0 -->\
+\
+We want to solve for all poses in the global frame for each posture image:\
+\
+<!--\
+\\begin\{equation\}\
+X_t^g = ( x_t^g, y_t^g, \\theta_t^g )\
+\\end\{equation\}\
+-->\
+\
+However, it is easier to break the problem down and reduce the search space with some assumptions.  The first way we break the problem down is grouping the poses into sets that represent the skeletons \\\\(S_\{1:m\}\\\\).  Each pose is then represented in the local frame of the skeleton whose origin is placed on some point on the parent skeleton.\
+\
+<!--\
+\\begin\{equation\}\
+S_i = \cb2 \\\{\\exists k \\quad \\mathrm\{s.t.\} \\quad 0 \\leq k \\leq t  \\\}\
+\cb1 \\end\{equation\}\
+-->\
+\
+The global pose of each of member of the skeleton is computed by using the relative skeleton transforms found by local frame origin placed on the parent skeleton:\
+\
+<!--\
+\\begin\{equation\}\
+b_i = (x_i,y_i,\\theta_i)\
+\\end\{equation\}\
+-->\
+\
+For instance, for the root skeleton \\\\(S_0\\\\), the origin is placed at the global origin \\\\(b_0^g = (0,0,0)\\\\).  So the global pose \\\\(X_k^g\\\\) and the local pose \\\\(X_k^0\\\\) are identical.  However, for a child skeleton \\\\(S_1\\\\), whose parent is \\\\(S_0\\\\), the location of its origin is some pose \\\\(b_1^0\\\\) in the local frame of the parent.  Therefore, the global pose of some \\\\(X_k^g\\\\) from \\\\(X_k^1\\\\) for \\\\(k \\in S_1\\\\) is \\\\(X_k^g = T * X_k^1\\\\) where \\\\(T\\\\) is a transform derived similarly to [](#equ:c_to_g_pose).\
+\
+The problem of global registration of branches to form junctions becomes the problem of finding the transform between skeletons.  Since a skeleton is created when a divergence occurs, finding the correct transform between two skeletons becomes finding the correct location of a branching arm.  This gives us a solution to the hard problem of correctly registering the branches of a cross junction.\
+\
+Since the transform is a 3 degree of freedom search space, we can reduce to one dimension by finding the child skeleton origin placed on some curve of the parent skeleton as seen in [](#control_point).  We call the location on the parent skeleton the *control point* \\\\(b_i\\\\) and serves as the origin of the skeleton's local frame.   The search space remains one dimension so long as we assume that the angle remains constant.  Any amount of angular transform results in the parent and child skeleton no longer overlapping cleanly, so this is a reasonable assumption in practice.\
+\
+![Control point on parent skeleton indicates location of child frame with respect to parent.][control_point]\
+\
+[control_point]: {\field{\*\fldinst{HYPERLINK "scrivlnk://319"}}{\fldrslt control_point}} width=400px\
+\
+Since the robot is in a confined space and all the sensed area is void space, it stands to reason that any possible location of the robot will be close to or on one of the skeleton splices.  With this observation, it is possible to reduce the dimensionality of the possible pose locations and make the localization problem much simpler.  To reduce the search space of optimizing the pose, we consider a uniform distribution of initial guesses that are located on the splices of the global skeleton map as seen in [](#init_pose_distribution).\
+\
+The pose is originally represented by 3 values: \\\\((x,y,\\theta)\\\\).  We can reduce the dimensionality of the pose by restricting the pose to be a point on a skeleton splice.   Specifically, given a curve, a pose on the curve can be represented by two variables, the angle \\\\(\\theta\\\\) and the arc distance \\\\(u\\\\).  Therefore, the current pose of the robot given the current map is represented by the vector \\\\( (u,\\theta) \\\\) and its designated skeleton splice curve \\\\(c\\\\).\
+\
+This approach assumes that any possible pose will be located on a skeleton splice curve.  This approach can encounter difficulties if this is not the case.  Any situation where the pose would not be on the skeleton curve is either, the skeleton is distorted by improperly localized previous poses, or the robot is not in the center of the pipe.  The latter case is possible if the pipe is too wide for the robot to anchor to the edges.   One of our original assumptions is that environment is not too wide for the robot to anchor.\
+\
+![Uniform distribution of initial pose guesses on global skeleton splices.][init_pose_distribution]\
+\
+[init_pose_distribution]: {\field{\*\fldinst{HYPERLINK "scrivlnk://321"}}{\fldrslt init_pose_distribution}} width=400px\
+\
+The spacing between the initial samples indicates how deeply the search will be formed.  With a sparse distribution, the search will be quick, but chances are the correct pose will not be found.  With a dense distribution, search time will be longer because each pose needs to be evaluated.  The distribution constitutes the initial guess of the pose and does not indicate a likely final result.  Later use of ICP will allow us to find the correct pose in a continuous search space.  However, ICP requires an initial value to start the search, so this distribution is our source for initial values.\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sl288\slmult1\pardirnatural
+\cf0 \
+\
+}

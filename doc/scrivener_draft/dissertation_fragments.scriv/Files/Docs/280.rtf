@@ -2,12 +2,63 @@
 {\fonttbl\f0\fnil\fcharset0 Cochin;}
 {\colortbl;\red255\green255\blue255;}
 \deftab720
-\pard\pardeftab720\li540\fi-540
+\pard\pardeftab720\li540\fi-540\sl288\slmult1
 
 \f0\fs28 \cf0 \
-## Skeletons Overlapping State\
+### Overlapping Skeletons\
 \
-Evaluate all skeleton states\
-Maximize evaluation function G(b\sub 12\nosupersub )\
-Measures overlap and landmark consistency\
-G(b\sub 12\nosupersub ) = normLandmarkCost * normMatchCount}
+The next phase of the *junction method* is to maximize the overlap of the skeletons.  That is, we will adjust the transform between parent and child skeletons such that they are aligned and create junctions that are consistent with the observations.\
+\
+Given a parent-child skeleton pair, like the motion estimation phase, we discretize the possible locations of the control point on the parent.  That is, we select a handful of possible locations for the child frame to be located on the parent that are uniformly spaced.  Given this handful of states, we evaluate each one with a cost function.\
+\
+If the map is more complex and includes more than two skeletons, then we evaluate every combination of control point location for each parent-child skeleton pair.  This creates an exponential explosion in combinations for each skeleton that is added.  In the future we can create smart strategies for pruning the search space, but for simple environments, this is sufficient.\
+\
+We begin by describing our evaluation function.  We use two metrics.  The first is the result, \\\\(LM\\\\), of the landmark cost function, \\\\(\\Call\{computeLandmarkCost\}\\\\), shown in [](#alg:landmarkCost).   The second is the amount of overlap, \\\\(MC\\\\), between all of the skeletons which is shown is shown in [](#alg:skeleton_overlap).\
+\
+The skeleton overlap function computes the number of points on a skeleton that are close enough to any other point on the other skeletons.  Therefore, skeletons that are mutually overlapping will maximize their match count.    A match is made if a point is within \\\\(D_c\\\\) distance to a point on any other skeleton.    The algorithm for the computation is shown in [](#alg:skeleton_overlap).\
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+\cf0 <!--\
+\\begin\{algorithm\}\
+\\caption\{Skeleton Overlap Evaluation\}       \
+\\label\{alg:skeleton_overlap\}\
+\\begin\{algorithmic\}\
+\\State $\\Function\{overlapSkeleton\}\{\\hat\{T\}_\{0:m\}\}$\
+\\State $D_c \\Leftarrow 0.2$  \\Comment match distance threshold\
+\\State $MC \\Leftarrow 0$  \\Comment number of point matches\
+\\For\{$i = 0$ to $m$ \}\
+	\\State $T^\{\\prime\} = \\hat\{T\}_\{0:m\} - \\hat\{T\}_i$  \\Comment points of skeletons minus current skeleton $\\hat\{T\}_i$\
+	\\For\{ $\\forall p \\in \\hat\{T\}_i$\}\
+		\\State $D_\{min\} = \\Call\{closestDistance\}\{p, T^\{\\prime\}\}$ \\Comment closest point to other skeletons\
+		\\If\{$D_\{min\} < D_c$\}\
+			\\State $MC \\Leftarrow MC + 1$   \\Comment increment if made a match under threshold\
+		\\EndIf\
+	\\EndFor\
+\\EndFor\
+\\State \\Return $MC$\
+\\EndFunction\
+\\end\{algorithmic\}\
+\\end\{algorithm\}\
+-->\
+\pard\pardeftab720\li540\fi-540\sl288\slmult1
+\cf0 \
+Given the global configuration of skeleton trees, \\\\(T_\{1:m\}\\\\), we compute the evaluation of a particular state with the following equation:\
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+\cf0 <!--\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+\cf0 \expnd0\expndtw0\kerning0
+\\begin\{equation\}\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+\cf0 \kerning1\expnd0\expndtw0 G(T_\{1:m\}) = \\frac\{LM_\{max\}-LM\}\{LM_\{max\}\} * \\frac\{MC\}\{MC_\{max\}\}\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+\cf0 \expnd0\expndtw0\kerning0
+\\end\{equation\}\
+-->\kerning1\expnd0\expndtw0 \
+\pard\pardeftab720\li540\fi-540\sl288\slmult1
+\cf0 \
+\\\\(LM_\{max\}\\\\) is the maximum landmark cost over all of the states and \\\\(MC_\{max\}\\\\) is the maximum match count over all of the states.  The state with the highest evaluation becomes our selected spatial transform between all of the skeletons.  This maximizes the mutual overlap between all of the skeletons and increases the consistency of the junctions.\
+\
+Since in the previous phase, we may have had a divergence and created a new skeleton, the skeleton overlap phase may have found a state that causes this new skeleton to completely overlap an existing one.  This indicative that the new branch is not in fact new, but re-observation of an existing one.  This mutual overlapping of skeletons gives us the opportunity to solve the loop-closing problem when revisiting existing junctions.\
+\
+}

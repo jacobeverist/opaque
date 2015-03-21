@@ -5,10 +5,32 @@
 
 \f0\fs28 \cf0 ###Skeleton Maps\
 \
-To represent and keep track of junctions and any instance of \'93branching off\'94 from the main global medial axis, we introduce a new map representation called a skeleton map.   First we define the **skeleton** to be the medial axis of a union of posture images that permits multiple junction features.   In the previous section, our medial axis of the entire environment represented a single path where there were no junctions.   Once a divergence event is found, a new skeleton is created that represents the branching off.  The coordinate frame origin is placed on the original skeleton and becomes the *parent* of the new skeleton.\
+![Skeleton Example][skeleton_example]\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+\cf0 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+\cf0 [skeleton_example]: {\field{\*\fldinst{HYPERLINK "scrivlnk://308"}}{\fldrslt skeleton_example}} width=600px\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+\cf0 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+\cf0 To represent and keep track of junctions and any instance of \'93branching off\'94 from the main global medial axis, we introduce a new map representation called a skeleton map.   First we define the **skeleton** to be the medial axis of a union of posture images that permits multiple junction features.   In the previous section, our medial axis of the entire environment represented a single path where there were no junctions.   Once a divergence event is found, a new skeleton is created that represents the branching off.  The coordinate frame origin is placed on the original skeleton and becomes the *parent* of the new skeleton.\
 \
 Corresponding to the three cases of how a spatial curve overlaps an existing global medial axis, 1) either the pose is contained within an existing skeleton, 2) the pose extends the skeleton, or 3) the pose diverges and is added to a new skeleton that branches off.   Given the nature of the skeleton structure, their is a parent-child relationship between skeletons, with the stem being the root skeleton.  All skeletons except for the root, have an origin placed on its parent skeleton.\
 \
-The skeleton is generated from the same computation as computing the global axis.  However, in the axis computation, we selected the longest path from leaf to leaf.  In the case of the skeleton, we keep the whole tree.  This allows the representation of junction features if they are needed.  We create new skeletons whenever a new spatial curve diverges from the parent skeleton and does not fit on to any existing skeleton.  We will explain this in detail later.\
+The skeleton is generated from the same computation as computing the global axis.  However, in the axis computation, we selected the longest path from leaf to leaf.  In the case of the skeleton, we keep the whole tree.  This allows the representation of junction features if they are needed.  We create new skeletons whenever a new spatial curve diverges from the parent skeleton and does not fit on to any existing skeleton.  An example of a skeleton map is shown in [](#skel_map1) and [](#skel_map2).\
 \
+![Skeleton Map 1][skel_map1]\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+\cf0 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+\cf0 [skel_map1]: {\field{\*\fldinst{HYPERLINK "scrivlnk://309"}}{\fldrslt skel_map1}} width=400px\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+\cf0 \
+![Skeleton Map 2][skel_map2]\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+\cf0 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+\cf0 [skel_map2]: {\field{\*\fldinst{HYPERLINK "scrivlnk://310"}}{\fldrslt skel_map2}} width=400px\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+\cf0 \
 We say a pose is a member of a skeleton \\\\(T_p\\\\) if it has some overlap with \\\\(T_p\\\\) but does not overlap a child, \\\\(T_c\\\\), of \\\\(T_p\\\\).   That is, if any portion of a pose overlaps a child \\\\(T_c\\\\), the pose is a member of \\\\(T_c\\\\) and not \\\\(T_p\\\\).  A pose can be a member of more than one skeleton if there are more than one child skeletons.   The member skeletons can be siblings or any other combination where the skeletons are not direct ancestors or descendants.}

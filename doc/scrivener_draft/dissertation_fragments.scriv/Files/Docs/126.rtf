@@ -13,22 +13,30 @@ To build the skeleton has the same computation as in [](#gen_axis).  However, in
 \\caption\{Generate Skeleton from Posture Images\}       \
 \\label\{alg:skeleton\}\
 \\begin\{algorithmic\}\
+\\State $\\Function\{skeletonize\}\{X_\{0:k\}, I_\{0:k\}\}$\
 \\State \
-\\State $ I_\{0:t\} \\Leftarrow $ posture images\
-\\State $ H_\{0:t\} \\Leftarrow $ alpha shapes from posture images\
-\\State $ M_\{0:t\} \\Leftarrow $ uniformly distributed points inside alpha shape polygons\
+\\State $ I_\{0:k\} \\Leftarrow $ posture images\
+\\State $ X_\{0:k\} \\Leftarrow $ global poses\
+\\State \
+\\For\{ $i=0$ to $k$\}\
+	\\State $H_i \\Leftarrow $\\Call\{alphaShape\}\{$I_i$\}  \\Comment\{alpha shapes from posture images\}\
+\\EndFor\
+\\State \
+\
+\\State  Uniformly distributed points inside alpha shape polygons\
+\\State $ M_\{0:k\} \\Leftarrow \\Call\{pointsInPolygon\}\{X_\{0:k\}, I_\{0:k\}\}$\
 \\State\
 \\State Compute alpha shape of union of points\
-\\State $\\hat\{H\} \\Leftarrow \\mathrm\{alphaShape\}(M_\{0:t\}) $\
+\\State $\\hat\{H\} \\Leftarrow \\Call\{alphaShape\}\{M_\{0:k\}\} $\
 \\State\
 \\State Fill points into alpha shape and make image\
-\\State $\\hat\{I\} \\Leftarrow \\mathrm\{polygonToImage\}(\\hat\{H\}) $\
+\\State $\\hat\{I\} \\Leftarrow \\Call\{polygonToImage\}\{\\hat\{H\}\} $\
 \\State\
 \\State Skeletonize the image\
-\\State $\\hat\{T\} \\Leftarrow \\mathrm\{skeletonize\}(\\hat\{I\}) $\
+\\State $\\hat\{T\} \\Leftarrow \\Call\{skeletonize\}\{\\hat\{I\}\} $\
 \\State\
 \\State Compute set of leaf-to-leaf paths\
-\\State $\\hat\{C\}_\{1:j\} \\Leftarrow \\mathrm\{computeSplices\}(\\hat\{T\}) $\
+\\State $\\hat\{C\}_\{1:j\} \\Leftarrow \\Call\{computeSplices\}\{\\hat\{T\}\} $\
 \\State \
 \\State \\Return $\\hat\{T\}, \\hat\{C\}_\{1:j\}$\
 \\end\{algorithmic\}\

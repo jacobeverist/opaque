@@ -4,9 +4,7 @@
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
 
 \f0\fs28 \cf0 \
-### Results\
-\
-Our results show that results of skeleton mapping with the junction method.\
+### Algorithm\
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
 \cf0 \
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
@@ -58,11 +56,11 @@ Our results show that results of skeleton mapping with the junction method.\
 \\caption\{Motion Estimation\}       \
 \\label\{alg:motion_skeletons\}\
 \\begin\{algorithmic\}\
-\\Function\{motionOnSkeletons\}\{$m,T_\{0:m\}, C, X_k, I_k$\}\
+\\State $\\Function\{motionOnSkeletons\}\{m,T_\{0:m\}, C, X_k, I_k\}$\
 \
 \\State $X_\{best\} \\Leftarrow X_k$\
 \\For\{ $\\forall c \\in C$\}\
-	\\State $X_k \\Leftarrow $\\Call\{overlapAxis\}\{$\\hat\{X\}_k, I_k, C$\}\
+	\\State $X_k \\Leftarrow $\\Call\{overlapAxis\}\{$\\hat\{X\}_k, I_k, c$\}\
 	\\State evaluate $X_k$ and set to $X_\{best\}$ if best\
 \\EndFor\
 \
@@ -78,7 +76,7 @@ Our results show that results of skeleton mapping with the junction method.\
 \\caption\{Add to Skeletons\}       \
 \\label\{alg:add_skeletons\}\
 \\begin\{algorithmic\}\
-\\Function\{addToSkeletons\}\{$m,S_\{0:m\},T_\{0:m\}, X_k, I_k$\}\
+\\State $\\Function\{addToSkeletons\}\{m,S_\{0:m\},T_\{0:m\}, X_k, I_k\}$\
 \
 \\Comment\{this is a comment\}\
 \
@@ -103,7 +101,7 @@ Our results show that results of skeleton mapping with the junction method.\
 \\caption\{Generate Skeletons\}       \
 \\label\{alg:gen_skeletons\}\
 \\begin\{algorithmic\}\
-\\Function\{genSkeletons\}\{$m,S_\{0:m\}, X_k, I_k$\}\
+\\State $\\Function\{genSkeletons\}\{m,S_\{0:m\}, X_k, I_k\}$\
 \
 \
 \\For\{$n = 0$ to $m$ \}\

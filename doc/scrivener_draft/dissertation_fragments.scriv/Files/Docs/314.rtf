@@ -1,0 +1,18 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fnil\fcharset0 Cochin;}
+{\colortbl;\red255\green255\blue255;}
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\fi360\sl288\slmult1\pardirnatural
+
+\f0\fs28 \cf0 ## Problem [search:problem]\
+\
+Though we have shown how to build a map with junctions in the environment, there are a number of ways for error to be injected into the map.  In particular, we identify three possible ways for error to be added.\
+\
+The first is that there is error in the pose of the robot.  In this case, a combination of the last best pose and the current estimated pose gives a pathological estimation of the location and orientation of the robot.  This could have innocuous results in straight and featureless environments or very severe errors in the case of the robot taking a wrong turn down a different branch of the map.\
+\
+The second form of error is whether or not a divergence is indicative of an actual branch.  Though a spatial curve is diverging from the skeleton map at the current pose of the robot, it does not necessarily mean that we have found a new junction.  This could mean that the spatial curve would have a more proper *contained* fit somewhere else in the skeleton map.  It may also indicate a junction that we have already encountered before.  We need some way to take in account all three possibilities of a divergence:  1) a new junction, 2) an existing junction, or 3) no junction at all.\
+\
+The third form of error that we consider is the actual location of a junction after the detection of a divergence event.  After a divergence event, a new skeleton is created with respect to its parent based on the estimated pose of the diverging spatial curve.  However, after the initial placement, it is useful to consider the spatial relationship between the two skeletons independent of a single pose.  Since junctions are only partially observable, we cannot reconstruct the entire junction without multiple views and different branching events.  The spatial relation of the skeletons that compose the junction need to be changeable so that they can be later optimized into the correct configuration.  For example, in the cross environment map, it is common to discover the arms of the junction in an unaligned fashion.  Only some post-hoc optimization process given enough data can align them into their true configuration.\
+\
+ In this chapter, we introduce the **search method** which provides some way to handle this error and search for the best possible solution.  Our approach discretizes the state space and uses ICP and evaluation functions to find the most consistent map given the observational data.  Just like in the *junction method*, we use the whole history of the sensor data to make mapping decisions.  However, this approach has the capacity to defer mapping decisions or remove branches that are unlikely.\
+\
+}

@@ -437,7 +437,7 @@ In order to capture as much information about the environment as we can, we need
 <hr/>
 <ul>
 <li>
-<p class="binderItem"><strong>problem</strong><br/>Challenges of build map.  Given features and actions, why existing methods are not sufficient for current problem</p>
+<p class="binderItem"><strong>Problem</strong><br/>Challenges of build map.  Given features and actions, why existing methods are not sufficient for current problem</p>
 </li>
 <li>
 <p class="binderItem"><strong>Naive Method</strong><br/>using only last pose to estimate location using spatial curve</p>
@@ -503,7 +503,7 @@ We define a new function similar to **overlap**, called **overlapAxis**, that fu
 <hr/>
 <ul>
 <li>
-<p class="binderItem"><strong>problem</strong><br/>axis method insufficient for maps with junctions.  Structures are undefined. How to ICP a tree instead of a curve? Need generalized solution for arbitrary amounts of "branches"</p>
+<p class="binderItem"><strong>Problem</strong><br/>axis method insufficient for maps with junctions.  Structures are undefined. How to ICP a tree instead of a curve? Need generalized solution for arbitrary amounts of "branches"</p>
 </li>
 <li>
 <p class="binderItem"><strong>Junction Method</strong><br/>## Junction Method<br/>
@@ -519,110 +519,82 @@ The approach we use to handle junctions in the environment is called the **junct
 <p class="binderItem"><strong>Generating Skeletons</strong><br/>Basic algorithm to generate medial axis of each shoot set, and cut the medial axis to create the shoots.</p>
 </li>
 <li>
-<p class="binderItem"><strong>Adding Poses to Skeletons</strong><br/>### Adding New Poses to Skeleton Map<br/>
+<p class="binderItem"><strong>Adding Poses to Skeletons</strong><br/>### Adding New Poses to Skeleton Map [junction:add_to_skeleton]<br/>
 <br/>
-Now that we have described how to generate a skeleton given a set of data, we need to explain how we go about adding new poses to a map.  In the base case, the first two poses are added to the initial skeleton.  The initial skeleton then becomes the root skeleton and ancestor to all future skeletons.  A skeleton map can have one or more skeletons.  We explain how to add a pose to a single skeleton map and then explain how to add a pose to a multi-skeleton ma...</p>
+Now that we have described how to generate a skeleton given a set of data, we need to explain how we go about adding new poses to a map.  In the base case, the first two poses are added to the initial skeleton.  The initial skeleton then becomes the root skeleton and ancestor to all future skeletons.  A skeleton map can have one or more skeletons.  We explain how to add a pose to a single skeleton map and then explain how to add a ...</p>
 </li>
 <li>
 <p class="binderItem"><strong>Results</strong><br/><br/>
-### Results<br/>
+### Algorithm<br/>
 <br/>
-Our results show that results of skeleton mapping with the junction method.<br/>
+The pseudocode describing the axis method mapping approach is shown in algorithm [](#alg:junction_method).  The portion to estimating the motion of all possible splices on the skeleton map is in algorithm [](#alg:motion_skeletons).  The portion devoted to adding the pose to the right skeleton is in algorithm [](#alg:add_skeletons).  The portion regarding generating the skeleton is in algorithm [](#alg:gen_skeletons).<br/>
 <br/>
-The pseudocode describing the axis method mapping approach is shown in algorithm [](#alg:junction_method).  The portion to estimating the motion of all possible splices on the skeleton map is in algorithm [](#alg:motion_skeletons).  The portion devoted to adding the pose to the right skeleton is in algorithm [](#alg:add_skeletons).  The portion regarding generating the skeleton is in algorithm [](#alg:gen_...</p>
+<!--<br/>
+\begin{algorithm}<br/>
+\caption{Junction Method}       <br/>
+\label...</p>
 </li>
 </ul>
 </ul>
 <hr/>
 <li>
-<p class="binderItem"><strong>Searching for Best Map</strong><br/>#Searching for Best Map [chap:search]</p>
+<p class="binderItem"><strong>Searching for the Best Map</strong><br/>#Searching for the Best Map [chap:search]</p>
 </li>
 <hr/>
 <ul>
 <li>
-<p class="binderItem"><strong>branch uncertainty</strong><br/>## Search Method<br/>
+<p class="binderItem"><strong>Problem</strong><br/>## Problem [search:problem]<br/>
 <br/>
-Branching in right location?<br/>
-New branch, existing branch, or no branch?<br/>
-Pose in right location?<br/>
-Leads to a search method</p>
+Though we have shown how to build a map with junctions in the environment, there are a number of ways for error to be injected into the map.  In particular, we identify three possible ways for error to be added.<br/>
+<br/>
+The first is that there is error in the pose of the robot.  In this case, a combination of the last best pose and the current estimated pose gives a pathological estimation of the location and orientation of the robot.  This could have innocuous results in s...</p>
+</li>
+<li>
+<p class="binderItem"><strong>Search Method</strong><br/>## Search Method<br/>
+<br/>
+The *search method* is trying to estimate and optimize the consistency of the map defined by the following parameters: 1) \\(X_{0:t}\\), the global poses of the robot, 2) \\(S_{0:m}\\), the skeletons and their member poses, and 3) \\(b_{1:m}\\), the spatial transform between parent and child skeletons.  Finding the best map would involve making sure the poses are classified to their appropriate skeletons, the poses are placed so that their spatial curves are mutually overlappin...</p>
 </li>
 <hr/>
 <ul>
 <li>
-<p class="binderItem"><strong>uncertainty of junction-1</strong><br/><br/>
-Take for instance the 3-point T junction shown in Figure [X].  There are three possible occupancy states for the robot to fit into the junction.   As we can see, states 0 and 1 together give us a complete representation of the junction.  However, it is not clear from just the estimated poses and local spline curves of the data that they should be matched up together.  There is ambiguity in their relationship since the poses can be arranged in a number of different configurations that represent ...</p>
-</li>
-</ul>
-<hr/>
-<li>
-<p class="binderItem"><strong>discretize poses and control</strong><br/>## Discretize Map Parameters<br/>
+<p class="binderItem"><strong>Parameterization</strong><br/>### Parameterization<br/>
 <br/>
-Uniformly discretize possible poses on every splice curve<br/>
-Sample many spatial relations between skeletons<br/>
-Select best evaluated state as our map<br/>
+In order to perform a search of the best map, we need to define the parameters of the map we will be searching over.  The ultimate goal is to search for the best possible values of \\(X_{1:t}\\) to produce the most consistent map given the posture image observations of \\(I_{1:t}\\) and the actions \\(A_{1:t}\\).<br/>
 <br/>
-</p>
-</li>
-<li>
-<p class="binderItem"><strong>parameterization</strong><br/><br/>
-##Parameterization<br/>
+To restate the experience of the robot, we have a series of actions:<br/>
 <br/>
-Possible poses of the new posture image Xt<br/>
-Skeleton sets: Grouping of all posture image with pose information Sk<br/>
-Spatial relationship between skeletons, control points bk</p>
-</li>
-<li>
-<p class="binderItem"><strong>spatial transform of skeletons</strong><br/><br/>
-## Spatial Transform of Skeletons<br/>
-<br/>
-Control point on “parent” skeleton<br/>
-<br/>
-Reduced to 1D search space</p>
-</li>
-<li>
-<p class="binderItem"><strong>Search Method Steps</strong><br/><br/>
-## Search Method Steps<br/>
-Objective: solve best fit for Xt, skeletons S1:k, and spatial relation b1:k<br/>
-<br/>
-Motion Estimation<br/>
-Add-to-Skeletons<br/>
-Overlap Skeletons<br/>
-Localize Pose to Map<br/>
-Merge Skeletons</p>
+<!--<br/>
+\begin{equation}<br/>
+    A_t = <br/>
+\begin{cases}<br/>
+    f, & \text{forward locomotion step}\\<br/>
+   ...</p>
 </li>
 <li>
 <p class="binderItem"><strong>Motion Estimation</strong><br/><br/>
-## Motion Estimation<br/>
+### Motion Estimation<br/>
 <br/>
-Select discrete possible poses uniformly along all splices of the set of overlapping skeletons<br/>
-Evaluate based on consistency F(x)<br/>
-F(x) = -2*overlapSum0 – 2*overlapSum1 – angDiff0/Pi – angDiff1/Pi + 2*normLandmarkSum<br/>
-Bias likelihood with Gaussian curve representing motion estimated from last best pose<br/>
-Select best possible pose, keep all past sampled possible poses<br/>
+Given the initial distribution of poses shown in [](#init_pose_distribution), we want to first model the movement of the robot given the current action A_t.  For every candidate pose shown in [](#init_pose_distribution), motion is achieved by displacing the pose by a fixed distance along the curve of each of the splices the pose is contained on.  The fixed distance displaced is an empirically determined value from the average locomotion distance of the robot.  For our cur...</p>
+</li>
+<li>
+<p class="binderItem"><strong>Add to Skeleton Map</strong><br/><br/>
+### Add to Skeleton Map<br/>
 <br/>
+This phase of the *search method* is identical to [](#junction:add_to_skeleton).  In this case, we use the best pose selected from the motion estimation phase.  If the spatial curve is diverging, we create a new skeleton.  If it is not, we add it to an existing skeleton.<br/>
 </p>
 </li>
 <li>
-<p class="binderItem"><strong>Add to Map</strong><br/><br/>
-## Add to Map<br/>
+<p class="binderItem"><strong>Overlapping Skeletons</strong><br/><br/>
+### Overlapping Skeletons<br/>
 <br/>
-Determine if pose’s spatial curve is diverging<br/>
-Create new branching skeleton if diverging<br/>
-Otherwise, add to an existing skeleton</p>
-</li>
-<li>
-<p class="binderItem"><strong>Skeleton Overlapping State</strong><br/><br/>
-## Skeletons Overlapping State<br/>
+The next phase of the *junction method* is to maximize the overlap of the skeletons.  That is, we will adjust the transform between parent and child skeletons such that they are aligned and create junctions that are consistent with the observations.<br/>
 <br/>
-Evaluate all skeleton states<br/>
-Maximize evaluation function G(b12)<br/>
-Measures overlap and landmark consistency<br/>
-G(b12) = normLandmarkCost * normMatchCount</p>
+Given a parent-child skeleton pair, like the motion estimation phase, we discretize the possible locations of the control point on the parent.  That is, we select a handful of possible locations for the child frame to be ...</p>
 </li>
 <li>
 <p class="binderItem"><strong>Localization</strong><br/><br/>
-## Localization<br/>
+### Localization<br/>
+<br/>
 ICP localize all previous samples across all splices<br/>
 Select maximum evaluated pose H(x)<br/>
 H(x) = normLandmarkSum * contigFrac0 * contigFrac1<br/>
@@ -630,132 +602,35 @@ Correct the map with best fit pose<br/>
 <br/>
 <br/>
 <br/>
+![Localization: ICP of initial poses and selection of best pose.][localization_evaluation]<br/>
+<br/>
+[localization_evaluation]: localization_evaluation width=400px<br/>
+<br/>
+![Localization: ICP of initial poses and selection of best pose.][localization_cost]<br/>
+<br/>
+[localization_cost]: localization_cost width=400px<br/>
 <br/>
 <br/>
-</p>
+Immediate...</p>
 </li>
-<hr/>
-<ul>
-<li>
-<p class="binderItem"><strong>Localizing on Skeletons Map</strong><br/>Splicing shoots together, performing ICP on splices.  Take best guess.  </p>
-</li>
-<hr/>
-<ul>
-<li>
-<p class="binderItem"><strong>Finding Best Fitted Location</strong><br/><br/>
-### Finding the Best Fitted Location<br/>
-<br/>
-Immediately after motion estimation, branch detection, and skeleton categorization, our next task is to find the best likely location for the current pose.  We measure the likelihood in terms of the best possible fit of the current posture curve to the current skeleton map.  To do this, we again utilize ICP between the posture curve and splice curves representing different permutations of spliced sections of the skeleton map.<br/>
-<br/>
-For instance, if we wanted to ...</p>
-</li>
-<li>
-<p class="binderItem"><strong>Choosing Skeleton Splices</strong><br/>###Choosing Skeleton Splices<br/>
-<br/>
-In step 1), if there is only one skeleton in the skeleton map then the resultant splice is simply the parent skeleton itself.  However, if there is more than one skeleton, a number of possible splices are possible.   We can take an exhaustive approach and select all possible splices, including splices with multiple junctions contained within them.<br/>
-<br/>
-One approach we can take is to select all splices that terminate at every possible combination of terminal points in th...</p>
-</li>
-<li>
-<p class="binderItem"><strong>Selecting Initial Poses for ICP</strong><br/>###Selecting Initial Poses for ICP<br/>
-<br/>
-Now that we have our set of skeleton splices on which we will localize the current pose, we must determine the initial pose for each splice to input to our ICP algorithm.  The ICP algorithm takes two sets of points and an initial transform between them and outputs another transform that represents the best possible fit.  In our case, the two sets of points are uniform samples from the posture curve and the skeleton splice curve respectively.   The initial tran...</p>
-</li>
-<li>
-<p class="binderItem"><strong>ICP Algorithm</strong><br/>###ICP Algorithm<br/>
-<br/>
-* Orientation<br/>
-* Closest pairs intersection point<br/>
-* Closest pairs computation<br/>
- * Local angle variance<br/>
- * Closest point A -> B<br/>
- * Closest point B -> A<br/>
- * Select pair that has lowest angular variance<br/>
-<br/>
-* Result serves as intersection point between two curves.  <br/>
-* 3DOF -> 2DOF conversion<br/>
-* (x,y,o) transform -> (u,o) transform<br/>
-<br/>
-* Covariance and mahalanobis distance?  <br/>
-* Point-to-line constraint<br/>
-* Point-matching search<br/>
-* Cost function<br/>
-* Repeat N number of times or convergence (c1-c2) ...</p>
-</li>
-<li>
-<p class="binderItem"><strong>Collate, Sort, Filter</strong><br/>###Collate, Sort, Filter<br/>
-<br/>
-Given all of the results, we need to select just one as our final localized pose.  We need some criteria to evaluate the fitness of each pose.  There are a number of metrics that we can use in this evaluation.  However, there is no straightforward method for choosing the “best” pose since there is ambiguity in the map, identically featured locations, and sometimes there is not enough discriminatory information to make a good localization fit.  Therefore, the process by ...</p>
-</li>
-</ul>
-<hr/>
-<li>
-<p class="binderItem"><strong>Curve segment algorithms</strong><br/>isOverlapped(), getOrientation(), getContiguity(), etc.</p>
-</li>
-<hr/>
-<ul>
-<li>
-<p class="binderItem"><strong>getOrderedOverlappingPaths</strong><br/>getOrderedOverlappingPaths()<br/>
-<br/>
-The purpose of this function is to find the minimum fitting path splice for a given target local spline curve.  <br/>
-<br/>
-We define the minimum fitting splice as the shortest curve splice in which the target curve is completely contained.  <br/>
-<br/>
-For all possible combinations of path splices and for the target curve in its designated global pose, find the splice that has the highest contiguity and passes overlap condition for all of the splice's constituent path fragment.<br/>
-<br/>
-The f...</p>
-</li>
-<li>
-<p class="binderItem"><strong>computeOverlapCondition</strong><br/>The purpose of the overlap condition computation is to determine if a proposed path splice curve is at all overlapping another curve such as a local spline or another path splice curve.  The actual value of the overlap sum is not necessarily interesting, only that it is a tractable value instead of infinity.<br/>
-<br/>
-It has two possible conditions:  1) is overlapping partially, and 2) does not overlap at all.<br/>
-<br/>
-The computation is achieved by taking the target curve, which is usually the local spline, and...</p>
-</li>
-<li>
-<p class="binderItem"><strong>orientPath</strong></p>
-</li>
-<li>
-<p class="binderItem"><strong>getContiguityFraction</strong><br/>The purpose of this particular computation is to determine how much of two curves are contiguously overlapped. This is a complement to the overlap sum computation which computes scalar quantity which is an average of point-to-point closeseness over the whole curve.<br/>
-<br/>
-The contiguity calculation determines what percentage of the target curve is completely overlapped and assumes that the remained of the portions are diverging from the host curve.<br/>
-<br/>
-Contiguity is computed by counting the number of poi...</p>
-</li>
-<li>
-<p class="binderItem"><strong>computeOverlapSum</strong><br/>The purpose of the overlap sum computation is to determine how well a proposed path splice curve overlaps another target curve such as a local spline or another path splice curve.<br/>
-<br/>
-The computation is achieved by taking the target curve, which is usually the local spline, and for each point along the local spline, find its closest matched point on the secondary curve, usually the path.  The sum of all the cartesian distances is added up and the result is the overlap sum divided by the number of p...</p>
-</li>
-<li>
-<p class="binderItem"><strong>getOverlapDeparture</strong></p>
-</li>
-<li>
-<p class="binderItem"><strong>isFeatureless</strong></p>
-</li>
-</ul>
-</ul>
-<hr/>
 <li>
 <p class="binderItem"><strong>Merge Skeletons</strong><br/><br/>
-## Merge Skeletons<br/>
+### Merge Skeletons<br/>
 Merge skeletons together if they are fully constrained<br/>
 <br/>
 <br/>
+![Skeletons before merge.][skeleton_premerge]<br/>
+<br/>
+[skeleton_premerge]: skeleton_premerge width=300px<br/>
+<br/>
+![Skeletons after merge.][skeleton_postmerge]<br/>
+<br/>
+[skeleton_postmerge]: skeleton_postmerge width=300px<br/>
+<br/>
+<br/>
 </p>
 </li>
-<li>
-<p class="binderItem"><strong>Space of Possibilities</strong><br/>Poses, Branches, Branch Locations.   Some decisions can lead to irrevocable consequences.  Replicated shoots, circular cases.</p>
-</li>
-<li>
-<p class="binderItem"><strong>Pose Particle Filter</strong><br/>Population of pose hypotheses, localized, evaluated, resampled.</p>
-</li>
-<li>
-<p class="binderItem"><strong>Pose+BranchLoc Particles</strong><br/>Pose + Small grid of branch locations.  Evaluated by overlapCost of full medial axis of child on parent.</p>
-</li>
-<li>
-<p class="binderItem"><strong>Branch Decision</strong><br/>Shoot map for each go/nogo branch decision.   Eliminate options based on degenerate conditions.</p>
-</li>
+</ul>
 </ul>
 <hr/>
 <li>
