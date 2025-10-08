@@ -1,17 +1,17 @@
-from SnakeControl import SnakeControl
+from .SnakeControl import SnakeControl
 from copy import *
 from math import *
 
-from behaviors.AnchorTransition import AnchorTransition
-from behaviors.HoldTransition import HoldTransition
-from behaviors.HoldPosition import HoldPosition
-from behaviors.FrontExtend import FrontExtend
+from .behaviors.AnchorTransition import AnchorTransition
+from .behaviors.HoldTransition import HoldTransition
+from .behaviors.HoldPosition import HoldPosition
+from .behaviors.FrontExtend import FrontExtend
 #from behaviors.PokeWalls import PokeWalls
 #from behaviors.PathStep import PathStep
-from behaviors.AdaptiveStep import AdaptiveStep
+from .behaviors.AdaptiveStep import AdaptiveStep
 
-from pose.AverageContacts import AverageContacts
-from maps.MapGraph import MapGraph
+from .pose.AverageContacts import AverageContacts
+from .maps.MapGraph import MapGraph
 
 class TestAnchor(SnakeControl):
 
@@ -228,7 +228,7 @@ class TestAnchor(SnakeControl):
 		" create the first behavior "
 		if self.localState == 0:
 			
-			print "START:  doHoldPosition()"
+			print("START:  doHoldPosition()")
 			
 			self.behavior = HoldPosition(self.robotParam)
 			self.behavior.reset(probeState)
@@ -253,7 +253,7 @@ class TestAnchor(SnakeControl):
 				
 				self.isAnchored = True
 				
-				print "FINISH:  doHoldPosition()"
+				print("FINISH:  doHoldPosition()")
 				return True
 		
 		return False		
@@ -266,7 +266,7 @@ class TestAnchor(SnakeControl):
 		" create the first behavior "
 		if self.localState == 0:
 			
-			print "START:  doInitAnchor()"
+			print("START:  doInitAnchor()")
 			
 			self.behavior = AnchorTransition(self.robotParam)
 			
@@ -286,7 +286,7 @@ class TestAnchor(SnakeControl):
 				
 				self.isAnchored = True
 				
-				print "FINISH:  doInitAnchor()"
+				print("FINISH:  doInitAnchor()")
 				return True
 		
 		return False
@@ -298,7 +298,7 @@ class TestAnchor(SnakeControl):
 
 		" create the first behavior "
 		if self.localState == 0:
-			print "START:  doFrontExtend()"
+			print("START:  doFrontExtend()")
 			
 			" extend the front "
 			self.behavior = FrontExtend(self.robotParam, self.contacts, self.direction)
@@ -334,7 +334,7 @@ class TestAnchor(SnakeControl):
 				self.behavior = 0
 				self.holdP = 0
 				
-				print "FINISH:  doFrontExtend()"
+				print("FINISH:  doFrontExtend()")
 				return True
 			
 		return False
@@ -345,7 +345,7 @@ class TestAnchor(SnakeControl):
 		probeState = self.probe.getProbeState()
 				
 		if self.localState == 0:
-			print "START:  doAdaptiveStep()"
+			print("START:  doAdaptiveStep()")
 			
 			self.behavior = AdaptiveStep(self.robotParam, probeState, self.contacts, self.mapGraph, self.direction)
 			self.behavior.reset(probeState)
@@ -373,7 +373,7 @@ class TestAnchor(SnakeControl):
 				self.behavior = 0
 				self.localState = 0
 				
-				print "FINISH:  doAdaptiveStep()"
+				print("FINISH:  doAdaptiveStep()")
 				return True
 			
 		return False
@@ -384,7 +384,7 @@ class TestAnchor(SnakeControl):
 		probeState = self.probe.getProbeState()
 				
 		if self.localState == 0:
-			print "START:  doPokeWalls()"
+			print("START:  doPokeWalls()")
 
 			self.behavior = PokeWalls(self.robotParam, self.contacts, direction, self.mapGraph.obstCallBack)
 			
@@ -413,7 +413,7 @@ class TestAnchor(SnakeControl):
 				self.behavior = 0
 				self.localState = 0
 			
-				print "FINISH:  doPokeWalls()"
+				print("FINISH:  doPokeWalls()")
 				return True
 			
 		return False
@@ -426,7 +426,7 @@ class TestAnchor(SnakeControl):
 		" create the first behavior "
 		if self.localState == 0:
 			
-			print "START:  doReturnToRest()"
+			print("START:  doReturnToRest()")
 			
 			self.behavior = HoldTransition(self.robotParam)
 			self.behavior.reset(self.restState)
@@ -446,7 +446,7 @@ class TestAnchor(SnakeControl):
 				self.localState = 0
 				self.behavior = 0
 
-				print "FINISH:  doReturnToRest()"
+				print("FINISH:  doReturnToRest()")
 				return True
 								
 		return False
@@ -459,7 +459,7 @@ class TestAnchor(SnakeControl):
 		" create the first behavior "
 		if self.localState == 0:
 	
-			print "START:  doPathStep()", direction
+			print("START:  doPathStep()", direction)
 
 			" instantiate the behavior "
 			self.behavior = PathStep(self.robotParam, probeState, self.contacts, self.mapGraph, direction)
@@ -500,7 +500,7 @@ class TestAnchor(SnakeControl):
 				self.localState = 0
 				self.behavior = 0
 	
-				print "FINISH:  doPathStep()"
+				print("FINISH:  doPathStep()")
 				return True
 	
 		return False
@@ -514,7 +514,7 @@ class TestAnchor(SnakeControl):
 		" manage the paths "
 		if self.localPathState == 0:
 			
-			print "START:  doPathFollow()"
+			print("START:  doPathFollow()")
 			self.targetReached = False
 			
 			self.localDirection = True
@@ -554,7 +554,7 @@ class TestAnchor(SnakeControl):
 			" check if we've crossed the destination "
 			if dist < 0.1:
 				if not self.targetReached:
-					print "target reached!"
+					print("target reached!")
 				self.targetReached = True
 			
 			if isDone:
@@ -572,7 +572,7 @@ class TestAnchor(SnakeControl):
 					
 					dest = self.localWayPoints[0]			
 					dist = sqrt((dest[0]-self.currPose[0])**2 + (dest[1]-self.currPose[1])**2)
-					print "distance from", dest, "to", self.currPose, "=", dist
+					print("distance from", dest, "to", self.currPose, "=", dist)
 					
 					" FIXME: need better directional detection when more complicated maps "
 					" check if we're going away from our target "
@@ -598,7 +598,7 @@ class TestAnchor(SnakeControl):
 							" all points traveled, end behavior "
 							self.localPathState = 0
 				
-							print "FINISH:  doPathFollow()"
+							print("FINISH:  doPathFollow()")
 							return True
 							
 					elif self.distCount >= 2:

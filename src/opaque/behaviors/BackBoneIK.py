@@ -111,9 +111,9 @@ class BackBoneIK:
 		targetPose = [0.0,0.0,0.0]
 
 		if originSeg >= self.numSegs-1 or targetSeg >= self.numSegs-1 or originSeg < -1 or targetSeg < 0:
-			print "ERROR: getJointWRTJointPose joint out of range!" 
-			print "Received joint", originSeg , "and" , targetSeg , "with pose"
-			print originPose[0], originPose[1], originPose[2]
+			print("ERROR: getJointWRTJointPose joint out of range!") 
+			print("Received joint", originSeg , "and" , targetSeg , "with pose")
+			print(originPose[0], originPose[1], originPose[2])
 			raise
 
 		# origin and target are the same, so return origin pose
@@ -147,7 +147,7 @@ class BackBoneIK:
 			zTotal = originPose[1] 
 			totalAngle = originPose[2] 
 
-			ind = range(targetSeg+1, originSeg + 1) # (28, 11) 
+			ind = list(range(targetSeg+1, originSeg + 1)) # (28, 11) 
 			ind.reverse()
 
 			for i in ind:
@@ -174,7 +174,7 @@ class BackBoneIK:
 
 			# indices
 			#ind = range(0, self.rootNode+1) # (0,19+1) 
-			ind = range(0, self.rootNode+1) # (0,19+1) 
+			ind = list(range(0, self.rootNode+1)) # (0,19+1) 
 			ind.reverse()
 
 			minNode = self.rootNode
@@ -264,7 +264,7 @@ class BackBoneIK:
 
 			# TODO: weaken the joints that were not set
 			#print "minNode = ", minNode, "maxU = ", maxU
-			ind = range(0, minNode+1) 
+			ind = list(range(0, minNode+1)) 
 			for i in ind: 
 				self.servoSettings[i] = 0.0
 
@@ -284,7 +284,7 @@ class BackBoneIK:
 			#pose[1] = zTotal
 
 			# indices
-			ind = range(0, self.rootNode+1) # (0,19+1) 
+			ind = list(range(0, self.rootNode+1)) # (0,19+1) 
 			#ind = range(1, 2) # (0,19+1) 
 			maxNode = 0
 			maxU = 0.0
@@ -331,7 +331,7 @@ class BackBoneIK:
 					maxU = samples[min_i][3]
 					#print maxNode, maxU
 				else:
-					print "breaking"
+					print("breaking")
 					break
 
 				# select the neighbors
@@ -381,7 +381,7 @@ class BackBoneIK:
 				self.servoSettings[currJoint] = newServo
 			
 			# TODO: weaken the joints that were not set
-			ind = range(maxNode, self.rootNode+1) # (0,19+1) 
+			ind = list(range(maxNode, self.rootNode+1)) # (0,19+1) 
 			for i in ind: 
 				self.probe.setServo(i, 0.0)
 				self.servoSettings[i] = 0.0

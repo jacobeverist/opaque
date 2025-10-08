@@ -45,7 +45,7 @@ def poweig(A, x0, maxiter = 100, ztol= 1.0e-5, mode= 0, teststeps=1):
 			xi[i] = 0.0
 			for j in range(m):
 				xi[i] += A[i][j] * xim1[j]
-		print n, xi
+		print(n, xi)
 		if mode == 0:
 			vlen = sqrt(sum([xi[k]**2 for k in range(m)]))
 			xi = [xi[k] /vlen for k in range(m)]
@@ -60,7 +60,7 @@ def poweig(A, x0, maxiter = 100, ztol= 1.0e-5, mode= 0, teststeps=1):
 			S = sum([xi[k]-xim1[k] for k in range(m)])
 			if abs(S) < ztol:
 				break
-		print n, xi
+		print(n, xi)
 		
 	# Compute Rayleigh quotient.
 	numer = sum([xi[k] * xim1[k] for k in range(m)])
@@ -283,13 +283,13 @@ if __name__ == '__main__':
 	A[6,7] = 0.5
 	
 	#print A
-	print "A:"
+	print("A:")
 	for i in range(N):
 		printStr = ""
 		for j in range(N):
 			printStr += "%1.2f" % (A[i,j]) + " "
 		
-		print printStr
+		print(printStr)
 
 	" do graph clustering of consistency matrix "
 	w = []
@@ -298,19 +298,19 @@ if __name__ == '__main__':
 
 		e, lmbda = dominantEigenvectors2(A)
 
-		print "lambda:", lmbda
+		print("lambda:", lmbda)
 		eigVec0 = [e[0][k,0] for k in range(N)]
 		eigVec1 = [e[1][k,0] for k in range(N)]
-		print "eigVec0:", eigVec0
-		print "eigVec1:", eigVec1
+		print("eigVec0:", eigVec0)
+		print("eigVec1:", eigVec1)
 
 
 		w0 = getIndicatorVector(e[0])
 		w1 = getIndicatorVector(e[1])
 		wVec0 = [w0[k,0] for k in range(N)]
 		wVec1 = [w1[k,0] for k in range(N)]
-		print "wVec0:", wVec0
-		print "wVec1:", wVec1
+		print("wVec0:", wVec0)
+		print("wVec1:", wVec1)
 		
 		
 		if len(e) <= 1:
@@ -318,7 +318,7 @@ if __name__ == '__main__':
 
 		" threshold test l1 / l2"
 		ratio = fabs(lmbda[0][0,0]) / fabs(lmbda[1][0,0])
-		print "ratio:", ratio
+		print("ratio:", ratio)
 		if ratio >= 2.0:
 			break
 	
@@ -339,11 +339,11 @@ if __name__ == '__main__':
 	fp5 = open("../../testData/clustering/A_sensor.txt", 'r')
 	A5 = eval(fp5.read())
 	
-	print A1.shape
-	print A2.shape
-	print A3.shape
-	print A4.shape
-	print A5.shape
+	print(A1.shape)
+	print(A2.shape)
+	print(A3.shape)
+	print(A4.shape)
+	print(A5.shape)
 
 		
 	" do graph clustering of consistency matrix "
@@ -357,13 +357,13 @@ if __name__ == '__main__':
 
 		" threshold test l1 / l2"
 		ratio = lmbda[0][0,0] / lmbda[1][0,0]
-		print "ratio:", ratio
+		print("ratio:", ratio)
 		if ratio >= 2.0:
-			print e[0]
-			print e[1]
+			print(e[0])
+			print(e[1])
 			break
 	
-	print w
+	print(w)
 	"""
 	e = dominantEigenvectors(A1)
 	w = getIndicatorVector(e[0])

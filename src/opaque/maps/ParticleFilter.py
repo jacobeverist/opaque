@@ -1,20 +1,20 @@
 import multiprocessing as processing
 import random
 from copy import deepcopy
-from SplineFit import SplineFit
+from .SplineFit import SplineFit
 import pylab
 from math import sqrt, pi
-from Pose import Pose
-import gen_icp
+from .Pose import Pose
+from . import gen_icp
 from math import acos, asin, fabs
 from numpy import array
 import ctypes, os, sys
 from operator import itemgetter
 
-from functions import diffAngle
-from Splices import getMultiDeparturePoint, orientPath, getCurveOverlap, orientPathLean
-from MapProcess import getStepGuess, getInPlaceGuess
-from shoots import selectLocalCommonOrigin
+from .functions import diffAngle
+from .Splices import getMultiDeparturePoint, orientPath, getCurveOverlap, orientPathLean
+from .MapProcess import getStepGuess, getInPlaceGuess
+from .shoots import selectLocalCommonOrigin
 
 from scipy.spatial import KDTree, cKDTree
 from scipy.cluster.hierarchy import fclusterdata, fcluster
@@ -50,7 +50,7 @@ def printStack():
 	for line in flist:
 		printStr += line
 		
-	print printStr
+	print(printStr)
 
 
 def __num_processors():
@@ -85,14 +85,14 @@ def batchDisplaceParticles(displaceJobs):
 	nproc = __num_processors()
 	
 	#nproc *= 2
-	print "nproc =", nproc
+	print("nproc =", nproc)
 	
 	# compute chunk size
 	chunk_size = ndata / nproc
 	chunk_size = 2 if chunk_size < 2 else chunk_size
 	
-	print "chunk_size =", chunk_size
-	print "max_size =", ndata/chunk_size
+	print("chunk_size =", chunk_size)
+	print("max_size =", ndata/chunk_size)
 	
 	# set up a pool of processes
 	if len(pool_dispPosePart) == 0:
@@ -112,15 +112,15 @@ def batchDisplaceParticles(displaceJobs):
 	#print "args =", args
 	while 1:
 		_data = args[cur:cur+chunk_size]
-		print "nc = ", nc
-		print "cur =", cur
+		print("nc = ", nc)
+		print("cur =", cur)
 		if len(_data) == 0: break
 		qin_dispPosePart.put((nc,_data))
-		print "DONE"
+		print("DONE")
 		cur += chunk_size
 		nc += 1
 	
-	print "BATCH FINISHED"
+	print("BATCH FINISHED")
 	
 	
 	# read output queue
@@ -136,8 +136,8 @@ def batchDisplaceParticles(displaceJobs):
 	
 	if isFail:
 
-		print "isFail =", isFail
-		print "knn =", knn
+		print("isFail =", isFail)
+		print("knn =", knn)
 
 
 		qin_dispPosePart.close()
@@ -162,7 +162,7 @@ def batchDisplaceParticles(displaceJobs):
 		p.terminate()
 	pool_dispPosePart = []
 
-	print "returning"
+	print("returning")
 	return knn
 
 def __remote_prof_displaceParticle(rank, qin, qout):
@@ -175,7 +175,7 @@ def __remote_prof_displaceParticle(rank, qin, qout):
 	
 	except:
 		traceback.print_exc()
-		print "Exception:", sys.exc_info()[0]
+		print("Exception:", sys.exc_info()[0])
 
 
 def __remote_displaceParticle(rank, qin, qout):
@@ -187,18 +187,18 @@ def __remote_displaceParticle(rank, qin, qout):
 		#sys.stderr = open("displaceParticle_" + str(os.getpid()) + ".err", "w")
 		sys.stdout = open("displaceParticle_" + str(rank) + ".out", "a")
 		sys.stderr = open("displaceParticle_" + str(rank) + ".err", "a")
-		print 'module name:', __name__
-		print 'parent process:', os.getppid()
-		print 'process id:', os.getpid()
+		print('module name:', __name__)
+		print('parent process:', os.getppid())
+		print('process id:', os.getpid())
 
-		print "started __remote_displaceParticle"
+		print("started __remote_displaceParticle")
 
 		while 1:
 			# read input queue (block until data arrives)
 			results = []
 			nc, args = qin.get()
 			
-			print "__remote_displaceParticle(", nc, len(args), args
+			print("__remote_displaceParticle(", nc, len(args), args)
 			sys.stdout.flush()
 
 			#foo = None
@@ -224,34 +224,34 @@ def __remote_displaceParticle(rank, qin, qout):
 				result = displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine, nodeID3, initPose2, initPose3, prevPose0, prevPose1, particleIndex, landmarks_G, landmarks_N)
 				results.append((particleIndex,) + result)
 
-				print "result:", (particleIndex,) + result
+				print("result:", (particleIndex,) + result)
 				sys.stdout.flush()
 
 
-			print "qout.put(", nc, results
+			print("qout.put(", nc, results)
 			sys.stdout.flush()
 							   
 			# write to output queue
 			qout.put((nc,results))
 
 	except:
-		print "Worker process failed. Exiting"
+		print("Worker process failed. Exiting")
 		#printStack()
 		traceback.print_exc()
-		print "Exception:", sys.exc_info()[0]
+		print("Exception:", sys.exc_info()[0])
 		
 		sys.stdout.flush()
 		sys.stderr.flush()
 		qout.put((None,None))
 		raise
 	
-	print "process exited incorrectly"
+	print("process exited incorrectly")
 
 
 def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine, nodeID3, initPose2, initPose3, prevPose0, prevPose1, particleIndex, landmarks_G, landmarks_N):
 
 	#print "movePath(", nodeID, ",", direction, ",", distEst, ")"
-	print "displaceParticle()"
+	print("displaceParticle()")
 	sys.stdout.flush()
 
 	estPose0 = prevPose0
@@ -308,7 +308,7 @@ def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine
 			#distEst = moveChance * 2.0
 			#distEst = 2.0*moveChance - 0.4
 
-			print "displacing", moveChance, distEst
+			print("displacing", moveChance, distEst)
 
 			" the guess process gives a meaningful guess for these node's poses "
 			" before this, it is meaningless "
@@ -319,10 +319,10 @@ def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine
 			#currPose3 = getInPlaceGuess(poseData, nodeID-1, nodeID, currPose2, estPose3, supportLine, direction)
 			currPose3 = getInPlaceGuess(poseData, nodeID-1, nodeID, currPose2, estPose3, [], direction)
 
-			print "displace old to new poses:", estPose0, estPose2, estPose3, currPose2, currPose3
+			print("displace old to new poses:", estPose0, estPose2, estPose3, currPose2, currPose3)
 
 		else:
-			print "movePath:  DO NOTHING"
+			print("movePath:  DO NOTHING")
 
 		#return currPose2, currPose3
 
@@ -459,18 +459,18 @@ def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine
 								minPoseSum = poseSum
 								minLandmark = p1
 
-						print "landmarks:", globalLandmarkPoint, p1, poseSum, minPoseSum, minLandmark
+						print("landmarks:", globalLandmarkPoint, p1, poseSum, minPoseSum, minLandmark)
 
 					#if minPathID != None:
 					if minLandmark != None:
 
-						print "nodePose0 =", nodePose0
-						print "global landmark =", globalLandmarkPoint
-						print "localJunctionPoint =", localJunctionPoint
+						print("nodePose0 =", nodePose0)
+						print("global landmark =", globalLandmarkPoint)
+						print("localJunctionPoint =", localJunctionPoint)
 						#print "junction pose =", junctionPose0
-						print "minLandmark =", minLandmark
+						print("minLandmark =", minLandmark)
 						#print "nodeID, pathID =", nodeID, minPathID
-						print "nodeI =", nodeID
+						print("nodeI =", nodeID)
 
 						#modJuncPose0 = [junctionPose0[0], junctionPose0[1], nodePose0[2]]
 						modJuncPose0 = [minLandmark[0], minLandmark[1], nodePose0[2]]
@@ -484,14 +484,14 @@ def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine
 						junctionNodePose0 = [newNodePoint0[0], newNodePoint0[1], nodePose0[2]]
 						
 						poseOffset = [newNodePoint0[0]-nodePose0[0], newNodePoint0[1]-nodePose0[1]]
-						print "poseOffset =", poseOffset
+						print("poseOffset =", poseOffset)
 						#poseOffset = poseOrigin0.convertGlobalToLocal(newNodePoint0)
 						#print "poseOffset =", poseOffset
 						
-						print "junctionNodePose0 =", junctionNodePose0
+						print("junctionNodePose0 =", junctionNodePose0)
 
 				
-						print "changing nodeID", nodeID, "from ", nodePose0, "to", junctionNodePose0, "with offset", poseOffset
+						print("changing nodeID", nodeID, "from ", nodePose0, "to", junctionNodePose0, "with offset", poseOffset)
 						poseOffsets[nodeID] = poseOffset
 						currPoses[nodeID] = junctionNodePose0
 						isPoseChanged[nodeID] = True
@@ -511,7 +511,7 @@ def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine
 			tempPose3 = deepcopy(currPose3)
 			tempPose3[0] = poseOffset2[0] + currPose3[0]
 			tempPose3[1] = poseOffset2[1] + currPose3[1]
-			print "changing nodeID3", nodeID3, "from ", currPose3, "to", tempPose3, "with offset", poseOffset2
+			print("changing nodeID3", nodeID3, "from ", currPose3, "to", tempPose3, "with offset", poseOffset2)
 			currPoses[nodeID3] = tempPose3
 
 		elif isPoseChanged[nodeID3] and not isPoseChanged[nodeID2]:
@@ -519,14 +519,14 @@ def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine
 			tempPose2 = deepcopy(currPose2)
 			tempPose2[0] = poseOffset3[0] + currPose2[0]
 			tempPose2[1] = poseOffset3[1] + currPose2[1]
-			print "changing nodeID2", nodeID2, "from ", currPose2, "to", tempPose2, "with offset", poseOffset3
+			print("changing nodeID2", nodeID2, "from ", currPose2, "to", tempPose2, "with offset", poseOffset3)
 			currPoses[nodeID2] = tempPose2
 	
 		""" if the node has been localized to a landmark, we need the updated version """
 		currPose2 = currPoses[nodeID2]
 		currPose3 = currPoses[nodeID3]
 
-		print "final poses:", currPose2, currPose3
+		print("final poses:", currPose2, currPose3)
 		currProb2 = 0.0
 		currProb3 = 0.0
 
@@ -546,8 +546,8 @@ def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine
 			#initPose3 = initPose1
 			
 			#print "junctions:", junctions
-			print "initPose2:", initPose2
-			print "initPose3:", initPose3
+			print("initPose2:", initPose2)
+			print("initPose3:", initPose3)
 									
 			#splicePaths = []
 
@@ -576,13 +576,13 @@ def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine
 				orientedSplicePath = orientPath(path, globalMedial0)				
 				currPathSpline = SplineFit(orientedSplicePath, smooth=0.1)
 
-				print "pose0,pose1:", pose0, pose1
+				print("pose0,pose1:", pose0, pose1)
 				
 				minDist0, u0, p0 = currPathSpline.findClosestPoint(pose0[0:2])
 				minDist1, u1, p1 = currPathSpline.findClosestPoint(pose1[0:2])
 				
-				print "u0,u1:", u0, u1
-				print "len(distPoints):", len(currPathSpline.distPoints)
+				print("u0,u1:", u0, u1)
+				print("len(distPoints):", len(currPathSpline.distPoints))
 				
 				arcDist0 = currPathSpline.distPoints[int(u0*1000)]
 				arcDist1 = currPathSpline.distPoints[int(u1*1000)]
@@ -595,7 +595,7 @@ def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine
 				pose2 = currPose2
 				pose3 = currPose3
 				
-				print "pose2,pose3:", pose2, pose3
+				print("pose2,pose3:", pose2, pose3)
 				
 				" 4) set as pose of new node "
 				#mapHyp.nodePoses[nodeID-1] = pose2
@@ -608,14 +608,14 @@ def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine
 				u2 = uPath2
 				u3 = uPath3
 
-				print "input: uMedialOrigin2, u2, pose2:", uMedialOrigin2, u2, pose2
-				print "input: uMedialOrigin3, u3, pose3:", uMedialOrigin3, u3, pose3
+				print("input: uMedialOrigin2, u2, pose2:", uMedialOrigin2, u2, pose2)
+				print("input: uMedialOrigin3, u3, pose3:", uMedialOrigin3, u3, pose3)
 
 				
 				resultPose2, lastCost2, matchCount2, currAng2, currU2 = gen_icp.globalPathToNodeOverlapICP2([u2, uMedialOrigin2, 0.0], orientedSplicePath, medial2, plotIter = False, n1 = nodeID-1, n2 = -1, arcLimit = 0.01)
 				resultPose3, lastCost3, matchCount3, currAng3, currU3 = gen_icp.globalPathToNodeOverlapICP2([u3, uMedialOrigin3, 0.0], orientedSplicePath, medial3, plotIter = False, n1 = nodeID, n2 = -1, arcLimit = 0.01)
 				
-				print "resultPoses:", resultPose2, resultPose3
+				print("resultPoses:", resultPose2, resultPose3)
 
 				multiDepCount = 0
 
@@ -648,9 +648,9 @@ def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine
 				else:
 					newProb3 = (pi-angDiff3) * contigFrac_3
 				
-				print "angDiff:", angDiff2, angDiff3
-				print "overlapSum:", overlapSum2, overlapSum3
-				print "newProb:", newProb2, newProb3
+				print("angDiff:", angDiff2, angDiff3)
+				print("overlapSum:", overlapSum2, overlapSum3)
+				print("newProb:", newProb2, newProb3)
 				
 
 
@@ -672,12 +672,12 @@ def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine
 			resultMoves3 = sorted(resultMoves3, key=itemgetter(18))
 			resultMoves3 = sorted(resultMoves3, key=itemgetter(16), reverse=True)
 			
-			print "resultMoves2:"
+			print("resultMoves2:")
 			for res in resultMoves2:
-				print res
-			print "resultMoves3:"
+				print(res)
+			print("resultMoves3:")
 			for res in resultMoves3:
-				print res
+				print(res)
 
 			currSplice2 = []
 			currSplice3 = []
@@ -690,7 +690,7 @@ def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine
 				currProb2 = resultMoves2[0][20]
 
 			else:
-				print "node", nodeID-1, "not movePathed because no valid pose"
+				print("node", nodeID-1, "not movePathed because no valid pose")
 				currProb2 = 0.0
 
 			if len(resultMoves3) > 0:
@@ -699,7 +699,7 @@ def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine
 				currProb3 = resultMoves3[0][20]
 
 			else:
-				print "node", nodeID, "not movePathed because no valid pose"
+				print("node", nodeID, "not movePathed because no valid pose")
 				currProb3 = 0.0
 
 			if len(currSplice2) == 0 and len(currSplice3) > 0:
@@ -718,8 +718,8 @@ def displaceParticle( poseData, partObj, pathSplices2, pathSplices3, supportLine
 			" move the pose particles along their paths "	
 
 
-			print "fitted poses:", currPose2, currPose3
-			print "currProbs:", currProb2, currProb3
+			print("fitted poses:", currPose2, currPose3)
+			print("currProbs:", currProb2, currProb3)
 
 
 		return currPose2, currPose3, currProb2, currProb3
@@ -734,7 +734,7 @@ def __remote_prof_multiParticle(rank, qin, qout):
 	
 	except:
 		traceback.print_exc()
-		print "Exception:", sys.exc_info()[0]
+		print("Exception:", sys.exc_info()[0])
 
 
 def __remote_multiParticle(rank, qin, qout):
@@ -745,11 +745,11 @@ def __remote_multiParticle(rank, qin, qout):
 		#sys.stderr = open("particle_" + str(os.getpid()) + ".err", "w")
 		sys.stdout = open("particle_" + str(rank) + ".out", "a")
 		sys.stderr = open("particle_" + str(rank) + ".err", "a")
-		print 'module name:', __name__
-		print 'parent process:', os.getppid()
-		print 'process id:', os.getpid()
+		print('module name:', __name__)
+		print('parent process:', os.getppid())
+		print('process id:', os.getpid())
 
-		print "started __remote_multiParticle"
+		print("started __remote_multiParticle")
 
 		while 1:
 			# read input queue (block until data arrives)
@@ -827,9 +827,9 @@ def __remote_multiParticle(rank, qin, qout):
 			# write to output queue
 			qout.put((nc,results))
 	except:
-		print "Worker process failed. Exiting"
+		print("Worker process failed. Exiting")
 		traceback.print_exc()
-		print "Exception:", sys.exc_info()[0]
+		print("Exception:", sys.exc_info()[0])
 		
 		sys.stdout.flush()
 		sys.stderr.flush()
@@ -856,14 +856,14 @@ def batchLocalizeParticle(localizeJobs):
 	nproc = __num_processors()
 	
 	#nproc *= 2
-	print "nproc =", nproc
+	print("nproc =", nproc)
 	
 	# compute chunk size
 	chunk_size = ndata / nproc
 	chunk_size = 2 if chunk_size < 2 else chunk_size
 	
-	print "chunk_size =", chunk_size
-	print "max_size =", ndata/chunk_size
+	print("chunk_size =", chunk_size)
+	print("max_size =", ndata/chunk_size)
 	
 	# set up a pool of processes
 	if len(pool_posePart) == 0:
@@ -882,15 +882,15 @@ def batchLocalizeParticle(localizeJobs):
 	#print "args =", args
 	while 1:
 		_data = args[cur:cur+chunk_size]
-		print "nc = ", nc
-		print "cur =", cur
+		print("nc = ", nc)
+		print("cur =", cur)
 		if len(_data) == 0: break
 		qin_posePart.put((nc,_data))
-		print "DONE"
+		print("DONE")
 		cur += chunk_size
 		nc += 1
 	
-	print "BATCH FINISHED"
+	print("BATCH FINISHED")
 	
 	
 	# read output queue
@@ -926,13 +926,13 @@ def batchLocalizeParticle(localizeJobs):
 		p.terminate()
 	pool_posePart = []
 
-	print "returning"
+	print("returning")
 	return knn
 
 
 def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, medialAxis1, initPose0, initPose1, prevMedialAxis0, prevMedialAxis1, prevPose0, prevPose1, pathIDs, nodeID0, nodeID1, landmarks_G, landmark0_N, landmark1_N, particleIndex, hypID = 0, pathPlotCount = 0, branchIndex = None, spliceIndex = 0, branchProbVal = 1.0):
 
-	print "multiParticleFitSplice()"
+	print("multiParticleFitSplice()")
 	sys.stdout.flush()
 
 
@@ -964,7 +964,7 @@ def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, me
 	currPoseOrigin = Pose(resultPose0)
 	prevPoseOrigin = Pose(prevPose0)
 
-	print "curr/prev pose:", resultPose0, prevPose0
+	print("curr/prev pose:", resultPose0, prevPose0)
 
 	currGlobalMedial0 = []
 	for p in medialAxis0:
@@ -1010,7 +1010,7 @@ def multiParticleFitSplice(initGuess0, initGuess1, orientedPath, medialAxis0, me
 		landmark1_G = (frame1.convertLocalToGlobal(landmark1_N[0]), landmark1_N[1], landmark1_N[2])
 		thresh1 = landmark1_G[1]
 
-	print hypID, nodeID0, particleIndex, spliceIndex, "landmarks:", landmark0_G, landmark1_G, landmarks_G
+	print(hypID, nodeID0, particleIndex, spliceIndex, "landmarks:", landmark0_G, landmark1_G, landmarks_G)
 
 	for i in range(len(landmarks_G)):
 		p1 = landmarks_G[i][0]
@@ -1136,7 +1136,7 @@ class Particle:
 	def getControlPoses(self):
 
 		controlPoses = {}
-		allPathIDs = self.junctionData.keys()
+		allPathIDs = list(self.junctionData.keys())
 		for pathID in allPathIDs:
 			controlPoses[pathID] = self.junctionData[pathID]["controlPose"]
 

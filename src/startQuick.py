@@ -132,11 +132,11 @@ def startRun():
 		#cProfile.run('runTest(probe)', 'test_prof')
 	
 	except ControlError as inst:
-		print inst.value
+		print(inst.value)
 
 	except:
 		traceback.print_exc()
-		print "Exception:", sys.exc_info()[0]
+		print("Exception:", sys.exc_info()[0])
 	
 
 if __name__ == '__main__':
@@ -153,9 +153,9 @@ if __name__ == '__main__':
 		#cProfile.run('runTest(probe)', 'test_prof')
 	
 	except ControlError as inst:
-		print inst.value
+		print(inst.value)
 
 	except:
 		traceback.print_exc()
-		print "Exception:", sys.exc_info()[0]
+		print("Exception:", sys.exc_info()[0])
 

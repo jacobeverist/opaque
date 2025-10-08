@@ -10,8 +10,8 @@ import pca_module
 
 from copy import copy
 from copy import deepcopy
-from coord import Pose
-from SplineFit import SplineFit
+from .coord import Pose
+from .SplineFit import SplineFit
 
 
 plotCount = 0

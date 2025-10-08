@@ -31,7 +31,7 @@ class BuildMap(SnakeControl):
 		# 3. behaviors
 
 		direction = False
-		joints = range(0, 20)
+		joints = list(range(0, 20))
 
 		# behaviors should be
 		self.anchor = behave.Anchor(self.probe)
@@ -204,7 +204,7 @@ class BuildMap(SnakeControl):
 					pose = self.probe.getActualSegPose(0)
 					
 					dist = sqrt((dest[0]-pose[0])**2 + (dest[1]-pose[1])**2)
-					print "dist = ", dist
+					print("dist = ", dist)
 					
 					if dist > self.lastDist:
 						self.distCount += 1

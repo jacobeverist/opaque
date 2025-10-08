@@ -9,7 +9,7 @@ import os
 import sys
 
 relPath = os.path.dirname(os.path.realpath(__file__))
-print relPath
+print(relPath)
 
 sys.path.insert(1,relPath)
 sys.path.insert(1,relPath + "/modules/")
@@ -62,14 +62,14 @@ with open(dirName + '/' + pickleFile, 'rb') as inputVal:
 
 spatialFeatures = mapAlgorithm.poseData.spatialFeatures
 
-for key, val in spatialFeatures.iteritems():
+for key, val in spatialFeatures.items():
 
 	resultObj = val[0]
 
-	print "node", key, "has:"
-	print "bloomPoint:", resultObj["bloomPoint"]
-	print "archPoint:", resultObj["archPoint"]
-	print "inflectionPoint:", resultObj["inflectionPoint"]
+	print("node", key, "has:")
+	print("bloomPoint:", resultObj["bloomPoint"])
+	print("archPoint:", resultObj["archPoint"])
+	print("inflectionPoint:", resultObj["inflectionPoint"])
 
 #for key, val in spatialFeatures.iteritems():
 
@@ -78,12 +78,12 @@ if False:
 	key = 0
 	val = spatialFeatures[key]
 
-	print key
+	print(key)
 	#, val
 
-	print len(val)
+	print(len(val))
 
-	print val[0].keys()
+	print(list(val[0].keys()))
 
 	#for item in val:
 	#	print item

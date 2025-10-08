@@ -1,5 +1,5 @@
 
-from Behavior import *
+from .Behavior import *
 from copy import copy
 
 class Transition(Behavior):

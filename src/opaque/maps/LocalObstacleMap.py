@@ -1,11 +1,11 @@
 
-from Map import Map
+from .Map import Map
 from PIL import Image
 from PIL import ImageDraw
 import pylab
 from math import cos, sin, floor, pi
 from copy import copy
-from functions import *
+from .functions import *
 
 class LocalObstacleMap(Map):
 
@@ -93,7 +93,7 @@ class LocalObstacleMap(Map):
 		
 		if isFront:
 			
-			joints = range(-1,self.rootNode)
+			joints = list(range(-1,self.rootNode))
 			joints.reverse()
 	
 			for i in joints:
@@ -108,7 +108,7 @@ class LocalObstacleMap(Map):
 		
 		else:
 			
-			joints = range(self.rootNode, self.probe.numSegs-1)
+			joints = list(range(self.rootNode, self.probe.numSegs-1))
 	
 			xTotal = 0.0
 			zTotal = 0.0

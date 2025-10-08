@@ -127,7 +127,7 @@ class SplineFit:
 	def getUVector(self, u1, iter = 0.01):
 
 		if u1 < 0.0 or u1 > 1.0:
-			print "ERROR: u =", u
+			print("ERROR: u =", u)
 			raise
 
 		if u1 > 1.0 - iter:
@@ -312,7 +312,7 @@ class SplineFit:
 
 	def getU(self, u):
 		if u < 0.0 or u > 1.0:
-			print "ERROR: u =", u
+			print("ERROR: u =", u)
 			raise
 
 		unew = [u]
@@ -322,7 +322,7 @@ class SplineFit:
 	def getUSet(self, u_set):
 		for u in u_set:
 			if u < 0.0 or u > 1.0:
-				print "ERROR: u =", u
+				print("ERROR: u =", u)
 				raise
 
 		newPoints = scipy.interpolate.splev(u_set,self.tck)

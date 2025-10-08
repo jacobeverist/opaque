@@ -120,7 +120,7 @@ for j in range(1,15):
 #for j in range(1,15):
 #for j in range(10,11):
 
-	print j
+	print(j)
 
 	pylab.clf()
 

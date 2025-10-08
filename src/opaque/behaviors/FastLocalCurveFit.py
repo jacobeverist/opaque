@@ -1,9 +1,9 @@
 
-from Behavior import *
+from .Behavior import *
 from copy import copy
 from math import sin, cos, sqrt, pi
 from numpy import arange
-from functions import LeftOnEdge, closestSegPoint
+from .functions import LeftOnEdge, closestSegPoint
 
 fastLocalNodeCount = 0
 
@@ -449,7 +449,7 @@ class FastLocalCurveFit(Behavior):
 		#print "forwardFit:", minJoint, maxJoint
 
 		# indices	
-		ind = range(minJoint,maxJoint+1)
+		ind = list(range(minJoint,maxJoint+1))
 		
 		maxU = 0.0
 
@@ -653,7 +653,7 @@ class FastLocalCurveFit(Behavior):
 			
 		#print "backwardFit:", minJoint, maxJoint
 
-		ind = range(minJoint,maxJoint+1)
+		ind = list(range(minJoint,maxJoint+1))
 		ind.reverse()
 
 		minNode = self.numJoints-1

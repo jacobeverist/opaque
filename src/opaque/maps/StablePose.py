@@ -1,6 +1,6 @@
 
-from functions import *
-from DiffStability import DiffStability
+from .functions import *
+from .DiffStability import DiffStability
 
 """
 1. reset the root node to (0,0,0)
@@ -178,7 +178,7 @@ class StablePose:
 
 		#self.rootFile.write(str(xTotal) + " " + str(zTotal) + " " + str(totalAngle) + "\n")
 	
-		joints = range(-1,self.node.rootNode)
+		joints = list(range(-1,self.node.rootNode))
 		joints.reverse()
 
 		for i in joints:
@@ -191,7 +191,7 @@ class StablePose:
 
 			self.refPoses[i] = [xTotal,zTotal,totalAngle]
 
-		joints = range(self.node.rootNode+1, self.probe.numSegs-1)
+		joints = list(range(self.node.rootNode+1, self.probe.numSegs-1))
 
 		xTotal = self.refPoses[self.node.rootNode][0]
 		zTotal = self.refPoses[self.node.rootNode][1]
@@ -237,7 +237,7 @@ class StablePose:
 
 		#self.rootFile.write(str(xTotal) + " " + str(zTotal) + " " + str(totalAngle) + "\n")
 	
-		joints = range(-1,self.node.rootNode)
+		joints = list(range(-1,self.node.rootNode))
 		joints.reverse()
 
 		for i in joints:
@@ -250,7 +250,7 @@ class StablePose:
 
 			self.refPoses[i] = [xTotal,zTotal,totalAngle]
 
-		joints = range(self.node.rootNode+1, self.probe.numSegs-1)
+		joints = list(range(self.node.rootNode+1, self.probe.numSegs-1))
 
 		xTotal = 0.0
 		zTotal = 0.0

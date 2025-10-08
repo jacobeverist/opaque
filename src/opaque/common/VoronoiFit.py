@@ -165,7 +165,7 @@ class VoronoiFit:
 				orthoDist.append( 1e100 )
 				tanVecs.append([1.0, 0.0])
 				closePoints.append(copy(self.points[i]))
-				print "degenerate"
+				print("degenerate")
 				continue
 
 			eAngle = acos(vec[0]/mag)

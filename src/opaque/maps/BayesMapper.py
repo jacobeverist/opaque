@@ -1,13 +1,13 @@
 
-from LocalNode import getLongestPath, computeHullAxis
-from StableCurve import StableCurve
-from SplineFit import SplineFit
-from Pose import Pose
-from PoseData import PoseData
-from MapProcess import addToPaths2 
-from shoots import computeGlobalControlPoses
-import gen_icp
-from functions import *
+from .LocalNode import getLongestPath, computeHullAxis
+from .StableCurve import StableCurve
+from .SplineFit import SplineFit
+from .Pose import Pose
+from .PoseData import PoseData
+from .MapProcess import addToPaths2 
+from .shoots import computeGlobalControlPoses
+from . import gen_icp
+from .functions import *
 from operator import itemgetter
 import cProfile
 import time
@@ -15,12 +15,12 @@ import traceback
 import math
 import cProfile
 
-from Splices import batchGlobalMultiFit, getMultiDeparturePoint, orientPath
+from .Splices import batchGlobalMultiFit, getMultiDeparturePoint, orientPath
 import pylab
 import matplotlib.pyplot as plt
 import graph
 
-from MapState import MapState
+from .MapState import MapState
 
 import random
 
@@ -36,7 +36,7 @@ def printStack():
 	for line in flist:
 		printStr += line
 		
-	print printStr
+	print(printStr)
 
 
 class BayesMapper:
@@ -143,7 +143,7 @@ class BayesMapper:
 
 	@property
 	def topHyp(self):
-		hypIDs = self.mapHyps.keys()
+		hypIDs = list(self.mapHyps.keys())
 		topID = hypIDs[0]
 		return self.mapHyps[topID]
 
@@ -154,10 +154,10 @@ class BayesMapper:
 		nodeID = self.poseData.numNodes
 		#self.nodeHash[nodeID] = self.currNode
 
-		print "incrementing numNodes"
-		print self.poseData.numNodes
+		print("incrementing numNodes")
+		print(self.poseData.numNodes)
 		self.poseData.numNodes += 1
-		print self.poseData.numNodes
+		print(self.poseData.numNodes)
 		
 		hull1, medial1 = computeHullAxis(nodeID, newNode, tailCutOff = False)
 		#hull1, medial1 = computeHullAxis(nodeID, newNode, tailCutOff = True)
@@ -175,14 +175,14 @@ class BayesMapper:
 		self.poseData.spatialFeatures[nodeID] = newNode.spatialFeatures
 
 
-		for mid, mapHyp in self.mapHyps.iteritems():
+		for mid, mapHyp in self.mapHyps.items():
 			mapHyp.updatePoseData(self.poseData)
 
 		""" for each current map hypothesis, integrate the new node """
 		currHyps = self.mapHyps
-		for mid, mapHyp in currHyps.iteritems():
+		for mid, mapHyp in currHyps.items():
 
-			print "loading", nodeID, "hyp", mapHyp.hypothesisID
+			print("loading", nodeID, "hyp", mapHyp.hypothesisID)
 
 			mapHyp.gndPoses[nodeID] = newNode.getGndGlobalGPACPose()
 			mapHyp.gndRawPoses[nodeID] = newNode.getGndPose()
@@ -205,7 +205,7 @@ class BayesMapper:
 						controlPoseDist = particle.junctionData[pathID]["controlPoseDist"]
 						branchPoseDist = particle.junctionData[pathID]["branchPoseDist"]
 
-						print "hypID,pathID,particleIndex:", mapHyp.hypothesisID, pathID, k, controlPoseDist
+						print("hypID,pathID,particleIndex:", mapHyp.hypothesisID, pathID, k, controlPoseDist)
 					
 
 		self.mapHyps = self.integrateNode(currHyps, nodeID)
@@ -214,10 +214,10 @@ class BayesMapper:
 	@logFunction
 	def restoreNode(self, dirName, numNodes):
 		
-		print "loading" + dirName + "/stateSave_%04u.txt" % (numNodes)
+		print("loading" + dirName + "/stateSave_%04u.txt" % (numNodes))
 		f = open(dirName + "/stateSave_%04u.txt" % (numNodes), 'r')		
 		saveStr = f.read()
-		print saveStr
+		print(saveStr)
 		f.close()
 		
 		saveStr = saveStr.replace('\r\n','\n')
@@ -240,16 +240,16 @@ class BayesMapper:
 		self.poseData.numNodes = numNodes+1
 
 		" get node poses from some map hypothesis "
-		hid = mapHypIDs.values()[0]
+		hid = list(mapHypIDs.values())[0]
 		tempMapState = MapState(self.poseData, hid)
 		tempMapState.restoreState(dirName, numNodes)
 
-		for mid, mapHyp in self.mapHyps.iteritems():
+		for mid, mapHyp in self.mapHyps.items():
 			mapHyp.updatePoseData(self.poseData)
 
 		""" for each current map hypothesis, integrate the new node """
 		currHyps = self.mapHyps
-		for mid, mapHyp in currHyps.iteritems():
+		for mid, mapHyp in currHyps.items():
 
 			mapHyp.gndPoses[nodeID] = tempMapState.gndPoses[nodeID]
 			mapHyp.gndRawPoses[nodeID] = tempMapState.gndRawPoses[nodeID]
@@ -268,7 +268,7 @@ class BayesMapper:
 		" DIRECTION OF TRAVEL FROM PREVIOUS POSE PAIR "
 		direction = self.poseData.travelDirs[nodeID]
 
-		print "integrating node", nodeID
+		print("integrating node", nodeID)
 
 		if nodeID > 0:
 			
@@ -277,50 +277,50 @@ class BayesMapper:
 
 				if nodeID % 2 == 1:
 
-					for pID, currHyp in hypSet.iteritems():
+					for pID, currHyp in hypSet.items():
 						time1 = time.time()
 						currHyp.batchDisplaceParticles(nodeID-1, nodeID)
 
 						currHyp.drawPoseParticles()
 						time2 = time.time()
-						print "TIME displace", currHyp.hypothesisID, "=", time2-time1 
+						print("TIME displace", currHyp.hypothesisID, "=", time2-time1) 
 
 		nodeID1 = self.poseData.numNodes-2
 		nodeID2 = self.poseData.numNodes-1
 
-		print "nodeID1, nodeID2 =", nodeID1, nodeID2
+		print("nodeID1, nodeID2 =", nodeID1, nodeID2)
 		
 		" CHECK FOR A BRANCHING EVENT "
 		
 		if self.poseData.numNodes >= 2 and self.poseData.numNodes % 2 == 0:
 
-			for pID, mapHyp in hypSet.iteritems():
+			for pID, mapHyp in hypSet.items():
 				mapHyp.isNodeBranching[nodeID1] = False
 				mapHyp.isNodeBranching[nodeID2] = False
 
 
 			time1 = time.time()
 			self.shootIDs, self.particleIDs, hypSet = addToPaths2(self.shootIDs, self.particleIDs, hypSet, nodeID1, nodeID2)
-			for pID, currHyp in hypSet.iteritems():
+			for pID, currHyp in hypSet.items():
 				currHyp.drawPoseParticles()
 			time2 = time.time()
-			print "TIME addToPaths =", time2-time1 
+			print("TIME addToPaths =", time2-time1) 
 
-			for pID, mapHyp in hypSet.iteritems():
+			for pID, mapHyp in hypSet.items():
 				time1 = time.time()
 
 				mapHyp.localizePoseParticles(nodeID1, nodeID2)
 
 				time2 = time.time()
 
-				print "TIME localize", pID, "=", time2-time1
+				print("TIME localize", pID, "=", time2-time1)
 
-			for pID, currHyp in hypSet.iteritems():
+			for pID, currHyp in hypSet.items():
 
 
 				""" merge a shoot if it does not diverge """
 				if False:
-					if 1 in currHyp.pathClasses.keys():
+					if 1 in list(currHyp.pathClasses.keys()):
 						currHyp.mergePath(1)
 						currHyp.generatePaths()
 						currHyp.drawPoseParticles()
@@ -328,20 +328,20 @@ class BayesMapper:
 				else:
 
 					isSubsumed = False
-					print pID, "branchDivergeCount:", currHyp.branchDivergeCount
-					for val in currHyp.branchDivergeCount.values():
+					print(pID, "branchDivergeCount:", currHyp.branchDivergeCount)
+					for val in list(currHyp.branchDivergeCount.values()):
 						if val >= 2:
 							isSubsumed = True
 
 					while isSubsumed:
 
-						print pID, "branchDivergeCount:", currHyp.branchDivergeCount
+						print(pID, "branchDivergeCount:", currHyp.branchDivergeCount)
 
-						pathIDs = currHyp.branchDivergeCount.keys()
+						pathIDs = list(currHyp.branchDivergeCount.keys())
 						
 
 						
-						for pathID, divergeCount in currHyp.branchDivergeCount.iteritems():
+						for pathID, divergeCount in currHyp.branchDivergeCount.items():
 							if divergeCount >= 2:
 								currHyp.mergePath(pathID)
 								currHyp.generatePaths()
@@ -350,7 +350,7 @@ class BayesMapper:
 								break
 
 						isSubsumed = False
-						for val in currHyp.branchDivergeCount.values():
+						for val in list(currHyp.branchDivergeCount.values()):
 							if val >= 2:
 								isSubsumed = True
 
@@ -362,8 +362,8 @@ class BayesMapper:
 
 		""" remove defective maps """
 		toDelete = []
-		for pID, currHyp in hypSet.iteritems():
-			print pID, "mapOverlapSum =", currHyp.mapOverlapSum, "isNoLocalize =", currHyp.isNoLocalize
+		for pID, currHyp in hypSet.items():
+			print(pID, "mapOverlapSum =", currHyp.mapOverlapSum, "isNoLocalize =", currHyp.isNoLocalize)
 			#if currHyp.mapOverlapSum > 4.0 or currHyp.isNoLocalize:
 			#	toDelete.append(pID)
 			#	if pID == self.activeHypID:
@@ -374,7 +374,7 @@ class BayesMapper:
 		#	del hypSet[pID]
 
 		hp = hpy()
-		print hp.heap()
+		print(hp.heap())
 
 		return hypSet
 
@@ -403,7 +403,7 @@ class BayesMapper:
 		saveFile += "self.poseData.travelDirs = " + repr(self.poseData.travelDirs) + "\n"
 		saveFile += "self.poseData.spatialFeatures = " + repr(self.poseData.spatialFeatures) + "\n"
 
-		saveFile += "mapHypIDs = " + repr(self.mapHyps.keys()) + "\n"
+		saveFile += "mapHypIDs = " + repr(list(self.mapHyps.keys())) + "\n"
 
 		f = open("stateSave_%04u.txt" % (self.poseData.numNodes-1), 'w')
 		f.write(saveFile)
@@ -412,17 +412,17 @@ class BayesMapper:
 
 
 		" SAVE STATE "
-		for k in self.mapHyps.keys():
+		for k in list(self.mapHyps.keys()):
 			self.mapHyps[k].saveState(self.poseData.numNodes-1)
 
 		
 	@logFunction
 	def restoreState(self, dirName, numNodes):
 		
-		print "loading" + dirName + "/stateSave_%04u.txt" % (numNodes)
+		print("loading" + dirName + "/stateSave_%04u.txt" % (numNodes))
 		f = open(dirName + "/stateSave_%04u.txt" % (numNodes), 'r')		
 		saveStr = f.read()
-		print saveStr
+		print(saveStr)
 		f.close()
 		
 		saveStr = saveStr.replace('\r\n','\n')
@@ -458,8 +458,8 @@ class BayesMapper:
 		medial2_vec = medialSpline2.getUniformSamples()
 
 
-		print "received", len(splicedPaths1), "spliced paths from path IDs", orderedPathIDs1
-		print "received", len(splicedPaths2), "spliced paths from path IDs", orderedPathIDs2
+		print("received", len(splicedPaths1), "spliced paths from path IDs", orderedPathIDs1)
+		print("received", len(splicedPaths2), "spliced paths from path IDs", orderedPathIDs2)
 
 		" departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2 |"
 		" departurePoint1, angle1, isInterior1, isExist1, dist1, maxFront, departurePoint2, angle2, isInterior2, isExist2, dist2, maxBack, contigFrac, overlapSum, angDiff2 "
@@ -509,7 +509,7 @@ class BayesMapper:
 		minDist = 1e100
 		minHypID = -1 
 
-		for hypID, mapHyp in self.mapHyps.iteritems():
+		for hypID, mapHyp in self.mapHyps.items():
 			newPoint = mapHyp.getNearestPathPoint(originPoint)
 			candPoints[hypID] = newPoint
 
@@ -758,7 +758,7 @@ class BayesMapper:
 
 			nodeSet = mapHyp.getNodes(k)
 
-			print "drawing pathID", k, "for nodes:", nodeSet
+			print("drawing pathID", k, "for nodes:", nodeSet)
 			"""
 			for nodeID in nodeSet:
 				xP = []
@@ -839,7 +839,7 @@ class BayesMapper:
 		self.plotEnv(ax3)
 		self.plotEnv(ax4)
 		
-		print "quadPath:", self.pathDrawCount
+		print("quadPath:", self.pathDrawCount)
 		printStack()
 
 		#pylab.xlim(-10, 12)
@@ -902,7 +902,7 @@ class BayesMapper:
 
 			nodeSet = mapHyp.getNodes(k)
 
-			print "drawing pathID", k, "for nodes:", nodeSet
+			print("drawing pathID", k, "for nodes:", nodeSet)
 			for nodeID in nodeSet:
 				xP = []
 				yP = []
@@ -975,7 +975,7 @@ class BayesMapper:
 
 		self.plotEnv()
 		
-		print "pathAndHull:", self.pathDrawCount
+		print("pathAndHull:", self.pathDrawCount)
 		printStack()
 
 		pylab.axis("equal")

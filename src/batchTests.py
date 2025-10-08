@@ -54,7 +54,7 @@ for mapFile in maps:
 
 	
 	parsed_args = shlex.split(command_line)
-	print "args:", parsed_args
+	print("args:", parsed_args)
 	#p = subprocess.Popen(args, stdout=fileOut, stderr=fileOut)
 
 	subprocess.check_call(parsed_args, stdout=fileOut, stderr=fileOut)

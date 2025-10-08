@@ -29,5 +29,5 @@ localPosture = [[0.45108433735200526, -1.6991237268801804, 2.609943337738514], [
 originCurve = StableCurve(localPosture)
 originForePose, originBackPose = originCurve.getPoses()
 
-print originForePose, originBackPose
+print(originForePose, originBackPose)
 

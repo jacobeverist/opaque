@@ -5,11 +5,11 @@ if not dir in sys.path:
 	sys.path.append(dir)
 
 from common import *
-from Behavior import *
-from Spring import *
-from Anchor import *
-from Transition import Transition
-from PathCurveFit import *
+from .Behavior import *
+from .Spring import *
+from .Anchor import *
+from .Transition import Transition
+from .PathCurveFit import *
 from pose import ValueStability
 
 
@@ -79,7 +79,7 @@ class GuidedPoke(Behavior):
 	
 		if jointI > self.rootNode:
 			#joints = range(self.rootNode, self.numJoints)
-			joints = range(self.rootNode, jointI)
+			joints = list(range(self.rootNode, jointI))
 	
 			for i in joints:
 				xTotal = xTotal + segLength*cos(totalAngle)
@@ -90,7 +90,7 @@ class GuidedPoke(Behavior):
 		
 		elif jointI < self.rootNode:
 			
-			joints = range(jointI,self.rootNode)
+			joints = list(range(jointI,self.rootNode))
 			joints.reverse()
 	
 			for i in joints:
@@ -105,7 +105,7 @@ class GuidedPoke(Behavior):
 			zTotal = 0.0
 
 		else:
-			print "rootNode =", self.rootNode, "segI = ", segI
+			print("rootNode =", self.rootNode, "segI = ", segI)
 			raise
 
 	
@@ -181,8 +181,8 @@ class GuidedPoke(Behavior):
 
 				pathDist = self.getPathDist(self.path)
 				
-				print "maxDist =", maxDist
-				print "pathDist =", pathDist
+				print("maxDist =", maxDist)
+				print("pathDist =", pathDist)
 				
 				if pathDist <= maxDist:
 					pointNotFound = False
@@ -238,7 +238,7 @@ class GuidedPoke(Behavior):
 				self.stabilityX.addData(pose[0])
 				self.stabilityY.addData(pose[1])
 
-				print self.stabilityX.getVar(), self.stabilityY.getVar()
+				print(self.stabilityX.getVar(), self.stabilityY.getVar())
 
 				if self.stabilityX.isStable() and self.stabilityY.isStable():
 			

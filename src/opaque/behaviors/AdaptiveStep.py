@@ -1,15 +1,15 @@
 
-from functions import *
+from .functions import *
 from copy import copy, deepcopy
 import pylab
 from math import pi, sin, cos, sqrt, fabs, acos
-from Behavior import Behavior
-from FrontAnchorFit import FrontAnchorFit
-from FastLocalCurveFit import FastLocalCurveFit
-from HoldTransition import HoldTransition
-from HoldSlideTransition import HoldSlideTransition
-from AdaptiveAnchorCurve import AdaptiveAnchorCurve
-from BackConcertinaCurve import BackConcertinaCurve
+from .Behavior import Behavior
+from .FrontAnchorFit import FrontAnchorFit
+from .FastLocalCurveFit import FastLocalCurveFit
+from .HoldTransition import HoldTransition
+from .HoldSlideTransition import HoldSlideTransition
+from .AdaptiveAnchorCurve import AdaptiveAnchorCurve
+from .BackConcertinaCurve import BackConcertinaCurve
 
 """
 TODO
@@ -336,7 +336,7 @@ class AdaptiveStep(Behavior):
 			cmdOrigin = [0.0,0.0,-spliceJointAngle]
 			self.cmdSegPoints.append(cmdOrigin)
 			
-			ind = range(0,self.spliceJoint+1)
+			ind = list(range(0,self.spliceJoint+1))
 			ind.reverse()
 			
 			for i in ind:		
@@ -372,7 +372,7 @@ class AdaptiveStep(Behavior):
 
 			self.cmdSegPoints.append(cmdOrigin)
 
-			ind = range(0,self.spliceJoint)
+			ind = list(range(0,self.spliceJoint))
 			ind.reverse()
 			
 			for i in ind:
@@ -446,7 +446,7 @@ class AdaptiveStep(Behavior):
 
 			actSegPoints.append(actOrigin)
 
-			ind = range(0,self.spliceJoint+1)
+			ind = list(range(0,self.spliceJoint+1))
 			ind.reverse()
 			
 			for i in ind:
@@ -479,7 +479,7 @@ class AdaptiveStep(Behavior):
 
 			actSegPoints.insert(0, actOrigin)
 
-			ind = range(0,self.spliceJoint)
+			ind = list(range(0,self.spliceJoint))
 			ind.reverse()
 			
 			for i in ind:
@@ -555,7 +555,7 @@ class AdaptiveStep(Behavior):
 			peakOrigin = [self.segLength*cos(-spliceJointAngle),self.segLength*sin(-spliceJointAngle),-spliceJointAngle + pi]
 			peakCurves[-1].append(copy(peakOrigin))
 			
-			ind = range(0,self.spliceJoint)
+			ind = list(range(0,self.spliceJoint))
 			ind.reverse()
 
 			for i in ind:
@@ -635,7 +635,7 @@ class AdaptiveStep(Behavior):
 			pylab.scatter(xP,yP,color=str(1.0-val))
 		"""
 
-		print "plotting graph", self.plotCount
+		print("plotting graph", self.plotCount)
 
 		pylab.xlim(-4,4)
 		#pylab.xlim(-0.5,4)
@@ -695,7 +695,7 @@ class AdaptiveStep(Behavior):
 			self.frontExtendDone = True
 			self.frontExtending = False
 
-		print "doExtendFront"
+		print("doExtendFront")
 			
 	def doFrontAnchor(self):
 
@@ -1029,7 +1029,7 @@ class AdaptiveStep(Behavior):
 				
 				if self.lastAttempt:
 					self.frontAnchoringDone = True
-					print "ERROR: Quit with error on jerk joints in Front Anchoring"
+					print("ERROR: Quit with error on jerk joints in Front Anchoring")
 					
 				else:
 					if self.direction:
@@ -1300,15 +1300,15 @@ class AdaptiveStep(Behavior):
 	
 				if len(peakJoints) == 0 and self.currPeak != 0:
 					isDone = True
-					print "terminating caseA"
+					print("terminating caseA")
 					
 				elif self.direction and 38 in peakJoints and currAmp > 0.5:
 					isDone = True
-					print "terminating caseB"
+					print("terminating caseB")
 					
 				elif not self.direction and 0 in peakJoints and currAmp > 0.5:
 					isDone = True
-					print "terminating caseC"	
+					print("terminating caseC")	
 
 			if isDone:
 					
@@ -1395,8 +1395,8 @@ class AdaptiveStep(Behavior):
 				self.frontAnchoringDone = False
 				self.frontAnchoringState = False
 
-				print "ERROR: Quit with outOfSegments error on Front Anchoring"
-				print "received frontAnchoringDone =", self.frontAnchoringDone
+				print("ERROR: Quit with outOfSegments error on Front Anchoring")
+				print("received frontAnchoringDone =", self.frontAnchoringDone)
 				
 			else:
 				

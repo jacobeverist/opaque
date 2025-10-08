@@ -110,7 +110,7 @@ class RoadMapIK:
 			childNode.attachObject(currEntity)
 
 	def getPathDirection(self):
-		joints = range(NUM_SEGS-1)
+		joints = list(range(NUM_SEGS-1))
 
 		# segment angle vector
 		vecSum1 = [0.0,0.0]
@@ -180,7 +180,7 @@ class RoadMapIK:
 		#	return
 
 		if startNode < 0 or startNode >= (self.numSegs-1) or endNode < 0 or endNode >= (self.numSegs-1):
-			print "Nodes out of bounds for fitBody:", startNode, endNode
+			print("Nodes out of bounds for fitBody:", startNode, endNode)
 			raise
 
 		if startNode > endNode:
@@ -211,19 +211,19 @@ class RoadMapIK:
 			# joints we're visiting in reverse order
 			if startNode  >= 35:
 				#joints = range(5, endNode+1)
-				joints = range(endNode, 34+1)
+				joints = list(range(endNode, 34+1))
 				joints.reverse()
 
 				tEnd = endNode
 				if tEnd < 35:
 					tEnd = 35
 
-				zeroJoints = range(tEnd,startNode+1)
+				zeroJoints = list(range(tEnd,startNode+1))
 				for i in zeroJoints:
 					self.probe.setServo(i, 0.0)
 
 			else:
-				joints = range(endNode, startNode+1)
+				joints = list(range(endNode, startNode+1))
 				joints.reverse()
 
 			#joints = range(endNode, startNode+1)
@@ -338,18 +338,18 @@ class RoadMapIK:
 
 			#joints = range(0,self.rootNode+1)
 			if startNode  <= 4:
-				joints = range(5, endNode+1)
+				joints = list(range(5, endNode+1))
 
 				tEnd = endNode
 				if tEnd > 4:
 					tEnd = 4
 
-				zeroJoints = range(startNode,tEnd+1)
+				zeroJoints = list(range(startNode,tEnd+1))
 				for i in zeroJoints:
 					self.probe.setServo(i, 0.0)
 
 			else:
-				joints = range(startNode, endNode+1)
+				joints = list(range(startNode, endNode+1))
 
 			for i in joints:
 

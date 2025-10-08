@@ -39,7 +39,7 @@ class FakeProbe:
 		
 		self.currIndex = 0
 		for i in range(len(self.angles)):
-			print len(self.angles[i])
+			print(len(self.angles[i]))
 		#print len(self.angles[0])
 		
 	def loadEmpty(self):
@@ -81,9 +81,9 @@ class FakeProbe:
 		targetPose = [0.0,0.0,0.0]
 
 		if originJoint >= self.numSegs-1 or targetJoint >= self.numSegs or originJoint < 0 or targetJoint < -1:
-			print "ERROR: getJointWRTJointPose joint out of range!" 
-			print "Received joint", originJoint , "and" , targetJoint , "with pose"
-			print originPose[0], originPose[1], originPose[2]
+			print("ERROR: getJointWRTJointPose joint out of range!") 
+			print("Received joint", originJoint , "and" , targetJoint , "with pose")
+			print(originPose[0], originPose[1], originPose[2])
 			raise
 
 		# origin and target are the same, so return origin pose
@@ -118,7 +118,7 @@ class FakeProbe:
 			zTotal = originPose[1] 
 			totalAngle = originPose[2] 
 
-			ind = range(targetJoint+1, originJoint + 1) # (28, 11) 
+			ind = list(range(targetJoint+1, originJoint + 1)) # (28, 11) 
 			ind.reverse()
 
 			for i in ind:

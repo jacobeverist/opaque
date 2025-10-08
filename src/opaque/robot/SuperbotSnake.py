@@ -2,7 +2,7 @@
 
 import ogre.renderer.OGRE as ogre
 import ogre.physics.OgreOde as OgreOde
-from Servo import Servo
+from .Servo import Servo
 from math import *
 from copy import *
 from transform import Transform
@@ -182,7 +182,7 @@ class SuperbotSnake:
 			
 			segPose = poses[i]
 
-			print segPose
+			print(segPose)
 			
 			pos = ogre.Vector3(segPose[0], segPose[1], segPose[2])			
 			self._bodies[i].setPosition(pos)
@@ -523,7 +523,7 @@ class SuperbotSnake:
 			zTotal = originPose[1] 
 			totalAngle = originPose[2] 
 
-			ind = range(targetJoint+1, originJoint + 1) # (28, 11) 
+			ind = list(range(targetJoint+1, originJoint + 1)) # (28, 11) 
 			ind.reverse()
 
 			for i in ind:
@@ -544,9 +544,9 @@ class SuperbotSnake:
 		targetPose = [0.0,0.0,0.0]
 
 		if originJoint >= self.numSegs-1 or targetJoint >= self.numSegs or originJoint < 0 or targetJoint < -1:
-			print "ERROR: getJointWRTJointPose joint out of range!" 
-			print "Received joint", originJoint , "and" , targetJoint , "with pose"
-			print originPose[0], originPose[1], originPose[2]
+			print("ERROR: getJointWRTJointPose joint out of range!") 
+			print("Received joint", originJoint , "and" , targetJoint , "with pose")
+			print(originPose[0], originPose[1], originPose[2])
 			raise
 
 		#joints = self.getProbeState()
@@ -591,7 +591,7 @@ class SuperbotSnake:
 			zTotal = originPose[1] 
 			totalAngle = originPose[2] 
 
-			ind = range(targetJoint+1, originJoint + 1) # (28, 11) 
+			ind = list(range(targetJoint+1, originJoint + 1)) # (28, 11) 
 			ind.reverse()
 
 			for i in ind:

@@ -10,8 +10,8 @@ import scipy.optimize
 
 from copy import copy
 from copy import deepcopy
-from coord import Pose
-from SplineFit import SplineFit
+from .coord import Pose
+from .SplineFit import SplineFit
 
 from numpy import array
 import pylab
@@ -251,7 +251,7 @@ if __name__ == '__main__':
 		#if i % 2 == 1:
 		if True:
 
-			print "correcting", i , "and", i+1
+			print("correcting", i , "and", i+1)
 
 			f = open('alpha_bound_%04u.txt' % i,'r')
 			#f = open('gnd_alpha_bound_%04u.txt' % i,'r')
@@ -321,7 +321,7 @@ if __name__ == '__main__':
 			for p in a_data:
 				a_trans.append(gen_icp.dispPoint(p, offset))
 
-			print "drawing: ", "finalOutput_%04u.png" % i
+			print("drawing: ", "finalOutput_%04u.png" % i)
 
 			# plot the final result, plot 999
 			gen_icp.draw(a_trans, b_data, "finalOutput_%04u.png" % i, fileWrite = True) 
@@ -331,10 +331,10 @@ if __name__ == '__main__':
 			poseNumbers.append(i)
 
 
-	print "finalOffsets"
-	print finalOffsets
-	print "estPoses"
-	print estPoses
+	print("finalOffsets")
+	print(finalOffsets)
+	print("estPoses")
+	print(estPoses)
 
 	# 1. get the relative offsets (done)
 	# 2. for each node, recompute the estimated pose of all the subsequent poses
@@ -358,8 +358,8 @@ if __name__ == '__main__':
 			#poseNumbers.append(poseNumbers[i]+2)
 			poseNumbers.append(poseNumbers[i]+1)
 
-	print "estPoses"
-	print estPoses
+	print("estPoses")
+	print(estPoses)
 	
 	pylab.clf()
 

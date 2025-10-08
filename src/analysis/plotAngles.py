@@ -5,9 +5,9 @@ import math
 
 errorReader = csv.reader(open('angles.txt', 'rb'), delimiter=',')
 
-header = errorReader.next()
+header = next(errorReader)
 
-print header
+print(header)
 
 angles = []
 xyErrors1 = []
@@ -35,7 +35,7 @@ for row in errorReader:
     xyErrors2.append(float(row[5]))
     angErrors2.append(float(row[6]))
 
-t = range(0,len(xyErrors1))    
+t = list(range(0,len(xyErrors1)))    
 
 
 #pylab.plot(t,xyErrors2, color=(0.5,0.5,1.0), linewidth='1')
@@ -45,7 +45,7 @@ pylab.plot(t,angErrors1, color='r', linewidth='1')
 pylab.plot(angles, color='g')
 pylab.axhline(y=0, xmin=0, xmax=1)
 
-print newPose
+print(newPose)
 
 for v in newPose:
     pylab.axvline(x = v, color='0.5')

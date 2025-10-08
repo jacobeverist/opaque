@@ -156,8 +156,8 @@ for result in results:
 		fails += 1
 		#print result
 
-print success, "successes"
-print fails, "failures"
+print(success, "successes")
+print(fails, "failures")
 
 #print checkStable(contacts, [fx, fy], [xc, yc])
 

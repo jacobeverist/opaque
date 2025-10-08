@@ -1,16 +1,16 @@
 import sys
 import os
 
-from LocalOccMap import *
-from LocalBoundaryMap import *
-from LocalObstacleMap import *
-from SplineFit import *
-from Pose import Pose
+from .LocalOccMap import *
+from .LocalBoundaryMap import *
+from .LocalObstacleMap import *
+from .SplineFit import *
+from .Pose import Pose
 #from cornerDetection import extractCornerCandidates
 #from voronoi import Site, computeVoronoiDiagram
 
-from GPACurve import GPACurve
-from StableCurve import StableCurve
+from .GPACurve import GPACurve
+from .StableCurve import StableCurve
 #from gen_icp import computeMedialAxis, getLongestPath
 from medialaxis import computeMedialAxis
 import matplotlib.pyplot as plt
@@ -19,8 +19,8 @@ import graph
 import alphamod
 
 import random
-import functions
-from functions import decimatePoints
+from . import functions
+from .functions import decimatePoints
 #from PIL import Image
 from numpy import array, dot, transpose
 
@@ -167,7 +167,7 @@ class LocalNode:
 		if self.stabilizePose:
 			self.initialGPACPose = self.getLocalGPACPose()
 	
-			print "rootPose:", self.rootPose
+			print("rootPose:", self.rootPose)
 
 
 		" alpha hull boundary "
@@ -212,7 +212,7 @@ class LocalNode:
 		
 		
 	def setPartnerNodeID(self, nodeID):
-		print "setting", self.nodeID, "partner to", nodeID
+		print("setting", self.nodeID, "partner to", nodeID)
 		self.partnerNodeID = nodeID	
 		
 	def getIsFeatureless(self):
@@ -220,7 +220,7 @@ class LocalNode:
 		if self.isFeatureless != None:
 			return self.isFeatureless
 		
-		print "isBowtie:", self.isBowtie
+		print("isBowtie:", self.isBowtie)
 		
 		#if self.isBowtie:			
 		#	medialAxis = self.getStaticMedialAxis()
@@ -231,16 +231,16 @@ class LocalNode:
 		hull, medialAxis = computeHullAxis(self.nodeID, self, tailCutOff = False)
 		#medialAxis = medialAxis[1:-2]
 
-		print "len(medialAxis) =", len(medialAxis)
-		print medialAxis[0], medialAxis[-1]
+		print("len(medialAxis) =", len(medialAxis))
+		print(medialAxis[0], medialAxis[-1])
 
 		medialSpline = SplineFit(medialAxis,smooth=0.1)
 		
 		#medialPoints = medialSpline.getUniformSamples(spacing = 0.05)
 		medialPoints = medialSpline.getUniformSamples(spacing = 0.1)
 
-		print "len(medialPoints) =", len(medialPoints)
-		print medialPoints[0], medialPoints[-1]
+		print("len(medialPoints) =", len(medialPoints))
+		print(medialPoints[0], medialPoints[-1])
 
 		xP = []
 		yP = []
@@ -252,7 +252,7 @@ class LocalNode:
 		ar1 = round(ar1,5)
 		br1 = round(br1,5)
 		
-		print "(ar1,br1) =", (ar1,br1)
+		print("(ar1,br1) =", (ar1,br1))
 		
 		" compute point distances from the fitted line "
 		xf1 = [medialPoints[0][0], medialPoints[-1][0]]
@@ -261,12 +261,12 @@ class LocalNode:
 		#linePoints2 = functions.makePointsUniform( linePoints1, max_spacing = 0.04)
 		linePoints2 = functions.makePointsUniform( linePoints1, max_spacing = 0.1)
 		
-		print "linePoints1 =", linePoints1
-		print "len(linePoints2) =", len(linePoints2)
-		print linePoints2[0], linePoints2[-1]
+		print("linePoints1 =", linePoints1)
+		print("len(linePoints2) =", len(linePoints2))
+		print(linePoints2[0], linePoints2[-1])
 		
 		
-		print self.nodeID, "isFeatureless() with", len(medialPoints), "medial points and spline length =", medialSpline.length()
+		print(self.nodeID, "isFeatureless() with", len(medialPoints), "medial points and spline length =", medialSpline.length())
 		
 		distances = []
 		for p in medialPoints:
@@ -279,7 +279,7 @@ class LocalNode:
 		
 		distAvg = sum / len(distances)
 		
-		print "node", self.nodeID, "has featurelessness of", distAvg
+		print("node", self.nodeID, "has featurelessness of", distAvg)
 		if distAvg > 0.04:
 			self.isFeatureless = False
 			return False
@@ -397,18 +397,18 @@ class LocalNode:
 
 
 		if isnan(self.rootPose[0]) or isnan(self.rootPose[1]) or isnan(self.rootPose[2]): 
-			print "isNaN:  self.rootPose =", self.rootPose
-			print "self.localPosture =", self.localPosture
-			print "originForePose, originBackPose =", originForePose, originBackPose
-			print "originForePosture =", originForePosture
-			print "originBackPosture =", originBackPosture
-			print "newPosture = ", newPosture
-			print "localForePose, localBackPose =", localForePose, localBackPose
-			print "localForePosture =", localForePosture 
-			print "localBackPosture =", localBackPosture
-			print "foreCost, backCost, angle =", foreCost, backCost, angle
-			print "correctedGPACPose = ", correctedGPACPose
-			print "localRootOffset3 = ", localRootOffset3
+			print("isNaN:  self.rootPose =", self.rootPose)
+			print("self.localPosture =", self.localPosture)
+			print("originForePose, originBackPose =", originForePose, originBackPose)
+			print("originForePosture =", originForePosture)
+			print("originBackPosture =", originBackPosture)
+			print("newPosture = ", newPosture)
+			print("localForePose, localBackPose =", localForePose, localBackPose)
+			print("localForePosture =", localForePosture) 
+			print("localBackPosture =", localBackPosture)
+			print("foreCost, backCost, angle =", foreCost, backCost, angle)
+			print("correctedGPACPose = ", correctedGPACPose)
+			print("localRootOffset3 = ", localRootOffset3)
 
 		self.correctedPosture = []
 		for j in range(self.numSegs-1):
@@ -708,7 +708,7 @@ class LocalNode:
 		zTotal = 0.0
 		totalAngle = 0.0		
 
-		joints = range(-1,self.rootNode)
+		joints = list(range(-1,self.rootNode))
 		joints.reverse()
 
 		for i in joints:
@@ -727,7 +727,7 @@ class LocalNode:
 		zTotal = 0.0
 		totalAngle = 0.0		
 
-		joints = range(self.rootNode, 39)
+		joints = list(range(self.rootNode, 39))
 
 		for i in joints:
 			xTotal = xTotal + segLength*cos(totalAngle)
@@ -749,7 +749,7 @@ class LocalNode:
 	
 		if jointI > self.rootNode:
 			#joints = range(self.rootNode, self.probe.numSegs-1)
-			joints = range(self.rootNode, jointI)
+			joints = list(range(self.rootNode, jointI))
 	
 			for i in joints:
 				xTotal = xTotal + segLength*cos(totalAngle)
@@ -760,7 +760,7 @@ class LocalNode:
 		
 		elif jointI < self.rootNode:
 			
-			joints = range(jointI,self.rootNode)
+			joints = list(range(jointI,self.rootNode))
 			joints.reverse()
 	
 			for i in joints:
@@ -775,7 +775,7 @@ class LocalNode:
 			zTotal = 0.0
 
 		else:
-			print "rootNode =", self.rootNode, "jointI = ", jointI
+			print("rootNode =", self.rootNode, "jointI = ", jointI)
 			raise
 	
 		return [xTotal, zTotal, totalAngle]
@@ -903,7 +903,7 @@ class LocalNode:
 
 	def readFromFile2(self, dirName, nodeID, forcedPose = []):
 
-		print "loading " + dirName + "/localStateSave_%04u.txt" % nodeID
+		print("loading " + dirName + "/localStateSave_%04u.txt" % nodeID)
 
 		#self.nodeID = nodeID
 
@@ -1194,11 +1194,11 @@ class LocalNode:
 		
 		global splineCount
 
-		print "computeFullSkeleton(", self.nodeID, ")"
+		print("computeFullSkeleton(", self.nodeID, ")")
 
 		" DO NOT RECOMPUTE, RETURN PREVIOUS "
 		if len(self.longPaths) > 0:
-			print "returning caseE"
+			print("returning caseE")
 			return self.longPaths, self.medialLongPaths, self.medialTailCuts, self.longMedialWidths, self.bowtieValues
 
 			self.spatialFeatures.append(results)
@@ -1325,11 +1325,11 @@ class LocalNode:
 	
 		" INITIALIZE DATA DICTS FOR UNIDIRECTIONAL MST"
 		uni_mst = {}
-		for k, v in mst.items():
+		for k, v in list(mst.items()):
 			uni_mst[k] = []
 	
 		" ADD EDGES TO DICT TREE REPRESENTATION "
-		for k, v in mst.items():
+		for k, v in list(mst.items()):
 			if v != None:
 				uni_mst[k].append(v)
 				uni_mst[v].append(k)
@@ -1337,7 +1337,7 @@ class LocalNode:
 		
 		" LOCATE ALL LEAVES "
 		leaves = []
-		for k, v in uni_mst.items():
+		for k, v in list(uni_mst.items()):
 			if len(v) == 1:
 				leaves.append(k)
 		
@@ -1350,10 +1350,10 @@ class LocalNode:
 	
 		" AGAIN, CREATE OUR DATA STRUCTURES AND IDENTIFY LEAVES "
 		uni_mst = {}
-		for k, v in mst.items():
+		for k, v in list(mst.items()):
 			uni_mst[k] = []
 	
-		for k, v in mst.items():
+		for k, v in list(mst.items()):
 			if v != None:
 				uni_mst[k].append(v)
 				uni_mst[v].append(k)
@@ -1362,7 +1362,7 @@ class LocalNode:
 		" RECORD THE LEAVES AND JUNCTIONS "
 		leaves = []
 		junctions = []
-		for k, v in uni_mst.items():
+		for k, v in list(uni_mst.items()):
 			if len(v) == 1:
 				leaves.append(k)
 
@@ -1388,7 +1388,7 @@ class LocalNode:
 			isVisited = {}
 			nodeSum = {}
 			nodePath = {}
-			for k, v in uni_mst.items():
+			for k, v in list(uni_mst.items()):
 				isVisited[k] = 0
 				nodeSum[k] = 0
 				nodePath[k] = []
@@ -1428,7 +1428,7 @@ class LocalNode:
 
 			self.leafPairs.append((leafID1,leafID2))
 			
-		print "leafPairs:", self.leafPairs
+		print("leafPairs:", self.leafPairs)
 
 		for k in range(len(self.longPaths)):
 			path = self.longPaths[k]
@@ -1470,16 +1470,16 @@ class LocalNode:
 		#longMedialWidths = []
 		#medialLongPaths = []
 		#medialTailCuts = []
-		print len(self.longPaths), "long paths"
+		print(len(self.longPaths), "long paths")
 		for pathIndex in range(len(self.longPaths)):
 			longPath = self.longPaths[pathIndex]
-			print "longPath:", len(longPath)
+			print("longPath:", len(longPath))
 			
 			leafPath = deepcopy(longPath)
 			
 			frontVec = [0.,0.]
 			backVec = [0.,0.]
-			indic = range(3)
+			indic = list(range(3))
 			#indic = range(16)
 			indic.reverse()
 		
@@ -1667,7 +1667,7 @@ class LocalNode:
 			self.medialTailCuts.append(medial3)
 	
 			
-			print "len(medial2) =", len(medial2)
+			print("len(medial2) =", len(medial2))
 			medialSpline2 = SplineFit(medial2, smooth=0.1)
 			#medialSpline2 = SplineFit(medial2, smooth=0.05)
 	
@@ -2003,7 +2003,7 @@ class LocalNode:
 							#p2 = [contigStartIndex + maxIndex, contigWeights[maxIndex]]
 							#p3 = [contigFinalIndex, longPathWidth[contigFinalIndex]["widthSum"]]
 
-							print "indices", contigStartIndex, maxIndex, contigFinalIndex, p1[0], p2[0], p3[0]
+							print("indices", contigStartIndex, maxIndex, contigFinalIndex, p1[0], p2[0], p3[0])
 
 							if p2[0]-p1[0] != 0.0:
 								slope1 = (p2[1]-p1[1])/(p2[0]-p1[0])
@@ -2082,8 +2082,8 @@ class LocalNode:
 
 				#contigBoundaries.append((contigStartIndex, contigFinalIndex))
 
-				print "spatial", self.nodeID, contigInflection, maxDeriv, len(longPathWidth), contigPointIndex, contigBoundaries
-				print "mass deriv:", [(k, contigLen[k], contigArea[k], contigDensity[k], longPathWidth[contigPointIndex[k]]["angDeriv2"]) for k in range(len(contigPointIndex))]
+				print("spatial", self.nodeID, contigInflection, maxDeriv, len(longPathWidth), contigPointIndex, contigBoundaries)
+				print("mass deriv:", [(k, contigLen[k], contigArea[k], contigDensity[k], longPathWidth[contigPointIndex[k]]["angDeriv2"]) for k in range(len(contigPointIndex))])
 
 				#if maxDeriv >= 0.35:
 				#if maxDeriv >= 0.6 and longPathWidth[contigInflection-1]["angDeriv2"] < maxDeriv and longPathWidth[contigInflection+1]["angDeriv2"] < maxDeriv:
@@ -2104,14 +2104,14 @@ class LocalNode:
 							if angDeriv >= 0.6:
 								inflectionPoint = copy(longPathWidth[centerMassIndex]["linePoint"])
 								#print self.nodeID, "inflection boundaries:", inflectionPoint, contigInflection, angDeriv, maxDeriv, len(longPathWidth)
-								print self.nodeID, "inflection boundaries:", inflectionPoint, centerMassIndex, angDeriv, maxDeriv, len(longPathWidth)
+								print(self.nodeID, "inflection boundaries:", inflectionPoint, centerMassIndex, angDeriv, maxDeriv, len(longPathWidth))
 
 					if inflectionPoint == None:
 						if longPathWidth[contigInflection-1]["angDeriv2"] < maxDeriv and longPathWidth[contigInflection+1]["angDeriv2"] < maxDeriv:
 							angDeriv = longPathWidth[contigInflection]["angDeriv2"]
 							if angDeriv >= maxDeriv - 0.2:
 								inflectionPoint = copy(longPathWidth[contigInflection]["linePoint"])
-								print self.nodeID, "inflection boundaries:", inflectionPoint, contigInflection, angDeriv, maxDeriv, len(longPathWidth)
+								print(self.nodeID, "inflection boundaries:", inflectionPoint, contigInflection, angDeriv, maxDeriv, len(longPathWidth))
 
 
 				else:
@@ -2130,18 +2130,18 @@ class LocalNode:
 					negArea = contigNegArea[0]
 					slopes = contigSlopes[0]
 
-					print self.nodeID, "bloom boundaries:", frontBoundIndex, backBoundIndex, len(longPathWidth), cLen, dens, angDeriv, asymm, area, negArea, slopes[0]+slopes[1]
+					print(self.nodeID, "bloom boundaries:", frontBoundIndex, backBoundIndex, len(longPathWidth), cLen, dens, angDeriv, asymm, area, negArea, slopes[0]+slopes[1])
 
-					print frontBoundIndex <= 6, backBoundIndex >= len(longPathWidth)-7, cLen < 25, dens >= 0.05
+					print(frontBoundIndex <= 6, backBoundIndex >= len(longPathWidth)-7, cLen < 25, dens >= 0.05)
 
 					if (frontBoundIndex <= 6 or backBoundIndex >= len(longPathWidth)-7) and cLen < 25 and dens >= 0.05:
 						bloomPoint = longPathWidth[pointIndex]["linePoint"]
 
 						#ax2.annotate("%1.2f %1.2f %1.2f %1.3f %s" % (dens, asymm, area, negArea, repr(slopes[0]+slopes[1])), xy=(contigCenterMass[0], 0.3), xytext=(contigCenterMass[0], 0.8), color='k')
 
-						print "bloom ACCEPT"
+						print("bloom ACCEPT")
 					else:
-						print "bloom REJECT"
+						print("bloom REJECT")
 
 
 				" conditions for a arch detection "
@@ -2157,9 +2157,9 @@ class LocalNode:
 					negArea = contigNegArea[0]
 					slopes = contigSlopes[0]
 
-					print self.nodeID, "arch boundaries:", frontBoundIndex, backBoundIndex, len(longPathWidth), cLen, dens, angDeriv, asymm, area, negArea, slopes[0]+slopes[1]
+					print(self.nodeID, "arch boundaries:", frontBoundIndex, backBoundIndex, len(longPathWidth), cLen, dens, angDeriv, asymm, area, negArea, slopes[0]+slopes[1])
 					#print frontBoundIndex > 6, backBoundIndex < len(longPathWidth)-7, angDeriv < 0.03, cLen > 5, cLen <= 20, area > 0.1, (slopes[0]+slopes[1]) > 0.37
-					print frontBoundIndex > 6, backBoundIndex < len(longPathWidth)-7, angDeriv < 0.1, cLen > 5, cLen <= 20, area > 0.1, (slopes[0]+slopes[1]) > 0.37
+					print(frontBoundIndex > 6, backBoundIndex < len(longPathWidth)-7, angDeriv < 0.1, cLen > 5, cLen <= 20, area > 0.1, (slopes[0]+slopes[1]) > 0.37)
 
 
 					#if (frontBoundIndex > 6 and backBoundIndex < len(longPathWidth)-7) and angDeriv < 0.03 and cLen > 5 and cLen <= 20 and area > 0.2 and dens >= 0.03:
@@ -2169,9 +2169,9 @@ class LocalNode:
 						#pass and cLen < 25 and dens >= 0.03:
 						archPoint = longPathWidth[pointIndex]["linePoint"]
 
-						print "arch ACCEPT"
+						print("arch ACCEPT")
 					else:
-						print "arch REJECT"
+						print("arch REJECT")
 
 
 
@@ -2207,7 +2207,7 @@ class LocalNode:
 				else:
 					widthStr += "0 "
 
-			print widthStr
+			print(widthStr)
 					
 			numSamples = len(medialWidth)
 			
@@ -2229,9 +2229,9 @@ class LocalNode:
 			divIndexes[3] += remainderTotal
 
 				
-			print "numSamples:", numSamples
-			print "histDiv:", histDiv
-			print "divIndexes:", divIndexes
+			print("numSamples:", numSamples)
+			print("histDiv:", histDiv)
+			print("divIndexes:", divIndexes)
 			for k in range(numSamples):
 				
 				width = medialWidth[k]["widthSum"]
@@ -2249,7 +2249,7 @@ class LocalNode:
 			self.bowtieValues.append((greatCount,divSums))
 
 
-		print "returning caseF"
+		print("returning caseF")
 		return self.longPaths, self.medialLongPaths, self.medialTailCuts, self.longMedialWidths, self.bowtieValues
 				
 
@@ -2257,16 +2257,16 @@ class LocalNode:
 		
 		global splineCount
 		
-		print "getBestMedialAxis(", self.nodeID, "):", self.isBowtie, self.medialAComputed, self.medialCComputed
+		print("getBestMedialAxis(", self.nodeID, "):", self.isBowtie, self.medialAComputed, self.medialCComputed)
 		
 		
 		if not self.isBowtie and self.medialAComputed:
-			print "returning caseA"
+			print("returning caseA")
 			return deepcopy(self.medialPathA)
 
 
 		elif self.isBowtie and self.medialCComputed:
-			print "returning caseB"
+			print("returning caseB")
 			return deepcopy(self.medialPathC)	
 
 		" make sure alpha boundary is built "
@@ -2290,7 +2290,7 @@ class LocalNode:
 		longPaths, medialLongPaths, medialTailCuts, longMedialWidths, bowtieValues = self.computeFullSkeleton(hull)
 
 		if len(longPaths) > 1:
-			print "MULTI-JUNCTION SITUATION"
+			print("MULTI-JUNCTION SITUATION")
 			
 			" record the edge points, the intersection points, each of splice paths "
 			self.splicePaths = deepcopy(longPaths)
@@ -2412,11 +2412,11 @@ class LocalNode:
 					#else:
 					#	widthX.append(0.0)
 
-					print "distR:", distR
-					print "distL:", distL
-					print "linePoint:", linePoint
-					print "leftPoint:", leftPoint
-					print "rightPoint:", rightPoint
+					print("distR:", distR)
+					print("distL:", distL)
+					print("linePoint:", linePoint)
+					print("leftPoint:", leftPoint)
+					print("rightPoint:", rightPoint)
 
 					if len(rightPoint) > 0.0:
 						xP = [linePoint[0], rightPoint[0]]
@@ -2554,17 +2554,17 @@ class LocalNode:
 
 
 		greatCount, divSums = bowtieValues[0]
-		print "divSums:", greatCount, divSums
+		print("divSums:", greatCount, divSums)
 		
 		if divSums[2] < divSums[0] and divSums[2] < divSums[4]:
 			self.isBowtie = True
-			print "BOWTIE"
+			print("BOWTIE")
 		elif greatCount >= 4:
 			self.isBowtie = True
-			print "BOWTIE"
+			print("BOWTIE")
 		else:
 			self.medialPathCut = medial2
-			print "returning caseC"
+			print("returning caseC")
 			return deepcopy(self.medialPathA)
 
 
@@ -2576,7 +2576,7 @@ class LocalNode:
 		self.bowtieValues = []
 
 
-		print "computing medial axis"
+		print("computing medial axis")
 
 		" make sure alpha boundary is built "
 		self.computeStaticAlphaBoundary()
@@ -2706,11 +2706,11 @@ class LocalNode:
 					#else:
 					#	widthX.append(0.0)
 
-					print "distR:", distR
-					print "distL:", distL
-					print "linePoint:", linePoint
-					print "leftPoint:", leftPoint
-					print "rightPoint:", rightPoint
+					print("distR:", distR)
+					print("distL:", distL)
+					print("linePoint:", linePoint)
+					print("leftPoint:", leftPoint)
+					print("rightPoint:", rightPoint)
 
 					if len(rightPoint) > 0.0:
 						xP = [linePoint[0], rightPoint[0]]
@@ -2846,7 +2846,7 @@ class LocalNode:
 			plt.clf()
 			plt.close()
 
-		print "returning caseD"
+		print("returning caseD")
 		return deepcopy(self.medialPathC)
 		
 	
@@ -2884,7 +2884,7 @@ class LocalNode:
 		longPaths, medialLongPaths, medialTailCuts, longMedialWidths, bowtieValues = self.computeFullSkeleton(hull)
 
 		if len(longPaths) > 1:
-			print "MULTI-JUNCTION SITUATION"
+			print("MULTI-JUNCTION SITUATION")
 			
 			" record the edge points, the intersection points, each of splice paths "
 			self.splicePaths = deepcopy(longPaths)
@@ -2936,14 +2936,14 @@ class LocalNode:
 
 
 		greatCount, divSums = bowtieValues[0]
-		print "divSums:", greatCount, divSums
+		print("divSums:", greatCount, divSums)
 		
 		if divSums[2] < divSums[0] and divSums[2] < divSums[4]:
 			self.isBowtie = True
-			print "BOWTIE"
+			print("BOWTIE")
 		elif greatCount > 4:
 			self.isBowtie = True
-			print "BOWTIE"
+			print("BOWTIE")
 		else:
 			self.medialPathCut = medial2
 
@@ -2963,7 +2963,7 @@ class LocalNode:
 		if self.medialCComputed:
 			return deepcopy(self.medialPathC)
 
-		print "computing medial axis"
+		print("computing medial axis")
 
 		" make sure alpha boundary is built "
 		self.computeStaticAlphaBoundary()
@@ -3237,12 +3237,12 @@ class LocalNode:
 				alphaPlotCount += 1
 									
 				if numVert <= 2:
-					print "Failed, hull had only", numVert, "vertices"
+					print("Failed, hull had only", numVert, "vertices")
 					raise
 				
 				isDone = True
 			except:
-				print "hull has holes!  retrying..."
+				print("hull has holes!  retrying...")
 				#print sArr	
 
 		return vertices

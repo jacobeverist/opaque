@@ -113,7 +113,7 @@ if True:
 		newImage.save(test + "/map_" + str_num + ".png")
 		newImage.save("resultsDir/map_" + str_num + ".png")
 	except IOError:
-		print "failed " + test
+		print("failed " + test)
 
 
 	#os.system("cp " + test + "/poseFitAfter.png resultsDir/map_" + str_num + ".png")

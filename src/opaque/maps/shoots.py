@@ -4,17 +4,17 @@ import alphamod
 import os
 import sys
 import graph
-from functions import *
+from .functions import *
 from PIL import Image
 import hashlib
 from medialaxis import computeMedialAxis
-from SplineFit import SplineFit
-from Pose import Pose
-from LocalNode import getLongestPath
+from .SplineFit import SplineFit
+from .Pose import Pose
+from .LocalNode import getLongestPath
 import pylab
-import gen_icp
+from . import gen_icp
 from icp import computeMatchErrorP
-from Splices import batchGlobalMultiFit, getMultiDeparturePoint, orientPath, getTipAngles
+from .Splices import batchGlobalMultiFit, getMultiDeparturePoint, orientPath, getTipAngles
 #from MapProcess import selectLocalCommonOrigin, selectCommonOrigin
 import traceback
 import ctypes
@@ -40,7 +40,7 @@ def extendBackToHull(path, hull):
 	currPath = deepcopy(path)
 
 	backVec = [0.,0.]
-	indic = range(3)
+	indic = list(range(3))
 	indic.reverse()
 	
 	""" use the last few edges of the leaf to average the leaf direction """
@@ -83,7 +83,7 @@ def extendToHull(path, hull):
 
 	frontVec = [0.,0.]
 	backVec = [0.,0.]
-	indic = range(3)
+	indic = list(range(3))
 	indic.reverse()
 	
 	for i in indic:
@@ -129,7 +129,7 @@ def extendToHull(path, hull):
 			interPoints.append(point2)
 			break
 	
-	print isIntersect1, isIntersect2, interPoints
+	print(isIntersect1, isIntersect2, interPoints)
 
 	""" replace the extended edges with a termination point at the hull edge """			
 	if isIntersect1:
@@ -210,14 +210,14 @@ def computeSkeletonFromImage(medialPointSoup):
 			""" if the hull doesn't have enough vertices, then we throw an exception, retry again """
 			numVert = len(vertices)
 			if numVert <= 2:
-				print "Failed, hull had only", numVert, "vertices"
+				print("Failed, hull had only", numVert, "vertices")
 				raise
 			
 			""" success!  Now exit the infinite loop """
 			isDone = True
 
 		except:
-			print "hull has holes!	retrying..."
+			print("hull has holes!	retrying...")
 	
 	""" cut out the repeat vertex """
 	vertices = vertices[:-1]
@@ -318,19 +318,19 @@ def computeSkeletonFromImage(medialPointSoup):
 	
 	""" INITIALIZE DATA DICTS FOR UNIDIRECTIONAL MST """
 	uni_mst = {}
-	for k, v in mst.items():
+	for k, v in list(mst.items()):
 		uni_mst[k] = []
 
 	
 	""" ADD EDGES TO DICT TREE REPRESENTATION """
-	for k, v in mst.items():
+	for k, v in list(mst.items()):
 		if v != None:
 			uni_mst[k].append(v)
 			uni_mst[v].append(k)
 
 	""" LOCATE ALL LEAVES """
 	leaves = []
-	for k, v in uni_mst.items():
+	for k, v in list(uni_mst.items()):
 		if len(v) == 1:
 			leaves.append(k)
 	
@@ -345,33 +345,33 @@ def computeSkeletonFromImage(medialPointSoup):
 	uni_mst = {}
 	isVisited = {}
 	nodeSum = {}
-	for k, v in mst.items():
+	for k, v in list(mst.items()):
 		uni_mst[k] = []
 		isVisited[k] = 0
 		nodeSum[k] = 0
 	
-	for k, v in mst.items():
+	for k, v in list(mst.items()):
 		if v != None:
 			uni_mst[k].append(v)
 			uni_mst[v].append(k)
 
 	""" create dictionary hash of converting grid indexes to real points """
 	gridHash = {}
-	for k, v in mst.items():
+	for k, v in list(mst.items()):
 		gridHash[k] = gridToReal(k)
 					
 	""" RECORD THE LEAVES AND JUNCTIONS """
 	leaves = []
 	junctions = []
-	for k, v in uni_mst.items():
+	for k, v in list(uni_mst.items()):
 		if len(v) == 1:
 			leaves.append(k)
 
 		if len(v) > 2:
 			junctions.append(k)
 
-	print "junctions:", junctions
-	print "leaves:", leaves
+	print("junctions:", junctions)
+	print("leaves:", leaves)
 
 	return vertices, junctions, leaves, uni_mst, gridHash
 
@@ -387,7 +387,7 @@ def computePathSegments(juncIDs, leafIDs, tree, gridHash, vertices):
 
 		for i in range(len(juncIDs)): 
 			isVisited = {}
-			for k, v in tree.items():
+			for k, v in list(tree.items()):
 				isVisited[k] = 0
 
 			jID = juncIDs[i]
@@ -401,7 +401,7 @@ def computePathSegments(juncIDs, leafIDs, tree, gridHash, vertices):
 					retPaths.append(resultPath)
 	else:
 		isVisited = {}
-		for k, v in tree.items():
+		for k, v in list(tree.items()):
 			isVisited[k] = 0
 
 		lID = leafIDs[0]
@@ -430,7 +430,7 @@ def computePathSegments(juncIDs, leafIDs, tree, gridHash, vertices):
 			internalSegments.append(path)
 
 		else:
-			print len(path), path[0], path[-1], juncIDs, leafIDs
+			print(len(path), path[0], path[-1], juncIDs, leafIDs)
 			raise
 
 
@@ -614,16 +614,16 @@ def getSegPaths(node, juncIDs, leafIDs, currPath, tree, isVisited):
 	
 	" should never reach, defective data or algorithm"
 
-	print "nextPath:", nextPath
-	print "juncIDs:", juncIDs
-	print "leafIDs:", leafIDs
+	print("nextPath:", nextPath)
+	print("juncIDs:", juncIDs)
+	print("leafIDs:", leafIDs)
 	raise
 	return nextPath
 
 @logFunction
 def computeGlobalControlPoses(controlPoses, parentPathIDs):
 
-	pathIDs = parentPathIDs.keys()
+	pathIDs = list(parentPathIDs.keys())
 
 	isComputed = {}
 
@@ -637,7 +637,7 @@ def computeGlobalControlPoses(controlPoses, parentPathIDs):
 			isComputed[pathID] = True
 
 
-	while False in isComputed.values():
+	while False in list(isComputed.values()):
 
 		for pathID in pathIDs:
 			if pathID != 0:
@@ -655,7 +655,7 @@ def computeGlobalControlPoses(controlPoses, parentPathIDs):
 @logFunction
 def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePoses, localLandmarks, tipPoint_L, hypothesisID, color, topCount, plotIter = False):
 	
-	print "computeShootSkeleton(", pathID, globalJunctionPose, hypothesisID, topCount, ")"
+	print("computeShootSkeleton(", pathID, globalJunctionPose, hypothesisID, topCount, ")")
 
 	""" establish recomputability for debugging """
 	random.seed(0)		  
@@ -697,7 +697,7 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 		""" print out a hash value for this unique hull for debugging """
 		m = hashlib.md5()
 		m.update(repr(hull1))
-		print nodeID, "hull1 =", int(m.digest().encode('hex'),16)
+		print(nodeID, "hull1 =", int(m.digest().encode('hex'),16))
 
 		""" convert hull points to global coordinates and save """
 		poseOrigin = Pose(estPose1)
@@ -724,7 +724,7 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 		gJunc = gridHash[junc]
 		allRealJunctions.append(gJunc)
 
-	print "all real junctions:", allRealJunctions
+	print("all real junctions:", allRealJunctions)
 
 	allJunctions = []
 	if globalJunctionPose != None:
@@ -738,7 +738,7 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 		minKey = None
 		minCand = None
 		minJuncDist = 1e100
-		for k, v in uni_mst.items():
+		for k, v in list(uni_mst.items()):
 			gCand = gridHash[k]
 			juncDist = sqrt((globalJunctionPose[0]-gCand[0])**2 + (globalJunctionPose[1]-gCand[1])**2)
 			
@@ -756,7 +756,7 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 			2: closest distance
 			3: direction vector """
 		theoryJunc = (minKey, minCand, minJuncDist, theoryVec)
-		print "theoryJunc:", theoryJunc
+		print("theoryJunc:", theoryJunc)
 		
 		""" create a series of edges that extends off of closest point mimicking the theoretical branch """
 		theoryJuncPoint = theoryJunc[1]
@@ -768,7 +768,7 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 			leafMag += 0.02
 
 
-		print "theoryLeaf:", theoryLeaf
+		print("theoryLeaf:", theoryLeaf)
 		
 
 		"""  Find the junctions and add them to allJunctions:
@@ -793,7 +793,7 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 		#	print "adding theoretical junction:", theoryJunc
 		#	allJunctions.append(theoryJunc)						  
 	
-	print "allJunctions:", allJunctions
+	print("allJunctions:", allJunctions)
 	
 	" FIND ALL THE PATHS BETWEEN LEAVES "		 
 	nodePaths = {}
@@ -803,7 +803,7 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 		isVisited = {}
 		nodeSum = {}
 		nodePath = {}
-		for k, v in uni_mst.items():
+		for k, v in list(uni_mst.items()):
 			isVisited[k] = 0
 			nodeSum[k] = 0
 			nodePath[k] = []
@@ -818,7 +818,7 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 		with junctions and leaves as terminals """
 	smoothLeafSegments, smoothInternalSegments, localSkeletonGraph, smoothLeafTerms = computePathSegments(junctions, leaves, uni_mst, gridHash, vertices)
 
-	print "computePathSegments:", len(smoothLeafSegments), len(smoothInternalSegments), "paths from", len(junctions), "junctions and", len(leaves), "leaves", [len(pMem) for pMem in smoothLeafSegments], [len(pMem) for pMem in smoothInternalSegments], "terms =", smoothLeafTerms
+	print("computePathSegments:", len(smoothLeafSegments), len(smoothInternalSegments), "paths from", len(junctions), "junctions and", len(leaves), "leaves", [len(pMem) for pMem in smoothLeafSegments], [len(pMem) for pMem in smoothInternalSegments], "terms =", smoothLeafTerms)
 
 
 	"""
@@ -861,11 +861,11 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 
 		""" every path from a leaf to the theoretical junction point """ 
 		theoryPaths = []
-		print "theoryPaths:"
+		print("theoryPaths:")
 		for leaf1 in leaves:
 			nPath = deepcopy(nodePaths[leaf1][theoryJunc[0]])					 
 			theoryPaths.append((len(nPath), nPath))
-			print leaf1, theoryJunc, len(nPath)
+			print(leaf1, theoryJunc, len(nPath))
 
 		""" sort by longest path first """
 		theoryPaths.sort(reverse=True)
@@ -880,10 +880,10 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 			
 			theoryPaths[k] = realPath + theoryLeaf
 			
-			print "theoryPath(" , k , ")", len(realPath), realPath[-1], theoryLeaf
+			print("theoryPath(" , k , ")", len(realPath), realPath[-1], theoryLeaf)
 			
 			theoryPath = theoryPaths[k]
-			print "theoryPath:", len(theoryPath)
+			print("theoryPath:", len(theoryPath))
 			
 			leafPath = deepcopy(theoryPath)
 			
@@ -935,23 +935,23 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 
 		#leafToLeafPaths.append(leafToLeafPathTuples[k][1])
 	
-	print "juncIndices:", juncIndices
+	print("juncIndices:", juncIndices)
 
 	""" extend these leaf2leaf paths to the boundary of the hull """
 	juncAngSet = []
 	juncLongIndices = []
-	print len(leafToLeafPaths), "long paths"
+	print(len(leafToLeafPaths), "long paths")
 	for leafIndex in range(len(leafToLeafPaths)):
 		
 		leaf2LeafPath = leafToLeafPaths[leafIndex]
-		print "leaf2LeafPath:", len(leaf2LeafPath)
+		print("leaf2LeafPath:", len(leaf2LeafPath))
 		#print leaf2LeafPath
 		
 		leafPath = extendToHull(leaf2LeafPath, vertices)
 		medialLongPaths.append(leafPath)
 
-		print "globalJunctionPose:", globalJunctionPose
-		print "juncIndices:", juncIndices[leafIndex]
+		print("globalJunctionPose:", globalJunctionPose)
+		print("juncIndices:", juncIndices[leafIndex])
 
 		
 		""" recompute the junction indices based on the concatenated edges """
@@ -968,7 +968,7 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 			else:
 				jIndices.append(index)
 		
-		print "jIndices:", jIndices
+		print("jIndices:", jIndices)
 
 		juncLongIndices.append(jIndices)
 
@@ -980,11 +980,11 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 
 					frontVec = [0.,0.]
 					backVec = [0.,0.]
-					indic = range(3)
+					indic = list(range(3))
 					indic.reverse()
 					
-					print "len(mLongPath):", len(mLongPath)
-					print "juncInd:", juncInd
+					print("len(mLongPath):", len(mLongPath))
+					print("juncInd:", juncInd)
 
 					highIndex = juncInd+4
 					highMod = highIndex
@@ -996,8 +996,8 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 					if lowIndex-4 < 0:
 						lowMod = 4
 					
-					print "highIndex, highMod:", highIndex, highMod
-					print "lowIndex, lowMod:", lowIndex, lowMod
+					print("highIndex, highMod:", highIndex, highMod)
+					print("lowIndex, lowMod:", lowIndex, lowMod)
 					
 					
 					for i in indic:
@@ -1021,8 +1021,8 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 					backVec[0] /= backMag
 					backVec[1] /= backMag
 					
-					print "frontVec:", frontVec
-					print "backVec:", backVec
+					print("frontVec:", frontVec)
+					print("backVec:", backVec)
 					
 					foreAng = acos(frontVec[0])
 					if frontVec[1] < 0.0:
@@ -1032,8 +1032,8 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 					if backVec[1] < 0.0:
 						backAng = -backAng
 	
-					print "foreAng:", foreAng
-					print "backAng:", backAng
+					print("foreAng:", foreAng)
+					print("backAng:", backAng)
 	
 					frontError = normalizeAngle(globalJunctionPose[2]-foreAng)
 					backError = normalizeAngle(globalJunctionPose[2]-backAng)
@@ -1096,7 +1096,7 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 	#juncGridDesc = {}
 	for k in range(len(juncLongIndices)):
 
-		print "junc indexes:", juncLongIndices[k], juncIndices[k]
+		print("junc indexes:", juncLongIndices[k], juncIndices[k])
 
 		juncInds = juncLongIndices[k]
 		juncPnts = []
@@ -1156,7 +1156,7 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 
 
 	""" remove duplicates """
-	for k, v in juncDesc.iteritems():
+	for k, v in juncDesc.items():
 		v1 = set(v)
 		juncDesc[k] = list(v1)
 
@@ -1227,7 +1227,7 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 		pylab.axis("equal")
 		pylab.title("Path %d %d %s %s %s" % (hypothesisID, pathID, sizes,bufStr1,bufStr2))
 		pylab.savefig("medialOut2_%02u_%03u_%04u.png" % (hypothesisID, maxNodeID, topCount))
-		print "saving medialOut2_%02u_%03u_%04u.png" % (hypothesisID, maxNodeID, topCount)
+		print("saving medialOut2_%02u_%03u_%04u.png" % (hypothesisID, maxNodeID, topCount))
 
 		" 1) plot the pose of local splines and postures "
 		" 2) plot the alpha shape of the union of pose alpha shapes and medial axis tree "
@@ -1279,7 +1279,7 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 
 		#nodeSet = self.getNodes(pathID)
 
-		print "drawing pathID", pathID, "for nodes:", nodeSet
+		print("drawing pathID", pathID, "for nodes:", nodeSet)
 		for nodeID in nodeSet:
 			xP = []
 			yP = []
@@ -1337,7 +1337,7 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 
 		#self.plotEnv()
 		
-		print "pathAndHull:", topCount
+		print("pathAndHull:", topCount)
 
 		pylab.axis("equal")
 		pylab.title("Path %d %d %d" % (hypothesisID, pathID, maxNodeID))
@@ -1346,7 +1346,7 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 
 		#self.topCount += 1
 
-	print "juncAngSet:", juncAngSet
+	print("juncAngSet:", juncAngSet)
 
 	
 	""" Select the leaf-to-leaf path that will be our defacto shoot """
@@ -1363,7 +1363,7 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 
 	pathCands.sort(reverse=True)
 	
-	print "pathCands:", pathCands
+	print("pathCands:", pathCands)
 	
 
 	" TODO: find longest path going to right, longest path going to left through the junction "
@@ -1380,7 +1380,7 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 			k = cand[1]
 			#print "medialLongPaths[k]:", medialLongPaths[k]
 			p_1, i_1, minDist = gen_icp.findClosestPointInA(medialLongPaths[k], tipPoint_L)
-			print "tipPoint_L:", tipPoint_L, p_1, minDist
+			print("tipPoint_L:", tipPoint_L, p_1, minDist)
 
 			if minDist < minTipDist:
 
@@ -1484,7 +1484,7 @@ def computeShootSkeleton(poseData, pathID, globalJunctionPose, nodeSet, nodePose
 			print "not returning bestFit"
 	"""
 
-	print "returning longest fit"
+	print("returning longest fit")
 
 	maxIndex = 0
 	maxLen = 0
@@ -1530,7 +1530,7 @@ def spliceSkeletons(localSkeletons, controlPoses, junctionPoses, parentPathIDs):
 	globalSkeletons = {}
 	junctionNodes = {}
 
-	pathIDs = localSkeletons.keys()
+	pathIDs = list(localSkeletons.keys())
 	
 	for pathID in pathIDs: 
 
@@ -1585,7 +1585,7 @@ def spliceSkeletons(localSkeletons, controlPoses, junctionPoses, parentPathIDs):
 
 			junctionNodes[pathID] = juncNode
 
-			print "add child junc edge", juncNode, minChildNode, minChildDist
+			print("add child junc edge", juncNode, minChildNode, minChildDist)
 			globalSkeletonGraph.add_node(juncNode, attrs=[("pathID",pathID),])
 			globalSkeletonGraph.add_edge(juncNode, minChildNode, wt=minChildDist)
 
@@ -1598,7 +1598,7 @@ def spliceSkeletons(localSkeletons, controlPoses, junctionPoses, parentPathIDs):
 
 	spliceSkeleton = graph.graph()
 	#for k in range(len(globalSkeletons)):
-	for k, skel in globalSkeletons.iteritems():
+	for k, skel in globalSkeletons.items():
 		#nodes = globalSkeletons[k].nodes()
 		edges = skel.edges()
 		#spliceSkeleton.add_nodes(nodes)
@@ -1645,10 +1645,10 @@ def spliceSkeletons(localSkeletons, controlPoses, junctionPoses, parentPathIDs):
 					minParentDist = dist2
 					minParentNode = globalNodePoint2
 
-			print "add parent junc edge", juncNode, minParentNode, minParentDist
+			print("add parent junc edge", juncNode, minParentNode, minParentDist)
 			spliceSkeleton.add_edge(juncNode, minParentNode, wt=minParentDist)
 	
-	skelIDs = globalSkeletons.keys()
+	skelIDs = list(globalSkeletons.keys())
 
 	#for j in range(len(globalSkeletons)):
 	#	for k in range(j, len(globalSkeletons)):
@@ -1734,7 +1734,7 @@ def __remote_prof_multiBranch(rank, qin, qout):
 	
 	except:
 		traceback.print_exc()
-		print "Exception:", sys.exc_info()[0]
+		print("Exception:", sys.exc_info()[0])
 
 
 def __remote_multiBranch(rank, qin, qout):
@@ -1745,11 +1745,11 @@ def __remote_multiBranch(rank, qin, qout):
 		#sys.stderr = open("branch_" + str(os.getpid()) + ".err", "w")
 		sys.stdout = open("branch_" + str(rank) + ".out", "a")
 		sys.stderr = open("branch_" + str(rank) + ".err", "a")
-		print 'module name:', __name__
-		print 'parent process:', os.getppid()
-		print 'process id:', os.getpid()
+		print('module name:', __name__)
+		print('parent process:', os.getppid())
+		print('process id:', os.getpid())
 
-		print "started __remote_multiBranch"
+		print("started __remote_multiBranch")
 
 		while 1:
 			# read input queue (block until data arrives)
@@ -1782,7 +1782,7 @@ def __remote_multiBranch(rank, qin, qout):
 			# write to output queue
 			qout.put((nc,results))
 	except:
-		print "Worker process failed. Exiting"
+		print("Worker process failed. Exiting")
 		qout.put((None,None))
 		raise
 
@@ -1805,14 +1805,14 @@ def batchJointBranch(branchJobs):
 	nproc = __num_processors()
 	
 	#nproc *= 2
-	print "nproc =", nproc
+	print("nproc =", nproc)
 	
 	# compute chunk size
 	chunk_size = ndata / nproc
 	chunk_size = 2 if chunk_size < 2 else chunk_size
 	
-	print "chunk_size =", chunk_size
-	print "max_size =", ndata/chunk_size
+	print("chunk_size =", chunk_size)
+	print("max_size =", ndata/chunk_size)
 	
 	# set up a pool of processes
 	if len(pool_branch) == 0:
@@ -1832,16 +1832,16 @@ def batchJointBranch(branchJobs):
 		#_data = data[:,cur:cur+chunk_size]
 		_data = args[cur:cur+chunk_size]
 		#print "_data =", _data
-		print "nc = ", nc
-		print "cur =", cur
+		print("nc = ", nc)
+		print("cur =", cur)
 		if len(_data) == 0: break
 		#print "put(", (nc,_data), ")"
 		qin_branch.put((nc,_data))
-		print "DONE"
+		print("DONE")
 		cur += chunk_size
 		nc += 1
 	
-	print "BATCH FINISHED"
+	print("BATCH FINISHED")
 	
 	# read output queue
 	knn = []
@@ -1892,7 +1892,7 @@ def batchJointBranch(branchJobs):
 	#	print "terminated"
 	pool_branch = []
 		
-	print "returning"
+	print("returning")
 	return knn
 
 def printStack():
@@ -1904,7 +1904,7 @@ def printStack():
 	for line in flist:
 		printStr += line
 		
-	print printStr
+	print(printStr)
 
 def __remote_prof_multiJointBranch(rank, qin, qout):
 
@@ -1916,7 +1916,7 @@ def __remote_prof_multiJointBranch(rank, qin, qout):
 	
 	except:
 		traceback.print_exc()
-		print "Exception:", sys.exc_info()[0]
+		print("Exception:", sys.exc_info()[0])
 
 
 def __remote_multiJointBranch(rank, qin, qout):
@@ -1927,11 +1927,11 @@ def __remote_multiJointBranch(rank, qin, qout):
 		#sys.stderr = open("jointbranch_" + str(os.getpid()) + ".err", "w")
 		sys.stdout = open("jointbranch_" + str(rank) + ".out", "a")
 		sys.stderr = open("jointbranch_" + str(rank) + ".err", "a")
-		print 'module name:', __name__
-		print 'parent process:', os.getppid()
-		print 'process id:', os.getpid()
+		print('module name:', __name__)
+		print('parent process:', os.getppid())
+		print('process id:', os.getpid())
 
-		print "started __remote_multiJointBranch"
+		print("started __remote_multiJointBranch")
 
 		while 1:
 			# read input queue (block until data arrives)
@@ -1967,10 +1967,10 @@ def __remote_multiJointBranch(rank, qin, qout):
 
 
 	except:
-		print "Worker process failed. Exiting"
+		print("Worker process failed. Exiting")
 
 		traceback.print_exc()
-		print "Exception:", sys.exc_info()[0]
+		print("Exception:", sys.exc_info()[0])
 		
 		sys.stdout.flush()
 		sys.stderr.flush()
@@ -1996,14 +1996,14 @@ def batchBranch(branchJobs):
 	nproc = __num_processors()
 	
 	#nproc *= 2
-	print "nproc =", nproc
+	print("nproc =", nproc)
 	
 	# compute chunk size
 	chunk_size = ndata / nproc
 	chunk_size = 2 if chunk_size < 2 else chunk_size
 	
-	print "chunk_size =", chunk_size
-	print "max_size =", ndata/chunk_size
+	print("chunk_size =", chunk_size)
+	print("max_size =", ndata/chunk_size)
 	
 	# set up a pool of processes
 	if len(pool_branch) == 0:
@@ -2023,16 +2023,16 @@ def batchBranch(branchJobs):
 		#_data = data[:,cur:cur+chunk_size]
 		_data = args[cur:cur+chunk_size]
 		#print "_data =", _data
-		print "nc = ", nc
-		print "cur =", cur
+		print("nc = ", nc)
+		print("cur =", cur)
 		if len(_data) == 0: break
 		#print "put(", (nc,_data), ")"
 		qin_branch.put((nc,_data))
-		print "DONE"
+		print("DONE")
 		cur += chunk_size
 		nc += 1
 	
-	print "BATCH FINISHED"
+	print("BATCH FINISHED")
 	
 	
 	# read output queue
@@ -2058,7 +2058,7 @@ def batchBranch(branchJobs):
 	#	p.terminate()
 	#	print "terminated"
 		
-	print "returning"
+	print("returning")
 	return knn
 
 @logFunction
@@ -2094,8 +2094,8 @@ def getTangentIntersections(path1, path2, frontDepI, backDepI, path1FrontDepI, p
 	if backDepI >= len(path2):
 		backDepI = len(path2)-1
 
-	print "frontBoundI, frontDepI:", frontBoundI, frontDepI
-	print "backBoundI, backDepI:", backBoundI, backDepI
+	print("frontBoundI, frontDepI:", frontBoundI, frontDepI)
+	print("backBoundI, backDepI:", backBoundI, backDepI)
 
 	for i in range(frontBoundI, frontDepI+1):
 
@@ -2141,7 +2141,7 @@ def getTangentIntersections(path1, path2, frontDepI, backDepI, path1FrontDepI, p
 		""" generate tangent segment """
 		angle2 = p[2]
 
-		print i, ":", angle2, p[:2]
+		print(i, ":", angle2, p[:2])
 
 		pA = [p[0] + 3*cos(angle2), p[1] + 3*sin(angle2)]
 		pB = [p[0] - 3*cos(angle2), p[1] - 3*sin(angle2)]
@@ -2278,8 +2278,8 @@ def getTangentIntersections(path1, path2, frontDepI, backDepI, path1FrontDepI, p
 
 	backDists = newBackDists
 
-	print "foreDists:", foreDists
-	print "backDists:", backDists
+	print("foreDists:", foreDists)
+	print("backDists:", backDists)
 	#print "interPoints:", interPoints
 
 
@@ -2436,7 +2436,7 @@ def getTangentIntersections(path1, path2, frontDepI, backDepI, path1FrontDepI, p
 			yP.append(p[1])
 		pylab.plot(xP,yP, color=(1.0,0.5,0.5),zorder=500)
 
-		print "intersectDeparture:", plotCount
+		print("intersectDeparture:", plotCount)
 		printStack()				 
 
 		pylab.title("%d intersections, %d %d tangent segments, angles %1.2f %1.2f %1.2f %1.2f %d %d" % (len(interPoints), len(foreEdges), len(backEdges), juncForeAng1, juncBackAng1, juncForeAng, juncBackAng, hypothesisID, nodeID))
@@ -2451,7 +2451,7 @@ def getOverlapDeparture(globalJunctionPose, parentPathID, childPathID, path1, pa
 
 	"Assumption:  one section of the medial axis is closely aligned with the path "		   
 		
-	print "getOverlapDeparture():"
+	print("getOverlapDeparture():")
 	
 	isExist1 = False
 	isInterior1 = False
@@ -2464,7 +2464,7 @@ def getOverlapDeparture(globalJunctionPose, parentPathID, childPathID, path1, pa
 	
 	" return exception if we receive an invalid path "		  
 	if len(path1) == 0:
-		print "path1 has zero length"
+		print("path1 has zero length")
 		raise
 
 
@@ -2501,7 +2501,7 @@ def getOverlapDeparture(globalJunctionPose, parentPathID, childPathID, path1, pa
 	" match distances of the tip points of child path "		   
 	maxFront = distances[0]
 	maxBack = distances[-1]
-	print "match distances of tip points:", maxFront, maxBack
+	print("match distances of tip points:", maxFront, maxBack)
 
 	" walk back from tip point until we have a non-monotic increase in match distance "
 	" this becomes our departure point "
@@ -2536,8 +2536,8 @@ def getOverlapDeparture(globalJunctionPose, parentPathID, childPathID, path1, pa
 	" departure index of child path and match distance "
 	backPoint = [backDepI, distances[backDepI]]
 
-	print "lengths of parent and child paths:", len(pathPoints1), len(pathPoints2)
-	print "non monotonic departures:", maxFront, maxBack, frontPoint, backPoint
+	print("lengths of parent and child paths:", len(pathPoints1), len(pathPoints2))
+	print("non monotonic departures:", maxFront, maxBack, frontPoint, backPoint)
 
 
 	"reset to the tip match distance "
@@ -2589,8 +2589,8 @@ def getOverlapDeparture(globalJunctionPose, parentPathID, childPathID, path1, pa
 		else:
 			isInterior2 = True
 
-	print "isExist1 =", isExist1, "isInterior1 =", isInterior1
-	print "isExist2 =", isExist2, "isInterior2 =", isInterior2
+	print("isExist1 =", isExist1, "isInterior1 =", isInterior1)
+	print("isExist2 =", isExist2, "isInterior2 =", isInterior2)
 
 	" sum of closest points on front and back "
 	" select the one with minimal cost "		
@@ -2611,8 +2611,8 @@ def getOverlapDeparture(globalJunctionPose, parentPathID, childPathID, path1, pa
 	" path section for our back departure hypothesis "
 	pathSec2 = pathPoints2[backDepI:]
 
-	print "pathSec1 hypothesis angle and overlap sum and match count:", angleSum1, overlapSum1, matchCount1
-	print "pathSec2 hypothesis angle and overlap sum and match count:", angleSum2, overlapSum2, matchCount2
+	print("pathSec1 hypothesis angle and overlap sum and match count:", angleSum1, overlapSum1, matchCount1)
+	print("pathSec2 hypothesis angle and overlap sum and match count:", angleSum2, overlapSum2, matchCount2)
 
 	" distance of departure point from known junction point "
 	p0 = pathSec1[0]
@@ -2649,7 +2649,7 @@ def getOverlapDeparture(globalJunctionPose, parentPathID, childPathID, path1, pa
 	#secP2 = pathPoints2[frontDepI]
 	#secP1 = pathPoints2[backDepI]
 
-	print "hypothesis discrepancy distance:", juncDist1, juncDist2, globalJunctionPose[2], diffAngle(frontJuncAng, globalJunctionPose[2]), diffAngle(backJuncAng, globalJunctionPose[2])
+	print("hypothesis discrepancy distance:", juncDist1, juncDist2, globalJunctionPose[2], diffAngle(frontJuncAng, globalJunctionPose[2]), diffAngle(backJuncAng, globalJunctionPose[2]))
 
 
 	#if plotIter:
@@ -2699,7 +2699,7 @@ def getOverlapDeparture(globalJunctionPose, parentPathID, childPathID, path1, pa
 		pylab.title("hyp %d nodeID %d, %d %d %d %d %d %3.2f %3.2f %3.2f %d %3.2f %3.2f %3.2f" % ( hypothesisID, numNodes, isExist1, isExist2, isInterior1, isInterior2, matchCount1, overlapSum1, angleSum1, juncDist1, matchCount2, overlapSum2, angleSum2, juncDist2))
 		pylab.savefig("trimDeparture_%04u_%04u.png" % (hypothesisID, pathPlotCount))
 
-		print "saving trimDeparture_%04u_%04u.png" % (hypothesisID, pathPlotCount)
+		print("saving trimDeparture_%04u_%04u.png" % (hypothesisID, pathPlotCount))
 		
 		pathPlotCount += 1
 
@@ -2727,7 +2727,7 @@ def getOverlapDeparture(globalJunctionPose, parentPathID, childPathID, path1, pa
 		secP2 = pathPoints2[len(distances)-1]
 
 	if len(secP1) == 0:
-		print "no departures found"
+		print("no departures found")
 		raise
 		
 	
@@ -2738,12 +2738,12 @@ def getSimpleDeparture(globalJunctionPose, path1, path2, plotIter = False):
 
 	" return exception if we receive an invalid path "		  
 	if len(path1) == 0:
-		print "path1 has zero length"
+		print("path1 has zero length")
 		raise
 
 	" return exception if we receive an invalid path "		  
 	if len(path2) == 0:
-		print "path2 has zero length"
+		print("path2 has zero length")
 		raise
 
 
@@ -2875,7 +2875,7 @@ def getSoupDivergence(globalJunctionPose, pointSoup, path2, angThresh = 0.8, hyp
 
 	" return exception if we receive an invalid path "		  
 	if len(path2) == 0:
-		print "path2 has zero length"
+		print("path2 has zero length")
 		raise
 
 	pointSoupTree = cKDTree(array(pointSoup))
@@ -2941,7 +2941,7 @@ def getSoupDivergence(globalJunctionPose, pointSoup, path2, angThresh = 0.8, hyp
 	if frontIndex-frontIndexEnd > 0:
 		frontVecSum = [0.0,0.0]
 
-		revRange = range(frontIndexEnd+1, frontIndex+1)
+		revRange = list(range(frontIndexEnd+1, frontIndex+1))
 		revRange.reverse()
 		for k in revRange:
 			p1 = pathPoints2[k]
@@ -2994,7 +2994,7 @@ def getSoupDivergence(globalJunctionPose, pointSoup, path2, angThresh = 0.8, hyp
 	angDiff1 = fabs(diffAngle(globalJunctionPose[2], frontPose[2]))
 	angDiff2 = fabs(diffAngle(globalJunctionPose[2], backPose[2]))
 
-	print "getSoupDivergence:", juncDist1, angDiff1, juncDist2, angDiff2, frontPose, backPose, len(pathPoints2), frontIndex, backIndex, frontNoDiverge, backNoDiverge, globalJunctionPose
+	print("getSoupDivergence:", juncDist1, angDiff1, juncDist2, angDiff2, frontPose, backPose, len(pathPoints2), frontIndex, backIndex, frontNoDiverge, backNoDiverge, globalJunctionPose)
 
 	if plotIter:
 
@@ -3025,7 +3025,7 @@ def getSoupDivergence(globalJunctionPose, pointSoup, path2, angThresh = 0.8, hyp
 		nameStr = "soupDivergence_%04u_%04u_%04u.png" % (hypothesisID, numNodes, pathID)
 
 		pylab.savefig(nameStr)
-		print "saving", nameStr
+		print("saving", nameStr)
 
 
 	return frontNoDiverge, backNoDiverge
@@ -3036,7 +3036,7 @@ def getSimpleSoupDeparture(tipPoint_G, globalJunctionPose, pointSoup, path2, ang
 
 	" return exception if we receive an invalid path "		  
 	if len(path2) == 0:
-		print "path2 has zero length"
+		print("path2 has zero length")
 		raise
 
 	pointSoupTree = cKDTree(array(pointSoup))
@@ -3108,7 +3108,7 @@ def getSimpleSoupDeparture(tipPoint_G, globalJunctionPose, pointSoup, path2, ang
 	if frontIndex-frontIndexEnd > 0:
 		frontVecSum = [0.0,0.0]
 
-		revRange = range(frontIndexEnd+1, frontIndex+1)
+		revRange = list(range(frontIndexEnd+1, frontIndex+1))
 		revRange.reverse()
 		for k in revRange:
 			p1 = pathPoints2[k]
@@ -3161,7 +3161,7 @@ def getSimpleSoupDeparture(tipPoint_G, globalJunctionPose, pointSoup, path2, ang
 	angDiff1 = fabs(diffAngle(globalJunctionPose[2], frontPose[2]))
 	angDiff2 = fabs(diffAngle(globalJunctionPose[2], backPose[2]))
 
-	print "getSimpleSoupDeparture:", juncDist1, angDiff1, tipDist1, juncDist2, angDiff2, tipDist2, frontPose, backPose, len(pathPoints2), frontIndex, backIndex, frontNoDiverge, backNoDiverge, globalJunctionPose, tipPoint_G, pathPoints2[0], pathPoints2[-1]
+	print("getSimpleSoupDeparture:", juncDist1, angDiff1, tipDist1, juncDist2, angDiff2, tipDist2, frontPose, backPose, len(pathPoints2), frontIndex, backIndex, frontNoDiverge, backNoDiverge, globalJunctionPose, tipPoint_G, pathPoints2[0], pathPoints2[-1])
 	#print "distances:", distances
 
 	if plotIter:
@@ -3193,7 +3193,7 @@ def getSimpleSoupDeparture(tipPoint_G, globalJunctionPose, pointSoup, path2, ang
 		nameStr = "simpleSoupDivergence_%04u_%04u_%04u.png" % (hypothesisID, numNodes, pathID)
 
 		pylab.savefig(nameStr)
-		print "saving", nameStr
+		print("saving", nameStr)
 
 
 
@@ -3318,7 +3318,7 @@ def computeDivergencePoint(juncI, frontInd, distances, indices, pathPoints1, pat
 	"""		   
 	maxFront = distances[frontInd]
 	#maxBack = distances[backInd]
-	print "match distances of tip points:", maxFront#, maxBack
+	print("match distances of tip points:", maxFront)#, maxBack
 
 	""" walk back from first point until we have a non-monotic increase in match distance """
 	""" this becomes our departure point """
@@ -3400,7 +3400,7 @@ def computeDivergencePoint(juncI, frontInd, distances, indices, pathPoints1, pat
 def ensureEnoughPoints(newPath2, max_spacing = 0.08, minPoints = 5):
 
 	if len(newPath2) < 2:
-		print len(newPath2), "not enough points to expand with", newPath2
+		print(len(newPath2), "not enough points to expand with", newPath2)
 		raise
 
 	max_spacing = 0.08
@@ -3410,7 +3410,7 @@ def ensureEnoughPoints(newPath2, max_spacing = 0.08, minPoints = 5):
 	while len(newPath3) <= minPoints:
 
 		max_spacing /= 2
-		print "max_spacing =", max_spacing
+		print("max_spacing =", max_spacing)
 		
 		newPath3 = [copy(newPath2[0])]
 							
@@ -3452,7 +3452,7 @@ def getInitSkeletonBranchPoint(globalJunctionPose, currShootID, globalMedial_G, 
 
 	CONTIG_DIST = 0.2
 
-	allPathIDs = localPathSegsByID.keys()
+	allPathIDs = list(localPathSegsByID.keys())
 
 	#isAncestor = {}
 	#parentID = parentShootIDs[currShootID]
@@ -3507,7 +3507,7 @@ def getInitSkeletonBranchPoint(globalJunctionPose, currShootID, globalMedial_G, 
 
 
 	globalSkeletons = {}
-	pathIDs = localSkeletons.keys()
+	pathIDs = list(localSkeletons.keys())
 	
 	for pathID in pathIDs: 
 
@@ -3601,7 +3601,7 @@ def getInitSkeletonBranchPoint(globalJunctionPose, currShootID, globalMedial_G, 
 
 			contigFrac = float(maxContig)/float(len(orientedMedial_G))
 
-			print "contigFrac:", maxContig, shootID, spliceIndex, len(orientedMedial_G), contigFrac
+			print("contigFrac:", maxContig, shootID, spliceIndex, len(orientedMedial_G), contigFrac)
 
 			if contigFrac > maxContigFrac:
 				maxContigFrac = contigFrac
@@ -3713,7 +3713,7 @@ def getInitSkeletonBranchPoint(globalJunctionPose, currShootID, globalMedial_G, 
 	""" placeholder values, not true branch point """
 	#branchParentID = controlParentID
 
-	print "initSkeletonBranchPoint:", maxSkeletonID, maxSpliceID, maxSkeletonContigFrac, controlPose_G, branchPose_G, tipPoint_G, controlTerm1_G, controlTerm2_G
+	print("initSkeletonBranchPoint:", maxSkeletonID, maxSpliceID, maxSkeletonContigFrac, controlPose_G, branchPose_G, tipPoint_G, controlTerm1_G, controlTerm2_G)
 
 	#return controlPose_G, controlParentID, tipPoint_G, branchPose_G
 	
@@ -3760,7 +3760,7 @@ def getSkeletonPath(skeleton, term1, term2):
 	endNode = minEndNode
 
 
-	print "nodes path from", startNode, "to", endNode
+	print("nodes path from", startNode, "to", endNode)
 	shortestSpliceTree, shortestSpliceDist = skeleton.shortest_path(endNode)
 	currNode = shortestSpliceTree[startNode]					 
 
@@ -3790,7 +3790,7 @@ def getSkeletonBranchPoint(tipPoint_G, globalJunctionPose, currShootID, parentSh
 	isDescendant = {}
 	isAncestor = {}
 
-	for key in parentShootIDs.keys():
+	for key in list(parentShootIDs.keys()):
 		isDescendant[key] = False
 		isAncestor[key] = False
 
@@ -3809,7 +3809,7 @@ def getSkeletonBranchPoint(tipPoint_G, globalJunctionPose, currShootID, parentSh
 
 		newDescen = [currShootID]
 
-		for key, val in parentShootIDs.iteritems():
+		for key, val in parentShootIDs.items():
 			if val in currDescen:
 				newDescen.append(key)
 
@@ -3822,12 +3822,12 @@ def getSkeletonBranchPoint(tipPoint_G, globalJunctionPose, currShootID, parentSh
 
 	""" we are potentially branching or controlling from any of the non-descendant skeletons """
 	nonDescentIDs = []
-	for shootID, isDescen in isDescendant.iteritems():
+	for shootID, isDescen in isDescendant.items():
 		if not isDescen:
 			nonDescentIDs.append(shootID)
 	
 	ancestorIDs = []
-	for shootID, isAncestor in isAncestor.iteritems():
+	for shootID, isAncestor in isAncestor.items():
 		if isAncestor:
 			ancestorIDs.append(shootID)
 
@@ -3846,7 +3846,7 @@ def getSkeletonBranchPoint(tipPoint_G, globalJunctionPose, currShootID, parentSh
 		currSegs_G.append(newSeg)
 
 
-	print currShootID, "ancestorIDs:", ancestorIDs
+	print(currShootID, "ancestorIDs:", ancestorIDs)
 
 	ancestorPointSoup_G = []
 	allPointSoup_G = []
@@ -3905,7 +3905,7 @@ def getSkeletonBranchPoint(tipPoint_G, globalJunctionPose, currShootID, parentSh
 		try:
 			""" get branch point from all skeletons """
 			branchPose_G, isNoDiverge, tipDist, newTipPoint_G = getSimpleSoupDeparture(tipPoint_G, globalJunctionPose, ancestorPointSoup_G, seg_G, angThresh = angThresh, plotIter = plotIter, hypothesisID = hypothesisID, numNodes = nodeID, pathID = arcDist)
-			print "simpleSoup returned", k, branchPose_G, isNoDiverge, tipDist, tipPoint_G, newTipPoint_G
+			print("simpleSoup returned", k, branchPose_G, isNoDiverge, tipDist, tipPoint_G, newTipPoint_G)
 
 			#dist = sqrt((branchPose_G[0]-globalJunctionPose[0])**2 + (branchPose_G[1]-globalJunctionPose[1])**2)
 			dist = tipDist
@@ -3919,7 +3919,7 @@ def getSkeletonBranchPoint(tipPoint_G, globalJunctionPose, currShootID, parentSh
 				""" clarify that we are diverging from non-descendants """
 				try:
 					frontNoDiverge, backNoDiverge = getSoupDivergence(branchPose_G, allPointSoup_G, seg_G, angThresh = angThresh, plotIter = plotIter, hypothesisID = hypothesisID, numNodes = nodeID, pathID = arcDist)
-					print "returned", k, frontNoDiverge, backNoDiverge
+					print("returned", k, frontNoDiverge, backNoDiverge)
 					minIsNoDiverge = frontNoDiverge and backNoDiverge
 				except:
 					minIsNoDiverge = True
@@ -3930,7 +3930,7 @@ def getSkeletonBranchPoint(tipPoint_G, globalJunctionPose, currShootID, parentSh
 
 
 
-	print "skeletonBranchPoint:", minBranchPose, minIsNoDiverge, "minDist =", minDist, "tipPoint =", minTipPoint_G
+	print("skeletonBranchPoint:", minBranchPose, minIsNoDiverge, "minDist =", minDist, "tipPoint =", minTipPoint_G)
 
 	if minBranchPose == None:
 		raise
@@ -3945,17 +3945,17 @@ def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, 
 	
 	global pathPlotCount
 
-	print "getBranchPoint():"
+	print("getBranchPoint():")
 
-	print "lengths of parent and child paths:", len(path1), len(path2)
+	print("lengths of parent and child paths:", len(path1), len(path2))
 	
 	""" return exception if we receive an invalid path """		  
 	if len(path1) == 0:
-		print "path1 has zero length"
+		print("path1 has zero length")
 		raise
 
 	if len(path2) == 0:
-		print "path2 has zero length"
+		print("path2 has zero length")
 		raise
 	
 	""" make sure the overlap of both shoots are oriented the same way """
@@ -3987,7 +3987,7 @@ def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, 
 
 	""" get the closest point to the current junction pose and each points' distance to it """
 	juncDists, minDist2, juncI = getPointDistances(pathPoints2, globalJunctionPose)
-	print "minDist2, juncI:", minDist2, juncI
+	print("minDist2, juncI:", minDist2, juncI)
 	juncI_rvrs = len(pathPoints2) - juncI - 1
 	#juncDists_rvrs, minDist2, juncI_rvrs = getPointDistances(pathPoints2_rvrs, globalJunctionPose)
 
@@ -3997,7 +3997,7 @@ def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, 
 	frontInd = 0
 	backInd = len(pathPoints2)-1
 
-	path2Indices = range(0,len(pathPoints2))
+	path2Indices = list(range(0,len(pathPoints2)))
 		
 	frontFound = False
 	backFound = False
@@ -4012,8 +4012,8 @@ def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, 
 			backInd = k
 			backFound = True
 
-	print "frontFound, backFound:", frontFound, backFound
-	print "frontInd, backInd:", frontInd, backInd
+	print("frontFound, backFound:", frontFound, backFound)
+	print("frontInd, backInd:", frontInd, backInd)
 
 
 	""" compute the divergence point of the child shoot from the parent in the front """
@@ -4058,8 +4058,8 @@ def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, 
 	p0 = pathSec2[0]
 	juncDist2 = sqrt((globalJunctionPose[0]-p0[0])**2 + (globalJunctionPose[1]-p0[1])**2)
 
-	print "pathSec1 hypothesis discrepancy distance:", juncDist1
-	print "pathSec2 hypothesis discrepancy distance:", juncDist2
+	print("pathSec1 hypothesis discrepancy distance:", juncDist1)
+	print("pathSec2 hypothesis discrepancy distance:", juncDist2)
 
 
 	secP1 = []
@@ -4103,7 +4103,7 @@ def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, 
 	
 	""" compute direction from which the curve diverges from parent shoot """
 	frontVec = [0.,0.]
-	indic = range(3)
+	indic = list(range(3))
 	indic.reverse()
 	
 	for i in indic:
@@ -4179,7 +4179,7 @@ def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, 
 	try:
 
 		foreIntI, backIntI, juncForeAng, juncBackAng = getTangentIntersections(pathPoints1, pathPoints2, frontDepI, backDepI, indices[frontDepI], indices[backDepI], juncI, indices[juncI], pathPlotCount, hypothesisID = hypothesisID, nodeID = nodeID, plotIter = True)
-		print "foreIntI, backIntI:", foreIntI, backIntI
+		print("foreIntI, backIntI:", foreIntI, backIntI)
 
 		""" junction distances are equal if both of the indices selected juncI as the departure point on path2'
 			occurs if path2 does not come close enough to path1 to get under distance 0.1
@@ -4192,7 +4192,7 @@ def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, 
 		backControlPoint = pathPoints1[backPathIndex][0], pathPoints1[backPathIndex][1]
 		backAngDeriv = angDerivs1[backPathIndex]
 
-		print "juncDist1, juncDist2 =", juncDist1, juncDist2
+		print("juncDist1, juncDist2 =", juncDist1, juncDist2)
 		if juncDist1 == juncDist2:
 
 			juncDist2 = sqrt((globalJunctionPose[0]-p0[0])**2 + (globalJunctionPose[1]-p0[1])**2)
@@ -4200,7 +4200,7 @@ def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, 
 			foreDist = sqrt((pathPoints1[foreIntI][0]-globalJunctionPose[0])**2 +  (pathPoints1[foreIntI][1]-globalJunctionPose[1])**2)
 			backDist = sqrt((pathPoints1[backIntI][0]-globalJunctionPose[0])**2 +  (pathPoints1[backIntI][1]-globalJunctionPose[1])**2)
 
-			print "foreDist, backDist =", foreDist, backDist
+			print("foreDist, backDist =", foreDist, backDist)
 
 			if foreDist < backDist:
 				globJuncPose = [pathPoints1[foreIntI][0], pathPoints1[foreIntI][1], juncForeAng]
@@ -4221,10 +4221,10 @@ def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, 
 			controlPoint = pathPoints1[backPathIndex][0], pathPoints1[backPathIndex][1]
 			angDeriv = angDerivs1[backPathIndex]
 
-		print "globJuncPose =", globJuncPose
+		print("globJuncPose =", globJuncPose)
 
 	except:
-		print "getTangentIntersections() failed!"
+		print("getTangentIntersections() failed!")
 		foreDist = sqrt((pathPoints1[forePathIndex][0]-globalJunctionPose[0])**2 +  (pathPoints1[forePathIndex][1]-globalJunctionPose[1])**2)
 		backDist = sqrt((pathPoints1[backPathIndex][0]-globalJunctionPose[0])**2 +  (pathPoints1[backPathIndex][1]-globalJunctionPose[1])**2)
 
@@ -4313,7 +4313,7 @@ def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, 
 			yP.append(p[1])
 		pylab.plot(xP,yP, color='k')
 
-		print "trimDeparture:", pathPlotCount
+		print("trimDeparture:", pathPlotCount)
 		printStack()				 
 
 		pylab.title("%1.2f %1.2f %1.2f %1.2f" % (juncDist1, juncDist2, juncAng, angDeriv))
@@ -4328,7 +4328,7 @@ def getBranchPoint(globalJunctionPose, parentPathID, childPathID, path1, path2, 
 @logFunction
 def computeJointBranch(localPathSegsByID, localTerms, localPaths, localSkeletons, controlPoses, tipPoints, junctionPoses, landmarks, parentPathIDs, arcDists, numNodes=0, hypothesisID=0):
 
-	print "computeJointBranch()", numNodes
+	print("computeJointBranch()", numNodes)
 	sys.stdout.flush()
 
 	newBranchPoses_L = {0:None}
@@ -4342,8 +4342,8 @@ def computeJointBranch(localPathSegsByID, localTerms, localPaths, localSkeletons
 	newArcDist = 0.0
 
 	""" operate only the non-root skeletons """
-	allPathIDs = deepcopy(parentPathIDs.keys())
-	branchPathIDs = deepcopy(parentPathIDs.keys())
+	allPathIDs = deepcopy(list(parentPathIDs.keys()))
+	branchPathIDs = deepcopy(list(parentPathIDs.keys()))
 	branchPathIDs.remove(0)
 	branchPathIDs.sort()
 
@@ -4610,7 +4610,7 @@ def computeJointBranch(localPathSegsByID, localTerms, localPaths, localSkeletons
 		nameStr = nameStr % arcTuple
 
 		pylab.savefig(nameStr)
-		print "saving", nameStr
+		print("saving", nameStr)
 
 
 	return branchResult
@@ -4632,7 +4632,7 @@ def computeAllSplices2(controlPoses_G, localTerms, localSegments, spliceSkeleton
 
 	globalTerms = {}
 
-	for pathID, terms in localTerms.iteritems():
+	for pathID, terms in localTerms.items():
 		globalTerms[pathID] = []
 		shootFrame = Pose(controlPoses_G[pathID])
 		for term in terms:
@@ -4642,7 +4642,7 @@ def computeAllSplices2(controlPoses_G, localTerms, localSegments, spliceSkeleton
 	
 	globalSegments = {}
 
-	for pathID, segs in localSegments.iteritems():
+	for pathID, segs in localSegments.items():
 		globalSegments[pathID] = []
 		shootFrame = Pose(controlPoses_G[pathID])
 		for seg in segs:
@@ -4661,7 +4661,7 @@ def computeAllSplices2(controlPoses_G, localTerms, localSegments, spliceSkeleton
 	subsumedTerms_L = {}
 	allTerms_L = {}
 	allTerms_G = {}
-	currKeys = globalSegments.keys()
+	currKeys = list(globalSegments.keys())
 
 	for currK1 in range(len(currKeys)): 
 
@@ -4701,7 +4701,7 @@ def computeAllSplices2(controlPoses_G, localTerms, localSegments, spliceSkeleton
 								minDist2 = dist2
 								minP2 = p
 			
-			print pathID1, minDist2, "terms:", term1_G
+			print(pathID1, minDist2, "terms:", term1_G)
 			if minDist2 > DIST_THRESH:
 				allTerms_L[pathID1].append(term1)
 				allTerms_G[pathID1].append(term1_G)
@@ -4710,7 +4710,7 @@ def computeAllSplices2(controlPoses_G, localTerms, localSegments, spliceSkeleton
 
 
 	termList = []
-	pathIDs = allTerms_G.keys()
+	pathIDs = list(allTerms_G.keys())
 
 	for pathID in pathIDs:
 		for term_G in allTerms_G[pathID]:
@@ -4725,7 +4725,7 @@ def computeAllSplices2(controlPoses_G, localTerms, localSegments, spliceSkeleton
 	finalResults = []
 
 
-	print "termCombos:", termCombos
+	print("termCombos:", termCombos)
 	
 	for termPath in termCombos:
 
@@ -4735,7 +4735,7 @@ def computeAllSplices2(controlPoses_G, localTerms, localSegments, spliceSkeleton
 		startPose = termPath[0]
 		endPose = termPath[1]
 
-		print "startPose, endPose:", startPose, endPose
+		print("startPose, endPose:", startPose, endPose)
 
 		minStartDist = 1e100
 		minStartNode = None
@@ -4774,7 +4774,7 @@ def computeAllSplices2(controlPoses_G, localTerms, localSegments, spliceSkeleton
 		endNode = minEndNode
 
 
-		print "nodes path from", startNode, "to", endNode
+		print("nodes path from", startNode, "to", endNode)
 		shortestSpliceTree, shortestSpliceDist = spliceSkeleton.shortest_path(endNode)
 		currNode = shortestSpliceTree[startNode]					 
 
@@ -5061,7 +5061,7 @@ def computeBranch(pathID, parentID, localPathSegsByID, localPaths, arcDist, loca
 			pylab.title("hyp %d nodeID %d %1.2f %1.2f %1.2f" % ( hypothesisID, numNodes, juncDiscDist, juncDiscAngle, newGlobJuncPose[2] ))
 			pylab.savefig("computeBranch_%04u_%04u_%1.1f.png" % (hypothesisID, numNodes, arcDist))
 
-			print "saving computeBranch_%04u_%04u_%1.1f.png" % (hypothesisID, numNodes, arcDist)
+			print("saving computeBranch_%04u_%04u_%1.1f.png" % (hypothesisID, numNodes, arcDist))
 
 			
 		#pathPlotCount += 1
@@ -5099,8 +5099,8 @@ def trimBranch(pathID, parentPathID, controlPose_P, oldTipPoint_L, oldBranchPose
 	oldBranchPose_G = currFrame.convertLocalOffsetToGlobal(oldBranchPose_L)
 	oldTipPoint_G = currFrame.convertLocalToGlobal(oldTipPoint_L)
 
-	print "oldBranchPose_L, oldTipPoint_L =", oldBranchPose_L, oldTipPoint_L
-	print "oldBranchPose_G, oldTipPoint_G =", oldBranchPose_G, oldTipPoint_G
+	print("oldBranchPose_L, oldTipPoint_L =", oldBranchPose_L, oldTipPoint_L)
+	print("oldBranchPose_G, oldTipPoint_G =", oldBranchPose_G, oldTipPoint_G)
 
 
 	try:
@@ -5151,7 +5151,7 @@ def trimBranch(pathID, parentPathID, controlPose_P, oldTipPoint_L, oldBranchPose
 	newTipPoint_L = localFrame.convertGlobalToLocal(newTipPoint_P)
 	newTipPoint_G = currFrame.convertLocalToGlobal(newTipPoint_L)
 
-	print "trimBranch:", hypothesisID, nodeID, pathID, arcDist, tipDist, oldTipPoint_G, branchTipPoint_G, newTipPoint_G, branchTipPoint_P, newTipPoint_P, branchPose_G, branchIndex, tipIndex, len(particlePath2), p_1, p_2
+	print("trimBranch:", hypothesisID, nodeID, pathID, arcDist, tipDist, oldTipPoint_G, branchTipPoint_G, newTipPoint_G, branchTipPoint_P, newTipPoint_P, branchPose_G, branchIndex, tipIndex, len(particlePath2), p_1, p_2)
 
 	""" convert path so that the points are uniformly distributed """
 	newPath3 = ensureEnoughPoints(newPath2, max_spacing = 0.08, minPoints = 5)
@@ -5193,7 +5193,7 @@ def trimBranch(pathID, parentPathID, controlPose_P, oldTipPoint_L, oldBranchPose
 		pylab.title("hyp %d nodeID %d %1.2f" % ( hypothesisID, nodeID, branchPose_G[2]))
 		pylab.savefig("trimDeparture_%04u_%04u_%1.1f_%d.png" % (hypothesisID, nodeID, arcDist, pathPlotCount))
 
-		print "saving trimDeparture_%04u_%04u_%1.1f_%d.png" % (hypothesisID, nodeID, arcDist, pathPlotCount)
+		print("saving trimDeparture_%04u_%04u_%1.1f_%d.png" % (hypothesisID, nodeID, arcDist, pathPlotCount))
 		
 		pathPlotCount += 1
 
@@ -5220,7 +5220,7 @@ def trimBranch(pathID, parentPathID, controlPose_P, oldTipPoint_L, oldBranchPose
 
 	localJuncPose = localFrame.convertGlobalPoseToLocal(branchPose_P)
 
-	print "localJuncPose = branchPose_L", localJuncPose, branchPose_L
+	print("localJuncPose = branchPose_L", localJuncPose, branchPose_L)
 
 	#return localNewPath3, localJuncPose, localParticlePath2
 	return localNewPath3, newTipPoint_L, branchPose_L, localParticlePath2, isNoDiverge
@@ -5442,7 +5442,7 @@ def selectCommonOrigin(globalPath1, globalPath2):
 	pathRail1 = int(len(globalSamples1) / 20.0)
 	pathRail2 = int(len(globalSamples2) / 20.0)
 
-	print "rails:", len(globalSamples1), len(globalSamples2), pathRail1, pathRail2
+	print("rails:", len(globalSamples1), len(globalSamples2), pathRail1, pathRail2)
 
 	
 	for i in range(pathRail1, len(globalSamples1)-pathRail1):
@@ -5492,7 +5492,7 @@ def selectCommonOrigin(globalPath1, globalPath2):
 	if minDistThresh > maxDistThresh:
 		maxDistThresh = minDistThresh
 	
-	print "minDistThresh,maxDistThresh =", allPairs[0][2], allPairs[-1][2]
+	print("minDistThresh,maxDistThresh =", allPairs[0][2], allPairs[-1][2])
 
 	if len(allPairs) == 0:
 		raise
@@ -5513,7 +5513,7 @@ def selectCommonOrigin(globalPath1, globalPath2):
 		" sort by lowest angular variance"
 		closestPairs = sorted(closestPairs, key=itemgetter(5,6))
 
-		print len(closestPairs), "closest pairs for dist", minDistThresh
+		print(len(closestPairs), "closest pairs for dist", minDistThresh)
 
 		if len(closestPairs) > 0:
 			originU2 = globalSpline2.findU(globalSamples2[closestPairs[0][1]])	
@@ -5573,7 +5573,7 @@ def selectLocalCommonOrigin(globalPath, medial1, estPose1):
 	pathRail = int(len(globalSamples) / 20.0)
 	medialRail = int(len(globalMedialSamples) / 20.0)
 
-	print "rails:", len(globalSamples), len(globalMedialSamples), pathRail, medialRail
+	print("rails:", len(globalSamples), len(globalMedialSamples), pathRail, medialRail)
 
 	
 	for i in range(pathRail, len(globalSamples)-pathRail):
@@ -5638,7 +5638,7 @@ def selectLocalCommonOrigin(globalPath, medial1, estPose1):
 	if minDistThresh > maxDistThresh:
 		maxDistThresh = minDistThresh
 	
-	print "minDistThresh,maxDistThresh =", allPairs[0][2], allPairs[-1][2]
+	print("minDistThresh,maxDistThresh =", allPairs[0][2], allPairs[-1][2])
 
 
 	if len(allPairs) == 0:
@@ -5657,7 +5657,7 @@ def selectLocalCommonOrigin(globalPath, medial1, estPose1):
 		" sort by lowest angular variance"
 		closestPairs = sorted(closestPairs, key=itemgetter(5,6))
 
-		print len(closestPairs), "closest pairs for dist", minDistThresh
+		print(len(closestPairs), "closest pairs for dist", minDistThresh)
 
 		if len(closestPairs) > 0:
 			originU2 = medialSpline1.findU(medialSamples[closestPairs[0][1]])	

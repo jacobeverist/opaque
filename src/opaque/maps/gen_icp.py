@@ -46,8 +46,8 @@ import scipy.optimize
 import math
 import pylab
 import pca_module
-import functions
-from functions import logFunction
+from . import functions
+from .functions import logFunction
 from subprocess import *
 import traceback
 from math import cos, sin, pi
@@ -59,8 +59,8 @@ import matplotlib.pyplot as plt
 from copy import copy
 from copy import deepcopy
 
-from Pose import Pose
-from SplineFit import SplineFit
+from .Pose import Pose
+from .SplineFit import SplineFit
 
 from PIL import Image
 
@@ -134,14 +134,14 @@ def batchGlobalICP(args):
 	ndata = len(args)
 	nproc = __num_processors()
 	
-	print "nproc =", nproc
+	print("nproc =", nproc)
 	
 	# compute chunk size
 	chunk_size = ndata / nproc
 	chunk_size = 2 if chunk_size < 2 else chunk_size
 	
-	print "chunk_size =", chunk_size
-	print "max_size =", ndata/chunk_size
+	print("chunk_size =", chunk_size)
+	print("max_size =", ndata/chunk_size)
 	
 	# set up a pool of processes
 	qin = processing.Queue(maxsize=ndata/chunk_size)
@@ -156,9 +156,9 @@ def batchGlobalICP(args):
 	while 1:
 		_data = args[cur:cur+chunk_size]
 		if len(_data) == 0: break
-		print "put(", (nc,_data), ")"
+		print("put(", (nc,_data), ")")
 		qin.put((nc,_data))
-		print "DONE"
+		print("DONE")
 		cur += chunk_size
 		nc += 1
 	
@@ -1115,7 +1115,7 @@ def overlapICP(estPose1, initGuess, medialPoints1, medialPoints2, rootPose1, roo
 		currU = newU
 		
 		if inPlace:
-			print "currU =", currU, "currAng =", currAng, "newCost =", newCost
+			print("currU =", currU, "currAng =", currAng, "newCost =", newCost)
 
 		" compute offset from newU and newAng"
 
@@ -1413,7 +1413,7 @@ def overlapICP_GPU2(estPose1, initGuess, medialPoints1, medialPoints2, rootPose1
 		currU = newU
 		
 		if inPlace:
-			print "currU =", currU, "currAng =", currAng, "newCost =", newCost
+			print("currU =", currU, "currAng =", currAng, "newCost =", newCost)
 
 		" compute offset from newU and newAng"
 
@@ -1658,7 +1658,7 @@ def globalOverlapICP_GPU2(initGuess, globalPath, medialPoints,plotIter = False, 
 		isTerminate = False
 		if abs(lastCost - newCost) < costThresh or (numIterations - startIteration) > 10:
 			isTerminate = True
-			print "terminating globalOverlap_GPU2:", lastCost, newCost, costThresh, numIterations-startIteration
+			print("terminating globalOverlap_GPU2:", lastCost, newCost, costThresh, numIterations-startIteration)
 		
 
 		" update after check for termination condition "
@@ -1753,7 +1753,7 @@ def globalPathToNodeOverlapICP2(initGuess, globalPath, medialPoints, plotIter = 
 	if uLow <= 0.0:
 		uLow = 0.0
 
-	print "u1,u2,u3,uHigh,uLow,currU,currAng:", u1, u2, u3, uHigh, uLow, currU, currAng
+	print("u1,u2,u3,uHigh,uLow,currU,currAng:", u1, u2, u3, uHigh, uLow, currU, currAng)
 	
 	
 	uSet = [i*0.01 for i in range(100)]
@@ -1900,7 +1900,7 @@ def globalPathToNodeOverlapICP2(initGuess, globalPath, medialPoints, plotIter = 
 		#if plotIter and pose2[0] > 1.8:
 		#	print poses_2
 
-		print "newCost =", newCost
+		print("newCost =", newCost)
 
 		newU = newParam[0]
 		newAng = newParam[1]
@@ -1929,7 +1929,7 @@ def globalPathToNodeOverlapICP2(initGuess, globalPath, medialPoints, plotIter = 
 		isTerminate = False
 		if abs(lastCost - newCost) < costThresh or (numIterations - startIteration) > 10:
 			isTerminate = True
-			print "terminating globalOverlap_GPU2:", lastCost, newCost, costThresh, numIterations-startIteration
+			print("terminating globalOverlap_GPU2:", lastCost, newCost, costThresh, numIterations-startIteration)
 		
 		" update after check for termination condition "
 		lastCost = newCost
@@ -2153,11 +2153,11 @@ def globalPathToNodeOverlapICP2(initGuess, globalPath, medialPoints, plotIter = 
 		trueCost2, resultParam, resultOffset = nelminICP.ICPcost(flatMatchPairs, numPairs, [u2,currU,currAng], uHigh, uLow, c_poses_2, c_poses_3, numPoses)
 		trueCost3 = shapeCostC(resultOffset, match_pairs)
 		
-		print "currPose:", currPose
-		print "resultOffset:", resultOffset
-		print "trueCost:", trueCost
-		print "trueCost2:", trueCost2
-		print "trueCost3:", trueCost3
+		print("currPose:", currPose)
+		print("resultOffset:", resultOffset)
+		print("trueCost:", trueCost)
+		print("trueCost2:", trueCost2)
+		print("trueCost3:", trueCost3)
 		
 		
 		figPlot, (ax1, ax2) = plt.subplots(2, sharex=True, sharey=True)
@@ -2873,7 +2873,7 @@ def branchEstimateICP(initGuess, junctionPose, pathSoup, globalPath, plotIter = 
 		newU = newParam[0]
 		newAng = newParam[1]
 
-		print "old to new:", u1, currU, currAng, " - ", newU, newAng
+		print("old to new:", u1, currU, currAng, " - ", newU, newAng)
 		
 		" set the current parameters "
 		currAng = functions.normalizeAngle(newAng)
@@ -3443,7 +3443,7 @@ def doTest():
 	
 	return
 	
-	print "initGuess:", initGuess
+	print("initGuess:", initGuess)
 		
 	#for u1 in uSet:
 	for i in range(len(uSet)/2):
@@ -3503,11 +3503,11 @@ def doTest2():
 
 	for i in range(1):
 		cost1, param, offset = nelminICP.ICPcost(flatMatchPairs, len(match_pairs), initGuess, currU+0.2, currU-0.2, c_poses_1, c_poses_2, len(poses_1))
-		print "offset =", offset
-		print "param =", param
+		print("offset =", offset)
+		print("param =", param)
 		cost2 = medialOverlapCostFunc([currU, currAng], match_pairs, poses_1, poses_2, uHigh, uLow, u1)			   
 		#print cost1, cost2
-		print cost1, cost2
+		print(cost1, cost2)
 		
 
 	#globalOverlapICP_GPU2(initGuess, globalPath, medialPoints)
@@ -3540,14 +3540,14 @@ if __name__ == '__main__':
 		#doTest2()
 		doTest()
 		time2 = time.time()
-		print time2 - time1
+		print(time2 - time1)
 	
 	except ControlError as inst:
-		print inst.value
+		print(inst.value)
 
 	except:
 		traceback.print_exc()
-		print "Exception:", sys.exc_info()[0]
+		print("Exception:", sys.exc_info()[0])
 		
 	
 

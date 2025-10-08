@@ -1,28 +1,28 @@
 import random
 random.seed(0)
 import sys
-from SnakeControl import SnakeControl
+from .SnakeControl import SnakeControl
 from copy import *
 from math import *
 import time
 from subprocess import Popen, PIPE
 
-from behaviors.AnchorTransition import AnchorTransition
+from .behaviors.AnchorTransition import AnchorTransition
 
-from pose.AverageContacts import AverageContacts
-from maps.PoseGraph import PoseGraph
-from maps.LocalNode import LocalNode
-from maps.Pose import Pose
-from maps.SplineFit import SplineFit
+from .pose.AverageContacts import AverageContacts
+from .maps.PoseGraph import PoseGraph
+from .maps.LocalNode import LocalNode
+from .maps.Pose import Pose
+from .maps.SplineFit import SplineFit
 
-from maps.functions import *
+from .maps.functions import *
 import hashlib
 
 import scipy
 import pca_module
 #from maps import toro
 
-from maps import scsgp
+from .maps import scsgp
 
 import alphamod
 
@@ -199,7 +199,7 @@ class TestUnit(SnakeControl):
 		" create the first behavior "
 		if self.localState == 0:
 			
-			print "START:  doInitAnchor()"
+			print("START:  doInitAnchor()")
 			
 			self.behavior = AnchorTransition(self.robotParam)
 			
@@ -219,7 +219,7 @@ class TestUnit(SnakeControl):
 				
 				self.isAnchored = True
 				
-				print "FINISH:  doInitAnchor()"
+				print("FINISH:  doInitAnchor()")
 				return True
 		
 		return False
@@ -259,14 +259,14 @@ class TestUnit(SnakeControl):
 		polyfit2_md5 = int(m.digest().encode('hex'),16)
 		
 		if polyfit1_md5_nom == polyfit1_md5:
-			print "polyfit1 PASS"
+			print("polyfit1 PASS")
 		else:
-			print "polyfit1 FAIL"
+			print("polyfit1 FAIL")
 			
 		if polyfit2_md5_nom == polyfit2_md5:
-			print "polyfit2 PASS"
+			print("polyfit2 PASS")
 		else:
-			print "polyfit2 FAIL"		
+			print("polyfit2 FAIL")		
 
 	def testGauss(self):
 		
@@ -280,9 +280,9 @@ class TestUnit(SnakeControl):
 
 		rand_md5_nom = 287040259466010197236266034435345065463
 		if rand_md5_nom == rand_md5:
-			print "rand1 PASS"
+			print("rand1 PASS")
 		else:
-			print "rand1 FAIL"
+			print("rand1 FAIL")
 				
 
 	def testMedialHull(self):
@@ -320,24 +320,24 @@ class TestUnit(SnakeControl):
 		axis2_md5 = int(m.digest().encode('hex'),16)
 
 		if hull1_md5_nom == hull1_md5:
-			print "hull1 PASS"
+			print("hull1 PASS")
 		else:
-			print "hull1 FAIL"
+			print("hull1 FAIL")
 			
 		if hull1_md5_nom == hull2_md5:
-			print "hull2 PASS"
+			print("hull2 PASS")
 		else:
-			print "hull2 FAIL"
+			print("hull2 FAIL")
 
 		if axis1_md5_nom == axis1_md5:
-			print "axis1 PASS"
+			print("axis1 PASS")
 		else:
-			print "axis1 FAIL"
+			print("axis1 FAIL")
 			
 		if axis1_md5_nom == axis2_md5:
-			print "axis2 PASS"
+			print("axis2 PASS")
 		else:
-			print "axis2 FAIL"
+			print("axis2 FAIL")
 		
 		return	
 
@@ -371,14 +371,14 @@ class TestUnit(SnakeControl):
 		#print points2_md5
 
 		if points1_md5_nom == points1_md5:
-			print "points1 PASS"
+			print("points1 PASS")
 		else:
-			print "points1 FAIL"
+			print("points1 FAIL")
 			
 		if points1_md5_nom == points2_md5:
-			print "points2 PASS"
+			print("points2 PASS")
 		else:
-			print "points2 FAIL"
+			print("points2 FAIL")
 
 		return
 		
@@ -422,14 +422,14 @@ class TestUnit(SnakeControl):
 		edges2_md5_nom = 146731739815347910490180057980616635724
 
 		if edges1_md5_nom == edges1_md5:
-			print "edges1 PASS"
+			print("edges1 PASS")
 		else:
-			print "edges1 FAIL"
+			print("edges1 FAIL")
 			
 		if edges2_md5_nom == edges2_md5:
-			print "edges2 PASS"
+			print("edges2 PASS")
 		else:
-			print "edges2 FAIL"
+			print("edges2 FAIL")
 
 
 		#print edges1_md5
@@ -481,14 +481,14 @@ class TestUnit(SnakeControl):
 		e_list_md5_nom = int(m.digest().encode('hex'),16)
 
 		if v_list_md5_nom == v_list_md5:
-			print "v_list PASS"
+			print("v_list PASS")
 		else:
-			print "v_list FAIL"
+			print("v_list FAIL")
 
 		if e_list_md5_nom == e_list_md5:
-			print "e_list PASS"
+			print("e_list PASS")
 		else:
-			print "e_list FAIL"
+			print("e_list FAIL")
 
 		v_list_1 = [[0, [-0.69656099999999999, -0.11831700000000001, -3.1298900000000001]], [1, [0.31398100000000001, -0.094107300000000005, 3.1370200000000001]], [2, [-0.38625700000000002, -0.115207, -3.1360700000000001]], [3, [0.44748300000000002, -0.0917737, -3.13313]], [4, [0.723298, -0.13203400000000001, 3.1139100000000002]], [5, [0.82904, -0.102147, 3.08806]], [6, [1.6474299999999999, -0.128221, -3.0613800000000002]], [7, [1.63565, -0.118212, -3.0606800000000001]], [8, [2.2233000000000001, -0.076758199999999999, -2.81779]], [9, [2.3147700000000002, 0.010116099999999999, -2.6669800000000001]], [10, [2.7588400000000002, 0.36728, -2.2459099999999999]], [11, [2.7465700000000002, 0.32573200000000002, -2.3235299999999999]], [12, [2.9898699999999998, 0.73587400000000003, -2.0148199999999998]], [13, [3.0192399999999999, 0.77077600000000002, -2.0587399999999998]]]
 		v_list_2 = [[0, [-0.69656099999999999, -0.11831700000000001, -3.1298900000000001]], [1, [0.31397799999999998, -0.094144199999999997, 3.13706]], [2, [-0.38625399999999999, -0.11516999999999999, -3.13611]], [3, [0.44747999999999999, -0.091837199999999994, -3.1330399999999998]], [4, [0.72331100000000004, -0.13192100000000001, 3.11368]], [5, [0.82902900000000002, -0.10230599999999999, 3.08832]], [6, [1.6474599999999999, -0.12809899999999999, -3.0624799999999999]], [7, [1.63567, -0.118307, -3.0602900000000002]], [8, [2.2231800000000002, -0.077014600000000002, -2.81934]], [9, [2.3150400000000002, 0.010028199999999999, -2.66615]], [10, [2.7589399999999999, 0.36634899999999998, -2.24885]], [11, [2.7464400000000002, 0.32556400000000002, -2.3212999999999999]], [12, [2.9896600000000002, 0.73262700000000003, -2.0222899999999999]], [13, [3.0202900000000001, 0.77352500000000002, -2.05199]]]
@@ -500,7 +500,7 @@ class TestUnit(SnakeControl):
 			dist = sqrt((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2)
 			angDiff = p1[2]-p2[2]
 			
-			print dist, angDiff
+			print(dist, angDiff)
 
 
 
@@ -538,14 +538,14 @@ class TestUnit(SnakeControl):
 		loadings2_md5_nom = 4604468617513472537582329011925291178
 
 		if loadings1_md5_nom == loadings1_md5:
-			print "loadings1 PASS"
+			print("loadings1 PASS")
 		else:
-			print "loadings1 FAIL"
+			print("loadings1 FAIL")
 			
 		if loadings2_md5_nom == loadings2_md5:
-			print "loadings2 PASS"
+			print("loadings2 PASS")
 		else:
-			print "loadings2 FAIL"
+			print("loadings2 FAIL")
 
 	def testSCSGP(self):
 		totalHypotheses = 3
@@ -580,14 +580,14 @@ class TestUnit(SnakeControl):
 		lmbda1_md5_nom = 91214331286978604462059783908825041166
 
 		if e1_md5_nom == e1_md5:
-			print "e1 PASS"
+			print("e1 PASS")
 		else:
-			print "e1 FAIL"
+			print("e1 FAIL")
 			
 		if lmbda1_md5_nom == lmbda1_md5:
-			print "lamda1 PASS"
+			print("lamda1 PASS")
 		else:
-			print "lamda1 FAIL"
+			print("lamda1 FAIL")
 
 	def testAlpha(self):
 		
@@ -642,7 +642,7 @@ class TestUnit(SnakeControl):
 				sArr = sArr[1:]
 				#print "hull has", numVert, "vertices"
 				if numVert <= 2:
-					print "Failed, hull had only", numVert, "vertices"
+					print("Failed, hull had only", numVert, "vertices")
 					raise
 				
 				vertices = []
@@ -650,18 +650,18 @@ class TestUnit(SnakeControl):
 					vertices.append([float(sArr[2*i]), float(sArr[2*i + 1])])
 				isDone = True
 			except:
-				print "hull has holes!  retrying..."
+				print("hull has holes!  retrying...")
 				#print sArr	
 
-		print "nomPoints = " + repr(vertices)
+		print("nomPoints = " + repr(vertices))
 		m = hashlib.md5()
 		m.update(repr(vertices))
 		vert_md5 = int(m.digest().encode('hex'),16)	
 		
 		if vert_md5 == vert_md5_nom:
-			print "alpha PASS"
+			print("alpha PASS")
 		else:
-			print "alpha FAIL"
+			print("alpha FAIL")
 
 
 	def testAlpha2(self):
@@ -702,12 +702,12 @@ class TestUnit(SnakeControl):
 				numVert = len(vertices)
 				
 				if numVert <= 2:
-					print "Failed, hull had only", numVert, "vertices"
+					print("Failed, hull had only", numVert, "vertices")
 					raise
 				
 				isDone = True
 			except:
-				print "hull has holes!  retrying..."
+				print("hull has holes!  retrying...")
 				#print sArr	
 	
 		m = hashlib.md5()
@@ -715,9 +715,9 @@ class TestUnit(SnakeControl):
 		vert_md5 = int(m.digest().encode('hex'),16)	
 		
 		if vert_md5 == vert_md5_nom:
-			print "alpha PASS"
+			print("alpha PASS")
 		else:
-			print "alpha FAIL"
+			print("alpha FAIL")
 	
 		#for k in range(len(vertices)):
 		#	print nomPoints[k], vertices[k]

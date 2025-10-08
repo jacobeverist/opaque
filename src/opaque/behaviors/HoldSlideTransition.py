@@ -1,5 +1,5 @@
-from Behavior import *
-from Transition import Transition
+from .Behavior import *
+from .Transition import Transition
 from math import exp, fabs, pi
 from copy import copy
 

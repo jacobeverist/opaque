@@ -157,14 +157,14 @@ class AdaptiveCosine:
 
 			p3 = [p2[0] + followLen, p2[1]]
 
-			print self.control
+			print(self.control)
 
 			self.control['p1'] = p1
 			self.control['pA'] = pA
 			self.control['p2'] = p2
 			self.control['p3'] = p3
 
-			print self.control
+			print(self.control)
 
 	def setTailLength(self, length):
 		
@@ -467,7 +467,7 @@ class AdaptiveCosine:
 			curvePoint2 = p3
 
 		else:
-			print "points not in expected configuration"
+			print("points not in expected configuration")
 			raise
 		
 
@@ -485,7 +485,7 @@ class AdaptiveCosine:
 			curvePoint3 = pA
 
 		else:
-			print "points not in expected configuration"
+			print("points not in expected configuration")
 			raise
 		
 

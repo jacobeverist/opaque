@@ -38,7 +38,7 @@ for inFile in files:
 
 	if inFile[:5] == "scene":
 		srcImage1 = Image.open(inFile)
-		print "scene:", inFile
+		print("scene:", inFile)
 
 	if inFile[:5] == "navEs":
 		srcImage2 = Image.open(inFile)
@@ -47,7 +47,7 @@ for inFile in files:
 
  		#left, upper, right, and lower pixel coordinate.
 
-		print "nav:", inFile
+		print("nav:", inFile)
 
 	newImage = Image.new('RGB', size, 0)
 	newImage.paste(srcImage1, (0,0))

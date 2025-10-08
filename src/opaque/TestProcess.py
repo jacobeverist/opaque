@@ -1,17 +1,17 @@
 import random
 random.seed(0)
 
-from SnakeControl import SnakeControl
+from .SnakeControl import SnakeControl
 from copy import *
 from math import *
 import time
 import math
 import os
 
-from behaviors.AnchorTransition import AnchorTransition
+from .behaviors.AnchorTransition import AnchorTransition
 
-from pose.AverageContacts import AverageContacts
-from maps.MapLoader import MapLoader
+from .pose.AverageContacts import AverageContacts
+from .maps.MapLoader import MapLoader
 
 import numpy
 import sys
@@ -195,7 +195,7 @@ class TestProcess(SnakeControl):
 			#self.mapGraph.forceUpdate(False)
 			#self.globalState = 6
 
-			print "Start Time:", time.clock()
+			print("Start Time:", time.clock())
 
 	def doInitAnchor(self):
 		
@@ -205,7 +205,7 @@ class TestProcess(SnakeControl):
 		" create the first behavior "
 		if self.localState == 0:
 			
-			print "START:  doInitAnchor()"
+			print("START:  doInitAnchor()")
 			
 			self.behavior = AnchorTransition(self.robotParam)
 			
@@ -225,7 +225,7 @@ class TestProcess(SnakeControl):
 				
 				self.isAnchored = True
 				
-				print "FINISH:  doInitAnchor()"
+				print("FINISH:  doInitAnchor()")
 				return True
 		
 		return False

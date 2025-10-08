@@ -1,8 +1,8 @@
-from SnakeControl import SnakeControl
+from .SnakeControl import SnakeControl
 from copy import *
 from math import *
 
-from behaviors.HoldTransition import HoldTransition
+from .behaviors.HoldTransition import HoldTransition
 
 class TestHoldTransition(SnakeControl):
 
@@ -53,7 +53,7 @@ class TestHoldTransition(SnakeControl):
 				self.probe.setServo(i, 0.0)
 			
 			self.stateA = 1			
-			print "step 0 complete"
+			print("step 0 complete")
 
 		elif self.stateA == 1:
 
@@ -77,7 +77,7 @@ class TestHoldTransition(SnakeControl):
 								
 			self.stateA = 2
 			
-			print "step 1 complete"
+			print("step 1 complete")
 			
 		# Anchor to the walls
 		elif self.stateA == 2:
@@ -108,9 +108,9 @@ class TestHoldTransition(SnakeControl):
 										
 					if currJoints[i] != modJoint:
 						isError = True
-						print "ERROR: joint", i, "is", currJoints[i], "not", modJoint
+						print("ERROR: joint", i, "is", currJoints[i], "not", modJoint)
 
-				print "step 2 complete"
+				print("step 2 complete")
 				
 				if isError:
 					self.testFail()

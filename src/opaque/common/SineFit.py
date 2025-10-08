@@ -102,7 +102,7 @@ class SineFit:
 			min1 = sqrt((newPoint[0]-p2[0])**2 + (newPoint[1]-p2[1])**2)
 			curvePoint1 = p2
 		else:
-			print "points not in expected configuration"
+			print("points not in expected configuration")
 			raise
 
 		# Hypothesis 2: closest point on the trailing edge
@@ -119,7 +119,7 @@ class SineFit:
 			curvePoint2 = p4
 
 		else:
-			print "points not in expected configuration"
+			print("points not in expected configuration")
 			raise
 
 		# Hypothesis 3: closest point on the cosine curve

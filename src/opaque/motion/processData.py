@@ -28,8 +28,8 @@ import scipy.optimize
 
 from copy import copy
 from copy import deepcopy
-from coord import Pose
-from SplineFit import SplineFit
+from .coord import Pose
+from .SplineFit import SplineFit
 
 from numpy import array
 import pylab
@@ -209,7 +209,7 @@ def computeUnion(points1, points2):
 	#print "rawOutput ="
 	#print sout
 
-	print serr
+	print(serr)
 	
 	" convert string output to typed data "
 	sArr = sout.split(" ")
@@ -369,12 +369,12 @@ if __name__ == '__main__':
 		offsets.append(offset)
 	
 	for k in range(1,len(estPoses)):
-		print k
+		print(k)
 
 		currEstPoses = estPoses[:k+1]
 		curr_a_hulls = a_hulls[:k+1]
 		
-		print len(currEstPoses),len(curr_a_hulls)
+		print(len(currEstPoses),len(curr_a_hulls))
 		
 		
 		" 1. target pose to correct "
@@ -433,11 +433,11 @@ if __name__ == '__main__':
 		gen_icp.addDistanceFromOriginCovariance(pastHull, tan_var=0.1, perp_var=0.01)
 		"""
 		
-		print "pastHull =", len(pastHull)
-		print "targetHull =", len(targetHull)
+		print("pastHull =", len(pastHull))
+		print("targetHull =", len(targetHull))
 		
-		print "pastPose =", pastPose
-		print "targetPose =", targetPose
+		print("pastPose =", pastPose)
+		print("targetPose =", targetPose)
 				
 		" run generalized ICP (a plot is made for each iteration of the algorithm) "
 		offset = gen_icp.gen_ICP_global(pastPose, targetPose, pastHull, targetHull, pastCircles, costThresh, minMatchDist, plotIteration)
@@ -699,10 +699,10 @@ if __name__ == '__main__':
 
 		circles.append([radius, center])
 
-	print circles
+	print(circles)
 	
 	
-	print
+	print()
 	for i in range(len(circles)):
 		distances = []
 		for j in range(0,i):
@@ -720,9 +720,9 @@ if __name__ == '__main__':
 				distances.append(1)
 			else:
 				distances.append(0)
-		print distances
+		print(distances)
 
-	print a_data
+	print(a_data)
 	exit()
 
 	count = 0
@@ -779,7 +779,7 @@ if __name__ == '__main__':
 		#if i % 2 == 1:
 		if True:
 
-			print "correcting", i , "and", i+1
+			print("correcting", i , "and", i+1)
 
 			f = open('alpha_bound_%04u.txt' % i,'r')
 			#f = open('gnd_alpha_bound_%04u.txt' % i,'r')
@@ -849,7 +849,7 @@ if __name__ == '__main__':
 			for p in a_data:
 				a_trans.append(gen_icp.dispPoint(p, offset))
 
-			print "drawing: ", "finalOutput_%04u.png" % i
+			print("drawing: ", "finalOutput_%04u.png" % i)
 
 			# plot the final result, plot 999
 			gen_icp.draw(a_trans, b_data, "finalOutput_%04u.png" % i, fileWrite = True) 
@@ -859,10 +859,10 @@ if __name__ == '__main__':
 			poseNumbers.append(i)
 
 
-	print "finalOffsets"
-	print finalOffsets
-	print "estPoses"
-	print estPoses
+	print("finalOffsets")
+	print(finalOffsets)
+	print("estPoses")
+	print(estPoses)
 
 	# 1. get the relative offsets (done)
 	# 2. for each node, recompute the estimated pose of all the subsequent poses
@@ -886,8 +886,8 @@ if __name__ == '__main__':
 			#poseNumbers.append(poseNumbers[i]+2)
 			poseNumbers.append(poseNumbers[i]+1)
 
-	print "estPoses"
-	print estPoses
+	print("estPoses")
+	print(estPoses)
 	
 	pylab.clf()
 

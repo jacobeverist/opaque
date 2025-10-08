@@ -1,6 +1,6 @@
 
-from AdaptiveCosine import * 
-from AdaptiveAnchorCurve import * 
+from .AdaptiveCosine import * 
+from .AdaptiveAnchorCurve import * 
 import pylab
 from math import *
 

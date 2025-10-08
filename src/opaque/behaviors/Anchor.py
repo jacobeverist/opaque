@@ -1,4 +1,4 @@
-from Behavior import Behavior
+from .Behavior import Behavior
 from math import pi, cos
 
 class Anchor(Behavior):

@@ -6,7 +6,7 @@ if not dir in sys.path:
 
 import math
 from common import *
-from Behavior import *
+from .Behavior import *
 from numpy import *
 
 class PathCurveFit(Behavior):
@@ -176,7 +176,7 @@ class PathCurveFit(Behavior):
 			return False
 		
 		if self.startNode < 0 or self.startNode >= (self.numSegs-1) or self.endNode < 0 or self.endNode >= (self.numSegs-1):
-			print "Nodes out of bounds for fitBody:", self.startNode, self.endNode
+			print("Nodes out of bounds for fitBody:", self.startNode, self.endNode)
 			raise
 
 		backwards = not self.direction
@@ -195,13 +195,13 @@ class PathCurveFit(Behavior):
 		# now we need to determine which segments are active
 		# start from the inner segment and work to the 0th segment
 		if self.startNode == 0:
-			segments = range(0,self.endNode+1)
+			segments = list(range(0,self.endNode+1))
 			segments.reverse()
 			segmentOrder = -1
 			
 		# start from inner segment and work out to the 39th segment
 		elif self.endNode == self.numSegs-2:
-			segments = range(self.startNode+1,self.endNode+2)
+			segments = list(range(self.startNode+1,self.endNode+2))
 			segmentOrder = 1
 			
 		# use the direction of the curve to guide our kinematic order
@@ -210,11 +210,11 @@ class PathCurveFit(Behavior):
 			# includes one extra segment depending on fitting direction
 			
 			if not self.direction:
-				segments = range(self.startNode,self.endNode+1)
+				segments = list(range(self.startNode,self.endNode+1))
 				segments.reverse()
 				segmentOrder = -1
 			else:
-				segments = range(self.startNode+1,self.endNode+2)
+				segments = list(range(self.startNode+1,self.endNode+2))
 				segmentOrder = 1
 		
 		#print "startNode, endNode:", self.startNode, self.endNode
@@ -460,7 +460,7 @@ class PathCurveFit(Behavior):
 		self.resetJoints()
 
 		if self.startNode < 0 or self.startNode >= (self.numSegs-1) or self.endNode < 0 or self.endNode >= (self.numSegs-1):
-			print "Nodes out of bounds for fitBody:", self.startNode, self.endNode
+			print("Nodes out of bounds for fitBody:", self.startNode, self.endNode)
 			raise
 		
 		if self.startNode == self.endNode:
@@ -494,14 +494,14 @@ class PathCurveFit(Behavior):
 
 			# joints we're visiting in reverse order
 			if self.startNode  >= 35:
-				joints = range(self.endNode, 34+1)
+				joints = list(range(self.endNode, 34+1))
 				joints.reverse()
 
 				tEnd = self.endNode
 				if tEnd < 35:
 					tEnd = 35
 
-				zeroJoints = range(tEnd,self.startNode+1)
+				zeroJoints = list(range(tEnd,self.startNode+1))
 				for i in zeroJoints:
 					#print "setting", i, "to zero"
 					#self.probe.setServo(i, 0.0)
@@ -509,7 +509,7 @@ class PathCurveFit(Behavior):
 					self.setJoint(i, 0.0)
 
 			else:
-				joints = range(self.endNode, self.startNode+1)
+				joints = list(range(self.endNode, self.startNode+1))
 				joints.reverse()
 
 			# compute the change in joint angle for every consecutive joint
@@ -626,7 +626,7 @@ class PathCurveFit(Behavior):
 				joints = range(self.startNode, self.endNode+1)
 			"""
 				
-			joints = range(self.startNode, self.endNode+1)
+			joints = list(range(self.startNode, self.endNode+1))
 
 			for i in joints:
 
@@ -722,7 +722,7 @@ class PathCurveFit(Behavior):
 	
 		if segI > self.rootNode + 1:
 			#joints = range(self.rootNode, self.numJoints)
-			joints = range(self.rootNode, segI)
+			joints = list(range(self.rootNode, segI))
 	
 			for i in joints:
 				xTotal = xTotal + 0.5*segLength*cos(totalAngle)
@@ -737,7 +737,7 @@ class PathCurveFit(Behavior):
 		
 		elif segI < self.rootNode + 1:
 			
-			joints = range(segI-1,self.rootNode)
+			joints = list(range(segI-1,self.rootNode))
 			joints.reverse()
 	
 			for i in joints:
@@ -756,7 +756,7 @@ class PathCurveFit(Behavior):
 			zTotal = zTotal + 0.5*segLength*sin(totalAngle)
 
 		else:
-			print "rootNode =", self.rootNode, "segI = ", segI
+			print("rootNode =", self.rootNode, "segI = ", segI)
 			raise
 
 	
@@ -772,7 +772,7 @@ class PathCurveFit(Behavior):
 		zTotal = 0.0
 		totalAngle = 0.0		
 
-		joints = range(-1,self.rootNode)
+		joints = list(range(-1,self.rootNode))
 		joints.reverse()
 
 		for i in joints:
@@ -793,7 +793,7 @@ class PathCurveFit(Behavior):
 		zTotal = 0.0
 		totalAngle = 0.0		
 
-		joints = range(self.rootNode, 39)
+		joints = list(range(self.rootNode, 39))
 
 		for i in joints:
 			xTotal = xTotal + segLength*cos(totalAngle)
@@ -817,7 +817,7 @@ class PathCurveFit(Behavior):
 	
 		if jointI > self.rootNode:
 			#joints = range(self.rootNode, self.numJoints)
-			joints = range(self.rootNode, jointI)
+			joints = list(range(self.rootNode, jointI))
 	
 			for i in joints:
 				xTotal = xTotal + segLength*cos(totalAngle)
@@ -828,7 +828,7 @@ class PathCurveFit(Behavior):
 		
 		elif jointI < self.rootNode:
 			
-			joints = range(jointI,self.rootNode)
+			joints = list(range(jointI,self.rootNode))
 			joints.reverse()
 	
 			for i in joints:
@@ -843,7 +843,7 @@ class PathCurveFit(Behavior):
 			zTotal = 0.0
 
 		else:
-			print "rootNode =", self.rootNode, "segI = ", segI
+			print("rootNode =", self.rootNode, "segI = ", segI)
 			raise
 
 	
@@ -869,7 +869,7 @@ class PathCurveFit(Behavior):
 		zTotal = 0.0
 		totalAngle = 0.0
 	
-		joints = range(-1,self.rootNode)
+		joints = list(range(-1,self.rootNode))
 		joints.reverse()
 
 		for i in joints:
@@ -893,7 +893,7 @@ class PathCurveFit(Behavior):
 		xTotal = 0.0
 		zTotal = 0.0
 		totalAngle = 0.0
-		joints = range(self.rootNode, self.numJoints)
+		joints = list(range(self.rootNode, self.numJoints))
 
 		for i in joints:
 			xTotal = xTotal + 0.5*segLength*cos(totalAngle)

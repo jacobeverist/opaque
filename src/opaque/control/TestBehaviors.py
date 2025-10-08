@@ -270,14 +270,14 @@ class TestBehaviors(SnakeControl):
 			self.mergeJoints([joints])
 			
 			if isDone:
-				print "done!"
+				print("done!")
 				
 				if len(self.wayPoints) > 0:
 					dest = self.wayPoints[0]
 					pose = self.probe.getActualSegPose(0)
 					
 					dist = sqrt((dest[0]-pose[0])**2 + (dest[1]-pose[1])**2)
-					print "dist = ", dist
+					print("dist = ", dist)
 					
 					if dist > self.lastDist:
 						self.distCount += 1

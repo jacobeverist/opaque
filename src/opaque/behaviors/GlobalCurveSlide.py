@@ -1,7 +1,7 @@
 
-from Behavior import Behavior
-from Transition import Transition
-from GlobalCurveFit import GlobalCurveFit
+from .Behavior import Behavior
+from .Transition import Transition
+from .GlobalCurveFit import GlobalCurveFit
 from math import exp, pi
 from copy import copy
 

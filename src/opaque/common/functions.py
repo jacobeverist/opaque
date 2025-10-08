@@ -226,7 +226,7 @@ def closestSegPoint(seg, tPoint):
 	except:
 
 		# find the point on a segment that is closest to "tPoint"
-		print "failed finding closest point of seg", seg, "to tPoint", tPoint
+		print("failed finding closest point of seg", seg, "to tPoint", tPoint)
 
 		raise
 

@@ -332,7 +332,7 @@ def executeToro(fileName):
 		result = os.system("./toro -nde " + fileName + " 2> toro.out.txt")
 
 	if result != 0 and result != 1:
-		print "returned", result
+		print("returned", result)
 		raise
 	os.chdir("..")
 	os.system("rm " + fileRoot + "-treeopt-final.graph")
@@ -355,7 +355,7 @@ if __name__ == '__main__':
 	fileName = "test.graph"
 	#fileName = "w10000-odom.graph"
 	vlist, elist = readToroGraph("./" + fileName)
-	print len(vlist), len(elist)
+	print(len(vlist), len(elist))
 	plotToro(vlist, elist, drawedge=True)
 	savefig("w10000_uncorrect.png")
 	clf()

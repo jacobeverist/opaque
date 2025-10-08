@@ -6,10 +6,10 @@ if not dir in sys.path:
 
 from copy import *
 from common import *
-from Behavior import *
-from FastLocalCurveFit import FastLocalCurveFit
-from HoldTransition import HoldTransition
-from AdaptiveCosine import AdaptiveCosine
+from .Behavior import *
+from .FastLocalCurveFit import FastLocalCurveFit
+from .HoldTransition import HoldTransition
+from .AdaptiveCosine import AdaptiveCosine
 
 
 class AdaptiveConcertinaGaitJerk(Behavior):
@@ -196,7 +196,7 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 			cmdOrigin = [0.0,0.0,pi]
 			self.cmdSegPoints.insert(0, cmdOrigin)
 		
-			ind = range(0,self.numJoints)
+			ind = list(range(0,self.numJoints))
 			ind.reverse()
 	
 			for i in ind:
@@ -249,7 +249,7 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 			actOrigin = [0.0,0.0,pi]
 			actSegPoints.insert(0,actOrigin)
 
-			ind = range(0,self.numJoints)
+			ind = list(range(0,self.numJoints))
 			ind.reverse()
 				
 			for i in ind:
@@ -312,7 +312,7 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 			peakOrigin = [0.0,0.0,pi]
 			peakCurves[-1].append(copy(peakOrigin))
 
-			ind = range(0,self.numJoints)
+			ind = list(range(0,self.numJoints))
 			ind.reverse()
 			
 			for i in ind:
@@ -443,15 +443,15 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 			
 			if len(peakJoints) == 0 and self.currPeak != 0:
 				isDone = True
-				print "terminating caseA"
+				print("terminating caseA")
 				
 			elif self.direction and 38 in peakJoints and currAmp > 0.5:
 				isDone = True
-				print "terminating caseB"
+				print("terminating caseB")
 				
 			elif not self.direction and 0 in peakJoints and currAmp > 0.5:
 				isDone = True
-				print "terminating caseC"
+				print("terminating caseC")
 	
 			if not isDone:
 				
@@ -471,8 +471,8 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 					" error threshold that determines we have made an anchor contact "
 					if maxError > 0.3 and self.maxAmp != 0.0:
 						
-						print errors
-						print torques
+						print(errors)
+						print(torques)
 						
 						" if the difference between amplitudes is < 0.01 "
 						if fabs(self.maxAmp-self.minAmp) < 0.01:
@@ -587,7 +587,7 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 							for k in range(len(self.jerkJoints)):
 								self.nomJerks[k] = self.probe.getServo(self.jerkJoints[k]) * 180.0 / pi
 						
-							print "nominal = " , self.nomJerk, self.probe.getServo(self.jerkJoint)
+							print("nominal = " , self.nomJerk, self.probe.getServo(self.jerkJoint))
 							self.prevJerkAngle = self.jerkAngle
 							self.jerkAngle = 60	
 						
@@ -602,7 +602,7 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 						elif self.jerkAngle == 60:
 							
 							#print "setting jerk joint to ", self.jerkAngle + self.nomJerk
-							print "jerk angle error = " , self.probe.getServo(self.jerkJoint)-self.probe.getServoCmd(self.jerkJoint)
+							print("jerk angle error = " , self.probe.getServo(self.jerkJoint)-self.probe.getServoCmd(self.jerkJoint))
 
 							errs = []
 							for k in range(len(self.jerkJoints)):
@@ -623,14 +623,14 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 								originPose = self.originPoses[k]
 								self.errorPoses1.append([tempPose[0]-originPose[0],tempPose[1]-originPose[1],tempPose[2]-originPose[2]])
 						
-							print self.errorPoses1
+							print(self.errorPoses1)
 							
 							self.originPoses = []
 							for k in peakJoints:
 								self.originPoses.append(self.contacts.getAveragePose(k))
 							
 						elif self.jerkAngle == -60:
-							print "jerk angle error = " , self.probe.getServo(self.jerkJoint)-self.probe.getServoCmd(self.jerkJoint)
+							print("jerk angle error = " , self.probe.getServo(self.jerkJoint)-self.probe.getServoCmd(self.jerkJoint))
 							self.jerkErrors.append(self.probe.getServo(self.jerkJoint)-self.probe.getServoCmd(self.jerkJoint))
 
 							" error = (-0.09, 0.005) is good "
@@ -648,7 +648,7 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 								originPose = self.originPoses[k]
 								self.errorPoses2.append([tempPose[0]-originPose[0],tempPose[1]-originPose[1],tempPose[2]-originPose[2]])
 						
-							print self.errorPoses2
+							print(self.errorPoses2)
 						
 						else:
 							self.prevJerkAngle = self.jerkAngle
@@ -689,7 +689,7 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 					
 					err2 = sqrt(xDiff**2 + yDiff**2)
 					
-					print "anchor errors =", err1, err2
+					print("anchor errors =", err1, err2)
 					
 					
 					#if abs(self.jerkErrors[0]) < 0.01 and abs(self.jerkErrors[1]) < 0.01:
@@ -753,23 +753,23 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 					" 30*2.5 is maximum "
 					peakJoints = self.localFit.getPeakJoints(self.currPeak)
 
-					print "peakJoints =", len(peakJoints), "amp =", self.curve.getPeakAmp(0)
+					print("peakJoints =", len(peakJoints), "amp =", self.curve.getPeakAmp(0))
 					if len(peakJoints) > 0 and self.curve.getPeakAmp(0) > 0 and self.isJerking:
 						
-						print "direction =", self.direction
+						print("direction =", self.direction)
 						if not self.direction:
 							maxJoint = max(peakJoints)
-							print "maxJoint = ", maxJoint
+							print("maxJoint = ", maxJoint)
 							for i in range(maxJoint+1, self.probe.numSegs-2):
 								if i <= self.probe.numSegs-2:
-									print "setting joint ", i, "to torque 3.0"
+									print("setting joint ", i, "to torque 3.0")
 									self.probe.setJointTorque(i, 3.0)
 						else:
 							minJoint = min(peakJoints)
-							print "minJoint = ", minJoint
+							print("minJoint = ", minJoint)
 							for i in range(0, minJoint):					
 								if i <= self.probe.numSegs-2:
-									print "setting joint ", i, "to torque 3.0"
+									print("setting joint ", i, "to torque 3.0")
 									self.probe.setJointTorque(i, 3.0)
 
 				else:
@@ -801,7 +801,7 @@ class AdaptiveConcertinaGaitJerk(Behavior):
 				self.holdT.reset(self.localFit.getJoints())
 				
 				if self.isJerking:
-					print "setting jerk joint to ", self.nomJerk + self.jerkAngle
+					print("setting jerk joint to ", self.nomJerk + self.jerkAngle)
 					#self.holdT.positions[self.jerkJoint] = self.nomJerk + self.jerkAngle
 					for k in range(len(self.jerkJoints)):
 						self.holdT.positions[self.jerkJoints[k]] = self.nomJerks[k] + self.jerkAngles[k]

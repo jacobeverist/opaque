@@ -6,9 +6,9 @@ if not dir in sys.path:
 
 from copy import *
 from common import *
-from Behavior import *
-from FastLocalCurveFit import FastLocalCurveFit
-from HoldTransition import HoldTransition
+from .Behavior import *
+from .FastLocalCurveFit import FastLocalCurveFit
+from .HoldTransition import HoldTransition
 
 class AdaptiveConcertinaGait(Behavior):
 
@@ -181,7 +181,7 @@ class AdaptiveConcertinaGait(Behavior):
 			cmdOrigin = [0.0,0.0,pi]
 			self.cmdSegPoints.insert(0, cmdOrigin)
 		
-			ind = range(0,self.numJoints)
+			ind = list(range(0,self.numJoints))
 			ind.reverse()
 	
 			for i in ind:
@@ -234,7 +234,7 @@ class AdaptiveConcertinaGait(Behavior):
 			actOrigin = [0.0,0.0,pi]
 			actSegPoints.insert(0,actOrigin)
 
-			ind = range(0,self.numJoints)
+			ind = list(range(0,self.numJoints))
 			ind.reverse()
 				
 			for i in ind:
@@ -297,7 +297,7 @@ class AdaptiveConcertinaGait(Behavior):
 			peakOrigin = [0.0,0.0,pi]
 			peakCurves[-1].append(copy(peakOrigin))
 
-			ind = range(0,self.numJoints)
+			ind = list(range(0,self.numJoints))
 			ind.reverse()
 			
 			for i in ind:
@@ -447,15 +447,15 @@ class AdaptiveConcertinaGait(Behavior):
 			
 			if len(peakJoints) == 0 and self.currPeak != 0:
 				isDone = True
-				print "terminating caseA"
+				print("terminating caseA")
 				
 			elif self.direction and 38 in peakJoints and currAmp > 0.5:
 				isDone = True
-				print "terminating caseB"
+				print("terminating caseB")
 				
 			elif not self.direction and 0 in peakJoints and currAmp > 0.5:
 				isDone = True
-				print "terminating caseC"
+				print("terminating caseC")
 	
 			if not isDone:
 				
@@ -548,7 +548,7 @@ class AdaptiveConcertinaGait(Behavior):
 										
 									nextWidth = self.nomWidth
 									self.widthInc = 0.04									
-									print "leaving width mode, ", self.nomWidth
+									print("leaving width mode, ", self.nomWidth)
 
 							else:
 								
@@ -568,7 +568,7 @@ class AdaptiveConcertinaGait(Behavior):
 								
 							nextWidth = self.nomWidth
 							self.widthInc = 0.04
-							print "leaving width mode, ", self.nomWidth
+							print("leaving width mode, ", self.nomWidth)
 							
 						else:
 							

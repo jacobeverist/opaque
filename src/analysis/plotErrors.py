@@ -6,9 +6,9 @@ import math
 errorFile = open("errors.csv", 'r')
 errorReader = csv.reader(open('errors.csv', 'rb'), delimiter=',')
 
-header = errorReader.next()
+header = next(errorReader)
 
-print header
+print(header)
 
 xyErrors1 = []
 angErrors1 = []
@@ -34,7 +34,7 @@ for row in errorReader:
     xyErrors2.append(float(row[4]))
     angErrors2.append(float(row[5]))
 
-t = range(0,len(xyErrors1))    
+t = list(range(0,len(xyErrors1)))    
 
 
 #pylab.plot(t,xyErrors2, color=(0.5,0.5,1.0), linewidth='1')
@@ -43,7 +43,7 @@ pylab.plot(t,angErrors2, color=(0.5,0.5,1.0), linewidth='1')
 pylab.plot(t,angErrors1, color='r', linewidth='1')
 pylab.axhline(y=0, xmin=0, xmax=1)
 
-print newPose
+print(newPose)
 
 for v in newPose:
     pylab.axvline(x = v, color='0.5')

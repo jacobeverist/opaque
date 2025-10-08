@@ -1,6 +1,6 @@
 #!/usr/bin/python
-from Pose import Pose
-from shoots import computeGlobalControlPoses
+from .Pose import Pose
+from .shoots import computeGlobalControlPoses
 from math import sqrt
 
 

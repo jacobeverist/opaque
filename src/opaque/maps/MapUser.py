@@ -1,17 +1,17 @@
-import BayesMapper
-from LocalNode import LocalNode, getLongestPath, computeHullAxis
-from MapProcess import getInPlaceGuess, getStepGuess
-from Pose import Pose
+from . import BayesMapper
+from .LocalNode import LocalNode, getLongestPath, computeHullAxis
+from .MapProcess import getInPlaceGuess, getStepGuess
+from .Pose import Pose
 import pylab
 import numpy
 from math import pi
 import matplotlib.patches as mpatches
-from SplineFit import SplineFit
+from .SplineFit import SplineFit
 from math import *
-from functions import *
+from .functions import *
 
-import cPickle as pickle
-from StablePose import StablePose
+import pickle as pickle
+from .StablePose import StablePose
 #from math import *
 
 # Map Space Parameters
@@ -63,7 +63,7 @@ class MapUser:
 		segWidth = self.probe.segWidth
 		segLength = self.probe.segLength
 
-		print "segWidth, segLength:", segWidth, segLength
+		print("segWidth, segLength:", segWidth, segLength)
 
 		walls = self.probe.getWalls()
 
@@ -84,7 +84,7 @@ class MapUser:
 			#totalAngle = pose[2] - pi
 			totalAngle = pose[2]
 
-			print "pose", i, pose
+			print("pose", i, pose)
 
 
 			p1 = [xTotal + 0.5*segLength*cos(totalAngle) - 0.5*segWidth*sin(totalAngle), zTotal + 0.5*segLength*sin(totalAngle) + 0.5*segWidth*cos(totalAngle)]
@@ -120,7 +120,7 @@ class MapUser:
 		rootPose = self.contacts.getAveragePose(19)
 		mapHyps = self.mapAlgorithm.mapHyps
 
-		for hypID, mapHyp in mapHyps.iteritems():
+		for hypID, mapHyp in mapHyps.items():
 
 			#if len(mapHyp.nodePoses) > 0:
 			if True:
@@ -134,7 +134,7 @@ class MapUser:
 				zTotal = rootPose[1]
 				totalAngle = rootPose[2]
 
-				joints = range(-1,19)
+				joints = list(range(-1,19))
 				joints.reverse()
 
 				for i in joints:
@@ -171,7 +171,7 @@ class MapUser:
 					#pylab.plot(xP,yP, color='k', alpha=0.5)
 					#actualConfig.append([i, [p4,p3,p2,p1], self.contacts.initMask[i]])
 
-				joints = range(19, self.probe.numSegs-1)
+				joints = list(range(19, self.probe.numSegs-1))
 				
 				#xTotal = 0.0
 				#zTotal = 0.0
@@ -276,7 +276,7 @@ class MapUser:
 		activeHypID = self.mapAlgorithm.activeHypID
 		mapHyps = self.mapAlgorithm.mapHyps
 
-		for hypID, mapHyp in mapHyps.iteritems():
+		for hypID, mapHyp in mapHyps.items():
 
 			if len(mapHyp.nodePoses) > 0:
 				allSplices = mapHyp.getAllSplices2()
@@ -357,20 +357,20 @@ class MapUser:
 
 	def restorePickle(self, dirName, nodeID):
 		PIXELSIZE = 0.05
-		print self
+		print(self)
 
 		#with open('map_%04u.obj' % nodeID, 'rb') as inputVal:
 		with open(dirName + '/' + 'map_%04u.obj' % nodeID, 'rb') as inputVal:
 		
-			print pickle
-			print inputVal
-			print self
-			print self.mapAlgorithm
+			print(pickle)
+			print(inputVal)
+			print(self)
+			print(self.mapAlgorithm)
 			self.mapAlgorithm = pickle.load(inputVal)
-			print self.mapAlgorithm
+			print(self.mapAlgorithm)
 			self.mapAlgorithm.saveState()
 
-			for val in self.mapAlgorithm.mapHyps.values():
+			for val in list(self.mapAlgorithm.mapHyps.values()):
 				self.mapAlgorithm.drawPathAndHull2(val)
 
 			#self.mapAlgorithm.loadSeries("../results/result_2013_08_24_cross", 238)
@@ -399,7 +399,7 @@ class MapUser:
 
 		for i in range(0, num_poses):
 
-			print "loading node", i			
+			print("loading node", i)			
 			self.currNode = LocalNode(self.probe, self.contacts, i, 19, self.pixelSize)
 			self.currNode.readFromFile2(dirName, i)			
 			self.currNode.setGPACPose(self.mapAlgorithm.nodePoses[i])
@@ -423,7 +423,7 @@ class MapUser:
 			
 		for i in range(0, num_poses):
 
-			print "loading node", i		
+			print("loading node", i)		
 			currNode = LocalNode(self.probe, self.contacts, i, 19, self.pixelSize)
 			currNode.readFromFile(dirName, i)
 			self.mapAlgorithm.loadNewNode(currNode)
@@ -441,7 +441,7 @@ class MapUser:
 		nodeHash = {}
 		
 		for i in range(0,num_poses):
-			print "loading node", i			
+			print("loading node", i)			
 			self.currNode = LocalNode(self.probe, self.contacts, i, 19, self.pixelSize)
 			self.currNode.readFromFile(dirName, i)
 			nodeHash[i] = self.currNode
@@ -546,7 +546,7 @@ class MapUser:
 		
 		self.currNode.synch()
 		
-		print "LocalNode Synched"
+		print("LocalNode Synched")
 
 		self.isDirty = False
 
@@ -665,7 +665,7 @@ class MapUser:
 
 		else:
 			""" return first """
-			for hypID, mapHyp in mapHyps.iteritems():
+			for hypID, mapHyp in mapHyps.items():
 				return mapHyp
 
 		raise
@@ -679,19 +679,19 @@ class MapUser:
 
 		if activeHypID != None:
 			""" return active """
-			print "return active:", nodeID
+			print("return active:", nodeID)
 			estPose1 = mapHyps[activeHypID].getNodeRawPose(nodeID)
 
 			return estPose1
 
 		else:
 			""" return first """
-			print "return first:", nodeID
-			for hypID, mapHyp in mapHyps.iteritems():
+			print("return first:", nodeID)
+			for hypID, mapHyp in mapHyps.items():
 				if len(mapHyp.nodePoses) > self.numNodes:
 					return mapHyp.getNodeRawPose(nodeID)
 
-		print "return currNode.getEstPose():", nodeID
+		print("return currNode.getEstPose():", nodeID)
 		return self.currNode.getEstPose()
 
 	
@@ -768,7 +768,7 @@ class MapUser:
 			" objective achieved!"
 			destReached = True
 
-		print "isDestReached:", destReached, frontMag, backMag, foreAvg, backAvg, goalDist
+		print("isDestReached:", destReached, frontMag, backMag, foreAvg, backAvg, goalDist)
 			
 		#if destReached:
 		#	goalDist = 0.0
@@ -824,7 +824,7 @@ class MapUser:
 		return totalDist + minDist1 + minDist2
 
 	def pathTermVisited(self, termID):
-		for hypID, mapHyp in self.mapAlgorithm.mapHyps.iteritems():
+		for hypID, mapHyp in self.mapAlgorithm.mapHyps.items():
 			mapHyp.pathTermVisited(termID)
 		
 	def selectNextDestination(self):
@@ -837,40 +837,40 @@ class MapUser:
 		termToHypID = {}
 
 		" get the termination point and orientation of each path "
-		for hypID, mapHyp in self.mapAlgorithm.mapHyps.iteritems():
+		for hypID, mapHyp in self.mapAlgorithm.mapHyps.items():
 			terms = mapHyp.getPathTerms()
 			termsVisited = mapHyp.getPathTermsVisited()
 
-			print "selectNextDestination for hyp", hypID
-			print "terms:", terms
-			print "termsVisited:", termsVisited
+			print("selectNextDestination for hyp", hypID)
+			print("terms:", terms)
+			print("termsVisited:", termsVisited)
 
-			for key, val in terms.iteritems():
+			for key, val in terms.items():
 				allTerms[key] = val
 				allTermsVisited[key] = termsVisited[key]
 				termToHypID[key] = hypID
 
-		print "allTerms:", allTerms
-		print "allTermsVisited:", allTermsVisited
+		print("allTerms:", allTerms)
+		print("allTermsVisited:", allTermsVisited)
 		
-		for k, term in allTerms.iteritems():
+		for k, term in allTerms.items():
 			if not allTermsVisited[k]:
-				print "selecting term", k, "for hyp ID", termToHypID[k]
+				print("selecting term", k, "for hyp ID", termToHypID[k])
 
 				self.mapAlgorithm.activeHypID = termToHypID[k]
 				return term,k
 		
 		" if all terms visited, reset and go to root "
-		for hypID, mapHyp in self.mapAlgorithm.mapHyps.iteritems():
+		for hypID, mapHyp in self.mapAlgorithm.mapHyps.items():
 			mapHyp.resetTerms()
 		
 		minDist = 1e100
 		minPnt = None
 		minTermID = None
-		for hypID, mapHyp in self.mapAlgorithm.mapHyps.iteritems():
+		for hypID, mapHyp in self.mapAlgorithm.mapHyps.items():
 			terms = mapHyp.getPathTerms()
 
-			for key,val in terms.iteritems():
+			for key,val in terms.items():
 
 				rootPoint = mapHyp.rootPoint
 				dist = sqrt((rootPoint[0]-val[0])**2 + (rootPoint[1]-val[1])**2)
@@ -891,15 +891,15 @@ class MapUser:
 		termToHypID = {}
 
 		" get the termination point and orientation of each path "
-		for hypID, mapHyp in self.mapAlgorithm.mapHyps.iteritems():
+		for hypID, mapHyp in self.mapAlgorithm.mapHyps.items():
 			terms = mapHyp.getPathTerms()
 			termsVisited = mapHyp.getPathTermsVisited()
 
-			print "selectNextDestination for hyp", hypID
-			print "terms:", terms
-			print "termsVisited:", termsVisited
+			print("selectNextDestination for hyp", hypID)
+			print("terms:", terms)
+			print("termsVisited:", termsVisited)
 
-			for key, val in terms.iteritems():
+			for key, val in terms.items():
 				allTerms[key] = val
 				allTermsVisited[key] = termsVisited[key]
 				termToHypID[key] = hypID

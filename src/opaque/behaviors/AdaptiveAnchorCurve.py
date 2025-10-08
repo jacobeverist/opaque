@@ -183,7 +183,7 @@ class AdaptiveAnchorCurve:
 			curvePoint2 = p2
 
 		else:
-			print "points not in expected configuration"
+			print("points not in expected configuration")
 			raise
 		
 		min = 0.0

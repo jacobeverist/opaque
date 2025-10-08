@@ -6,9 +6,9 @@ if not dir in sys.path:
 
 from copy import *
 from common import *
-from Behavior import *
-from BlindConcertinaGait import BlindConcertinaGait
-from GlobalCurveFit import GlobalCurveFit
+from .Behavior import *
+from .BlindConcertinaGait import BlindConcertinaGait
+from .GlobalCurveFit import GlobalCurveFit
 
 class PathConcertinaGait(Behavior):
 
@@ -29,7 +29,7 @@ class PathConcertinaGait(Behavior):
 
 	def setDirection(self, direction):
 		self.direction = direction
-		print "setting direction =", self.direction
+		print("setting direction =", self.direction)
 
 		self.blindConcertina.setDirection(direction)
 		

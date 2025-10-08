@@ -1,8 +1,8 @@
 
 from math import sqrt, pi, fabs, cos, sin
-from Behavior import Behavior
-from ValueStability import ValueStability
-from Transition import Transition
+from .Behavior import Behavior
+from .ValueStability import ValueStability
+from .Transition import Transition
 
 class Curl(Behavior):
 	

@@ -4,7 +4,7 @@ import gen_icp
 import math
 import numpy 
 import random
-from coord import Pose
+from .coord import Pose
 
 
 
@@ -106,26 +106,26 @@ if __name__ == '__main__':
 
 	relPose2 = pose1.convertGlobalPoseToLocal(estPose2)
 
-	print "estPose1:", estPose1
-	print "estPose2:", estPose2
-	print "relPose2:", relPose2
-	print
-	print "local point of pose2:", a_data[10]
-	print "global point of pose2:", global1
-	print "point with respect to pose1:", local1
-	print
-	print "local point of pose2:", a_data[300]
-	print "global point of pose2:", global2
-	print "point with respect to pose1:", local2
+	print("estPose1:", estPose1)
+	print("estPose2:", estPose2)
+	print("relPose2:", relPose2)
+	print()
+	print("local point of pose2:", a_data[10])
+	print("global point of pose2:", global1)
+	print("point with respect to pose1:", local1)
+	print()
+	print("local point of pose2:", a_data[300])
+	print("global point of pose2:", global2)
+	print("point with respect to pose1:", local2)
 	
-	print
-	print
+	print()
+	print()
 
 
 	#offset = [estPose2[0]-estPose1[0],estPose2[1]-estPose2[1],-gen_icp.normalizeAngle(estPose2[2]-estPose1[2])]
 	offset = relPose2
-	print gen_icp.dispOffset(a_data[10], offset)
-	print gen_icp.dispOffset(a_data[300], offset)
+	print(gen_icp.dispOffset(a_data[10], offset))
+	print(gen_icp.dispOffset(a_data[300], offset))
 
 	# 1. problem is that the ICP uses homogeneous transformations of points in the local coordinate systmes,
 	# 2. however, the legacy system uses a more complex transformation of coordinate systems in global coordinate systems
@@ -140,15 +140,15 @@ if __name__ == '__main__':
 	# Hope... leads to a conversion
 
 	control_points = [[0.0,0.0],[1.0,1.0],[2.0,2.0],[3.01,2.9],[4.0,4.0]]
-	print offset
+	print(offset)
 	#print gen_icp.modifyGuess(estPose1, offset, control_points)
 
 
-	print [0.0,0.0]
+	print([0.0,0.0])
 	result = gen_icp.dispOffset([0.0,0.0], offset)	
-	print result
+	print(result)
 	result = gen_icp.dispOffset(result, [-offset[0],-offset[1],0.0])	
-	print result
+	print(result)
 
 
 

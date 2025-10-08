@@ -164,7 +164,7 @@ class TestJunction(SnakeControl):
 				self.stateA = 1
 				self.holdP.reset()
 				self.holdT.reset()
-				print "going to state 1"
+				print("going to state 1")
 				#self.mapGraph.saveMap()
 			
 				" set anchoring "
@@ -209,7 +209,7 @@ class TestJunction(SnakeControl):
 
 			if isDone:
 				self.stateA = 2
-				print "going to state 2"
+				print("going to state 2")
 
 		elif self.stateA == 2:
 			
@@ -230,7 +230,7 @@ class TestJunction(SnakeControl):
 				
 				self.stateA = 3
 				self.prevTime = self.globalTimer
-				print "going to state 3"
+				print("going to state 3")
 
 		elif self.stateA == 3:
 			
@@ -246,7 +246,7 @@ class TestJunction(SnakeControl):
 				""" do an update forward and backward since we are reversing our sensing direction """
 				self.mapGraph.update(True)
 				self.stateA = 4
-				print "going to state 4"
+				print("going to state 4")
 
 		elif self.stateA == 4:
 			isDone = self.guidedPoke.step()

@@ -52,7 +52,7 @@ if __name__ =="__main__":
 	bGraph = boundMap.getBoundaryGraph()
 	
 	mst = bGraph.minimal_spanning_tree(boundMap.rootNode)
-	print len(mst)
+	print(len(mst))
 	
 	"""	
 	vNodes = copy(bGraph.nodes()).tolist()
@@ -62,11 +62,11 @@ if __name__ =="__main__":
 		for key in mst.keys():
 			vNodes.remove(key)
 	"""
-	print mst.edges()
+	print(mst.edges())
 	#vEdges = bGraph.edges()
 	vEdges = mst
 	for edge in vEdges:
-		print edge
+		print(edge)
 		p0 = eval(edge[0])
 		p1 = eval(edge[1])
 		

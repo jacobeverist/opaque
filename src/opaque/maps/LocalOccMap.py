@@ -8,7 +8,7 @@ from random import *
 from math import floor, cos, sin, sqrt, asin, acos, pi
 from numpy import array, dot
 from copy import deepcopy, copy
-from functions import *
+from .functions import *
 
 class LocalOccMap:
 
@@ -132,7 +132,7 @@ class LocalOccMap:
 			if mag == 0:
 				orthoDist.append( 1e100 )
 				closePoints.append(copy(cHull[i]))
-				print "degenerate"
+				print("degenerate")
 				continue
 
 			eAngle = acos(vec[0]/mag)
@@ -249,7 +249,7 @@ class LocalOccMap:
 
 		#print xTotal, zTotal, totalAngle
 		
-		joints = range(-1,self.rootNode)
+		joints = list(range(-1,self.rootNode))
 		joints.reverse()
 
 		for i in joints:
@@ -268,7 +268,7 @@ class LocalOccMap:
 			actualConfig.append([i, [p4,p3,p2,p1], self.contacts.initMask[i]])
 
 
-		joints = range(self.rootNode, self.probe.numSegs-1)
+		joints = list(range(self.rootNode, self.probe.numSegs-1))
 
 		#xTotal = newOrigin[0]
 		#zTotal = newOrigin[1]
@@ -320,7 +320,7 @@ class LocalOccMap:
 		zTotal = 0.0
 		totalAngle = 0.0
 
-		joints = range(-1,self.rootNode)
+		joints = list(range(-1,self.rootNode))
 		joints.reverse()
 
 		for i in joints:
@@ -338,7 +338,7 @@ class LocalOccMap:
 
 			actualConfig.append([i, [p4,p3,p2,p1], self.contacts.initMask[i]])
 
-		joints = range(self.rootNode, self.probe.numSegs-1)
+		joints = list(range(self.rootNode, self.probe.numSegs-1))
 
 		#xTotal = self.localNode.rootPose[0]
 		#zTotal = self.localNode.rootPose[1]
@@ -391,7 +391,7 @@ class LocalOccMap:
 		#zTotal = 0.0
 		#totalAngle = 0.0
 
-		joints = range(-1,self.rootNode)
+		joints = list(range(-1,self.rootNode))
 		joints.reverse()
 
 		for i in joints:
@@ -409,7 +409,7 @@ class LocalOccMap:
 
 			actualConfig.append([i, [p4,p3,p2,p1], self.contacts.initMask[i]])
 
-		joints = range(self.rootNode, self.probe.numSegs-1)
+		joints = list(range(self.rootNode, self.probe.numSegs-1))
 
 		xTotal = self.localNode.rootPose[0]
 		zTotal = self.localNode.rootPose[1]
@@ -522,7 +522,7 @@ class LocalOccMap:
 		if fileName != "":
 			self.mapImage.save(fileName)
 		else:
-			print "saving as", self.fileName % self.saveCount
+			print("saving as", self.fileName % self.saveCount)
 			self.mapImage.save(self.fileName % self.saveCount)	
 			self.gndMapImage.save(self.gndFileName % self.saveCount)
 			#self.stableMapImage.save(self.stableFileName % self.saveCount)

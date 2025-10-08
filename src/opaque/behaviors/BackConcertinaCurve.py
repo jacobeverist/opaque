@@ -401,7 +401,7 @@ class BackConcertinaCurve:
 			curvePoint2 = p3
 
 		else:
-			print "points not in expected configuration"
+			print("points not in expected configuration")
 			raise
 		
 
@@ -419,7 +419,7 @@ class BackConcertinaCurve:
 			curvePoint3 = pA
 
 		else:
-			print "points not in expected configuration"
+			print("points not in expected configuration")
 			raise
 		
 

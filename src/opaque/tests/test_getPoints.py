@@ -78,7 +78,7 @@ if __name__ =="__main__":
 
 	occMap = OccMap("occ0008.png")
 	points = occMap.getPoints()
-	print len(points)
+	print(len(points))
 	f = open("point.txt", 'w')
 	
 	for p in points:
@@ -93,7 +93,7 @@ if __name__ =="__main__":
 	pnt_str = f.read()
 	
 	edges = eval(pnt_str)
-	print len(edges)
+	print(len(edges))
 	
 	xP = []
 	yP = []

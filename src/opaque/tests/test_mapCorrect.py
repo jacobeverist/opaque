@@ -82,7 +82,7 @@ class TestMap:
 	def load(self, num):
 		self.num = num
 		self.probe.loadFile(num)
-		print "loading file", num, "with", len(self.probe.angles[0]), "snapshots"
+		print("loading file", num, "with", len(self.probe.angles[0]), "snapshots")
 		
 		self.count = 0
 

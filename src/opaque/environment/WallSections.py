@@ -113,7 +113,7 @@ class WallSections:
 		mo1_ext.convertToMesh("WallMesh_Exterior_" + str(self.count))
 		mo1_top.convertToMesh("WallMesh_Top_" + str(self.count))
 		# create Ogre entity
-		print "creating entity " + str(self.count)
+		print("creating entity " + str(self.count))
 		entity1_int = self._mgr.createEntity("WallEntity_Interior_" + str(self.count), "WallMesh_Interior_" + str(self.count))
 		entity1_ext = self._mgr.createEntity("WallEntity_Exterior_" + str(self.count), "WallMesh_Exterior_" + str(self.count))
 		entity1_top = self._mgr.createEntity("WallEntity_Top_" + str(self.count), "WallMesh_Top_" + str(self.count))
@@ -230,7 +230,7 @@ class WallSections:
 				mo1_ext.convertToMesh("WallMesh_Exterior" + str(j))
 				mo1_top.convertToMesh("WallMesh_Top" + str(j))
 				# create Ogre entity
-				print "creating entity " + str(j)
+				print("creating entity " + str(j))
 				entity1_int = self._mgr.createEntity("WallEntity_Interior" + str(j), "WallMesh_Interior" + str(j))
 				entity1_ext = self._mgr.createEntity("WallEntity_Exterior" + str(j), "WallMesh_Exterior" + str(j))
 				entity1_top = self._mgr.createEntity("WallEntity_Top" + str(j), "WallMesh_Top" + str(j))

@@ -51,7 +51,7 @@ for i in range(17):
 				anchorCount += 1
 		
 		#print dirName, "failed anchors:", anchorCount-1
-		print angle, dist, anchorCount-1
+		print(angle, dist, anchorCount-1)
 	
 	#exit()
 	

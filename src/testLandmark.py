@@ -54,7 +54,7 @@ while resultLine != "":
 	resultLine = f.readline()
 
 for result in resultStrings:
-	print result
+	print(result)
 
 
 for k in range(len(resultStrings)-1):
@@ -74,7 +74,7 @@ for k in range(len(resultStrings)-1):
 		controlPoses_G = eval(parsedLine2)
 
 		landmarks_G = []
-		for pathID, val in landmarksDict.iteritems():
+		for pathID, val in landmarksDict.items():
 			controlPose_G = controlPoses_G[pathID]
 			currFrame_G = Pose(controlPose_G)
 			for entry in val:
@@ -158,7 +158,7 @@ for k in range(len(resultStrings)-1):
 
 
 					if (landmarkType1 == "archPoint" or landmarkType1 == "bloomPoint") and (landmarkType2 == "archPoint" or landmarkType2 == "bloomPoint"):
-						print landmarkType1, landmarkType2
+						print(landmarkType1, landmarkType2)
 						""" bloom only nearest neighbors """
 						thisLandmarksBloomNeighbors.append((j, k, dist, diffVal, landmarks_G[j][1], landmarks_G[k][1], landmarks_G[j][0], landmarks_G[k][0]))
 
@@ -226,27 +226,27 @@ for k in range(len(resultStrings)-1):
 			#	print result
 
 
-			print "max:", maxDiff
+			print("max:", maxDiff)
 
 			maxDiff = 0.0
-			print "minResults:"
+			print("minResults:")
 			for minResult in minResults:
-				print minResult[3]
+				print(minResult[3])
 
 				if minResult[3] > maxDiff:
 					maxDiff = minResult[3]
-			print "max:", maxDiff
+			print("max:", maxDiff)
 
 			isReject = False
-			print "bloom neighbors:"
+			print("bloom neighbors:")
 			for result in bloomNearestNeighbors:
 
 				if len(result) > 1:
-					print result[0][2], result[1][2]
+					print(result[0][2], result[1][2])
 					if result[0][2] > 0.4 or result[1][2] > 0.4:
 						isReject = True
 				else:
-					print result[0][2]
+					print(result[0][2])
 					if result[0][2] > 0.4:
 						isReject = True
 

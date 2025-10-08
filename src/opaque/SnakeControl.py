@@ -1,4 +1,4 @@
-from ControlError import ControlError
+from .ControlError import ControlError
 
 class SnakeControl():
 

@@ -1,14 +1,14 @@
 #import PoseGraph
-import BayesMapper
-from LocalNode import LocalNode, getLongestPath
-from Pose import Pose
+from . import BayesMapper
+from .LocalNode import LocalNode, getLongestPath
+from .Pose import Pose
 import pylab
-import gen_icp
+from . import gen_icp
 from numpy import matrix
 from random import random, gauss
-import functions
+from . import functions
 from copy import copy
-from SplineFit import SplineFit
+from .SplineFit import SplineFit
 import math
 import graph
 from subprocess import Popen, PIPE
@@ -17,7 +17,7 @@ from PIL import Image
 import sys
 import alphamod
 
-import cPickle as pickle
+import pickle as pickle
 
 class MapLoader:
 
@@ -31,7 +31,7 @@ class MapLoader:
 		#self.mapAlgorithm = PoseGraph.PoseGraph(self.probe, self.contacts)	
 		self.mapAlgorithm = BayesMapper.BayesMapper(self.probe.getWalls(), args = self.args)	
 
-		print "mapAlgorithm:", self
+		print("mapAlgorithm:", self)
 
 		self.localNodes = []
 
@@ -40,18 +40,18 @@ class MapLoader:
 
 	def restorePickle(self, dirName, nodeID):
 		PIXELSIZE = 0.05
-		print self
+		print(self)
 
 		with open(dirName + '/' + 'map_%04u.obj' % nodeID, 'rb') as inputVal:
-			print pickle
-			print inputVal
-			print self
-			print self.mapAlgorithm
+			print(pickle)
+			print(inputVal)
+			print(self)
+			print(self.mapAlgorithm)
 			self.mapAlgorithm = pickle.load(inputVal)
-			print self.mapAlgorithm
+			print(self.mapAlgorithm)
 			self.mapAlgorithm.saveState()
 
-			for val in self.mapAlgorithm.mapHyps.values():
+			for val in list(self.mapAlgorithm.mapHyps.values()):
 				self.mapAlgorithm.drawPathAndHull2(val)
 
 			#self.mapAlgorithm.loadSeries("../results/result_2013_08_24_cross", 238)
@@ -80,7 +80,7 @@ class MapLoader:
 
 		for i in range(startID, endID+1):
 
-			print "loading node", i		
+			print("loading node", i)		
 			currNode = LocalNode(self.probe, self.contacts, i, 19, PIXELSIZE, useBloom = self.args.bloomFeature, useBend = self.args.bendFeature)		
 
 			currNode.readFromFile2(dirName, i)
@@ -103,7 +103,7 @@ class MapLoader:
 
 		PIXELSIZE = 0.05
 		for i in range(0, num_poses):
-			print "loading node", i		
+			print("loading node", i)		
 			currNode = LocalNode(self.probe, self.contacts, i, 19, PIXELSIZE, useBloom = self.args.bloomFeature, useBend = self.args.bendFeature)
 			currNode.readFromFile2(dirName, i)
 			self.localNodes.append(currNode)
@@ -114,7 +114,7 @@ class MapLoader:
 		PIXELSIZE = 0.05
 		for i in range(0, num_poses):
 
-			print "loading node", i		
+			print("loading node", i)		
 			#currNode = LocalNode(self.probe, self.contacts, i, 19, PIXELSIZE)
 
 			#currNode.readFromFile2(dirName, i)
@@ -136,7 +136,7 @@ class MapLoader:
 		PIXELSIZE = 0.05
 		for i in range(0, num_poses):
 
-			print "loading node", i			
+			print("loading node", i)			
 			currNode = LocalNode(self.probe, self.contacts, i, 19, PIXELSIZE, useBloom = self.args.bloomFeature, useBend = self.args.bendFeature)
 			currNode.readFromFile2(dirName, i)
 			self.localNodes.append(currNode)
@@ -152,7 +152,7 @@ class MapLoader:
 		
 		for i in range(num_poses+2, num_poses+70):
 
-			print "loading node", i		
+			print("loading node", i)		
 			currNode = LocalNode(self.probe, self.contacts, i, 19, PIXELSIZE,  useBloom = self.args.bloomFeature, useBend = self.args.bendFeature)
 			currNode.readFromFile2(dirName, i)
 			self.localNodes.append(currNode)

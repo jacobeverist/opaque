@@ -1,18 +1,18 @@
-from SnakeControl import SnakeControl
+from .SnakeControl import SnakeControl
 from copy import *
 from math import *
 import time
 
-from behaviors.AnchorTransition import AnchorTransition
-from behaviors.HoldTransition import HoldTransition
-from behaviors.HoldPosition import HoldPosition
-from behaviors.FrontExtend import FrontExtend
-from behaviors.PokeWalls import PokeWalls
-from behaviors.PathStep import PathStep
-from behaviors.AdaptiveStep import AdaptiveStep
+from .behaviors.AnchorTransition import AnchorTransition
+from .behaviors.HoldTransition import HoldTransition
+from .behaviors.HoldPosition import HoldPosition
+from .behaviors.FrontExtend import FrontExtend
+from .behaviors.PokeWalls import PokeWalls
+from .behaviors.PathStep import PathStep
+from .behaviors.AdaptiveStep import AdaptiveStep
 
-from pose.AverageContacts import AverageContacts
-from maps.MapGraph import MapGraph
+from .pose.AverageContacts import AverageContacts
+from .maps.MapGraph import MapGraph
 
 import numpy
 import sys
@@ -322,7 +322,7 @@ class TestModular(SnakeControl):
 			#self.globalState = 6
 			self.currPose = self.contacts.getAverageSegPose(0)
 
-			print "Start Time:", time.clock()
+			print("Start Time:", time.clock())
 
 
 			
@@ -345,7 +345,7 @@ class TestModular(SnakeControl):
 
 				self.currPose = self.contacts.getAverageSegPose(0)
 				deltaDist = sqrt((self.currPose[0]-self.lastPose[0])**2 + (self.currPose[1]-self.lastPose[1])**2)
-				print "deltaDist =", deltaDist
+				print("deltaDist =", deltaDist)
 	
 				#print "Stop Time:", time.clock()
 
@@ -409,7 +409,7 @@ class TestModular(SnakeControl):
 			isDone = self.doReturnToRest()
 			
 			if isDone:
-				print "Stop Time:", time.clock()
+				print("Stop Time:", time.clock())
 
 				self.isCapture = False
 
@@ -445,7 +445,7 @@ class TestModular(SnakeControl):
 				foreAvg = frontSum / len(frontProbeError)
 				
 				
-				print "foreAvg =", foreAvg
+				print("foreAvg =", foreAvg)
 				#foreAvg = 2.0
 				#foreAvg = 0.0
 				if foreAvg >= 1.4:
@@ -513,7 +513,7 @@ class TestModular(SnakeControl):
 		" create the first behavior "
 		if self.localState == 0:
 			
-			print "START:  doHoldPosition()"
+			print("START:  doHoldPosition()")
 			
 			self.behavior = HoldPosition(self.robotParam)
 			self.behavior.reset(probeState)
@@ -538,7 +538,7 @@ class TestModular(SnakeControl):
 				
 				self.isAnchored = True
 				
-				print "FINISH:  doHoldPosition()"
+				print("FINISH:  doHoldPosition()")
 				return True
 		
 		return False		
@@ -551,7 +551,7 @@ class TestModular(SnakeControl):
 		" create the first behavior "
 		if self.localState == 0:
 			
-			print "START:  doInitAnchor()"
+			print("START:  doInitAnchor()")
 			
 			self.behavior = AnchorTransition(self.robotParam)
 			
@@ -571,7 +571,7 @@ class TestModular(SnakeControl):
 				
 				self.isAnchored = True
 				
-				print "FINISH:  doInitAnchor()"
+				print("FINISH:  doInitAnchor()")
 				return True
 		
 		return False
@@ -583,7 +583,7 @@ class TestModular(SnakeControl):
 
 		" create the first behavior "
 		if self.localState == 0:
-			print "START:  doFrontExtend()"
+			print("START:  doFrontExtend()")
 
 			self.lastPose = self.contacts.getAveragePose(0)
 			
@@ -621,7 +621,7 @@ class TestModular(SnakeControl):
 				self.behavior = 0
 				self.holdP = 0
 				
-				print "FINISH:  doFrontExtend()"
+				print("FINISH:  doFrontExtend()")
 				return True
 			
 		return False
@@ -632,7 +632,7 @@ class TestModular(SnakeControl):
 		probeState = self.probe.getProbeState()
 				
 		if self.localState == 0:
-			print "START:  doAdaptiveStep()"
+			print("START:  doAdaptiveStep()")
 			
 			self.behavior = AdaptiveStep(self.robotParam, probeState, self.contacts, self.mapGraph, self.direction)
 			self.behavior.reset(probeState)
@@ -664,7 +664,7 @@ class TestModular(SnakeControl):
 				self.behavior = 0
 				self.localState = 0
 				
-				print "FINISH:  doAdaptiveStep()"
+				print("FINISH:  doAdaptiveStep()")
 				return True
 			
 		return False
@@ -675,7 +675,7 @@ class TestModular(SnakeControl):
 		probeState = self.probe.getProbeState()
 				
 		if self.localState == 0:
-			print "START:  doPokeWalls()"
+			print("START:  doPokeWalls()")
 
 			self.behavior = PokeWalls(self.robotParam, self.contacts, direction, self.mapGraph.obstCallBack)
 			
@@ -718,7 +718,7 @@ class TestModular(SnakeControl):
 				self.behavior = 0
 				self.localState = 0
 			
-				print "FINISH:  doPokeWalls()"
+				print("FINISH:  doPokeWalls()")
 				return True
 			
 		return False
@@ -731,7 +731,7 @@ class TestModular(SnakeControl):
 		" create the first behavior "
 		if self.localState == 0:
 			
-			print "START:  doReturnToRest()"
+			print("START:  doReturnToRest()")
 			
 			self.behavior = HoldTransition(self.robotParam)
 			self.behavior.reset(self.restState)
@@ -755,7 +755,7 @@ class TestModular(SnakeControl):
 				self.localState = 0
 				self.behavior = 0
 
-				print "FINISH:  doReturnToRest()"
+				print("FINISH:  doReturnToRest()")
 				return True
 								
 		return False
@@ -768,7 +768,7 @@ class TestModular(SnakeControl):
 		" create the first behavior "
 		if self.localState == 0:
 	
-			print "START:  doPathStep()", direction
+			print("START:  doPathStep()", direction)
 
 			" instantiate the behavior "
 			self.behavior = PathStep(self.robotParam, probeState, self.contacts, self.mapGraph)
@@ -815,7 +815,7 @@ class TestModular(SnakeControl):
 				self.localState = 0
 				self.behavior = 0
 	
-				print "FINISH:  doPathStep()"
+				print("FINISH:  doPathStep()")
 				return True
 	
 		return False
@@ -829,7 +829,7 @@ class TestModular(SnakeControl):
 		" manage the paths "
 		if self.localPathState == 0:
 			
-			print "START:  doPathFollow()"
+			print("START:  doPathFollow()")
 			self.targetReached = False
 			
 			self.localDirection = True
@@ -837,9 +837,9 @@ class TestModular(SnakeControl):
 			self.localWayPoints = deepcopy(wayPoints)
 			self.localWayPaths = deepcopy(wayPaths)
 
-			print len(self.localWayPoints), "wayPoints"
+			print(len(self.localWayPoints), "wayPoints")
 			for i in range(len(self.localWayPoints)):
-				print self.localWayPoints[i]
+				print(self.localWayPoints[i])
 			
 			self.currPose = self.contacts.getAverageSegPose(0)
 
@@ -857,7 +857,7 @@ class TestModular(SnakeControl):
 				" determine distance to the next way point "
 				dest = self.localWayPoints[0]			
 				self.lastDist = sqrt((dest[0]-self.currPose[0])**2 + (dest[1]-self.currPose[1])**2)
-				print "lastDist: ", self.lastDist
+				print("lastDist: ", self.lastDist)
 				
 			self.distCount = 0
 			self.localPathState = 1
@@ -877,7 +877,7 @@ class TestModular(SnakeControl):
 			" check if we've crossed the destination "
 			if dist < 0.1:
 				if not self.targetReached:
-					print "target reached at wayPoint:", dest
+					print("target reached at wayPoint:", dest)
 				self.targetReached = True
 			
 			if isDone:
@@ -892,7 +892,7 @@ class TestModular(SnakeControl):
 
 				self.currPose = self.contacts.getAverageSegPose(0)
 				deltaDist = sqrt((self.currPose[0]-self.lastPose[0])**2 + (self.currPose[1]-self.lastPose[1])**2)
-				print "deltaDist =", deltaDist
+				print("deltaDist =", deltaDist)
 
 
 				self.localPathState = 2
@@ -945,7 +945,7 @@ class TestModular(SnakeControl):
 					
 					totalDist = distA + distB + pathLen
 					
-					print "distance from", dest, "to", self.currPose, "=", totalDist
+					print("distance from", dest, "to", self.currPose, "=", totalDist)
 					
 					" FIXME: need better directional detection when more complicated maps "
 					" check if we're going away from our target "
@@ -954,8 +954,8 @@ class TestModular(SnakeControl):
 					else:
 						self.distCount = 0
 					
-					print "lastDist =", self.lastDist
-					print "distCount =", self.distCount
+					print("lastDist =", self.lastDist)
+					print("distCount =", self.distCount)
 					self.lastDist = totalDist
 
 					" if we've reached our target after this step, go to next waypoint "
@@ -973,14 +973,14 @@ class TestModular(SnakeControl):
 							" all points traveled, end behavior "
 							self.localPathState = 0
 							
-							print "FINISH:  doPathFollow()"
+							print("FINISH:  doPathFollow()")
 							self.drawThings.drawPath([])
 
 							return True
 							
 						#elif self.distCount >= 2:
 					elif self.distCount >= 1:
-						print "changing direction from", self.localDirection, "to", not self.localDirection
+						print("changing direction from", self.localDirection, "to", not self.localDirection)
 						" if we're going the wrong way, reverse our direction "
 						self.localDirection = not self.localDirection
 						self.lastDist = 1e100
@@ -1054,7 +1054,7 @@ class TestModular(SnakeControl):
 					frontSum += n
 				foreAvg = frontSum / len(frontProbeError)
 							
-				print "PathFollow: foreAvg =", foreAvg
+				print("PathFollow: foreAvg =", foreAvg)
 															
 		return False				
 

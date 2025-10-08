@@ -32,7 +32,7 @@ if __name__ =="__main__":
 	xP = []
 	yP = []
 	for p in points2:
-		print p
+		print(p)
 		xP.append(p[0])
 		yP.append(p[1])
 		

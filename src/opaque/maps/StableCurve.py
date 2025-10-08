@@ -8,7 +8,7 @@ from math import floor, asin, acos
 from time import time
 from numpy import linspace, concatenate
 
-from Pose import Pose
+from .Pose import Pose
 import pca_module
 import scipy
 
@@ -387,14 +387,14 @@ if __name__ == '__main__':
         f = open(dirName + "/posture%04u.txt" % i, 'r')
         localPostures.append(eval(f.read().rstrip()))
         f.close()
-    print len(localPostures), numPoses
-    print time()
+    print(len(localPostures), numPoses)
+    print(time())
     for i in range(numPoses):    
         " compute a fitted curve of a center point "
         centerCurves.append(SplineFit(localPostures[i], smooth = 0.5, kp = 2))
         vec = centerCurves[i].getUVector(0.5)
         pnt = centerCurves[i].getU(0.5)
 
-    print time()
+    print(time())
         
 

@@ -173,7 +173,7 @@ def closestSegPoint(seg, tPoint):
 	except:
 
 		# find the point on a segment that is closest to "tPoint"
-		print "failed finding closest point of seg", seg, "to tPoint", tPoint
+		print("failed finding closest point of seg", seg, "to tPoint", tPoint)
 
 		raise
 
@@ -210,7 +210,7 @@ class MapMaker:
 
 	def done(self):
 		toDel = []
-		for k, v in self.activeSegments.iteritems():
+		for k, v in self.activeSegments.items():
 			toDel.append(k)
 		for k in toDel:
 			self.delSeg(k)
@@ -218,7 +218,7 @@ class MapMaker:
 
 	def getSegs(self):
 		segIDs = []
-		for k, v in self.activeSegments.iteritems():
+		for k, v in self.activeSegments.items():
 			segIDs.append(k)
 
 		return segIDs
@@ -479,7 +479,7 @@ class MapMaker:
 
 	def draw(self):
 
-		print "walls =", repr(self.walls)
+		print("walls =", repr(self.walls))
 
 		pylab.clf()
 		
@@ -787,7 +787,7 @@ class PipeJunctions:
 
 		" establish the spline for the main branch "
 		intArray = [[],[]]
-		print self.nodes
+		print(self.nodes)
 		for n in self.nodes:
 			point = self.pathTree.get_node_attributes(n)
 			intArray[0].append(point[0])
@@ -973,7 +973,7 @@ class PipeJunctions:
 		#if results[0][0] and results[1][0]:
 		if results[0][0] and results[1][0] and results[0][2][0] < results[1][2][0]:
 			" Graft branch onto the right side "	
-			print "right graft on ", mapCount, results[0][2], results[1][2]
+			print("right graft on ", mapCount, results[0][2], results[1][2])
 
 			"main up to intersection"			
 			newWall = deepcopy(R_Main[0:results[0][2][0]])
@@ -1001,7 +1001,7 @@ class PipeJunctions:
 		elif results[2][0] and results[3][0] and results[2][2][0] > results[3][2][0]:
 			" Graft branch onto the left side "			
 
-			print "left graft on ", mapCount, results[2][2], results[3][2]
+			print("left graft on ", mapCount, results[2][2], results[3][2])
 
 		
 		
@@ -1517,7 +1517,7 @@ class ForkEnv:
 		#if results[0][0] and results[1][0]:
 		if results[0][0] and results[1][0] and results[0][2][0] < results[1][2][0]:
 			" Graft branch onto the right side "	
-			print "right graft on ", mapCount, results[0][2], results[1][2]
+			print("right graft on ", mapCount, results[0][2], results[1][2])
 
 			"main up to intersection"			
 			newWall = deepcopy(R_Main[0:results[0][2][0]])
@@ -1545,7 +1545,7 @@ class ForkEnv:
 		elif results[2][0] and results[3][0] and results[2][2][0] > results[3][2][0]:
 			" Graft branch onto the left side "			
 
-			print "left graft on ", mapCount, results[2][2], results[3][2]
+			print("left graft on ", mapCount, results[2][2], results[3][2])
 
 		
 		
@@ -1991,12 +1991,12 @@ class Corridor:
 			wallCount = 0
 			self.wall1, self.wall2 = self.createWalls()
 
-			print "checkA"
+			print("checkA")
 
 			while not self.checkConstraints():
 				wallCount += 1
 
-				print "checkB"
+				print("checkB")
 				if wallCount > 10:
 					#print "wallCount =", wallCount
 					break
@@ -2067,7 +2067,7 @@ class Corridor:
 			lY = self.wall2.points[0][1]
 			width = (self.pipeMax + self.pipeMin)/2.0
 			dLy = -width/2.0 - lY 
-			print lY, width, dLy
+			print(lY, width, dLy)
 
 			#print "offseting by", dLx
 
@@ -2106,25 +2106,25 @@ class Corridor:
 				self.wall2.points[i][1] += yAdj
 
 
-			print "entrance points:", self.wall1.points[0], self.wall2.points[0]
+			print("entrance points:", self.wall1.points[0], self.wall2.points[0])
 
-			print "checkC"
+			print("checkC")
 			
 			# now verify the walls again
 			if self.checkConstraints():
-				print "generated after", self.genCount
+				print("generated after", self.genCount)
 
 				self.wall1.points.reverse()
 				return
 			
 
-			print "checkD"
+			print("checkD")
 
 			# start over
 			self.genCount += 1
 
 			if self.genCount >= 100:
-				print "Generation failed after 100 iterations!"
+				print("Generation failed after 100 iterations!")
 				raise
 
 	def writeToFile(self, testDir):
@@ -2227,7 +2227,7 @@ class Corridor:
 			leftP[1].append(self.dir[0][i]*sin(-pi/2) + self.dir[1][i]*cos(-pi/2))
 
 
-		print "pos:", self.pos[0][0], self.pos[1][0]
+		print("pos:", self.pos[0][0], self.pos[1][0])
 
 		points = []
 
@@ -2457,7 +2457,7 @@ class Wall:
 	def getLenPos(self, dist):
 		
 		if dist > self.totalLen or dist < 0.0:
-			print "value", dist, "outside the length of wall"
+			print("value", dist, "outside the length of wall")
 			raise
 
 		for i in range(0,len(self.lengths)):
@@ -2467,18 +2467,18 @@ class Wall:
 				xPos = startPos[0]
 				yPos = startPos[1]
 
-				print "starting position =", startPos
+				print("starting position =", startPos)
 
 				lastDist = self.lengths[i-1]
 				diffDist = dist - lastDist
 
-				print "lastDist =", lastDist
-				print "diffDist =", diffDist
+				print("lastDist =", lastDist)
+				print("diffDist =", diffDist)
 
 				xPos += diffDist * cos(startPos[2])
 				yPos += diffDist * sin(startPos[2])
 
-				print "result =", xPos,yPos
+				print("result =", xPos,yPos)
 
 				return [xPos, yPos]
 				

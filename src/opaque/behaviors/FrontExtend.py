@@ -1,6 +1,6 @@
-from Behavior import *
-from HoldSlideTransition import HoldSlideTransition
-from HoldPosition import HoldPosition
+from .Behavior import *
+from .HoldSlideTransition import HoldSlideTransition
+from .HoldPosition import HoldPosition
 from math import sqrt
 from copy import copy
 
@@ -122,7 +122,7 @@ class FrontExtend(Behavior):
 			
 			if self.direction:
 				self.topJoint = self.spliceJoint
-				joints = range(self.spliceJoint,self.numJoints)
+				joints = list(range(self.spliceJoint,self.numJoints))
 				for i in joints:
 					if self.mask[i] == 0.0:
 						self.topJoint = i
@@ -130,7 +130,7 @@ class FrontExtend(Behavior):
 						break
 			else:
 				self.topJoint = self.spliceJoint
-				joints = range(0, self.spliceJoint+1)
+				joints = list(range(0, self.spliceJoint+1))
 				joints.reverse()
 				for i in joints:
 					if self.mask[i] == 0.0:
@@ -139,7 +139,7 @@ class FrontExtend(Behavior):
 						break
 
 			if avgDist < 0.001:
-				print "detected obstruction!", avgDist, "with topJoint =", self.topJoint
+				print("detected obstruction!", avgDist, "with topJoint =", self.topJoint)
 				isDone = True
 
 			if isDone:

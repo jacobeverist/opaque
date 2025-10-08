@@ -1,17 +1,17 @@
 import multiprocessing as processing
 import ctypes, os, sys
-from SplineFit import SplineFit
-import gen_icp
-from Pose import Pose
-from Splices import batchGlobalMultiFit, getMultiDeparturePoint, orientPath, orientPathLean
-from functions import *
-from StableCurve import StableCurve
+from .SplineFit import SplineFit
+from . import gen_icp
+from .Pose import Pose
+from .Splices import batchGlobalMultiFit, getMultiDeparturePoint, orientPath, orientPathLean
+from .functions import *
+from .StableCurve import StableCurve
 import math
 from operator import itemgetter
 import time
 import pylab
-from landmarks import *
-from shoots import *
+from .landmarks import *
+from .shoots import *
 
 import traceback 
 import cProfile
@@ -94,7 +94,7 @@ def getInPlaceGuess(poseData, nodeID1, nodeID2, estPose1, estPose2, supportLine,
 		#estPose1 = mapHyp.nodePoses[nodeID1]		
 		resultSum3 = checkSupport(estPose1, medial2, nodeID1, nodeID2, offset3, supportLine)
 
-	print "INPLACE sums:", resultSum1, resultSum3
+	print("INPLACE sums:", resultSum1, resultSum3)
 
 	#poseOrigin = Pose(mapHyp.nodePoses[nodeID1])
 	poseOrigin = Pose(estPose1)
@@ -545,7 +545,7 @@ def makeMultiJunctionMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose
 						angleSum2 += ang2
 				
 				" select global path orientation based on which has the smallest angle between tangent vectors "
-				print i, "angleSum1 =", angleSum1, "angleSum2 =", angleSum2
+				print(i, "angleSum1 =", angleSum1, "angleSum2 =", angleSum2)
 				if angleSum1 > angleSum2:
 					medial2Reverse = deepcopy(medial2)
 					medial2Reverse.reverse()
@@ -585,7 +585,7 @@ def makeMultiJunctionMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose
 					moveDist = -0.3
 					u2 = medialSpline2.getUOfDist(originU2, moveDist, distIter = 0.001)
 				
-				print "computed u2 =", u2, "from originU2 =", originU2
+				print("computed u2 =", u2, "from originU2 =", originU2)
 
 				u1 = originU1
 				angGuess = 0.0
@@ -594,7 +594,7 @@ def makeMultiJunctionMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose
 
 				transform = matrix([[result[0]], [result[1]], [result[2]]])
 				
-				print "making overlap constraint:", result[0], result[1], result[2]
+				print("making overlap constraint:", result[0], result[1], result[2])
 				
 				angDiff = abs(diffAngle(diffOffset[2], transform[2,0]))			
 				#totalGuesses.append((angDiff, result[2], result[3], result[4]))
@@ -701,7 +701,7 @@ def makeMultiJunctionMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose
 						angleSum2 += ang2
 				
 				" select global path orientation based on which has the smallest angle between tangent vectors "
-				print i, "angleSum1 =", angleSum1, "angleSum2 =", angleSum2
+				print(i, "angleSum1 =", angleSum1, "angleSum2 =", angleSum2)
 				if angleSum1 > angleSum2:
 					medial2Reverse = deepcopy(medial2)
 					medial2Reverse.reverse()
@@ -720,7 +720,7 @@ def makeMultiJunctionMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose
 					originU1 = 0.6
 					originU2 = 0.4
 					u2 = originU2
-					print "computed u2 =", u2, "from originU2 =", originU2
+					print("computed u2 =", u2, "from originU2 =", originU2)
 
 				else:
 					poseOrigin = Pose(estPose1)
@@ -747,7 +747,7 @@ def makeMultiJunctionMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose
 
 				transform = matrix([[result[0]], [result[1]], [result[2]]])
 				
-				print "making overlap constraint:", result[0], result[1], result[2]
+				print("making overlap constraint:", result[0], result[1], result[2])
 				
 				angDiff = abs(diffAngle(diffOffset[2], transform[2,0]))			
 
@@ -799,10 +799,10 @@ def makeMultiJunctionMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose
 	
 	results.sort(reverse=True)
 	
-	print "Multi-Junction Overlap of", nodeID1, "and", nodeID2
+	print("Multi-Junction Overlap of", nodeID1, "and", nodeID2)
 	selectedIndex = 0
 	for k in range(len(results)):
-		print results[k]
+		print(results[k])
 		
 
 	for k in range(len(results)):
@@ -848,7 +848,7 @@ def makeMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose1, estPose2, 
 		originU2 = 0.5
 		
 		u2 = originU2
-		print "computed u2 =", u2, "from originU2 =", originU2
+		print("computed u2 =", u2, "from originU2 =", originU2)
 
 	elif isMove:
 		
@@ -890,7 +890,7 @@ def makeMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose1, estPose2, 
 			
 			
 			#u2 = 0.4
-		print "computed u2 =", u2, "from originU2 =", originU2
+		print("computed u2 =", u2, "from originU2 =", originU2)
 		 
 	else:
 		poseOrigin = Pose(estPose1)
@@ -919,13 +919,13 @@ def makeMedialOverlapConstraint(poseData, nodeID1, nodeID2, estPose1, estPose2, 
 
 	transform = matrix([[result[0]], [result[1]], [result[2]]])
 	
-	print "making overlap constraint:", result[0], result[1], result[2]
+	print("making overlap constraint:", result[0], result[1], result[2])
 
 	return transform, hist
 
 @logFunction
 def generateAll(hypSet):
-	for pID, mapHyp in hypSet.iteritems():
+	for pID, mapHyp in hypSet.items():
 		generateMap(mapHyp)
 
 @logFunction
@@ -938,19 +938,19 @@ def generateMap(mapHyp):
 @logFunction
 def addToPaths2(shootIDs, particleIDs, hypSet, nodeID1, nodeID2):
 
-	poseData = hypSet.values()[0].poseData
+	poseData = list(hypSet.values())[0].poseData
 
 	newHyps = {}
 
 	" IF THIS IS THE FIRST NODES IN THE FIRST PATH, JUST ADD THEM AS DEFAULT, DO NOTHING "
 	isFirst = False
-	for pID, mapHyp in hypSet.iteritems():
+	for pID, mapHyp in hypSet.items():
 		if len(mapHyp.paths[0]) == 0:
-			print "this is first nodes, just add them already!"
+			print("this is first nodes, just add them already!")
 			isFirst = True
 
 	if isFirst:
-		for pID, mapHyp in hypSet.iteritems():
+		for pID, mapHyp in hypSet.items():
 			mapHyp.addNode(nodeID1,0)
 			mapHyp.addNode(nodeID2,0)
 	
@@ -961,13 +961,13 @@ def addToPaths2(shootIDs, particleIDs, hypSet, nodeID1, nodeID2):
 		return shootIDs, particleIDs, hypSet
 
 
-	for pID, mapHyp in hypSet.iteritems():
+	for pID, mapHyp in hypSet.items():
 		generateMap(mapHyp)
 
 	""" check branching of local spline from member path """
 	computeLocalDivergence2(hypSet, nodeID1, nodeID2)
 
-	for pID, mapHyp in hypSet.iteritems():
+	for pID, mapHyp in hypSet.items():
 		mapHyp.isNotBranched = True
 		mapHyp.isSplit = False
 
@@ -985,14 +985,14 @@ def addToPaths2(shootIDs, particleIDs, hypSet, nodeID1, nodeID2):
 
 	genSet = {}
 	nonSet = {}
-	for pID, currHyp in hypSet.iteritems():
+	for pID, currHyp in hypSet.items():
 		if not currHyp.isNotBranched:
 			genSet[pID] = currHyp
 		else:
 			nonSet[pID] = currHyp
 
 
-	for pID, mapHyp in genSet.iteritems():
+	for pID, mapHyp in genSet.items():
 		generateMap(mapHyp)
 
 	nonSet.update(genSet)
@@ -1003,9 +1003,9 @@ def addToPaths2(shootIDs, particleIDs, hypSet, nodeID1, nodeID2):
 @logFunction
 def addNodesToShoot(hypSet, nodeID1, nodeID2):
 
-	poseData = hypSet.values()[0].poseData
+	poseData = list(hypSet.values())[0].poseData
 
-	for pID, mapHyp in hypSet.iteritems():
+	for pID, mapHyp in hypSet.items():
 
 
 		medialAxis1 = mapHyp.poseData.medialAxes[nodeID1]
@@ -1031,11 +1031,11 @@ def addNodesToShoot(hypSet, nodeID1, nodeID2):
 		" GET THE ORDERED LIST OF OVERLAPPING PATHS FOR EACH NODE "
 
 		memberShootIDs1 = mapHyp.memberShootIDs1
-		print "memberShootIDs1:", memberShootIDs1
+		print("memberShootIDs1:", memberShootIDs1)
 
 		isNewID = False
 		for shootID in memberShootIDs1:
-			if shootID not in mapHyp.globalLongPaths.keys():
+			if shootID not in list(mapHyp.globalLongPaths.keys()):
 				isNewID = True
 				mapHyp.addNode(nodeID1,shootID)
 
@@ -1080,11 +1080,11 @@ def addNodesToShoot(hypSet, nodeID1, nodeID2):
 
 
 		memberShootIDs2 = mapHyp.memberShootIDs2
-		print "memberShootIDs2:", memberShootIDs2
+		print("memberShootIDs2:", memberShootIDs2)
 
 		isNewID = False
 		for shootID in memberShootIDs2:
-			if shootID not in mapHyp.globalLongPaths.keys():
+			if shootID not in list(mapHyp.globalLongPaths.keys()):
 				isNewID = True
 				mapHyp.addNode(nodeID2,shootID)
 
@@ -1136,9 +1136,9 @@ def addNodesToShoot(hypSet, nodeID1, nodeID2):
 @logFunction
 def computeLocalDivergence2(hypSet, nodeID1, nodeID2):
 
-	poseData = hypSet.values()[0].poseData
+	poseData = list(hypSet.values())[0].poseData
 
-	for pID, mapHyp in hypSet.iteritems():
+	for pID, mapHyp in hypSet.items():
 
 
 		medialAxis1 = mapHyp.poseData.medialAxes[nodeID1]
@@ -1284,10 +1284,10 @@ def checkForeBranch2(hypSet, nodeID1, nodeID2, shootIDs, particleIDs):
 	ANG_THRESH = 1.047
 
 	newHyps = {}
-	poseData = hypSet.values()[0].poseData
+	poseData = list(hypSet.values())[0].poseData
 
 
-	for pID, mapHyp in hypSet.iteritems():
+	for pID, mapHyp in hypSet.items():
 		
 		departurePoint1, depAngle1, isInterior1, isExist1, discDist1, maxFront, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, maxBack, contigFrac, overlapSum, angDiff2, spliceIndex = mapHyp.departureResultSet1
 
@@ -1307,20 +1307,20 @@ def checkForeBranch2(hypSet, nodeID1, nodeID2, shootIDs, particleIDs):
 		depAngles2 = [depAngle1, depAngle2]
 		contig2 = (contigFrac, overlapSum)
 
-		print "F node departures", nodeID1, ":", departures1
-		print "F node departures", nodeID2, ":", departures2
-		print "F node  interiors", nodeID1, ":", interiors1
-		print "F node  interiors", nodeID2, ":", interiors2
-		print "F node contiguity", nodeID1, ":", contig1
-		print "F node contiguity", nodeID2, ":", contig2
-		print "F node depPoints", nodeID1, ":", depPoints1
-		print "F node depPoints", nodeID2, ":", depPoints2
-		print "F node distances", nodeID1, ":", distances1
-		print "F node distances", nodeID2, ":", distances2
-		print "F node depAngles", nodeID1, ":", depAngles1
-		print "F node depAngles", nodeID2, ":", depAngles2
-		print "F node contig", nodeID1, ":", contig1
-		print "F node contig", nodeID2, ":", contig2
+		print("F node departures", nodeID1, ":", departures1)
+		print("F node departures", nodeID2, ":", departures2)
+		print("F node  interiors", nodeID1, ":", interiors1)
+		print("F node  interiors", nodeID2, ":", interiors2)
+		print("F node contiguity", nodeID1, ":", contig1)
+		print("F node contiguity", nodeID2, ":", contig2)
+		print("F node depPoints", nodeID1, ":", depPoints1)
+		print("F node depPoints", nodeID2, ":", depPoints2)
+		print("F node distances", nodeID1, ":", distances1)
+		print("F node distances", nodeID2, ":", distances2)
+		print("F node depAngles", nodeID1, ":", depAngles1)
+		print("F node depAngles", nodeID2, ":", depAngles2)
+		print("F node contig", nodeID1, ":", contig1)
+		print("F node contig", nodeID2, ":", contig2)
 
 		" new junction finding logic "
 		" if terminal departures for each medial axis are None or exterior, than we stay on existing paths "
@@ -1355,7 +1355,7 @@ def checkForeBranch2(hypSet, nodeID1, nodeID2, shootIDs, particleIDs):
 		elif not isFront1 and isFront2:
 			dirFlag = 1
 		else:
-			print isFront1, isFront2
+			print(isFront1, isFront2)
 			raise	
 
 
@@ -1374,10 +1374,10 @@ def checkForeBranch2(hypSet, nodeID1, nodeID2, shootIDs, particleIDs):
 
 		if hasLandmark1 or hasLandmark2:
 			hasSpatialFeature = True
-			print "current pair", nodeID1, nodeID2, "has spatial landmark feature(s)", depPoint1, depPoint2
+			print("current pair", nodeID1, nodeID2, "has spatial landmark feature(s)", depPoint1, depPoint2)
 		else:
 			hasSpatialFeature = False
-			print "current pair", nodeID1, nodeID2, "has no spatial landmark feature and cannot branch", depPoint1, depPoint2
+			print("current pair", nodeID1, nodeID2, "has no spatial landmark feature and cannot branch", depPoint1, depPoint2)
 
 			#print "REJECT, diverging pose has no spatial landmark feature", nodeID1, pathID, neighborCount, depPoint
 			#return False, parentPathID
@@ -1496,9 +1496,9 @@ def checkBackBranch2(hypSet, nodeID1, nodeID2, shootIDs, particleIDs):
 	ANG_THRESH = 1.047
 
 	newHyps = {}
-	poseData = hypSet.values()[0].poseData
+	poseData = list(hypSet.values())[0].poseData
 
-	for pID, mapHyp in hypSet.iteritems():
+	for pID, mapHyp in hypSet.items():
 
 		departurePoint1, depAngle1, isInterior1, isExist1, discDist1, maxFront, departurePoint2, depAngle2, isInterior2, isExist2, discDist2, maxBack, contigFrac, overlapSum, angDiff2, spliceIndex = mapHyp.departureResultSet1
 
@@ -1519,20 +1519,20 @@ def checkBackBranch2(hypSet, nodeID1, nodeID2, shootIDs, particleIDs):
 		contig2 = (contigFrac, overlapSum)
 
 
-		print "B node departures", nodeID1, ":", departures1
-		print "B node departures", nodeID2, ":", departures2
-		print "B node  interiors", nodeID1, ":", interiors1
-		print "B node  interiors", nodeID2, ":", interiors2
-		print "B node contiguity", nodeID1, ":", contig1
-		print "B node contiguity", nodeID2, ":", contig2
-		print "B node depPoints", nodeID1, ":", depPoints1
-		print "B node depPoints", nodeID2, ":", depPoints2
-		print "B node distances", nodeID1, ":", distances1
-		print "B node distances", nodeID2, ":", distances2
-		print "B node depAngles", nodeID1, ":", depAngles1
-		print "B node depAngles", nodeID2, ":", depAngles2
-		print "B node contig", nodeID1, ":", contig1
-		print "B node contig", nodeID2, ":", contig2
+		print("B node departures", nodeID1, ":", departures1)
+		print("B node departures", nodeID2, ":", departures2)
+		print("B node  interiors", nodeID1, ":", interiors1)
+		print("B node  interiors", nodeID2, ":", interiors2)
+		print("B node contiguity", nodeID1, ":", contig1)
+		print("B node contiguity", nodeID2, ":", contig2)
+		print("B node depPoints", nodeID1, ":", depPoints1)
+		print("B node depPoints", nodeID2, ":", depPoints2)
+		print("B node distances", nodeID1, ":", distances1)
+		print("B node distances", nodeID2, ":", distances2)
+		print("B node depAngles", nodeID1, ":", depAngles1)
+		print("B node depAngles", nodeID2, ":", depAngles2)
+		print("B node contig", nodeID1, ":", contig1)
+		print("B node contig", nodeID2, ":", contig2)
 
 
 		backExist1 = departures1[1]
@@ -1560,7 +1560,7 @@ def checkBackBranch2(hypSet, nodeID1, nodeID2, shootIDs, particleIDs):
 		elif not isFront1 and isFront2:
 			dirFlag = 0
 		else:
-			print isFront1, isFront2
+			print(isFront1, isFront2)
 			raise	
 
 		sF1 = poseData.spatialFeatures[nodeID1][0]
@@ -1577,10 +1577,10 @@ def checkBackBranch2(hypSet, nodeID1, nodeID2, shootIDs, particleIDs):
 
 		if hasLandmark1 or hasLandmark2:
 			hasSpatialFeature = True
-			print "current pair", nodeID1, nodeID2, "has spatial landmark feature(s)", depPoint1, depPoint2
+			print("current pair", nodeID1, nodeID2, "has spatial landmark feature(s)", depPoint1, depPoint2)
 		else:
 			hasSpatialFeature = False
-			print "current pair", nodeID1, nodeID2, "has no spatial landmark feature and cannot branch", depPoint1, depPoint2
+			print("current pair", nodeID1, nodeID2, "has no spatial landmark feature and cannot branch", depPoint1, depPoint2)
 
 
 		parentPathID1 = 0

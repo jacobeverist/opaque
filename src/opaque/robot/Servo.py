@@ -3,7 +3,7 @@
 #import ogre.renderer.OGRE as ogre
 import ogre.physics.OgreOde as OgreOde
 from math import pi, modf
-from servo import commandServo
+from .servo import commandServo
 
 DEGREES_TO_RADIANS = pi / 180.0
 

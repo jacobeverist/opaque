@@ -42,7 +42,7 @@ size3 = img.size
 xSize = size3[0]
 ySize = size3[1] + size3[0]/2
 
-print xSize, ySize
+print(xSize, ySize)
 
 saveOcc = newImage = Image.new(img.mode, size1)
 saveObst = newImage = Image.new(img.mode, size2)

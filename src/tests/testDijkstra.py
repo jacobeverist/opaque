@@ -57,13 +57,13 @@ result4, cov4 = doTransform(result3, Tp2, cov3, Ep2)
 
 invMat = scipy.linalg.inv(cov4)
 
-print "invMat:", invMat
+print("invMat:", invMat)
 
 err = sqrt(transpose(result4) * invMat * result4)
 #results.append([err, i, j])
 
 
 
-print result4, cov4
-print err
+print(result4, cov4)
+print(err)
 

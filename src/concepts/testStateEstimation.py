@@ -112,7 +112,7 @@ for t in range(1,len(Obs)):
 			for f_j in range(3):  # f_j  (t+1)
 				newState[s_i,f_j] /= denomSum
 
-		print "go forward"
+		print("go forward")
 
 	elif currAct == 'b':
 		denomSum = 0.0
@@ -133,7 +133,7 @@ for t in range(1,len(Obs)):
 			for f_j in range(3):  # f_j  (t+1)
 				newState[s_i,f_j] /= denomSum
 
-		print "go backward"
+		print("go backward")
 	else:
 		raise
 
@@ -151,8 +151,8 @@ for t in range(1,len(Obs)):
 			probSum += newState[i,j] 
 
 
-	print currAct, currZ
-	print newState
+	print(currAct, currZ)
+	print(newState)
 	#print probState
 	#print probFeature
 	PI.append(newState)

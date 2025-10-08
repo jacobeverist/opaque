@@ -1,4 +1,4 @@
-from functions import *
+from .functions import *
 from copy import copy
 from numpy import array, dot, transpose
 from math import *
@@ -29,7 +29,7 @@ class Pose:
 			else:
 				self.vecAng = 0.0
 		except:
-			print "Pose angle fail, dist =", self.dist, "estPose =", self.estPose
+			print("Pose angle fail, dist =", self.dist, "estPose =", self.estPose)
 			self.vecAng = 0.0
 
 		#print "vecAng:", repr(self.vecAng)

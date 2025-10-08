@@ -1,8 +1,8 @@
 
-from Behavior import *
+from .Behavior import *
 import math
 
-from functions import LeftOnEdge
+from .functions import LeftOnEdge
 from math import pi , cos, sin, sqrt
 from numpy import arange
 from copy import copy
@@ -101,7 +101,7 @@ class FrontAnchorFit(Behavior):
 		if maxJoint > self.endNode:
 			maxJoint = self.endNode
 
-		ind = range(minJoint,maxJoint+1)
+		ind = list(range(minJoint,maxJoint+1))
 		ind.reverse()
 
 		minNode = self.numJoints-1
@@ -275,7 +275,7 @@ class FrontAnchorFit(Behavior):
 			maxJoint = self.endNode
 
 		# indices	
-		ind = range(minJoint,maxJoint+1)
+		ind = list(range(minJoint,maxJoint+1))
 		#print "ind =", ind
 		
 		maxNode = 0

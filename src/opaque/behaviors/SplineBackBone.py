@@ -6,7 +6,7 @@ if not dir in sys.path:
 
 from common import *
 
-from BackBoneIK import *
+from .BackBoneIK import *
 
 import ogre.renderer.OGRE as ogre
 from math import *

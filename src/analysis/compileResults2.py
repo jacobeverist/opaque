@@ -39,7 +39,7 @@ size2 = img.size
 xWidth = size[0]
 yWidth = size[1]
 
-print xWidth, yWidth
+print(xWidth, yWidth)
 
 for i in range(len(localOccMaps)):
 	xSize = xWidth

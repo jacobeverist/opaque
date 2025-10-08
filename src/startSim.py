@@ -8,7 +8,7 @@ import os
 import sys
 
 relPath = os.path.dirname(os.path.realpath(__file__))
-print relPath
+print(relPath)
 
 sys.path.insert(1,relPath)
 sys.path.insert(1,relPath + "/modules/")
@@ -113,7 +113,7 @@ def createTest():
 	#probe = BulletProbe(quat,pos,40,0.15,0.1,0.15,1000.0,1.0)
 	#probe = BulletProbe(quat,pos,40,0.15,0.1,0.15,1000.0,10.0)
 
-	print "args:", args
+	print("args:", args)
 
 	
 	drawThings = DrawThings(probe, hideWindow = args.hideWindow, restoreConfig = args.restoreConfig)
@@ -200,11 +200,11 @@ def startRun():
 		#cProfile.run('runTest(probe)', 'test_prof')
 	
 	except ControlError as inst:
-		print inst.value
+		print(inst.value)
 
 	except:
 		traceback.print_exc()
-		print "Exception:", sys.exc_info()[0]
+		print("Exception:", sys.exc_info()[0])
 	
 
 if __name__ == '__main__':
@@ -221,9 +221,9 @@ if __name__ == '__main__':
 		#cProfile.run('runTest(probe)', 'test_prof')
 	
 	except ControlError as inst:
-		print inst.value
+		print(inst.value)
 
 	except:
 		traceback.print_exc()
-		print "Exception:", sys.exc_info()[0]
+		print("Exception:", sys.exc_info()[0])
 

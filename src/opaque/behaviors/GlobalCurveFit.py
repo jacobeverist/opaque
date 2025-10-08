@@ -1,7 +1,7 @@
 
-from functions import Pose
+from .functions import Pose
 from math import sin, cos, asin, acos, sqrt, fabs, pi
-from Behavior import Behavior
+from .Behavior import Behavior
 from numpy import arange
 from copy import copy
 
@@ -50,7 +50,7 @@ class GlobalCurveFit(Behavior):
 		self.curve = curve
 		self.computePathDirection()
 		
-		print "globalCurveFit Behavior direction =", self.direction
+		print("globalCurveFit Behavior direction =", self.direction)
 	
 	def clearDraw(self):
 		
@@ -133,7 +133,7 @@ class GlobalCurveFit(Behavior):
 		self.startNode = startNode
 		self.endNode = endNode
 		
-		print "setting boundaries:", self.startNode, self.endNode
+		print("setting boundaries:", self.startNode, self.endNode)
 
 	# perform a continuous transition to a continuous fit
 	def step(self, probeState):
@@ -165,7 +165,7 @@ class GlobalCurveFit(Behavior):
 			return False
 		
 		if self.startNode < 0 or self.startNode >= (self.numJoints) or self.endNode < 0 or self.endNode >= (self.numJoints):
-			print "Nodes out of bounds for fitBody:", self.startNode, self.endNode
+			print("Nodes out of bounds for fitBody:", self.startNode, self.endNode)
 			raise
 
 		#self.direction = False
@@ -193,13 +193,13 @@ class GlobalCurveFit(Behavior):
 		# start from the inner segment and work to the 0th segment
 		if self.startNode == 0:
 			#segments = range(0,self.endNode+1)
-			segments = range(0,self.endNode+1)
+			segments = list(range(0,self.endNode+1))
 			segments.reverse()
 			segmentOrder = -1
 			
 		# start from inner segment and work out to the 39th segment
 		elif self.endNode == self.numJoints-1:
-			segments = range(self.startNode+1,self.endNode+2)
+			segments = list(range(self.startNode+1,self.endNode+2))
 			segmentOrder = 1
 		
 		# use the direction of the curve to guide our kinematic order
@@ -208,11 +208,11 @@ class GlobalCurveFit(Behavior):
 			# includes one extra segment depending on fitting direction
 			
 			if not self.direction:
-				segments = range(self.startNode,self.endNode+1)
+				segments = list(range(self.startNode,self.endNode+1))
 				segments.reverse()
 				segmentOrder = -1
 			else:
-				segments = range(self.startNode+1,self.endNode+2)
+				segments = list(range(self.startNode+1,self.endNode+2))
 				segmentOrder = 1
 		
 		#print "global curve fit segments:", segments
@@ -441,11 +441,11 @@ class GlobalCurveFit(Behavior):
 		return False
 
 	def getPathDirection(self):
-		print "returning GlobalCurveFit direction:", self.direction
+		print("returning GlobalCurveFit direction:", self.direction)
 		return self.direction
 	
 	def computePathDirection(self):
-		joints = range(self.numJoints)
+		joints = list(range(self.numJoints))
 
 		# segment angle vector
 		vecSum1 = [0.0,0.0]

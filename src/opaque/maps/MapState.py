@@ -1,26 +1,26 @@
 
 
-from Pose import Pose
+from .Pose import Pose
 import math
 import ctypes, os, sys
 import multiprocessing as processing
 from copy import copy, deepcopy
-from functions import *
+from .functions import *
 import random
 from subprocess import Popen, PIPE
 from PIL import Image
 from medialaxis import computeMedialAxis
 import graph
-from LocalNode import getLongestPath
-import gen_icp
-from SplineFit import SplineFit
+from .LocalNode import getLongestPath
+from . import gen_icp
+from .SplineFit import SplineFit
 import pylab
 import numpy
 from operator import itemgetter
 import hashlib
-from Splices import batchGlobalMultiFit, getMultiDeparturePoint, orientPath, getTipAngles, orientPathLean
+from .Splices import batchGlobalMultiFit, getMultiDeparturePoint, orientPath, getTipAngles, orientPathLean
 #from MapProcess import selectLocalCommonOrigin, selectCommonOrigin
-from ParticleFilter import multiParticleFitSplice, batchLocalizeParticle, batchDisplaceParticles, Particle
+from .ParticleFilter import multiParticleFitSplice, batchLocalizeParticle, batchDisplaceParticles, Particle
 import time
 import traceback
 from uuid import uuid4
@@ -28,8 +28,8 @@ from uuid import uuid4
 import alphamod
 from itertools import product
 
-from shoots import computeShootSkeleton, spliceSkeletons, computeGlobalControlPoses, batchJointBranch, batchBranch, trimBranch, getBranchPoint, ensureEnoughPoints, getInitSkeletonBranchPoint, getSkeletonBranchPoint, getSkeletonPath
-from landmarks import *
+from .shoots import computeShootSkeleton, spliceSkeletons, computeGlobalControlPoses, batchJointBranch, batchBranch, trimBranch, getBranchPoint, ensureEnoughPoints, getInitSkeletonBranchPoint, getSkeletonBranchPoint, getSkeletonPath
+from .landmarks import *
 #from shoots import *
 
 pylab.ioff()
@@ -419,7 +419,7 @@ class MapState:
 	
 	def setNodePose(self, nodeID, newPose):
 
-		print "setNodePose(", nodeID, ",", newPose, ")"
+		print("setNodePose(", nodeID, ",", newPose, ")")
 
 		oldGPACPose = self.getNodePose(nodeID)
 
@@ -471,7 +471,7 @@ class MapState:
 	@logFunction
 	def updateMaxParticle(self, maxIndex):
 
-		print "updateMaxParticle(", maxIndex, ")"
+		print("updateMaxParticle(", maxIndex, ")")
 
 
 		particleDist2 = self.poseParticles["snapshots2"][0]
@@ -517,14 +517,14 @@ class MapState:
 				controlPose_P = self.branchControlPoses[pathID][arcDist]
 
 				origControlPose = copy(self.pathClasses[pathID]["controlPose"])
-				print "changing path", pathID, "control position from", origControlPose, "to", controlPose_P
+				print("changing path", pathID, "control position from", origControlPose, "to", controlPose_P)
 
 				self.pathClasses[pathID]["controlPose"] = controlPose_P
 
 				branchPose_L = branchResult["branchPoses_L"][pathID]
 				tipPoint_L = branchResult["tipPoints_L"][pathID]
 
-				print "updating local tip point", self.hypothesisID, pathID, tipPoint_L
+				print("updating local tip point", self.hypothesisID, pathID, tipPoint_L)
 
 				""" FIXME:  was recycling the angle, but now we are regenerating it """
 				self.setLocalJunctionPose(pathID, branchPose_L)
@@ -542,7 +542,7 @@ class MapState:
 
 			allNodes = self.pathClasses[pathID]["nodeSet"]
 
-			print "local to global controlPose:", controlPoses[pathID], globalControlPoses[pathID]
+			print("local to global controlPose:", controlPoses[pathID], globalControlPoses[pathID])
 
 			for nodeID in allNodes:
 
@@ -675,7 +675,7 @@ class MapState:
 			#batchJobs.append([self.poseData, part, particleIndex, nodeID1, prevPose0, prevPose1, hypPose0, hypPose1, [], staticSplicedPaths0, staticSplicedPaths1, candLandmarks_G, targetNodeLandmarks_N])
 			batchJobs.append([self.poseData, part, particleIndex, nodeID1, prevPose0, prevPose1, hypPose0, hypPose1, [], staticSplicedPaths0, [], candLandmarks_G, targetNodeLandmarks_N])
 
-		print len(batchJobs), "total displacement jobs"
+		print(len(batchJobs), "total displacement jobs")
 		results = batchDisplaceParticles(batchJobs)
 
 		for result in results:
@@ -720,20 +720,20 @@ class MapState:
 					landmarkPoint0_G = (poseFrame0_G.convertLocalToGlobal(landmarkPoint0_N[0]), landmarkPoint0_N[1], landmarkPoint0_N[2])
 					currLandmarks.append(landmarkPoint0_G)
 
-					print "landmark0:", landmarkPoint0_G
+					print("landmark0:", landmarkPoint0_G)
 
 				if landmarkPoint1_N != None:
 					landmarkPoint1_G = (poseFrame1_G.convertLocalToGlobal(landmarkPoint1_N[0]), landmarkPoint1_N[1], landmarkPoint1_N[2])
 					currLandmarks.append(landmarkPoint1_G)
 
-					print "landmark1:", landmarkPoint1_G
+					print("landmark1:", landmarkPoint1_G)
 
 				currSum = computeConsistency(currLandmarks)
 
 				part.landmarkSum = currSum
 
 
-				print "poseSum:", partIndex, currSum
+				print("poseSum:", partIndex, currSum)
 
 				if currSum < minSum:
 					minSum = currSum
@@ -769,7 +769,7 @@ class MapState:
 				maxPart = partIndex
 
 		#print "setting max particle:", minPartIndex
-		print "setting max particle:", maxPart, maxProb
+		print("setting max particle:", maxPart, maxProb)
 
 		#self.currMaxIndex = minPartIndex
 		self.currMaxIndex = maxPart
@@ -1069,9 +1069,9 @@ class MapState:
 				part.branchArcDists = newBranchArcDists
 				part.branchControls = newBranchControls
 
-		print "jointComboControl:", len(jointComboControlSets)
+		print("jointComboControl:", len(jointComboControlSets))
 		jointComboControlSets = list(set(jointComboControlSets))
-		print "jointComboControl:", len(jointComboControlSets)
+		print("jointComboControl:", len(jointComboControlSets))
 
 		time1 = time.time()
 
@@ -1080,7 +1080,7 @@ class MapState:
 		self.batchPrecomputeBranches(jointComboControlSets)
 
 		time2 = time.time()
-		print "TIME computeJointBranch", self.hypothesisID, "=", time2-time1
+		print("TIME computeJointBranch", self.hypothesisID, "=", time2-time1)
 
 		parentPathIDs = self.getParentHash()
 		localizeJobs = []
@@ -1094,14 +1094,14 @@ class MapState:
 		#landmark0_L = None
 		#landmark1_L = None
 
-		print "self.nodeLandmarks =", self.nodeLandmarks
+		print("self.nodeLandmarks =", self.nodeLandmarks)
 
 		for pathID in pathIDs:
 
 			nodeSet = self.getNodes(pathID)
 			for nodeID in nodeSet:
 
-				print "pathID,nodeID", pathID, nodeID
+				print("pathID,nodeID", pathID, nodeID)
 
 				landmarkPoint_N = self.nodeLandmarks[pathID][nodeID]
 
@@ -1120,7 +1120,7 @@ class MapState:
 
 		maxTuple = None
 		maxNormCost = -1e10
-		for arcTuple, branchResult in self.jointBranchEvaluations.iteritems():
+		for arcTuple, branchResult in self.jointBranchEvaluations.items():
 
 			normLandmark = branchResult["normLandmark"]
 
@@ -1139,7 +1139,7 @@ class MapState:
 			normLandmark = branchResult["normLandmark"]
 
 
-			print "maxTuple:", maxTuple, normLandmark, maxNormCost, totalMatchCount, branchResult["landmarkCost"]
+			print("maxTuple:", maxTuple, normLandmark, maxNormCost, totalMatchCount, branchResult["landmarkCost"])
 
 			#if normLandmark > maxNormCost:
 			#	maxNormCost = normLandmark
@@ -1251,7 +1251,7 @@ class MapState:
 			# TODO: consider single path longestPaths , including root
 			""" minimum 5 tuples """
 			for arcTuple in arcIndexes:
-				print "arcIndex:", arcTuple
+				print("arcIndex:", arcTuple)
 				branchResult = self.jointBranchEvaluations[arcTuple]
 				totalMatchCount = branchResult["totalMatchCount"]
 				normMatchCount = branchResult["normMatchCount"]
@@ -1277,7 +1277,7 @@ class MapState:
 				#			distSum += dist
 
 
-				print len(splices_G), "splices"
+				print(len(splices_G), "splices")
 				splices_G = branchResult["splices_G"]
 				for splice in splices_G:
 					#thisSplicedPaths.append((arcTuple, normMatchCount*normLandmark, splice, None, []))
@@ -1354,7 +1354,7 @@ class MapState:
 			allSplicedPaths += thisSplicedPaths
 
 
-		print len(localizeJobs), "total localize jobs"
+		print(len(localizeJobs), "total localize jobs")
 
 		time1 = time.time()
 
@@ -1362,8 +1362,8 @@ class MapState:
 
 		time2 = time.time()
 
-		print "TIME batchLocalizeParticle", self.hypothesisID, "=", time2-time1 
-		print len(results[0]), "result arguments"
+		print("TIME batchLocalizeParticle", self.hypothesisID, "=", time2-time1) 
+		print(len(results[0]), "result arguments")
 
 		maxLandmarkSum = 0.0
 		for index in range(len(results)):
@@ -1372,7 +1372,7 @@ class MapState:
 			if poseLandmarkSum > maxLandmarkSum:
 				maxLandmarkSum = poseLandmarkSum
 
-		print "maxLandmarkSum =", maxLandmarkSum
+		print("maxLandmarkSum =", maxLandmarkSum)
 
 		isAllReject = True
 		rejectDivergence = True
@@ -1428,22 +1428,22 @@ class MapState:
 				isReject = False
 				""" divergence is prohibited """
 				if rejectDivergence and (isInterior1_0 or isInterior2_0 or isInterior1_1 or isInterior2_1):
-					print "reject because divergence"
+					print("reject because divergence")
 					isReject = True
 
 				""" only a single extension is permitted, but not two """
 				if isExist1_0 and isExist2_0 or isExist1_1 and isExist2_1:
-					print "reject because double extension"
+					print("reject because double extension")
 					isReject = True
 				
 				""" horrifically low contiguity is rejected out of hand """
 				if contigFrac_0 <= 0.5 or contigFrac_1 <= 0.5:
-					print "reject because low contiguity"
+					print("reject because low contiguity")
 					isReject = True
 
 				""" contiguity between current and previous pose """
 				if overlapSum > 1e10:
-					print "reject because no overlap"
+					print("reject because no overlap")
 					isReject = True
 
 				#ANG_THRESH = 2.0*pi/3.0
@@ -1452,7 +1452,7 @@ class MapState:
 				#if fabs(diffAngle(initPose0[2],newPose0[2])) > 2.0*pi/3.0 or fabs(diffAngle(initPose1[2],newPose1[2])) > 2.0*pi/3.0:
 
 				if fabs(diffAngle(initPose0[2],newPose0[2])) > ANG_THRESH or fabs(diffAngle(initPose1[2],newPose1[2])) > ANG_THRESH:
-					print "reject because change in pose angle is too different"
+					print("reject because change in pose angle is too different")
 					isReject = True
 				else:
 					pass
@@ -1505,7 +1505,7 @@ class MapState:
 
 					results[index] = tupleCopy
 
-				print "%d %d %d %d %d isReject branchProb poseProb_B poseProb %d %1.2f %1.2f %1.2f" %  (nodeID0, self.hypothesisID, particleID, index, spliceIndex, isReject, branchNormLandmarkCost, results[index][45], preBranchProb), normMatchCount, overlapSum, contigFrac_0, contigFrac_1, initPose0[2], newPose0[2], int(isExist1_0), int(isExist2_0), int(isExist1_1), int(isExist2_1), int(isInterior1_0), int(isInterior2_0), int(isInterior1_1), int(isInterior2_1), branchIndex, poseLandmarkSum, len(landmarks_G), normAngDiff
+				print("%d %d %d %d %d isReject branchProb poseProb_B poseProb %d %1.2f %1.2f %1.2f" %  (nodeID0, self.hypothesisID, particleID, index, spliceIndex, isReject, branchNormLandmarkCost, results[index][45], preBranchProb), normMatchCount, overlapSum, contigFrac_0, contigFrac_1, initPose0[2], newPose0[2], int(isExist1_0), int(isExist2_0), int(isExist1_1), int(isExist2_1), int(isInterior1_0), int(isInterior2_0), int(isInterior1_1), int(isInterior2_1), branchIndex, poseLandmarkSum, len(landmarks_G), normAngDiff)
 				
 				#print "%d %d %d %d %d normMatchCount, newUtilVal, overlapSum:" % (nodeID0, self.hypothesisID, particleID, index, spliceIndex), normMatchCount, results[index][45], overlapSum, contigFrac_0, contigFrac_1, initPose0[2], newPose0[2], int(isExist1_0), int(isExist2_0), int(isExist1_1), int(isExist2_1), int(isInterior1_0), int(isInterior2_0), int(isInterior1_1), int(isInterior2_1), isReject, branchIndex, poseLandmarkSum, len(landmarks_G), normLandmarkSum, normAngDiff, branchNormLandmarkCost
 
@@ -1524,7 +1524,7 @@ class MapState:
 		""" sort by pose particle index followed by utility value """
 		sortedResults = sorted(results, key=itemgetter(0,45), reverse=True)
 
-		print "particle sort"
+		print("particle sort")
 		thisParticleID = -1
 		distMin = 1e100
 		filteredParticles = []
@@ -1544,15 +1544,15 @@ class MapState:
 
 		filteredParticles.reverse()
 
-		print "localize results:"
-		for key, values in probResults.iteritems():
-			print key, values
+		print("localize results:")
+		for key, values in probResults.items():
+			print(key, values)
 			
-		print "len(filteredParticles) =", len(filteredParticles)
+		print("len(filteredParticles) =", len(filteredParticles))
 
 		newParticleDist2 = []
 
-		print "particle evaluation:", nodeID0, self.hypothesisID, updateCount
+		print("particle evaluation:", nodeID0, self.hypothesisID, updateCount)
 		for particleIndex in range(len(filteredParticles)):
 
 			#if duplicateMatches[particleIndex] == particleIndex:
@@ -1591,9 +1591,9 @@ class MapState:
 			else:
 				newProb = 0.0
 			
-			print "%d %d %d %d %d normMatchCount, utilVal, newProb" % (nodeID0, self.hypothesisID, particleID, particleIndex, spliceIndex), normMatchCount, utilVal, newProb, contigFrac_0, overlapSum_0
+			print("%d %d %d %d %d normMatchCount, utilVal, newProb" % (nodeID0, self.hypothesisID, particleID, particleIndex, spliceIndex), normMatchCount, utilVal, newProb, contigFrac_0, overlapSum_0)
 
-			print "localize angle diff:", particleID, initPose0[2], newPose0[2], initPose1[2], newPose1[2], fabs(diffAngle(initPose0[2],newPose0[2])), fabs(diffAngle(initPose1[2],newPose1[2]))
+			print("localize angle diff:", particleID, initPose0[2], newPose0[2], initPose1[2], newPose1[2], fabs(diffAngle(initPose0[2],newPose0[2])), fabs(diffAngle(initPose1[2],newPose1[2])))
 
 			particleObj = particleDist2[particleIndex].copy()
 
@@ -1662,7 +1662,7 @@ class MapState:
 				probParticles.append(float(1)/float(numParticles))
 				self.isNoLocalize = True
 
-		print "probParticles:", self.isNoLocalize, probParticles 
+		print("probParticles:", self.isNoLocalize, probParticles) 
 
 		""" now resample """
 		resampledParticles2 = []
@@ -1680,12 +1680,12 @@ class MapState:
 			elif probParticles[k] == maxVal:
 				numMax += 1
 
-		print "maxIndex, numMax, maxVal:", maxIndex, numMax, maxVal
+		print("maxIndex, numMax, maxVal:", maxIndex, numMax, maxVal)
 
 		""" if more than one max, than we don't change the node pose, we accept the localize on the canonical pose """
 		if numMax >= 1:
 
-			print "setting max likelihood poses", maxIndex, nodeID0, nodeID1, self.getNodePose(nodeID0), self.getNodePose(nodeID1)
+			print("setting max likelihood poses", maxIndex, nodeID0, nodeID1, self.getNodePose(nodeID0), self.getNodePose(nodeID1))
 
 			#self.nodePoses[nodeID0] = deepcopy(particleDist2[maxIndex].pose0)
 			#self.nodePoses[nodeID1] = deepcopy(particleDist2[maxIndex].pose1)
@@ -1707,13 +1707,13 @@ class MapState:
 
 
 		else:
-			print "no maximum particle!", probParticles
+			print("no maximum particle!", probParticles)
 			raise
 
 		""" FIXME:  do we really do nothing here when we tie for maximum? """
 
 
-		print "particle evaluation:", nodeID0, self.hypothesisID, updateCount
+		print("particle evaluation:", nodeID0, self.hypothesisID, updateCount)
 		for i in range(numParticles):
 			sampVal = random.random()
 
@@ -1726,17 +1726,17 @@ class MapState:
 
 			oldPart2 = particleDist2[k]
 			
-			myKeys = oldPart2.junctionData.keys()
+			myKeys = list(oldPart2.junctionData.keys())
 			printStr = ""
 			for key in myKeys:
 				printStr += repr(oldPart2.junctionData[key]["globalJunctionPose"]) 
 				printStr += " " + repr(self.pathClasses[key]["globalJunctionPose"]) 
 
 			#print "resampling particle", k, probParticles[k], printStr
-			print "resampling particle", k, probParticles[k]
-			print oldPart2.prevPose0, oldPart2.prevPose1
-			print oldPart2.dispPose0, oldPart2.dispPose1
-			print oldPart2.pose0, oldPart2.pose1
+			print("resampling particle", k, probParticles[k])
+			print(oldPart2.prevPose0, oldPart2.prevPose1)
+			print(oldPart2.dispPose0, oldPart2.dispPose1)
+			print(oldPart2.pose0, oldPart2.pose1)
 
 			resampledParticles2.append(oldPart2.copy())
 
@@ -1778,7 +1778,7 @@ class MapState:
 		#print "particles:", particleDist2
 
 		pylab.ioff()
-		print pylab.isinteractive()
+		print(pylab.isinteractive())
 		pylab.clf()
 		#pylab.axis("equal")
 
@@ -1956,7 +1956,7 @@ class MapState:
 		#if len(xP) > 0:
 		#	pylab.scatter(xP, yP, color='k', linewidth=1, zorder=9, alpha=0.9)
 
-		for k, segs in self.globalSegments.iteritems():
+		for k, segs in self.globalSegments.items():
 			for seg in segs:
 				xP = []
 				yP = []
@@ -2055,19 +2055,19 @@ class MapState:
 
 		#pylab.savefig("moveEstimate2_%04u_%04u.png" % (self.posePlotCount, self.hypothesisID))
 		pylab.savefig("moveEstimate2_%04u_%04u.png" % (self.hypothesisID, self.posePlotCount))
-		print "moveEstimate2_%04u_%04u.png" % (self.hypothesisID, self.posePlotCount)
+		print("moveEstimate2_%04u_%04u.png" % (self.hypothesisID, self.posePlotCount))
 
 		self.posePlotCount += 1
 
 	@logFunction
 	def updatePoseData(self, poseData):
 		self.poseData = deepcopy(poseData)
-		print "updated poseData:", poseData.numNodes, self.poseData.numNodes
+		print("updated poseData:", poseData.numNodes, self.poseData.numNodes)
 
 	@logFunction
 	def copy(self, hypothesisID):
 
-		print "creating hypothesis", hypothesisID
+		print("creating hypothesis", hypothesisID)
 
 		#newObj = deepcopy(self)
 		#newObj.hypothesisID = hypothesisID
@@ -2171,7 +2171,7 @@ class MapState:
 
 		totalSum = 0.0
 
-		if False in self.branchDiverges.values():
+		if False in list(self.branchDiverges.values()):
 				totalSum = 1e100
 
 		""" look for outlier landmarks to invalidate a map state """
@@ -2180,18 +2180,18 @@ class MapState:
 		OUTLIER_THRESH = 0.7
 		#OUTLIER_THRESH = 0.4
 
-		print "controlPoses_L:", self.getControlPoses()
+		print("controlPoses_L:", self.getControlPoses())
 
 		controlPoses_G = computeGlobalControlPoses(self.getControlPoses(), self.getParentHash())
 
-		print "controlPoses_G:", controlPoses_G
+		print("controlPoses_G:", controlPoses_G)
 
 		""" collect the current landmarks """
 		landmarks_G = nodeToGlobalLandmarks(self.getControlPoses(), self.getPathIDs(), self.getParentHash(), self.nodeLandmarks, self.pathClasses)
 
-		print "check for outliers:", landmarks_G
+		print("check for outliers:", landmarks_G)
 
-		print "computeEval:", self.hypothesisID
+		print("computeEval:", self.hypothesisID)
 
 
 
@@ -2218,7 +2218,7 @@ class MapState:
 
 
 					if (landmarkType1 == "archPoint" or landmarkType1 == "bloomPoint") and (landmarkType2 == "archPoint" or landmarkType2 == "bloomPoint"):
-						print landmarkType1, landmarkType2
+						print(landmarkType1, landmarkType2)
 						""" bloom only nearest neighbors """
 						thisLandmarksBloomNeighbors.append((j, k, dist, diffVal, landmarks_G[j][1], landmarks_G[k][1], landmarks_G[j][0], landmarks_G[k][0]))
 
@@ -2236,34 +2236,34 @@ class MapState:
 
 
 		isReject = False
-		print self.hypothesisID, "bloom neighbors:"
+		print(self.hypothesisID, "bloom neighbors:")
 		for result in bloomNearestNeighbors:
 
-			print result
+			print(result)
 
 			if len(result) > 1:
-				print result[0][2], result[1][2]
+				print(result[0][2], result[1][2])
 				if result[0][2] > 0.4 or result[1][2] > 0.4:
 					isReject = True
 			else:
-				print result[0][2]
+				print(result[0][2])
 				if result[0][2] > 0.4:
 					isReject = True
 
 		if isReject:
 			totalSum = 5e100
 
-		print self.hypothesisID, "bloom/bend neighbors:"
+		print(self.hypothesisID, "bloom/bend neighbors:")
 		for result in allNearestNeighbors:
 
-			print result
+			print(result)
 
 			if len(result) > 1:
-				print result[0][2], result[1][2]
+				print(result[0][2], result[1][2])
 				if result[0][2] > 1.0 or result[1][2] > 1.0:
 					isReject = True
 			else:
-				print result[0][2]
+				print(result[0][2])
 				if result[0][2] > 1.0:
 					isReject = True
 
@@ -2302,10 +2302,10 @@ class MapState:
 	@logFunction
 	def restoreState(self, dirName, numNodes):
 		
-		print "loading" + dirName + "/mapStateSave_%04u_%04u.txt" % (self.hypothesisID, numNodes+1)
+		print("loading" + dirName + "/mapStateSave_%04u_%04u.txt" % (self.hypothesisID, numNodes+1))
 		f = open(dirName + "/mapStateSave_%04u_%04u.txt" % (self.hypothesisID, numNodes+1), 'r')		 
 		saveStr = f.read()
-		print saveStr
+		print(saveStr)
 		f.close()
 		
 		saveStr = saveStr.replace('\r\n','\n')
@@ -2335,7 +2335,7 @@ class MapState:
 			currFrame = Pose(shootControlPose)
 			tipPoint_G = currFrame.convertLocalToGlobal(tipPoint_L)
 
-			print "tipPoint_G =", self.hypothesisID, tipPoint_G
+			print("tipPoint_G =", self.hypothesisID, tipPoint_G)
 
 			#self.pathClasses[pathID]["globalJunctionPose"] = globalJuncPose
 
@@ -2381,7 +2381,7 @@ class MapState:
 	
 	@logFunction
 	def getPathIDs(self):
-		allPathIDs = self.pathClasses.keys()
+		allPathIDs = list(self.pathClasses.keys())
 		allPathIDs.sort()
 		return deepcopy(allPathIDs)
 
@@ -2454,10 +2454,10 @@ class MapState:
 	
 	def getAllSplices2(self, plotIter = False):
 		if not self.isChanged:
-			print "returning without computing, not isChanged"
+			print("returning without computing, not isChanged")
 			return self.allSplices2
 		else:
-			print "recomputing allSplices"
+			print("recomputing allSplices")
 			self.generatePaths()
 			return self.allSplices2
 
@@ -2483,7 +2483,7 @@ class MapState:
 		self.subsumedTerms_L = {}
 		allTerms_L = {}
 		allTerms_G = {}
-		currKeys = self.globalSegments.keys()
+		currKeys = list(self.globalSegments.keys())
 
 		controlPoses_G = self.getGlobalControlPoses()
 
@@ -2532,7 +2532,7 @@ class MapState:
 									minDist2 = dist2
 									minP2 = p
 				
-				print pathID1, minDist2, "terms:", term1_G
+				print(pathID1, minDist2, "terms:", term1_G)
 				if minDist2 > DIST_THRESH:
 					allTerms_L[pathID1].append(term1)
 					allTerms_G[pathID1].append(term1_G)
@@ -2573,7 +2573,7 @@ class MapState:
 
 		""" previous terminals from last computation """
 		prevTermList = []
-		for pathID, terms_L in self.subsumedTerms_L.iteritems():
+		for pathID, terms_L in self.subsumedTerms_L.items():
 
 			shootFrame = Pose(controlPoses_G[pathID])
 
@@ -2589,7 +2589,7 @@ class MapState:
 				minUUID = None
 
 				#for termTuple, visitStatus in prevTermsVisited.iteritems():
-				for termUUID, termData in prevTermsData.iteritems():
+				for termUUID, termData in prevTermsData.items():
 					termShootID = termData["frameID"]
 					prevTermPoint = termData["term_L"]
 					visitStatus = termData["isVisited"]
@@ -2657,21 +2657,21 @@ class MapState:
 		""" data structures for navigation """
 		self.pathTermsVisited = {}
 		self.pathTerms = {}
-		for uuidVal, termData in self.pathTermsData.iteritems():
+		for uuidVal, termData in self.pathTermsData.items():
 			self.pathTermsVisited[uuidVal] = termData["isVisited"]
 			self.pathTerms[uuidVal] = termData["term_G"]
 
 	
-		print "self.pathTermsVisited:", self.pathTermsVisited
-		print "self.pathTerms:", self.pathTerms
-		print "self.pathTermsData:", self.pathTermsData
+		print("self.pathTermsVisited:", self.pathTermsVisited)
+		print("self.pathTerms:", self.pathTerms)
+		print("self.pathTermsData:", self.pathTermsData)
 
 		termsVisited = self.getPathTermsVisited()
-		print "self.getPathTerms():", self.getPathTerms()
-		print "self.getPathTermsVisited:", self.getPathTermsVisited()
+		print("self.getPathTerms():", self.getPathTerms())
+		print("self.getPathTermsVisited:", self.getPathTermsVisited())
 
 		termList = []
-		pathIDs = allTerms_G.keys()
+		pathIDs = list(allTerms_G.keys())
 
 		for pathID in pathIDs:
 			for term_G in allTerms_G[pathID]:
@@ -2688,7 +2688,7 @@ class MapState:
 		finalResults = []
 
 
-		print "termCombos:", termCombos
+		print("termCombos:", termCombos)
 		
 		for termPath in termCombos:
 
@@ -2698,7 +2698,7 @@ class MapState:
 			startPose = termPath[0]
 			endPose = termPath[1]
 
-			print "startPose, endPose:", startPose, endPose
+			print("startPose, endPose:", startPose, endPose)
 
 			minStartDist = 1e100
 			minStartNode = None
@@ -2737,7 +2737,7 @@ class MapState:
 			endNode = minEndNode
 
 
-			print "nodes path from", startNode, "to", endNode
+			print("nodes path from", startNode, "to", endNode)
 			shortestSpliceTree, shortestSpliceDist = self.spliceSkeleton.shortest_path(endNode)
 			currNode = shortestSpliceTree[startNode]					 
 
@@ -2774,13 +2774,13 @@ class MapState:
 			sPath = {}
 			sPath['termPath'] = termPath
 			sPath['skelPath'] = splicePoints1
-			sPath['memberShootIDs'] = memberShootIDs.keys()
+			sPath['memberShootIDs'] = list(memberShootIDs.keys())
 			
 			finalResults.append(sPath)
 			
 		
 		if plotIter:
-			print "plotting splicedPath2"
+			print("plotting splicedPath2")
 			pylab.clf()
 
 			
@@ -2807,7 +2807,7 @@ class MapState:
 
 			#self.drawWalls()
 	
-			print "saving splicedPath_%04u_%04u_%04u.png" % (self.hypothesisID, self.poseData.numNodes, self.spliceCount)
+			print("saving splicedPath_%04u_%04u_%04u.png" % (self.hypothesisID, self.poseData.numNodes, self.spliceCount))
 			pylab.title("Spliced Paths, pathIDs = %s" %  self.getPathIDs())
 			pylab.savefig("newSplicedPath_%04u_%04u_%04u.png" % (self.hypothesisID, self.poseData.numNodes, self.spliceCount))
 			self.spliceCount += 1
@@ -2843,7 +2843,7 @@ class MapState:
 		
 		resultPose1, lastCost1, matchCount1 = gen_icp.branchEstimateICP([u1,u2,angGuess], junctionPose1, orientedPathSoup, globalPath2, plotIter = plotIter, n1 = pathID1, n2 = parentPathID)
 
-		print "matchCount,cost,result:", matchCount1, lastCost1, resultPose1
+		print("matchCount,cost,result:", matchCount1, lastCost1, resultPose1)
 		
 		return resultPose1, lastCost1, matchCount1
 	 
@@ -2959,7 +2959,7 @@ class MapState:
 		if self.pathClasses[pathID]["parentID"] != None: 
 			currBranchSpace = self.branchArcBins[pathID]
 
-			currKeys = currBranchSpace.keys()
+			currKeys = list(currBranchSpace.keys())
 			currKeys.sort()
 
 
@@ -2978,7 +2978,7 @@ class MapState:
 				return deepcopy(currBranchSpace[thisKey])
 			else:
 
-				print "returned precomputation of branch", arcDist, thisKey, None
+				print("returned precomputation of branch", arcDist, thisKey, None)
 
 			raise
 
@@ -3046,7 +3046,7 @@ class MapState:
 			#jointBranchJobs.append((localPathSegsByID, localTermsByID, self.controlCurves, localSkeletons, thisControlPoses, tipPoints, junctionPoses, self.localLandmarks, parentPathIDs, thisArcDists, len(self.nodePoses)-1, self.hypothesisID ))
 
 
-		print len(jointBranchJobs), "total branch jobs"
+		print(len(jointBranchJobs), "total branch jobs")
 		jointResults = batchJointBranch(jointBranchJobs)
 
 		"""
@@ -3145,7 +3145,7 @@ class MapState:
 
 			pylab.clf() 
 
-			for arcTuple, branchResult in self.jointBranchEvaluations.iteritems():
+			for arcTuple, branchResult in self.jointBranchEvaluations.items():
 
 				#modJuncPose = result["modJuncPose"]
 				#modControlPose = result["modControlPose"]
@@ -3291,21 +3291,21 @@ class MapState:
 				self.nodeLandmarks[pathID][nodeID] = None
 
 				if spatialFeature["bloomPoint"] != None:
-					print self.hypothesisID, "adding bloomPoint for node", nodeID, "in path", pathID
+					print(self.hypothesisID, "adding bloomPoint for node", nodeID, "in path", pathID)
 					landmarkPoint_N = spatialFeature["bloomPoint"]
 					landmarkPoint_L = poseFrame_L.convertLocalToGlobal(landmarkPoint_N)
 					self.localLandmarks[pathID].append((landmarkPoint_L, BLOOM_THRESH, "bloomPoint"))
 					self.nodeLandmarks[pathID][nodeID] = (landmarkPoint_N, BLOOM_THRESH, "bloomPoint")
 
 				elif spatialFeature["archPoint"] != None:
-					print self.hypothesisID, "adding archPoint for node", nodeID, "in path", pathID
+					print(self.hypothesisID, "adding archPoint for node", nodeID, "in path", pathID)
 					landmarkPoint_N = spatialFeature["archPoint"]
 					landmarkPoint_L = poseFrame_L.convertLocalToGlobal(landmarkPoint_N)
 					self.localLandmarks[pathID].append((landmarkPoint_L, ARCH_THRESH, "archPoint"))
 					self.nodeLandmarks[pathID][nodeID] = (landmarkPoint_N, ARCH_THRESH, "archPoint")
 
 				elif spatialFeature["inflectionPoint"] != None:
-					print self.hypothesisID, "adding inflectionPoint for node", nodeID, "in path", pathID
+					print(self.hypothesisID, "adding inflectionPoint for node", nodeID, "in path", pathID)
 					landmarkPoint_N = spatialFeature["inflectionPoint"]
 					landmarkPoint_L = poseFrame_L.convertLocalToGlobal(landmarkPoint_N)
 					self.localLandmarks[pathID].append((landmarkPoint_L, BEND_THRESH, "bendPoint"))
@@ -3318,7 +3318,7 @@ class MapState:
 				#self.nodeLandmarks[pathID][nodeID] = landmarkPoint_N
 
 
-		print self.hypothesisID, "landmarks:", self.localLandmarks
+		print(self.hypothesisID, "landmarks:", self.localLandmarks)
 
 	
 				
@@ -3346,7 +3346,7 @@ class MapState:
 		
 		pathIDs = self.getPathIDs()
 		for pathID in pathIDs:
-			print "computing path for node set", pathID, ":", self.getNodes(pathID)
+			print("computing path for node set", pathID, ":", self.getNodes(pathID))
 			localResults = computeShootSkeleton(self.poseData,
 										pathID,
 										self.pathClasses[pathID]["localJunctionPose"],
@@ -3388,13 +3388,13 @@ class MapState:
 		
 		finalPoses = computeGlobalControlPoses(controlPoses, parentPathIDs)
 
-		print "controlPoses:", controlPoses
-		print "finalPoses:", finalPoses
-		print "junctionPoses:", junctionPoses
+		print("controlPoses:", controlPoses)
+		print("finalPoses:", finalPoses)
+		print("junctionPoses:", junctionPoses)
 
 
 		""" convert local to max likelihood global """
-		for pathID, localPath in self.localPaths.iteritems():
+		for pathID, localPath in self.localPaths.items():
 			shootFrame = Pose(finalPoses[pathID])
 
 			globalPath = []
@@ -3405,7 +3405,7 @@ class MapState:
 			self.paths[pathID] = globalPath
 
 		""" convert local to max likelihood global """
-		for pathID, localHull in self.localHulls.iteritems():
+		for pathID, localHull in self.localHulls.items():
 			shootFrame = Pose(finalPoses[pathID])
 
 			globalHull = []
@@ -3415,7 +3415,7 @@ class MapState:
 
 			self.hulls[pathID] = globalHull
 
-		for pathID, segs in self.localSegments.iteritems():
+		for pathID, segs in self.localSegments.items():
 			self.globalSegments[pathID] = []
 			shootFrame = Pose(finalPoses[pathID])
 			for seg in segs:
@@ -3426,7 +3426,7 @@ class MapState:
 
 				self.globalSegments[pathID].append(globalSeg)
 
-		for pathID, longPaths in self.localLongPaths.iteritems():
+		for pathID, longPaths in self.localLongPaths.items():
 			self.globalLongPaths[pathID] = []
 			shootFrame = Pose(finalPoses[pathID])
 			for path in longPaths:
@@ -3439,7 +3439,7 @@ class MapState:
 				self.globalLongPaths[pathID].append(globalPath)
 
 
-		for pathID, terms in self.localTerms.iteritems():
+		for pathID, terms in self.localTerms.items():
 			self.globalTerms[pathID] = []
 			shootFrame = Pose(finalPoses[pathID])
 			for term in terms:
@@ -3477,7 +3477,7 @@ class MapState:
 				parentTerm1_G = parentFrame.convertLocalToGlobal(parentTerm1)
 				parentTerm2_G = parentFrame.convertLocalToGlobal(parentTerm2)
 
-				print "controlCurve:", pathID, parentPathID, parentTerm1_G, parentTerm2_G
+				print("controlCurve:", pathID, parentPathID, parentTerm1_G, parentTerm2_G)
 
 				self.controlCurves[pathID] = getSkeletonPath(parentSkeleton, parentTerm1, parentTerm2)
 			else:
@@ -3489,7 +3489,7 @@ class MapState:
 
 	@logFunction
 	def delNode(self, nodeID, pathID):
-		print "deleting node", nodeID, "from path", pathID
+		print("deleting node", nodeID, "from path", pathID)
 		self.pathClasses[pathID]["nodeSet"].remove(nodeID)
 		del self.pathClasses[pathID]["localNodePoses"][nodeID]
 		
@@ -3508,7 +3508,7 @@ class MapState:
 		" remove node from other shoots first"
 		for pathID in pathIDs:
 			if nodeID in self.pathClasses[pathID]["nodeSet"]:
-				print "removing node", nodeID, "from path", pathID
+				print("removing node", nodeID, "from path", pathID)
 				self.pathClasses[pathID]["nodeSet"].remove(nodeID)
 				del self.pathClasses[pathID]["localNodePoses"][nodeID]
 
@@ -3516,7 +3516,7 @@ class MapState:
 					p.delNode(nodeID, pathID)
 
 
-		print "adding node", nodeID, "to path", targetPathID
+		print("adding node", nodeID, "to path", targetPathID)
 		self.pathClasses[targetPathID]["nodeSet"].append(nodeID)
 		#self.addNode(nodeID,pathID)
 
@@ -3537,7 +3537,7 @@ class MapState:
 		for p in particleDist:
 			p.addNode(nodeID, targetPathID, nodePose_C)
 
-		print "shoot", targetPathID, "has nodes", self.pathClasses[targetPathID]["nodeSet"]
+		print("shoot", targetPathID, "has nodes", self.pathClasses[targetPathID]["nodeSet"])
 
 		self.updateLandmarks()
 		self.isChanged = True		
@@ -3546,7 +3546,7 @@ class MapState:
 	def addNode(self, nodeID, pathID):
 
 
-		print "adding node", nodeID, "to path", pathID
+		print("adding node", nodeID, "to path", pathID)
 		if not nodeID in self.pathClasses[pathID]["nodeSet"]:
 			self.pathClasses[pathID]["nodeSet"].append(nodeID)
 
@@ -3565,7 +3565,7 @@ class MapState:
 			self.pathClasses[pathID]["localNodePoses"][nodeID] = nodePose_C
 
 		else:
-			print "node", nodeID, "already present in path", pathID
+			print("node", nodeID, "already present in path", pathID)
 
 		updateCount = self.poseParticles["updateCount"] 
 		particleDist = self.poseParticles["snapshots2"][0]
@@ -3574,7 +3574,7 @@ class MapState:
 			nodePose_C = self.pathClasses[pathID]["localNodePoses"][nodeID]
 			p.addNode(nodeID, pathID, nodePose_C)
 
-		print pathID, "has nodes", self.pathClasses[pathID]["nodeSet"]
+		print(pathID, "has nodes", self.pathClasses[pathID]["nodeSet"])
 
 
 		self.updateLandmarks()
@@ -3591,7 +3591,7 @@ class MapState:
 		""" target shoot we want to merge to """
 		mergeTargetPathID = parentPathIDs[pathID]
 
-		print "merging", pathID, "to", mergeTargetPathID
+		print("merging", pathID, "to", mergeTargetPathID)
 
 		""" if the root shoot, return after doing nothing """
 		if mergeTargetPathID == None:
@@ -3634,7 +3634,7 @@ class MapState:
 
 		partSetControlPoses_G = []
 
-		print "deleting path", pathID, "merging to path", mergeTargetID
+		print("deleting path", pathID, "merging to path", mergeTargetID)
 		try: 
 			del self.pathClasses[pathID]
 			#del self.pathTermsVisited[pathID]
@@ -3664,9 +3664,9 @@ class MapState:
 				else:
 					part.maxLikelihoodBranch = None
 
-				print "oldTuple, newTuple:", branchTupleIndex, newTupleIndex
+				print("oldTuple, newTuple:", branchTupleIndex, newTupleIndex)
 			
-			for childPathID, pathClass in self.pathClasses.iteritems():
+			for childPathID, pathClass in self.pathClasses.items():
 				
 				if pathClass["parentID"] == pathID:
 
@@ -3728,7 +3728,7 @@ class MapState:
 
 						self.setNodePose(nodeID, nodePose_G)
 
-					print "reparented pathClass:", childPathID, pathClass
+					print("reparented pathClass:", childPathID, pathClass)
 
 
 					for k in range(len(particleDist2)):
@@ -3756,7 +3756,7 @@ class MapState:
 
 		except:
 
-			print "FAIL to delete path!"
+			print("FAIL to delete path!")
 			raise
 			pass
 	
@@ -3785,7 +3785,7 @@ class MapState:
 		"""
 
 
-		print "addPath(", self.shootIDs, branchNodeID, localDivergencePose_R
+		print("addPath(", self.shootIDs, branchNodeID, localDivergencePose_R)
 		
 		""" the raw pose and posture pose """
 		nodePose_G = self.getNodePose(branchNodeID)
@@ -3798,7 +3798,7 @@ class MapState:
 		
 		""" pathIDs from self.localLeaf2LeafPathJunctions structure because recent shoots may not be generated yet """
 		#allPathIDs = self.getPathIDs()
-		allPathIDs = self.localLeaf2LeafPathJunctions.keys()
+		allPathIDs = list(self.localLeaf2LeafPathJunctions.keys())
 		
 
 		""" new shoot ID """
@@ -3894,7 +3894,7 @@ class MapState:
 						"controlTerm1_P" : controlTerm1_P, 		
 						"controlTerm2_P" : controlTerm2_P }		
 
-		print "new pathClass:", self.pathClasses[newPathID]
+		print("new pathClass:", self.pathClasses[newPathID])
 
 
 		#self.pathTermsVisited[newPathID] = False
@@ -3987,7 +3987,7 @@ class MapState:
 			""" add the details of this junction given particle pose is true """
 			part.addPath(newPathID, controlParentID, branchNodeID, nodePose_C, localDivergencePose_R, modJunctionPose_G, localJunctionPose_C, localParticleControlPose_P, self.NUM_BRANCHES, arcDists, controlPoses_P)
 
-		print "newPath", newPathID, "=", self.pathClasses[newPathID]
+		print("newPath", newPathID, "=", self.pathClasses[newPathID])
 
 		self.updateLandmarks()
 
@@ -4008,7 +4008,7 @@ class MapState:
 
 			self.pathTermsData[termID]["isVisited"] = True
 
-		print "pathTermVisited(", termID, self.pathTermsVisited
+		print("pathTermVisited(", termID, self.pathTermsVisited)
 
 	@logFunction
 	def getPathTermsVisited(self):
@@ -4017,7 +4017,7 @@ class MapState:
 	@logFunction
 	def resetTerms(self):
 		
-		for k, v in self.pathTermsVisited.iteritems():
+		for k, v in self.pathTermsVisited.items():
 			self.pathTermsVisited[k] = False
 			self.pathTermsData[k]["isVisited"] = False
 
@@ -4029,13 +4029,13 @@ class MapState:
 	def checkUniqueBranch2(self, parentPathID, nodeID1, depAngle, depPoint):
 
 
-		print "checkUniqueBranch(", parentPathID, ",", nodeID1, ",", depAngle, ",", depPoint, ")"
+		print("checkUniqueBranch(", parentPathID, ",", nodeID1, ",", depAngle, ",", depPoint, ")")
 
 		#foreTerm1 = frontInterior1 and frontExist1
 		#foreTerm2 = frontInterior2 and frontExist2
 
 		if depPoint == 0:
-			print "REJECT, no departure point!", nodeID1, depPoint
+			print("REJECT, no departure point!", nodeID1, depPoint)
 			return False, -1
 
 		" check cartesian distance to similar junction points from parent path "
@@ -4070,7 +4070,7 @@ class MapState:
 					neighborCount += 1
 
 		if neighborCount >= 2:
-			print "REJECT, too many neighbors", nodeID1, pathID, neighborCount, depPoint
+			print("REJECT, too many neighbors", nodeID1, pathID, neighborCount, depPoint)
 			return False, parentPathID
 
 
@@ -4098,7 +4098,7 @@ class MapState:
 
 		#if minLandDist >= 0.5:
 		if minLandDist >= 1.0:
-			print "REJECT, proposed branch point is not close enough to a spatial landmark", nodeID1, pathID, minLandDist, minLandmark, neighborCount, depPoint
+			print("REJECT, proposed branch point is not close enough to a spatial landmark", nodeID1, pathID, minLandDist, minLandmark, neighborCount, depPoint)
 			return False, parentPathID
 
 		#sF0 = self.poseData.spatialFeatures[nodeID1][0]
@@ -4183,7 +4183,7 @@ class MapState:
 		dirFlag specifies which node we want to check branches on.	We do not want to branch with the anchored end of a probe sweep   
 		"""
 
-		print self.hypothesisID, "determineBranchPair(", nodeID1, ",", nodeID2, ",", frontExist1, ",", frontExist2, ",", frontInterior1, ",", frontInterior2, ",", depAngle1, ",", depAngle2, ",", depPoint1, ",", depPoint2, ",", dirFlag, ",", isUnique1, ",", isUnique2, ",", ",", shootIDs, ")"
+		print(self.hypothesisID, "determineBranchPair(", nodeID1, ",", nodeID2, ",", frontExist1, ",", frontExist2, ",", frontInterior1, ",", frontInterior2, ",", depAngle1, ",", depAngle2, ",", depPoint1, ",", depPoint2, ",", dirFlag, ",", isUnique1, ",", isUnique2, ",", ",", shootIDs, ")")
 		
 		self.shootIDs = shootIDs
 
@@ -4221,7 +4221,7 @@ class MapState:
 					pathBranchIDs[0] = newPathID
 					pathBranchIDs[1] = newPathID
 
-					print "foreA"
+					print("foreA")
 
 				if isUnique1 and not isUnique2:
 
@@ -4278,7 +4278,7 @@ class MapState:
 
 						pathBranchIDs[1] = newPathID2
 
-					print "foreB"
+					print("foreB")
 
 				if isUnique1 and not isUnique2:
 					if dirFlag == 0:
@@ -4324,7 +4324,7 @@ class MapState:
 					pathBranchIDs[0] = newPathID
 					pathBranchIDs[1] = newPathID
 
-					print "foreC"
+					print("foreC")
 					
 				else:
 					if dirFlag == 0:
@@ -4339,7 +4339,7 @@ class MapState:
 
 						pathBranchIDs[0] = newPathID
 
-					print "foreD"
+					print("foreD")
 					
 		elif foreTerm2 and not foreTerm1:
 
@@ -4354,7 +4354,7 @@ class MapState:
 
 					poseOrigin = Pose(self.nodeRawPoses[branchNodeID])
 					newPathID = self.addPath(branchNodeID, poseOrigin.convertGlobalPoseToLocal(junctionAug))
-					print "foreE"
+					print("foreE")
 
 					pathBranchIDs[0] = newPathID
 					pathBranchIDs[1] = newPathID
@@ -4373,7 +4373,7 @@ class MapState:
 
 						pathBranchIDs[1] = newPathID
 
-					print "foreF"
+					print("foreF")
 
 		
 		#return isBranch, pathBranchIDs, isNew, self.shootIDs
@@ -4430,7 +4430,7 @@ class MapState:
 			path = sPath['skelPath']
 			splicedPaths.append(path)
 	
-		print len(splicedPaths), "spliced paths for path finding "
+		print(len(splicedPaths), "spliced paths for path finding ")
 		
 		" again, find closest point of start and end pose "
 		
@@ -4469,7 +4469,7 @@ class MapState:
 				minSplicePathID = i
 				spliceIndex = (minJ1,minJ2)
 
-			print i, path[0], path[-1], minJ1, minJ2, minDist1, minDist2, totalDist, minTotalDist, minSplicePathID, spliceIndex
+			print(i, path[0], path[-1], minJ1, minJ2, minDist1, minDist2, totalDist, minTotalDist, minSplicePathID, spliceIndex)
 		
 		
 		" return splicePath[startIndex:endIndex+1]"

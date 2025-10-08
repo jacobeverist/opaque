@@ -1,9 +1,9 @@
-from SnakeControl import SnakeControl
+from .SnakeControl import SnakeControl
 from copy import *
 from math import *
 
-from behaviors.AnchorTransition import AnchorTransition
-from pose.AverageContacts import AverageContacts
+from .behaviors.AnchorTransition import AnchorTransition
+from .pose.AverageContacts import AverageContacts
 
 
 class TestAnchorTransition(SnakeControl):
@@ -59,7 +59,7 @@ class TestAnchorTransition(SnakeControl):
 			self.contacts.step()
 				
 			self.stateA = 1			
-			print "step 0 complete"
+			print("step 0 complete")
 
 		elif self.stateA == 1:
 
@@ -68,7 +68,7 @@ class TestAnchorTransition(SnakeControl):
 
 			if self.contacts.isStable():
 				self.stateA = 2
-				print "isStable()"
+				print("isStable()")
 
 		elif self.stateA == 2:
 			
@@ -77,7 +77,7 @@ class TestAnchorTransition(SnakeControl):
 			
 			self.stateA = 3
 			
-			print "step 1 complete"
+			print("step 1 complete")
 			
 		# Anchor to the walls
 		elif self.stateA == 3:
@@ -103,16 +103,16 @@ class TestAnchorTransition(SnakeControl):
 					modVal = i % 4
 					
 					if modVal == 0 and currJoints[i] != 0.0:
-						print "ERROR: joint", i, "is", currJoints[i], "not 0.0"
+						print("ERROR: joint", i, "is", currJoints[i], "not 0.0")
 					elif modVal == 1 and currJoints[i] != 0.0:
-						print "ERROR: joint", i, "is", currJoints[i], "not 90.0"
+						print("ERROR: joint", i, "is", currJoints[i], "not 90.0")
 					elif modVal == 2 and currJoints[i] != 0.0:
-						print "ERROR: joint", i, "is", currJoints[i], "not 0.0"
+						print("ERROR: joint", i, "is", currJoints[i], "not 0.0")
 					elif modVal == 3 and currJoints[i] != 0.0:
-						print "ERROR: joint", i, "is", currJoints[i], "not -90.0"
+						print("ERROR: joint", i, "is", currJoints[i], "not -90.0")
 
 
-				print "step 2 complete"
+				print("step 2 complete")
 
 				self.testSuccess()
 

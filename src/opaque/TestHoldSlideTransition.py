@@ -1,8 +1,8 @@
-from SnakeControl import SnakeControl
+from .SnakeControl import SnakeControl
 from copy import *
 from math import *
 
-from behaviors.HoldSlideTransition import HoldSlideTransition
+from .behaviors.HoldSlideTransition import HoldSlideTransition
 
 class TestHoldSlideTransition(SnakeControl):
 
@@ -63,7 +63,7 @@ class TestHoldSlideTransition(SnakeControl):
 				
 			if self.globalTimer > 1000:
 				self.stateA = 1			
-				print "step 0 complete"
+				print("step 0 complete")
 
 		elif self.stateA == 1:
 			
@@ -75,7 +75,7 @@ class TestHoldSlideTransition(SnakeControl):
 
 			self.stateA = 2
 			
-			print "step 1 complete"
+			print("step 1 complete")
 			
 		# Anchor to the walls
 		elif self.stateA == 2:
@@ -92,9 +92,9 @@ class TestHoldSlideTransition(SnakeControl):
 				for i in range(0,17):
 					
 					if fabs(currJoints[i]) >= 0.0001:
-						print "ERROR: joint", i, "is", currJoints[i], "not 0.0"
+						print("ERROR: joint", i, "is", currJoints[i], "not 0.0")
 
-				print "step 2 complete"
+				print("step 2 complete")
 				self.testSuccess()
 			
 			

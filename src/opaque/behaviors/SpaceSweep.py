@@ -5,11 +5,11 @@ if not dir in sys.path:
 	sys.path.append(dir)
 
 from common import *
-from Behavior import *
+from .Behavior import *
 
-from Anchor import Anchor
-from LocalCurveFit import LocalCurveFit
-from Transition import Transition
+from .Anchor import Anchor
+from .LocalCurveFit import LocalCurveFit
+from .Transition import Transition
 
 class SpaceSweep(Behavior):
 	
@@ -127,7 +127,7 @@ class SpaceSweep(Behavior):
 			#transTime = int(errSum*2)
 			transTime = int(4*errSum)
 			
-			print "sweep transition time =", transTime
+			print("sweep transition time =", transTime)
 
 			# set target and initial poses
 			self.transition.setInit(initState)

@@ -6,7 +6,7 @@ from random import gauss
 from copy import copy
 from math import floor, asin, acos, cos, sin, ceil
 from time import time
-from functions import closestAngle, diffAngle, makePosesUniform
+from .functions import closestAngle, diffAngle, makePosesUniform
 
 from scipy.spatial import cKDTree
 from numpy import array, append
@@ -20,12 +20,12 @@ class SplineFit:
 		random.seed(0)		
 
 		if len(points) <= 1:
-			print "ERROR, not enough points", points
+			print("ERROR, not enough points", points)
 			raise
 
 		if len(points) <= 5:
 
-			print "SplineFit received points:", points
+			print("SplineFit received points:", points)
 
 			max_spacing = 0.08
 
@@ -68,7 +68,7 @@ class SplineFit:
 				newPath3 = newP
 					
 			points = newPath3
-			print "SplineFit recomputed points:", points
+			print("SplineFit recomputed points:", points)
 
 		self.pointSet = points
 		self.smoothNess = smooth
@@ -101,8 +101,8 @@ class SplineFit:
 		try:
 			self.tck, self.u = scipy.interpolate.splprep(intArray, s = self.smoothNess, k=self.kp)
 		except:
-			print "points:", points
-			print "intArray:", intArray
+			print("points:", points)
+			print("intArray:", intArray)
 			raise
 
 
@@ -197,7 +197,7 @@ class SplineFit:
 		candAngle = points[0][2]+offset
 		if compareAngle != None:
 			nextAngle = closestAngle(compareAngle, candAngle)
-			print "compareAngle:", compareAngle, candAngle, nextAngle
+			print("compareAngle:", compareAngle, candAngle, nextAngle)
 		else:
 			nextAngle = candAngle
 		
@@ -211,7 +211,7 @@ class SplineFit:
 			candAngle = p1[2] + offset
 			nextAngle = closestAngle(prevAngle, candAngle)
 			if i == 0:
-				print "closestAngle:", offset, prevAngle, candAngle, nextAngle
+				print("closestAngle:", offset, prevAngle, candAngle, nextAngle)
 			points_trans.append([totalDist, nextAngle])
 			
 		" thin out the points "
@@ -300,8 +300,8 @@ class SplineFit:
 	
 				count += 1
 				if count > 30:
-					print "Fail getUofDist:"
-					print startU, dist, highU, lowU, midU, midDist, magDist, termDist
+					print("Fail getUofDist:")
+					print(startU, dist, highU, lowU, midU, midDist, magDist, termDist)
 					#raise
 
 					" brute force search"
@@ -309,10 +309,10 @@ class SplineFit:
 					bestIndex = int(startU*1000.)
 					initDist = self.distPoints[bestIndex]
 			
-					print "bestIndex, initDist =", bestIndex, initDist
+					print("bestIndex, initDist =", bestIndex, initDist)
 			
 					if dist >= 0:
-						setIndices = range(bestIndex,1000)
+						setIndices = list(range(bestIndex,1000))
 						for k in setIndices:
 							currDist = self.distPoints[k] - initDist
 							deltaDiff = abs(magDist-currDist)
@@ -321,7 +321,7 @@ class SplineFit:
 								bestDiff = deltaDiff
 								bestIndex = k
 					else:
-						setIndices = range(0,bestIndex+1)
+						setIndices = list(range(0,bestIndex+1))
 						setIndices.reverse()
 						for k in setIndices:
 							currDist = initDist - self.distPoints[k]
@@ -332,7 +332,7 @@ class SplineFit:
 								bestIndex = k
 			
 					uVal = bestIndex * 0.001
-					print "currDist, bestIndex, bestDiff, uVal =", currDist, bestIndex, bestDiff, uVal
+					print("currDist, bestIndex, bestDiff, uVal =", currDist, bestIndex, bestDiff, uVal)
 					returnVal2 = uVal
 					
 					return uVal
@@ -615,7 +615,7 @@ class SplineFit:
 		#print "getUVector(", u1, ")"
 
 		if u1 < 0.0 or u1 > 1.0:
-			print "ERROR: u =", u1
+			print("ERROR: u =", u1)
 			raise
 
 		iterVal = 1.0-iter
@@ -806,7 +806,7 @@ class SplineFit:
 
 	def getU(self, u):
 		if u < 0.0 or u > 1.0:
-			print "ERROR: u =", u
+			print("ERROR: u =", u)
 			raise
 
 		unew = [u]
@@ -821,7 +821,7 @@ class SplineFit:
 	def getUSet(self, u_set):
 		for u in u_set:
 			if u < 0.0 or u > 1.0:
-				print "ERROR: u =", u
+				print("ERROR: u =", u)
 				raise
 
 		newPoints = scipy.interpolate.splev(u_set,self.tck)
@@ -836,7 +836,7 @@ class SplineFit:
 		
 		for u in u_set:
 			if u < 0.0 or u > 1.0:
-				print "ERROR: u =", u
+				print("ERROR: u =", u)
 				raise
 
 		newPoints = scipy.interpolate.splev(u_set,self.tck)

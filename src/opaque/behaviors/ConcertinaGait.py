@@ -118,7 +118,7 @@ class ConcertinaGait:
 
 				else:
 					# mask for a shorter widthed activity indicator
-					amps_short = range(numPeaks)
+					amps_short = list(range(numPeaks))
 
 					# active node gaussian peaks
 					for j in range(numPeaks):
@@ -139,7 +139,7 @@ class ConcertinaGait:
 
 				else:
 					# gaussians for amplitude and activity indicator
-					amps = range(numPeaks)
+					amps = list(range(numPeaks))
 
 					# active node gaussian peaks
 					for j in range(numPeaks):

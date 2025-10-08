@@ -1,11 +1,11 @@
-from SnakeControl import SnakeControl
+from .SnakeControl import SnakeControl
 from copy import copy
 from math import fabs
 
-from behaviors.PokeWalls import PokeWalls
-from behaviors.AnchorTransition import AnchorTransition
-from pose.AverageContacts import AverageContacts
-from maps.MapGraph import MapGraph
+from .behaviors.PokeWalls import PokeWalls
+from .behaviors.AnchorTransition import AnchorTransition
+from .pose.AverageContacts import AverageContacts
+from .maps.MapGraph import MapGraph
 
 class TestPokeWalls(SnakeControl):
 
@@ -71,7 +71,7 @@ class TestPokeWalls(SnakeControl):
 			self.contacts.step()
 				
 			self.stateA = 1			
-			print "step 0 complete"
+			print("step 0 complete")
 
 		elif self.stateA == 1:
 
@@ -80,7 +80,7 @@ class TestPokeWalls(SnakeControl):
 
 			if self.contacts.isStable():
 				self.stateA = 2
-				print "isStable()"
+				print("isStable()")
 
 		elif self.stateA == 2:
 			
@@ -89,7 +89,7 @@ class TestPokeWalls(SnakeControl):
 			
 			self.stateA = 3
 			
-			print "step 1 complete"
+			print("step 1 complete")
 			
 		# Anchor to the walls
 		elif self.stateA == 3:
@@ -108,7 +108,7 @@ class TestPokeWalls(SnakeControl):
 	
 			if isDone:
 				self.stateA = 4
-				print "step 3 complete"
+				print("step 3 complete")
 	
 			
 		elif self.stateA == 4:
@@ -118,7 +118,7 @@ class TestPokeWalls(SnakeControl):
 
 			self.stateA = 5
 			
-			print "step 4 complete"
+			print("step 4 complete")
 			
 		# Anchor to the walls
 		elif self.stateA == 5:
@@ -143,9 +143,9 @@ class TestPokeWalls(SnakeControl):
 				for i in range(0,17):
 					
 					if fabs(currJoints[i]) >= 0.0001:
-						print "ERROR: joint", i, "is", currJoints[i], "not 0.0"
+						print("ERROR: joint", i, "is", currJoints[i], "not 0.0")
 
-				print "step 5 complete"
+				print("step 5 complete")
 				self.testSuccess()
 			
 								

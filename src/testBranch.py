@@ -17,7 +17,7 @@ from opaque.maps.MapState import getBranchPoint
 class DataObj:
 	def restoreState(self, dirName, numNodes):
 		
-		print "loading" + dirName + "/mapStateSave_%04u_%04u.txt" % (0, numNodes+1)
+		print("loading" + dirName + "/mapStateSave_%04u_%04u.txt" % (0, numNodes+1))
 		f = open(dirName + "/mapStateSave_%04u_%04u.txt" % (0, numNodes+1), 'r')		 
 		saveStr = f.read()
 		#print saveStr
@@ -63,7 +63,7 @@ for dataEntry in dataSet:
 
 	pathClasses, paths = dataEntry
 
-	for pathID in pathClasses.keys():
+	for pathID in list(pathClasses.keys()):
 		if pathID != 0:
 
 			globalJunctionPose = pathClasses[pathID]["globalJunctionPose"]

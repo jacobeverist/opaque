@@ -2,6 +2,6 @@
 
 from opaque.common import *
 
-print PIXELSIZE
+print(PIXELSIZE)
 
 #snake = robot.SnakeProbe()

@@ -23,8 +23,8 @@ class BulletProbe:
 
 		self.transform = Transform()
 		
-		print "initial quaternion:", angQuat
-		print "initial starting position:", pos
+		print("initial quaternion:", angQuat)
+		print("initial starting position:", pos)
 		
 		self.bullet_snake = BulletSnakeProbe(angQuat, pos, numSegs, segLength, segHeight, segWidth, friction)
 		#self.bullet_snake.frameStarted()
@@ -87,7 +87,7 @@ class BulletProbe:
 		
 	def perturbProbe(self, doForce):
 		if doForce:
-			print "PERTURB"
+			print("PERTURB")
 			self.bullet_snake.perturb()
 	
 	def setAnchor(self, isAnchor):
@@ -106,10 +106,10 @@ class BulletProbe:
 	def setWalls(self, walls):
 		self.walls = walls
 	
-		print "creating walls:"
-		print walls
+		print("creating walls:")
+		print(walls)
 		for pnts in walls:
-			print "wall: ",pnts
+			print("wall: ",pnts)
 			self.bullet_snake.addWall(pnts)
 			#self.bullet_snake.createWall(pnts)
 
@@ -504,7 +504,7 @@ class BulletProbe:
 			zTotal = originPose[1] 
 			totalAngle = originPose[2] 
 
-			ind = range(targetJoint+1, originJoint + 1) # (28, 11) 
+			ind = list(range(targetJoint+1, originJoint + 1)) # (28, 11) 
 			ind.reverse()
 
 			for i in ind:
@@ -525,9 +525,9 @@ class BulletProbe:
 		targetPose = [0.0,0.0,0.0]
 
 		if originJoint >= self.numSegs-1 or targetJoint >= self.numSegs or originJoint < 0 or targetJoint < -1:
-			print "ERROR: getJointWRTJointPose joint out of range!" 
-			print "Received joint", originJoint , "and" , targetJoint , "with pose"
-			print originPose[0], originPose[1], originPose[2]
+			print("ERROR: getJointWRTJointPose joint out of range!") 
+			print("Received joint", originJoint , "and" , targetJoint , "with pose")
+			print(originPose[0], originPose[1], originPose[2])
 			raise
 
 		#joints = self.getProbeState()
@@ -572,7 +572,7 @@ class BulletProbe:
 			zTotal = originPose[1] 
 			totalAngle = originPose[2] 
 
-			ind = range(targetJoint+1, originJoint + 1) # (28, 11) 
+			ind = list(range(targetJoint+1, originJoint + 1)) # (28, 11) 
 			ind.reverse()
 
 			for i in ind:

@@ -184,7 +184,7 @@ for t in range(1,len(Obs)):
 			for j in range(3):  # f_j  (t+1)
 				newState[i,j] /= denomSum
 
-		print "go forward"
+		print("go forward")
 
 	elif currAct == 'b':
 		denomSum = 0.0
@@ -206,7 +206,7 @@ for t in range(1,len(Obs)):
 			for j in range(3):  # f_j  (t+1)
 				newState[i,j] /= denomSum
 
-		print "go backward"
+		print("go backward")
 	else:
 		raise
 
@@ -224,9 +224,9 @@ for t in range(1,len(Obs)):
 			probSum += newState[i,j] 
 
 
-	print currAct, currZ
-	print probState
-	print probFeature
+	print(currAct, currZ)
+	print(probState)
+	print(probFeature)
 	#print probSum, newState
 	#print newAlpha
 	
@@ -245,7 +245,7 @@ newBeta = np.matrix('1.0 1.0 1.0; 1.0 1.0 1.0 ; 1.0 1.0 1.0 ')
 betas.insert(0,newBeta)
 
 
-times = range(1,len(Obs))
+times = list(range(1,len(Obs)))
 #times = range(len(Acts))
 times.reverse()
 
@@ -295,7 +295,7 @@ for i in range(3):
 	for j in range(3):
 		P_O_AMC += pi_0[i,j] * THETA[i*3+j, currZ] * beta_0[i,j]
 
-print len(alphas), len(betas), P_O_AMC
+print(len(alphas), len(betas), P_O_AMC)
 
 
 gammas = []
@@ -343,7 +343,7 @@ for t in range(1,len(alphas)):
 
 	epsilons.append(newEpsilon)
 
-times = range(1,len(Obs))
+times = list(range(1,len(Obs)))
 
 denom_gamma_f = np.zeros([3,3])
 denom_gamma_b = np.zeros([3,3])
@@ -376,9 +376,9 @@ for t in range(1,len(gammas)):
 	else:
 		raise
 
-print denom_gamma_f
-print denom_gamma_b
-print denom_gamma
+print(denom_gamma_f)
+print(denom_gamma_b)
+print(denom_gamma)
 
 #currGamma = gammas[-1]
 #for i in range(3):
@@ -423,11 +423,11 @@ for t in range(0,len(alphas)):
 			new_THETA[i*3+j, currZ] += THETA[i*3+j, currZ] / denom_gamma[i,j]
 
 
-print new_PHI_f
-print new_PHI_b
-print new_THETA
+print(new_PHI_f)
+print(new_PHI_b)
+print(new_THETA)
 
-print "G_1:", gammas[0]
+print("G_1:", gammas[0])
 
 
 new_PIs = []

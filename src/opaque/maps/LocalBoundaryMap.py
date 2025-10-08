@@ -1,5 +1,5 @@
 
-from Map import Map
+from .Map import Map
 from PIL import Image
 from PIL import ImageDraw
 

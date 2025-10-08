@@ -23,8 +23,8 @@ class PhysXProbe:
 
 		self.transform = Transform()
 		
-		print "initial quaternion:", R.x, R.y, R.z, R.w
-		print "initial starting position:", pos.x, pos.y, pos.z
+		print("initial quaternion:", R.x, R.y, R.z, R.w)
+		print("initial starting position:", pos.x, pos.y, pos.z)
 		
 		self.nx_snake = NxSnakeProbe([R.x,R.y,R.z,R.w], [pos.x, pos.y, pos.z], numSegs, segLength, segHeight, segWidth, friction)
 		#self.nx_snake.frameStarted()
@@ -103,7 +103,7 @@ class PhysXProbe:
 		
 	def perturbProbe(self, doForce):
 		if doForce:
-			print "PERTURB"
+			print("PERTURB")
 			self.nx_snake.perturb()
 	
 	def setAnchor(self, isAnchor):
@@ -123,10 +123,10 @@ class PhysXProbe:
 		self.walls = walls
 		self.npnts = []
 	
-		print "creating walls:"
-		print walls
+		print("creating walls:")
+		print(walls)
 		for pnts in walls:
-			print "wall: ",pnts
+			print("wall: ",pnts)
 			self.createWall(pnts)
 			self.nx_snake.addWall(pnts)
 			#self.nx_snake.createWall(pnts)
@@ -224,7 +224,7 @@ class PhysXProbe:
 		mo1_ext.convertToMesh("WallMesh_Exterior_" + str(self.wallCount))
 		mo1_top.convertToMesh("WallMesh_Top_" + str(self.wallCount))
 		# create Ogre entity
-		print "creating entity " + str(self.wallCount)
+		print("creating entity " + str(self.wallCount))
 		entity1_int = self._mgr.createEntity("WallEntity_Interior_" + str(self.wallCount), "WallMesh_Interior_" + str(self.wallCount))
 		entity1_ext = self._mgr.createEntity("WallEntity_Exterior_" + str(self.wallCount), "WallMesh_Exterior_" + str(self.wallCount))
 		entity1_top = self._mgr.createEntity("WallEntity_Top_" + str(self.wallCount), "WallMesh_Top_" + str(self.wallCount))
@@ -612,7 +612,7 @@ class PhysXProbe:
 			zTotal = originPose[1] 
 			totalAngle = originPose[2] 
 
-			ind = range(targetJoint+1, originJoint + 1) # (28, 11) 
+			ind = list(range(targetJoint+1, originJoint + 1)) # (28, 11) 
 			ind.reverse()
 
 			for i in ind:
@@ -633,9 +633,9 @@ class PhysXProbe:
 		targetPose = [0.0,0.0,0.0]
 
 		if originJoint >= self.numSegs-1 or targetJoint >= self.numSegs or originJoint < 0 or targetJoint < -1:
-			print "ERROR: getJointWRTJointPose joint out of range!" 
-			print "Received joint", originJoint , "and" , targetJoint , "with pose"
-			print originPose[0], originPose[1], originPose[2]
+			print("ERROR: getJointWRTJointPose joint out of range!") 
+			print("Received joint", originJoint , "and" , targetJoint , "with pose")
+			print(originPose[0], originPose[1], originPose[2])
 			raise
 
 		#joints = self.getProbeState()
@@ -680,7 +680,7 @@ class PhysXProbe:
 			zTotal = originPose[1] 
 			totalAngle = originPose[2] 
 
-			ind = range(targetJoint+1, originJoint + 1) # (28, 11) 
+			ind = list(range(targetJoint+1, originJoint + 1)) # (28, 11) 
 			ind.reverse()
 
 			for i in ind:

@@ -5,8 +5,8 @@ if not dir in sys.path:
 	sys.path.append(dir)
 
 from common import *
-from Behavior import *
-from Transition import Transition
+from .Behavior import *
+from .Transition import Transition
 
 class Spring(Behavior):
 	
@@ -39,7 +39,7 @@ class Spring(Behavior):
 
 		self.direction = val
 
-		print "spring direction =", self.direction 
+		print("spring direction =", self.direction) 
 		self.resetJoints()
 		
 		#if self.direction:
@@ -83,9 +83,9 @@ class Spring(Behavior):
 			" 1. setup target configuration and begin the transition "
 
 			if self.direction:
-				joints = range(0, self.topJoint)
+				joints = list(range(0, self.topJoint))
 			else:
-				joints = range(self.topJoint, self.numJoints)
+				joints = list(range(self.topJoint, self.numJoints))
 				
 			#print joints
 			

@@ -1,8 +1,8 @@
-from SnakeControl import SnakeControl
+from .SnakeControl import SnakeControl
 from copy import *
 from math import *
 
-from behaviors.HoldPosition import HoldPosition
+from .behaviors.HoldPosition import HoldPosition
 
 class TestBehavior(SnakeControl):
 
@@ -79,7 +79,7 @@ class TestBehavior(SnakeControl):
 					
 			self.stateA = 1
 			
-			print "step 0 complete"
+			print("step 0 complete")
 			
 		# Anchor to the walls
 		elif self.stateA == 1:
@@ -92,7 +92,7 @@ class TestBehavior(SnakeControl):
 			if self.nextState:
 
 				if isDone:
-					print "ERROR: isDone is true in step 2"
+					print("ERROR: isDone is true in step 2")
 				
 				currJoints = probeState['joints']
 
@@ -101,22 +101,22 @@ class TestBehavior(SnakeControl):
 					
 					if modVal == 0:
 						if modVal == 0 and currJoints[i] != 0.0:
-							print "ERROR: joint", i, "is", currJoints[i], "not 0.0"
+							print("ERROR: joint", i, "is", currJoints[i], "not 0.0")
 						elif modVal == 1 and currJoints[i] != 0.0:
-							print "ERROR: joint", i, "is", currJoints[i], "not 90.0"
+							print("ERROR: joint", i, "is", currJoints[i], "not 90.0")
 						elif modVal == 2 and currJoints[i] != 0.0:
-							print "ERROR: joint", i, "is", currJoints[i], "not 0.0"
+							print("ERROR: joint", i, "is", currJoints[i], "not 0.0")
 						elif modVal == 3 and currJoints[i] != 0.0:
-							print "ERROR: joint", i, "is", currJoints[i], "not -90.0"
+							print("ERROR: joint", i, "is", currJoints[i], "not -90.0")
 
-				print "step 2 complete"
+				print("step 2 complete")
 				self.testSuccess()
 				
 			else:
 				self.nextState = True
 			
 				if isDone:
-					print "ERROR: isDone is true in step 1"
+					print("ERROR: isDone is true in step 1")
 					
 				currJoints = probeState['joints']
 
@@ -125,20 +125,20 @@ class TestBehavior(SnakeControl):
 					
 					if modVal == 0:
 						if modVal == 0 and currJoints[i] != 0.0:
-							print "ERROR: joint", i, "is", currJoints[i], "not 0.0"
+							print("ERROR: joint", i, "is", currJoints[i], "not 0.0")
 						elif modVal == 1 and currJoints[i] != 90.0:
-							print "ERROR: joint", i, "is", currJoints[i], "not 90.0"
+							print("ERROR: joint", i, "is", currJoints[i], "not 90.0")
 						elif modVal == 2 and currJoints[i] != 0.0:
-							print "ERROR: joint", i, "is", currJoints[i], "not 0.0"
+							print("ERROR: joint", i, "is", currJoints[i], "not 0.0")
 						elif modVal == 3 and currJoints[i] != -90.0:
-							print "ERROR: joint", i, "is", currJoints[i], "not -90.0"
+							print("ERROR: joint", i, "is", currJoints[i], "not -90.0")
 
-				print "step 1 complete"
+				print("step 1 complete")
 				
 			
 			if isDone:
 				self.stateA = 2
-				print "going to state ", self.stateA
+				print("going to state ", self.stateA)
 
 				self.holdP.reset(probeState)
 

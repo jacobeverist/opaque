@@ -146,5 +146,5 @@ if __name__ == '__main__':
 		gnds.append(gndOffset)
 		ests.append(estOffset)
 		
-	print computeCovar(gnds, ests)
-	print computeCovar(gnds, gnds)
+	print(computeCovar(gnds, ests))
+	print(computeCovar(gnds, gnds))

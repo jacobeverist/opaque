@@ -23,7 +23,7 @@ str_f = f.readline()
 
 while str_f != '':
     inputVals.append(eval(str_f))
-    print inputVals[-1][-1]
+    print(inputVals[-1][-1])
     str_f = f.readline()
     
 plotCount = 0

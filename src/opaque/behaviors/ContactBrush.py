@@ -5,7 +5,7 @@ if not dir in sys.path:
 	sys.path.append(dir)
 
 from common import *
-from Behavior import *
+from .Behavior import *
 
 class ContactBrush(Behavior):
 	

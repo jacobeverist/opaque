@@ -41,9 +41,9 @@ def _myDet(p, q, r):
     return sum1 - sum2
 
 
-def _isRightTurn((p, q, r)):
+def _isRightTurn(xxx_todo_changeme):
     "Do the vectors pq:qr form a right turn, or not?"
-
+    (p, q, r) = xxx_todo_changeme
     assert p != q and q != r and p != r
             
     if _myDet(p, q, r) < 0:
@@ -56,7 +56,7 @@ def _isPointInPolygon(r, P):
     "Is point r inside a given polygon P?"
 
     # We assume the polygon is a list of points, listed clockwise!
-    for i in xrange(len(P[:-1])):
+    for i in range(len(P[:-1])):
         p, q = P[i], P[i+1]
         if not _isRightTurn((p, q, r)):
             return 0 # Out!        
@@ -70,7 +70,7 @@ def _makeRandomData(numPoints=10, sqrLength=100, addCornerPoints=0):
     # Fill a square with random points.
     min, max = 0, sqrLength
     P = []
-    for i in xrange(numPoints):
+    for i in range(numPoints):
 	rand = random.randint
 	x = rand(min+1, max-1)
 	y = rand(min+1, max-1)
@@ -146,7 +146,7 @@ def convexHull(P):
     "Calculate the convex hull of a set of points."
 
     # Get a local list copy of the points and sort them lexically.
-    points = map(None, P)
+    points = list(P)
     points.sort()
 
     # Build upper half of the hull.
@@ -196,7 +196,7 @@ if __name__ == '__main__':
         path = "sample.eps"
 
     p = _makeRandomData(numPoints, squareLength, addCornerPoints=0)
-    print p
+    print(p)
     c = convexHull(p)
-    print c
+    print(c)
     #saveAsEps(p, c, squareLength, path)

@@ -5,7 +5,7 @@ if not dir in sys.path:
 	sys.path.append(dir)
 
 from common import *
-from Behavior import *
+from .Behavior import *
 
 localNodeCount = 0
 
@@ -155,7 +155,7 @@ class LocalCurveFit(Behavior):
 					maxJoint = self.endNode
 				
 				#ind = range(0, self.rootNode+1) # (0,19+1) 
-				ind = range(minJoint,maxJoint+1)
+				ind = list(range(minJoint,maxJoint+1))
 				ind.reverse()
 
 				minNode = self.rootNode
@@ -245,7 +245,7 @@ class LocalCurveFit(Behavior):
 				# TODO: weaken the joints that were not set
 				#print "minNode = ", minNode, "maxU = ", maxU
 				#ind = range(0, minNode+1) 
-				ind = range(minJoint, minNode+1) 
+				ind = list(range(minJoint, minNode+1)) 
 				for i in ind: 
 					#self.setJoint(i, 0.0)
 					self.setJoint(i, 0.0)
@@ -270,7 +270,7 @@ class LocalCurveFit(Behavior):
 				if maxJoint > self.endNode:
 					maxJoint = self.endNode
 					 
-				ind = range(minJoint,maxJoint+1)
+				ind = list(range(minJoint,maxJoint+1))
 				
 				# indices
 				#ind = range(0, self.rootNode+1) # (0,19+1) 
@@ -370,7 +370,7 @@ class LocalCurveFit(Behavior):
 
 				# TODO: weaken the joints that were not set
 				#ind = range(maxNode, self.rootNode+1) # (0,19+1) 
-				ind = range(maxNode, maxJoint+1) # (0,19+1) 
+				ind = list(range(maxNode, maxJoint+1)) # (0,19+1) 
 				for i in ind: 
 					self.setJoint(i, 0.0)
 
@@ -394,7 +394,7 @@ class LocalCurveFit(Behavior):
 				if maxJoint > self.endNode:
 					maxJoint = self.endNode
 					 
-				ind = range(minJoint,maxJoint+1)
+				ind = list(range(minJoint,maxJoint+1))
 				#ind = range(self.rootNode+1, self.numJoints) # (20,39+1) 
 				ind.reverse()
 
@@ -485,7 +485,7 @@ class LocalCurveFit(Behavior):
 				# TODO: weaken the joints that were not set
 				#print "minNode = ", minNode, "maxU = ", maxU
 				#ind = range(self.rootNode+1, minNode+1) 
-				ind = range(minJoint, minNode+1) 
+				ind = list(range(minJoint, minNode+1)) 
 				for i in ind: 
 					self.setJoint(i, 0.0)
 
@@ -508,7 +508,7 @@ class LocalCurveFit(Behavior):
 				if maxJoint > self.endNode:
 					maxJoint = self.endNode
 					 
-				ind = range(minJoint,maxJoint+1)
+				ind = list(range(minJoint,maxJoint+1))
 				#ind = range(self.rootNode+1, self.numJoints) # (20,39+1) 
 				maxNode = 0
 				maxU = 0.0
@@ -605,7 +605,7 @@ class LocalCurveFit(Behavior):
 
 				# TODO: weaken the joints that were not set
 				#ind = range(maxNode, self.numSegs-1) # (0,19+1) 
-				ind = range(maxNode, maxJoint+1) # (0,19+1) 
+				ind = list(range(maxNode, maxJoint+1)) # (0,19+1) 
 				for i in ind: 
 					self.setJoint(i, 0.0)
 

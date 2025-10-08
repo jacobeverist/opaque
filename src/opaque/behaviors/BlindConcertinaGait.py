@@ -5,7 +5,7 @@ if not dir in sys.path:
 	sys.path.append(dir)
 
 from common import *
-from Behavior import *
+from .Behavior import *
 
 class BlindConcertinaGait(Behavior):
 	
@@ -109,7 +109,7 @@ class BlindConcertinaGait(Behavior):
 	
 				else:
 					# mask for a shorter widthed activity indicator
-					amps_short = range(numPeaks)
+					amps_short = list(range(numPeaks))
 	
 					# active node gaussian peaks
 					for j in range(numPeaks):
@@ -130,7 +130,7 @@ class BlindConcertinaGait(Behavior):
 	
 				else:
 					# gaussians for amplitude and activity indicator
-					amps = range(numPeaks)
+					amps = list(range(numPeaks))
 	
 					# active node gaussian peaks
 					for j in range(numPeaks):

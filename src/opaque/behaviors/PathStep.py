@@ -1,15 +1,15 @@
 
 
-from Behavior import Behavior
-from VoronoiFit import VoronoiFit
-from FrontAnchorFit import FrontAnchorFit
-from FastLocalCurveFit import FastLocalCurveFit
-from HoldTransition import HoldTransition
-from HoldSlideTransition import HoldSlideTransition
-from AdaptiveAnchorCurve import AdaptiveAnchorCurve
-from BackConcertinaCurve import BackConcertinaCurve
-from GlobalCurveFit import GlobalCurveFit
-from GlobalCurveSlide import GlobalCurveSlide
+from .Behavior import Behavior
+from .VoronoiFit import VoronoiFit
+from .FrontAnchorFit import FrontAnchorFit
+from .FastLocalCurveFit import FastLocalCurveFit
+from .HoldTransition import HoldTransition
+from .HoldSlideTransition import HoldSlideTransition
+from .AdaptiveAnchorCurve import AdaptiveAnchorCurve
+from .BackConcertinaCurve import BackConcertinaCurve
+from .GlobalCurveFit import GlobalCurveFit
+from .GlobalCurveSlide import GlobalCurveSlide
 
 from copy import copy, deepcopy
 from math import pi, cos, sin, fabs, sqrt
@@ -26,7 +26,7 @@ class PathStep(Behavior):
 	def __init__(self, robotParam, probeState, contacts, mapGraph, inversion = 1):
 		Behavior.__init__(self, robotParam)
 
-		print "creating PathStep"
+		print("creating PathStep")
 
 		self.numJoints = self.robotParam['numJoints']
 		self.numSegs = self.robotParam['numSegs']
@@ -117,7 +117,7 @@ class PathStep(Behavior):
 		return self.mask
 
 	def setPath(self, path):
-		print "setting path: ", path
+		print("setting path: ", path)
 
 		self.path = deepcopy(path)
 		#self.computeCurve()
@@ -125,19 +125,19 @@ class PathStep(Behavior):
 		self.pathCurve1 = VoronoiFit(deepcopy(self.path))
 		self.pathCurve2 = VoronoiFit(deepcopy(self.path))
 		
-		print "creating GlobalCurveFit"
+		print("creating GlobalCurveFit")
 		#self.globalCurveFit = GlobalCurveFit(self.robotParam, self.contacts, self.pathCurve1, localNode = self.mapGraph.currNode)
 		self.globalCurveFit = GlobalCurveFit(self.robotParam, self.contacts, self.pathCurve1)
 		#self.globalCurveFit.setTimerAliasing(10)
 		
-		print "creating GlobalCurveSlide"
+		print("creating GlobalCurveSlide")
 		#self.globalCurveSlide = GlobalCurveSlide(self.robotParam, self.contacts, self.pathCurve2, localNode = self.mapGraph.currNode)
 		self.globalCurveSlide = GlobalCurveSlide(self.robotParam, self.contacts, self.pathCurve2)
 		
 		#self.setDirection(not self.globalCurveFit.getPathDirection())
 		result = self.globalCurveSlide.getPathDirection()
 		
-		print "received", result, "from globalCurveSlide"
+		print("received", result, "from globalCurveSlide")
 		
 		self.setDirection(result)
 		
@@ -159,7 +159,7 @@ class PathStep(Behavior):
 
 		self.direction = isForward
 		
-		print "setting PathStep direction =", self.direction
+		print("setting PathStep direction =", self.direction)
 
 		self.mask = [0.0 for i in range(0,40)]
 		self.count = 0
@@ -643,7 +643,7 @@ class PathStep(Behavior):
 			
 	def doExtendFront(self):
 
-		print "Extend Front"
+		print("Extend Front")
 
 		if self.globalCurveSlide.step(self.probeState):
 			self.frontExtendDone = True
@@ -968,7 +968,7 @@ class PathStep(Behavior):
 			#print "errorPoses1:", self.errorPoses1
 			#print "errorPoses2:", self.errorPoses2
 			#print "errorPoses3:", self.errorPoses3
-			print "anchor errors =", err1, err2, err3
+			print("anchor errors =", err1, err2, err3)
 			
 			#if err1 > 0.1 or err2 > 0.1:
 			if False:
@@ -1230,15 +1230,15 @@ class PathStep(Behavior):
 	
 				if len(peakJoints) == 0 and self.currPeak != 0:
 					isDone = True
-					print "terminating caseA"
+					print("terminating caseA")
 					
 				elif self.direction and 38 in peakJoints and currAmp > 0.5:
 					isDone = True
-					print "terminating caseB"
+					print("terminating caseB")
 					
 				elif not self.direction and 0 in peakJoints and currAmp > 0.5:
 					isDone = True
-					print "terminating caseC"	
+					print("terminating caseC")	
 
 			if isDone:
 					
@@ -1260,13 +1260,13 @@ class PathStep(Behavior):
 					
 					if self.frontExtending:
 						
-						print "Front Extend Step"
+						print("Front Extend Step")
 						self.doExtendFront()
 						if self.frontExtendDone:
 							self.frontExtending = False
 						
 					else:
-						print "Front Anchor Step"
+						print("Front Anchor Step")
 						self.doFrontAnchor()
 		
 						if self.frontAnchoringDone:
@@ -1291,7 +1291,7 @@ class PathStep(Behavior):
 				else:
 					peakJoints = self.concertinaFit.getPeakJoints(self.currPeak)	
 					
-					print "Concertina Step"
+					print("Concertina Step")
 					self.doBackConcertina()
 
 
@@ -1309,7 +1309,7 @@ class PathStep(Behavior):
 		
 		if self.frontCurve.isOutOfSegments(self.frontAnchorFit.lastPosition):
 
-			print "NOTE: ran out of segments on splice joint", self.spliceJoint
+			print("NOTE: ran out of segments on splice joint", self.spliceJoint)
 			
 			" if we've exhausted too many joints, lets just quit with what we have "
 			if self.direction and self.spliceJoint >= 15:

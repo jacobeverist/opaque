@@ -1,4 +1,4 @@
-from SnakeControl import SnakeControl
+from .SnakeControl import SnakeControl
 from copy import *
 from math import *
 import time
@@ -65,7 +65,7 @@ class TestTransform(SnakeControl):
 			self.stateA = 1		
 			self.t1 = time.time()
 				
-			print "step 0 complete"
+			print("step 0 complete")
 
 		elif self.stateA == 1:
 
@@ -128,11 +128,11 @@ class TestTransform(SnakeControl):
 				t2 = time.time()
 
 				result = (t2-self.t1)*1000.0
-				print result
+				print(result)
 				exit()
 							
 			if isDone:
-				print "step 1 complete"
+				print("step 1 complete")
 		
 				self.stateA = 2
 

@@ -136,7 +136,7 @@ for j in range(7,16):
 		totalAngle = 0.0
 		actualConfig = []
 	
-		joints = range(-1,rootNode)
+		joints = list(range(-1,rootNode))
 		joints.reverse()
 
 		for i in joints:
@@ -154,7 +154,7 @@ for j in range(7,16):
 
 			actualConfig.append([i, [p4,p3,p2,p1]])
 
-		joints = range(rootNode, numSegs-1)
+		joints = list(range(rootNode, numSegs-1))
 
 		xTotal = 0.0
 		zTotal = 0.0

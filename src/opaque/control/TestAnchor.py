@@ -207,7 +207,7 @@ class TestAnchor(SnakeControl):
 				#self.stateA = 1
 				self.holdP.reset()
 				self.holdT.reset()
-				print "going to state 1"
+				print("going to state 1")
 				#self.mapGraph.saveMap()
 			
 				" set anchoring "
@@ -280,7 +280,7 @@ class TestAnchor(SnakeControl):
 
 			if isDone:
 				self.stateA = 2
-				print "going to state 2"
+				print("going to state 2")
 
 		elif self.stateA == 2:
 			
@@ -307,7 +307,7 @@ class TestAnchor(SnakeControl):
 			
 				self.stateA = 3
 				self.prevTime = self.globalTimer
-				print "going to state 3"
+				print("going to state 3")
 
 		elif self.stateA == 3:
 			
@@ -339,7 +339,7 @@ class TestAnchor(SnakeControl):
 				self.mapGraph.update(True)
 				#self.stateA = 4
 				self.stateA = 5
-				print "going to state 4"
+				print("going to state 4")
 
 		elif self.stateA == 4:
 			
@@ -364,7 +364,7 @@ class TestAnchor(SnakeControl):
 	
 			if isDone:
 				self.stateA = 5
-				print "going to state 5"
+				print("going to state 5")
 
 		elif self.stateA == 5:
 			
@@ -392,12 +392,12 @@ class TestAnchor(SnakeControl):
 
 				self.stateA = 6
 				self.prevTime = self.globalTimer
-				print "going to state 6"
+				print("going to state 6")
 
 				" skip the anchoring and just go to locomotion "
 				if True:
 					self.stateA = 0
-					print "going to state 0"
+					print("going to state 0")
 					self.mapGraph.saveLocalMap()
 	
 					" anchoring turned off "
@@ -421,7 +421,7 @@ class TestAnchor(SnakeControl):
 				#self.mapGraph.update(True)
 				#self.mapGraph.update(False)
 				self.stateA = 7
-				print "going to state 7"
+				print("going to state 7")
 
 		elif self.stateA == 7:
 			
@@ -432,7 +432,7 @@ class TestAnchor(SnakeControl):
 				#if self.frontierMap.isFrontier():
 				if True:
 					self.stateA = 0
-					print "going to state 0"
+					print("going to state 0")
 					self.mapGraph.saveLocalMap()
 
 					" anchoring turned off "
@@ -462,14 +462,14 @@ class TestAnchor(SnakeControl):
 			self.mergeJoints([joints])
 			
 			if isDone:
-				print "done!"
+				print("done!")
 				
 				if len(self.wayPoints) > 0:
 					dest = self.wayPoints[0]
 					pose = self.probe.getActualSegPose(0)
 					
 					dist = sqrt((dest[0]-pose[0])**2 + (dest[1]-pose[1])**2)
-					print "dist = ", dist
+					print("dist = ", dist)
 					
 					if dist > self.lastDist:
 						self.distCount += 1

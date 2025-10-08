@@ -4,8 +4,8 @@ dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if not dir in sys.path:
 	sys.path.append(dir)
 
-from common import *
-from SnakeControl import *
+from .common import *
+from .SnakeControl import *
 from copy import *
 from math import *
 from numpy import arange
@@ -146,7 +146,7 @@ class TestMapping(SnakeControl):
 			if isDone:
 				self.stateA = -1
 				#self.stateA = 1
-				print "going to state ", self.stateA
+				print("going to state ", self.stateA)
 
 				self.holdP.reset()
 				self.holdT.reset()
@@ -198,7 +198,7 @@ class TestMapping(SnakeControl):
 				self.frontExtend.reset()
 				
 				self.stateA = 0
-				print "going to state 0"
+				print("going to state 0")
 
 				
 		elif self.stateA == 0:
@@ -225,7 +225,7 @@ class TestMapping(SnakeControl):
 
 				self.holdP.reset()
 				self.holdT.reset()
-				print "going to state 1"
+				print("going to state 1")
 
 				" set anchoring "
 				self.isAnchored = True
@@ -237,7 +237,7 @@ class TestMapping(SnakeControl):
 
 				#self.adaptiveStep.computeCenterPoints()
 				centerPoints = self.adaptiveStep.getCenterPoints()
-				print "centerPoints =", centerPoints
+				print("centerPoints =", centerPoints)
 				self.mapGraph.setCenterPoints(centerPoints)
 				
 				self.mapGraph.forceUpdate(False)
@@ -260,7 +260,7 @@ class TestMapping(SnakeControl):
 				self.isCapture = False
 				self.stateA = 2
 				self.prevTime = self.globalTimer
-				print "going to state 2"
+				print("going to state 2")
 
 		elif self.stateA == 2:
 			
@@ -276,7 +276,7 @@ class TestMapping(SnakeControl):
 				self.mapGraph.setCenterPoints(centerPoints)
 
 				self.stateA = 3
-				print "going to state 3"
+				print("going to state 3")
 
 		elif self.stateA == 3:
 			
@@ -307,7 +307,7 @@ class TestMapping(SnakeControl):
 					#	exit()
 
 					self.stateA = 4
-					print "going to state 4"
+					print("going to state 4")
 	
 					" anchoring turned off "
 					self.isAnchored = False
@@ -318,21 +318,21 @@ class TestMapping(SnakeControl):
 			self.mergeJoints([joints1])
 			if self.globalTimer - self.prevTime > 100:
 
-				print "check1"
+				print("check1")
 				#self.mapGraph.saveLocalMap()
 				self.mapGraph.correctPoses2()
-				print "check2"
-				print "self.contacts.activeRef =", self.contacts.activeRef
+				print("check2")
+				print("self.contacts.activeRef =", self.contacts.activeRef)
 
 				self.mapGraph.synch()
-				print "check3"
-				print "self.contacts.activeRef =", self.contacts.activeRef
+				print("check3")
+				print("self.contacts.activeRef =", self.contacts.activeRef)
 				self.mapGraph.saveLocalMap()
-				print "check4"
-				print "self.contacts.activeRef =", self.contacts.activeRef
+				print("check4")
+				print("self.contacts.activeRef =", self.contacts.activeRef)
 				self.mapGraph.saveMap()
-				print "check5"
-				print "self.contacts.activeRef =", self.contacts.activeRef
+				print("check5")
+				print("self.contacts.activeRef =", self.contacts.activeRef)
 
 				self.renderTransition = True
 
@@ -340,7 +340,7 @@ class TestMapping(SnakeControl):
 				currPose = self.contacts.getAveragePose(0)
 				deltaDist = sqrt((currPose[0]-self.lastPose[0])**2 + (currPose[1]-self.lastPose[1])**2)
 
-				print "deltaDist =", deltaDist
+				print("deltaDist =", deltaDist)
 
 				if deltaDist > 0.4:
 
@@ -349,10 +349,10 @@ class TestMapping(SnakeControl):
 				
 
 					self.stateA = -1
-					print "going to state -1"
+					print("going to state -1")
 
 					self.lastPose = self.contacts.getAveragePose(0)
-					print "self.contacts.activeRef =", self.contacts.activeRef
+					print("self.contacts.activeRef =", self.contacts.activeRef)
 
 					# inhibit frontier points in front of me
 
@@ -368,14 +368,14 @@ class TestMapping(SnakeControl):
 					" anchoring turned off "
 					self.isAnchored = False
 					
-					print "check6"
+					print("check6")
 					frontierPoint = self.mapGraph.selectNextFrontier()
 					#currPose = self.probe.getActualSegPose(0)
-					print "check7"
+					print("check7")
 
 					currPose = self.contacts.getAverageSegPose(0)
-					print "check8"
-					print "self.contacts.activeRef =", self.contacts.activeRef
+					print("check8")
+					print("self.contacts.activeRef =", self.contacts.activeRef)
 					
 					originPath, goalPath, breakPoint = self.mapGraph.computeHeadPath(currPose, frontierPoint, self.exploreRoot)
 					self.wayPoints = [breakPoint, goalPath[-1]]
@@ -386,11 +386,11 @@ class TestMapping(SnakeControl):
 					
 					#self.wayPaths[0].reverse()
 
-					print "check9"
+					print("check9")
 					self.pathStep = behave.PathStep(self.probe, self.contacts, self.mapGraph, False)
-					print "check10"
+					print("check10")
 					self.pathStep.setPath(self.wayPaths[0])
-					print "check11"
+					print("check11")
 					self.pathStep.computeCurve()
 					
 					" check if we're already there "
@@ -400,7 +400,7 @@ class TestMapping(SnakeControl):
 						pose = self.contacts.getAverageSegPose(0)
 						
 						dist = sqrt((dest[0]-pose[0])**2 + (dest[1]-pose[1])**2)
-						print "distance from", dest, "to", pose, "=", dist
+						print("distance from", dest, "to", pose, "=", dist)
 						
 						if dist > self.lastDist:
 							self.distCount += 1
@@ -432,7 +432,7 @@ class TestMapping(SnakeControl):
 							self.lastDist = 1e100
 							self.distCount = 0
 					
-					print "going to state", self.stateA
+					print("going to state", self.stateA)
 					
 		elif self.stateA == 5:
 	
@@ -452,11 +452,11 @@ class TestMapping(SnakeControl):
 			if dist < 0.1:
 
 				if not self.targetReached:
-					print "target reached!"
+					print("target reached!")
 				self.targetReached = True
 						
 			if isDone:
-				print "done!"
+				print("done!")
 				self.stateA = 6
 
 
@@ -469,7 +469,7 @@ class TestMapping(SnakeControl):
 					pose = self.contacts.getAverageSegPose(0)
 			
 					dist = sqrt((dest[0]-pose[0])**2 + (dest[1]-pose[1])**2)
-					print "distance from", dest, "to", pose, "=", dist
+					print("distance from", dest, "to", pose, "=", dist)
 					
 					if dist > self.lastDist:
 						self.distCount += 1
@@ -500,7 +500,7 @@ class TestMapping(SnakeControl):
 				self.holdT.reset()
 
 				self.isAnchored = True
-				print "going to state", self.stateA
+				print("going to state", self.stateA)
 				
 		elif self.stateA == 6:
 			
@@ -520,7 +520,7 @@ class TestMapping(SnakeControl):
 				self.isCapture = False
 				self.stateA = 7
 				self.prevTime = self.globalTimer
-				print "going to state 7"
+				print("going to state 7")
 
 		elif self.stateA == 7:
 			
@@ -537,7 +537,7 @@ class TestMapping(SnakeControl):
 				self.holdT.reset()
 				
 				self.stateA = 8
-				print "going to state 8"
+				print("going to state 8")
 
 		elif self.stateA == 8:
 			
@@ -559,7 +559,7 @@ class TestMapping(SnakeControl):
 				self.prevTime = self.globalTimer
 
 				self.stateA = 9
-				print "going to state 9"
+				print("going to state 9")
 
 		elif self.stateA == 9:
 			
@@ -588,4 +588,4 @@ class TestMapping(SnakeControl):
 				self.isAnchored = False
 
 				self.stateA = 5
-				print "going to state 5"
+				print("going to state 5")

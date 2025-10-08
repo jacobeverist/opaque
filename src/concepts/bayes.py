@@ -228,7 +228,7 @@ def dijkstra_proj(initNode, numNodes, edgeHash):
 		
 			" compute the set of pairwise poses to consider using djikstra projection "
 	
-	for key, value in paths.iteritems():
+	for key, value in paths.items():
 		
 		offset = value[0]
 		covE = value[1]
@@ -262,7 +262,7 @@ if __name__ == '__main__':
 		paths.append(dijkstra_proj(i, numNodes, newGraph))	
 	
 	" compare the inverse dijkstra projections "
-	print paths[2][10]
+	print(paths[2][10])
 	#print paths[10][2]
 	
 	loc2 = paths[2][10][0]	
@@ -270,12 +270,12 @@ if __name__ == '__main__':
 	
 	E = matrix([[E_param[0,0], E_param[0,1]],[E_param[1,0], E_param[1,1]]],dtype=float)
 
-	print loc2
-	print E
+	print(loc2)
+	print(E)
 	
 	c1 = matrix([[0.0],[0.0]],dtype=float)
 	c2 = matrix([[loc2[0,0]],[loc2[1,0]]],dtype=float)
-	print mahab_dist(c1, c2, 0, 0, E)
+	print(mahab_dist(c1, c2, 0, 0, E))
 	
 	#nodes = eval(fp.read())
 	#edges = eval(fp.read())

@@ -1,5 +1,5 @@
 #from RefNode import RefNode
-from RefEdge import RefEdge
+from .RefEdge import RefEdge
 #from ValueStability import ValueStability
 from stability import ValueStability
 from reference import RefNode
@@ -110,7 +110,7 @@ class AverageContacts:
 		return stable
 
 	def setCautious(self, isCautious = False):
-		print "setCautious:", isCautious
+		print("setCautious:", isCautious)
 		if isCautious:
 			self.varThresh = 0.001
 			self.jointVar = []
@@ -286,7 +286,7 @@ class AverageContacts:
 
 
 		# search for the largest consecutive section of stable reference nodes
-		nodes = range(0,self.numJoints-1)
+		nodes = list(range(0,self.numJoints-1))
 
 		prevActive = False
 		currStart = 0
@@ -319,7 +319,7 @@ class AverageContacts:
 		# record this as new reference point
 		pose = [0.,0.,0.]
 
-		nodes = range(maxConsec-maxSize+1,maxConsec+1)
+		nodes = list(range(maxConsec-maxSize+1,maxConsec+1))
 
 		#refCount = maxSize
 		refCount = 0
@@ -367,7 +367,7 @@ class AverageContacts:
 		# this is the first node, so reference from 0,0
 		elif self.numRef == 0:
 			
-			print "ERROR: getAveragePose() with no references!"
+			print("ERROR: getAveragePose() with no references!")
 			pose = self.probe.getActualJointPose(targetJoint)
 
 		else:
@@ -401,7 +401,7 @@ class AverageContacts:
 				return [refX, refZ, refP]
 
 		# FIXME: find the *closest* recent node, not the *first*
-		nodes = range(0,targetJoint-1)
+		nodes = list(range(0,targetJoint-1))
 		nodes.reverse()
 
 		for j in nodes:
@@ -412,7 +412,7 @@ class AverageContacts:
 				break
 
 		if not refExists:
-			nodes = range(0,self.numJoints-1)
+			nodes = list(range(0,self.numJoints-1))
 			nodes.reverse()
 			for j in nodes:
 				if self.activeRef[j]:
@@ -712,7 +712,7 @@ class AverageContacts:
 
 		# FIXME: find the *closest* recent node, not the *first*
 		
-		nodes = range(0,newJointID-1)
+		nodes = list(range(0,newJointID-1))
 		nodes.reverse()
 
 		for j in nodes:
@@ -723,7 +723,7 @@ class AverageContacts:
 				break
 
 		if not refExists:
-			nodes = range(0,self.numJoints-1)
+			nodes = list(range(0,self.numJoints-1))
 			nodes.reverse()
 			for j in nodes:
 				if self.activeRef[j]:
@@ -756,13 +756,13 @@ class AverageContacts:
 
 			if forcePose != []:
 				origin = forcePose
-				print "createNewNode() taking forced pose of", forcePose
-				print "actual pose =", self.probe.getActualJointPose(newJointID)
+				print("createNewNode() taking forced pose of", forcePose)
+				print("actual pose =", self.probe.getActualJointPose(newJointID))
 			else:
 				
 				# initialize the first reference node with its position in global coordinates
 				origin = self.probe.getActualJointPose(newJointID)
-				print "initial pose at joint", newJointID
+				print("initial pose at joint", newJointID)
 
 			# initialize the first reference node with its position in global coordinates
 			#origin = self.probe.getActualJointPose(newJointID)
@@ -784,16 +784,16 @@ class AverageContacts:
 			refP = originNode.getRefPoseP()
 			
 			initPose = [refX, refZ, refP]
-			print "initPose =", initPose
+			print("initPose =", initPose)
 
 			jointID = originNode.getJointID()
 
-			print "jointID =", jointID, "newJointID =", newJointID
+			print("jointID =", jointID, "newJointID =", newJointID)
 
 			pose = self.probe.getJointWRTJointPose(initPose, jointID, newJointID) 
 			
-			print "finalPose =", pose
-			print "actual =", self.probe.getActualJointPose(newJointID)
+			print("finalPose =", pose)
+			print("actual =", self.probe.getActualJointPose(newJointID))
 			#print initPose,pose
 
 		else:
@@ -833,7 +833,7 @@ class AverageContacts:
 
 
 		# search for the largest consecutive section of stable reference nodes
-		nodes = range(0,self.numJoints-1)
+		nodes = list(range(0,self.numJoints-1))
 
 		prevActive = False
 		currStart = 0
@@ -872,8 +872,8 @@ class AverageContacts:
 		# record this as new reference point
 		pose = [0.,0.,0.]
 
-		nodes = range(maxConsec-maxSize+1,maxConsec+1)
-		print maxConsec-maxSize+1, maxConsec
+		nodes = list(range(maxConsec-maxSize+1,maxConsec+1))
+		print(maxConsec-maxSize+1, maxConsec)
 		#refCount = maxSize
 		refCount = 0
 		
@@ -921,7 +921,7 @@ class AverageContacts:
 
 			if forcePose != []:
 				origin = forcePose
-				print "createNewNodeAverage() taking forced pose of", forcePose
+				print("createNewNodeAverage() taking forced pose of", forcePose)
 			else:
 				
 				# initialize the first reference node with its position in global coordinates

@@ -1,6 +1,6 @@
-from Behavior import Behavior
-from Curl import Curl
-from Anchor import Anchor
+from .Behavior import Behavior
+from .Curl import Curl
+from .Anchor import Anchor
 
 class PokeWalls(Behavior):
 
