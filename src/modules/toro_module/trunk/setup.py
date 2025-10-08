@@ -1,6 +1,6 @@
 from distutils.core import setup
 from distutils.extension import Extension
-from Cython.Distutils import build_ext
+from Cython.Build import cythonize
 
 ext_modules = [Extension("toromod", ["toromod.pyx", "toro.cpp", "posegraph2.cpp", "treeoptimizer2.cpp"],
 			language="c++",
@@ -13,7 +13,6 @@ ext_modules = [Extension("toromod", ["toromod.pyx", "toro.cpp", "posegraph2.cpp"
 
 setup(
   name = 'TORO Optimizer',
-  cmdclass = {'build_ext': build_ext},
-  ext_modules = ext_modules
+  ext_modules = cythonize(ext_modules, compiler_directives={'language_level': "3"})
 )
 

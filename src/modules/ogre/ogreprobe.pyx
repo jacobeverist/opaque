@@ -72,9 +72,9 @@ cdef class ProbeApp:
 		cdef double quats[1200]
 
 		if len(segPositions) != self.numSegments:
-			print "ERROR: incorrect number of positions. received", len(segPositions), "was expecting", self.numSegments
+			print("ERROR: incorrect number of positions. received", len(segPositions), "was expecting", self.numSegments)
 		if len(segQuaternions) != self.numSegments:
-			print "ERROR: incorrect number of quaternions. received", len(segQuaternions), "was expecting", self.numSegments
+			print("ERROR: incorrect number of quaternions. received", len(segQuaternions), "was expecting", self.numSegments)
 
 		for k in range(len(segPositions)):
 			points[3*k] = segPositions[k][0]

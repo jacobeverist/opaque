@@ -95,7 +95,7 @@ cdef class Transform:
 			#ind.reverse()
 	
 			#for i in ind:
-			for i from oj >= i > tj:
+			for i in range(oj, tj, -1):
 	
 				totalAngle = totalAngle + self.joints[i]
 				xTotal = xTotal - self.segLength*cos(totalAngle)

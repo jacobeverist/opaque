@@ -70,14 +70,14 @@ class Map:
 		return self.mapImage.copy()
 
 	def realToGrid(self, point):
-		indexX = int(floor(point[0]*self.divPix)) + self.numPixel/2 + 1
-		indexY = int(floor(point[1]*self.divPix)) + self.numPixel/2 + 1
+		indexX = int(floor(point[0]*self.divPix)) + self.numPixel//2 + 1
+		indexY = int(floor(point[1]*self.divPix)) + self.numPixel//2 + 1
 		return indexX, indexY
 
 	def gridToReal(self, indices):
 		i = indices[0]
 		j = indices[1]
-		point = [(i - self.numPixel/2 - 1)*(self.pixelSize/2.0) + self.pixelSize/2.0, (j - self.numPixel/2 - 1)*(self.pixelSize/2.0) + self.pixelSize/2.0]
+		point = [(i - self.numPixel//2 - 1)*(self.pixelSize/2.0) + self.pixelSize/2.0, (j - self.numPixel//2 - 1)*(self.pixelSize/2.0) + self.pixelSize/2.0]
 		return point
 
 	def saveMap(self, point = []):

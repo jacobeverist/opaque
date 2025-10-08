@@ -128,29 +128,57 @@ Test maps are in `src/mapLibrary/` and `src/testData/curveEnv/`.
 
 ### Building Extensions
 
-Before running simulations, build Cython extensions:
+Before running simulations, build Cython extensions with Python 3:
+
+**Main modules:**
 ```bash
 cd src/modules
-python setup.py build_ext --inplace
+python3 setup.py build_ext --inplace
 ```
 
-For bulletprobe specifically:
+**Individual modules** (build each as needed):
 ```bash
-cd src/modules/bulletprobe
-python setup.py build_ext --inplace
+cd src/modules/bulletprobe && python3 setup.py build_ext --inplace
+cd src/modules/ogre && python3 setup.py build_ext --inplace
+cd src/modules/alphashape && python3 setup.py build_ext --inplace
+cd src/modules/medialaxis && python3 setup.py build_ext --inplace
+cd src/modules/nelmin && python3 setup.py build_ext --inplace
+cd src/modules/toro_module/trunk && python3 setup.py build_ext --inplace
 ```
+
+**Note**: You'll need the appropriate C++ libraries installed (Bullet, Ogre3D, OpenCV, CGAL) for the modules to compile successfully.
 
 ### Python Environment
 
-This codebase uses **Python 2.6/2.7** (legacy system). Key dependencies:
+This codebase has been **fully migrated to Python 3.x**. Key dependencies:
 - Bullet physics
 - Ogre3D
 - Cython
 - NumPy, SciPy
 - Matplotlib (pylab)
-- PIL (Python Imaging Library)
+- Pillow (PIL fork for Python 3)
 - CGAL (for alpha shapes)
 - Multiprocessing for parallelization
+
+**Migration Status:**
+- ✅ **COMPLETE**: All Python files in `src/` converted using 2to3
+- ✅ **COMPLETE**: All `src/modules/` files converted to Python 3
+  - ✅ Updated all 7 setup.py files: `Cython.Distutils` → `Cython.Build`
+  - ✅ Added `language_level="3"` directive to all Cython modules
+  - ✅ Fixed all .pyx files (12 total):
+    - transform.pyx: Fixed old Cython `for i from ... >= i > ...` syntax → `for i in range(...)`
+    - ogre/ogreprobe.pyx: Fixed `print` statements → `print()` functions
+    - All other .pyx files were already Python 3 compatible
+  - C++ wrapper files unchanged (C++ is version-agnostic)
+- When converting Python 2 to 3, key changes include:
+  - `print` statements → `print()` function calls
+  - `import cPickle as pickle` → `import pickle`
+  - Relative imports → Absolute imports with dots (e.g., `from .module import`)
+  - `dict.iteritems()` → `dict.items()`
+  - `dict.iterkeys()` → `dict.keys()`
+  - `dict.itervalues()` → `dict.values()`
+  - `range()` returns iterator, use `list(range())` if list needed
+  - Division: `/` is float division, use `//` for integer division
 
 ### System Path Setup
 
@@ -224,3 +252,4 @@ Dissertation materials: `doc/Dissertation/`
 - MAX_NODES in TestNavigation is set to 60 (configurable: 60/100/300)
 - Default recursion limit is 10000 for deep mapping computations
 - Random seed is fixed to 0 for reproducibility in both main scripts
+- All Python code (including `src/` and `src/modules`) has been fully migrated to Python 3.x
