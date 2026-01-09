@@ -1,7 +1,5 @@
 # Opaque/DarkMapper
 
-**Robotic Navigation and Mapping in Confined Environments Using Proprioception**
-
 This repository contains the experimental code and simulation framework developed for my PhD dissertation research entitled, [Robot Mapping with Proprioceptive Spatial Awareness in Confined and Sensor-Challenged Environments](doc/Everist_Dissertation_2015.pdf).
 
 The project investigates how snake-like robotic probes can explore, map, and navigate through unknown confined environments when all external sensors have failed, relying solely on proprioception (joint angles and body contact) and physical interaction with the environment.
