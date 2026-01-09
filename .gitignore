@@ -6,6 +6,8 @@
 # Excluded Items
 .idea
 .DS_Store
+**/.DS_Store
+
 libbbcore.*
 bin/
 build/
