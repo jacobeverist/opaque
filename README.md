@@ -2,7 +2,7 @@
 
 **Robotic Navigation and Mapping in Confined Environments Using Proprioception**
 
-This repository contains the experimental code and simulation framework developed for my PhD dissertation research entitled [Robot Mapping with Proprioceptive Spatial Awareness in Confined and Sensor-Challenged Environments](./doc/Everist - ROBOT MAPPING WITH PROPRIOCEPTIVE SPATIAL AWARENES.pdf)
+This repository contains the experimental code and simulation framework developed for my PhD dissertation research entitled, [Robot Mapping with Proprioceptive Spatial Awareness in Confined and Sensor-Challenged Environments](doc/Everist_Dissertation_2015.pdf).
 
 The project investigates how snake-like robotic probes can explore, map, and navigate through unknown confined environments when all external sensors have failed, relying solely on proprioception (joint angles and body contact) and physical interaction with the environment.
 
@@ -26,8 +26,10 @@ The system uses a **physics-based simulator** (Bullet Physics + Ogre3D) to valid
 
 ## Documentation
 
-- **Dissertation**: `doc/Dissertation/` - Complete PhD dissertation
-- **Research Papers**: `doc/*.pdf` - Published conference/journal papers
+- **Final Dissertation**: `doc/Everist_Dissertation_2015.pdf` - Submitted and Accepted Dissertation
+- **Dissertation Defense**: `doc/defense/` - PowerPoint Slide Deck
+- **Dissertation Materials**: `doc/Dissertation/` - Writing Materials, incomplete
+- **Related Research Papers**: `doc/*.pdf` - Published conference/journal papers
 - **Algorithm Overview**: `doc/algorithm.txt` - High-level algorithm description
 - **Developer Guide**: `CLAUDE.md` - Detailed codebase documentation
 
@@ -219,16 +221,16 @@ python3 batchTests.py --maxNumPoses 100
 If you use this code in your research, please cite:
 
 ```bibtex
-@phdthesis{everist_phd,
+@phdthesis{everist_phd_2015,
   author = {Jacob Everist},
-  title = {Robotic Navigation and Mapping in Confined Environments Using Proprioception},
-  school = {[Your University]},
-  year = {[Year]},
-  note = {Available at: https://github.com/[your-username]/opaque}
+  title = {Robot Mapping with Proprioceptive Spatial Awareness in Confined and Sensor-Challenged Environments},
+  school = {[University of Southern California]},
+  year = {2015},
+  note = {Available at: https://github.com/jacobeverist/opaque/doc/Everist_Dissertation_2015.pdf}
 }
 ```
 
-See `doc/Dissertation/` and `doc/*.pdf` for published papers.
+See `doc/*.pdf` for related papers.
 
 ## License
 
